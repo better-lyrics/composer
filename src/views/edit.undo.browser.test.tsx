@@ -1,13 +1,14 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 import { EditPanel } from "@/views/edit";
-import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -80,17 +81,17 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
 
     blurTextarea(textarea);
 
     useProjectStore.getState().undo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello"]);
 
     useProjectStore.getState().redo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
     await expect.poll(() => textarea.value).toBe("Hello world");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world"]);
   });
@@ -101,10 +102,10 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello there");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello there");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello there");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
   });
 
@@ -115,10 +116,10 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello again");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello again");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello again");
 
     pressUndo(textarea, REMAPPED_UNDO);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
   });
 
@@ -128,13 +129,13 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello");
 
     pressRedo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
     await expect.poll(() => textarea.value).toBe("Hello world");
   });
 
@@ -144,13 +145,13 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello");
 
     pressRedo(textarea, ALTERNATE_REDO);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
     await expect.poll(() => textarea.value).toBe("Hello world");
   });
 
@@ -162,7 +163,7 @@ describe("editor undo and redo", () => {
 
     pasteIntoTextarea(textarea, "First line\nSecond line\nThird line");
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
       .toEqual(["First line", "Second line", "Third line"]);
 
     pressUndo(textarea);
@@ -177,18 +178,18 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Start typed");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Start typed");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Start typed");
 
     pasteIntoTextarea(textarea, "Start typed\nPasted line");
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
       .toEqual(["Start typed", "Pasted line"]);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Start typed"]);
+    await expect.poll(() => useProjectStore.getState().lines.map((l) => lineText(l))).toEqual(["Start typed"]);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Start"]);
+    await expect.poll(() => useProjectStore.getState().lines.map((l) => lineText(l))).toEqual(["Start"]);
   });
 
   it("treats two blurred typing runs as two undo steps", async () => {
@@ -197,18 +198,18 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "AB");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("AB");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("AB");
     blurTextarea(textarea);
 
     setTextareaValue(textarea, "ABC");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("ABC");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("ABC");
     blurTextarea(textarea);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("AB");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("AB");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("A");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("A");
   });
 });
 
@@ -225,11 +226,11 @@ describe("editor undo and redo without textarea focus", () => {
     document.body.focus();
 
     useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { backgroundText: "ooh" } }]));
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("ooh");
     expect(document.activeElement).not.toBe(textarea);
 
     dispatchWindowUndo();
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe(undefined);
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe(undefined);
   });
 
   it("undoes via a remapped binding on window when focus is outside the textarea", async () => {
@@ -448,7 +449,7 @@ describe("editor undo edge cases", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Untouched");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Untouched");
     expect(textarea.value).toBe("Untouched");
   });
 
@@ -458,15 +459,15 @@ describe("editor undo edge cases", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Base A");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Base A");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Base A");
     blurTextarea(textarea);
 
     setTextareaValue(textarea, "Base B");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Base B");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Base B");
     blurTextarea(textarea);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Base A");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Base A");
     await expect.poll(() => textarea.value).toBe("Base A");
   });
 
@@ -502,7 +503,7 @@ describe("editor undo edge cases", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
 
     const event = new KeyboardEvent("keydown", {
       key: "z",

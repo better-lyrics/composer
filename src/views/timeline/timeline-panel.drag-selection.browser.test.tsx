@@ -1,3 +1,6 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -8,8 +11,6 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -165,7 +166,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 1, 7 * ZOOM);
 
-      expect(useProjectStore.getState().lines[0].words?.[1].end).toBeGreaterThan(5);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].end).toBeGreaterThan(5);
       expect(selected()).toEqual(words("l0", 0, "word", [1]));
     });
 
@@ -175,7 +176,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 1, 7 * ZOOM);
 
-      expect(useProjectStore.getState().lines[0].words?.[0].end).toBeGreaterThan(4);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].end).toBeGreaterThan(4);
       expect(selected()).toEqual(words("l0", 0, "word", [0, 1]));
     });
 
@@ -185,7 +186,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 0, 4.6 * ZOOM);
 
-      expect(useProjectStore.getState().lines[0].words?.[0].end).toBe(4);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].end).toBe(4);
       expect(selected()).toEqual(words("l0", 0, "word", [0]));
     });
 
@@ -195,7 +196,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 1, 7 * ZOOM, ROW_HEIGHT - 2);
 
-      expect(useProjectStore.getState().lines[0].words?.[1].end).toBeGreaterThan(5);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].end).toBeGreaterThan(5);
       expect(selected()).toEqual(words("l0", 0, "word", [1]));
     });
 

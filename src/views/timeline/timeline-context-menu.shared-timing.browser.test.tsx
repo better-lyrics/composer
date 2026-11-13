@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -5,7 +7,6 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -48,7 +49,7 @@ describe("TimelineContextMenu · add instance to a group that shares timing", ()
   it("places the instance in the empty row with the shared timing", async () => {
     await addInstanceAtPlayhead();
 
-    expect(lineById("e")?.words?.[1].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(7);
   });
 
   describe("regressions", () => {
@@ -95,7 +96,7 @@ describe("TimelineContextMenu · add instance from an own-timing banner", () => 
   it("gives the new instance the shared timing, not the clicked banner's", async () => {
     await addInstanceAtPlayhead();
 
-    expect(lineById("e")?.words?.[1].begin).toBe(7.5);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(7.5);
   });
 });
 
@@ -183,8 +184,8 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
     await addWordHere("word", 12.9);
 
     await expect.poll(() => lineById("c0")?.words?.length).toBe(3);
-    expect(lineById("c0")?.words?.[2]).toMatchObject({ begin: 12, end: 13 });
-    expect(lineById("c1")?.words?.[2]).toMatchObject({ begin: 19, end: 20 });
+    expect(timedSyllables(mainTrack(lineById("c0")!))[2]).toMatchObject({ begin: 12, end: 13 });
+    expect(timedSyllables(mainTrack(lineById("c1")!))[2]).toMatchObject({ begin: 19, end: 20 });
   });
 
   it("ends timed background text where the latest instance reaches the song end", async () => {
@@ -194,8 +195,8 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
     await addWordHere("bg", 12.9);
 
     await expect.poll(() => lineById("c0")?.backgroundWords?.length).toBe(3);
-    expect(lineById("c0")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(13);
-    expect(lineById("c1")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(20);
+    expect(timedSyllables(backgroundTrack(lineById("c0")!)).at(-1)?.end).toBeLessThanOrEqual(13);
+    expect(timedSyllables(backgroundTrack(lineById("c1")!)).at(-1)?.end).toBeLessThanOrEqual(20);
   });
 
   describe("regressions", () => {
@@ -205,8 +206,8 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
       await addWordHere("word", 12.9);
 
       await expect.poll(() => lineById("c0")?.words?.length).toBe(3);
-      expect(lineById("c0")?.words?.[2].begin).toBeCloseTo(12.9, 5);
-      expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.9, 5);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[2].begin).toBeCloseTo(12.9, 5);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBeCloseTo(13.9, 5);
     });
   });
 });

@@ -1,4 +1,3 @@
-import { convertToWordTiming } from "@/domain/commands/line-timing";
 import {
   IconArrowBackUp,
   IconArrowBarBoth,
@@ -13,11 +12,14 @@ import {
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { instanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -54,7 +56,7 @@ interface LineFacts {
 const lineFacts = memoByIdentity(
   (lines: readonly LyricLine[]): LineFacts => ({
     hasTransliteration: hasTransliteration(lines),
-    hasUnexpandedLines: lines.some((l) => !l.words?.length && l.text.trim().length > 0),
+    hasUnexpandedLines: lines.some((l) => !timedSyllables(mainTrack(l)).length && lineText(l).trim().length > 0),
     instanceKeys: [...new Set(lines.flatMap((l) => (isLinked(l) ? [instanceKey(l.groupId, l.instanceIdx)] : [])))],
   }),
 );
@@ -95,8 +97,8 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     const updates: Array<{ id: string; updates: { words?: WordTiming[]; begin?: undefined; end?: undefined } }> = [];
 
     for (const line of lines) {
-      if (line.words?.length) continue;
-      if (!line.text.trim()) continue;
+      if (timedSyllables(mainTrack(line)).length) continue;
+      if (!lineText(line).trim()) continue;
 
       if (isLineSynced(line)) {
         const converted = convertLineToWord(line);
@@ -104,7 +106,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
           updates.push({ id: line.id, updates: { words: converted.words, begin: undefined, end: undefined } });
         }
       } else {
-        const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
+        const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
         if (parts.length === 0) continue;
         const words = wordsFromSpaced(
           parts.map((part, i) => ({

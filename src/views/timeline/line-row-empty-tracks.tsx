@@ -1,9 +1,10 @@
-import { useCallback } from "react";
 import { IconPlus } from "@tabler/icons-react";
-import type { TimeRange } from "@/domain/group/shared-timing";
+import { useCallback } from "react";
 import { placeLineAt } from "@/domain/commands/line-timing";
 import { fillEmptyTrack } from "@/domain/commands/word-structure";
+import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
 import type { WordTrack } from "@/domain/line/tracks";
 import { addressOf } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
@@ -114,7 +115,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
 
 const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, duration, rowHeight }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const displayText = stripSplitCharacter(line.text);
+  const displayText = stripSplitCharacter(lineText(line));
 
   return (
     <div
@@ -129,7 +130,7 @@ const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, durati
       >
         <span className="truncate pr-0.5">{truncateLabel(displayText, MAIN_LABEL_MAX_CHARS)}</span>
         {displayText.length > 0 && (
-          <SyncLineButton lineId={line.id} wordCount={splitIntoWordsWithMeta(line.text).parts.length} />
+          <SyncLineButton lineId={line.id} wordCount={splitIntoWordsWithMeta(lineText(line)).parts.length} />
         )}
       </div>
     </div>
@@ -150,7 +151,7 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
-    {line.backgroundText ? truncateLabel(line.backgroundText, BG_LABEL_MAX_CHARS) : "BG"}
+    {truncateLabel(backgroundText(line) ?? "", BG_LABEL_MAX_CHARS) || "BG"}
   </div>
 );
 

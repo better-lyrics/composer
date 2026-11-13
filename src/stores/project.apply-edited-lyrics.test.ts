@@ -1,7 +1,8 @@
+import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -33,11 +34,11 @@ describe("applyEditedLyricsWithHistory", () => {
   it("writes the edited lines as one undo step", () => {
     seedProject();
     apply();
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello there"]);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello"]);
     useProjectStore.getState().redo();
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello there"]);
   });
 
   describe("regressions", () => {

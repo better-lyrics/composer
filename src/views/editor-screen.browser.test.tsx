@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { TabBar } from "@/ui/tab-bar";
 import { isMac } from "@/utils/platform";
 import { EditorScreen } from "@/views/editor-screen";
-import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -23,7 +24,7 @@ function pressUndo(target: EventTarget): KeyboardEvent {
   return event;
 }
 
-const firstLineText = () => useProjectStore.getState().lines[0].text;
+const firstLineText = () => lineText(useProjectStore.getState().lines[0]);
 
 // -- Tests --------------------------------------------------------------------
 

@@ -1,13 +1,14 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -73,14 +74,16 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Split Word" }).click();
 
       await expect.poll(() => savedLine().words?.length).toBe(4);
-      expect(savedLine().words?.map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
-      expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
-      expect(getEffectiveLines([savedLine()])[0].words?.map((word) => word.transliteration)).toEqual([
+      expect(timedSyllables(mainTrack(savedLine())).map((word) => word.transliteration)).toEqual([
         "Uh",
         "il",
         "dan eun",
         "na",
       ]);
+      expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
+      expect(
+        timedSyllables(mainTrack(getEffectiveLines([savedLine()])[0])).map((word) => word.transliteration),
+      ).toEqual(["Uh", "il", "dan eun", "na"]);
     });
 
     it("regression: keeps the chosen roman split on the background track (#283)", async () => {
@@ -92,7 +95,11 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Split Word" }).click();
 
       await expect.poll(() => savedLine().backgroundWords?.length).toBe(3);
-      expect(savedLine().backgroundWords?.map((word) => word.transliteration)).toEqual(["ge", "urae", "yeah"]);
+      expect(timedSyllables(backgroundTrack(savedLine())).map((word) => word.transliteration)).toEqual([
+        "ge",
+        "urae",
+        "yeah",
+      ]);
       expect(savedLine().transliteration?.backgroundText).toBe("geurae  yeah");
       expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
     });
@@ -106,16 +113,13 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Split Word" }).click();
 
       await expect.poll(() => savedLine().words?.length).toBe(4);
-      const stored = savedLine().words ?? [];
+      const stored = timedSyllables(mainTrack(savedLine()));
       expect(stored.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단 ", "은 ", "나"]);
       expect(stored.map((word) => word.transliteration)).toEqual(["Uh", "ild", "an eun", "na"]);
       expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
-      expect(getEffectiveLines([savedLine()])[0].words?.map((word) => word.transliteration)).toEqual([
-        "Uh",
-        "ild",
-        "an eun",
-        "na",
-      ]);
+      expect(
+        timedSyllables(mainTrack(getEffectiveLines([savedLine()])[0])).map((word) => word.transliteration),
+      ).toEqual(["Uh", "ild", "an eun", "na"]);
     });
   });
 });

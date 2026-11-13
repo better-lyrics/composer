@@ -1,9 +1,10 @@
+import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
-import { describe, expect, it } from "vitest";
 
 function sourceLine(): LyricLine {
   return {
@@ -91,7 +92,7 @@ describe("generated language updates", () => {
       text: "",
       backgroundText: "an nyeong",
       origin: "google",
-      sourceFingerprint: languageSourceFingerprint(line.text, line.backgroundText),
+      sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
     });
     expect(updates.words?.[0]).not.toHaveProperty("transliteration");
     expect(updates.backgroundWords?.[0].transliteration).toBe("an nyeong");

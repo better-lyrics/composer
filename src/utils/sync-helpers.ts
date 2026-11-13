@@ -1,9 +1,10 @@
 import type { LyricLine } from "@/domain/line/model";
-import { lineTimingWordId } from "@/domain/word/id";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { trackWords } from "@/domain/line/tracks";
-import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { SyncAddress } from "@/domain/sync/address";
+import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
+import { lineTimingWordId } from "@/domain/word/id";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
@@ -148,7 +149,7 @@ function createTrackWordsFromTextAt(
   begin: number,
   maxEnd: number,
 ): WordTiming[] | null {
-  const text = type === "word" ? line.text : line.backgroundText;
+  const text = type === "word" ? lineText(line) : backgroundText(line);
   if (!text || trackWords(line, type)?.length) return null;
   const partDuration = type === "word" ? useSettingsStore.getState().defaultWordDuration : DEFAULT_BG_WORD_DURATION;
   const naturalEnd = begin + splitIntoWords(text).length * partDuration;

@@ -1,15 +1,17 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { mergeSyllableGroup, snapSyllablesFlush } from "@/domain/commands/word-edits";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
+import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
-import { useChoiceStore } from "@/stores/choice-store";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
-import { beforeEach, describe, expect, it } from "vitest";
-import { mergeSyllableGroup, snapSyllablesFlush } from "@/domain/commands/word-edits";
-import { pasteLyrics } from "@/domain/commands/edit-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -50,7 +52,7 @@ describe("mergeSyllableGroupIntoWord", () => {
   it("collapses a syllable group into one word", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1, 2]));
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words).toHaveLength(1);
     expect(words[0].text).toBe("beautiful");
     expect(words[0].begin).toBe(0);
@@ -99,8 +101,10 @@ describe("mergeSyllableGroupIntoWord", () => {
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
     const merged = useProjectStore.getState().lines[0];
-    expect(merged.words).toEqual([{ text: "일단은", sep: "", transliteration: "ildan eun", begin: 0, end: 0.9 }]);
-    expect(merged.text).toBe("일단은");
+    expect(timedSyllables(mainTrack(merged))).toEqual([
+      { text: "일단은", sep: "", transliteration: "ildan eun", begin: 0, end: 0.9 },
+    ]);
+    expect(lineText(merged)).toBe("일단은");
     expect(merged.transliteration?.text).toBe("ildan eun");
   });
 
@@ -114,14 +118,14 @@ describe("mergeSyllableGroupIntoWord", () => {
 
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
 
-    expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBe("kyouhi");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].transliteration).toBe("kyouhi");
   });
 
   it("does not keep a partial transliteration when one fragment is missing", () => {
     const line = seedGroupedLine();
     if (!line.words) throw new Error("expected word-synced fixture");
-    line.words[0].transliteration = "beau";
-    line.words[2].transliteration = "ful";
+    timedSyllables(mainTrack(line))[0].transliteration = "beau";
+    timedSyllables(mainTrack(line))[2].transliteration = "ful";
     useProjectStore.getState().restoreLyrics({ lines: [line] });
 
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
@@ -132,14 +136,14 @@ describe("mergeSyllableGroupIntoWord", () => {
   it("collapses the whole group when only one syllable is selected", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.map((w) => w.text)).toEqual(["beautiful"]);
   });
 
   it("syncs line.text to the collapsed words", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
-    expect(useProjectStore.getState().lines[0].text).toBe("beautiful");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("beautiful");
   });
 
   it("leaves non-grouped words untouched and is a no-op on a non-grouped selection", () => {
@@ -166,7 +170,7 @@ describe("mergeSyllableGroupIntoWord", () => {
       ],
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 3]));
-    expect((useProjectStore.getState().lines[0].words ?? []).map((w) => w.text)).toEqual(["ab", "cd"]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text)).toEqual(["ab", "cd"]);
   });
 
   it("works on the background track and syncs backgroundText", () => {
@@ -187,8 +191,8 @@ describe("mergeSyllableGroupIntoWord", () => {
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
     const line = useProjectStore.getState().lines[0];
-    expect((line.backgroundWords ?? []).map((w) => w.text)).toEqual(["oooh"]);
-    expect(line.backgroundText).toBe("oooh");
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["oooh"]);
+    expect(backgroundText(line)).toBe("oooh");
   });
 
   it("is undoable", () => {
@@ -196,7 +200,7 @@ describe("mergeSyllableGroupIntoWord", () => {
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1, 2]));
     expect(useProjectStore.getState().canUndo()).toBe(true);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].words ?? []).toHaveLength(3);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toHaveLength(3);
   });
 });
 
@@ -242,8 +246,8 @@ describe("mergeSyllableGroupIntoWord · linked propagation", () => {
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
-    expect(a0?.words?.map((w) => w.text)).toEqual(["every"]);
-    expect(a1?.words?.map((w) => w.text)).toEqual(["every"]);
+    expect(timedSyllables(mainTrack(a0!)).map((w) => w.text)).toEqual(["every"]);
+    expect(timedSyllables(mainTrack(a1!)).map((w) => w.text)).toEqual(["every"]);
   });
 });
 
@@ -267,8 +271,8 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
-    expect((line.backgroundWords ?? []).map((w) => w.text)).toEqual(["oooh"]);
+    expect(backgroundTrack(line)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["oooh"]);
   });
 
   it("leaves backgroundTextSource untouched when merging the main track", () => {
@@ -290,7 +294,7 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
       ],
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1, 2]));
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 
   it("flips linked siblings to manual when a background-track merge propagates", () => {
@@ -331,9 +335,9 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
     });
     useProjectStore.getState().commit(mergeSyllableGroup("a0", "backgroundWords", [0, 1]));
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((l) => l.id === "a0")?.backgroundTextSource).toBe("manual");
-    expect(lines.find((l) => l.id === "a1")?.backgroundTextSource).toBe("manual");
-    expect(lines.find((l) => l.id === "a1")?.backgroundWords?.map((w) => w.text)).toEqual(["oooh"]);
+    expect(backgroundTrack(lines.find((l) => l.id === "a0")!)?.source).toBe("manual");
+    expect(backgroundTrack(lines.find((l) => l.id === "a1")!)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(lines.find((l) => l.id === "a1")!)).map((w) => w.text)).toEqual(["oooh"]);
   });
 
   it("undo restores the prior extraction provenance", () => {
@@ -354,9 +358,9 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
       ]),
     );
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
 
@@ -381,7 +385,7 @@ describe("snapSyllablesFlush", () => {
 
     useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].end).toBe(words[1].begin);
     expect(words[1].end).toBe(words[2].begin);
     expect(words[0].begin).toBe(0);
@@ -440,7 +444,7 @@ describe("snapSyllablesFlush", () => {
 
     useProjectStore.getState().commit(snapSyllablesFlush("line-1", "backgroundWords"));
 
-    const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
+    const bg = timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]));
     expect(bg[0].end).toBe(bg[1].begin);
     expect(bg[0].begin).toBe(1);
     expect(bg[1].begin).toBe(1.5);
@@ -528,9 +532,9 @@ describe("snapSyllablesFlush · background provenance", () => {
     seedGappedBgLine();
     useProjectStore.getState().commit(snapSyllablesFlush("line-1", "backgroundWords"));
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
-    expect(line.backgroundWords?.[0].end).toBe(line.backgroundWords?.[1].begin);
-    expect(line.backgroundText).toBe("oo|oh");
+    expect(backgroundTrack(line)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(line))[0].end).toBe(line.backgroundWords?.[1].begin);
+    expect(backgroundText(line)).toBe("oo|oh");
   });
 
   it("leaves backgroundTextSource untouched when snapping the main track", () => {
@@ -552,16 +556,16 @@ describe("snapSyllablesFlush · background provenance", () => {
       ],
     });
     useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 
   it("undo restores the prior extraction provenance", () => {
     seedGappedBgLine();
     useProjectStore.getState().clearHistory();
     useProjectStore.getState().commit(snapSyllablesFlush("line-1", "backgroundWords"));
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
 
@@ -584,12 +588,16 @@ describe("mergeSelectedWords", () => {
 
     await mergeSelectedWords("line-1", "word", [1, 2]);
 
-    expect(useProjectStore.getState().lines[0].words).toEqual([
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual([
       { text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
       { text: "tiful", sep: "", begin: 0.3, end: 0.9, syllableGroupId: "g1" },
     ]);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["beau", "ti", "ful"]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text)).toEqual([
+      "beau",
+      "ti",
+      "ful",
+    ]);
   });
 
   it("carries the merge to linked siblings with the same rhythm without asking", async () => {
@@ -612,7 +620,7 @@ describe("mergeSelectedWords", () => {
     await mergeSelectedWords("a0", "word", [1, 2]);
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.words?.map((w) => [w.text, w.begin, w.end])).toEqual([
+    expect(timedSyllables(mainTrack(a1!)).map((w) => [w.text, w.begin, w.end])).toEqual([
       ["ev", 10, 10.3],
       ["ery", 10.3, 11],
     ]);
@@ -639,14 +647,14 @@ describe("mergeSelectedWords", () => {
     await mergeSelectedWords("a0", "word", [1, 2]);
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.words).toEqual([
+    expect(timedSyllables(mainTrack(a1!))).toEqual([
       { text: "so", sep: " ", begin: 10, end: 10.5 },
       { text: "beauti", sep: "", begin: 10.5, end: 11.1, syllableGroupId: "g_a1" },
       { text: "ful", sep: "", begin: 11.1, end: 11.6, syllableGroupId: "g_a1" },
     ]);
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(restored?.words?.map((w) => w.text + w.sep)).toEqual(["so ", "beau", "ti", "ful"]);
+    expect(timedSyllables(mainTrack(restored!)).map((w) => w.text + w.sep)).toEqual(["so ", "beau", "ti", "ful"]);
   });
 
   it("regression: a linked copy split differently follows the merge", async () => {
@@ -716,7 +724,7 @@ describe("mergeSelectedWords", () => {
     await mergeSelectedWords("a0", "word", [0, 1]);
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.words).toEqual([
+    expect(timedSyllables(mainTrack(a1!))).toEqual([
       { text: "onetwo", sep: " ", begin: 10, end: 12.5 },
       { text: "three", sep: "", begin: 12.5, end: 13 },
     ]);
@@ -756,8 +764,8 @@ describe("mergeSelectedWords", () => {
       await expect.poll(() => useChoiceStore.getState().request?.title).toBe("Word structure changed");
       useChoiceStore.getState().answer("apply");
       await merging;
-      expect(line("a0")?.words?.map((w) => w.text)).toEqual(["beauti", "ful"]);
-      expect(line("a1")?.words?.map((w) => w.text)).toEqual(["beautiful"]);
+      expect(timedSyllables(mainTrack(line("a0")!)).map((w) => w.text)).toEqual(["beauti", "ful"]);
+      expect(timedSyllables(mainTrack(line("a1")!)).map((w) => w.text)).toEqual(["beautiful"]);
     });
 
     it("Detach merges only the selected line and unlinks it", async () => {
@@ -766,9 +774,9 @@ describe("mergeSelectedWords", () => {
       await expect.poll(() => useChoiceStore.getState().request?.title).toBe("Word structure changed");
       useChoiceStore.getState().answer("detach");
       await merging;
-      expect(line("a0")?.words?.map((w) => w.text)).toEqual(["beauti", "ful"]);
+      expect(timedSyllables(mainTrack(line("a0")!)).map((w) => w.text)).toEqual(["beauti", "ful"]);
       expect(line("a0")?.groupId).toBeUndefined();
-      expect(line("a1")?.words?.map((w) => w.text)).toEqual(["be", "aut", "iful"]);
+      expect(timedSyllables(mainTrack(line("a1")!)).map((w) => w.text)).toEqual(["be", "aut", "iful"]);
     });
   });
 });

@@ -1,16 +1,17 @@
 /**
  * @vitest-environment node
  */
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { applyAlignedTimings } from "@/domain/commands/alignment";
 import { lineEditCommand } from "@/domain/commands/line-edits";
+import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 
 const chorus = (instanceIdx: number, begin: number) =>
   createLine({
@@ -30,7 +31,7 @@ function seed(group: LinkGroup, lines: LyricLine[] = [chorus(0, 10), chorus(1, 4
 }
 
 function nudgedSecondWord(delta: number): WordTiming[] {
-  const words = useProjectStore.getState().lines[0].words ?? [];
+  const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
   return words.map((word, i) => (i === 1 ? { ...word, begin: word.begin + delta, end: word.end + delta } : word));
 }
 
@@ -94,7 +95,9 @@ describe("shared timing in history writes", () => {
     it("rejects a batch that would move a copy below zero", () => {
       seed(createGroup({ id: "g1", sharesTiming: true }), [chorus(0, 10), chorus(1, 0.05)]);
       const before = useProjectStore.getState();
-      const words = (before.lines[0].words ?? []).map((word, i) => (i === 0 ? { ...word, begin: 9.8 } : word));
+      const words = timedSyllables(mainTrack(before.lines[0])).map((word, i) =>
+        i === 0 ? { ...word, begin: 9.8 } : word,
+      );
       before.commit(timingWrite([{ id: "c0", updates: { words } }]));
       const after = useProjectStore.getState();
       expect(after.lines).toBe(before.lines);
@@ -104,7 +107,9 @@ describe("shared timing in history writes", () => {
     it("types the refusal of a copy below zero", () => {
       seed(createGroup({ id: "g1", sharesTiming: true }), [chorus(0, 10), chorus(1, 0.05)]);
       const before = useProjectStore.getState();
-      const words = (before.lines[0].words ?? []).map((word, i) => (i === 0 ? { ...word, begin: 9.8 } : word));
+      const words = timedSyllables(mainTrack(before.lines[0])).map((word, i) =>
+        i === 0 ? { ...word, begin: 9.8 } : word,
+      );
       const outcome = before.commit(applyAlignedTimings([{ id: "c0", updates: { words } }]));
       expect(outcome).toEqual({ refused: { reason: "copy-below-zero" } });
       expect(useProjectStore.getState().history).toBe(before.history);
@@ -138,13 +143,15 @@ describe("shared timing in structural word writes", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }), [syllables(0, 10), syllables(1, 40)]);
     useProjectStore.getState().commit(snapSyllablesFlush("s0", "words"));
     const sibling = useProjectStore.getState().lines.find((line) => line.id === "s1");
-    expect(sibling?.words?.[1]?.begin).toBeCloseTo(sibling?.words?.[0]?.end ?? Number.NaN, 6);
+    expect(timedSyllables(mainTrack(sibling!))[1]?.begin).toBeCloseTo(sibling?.words?.[0]?.end ?? Number.NaN, 6);
   });
 
   it("keeps an old group's sibling where it was", () => {
     seed(createGroup({ id: "g1" }), [syllables(0, 10), syllables(1, 40)]);
     useProjectStore.getState().commit(snapSyllablesFlush("s0", "words"));
-    expect(useProjectStore.getState().lines.find((line) => line.id === "s1")?.words?.[1]?.begin).toBeCloseTo(40.4, 6);
+    expect(
+      timedSyllables(mainTrack(useProjectStore.getState().lines.find((line) => line.id === "s1")!))[1]?.begin,
+    ).toBeCloseTo(40.4, 6);
   });
 
   it("makes a snap and its copy one undo step", () => {
@@ -152,7 +159,7 @@ describe("shared timing in structural word writes", () => {
     useProjectStore.getState().commit(snapSyllablesFlush("s0", "words"));
     useProjectStore.getState().undo();
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((line) => line.id === "s0")?.words?.[1]?.begin).toBeCloseTo(10.4, 6);
-    expect(lines.find((line) => line.id === "s1")?.words?.[1]?.begin).toBeCloseTo(40.4, 6);
+    expect(timedSyllables(mainTrack(lines.find((line) => line.id === "s0")!))[1]?.begin).toBeCloseTo(10.4, 6);
+    expect(timedSyllables(mainTrack(lines.find((line) => line.id === "s1")!))[1]?.begin).toBeCloseTo(40.4, 6);
   });
 });

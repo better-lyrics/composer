@@ -1,8 +1,10 @@
+import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -196,15 +198,17 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.text && line.text.trim().length > 0) {
+    const mainText = lineText(line);
+    if (mainText && mainText.trim().length > 0) {
       fieldsInRun++;
-      for (const hit of fieldHits(line.text, line.words)) {
+      for (const hit of fieldHits(mainText, timedSyllables(mainTrack(line)))) {
         raw.push({ ...hit, line, lineIndex: i, field: "words" });
       }
     }
-    if (line.backgroundText && line.backgroundText.trim().length > 0) {
+    const bgText = backgroundText(line);
+    if (bgText && bgText.trim().length > 0) {
       fieldsInRun++;
-      for (const hit of fieldHits(line.backgroundText, line.backgroundWords)) {
+      for (const hit of fieldHits(bgText, timedSyllables(backgroundTrack(line)))) {
         raw.push({ ...hit, line, lineIndex: i, field: "backgroundWords" });
       }
     }

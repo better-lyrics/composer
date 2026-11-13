@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectQrcSyncType } from "@/domain/lyrics-search/sync-type";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
@@ -230,7 +231,7 @@ describeOnline("portatoProvider", () => {
       const parsed = parseLyricsFile("x.qrc", result.payload.raw);
       expect(parsed.lines.length).toBeGreaterThan(0);
       expect(parsed.hasTimingData).toBe(true);
-      expect(parsed.lines.some((line) => (line.words?.length ?? 0) > 0)).toBe(true);
+      expect(parsed.lines.some((line) => timedSyllables(mainTrack(line)).length > 0)).toBe(true);
     });
 
     it("echoes the track, artist and album back onto the result", () => {

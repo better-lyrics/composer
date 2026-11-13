@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 
@@ -28,8 +29,8 @@ function buildCandidateLines(
   for (const [lineId, { mainIdxs, bgIdxs, lineIndex }] of byLine) {
     const line = linesById.get(lineId);
     if (!line) return undefined;
-    const totalMain = line.words?.length ?? 0;
-    const totalBg = line.backgroundWords?.length ?? 0;
+    const totalMain = timedSyllables(mainTrack(line)).length;
+    const totalBg = timedSyllables(backgroundTrack(line)).length;
     if (mainIdxs.size !== totalMain) return undefined;
     if (bgIdxs.size !== totalBg) return undefined;
     candidates.push({ line, lineIndex });

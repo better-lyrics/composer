@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup } from "@/test/factories";
@@ -34,7 +35,7 @@ function linkedChorusAroundVerse(): LyricLine[] {
   ];
 }
 
-const texts = () => useProjectStore.getState().lines.map((l) => l.text);
+const texts = () => useProjectStore.getState().lines.map((l) => lineText(l));
 
 // -- Tests --------------------------------------------------------------------
 

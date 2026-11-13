@@ -1,3 +1,4 @@
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -57,14 +58,14 @@ async function renderStretchTrack(
   const fixture: Fixture = {
     lineId: line.id,
     blocks,
-    original: useProjectStore.getState().lines[0].words ?? [],
+    original: timedSyllables(mainTrack(useProjectStore.getState().lines[0])),
   };
   return fixture;
 }
 
 function storeWords(): WordTiming[] {
   const line = useProjectStore.getState().lines[0];
-  return line.words ?? [];
+  return timedSyllables(mainTrack(line));
 }
 
 function gripEdge(block: HTMLElement, edge: "left" | "right"): HTMLElement | null {

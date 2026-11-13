@@ -4,6 +4,8 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
@@ -124,14 +126,14 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
 
     const lineBounds = mainBounds(line);
     templates.push({
-      text: line.text,
+      text: lineText(line),
       agentId: line.agentId,
       relativeBegin: lineBounds ? lineBounds.begin - startTime : undefined,
       relativeEnd: lineBounds ? lineBounds.end - startTime : undefined,
       words: tplWords,
-      backgroundText: line.backgroundText,
+      backgroundText: backgroundText(line),
       backgroundWords: tplBgWords,
-      backgroundTextSource: line.backgroundTextSource,
+      backgroundTextSource: backgroundTrack(line)?.source,
       translations: line.translations && structuredClone(line.translations),
       transliteration: line.transliteration && structuredClone(line.transliteration),
     });

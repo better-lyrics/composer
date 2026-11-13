@@ -1,9 +1,10 @@
+import { toast } from "sonner";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { toast } from "sonner";
 
 // Builds a ClipboardData payload covering every word and bg word of the
 // (groupId, instanceIdx) instance, then sets it as the active clipboard and
@@ -26,15 +27,11 @@ function copyInstanceToClipboardAndPreview(lines: LyricLine[], groupId: string, 
 
   for (const lineIdx of instanceLineIndices) {
     const line = lines[lineIdx];
-    if (line.words?.length) {
-      for (const word of line.words) {
-        entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "word" });
-      }
+    for (const word of timedSyllables(mainTrack(line))) {
+      entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "word" });
     }
-    if (line.backgroundWords?.length) {
-      for (const word of line.backgroundWords) {
-        entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "bg" });
-      }
+    for (const word of timedSyllables(backgroundTrack(line))) {
+      entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "bg" });
     }
   }
 

@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
@@ -124,9 +125,9 @@ function buildAlternateBackgroundLanguageTtml(): string {
       backgroundWords: [{ text: "오", begin: 3.2, end: 3.8 }],
     }),
   ];
-  lines[0].words![0].transliteration = "annyeong";
-  lines[0].words![1].transliteration = "sesang";
-  lines[0].backgroundWords![0].transliteration = "oh";
+  timedSyllables(mainTrack(lines[0]))[0].transliteration = "annyeong";
+  timedSyllables(mainTrack(lines[0]))[1].transliteration = "sesang";
+  timedSyllables(backgroundTrack(lines[0]))[0].transliteration = "oh";
   lines[0].transliteration = {
     language: "ko-Latn",
     text: "annyeong sesang",
@@ -162,7 +163,7 @@ function buildMatchingAlternateLanguageTtml(): string {
       ],
     }),
   ];
-  for (const [index, word] of (lines[0].words ?? []).entries()) {
+  for (const [index, word] of timedSyllables(mainTrack(lines[0])).entries()) {
     word.transliteration = index === 0 ? "Same," : "LINE!";
   }
   lines[0].transliteration = {

@@ -1,8 +1,11 @@
+import { Toaster } from "sonner";
+import { describe, expect, it, vi } from "vitest";
+import { lineText } from "@/domain/line/text";
+import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { schedulePendingDeletion } from "@/lib/pending-deletions";
 import { projectFileFrom } from "@/lib/project-file";
-import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { importProjectFile } from "@/lib/project-import";
 import { listProjectIndex, removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
@@ -14,8 +17,6 @@ import { createLine } from "@/test/factories";
 import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
-import { Toaster } from "sonner";
-import { describe, expect, it, vi } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -135,14 +136,14 @@ describe("importProjectFile", () => {
       expect(id).not.toBeNull();
       expect(id).not.toBe("a");
       expect(openProjectIdSnapshot()).toBe(id);
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Now"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Now"]);
     });
 
     it("starts the opened TTML project with nothing to undo", async () => {
       const id = await importProjectFile(new File([TTML_DOCUMENT], "Cynic.json"));
       expect(id).not.toBeNull();
       expect(useProjectStore.getState().canUndo()).toBe(false);
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Now"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Now"]);
     });
 
     it("regression: a newer project file whose export edit holds TTML shows the project file error, not TTML", async () => {
@@ -198,7 +199,7 @@ describe("openLyricsFileAsNewProject", () => {
     expect(id).not.toBeNull();
     expect(id).not.toBe("a");
     expect(openProjectIdSnapshot()).toBe(id);
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([
+    expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual([
       "Climb up the H of the Hollywood sign",
       "In these stolen moments",
     ]);

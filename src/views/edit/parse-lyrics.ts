@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { backgroundText, lineText } from "@/domain/line/text";
 
 interface ParsedLine {
   lineNumber: number;
@@ -17,7 +18,7 @@ interface ParsedLine {
 
 function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): ParsedLine[] {
   const textLines = text.split("\n");
-  const nonEmptyStored = lines.filter((l) => l.text !== "");
+  const nonEmptyStored = lines.filter((l) => lineText(l) !== "");
   let nonEmptyIndex = 0;
 
   return textLines.map((line, index) => {
@@ -29,12 +30,12 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
     return {
       lineNumber: index + 1,
       lineId: lyricLine?.id ?? "",
-      text: lyricLine?.text ?? line,
+      text: lyricLine ? lineText(lyricLine) : line,
       isEmpty,
       hasBrackets: /\[.*?\]/.test(line),
       hasTiming,
       agentId: lyricLine?.agentId ?? defaultAgentId,
-      backgroundText: lyricLine?.backgroundText,
+      backgroundText: lyricLine && backgroundText(lyricLine),
       groupId: lyricLine?.groupId,
       instanceIdx: lyricLine?.instanceIdx,
       templateLineIdx: lyricLine?.templateLineIdx,

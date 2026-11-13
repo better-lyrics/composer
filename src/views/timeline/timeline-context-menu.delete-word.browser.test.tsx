@@ -1,13 +1,15 @@
+import { describe, expect, it } from "vitest";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -48,7 +50,7 @@ describe("TimelineContextMenu · delete word", () => {
     );
     await clickDelete();
 
-    expect(lineById("l1")?.words).toEqual([createWord({ text: "world", begin: 2, end: 3 })]);
+    expect(timedSyllables(mainTrack(lineById("l1")!))).toEqual([createWord({ text: "world", begin: 2, end: 3 })]);
   });
 
   it("removes the clicked background word", async () => {
@@ -71,8 +73,8 @@ describe("TimelineContextMenu · delete word", () => {
     );
     await clickDelete();
 
-    expect(lineById("l1")?.backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh"]);
-    expect(lineById("l1")?.words).toHaveLength(1);
+    expect(timedSyllables(backgroundTrack(lineById("l1")!)).map((word) => word.text.trim())).toEqual(["ooh"]);
+    expect(timedSyllables(mainTrack(lineById("l1")!))).toHaveLength(1);
   });
 
   describe("regressions", () => {
@@ -93,8 +95,8 @@ describe("TimelineContextMenu · delete word", () => {
       useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })] });
       await clickDelete();
 
-      expect(lineById("c0")?.words?.map((word) => word.text + word.sep)).toEqual(["now"]);
-      expect(lineById("c1")?.words?.map((word) => word.text + word.sep)).toEqual(["now"]);
+      expect(timedSyllables(mainTrack(lineById("c0")!)).map((word) => word.text + word.sep)).toEqual(["now"]);
+      expect(timedSyllables(mainTrack(lineById("c1")!)).map((word) => word.text + word.sep)).toEqual(["now"]);
     });
 
     it("regression: removes the timing of a line-synced line (issue #285)", async () => {
@@ -103,7 +105,7 @@ describe("TimelineContextMenu · delete word", () => {
 
       const line = lineById("l1");
       expect(line && hasAnyTiming(line)).toBe(false);
-      expect(line?.text).toBe("hello world");
+      expect(lineText(line!)).toBe("hello world");
     });
 
     const threeWords = () =>
@@ -124,7 +126,7 @@ describe("TimelineContextMenu · delete word", () => {
       });
       await clickDelete("Delete 2 words");
 
-      expect(lineById("l1")?.words).toEqual([createWord({ text: "three", begin: 3, end: 4 })]);
+      expect(timedSyllables(mainTrack(lineById("l1")!))).toEqual([createWord({ text: "three", begin: 3, end: 4 })]);
       expect(useTimelineStore.getState().selectedWords).toEqual([]);
     });
 
@@ -135,7 +137,7 @@ describe("TimelineContextMenu · delete word", () => {
       });
       await clickDelete();
 
-      expect(lineById("l1")?.words?.map((word) => word.text + word.sep)).toEqual(["one ", "two "]);
+      expect(timedSyllables(mainTrack(lineById("l1")!)).map((word) => word.text + word.sep)).toEqual(["one ", "two "]);
       expect(useTimelineStore.getState().selectedWords).toEqual([]);
     });
   });
@@ -158,8 +160,8 @@ describe("TimelineContextMenu · delete word", () => {
       );
       await clickDelete("Delete syllable");
 
-      expect(lineById("l1")?.words).toHaveLength(1);
-      expect(lineById("l1")?.words?.[0]?.begin).toBe(1);
+      expect(timedSyllables(mainTrack(lineById("l1")!))).toHaveLength(1);
+      expect(timedSyllables(mainTrack(lineById("l1")!))[0]?.begin).toBe(1);
     });
 
     it("unlinks an instance once its last word is gone", async () => {

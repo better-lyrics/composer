@@ -1,8 +1,9 @@
+import { describe, expect, it } from "vitest";
 import { holdsEveryLine } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -103,7 +104,7 @@ describe("mergeEditedTtmlLines · language tracks", () => {
     it("regression: an edited line keeps its empty translations as stored", () => {
       const stored = [clearedTranslationField(withSpanish("a", "Hello", 1), "es")];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
-      expect(merged[0]?.text).toBe("Hello there");
+      expect(lineText(merged[0]!)).toBe("Hello there");
       expect(merged[0]?.translations).toEqual({});
     });
   });

@@ -3,6 +3,7 @@ import { agentDisplayName } from "@/domain/agent/display-name";
 import type { Agent } from "@/domain/agent/model";
 import type { LanguageDisplayLine } from "@/domain/language/display";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import type { LaneGroupTag } from "@/views/sync/shared-sync-tags";
@@ -78,7 +79,7 @@ function lineWords(line: LyricLine, display: LanguageDisplayLine): LineWords {
   const cached = wordsByLine.get(line);
   if (cached?.display === display && cached.splitCharacter === splitCharacter) return cached;
   const wordTexts = display.wordTexts ?? splitIntoWords(display.text);
-  const words = { display, splitCharacter, wordTexts, wordRuns: wordRunsOf(line.text, wordTexts.length) };
+  const words = { display, splitCharacter, wordTexts, wordRuns: wordRunsOf(lineText(line), wordTexts.length) };
   wordsByLine.set(line, words);
   return words;
 }

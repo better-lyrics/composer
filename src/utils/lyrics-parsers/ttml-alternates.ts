@@ -3,6 +3,7 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import type { WordTiming } from "@/domain/word/timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 
@@ -101,7 +102,7 @@ function parseTranslations(
             text: textWithoutBackground(textElement),
             backgroundText,
             origin: "import",
-            sourceFingerprint: languageSourceFingerprint(line.text, line.backgroundText),
+            sourceFingerprint: languageSourceFingerprint(lineText(line), line.backgroundText),
           },
         },
       });
@@ -129,7 +130,7 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
       const mappedBackgroundWords = backgroundText
         ? mappedWordsFromSpans(line.backgroundWords, backgroundText, background ? directTimedSpans(background) : [])
         : null;
-      const segments = wholeLineSegments(line.text, text);
+      const segments = wholeLineSegments(lineText(line), text);
       const backgroundSegments =
         backgroundText && line.backgroundText ? wholeLineSegments(line.backgroundText, backgroundText) : undefined;
       const track = {
@@ -139,7 +140,7 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
         segments,
         backgroundSegments,
         origin: "import",
-        sourceFingerprint: languageSourceFingerprint(line.text, line.backgroundText),
+        sourceFingerprint: languageSourceFingerprint(lineText(line), line.backgroundText),
       } as const;
       const mappedLine = reconcileLine({
         ...line,

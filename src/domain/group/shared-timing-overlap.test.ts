@@ -1,16 +1,17 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { shiftLineTiming } from "@/domain/line/shift";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { nudgeSelectedWords } from "@/domain/selection/nudge";
+import { stretchSelections } from "@/domain/selection/stretch";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { clampBoundaryTime } from "@/domain/word/boundary";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
-import { stretchSelections } from "@/domain/selection/stretch";
-import { nudgeSelectedWords } from "@/domain/selection/nudge";
-import { beforeEach, describe, expect, it } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -98,10 +99,10 @@ function expectNoOverlapInSharedInstances(): void {
 }
 
 function expectCopiesFollowSource(templateLine: "a" | "b"): void {
-  const source = lineById(`${templateLine}${SOURCE_INSTANCE}`).words ?? [];
+  const source = timedSyllables(mainTrack(lineById(`${templateLine}${SOURCE_INSTANCE}`)));
   for (const instanceIdx of [0, 2]) {
     const offset = INSTANCE_STARTS[instanceIdx] - INSTANCE_STARTS[SOURCE_INSTANCE];
-    const copy = lineById(`${templateLine}${instanceIdx}`).words ?? [];
+    const copy = timedSyllables(mainTrack(lineById(`${templateLine}${instanceIdx}`)));
     copy.forEach((word, index) => expect(word.begin).toBeCloseTo(source[index].begin + offset, 6));
   }
 }
@@ -115,13 +116,13 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
     const { updates } = nudgeSelectedWords(store().lines, selectWords("a1", 2), -50, rangeOf());
     commit(updates);
 
-    expect(lineById("a1").words?.[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(lineById("a1")))[0].begin).toBe(8);
     expectCopiesFollowSource("a");
     expectNoOverlapInSharedInstances();
   });
 
   it("boundary drag", () => {
-    const words = lineById("b1").words ?? [];
+    const words = timedSyllables(mainTrack(lineById("b1")));
     const end = clampBoundaryTime({
       words,
       wordIndex: words.length - 1,
@@ -138,7 +139,7 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
       },
     ]);
 
-    expect(lineById("b1").words?.at(-1)?.end).toBe(12.5);
+    expect(timedSyllables(mainTrack(lineById("b1"))).at(-1)?.end).toBe(12.5);
     expectCopiesFollowSource("b");
     expectNoOverlapInSharedInstances();
   });
@@ -161,7 +162,7 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
     const line = lineById("a1");
     commit([{ id: line.id, updates: shiftLineTiming(line, -50, rangeOf()(line)) }]);
 
-    expect(lineById("a1").words?.[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(lineById("a1")))[0].begin).toBe(8);
     expectCopiesFollowSource("a");
     expectNoOverlapInSharedInstances();
   });
@@ -177,8 +178,8 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
     if (!gesture) throw new Error("tap produced no commit");
     commit(gesture.lineUpdates);
 
-    expect(lineById("a1").words?.[0].begin).toBe(8);
-    expect(lineById("x").words?.[0].end).toBe(8);
+    expect(timedSyllables(mainTrack(lineById("a1")))[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(lineById("x")))[0].end).toBe(8);
     expectCopiesFollowSource("a");
     expectNoOverlapInSharedInstances();
   });

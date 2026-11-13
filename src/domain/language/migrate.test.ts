@@ -1,6 +1,7 @@
+import { describe, expect, it } from "vitest";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 
 function legacyLine(overrides: Partial<LooseLine> = {}): LyricLine {
   return reconcileLine({
@@ -53,7 +54,7 @@ describe("legacy transliteration migration", () => {
     );
 
     expect(migrated.transliteration?.text).toBe("kyouhi");
-    expect(migrated.words?.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(timedSyllables(mainTrack(migrated)).map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
   });
 
   it("preserves potentially literal dashes and asks for review", () => {

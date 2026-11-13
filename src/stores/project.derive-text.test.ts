@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { newWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -61,7 +62,7 @@ describe("history writes derive text only for the lines they change", () => {
     useProjectStore.getState().commit(mergeSyllableGroup("split", "words", [0]));
 
     const partial = useProjectStore.getState().lines.find((line) => line.id === "partial");
-    expect(partial?.text).toBe("hello world");
+    expect(lineText(partial!)).toBe("hello world");
   });
 
   it("regression: a history write after a timed word is deleted keeps the untimed words", () => {
@@ -84,7 +85,7 @@ describe("history writes derive text only for the lines they change", () => {
 
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [afterDelete]));
 
-    expect(useProjectStore.getState().lines[0].text).toBe("every in my dreams");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("every in my dreams");
   });
 
   it("regression: an edit on a partly synced line keeps its untimed words", () => {
@@ -102,7 +103,7 @@ describe("history writes derive text only for the lines they change", () => {
     useProjectStore.getState().commit(toggleWordExplicit("partial", "words", [0]));
     useProjectStore.getState().commit(snapSyllablesFlush("partial", "words"));
 
-    expect(useProjectStore.getState().lines[0].text).toBe("every night in my dreams");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("every night in my dreams");
   });
 });
 
@@ -123,7 +124,7 @@ describe("updateLineWithHistory derives text from words", () => {
       ]),
     );
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hello wor|ld");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });
 
   it("re-derives text on a plain word-text rename", () => {
@@ -140,7 +141,7 @@ describe("updateLineWithHistory derives text from words", () => {
       ]),
     );
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hi world");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hi world");
   });
 
   it("re-derives backgroundText from backgroundWords", () => {
@@ -167,7 +168,7 @@ describe("updateLineWithHistory derives text from words", () => {
       ]),
     );
 
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("oh ye|ah");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("oh ye|ah");
   });
 
   it("leaves text untouched for a line with no words", () => {
@@ -177,7 +178,7 @@ describe("updateLineWithHistory derives text from words", () => {
 
     useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { begin: 1 } }]));
 
-    expect(useProjectStore.getState().lines[0].text).toBe("chorus line");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("chorus line");
   });
 
   it("propagates derived text to linked siblings", () => {
@@ -216,7 +217,7 @@ describe("updateLineWithHistory derives text from words", () => {
     );
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "b");
-    expect(sibling?.text).toBe("hi world");
+    expect(lineText(sibling!)).toBe("hi world");
   });
 });
 
@@ -242,7 +243,7 @@ describe("updateLine derives text from words", () => {
       "pending",
     );
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hello wor|ld");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });
 });
 
@@ -256,7 +257,7 @@ describe("applyWordCountChange derives text from words", () => {
       .getState()
       .commit(applyWordCountChange("l1", [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"));
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hello wor|ld");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });
 });
 
@@ -278,7 +279,7 @@ describe("moveWordToBg derives text from both tracks", () => {
     useProjectStore.getState().moveWordToBg("l1", [2], 5, 30);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.text).toBe("hello world");
-    expect(line.backgroundText).toBe("goodbye");
+    expect(lineText(line)).toBe("hello world");
+    expect(backgroundText(line)).toBe("goodbye");
   });
 });

@@ -1,7 +1,9 @@
+import { describe, expect, it } from "vitest";
 import { holdsEveryLine, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -31,7 +33,7 @@ describe("mergeEditedTtmlLines", () => {
       createLine({ id: "b", text: "World", begin: 2, end: 3 }),
     ];
     const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
-    expect(merged.map((line) => [line.id, line.text])).toEqual([
+    expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
       ["a", "Hello there"],
       ["b", "World"],
     ]);
@@ -40,7 +42,7 @@ describe("mergeEditedTtmlLines", () => {
   it("takes an edited word timing", () => {
     const stored = [createLine({ id: "a", text: "Hi", words: [{ text: "Hi", begin: 1, end: 2 }] })];
     const merged = mergeEditedExport(stored, (ttml) => ttml.replaceAll('end="0:02.000"', 'end="0:02.500"'));
-    expect(merged[0]?.words?.[0]?.end).toBe(2.5);
+    expect(timedSyllables(mainTrack(merged[0]!))[0]?.end).toBe(2.5);
   });
 
   describe("edge cases", () => {
@@ -52,7 +54,7 @@ describe("mergeEditedTtmlLines", () => {
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Added</p></div>'),
       );
-      expect(merged.map((line) => line.text)).toEqual(["Hello", "World", "Added"]);
+      expect(merged.map((line) => lineText(line))).toEqual(["Hello", "World", "Added"]);
       expect(merged[0]?.id).toBe("a");
       expect(merged[1]?.id).toBe("b");
       expect(["a", "b"]).not.toContain(merged[2]?.id);

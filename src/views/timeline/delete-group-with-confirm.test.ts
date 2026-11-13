@@ -1,12 +1,14 @@
 /**
  * @vitest-environment node
  */
-import { useConfirmStore } from "@/stores/confirm-store";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { useConfirmStore } from "@/stores/confirm-store";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { deleteGroupWithConfirm } from "./delete-group-with-confirm";
 
 beforeEach(() => {
@@ -94,9 +96,9 @@ describe("deleteGroupWithConfirm · confirm accepted", () => {
     await done;
 
     const a0 = useProjectStore.getState().lines.find((l) => l.id === "a0");
-    expect(a0?.text).toBe("I love you");
-    expect(a0?.words?.[0].begin).toBe(30);
-    expect(a0?.words?.[2].end).toBe(31.2);
+    expect(lineText(a0!)).toBe("I love you");
+    expect(timedSyllables(mainTrack(a0!))[0].begin).toBe(30);
+    expect(timedSyllables(mainTrack(a0!))[2].end).toBe(31.2);
   });
 
   it("closes the confirm modal once resolved", async () => {

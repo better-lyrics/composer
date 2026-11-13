@@ -1,12 +1,14 @@
 /**
  * @vitest-environment node
  */
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
-import { extractInlineFromLine } from "@/utils/background-vocal-extraction";
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { useProjectStore } from "@/stores/project";
+import { extractInlineFromLine } from "@/utils/background-vocal-extraction";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -37,9 +39,9 @@ describe("project store · background extraction on linked lines", () => {
         {
           id: target.id,
           updates: {
-            text: extracted.text,
+            text: lineText(extracted),
             words: extracted.words,
-            backgroundText: extracted.backgroundText,
+            backgroundText: backgroundText(extracted),
           },
         },
       ]),
@@ -58,10 +60,10 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.text).toBe("Hello");
-    expect(a0?.backgroundText).toBe("ooh");
-    expect(a1?.text).toBe("Hello");
-    expect(a1?.backgroundText).toBe("ooh");
+    expect(lineText(a0!)).toBe("Hello");
+    expect(backgroundText(a0!)).toBe("ooh");
+    expect(lineText(a1!)).toBe("Hello");
+    expect(backgroundText(a1!)).toBe("ooh");
     expect(a0?.text).not.toContain("(");
     expect(a1?.text).not.toContain("(");
   });
@@ -118,18 +120,18 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.text).toBe("Hello");
-    expect(a1?.text).toBe("Hello");
-    expect(a0?.backgroundText).toBe("ooh");
-    expect(a1?.backgroundText).toBe("ooh");
+    expect(lineText(a0!)).toBe("Hello");
+    expect(lineText(a1!)).toBe("Hello");
+    expect(backgroundText(a0!)).toBe("ooh");
+    expect(backgroundText(a1!)).toBe("ooh");
 
-    expect(a0?.words?.map((w) => w.text)).toEqual(["Hello"]);
-    expect(a1?.words?.map((w) => w.text)).toEqual(["Hello"]);
+    expect(timedSyllables(mainTrack(a0!)).map((w) => w.text)).toEqual(["Hello"]);
+    expect(timedSyllables(mainTrack(a1!)).map((w) => w.text)).toEqual(["Hello"]);
 
-    expect(a0?.words?.[0].begin).toBe(0);
-    expect(a0?.words?.[0].end).toBe(1);
-    expect(a1?.words?.[0].begin).toBe(30);
-    expect(a1?.words?.[0].end).toBe(31.5);
+    expect(timedSyllables(mainTrack(a0!))[0].begin).toBe(0);
+    expect(timedSyllables(mainTrack(a0!))[0].end).toBe(1);
+    expect(timedSyllables(mainTrack(a1!))[0].begin).toBe(30);
+    expect(timedSyllables(mainTrack(a1!))[0].end).toBe(31.5);
   });
 
   it("leaves a detached sibling untouched when extracting on the source", () => {
@@ -149,8 +151,8 @@ describe("project store · background extraction on linked lines", () => {
     applyPullFromParens("a0");
 
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((l) => l.id === "a0")?.text).toBe("Hello");
-    expect(lines.find((l) => l.id === "a1")?.text).toBe("Hello (ooh)");
+    expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("Hello");
+    expect(lineText(lines.find((l) => l.id === "a1")!)).toBe("Hello (ooh)");
   });
 
   it("propagates the background provenance flag to the linked sibling", () => {
@@ -176,10 +178,10 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.backgroundText).toBe("ooh");
-    expect(a0?.backgroundTextSource).toBe("extraction");
-    expect(a1?.backgroundText).toBe("ooh");
-    expect(a1?.backgroundTextSource).toBe("extraction");
+    expect(backgroundText(a0!)).toBe("ooh");
+    expect(backgroundTrack(a0!)?.source).toBe("extraction");
+    expect(backgroundText(a1!)).toBe("ooh");
+    expect(backgroundTrack(a1!)?.source).toBe("extraction");
   });
 
   it("propagates a cleared background provenance flag to the linked sibling", () => {
@@ -272,12 +274,12 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.backgroundTextSource).toBe("manual");
-    expect(a1?.backgroundTextSource).toBe("manual");
-    expect(a0?.backgroundWords?.[1].end).toBe(1.8);
+    expect(backgroundTrack(a0!)?.source).toBe("manual");
+    expect(backgroundTrack(a1!)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(a0!))[1].end).toBe(1.8);
     // Sibling keeps its own instance-local timing, only the word structure mirrors.
-    expect(a1?.backgroundWords?.[0].begin).toBe(31);
-    expect(a1?.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ooh ", "aah"]);
+    expect(timedSyllables(backgroundTrack(a1!))[0].begin).toBe(31);
+    expect(timedSyllables(backgroundTrack(a1!)).map((w) => w.text + w.sep)).toEqual(["ooh ", "aah"]);
   });
 
   it("produces a single undoable history entry covering source + sibling", () => {
@@ -291,7 +293,7 @@ describe("project store · background extraction on linked lines", () => {
 
     useProjectStore.getState().undo();
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((l) => l.id === "a0")?.text).toBe("Hello (ooh)");
-    expect(lines.find((l) => l.id === "a1")?.text).toBe("Hello (ooh)");
+    expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("Hello (ooh)");
+    expect(lineText(lines.find((l) => l.id === "a1")!)).toBe("Hello (ooh)");
   });
 });

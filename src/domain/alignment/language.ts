@@ -1,6 +1,7 @@
 import { hasKana } from "@/domain/alignment/cjk";
 import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ function canAlignLanguage(language: string | undefined, modelLanguages: readonly
 function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]): HanReading {
   const base = baseLanguage(language);
   if (base === "ja" || base === "zh") return base;
-  return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
+  return lines.some((line) => hasKana(lineText(line))) ? "ja" : "zh";
 }
 
 // The project language when set, else a guess from the lyrics' script. Kana

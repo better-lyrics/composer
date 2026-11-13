@@ -1,5 +1,7 @@
-import { setLanguageFields } from "@/domain/commands/languages";
+import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
+import { useState } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
+import { setLanguageFields } from "@/domain/commands/languages";
 import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
@@ -12,14 +14,14 @@ import {
   languageLineAnchorId,
 } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { AlignButton, BackgroundLanguageFields } from "@/views/languages/background-language-fields";
 import { LanguageField as Field } from "@/views/languages/language-field";
 import { type AlignmentField, TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
-import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
-import { useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -41,7 +43,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   sourceLanguage,
 }) => {
   const [alignmentField, setAlignmentField] = useState<AlignmentField | null>(null);
-  const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
   const needsReview = getLanguageReviewTracks(line).length > 0;
   const alignmentErrors = getLanguageAlignmentErrors(line);
   const transliterationError = alignmentErrors.find((error) => error.field === "transliteration")?.message;
@@ -52,7 +54,9 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   const transliterationStale = line.transliteration
     ? isTransliterationSourceStale(line, "words") || alignmentNeedsReview(line.transliteration, "main")
     : false;
-  const canAlignMain = Boolean(line.words?.length && line.transliteration?.text && !transliterationError);
+  const canAlignMain = Boolean(
+    timedSyllables(mainTrack(line)).length && line.transliteration?.text && !transliterationError,
+  );
   const update = (updates: Partial<LyricLine>) =>
     useProjectStore.getState().commit(setLanguageFields(line.id, updates), "pending");
   const clearTransliteration = () =>
@@ -78,10 +82,10 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
         <span className="flex h-12 items-center justify-center">{index + 1}</span>
       </span>
       <div className="flex min-w-0 flex-col items-start gap-1.5 py-3.5 px-4">
-        <span className="max-w-full text-sm leading-5 wrap-anywhere select-text">{line.text}</span>
-        {line.backgroundText && (
+        <span className="max-w-full text-sm leading-5 wrap-anywhere select-text">{lineText(line)}</span>
+        {backgroundText(line) && (
           <span className="max-w-full text-[13px] italic text-(--muted) wrap-anywhere select-text">
-            {line.backgroundText}
+            {backgroundText(line)}
           </span>
         )}
         {hasAlignmentError && (
@@ -156,7 +160,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
             />
           );
         })}
-        {line.backgroundText && (
+        {backgroundText(line) && (
           <BackgroundLanguageFields
             line={line}
             targets={targets}

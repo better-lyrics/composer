@@ -1,3 +1,6 @@
+import { describe, expect, it } from "vitest";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -5,7 +8,6 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
 
 function findButton(pattern: RegExp): HTMLButtonElement | undefined {
   return Array.from(document.querySelectorAll("button")).find((b) => pattern.test(b.textContent ?? ""));
@@ -91,7 +93,7 @@ describe("TimelineContextMenu", () => {
     expect(mergeBtn).toBeDefined();
     mergeBtn?.click();
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words).toHaveLength(1);
     expect(words[0].text).toBe("every");
     expect(words[0].begin).toBe(0);
@@ -165,7 +167,7 @@ describe("TimelineContextMenu", () => {
     expect(snapBtn).toBeDefined();
     snapBtn?.click();
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].end).toBe(words[1].begin);
     expect(words[1].end).toBe(words[2].begin);
     expect(words[0].begin).toBe(0);
@@ -203,8 +205,8 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Delete word/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["aah"]);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated)).map((w) => w.text + w.sep)).toEqual(["aah"]);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("clears all three background fields when the last bg word is deleted", async () => {
@@ -231,8 +233,8 @@ describe("TimelineContextMenu background provenance", () => {
 
     const updated = useProjectStore.getState().lines[0];
     expect(updated.backgroundWords).toBeUndefined();
-    expect(updated.backgroundText).toBeUndefined();
-    expect(updated.backgroundTextSource).toBeUndefined();
+    expect(backgroundText(updated)).toBeUndefined();
+    expect(backgroundTrack(updated)?.source).toBeUndefined();
   });
 
   it("stamps backgroundTextSource manual when a bg word is added via 'Add word here'", async () => {
@@ -251,7 +253,7 @@ describe("TimelineContextMenu background provenance", () => {
 
     const updated = useProjectStore.getState().lines[0];
     expect(updated.backgroundWords?.length).toBe(3);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("stamps backgroundTextSource manual when bg words are merged", async () => {
@@ -269,8 +271,8 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Merge words/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords).toHaveLength(1);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated))).toHaveLength(1);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word is deleted", async () => {
@@ -298,7 +300,7 @@ describe("TimelineContextMenu background provenance", () => {
 
     findButton(/Delete word/i)?.click();
 
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
 
@@ -332,7 +334,7 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
     await expect
       .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah ", "baby"]);
-    expect(useProjectStore.getState().lines[0].words).toEqual(line.words);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual(timedSyllables(mainTrack(line)));
   });
 
   it("hides 'Split into words' on a bg track that is already one word per word", async () => {
@@ -373,7 +375,7 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     await expect
       .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah"]);
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("ooh yeah");
     const firstBegin = useProjectStore.getState().lines[0].backgroundWords?.[0].begin ?? -1;
     expect(firstBegin).toBeGreaterThan(4.5);
     expect(firstBegin).toBeLessThanOrEqual(5);

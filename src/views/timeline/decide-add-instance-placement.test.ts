@@ -1,4 +1,5 @@
 import { splitTrailingWhitespace } from "insync/from-words";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 /**
  * @vitest-environment node
  */
@@ -90,7 +91,7 @@ describe("decideAddInstancePlacement · fill path (matches paste-as-instance)", 
       const filled = result.updatedLines[1];
       expect(filled.groupId).toBe("cannon");
       expect(filled.instanceIdx).toBe(1);
-      expect(filled.words?.[0].begin).toBeCloseTo(20);
+      expect(timedSyllables(mainTrack(filled))[0].begin).toBeCloseTo(20);
     }
   });
 

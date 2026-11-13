@@ -1,4 +1,6 @@
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 /**
@@ -37,10 +39,10 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
-    expect(line.backgroundWords).toHaveLength(1);
-    expect(line.backgroundWords?.[0]).toEqual({ text: "goodbye", sep: "", begin: 7, end: 8 });
-    expect(line.backgroundText).toBe("goodbye");
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(backgroundTrack(line))).toHaveLength(1);
+    expect(timedSyllables(backgroundTrack(line))[0]).toEqual({ text: "goodbye", sep: "", begin: 7, end: 8 });
+    expect(backgroundText(line)).toBe("goodbye");
   });
 
   it("trims trailing space from the new last main word", () => {
@@ -49,7 +51,7 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.[1]).toMatchObject({ text: "world", sep: "" });
+    expect(timedSyllables(mainTrack(line))[1]).toMatchObject({ text: "world", sep: "" });
   });
 
   it("moves multiple selected words at once", () => {
@@ -58,9 +60,9 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [0, 2], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["world"]);
-    expect(line.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["hello ", "goodbye"]);
-    expect(line.backgroundText).toBe("hello goodbye");
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text)).toEqual(["world"]);
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "goodbye"]);
+    expect(backgroundText(line)).toBe("hello goodbye");
   });
 
   it("adds a trailing space to the previous last bg word when a new word lands at the end without breaking syllable bonds before it", () => {
@@ -79,8 +81,8 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 7, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ah", "ooh ", "goodbye"]);
-    expect(line.backgroundText).toBe("ah|ooh goodbye");
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text + w.sep)).toEqual(["ah", "ooh ", "goodbye"]);
+    expect(backgroundText(line)).toBe("ah|ooh goodbye");
   });
 
   it("resolves overlap when moved word collides with an existing bg word", () => {
@@ -112,7 +114,7 @@ describe("moveWordToBg · background provenance", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(line)?.source).toBe("manual");
   });
 
   it("flips an extraction-sourced background to manual when more words are moved in", () => {
@@ -129,7 +131,7 @@ describe("moveWordToBg · background provenance", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(line)?.source).toBe("manual");
   });
 });
 
@@ -150,9 +152,9 @@ describe("moveWordFromBg", () => {
 
     const line = useProjectStore.getState().lines[0];
     expect(line.backgroundWords).toBeUndefined();
-    expect(line.backgroundText).toBeUndefined();
-    expect(line.words?.find((w) => w.text.trimEnd() === "ooh")).toBeTruthy();
-    const ooh = line.words?.find((w) => w.text.trimEnd() === "ooh");
+    expect(backgroundText(line)).toBeUndefined();
+    expect(timedSyllables(mainTrack(line)).find((w) => w.text.trimEnd() === "ooh")).toBeTruthy();
+    const ooh = timedSyllables(mainTrack(line)).find((w) => w.text.trimEnd() === "ooh");
     expect(ooh?.begin).toBe(3);
     expect(ooh?.end).toBe(4);
   });
@@ -173,8 +175,8 @@ describe("moveWordFromBg", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [1], 3, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah"]);
-    expect(line.backgroundText).toBe("ah");
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["ah"]);
+    expect(backgroundText(line)).toBe("ah");
   });
 
   it("moves multiple selected bg words at once", () => {
@@ -195,8 +197,8 @@ describe("moveWordFromBg", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0, 2], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ooh"]);
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["ah ", "yeah"]);
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["ooh"]);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["ah ", "yeah"]);
   });
 });
 
@@ -216,8 +218,8 @@ describe("moveWordFromBg · background provenance", () => {
 
     const line = useProjectStore.getState().lines[0];
     expect(line.backgroundWords).toBeUndefined();
-    expect(line.backgroundText).toBeUndefined();
-    expect(line.backgroundTextSource).toBeUndefined();
+    expect(backgroundText(line)).toBeUndefined();
+    expect(backgroundTrack(line)?.source).toBeUndefined();
   });
 
   it("stamps backgroundTextSource manual on the remaining background", () => {
@@ -237,8 +239,8 @@ describe("moveWordFromBg · background provenance", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [1], 3, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah"]);
-    expect(line.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["ah"]);
+    expect(backgroundTrack(line)?.source).toBe("manual");
   });
 });
 
@@ -255,7 +257,7 @@ describe("cross-track moves and history", () => {
 
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0];
-    expect(restored.words?.map((w) => w.text)).toEqual(before.words?.map((w) => w.text));
+    expect(timedSyllables(mainTrack(restored)).map((w) => w.text)).toEqual(before.words?.map((w) => w.text));
     expect(restored.backgroundWords).toBeUndefined();
   });
 
@@ -275,13 +277,13 @@ describe("cross-track moves and history", () => {
 
     useProjectStore.getState().undo();
     const undone = useProjectStore.getState().lines[0];
-    expect(undone.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 10, end: 11 }]);
+    expect(timedSyllables(backgroundTrack(undone))).toEqual([{ text: "ooh", sep: "", begin: 10, end: 11 }]);
     expect(useProjectStore.getState().canRedo()).toBe(true);
 
     useProjectStore.getState().redo();
     const redone = useProjectStore.getState().lines[0];
     expect(redone.backgroundWords).toBeUndefined();
-    expect(redone.words?.find((w) => w.text.trimEnd() === "ooh")).toBeTruthy();
+    expect(timedSyllables(mainTrack(redone)).find((w) => w.text.trimEnd() === "ooh")).toBeTruthy();
   });
 
   it("does not push history when no words match the indices", () => {
@@ -315,8 +317,8 @@ describe("cross-track moves and history", () => {
     useProjectStore.getState().moveWordToBg("line-1", [3], 10, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.[0].end).toBe(0.2);
-    expect(line.words?.[1].begin).toBe(0.3);
+    expect(timedSyllables(mainTrack(line))[0].end).toBe(0.2);
+    expect(timedSyllables(mainTrack(line))[1].begin).toBe(0.3);
   });
 
   it("preserves pre-existing intra-group gaps when a move passes through applyMoveFromBg", () => {
@@ -340,8 +342,8 @@ describe("cross-track moves and history", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0], 10, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.[0].end).toBe(0.2);
-    expect(line.words?.[1].begin).toBe(0.3);
+    expect(timedSyllables(mainTrack(line))[0].end).toBe(0.2);
+    expect(timedSyllables(mainTrack(line))[1].begin).toBe(0.3);
   });
 
   it("clears line.begin/end when bg→main populates main from empty", () => {
@@ -414,11 +416,11 @@ describe("moveWordToBg · linked propagation", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
-    expect(a0?.backgroundWords).toEqual([{ text: "goodbye", sep: "", begin: 2, end: 3 }]);
+    expect(timedSyllables(mainTrack(a0!)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(backgroundTrack(a0!))).toEqual([{ text: "goodbye", sep: "", begin: 2, end: 3 }]);
 
-    expect(a1?.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
-    expect(a1?.backgroundWords).toEqual([{ text: "goodbye", sep: "", begin: 12, end: 13 }]);
+    expect(timedSyllables(mainTrack(a1!)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(backgroundTrack(a1!))).toEqual([{ text: "goodbye", sep: "", begin: 12, end: 13 }]);
   });
 
   it("does not propagate to detached siblings", () => {
@@ -522,10 +524,10 @@ describe("moveWordToBg · linked propagation", () => {
     const a1 = lines.find((l) => l.id === "a1");
 
     expect(a0?.words).toBeUndefined();
-    expect(a0?.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(timedSyllables(backgroundTrack(a0!)).map((w) => w.text)).toEqual(["ev", "er", "y"]);
 
-    expect(a1?.words?.map((w) => w.text.trimEnd())).toEqual(["ev", "y"]);
-    expect(a1?.backgroundWords?.map((w) => w.text)).toEqual(["er"]);
+    expect(timedSyllables(mainTrack(a1!)).map((w) => w.text.trimEnd())).toEqual(["ev", "y"]);
+    expect(timedSyllables(backgroundTrack(a1!)).map((w) => w.text)).toEqual(["er"]);
   });
 });
 
@@ -553,9 +555,9 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
-    expect(getSyllablePositions(line.backgroundWords ?? [])).toEqual(["first", "middle", "last"]);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(getSyllablePositions(timedSyllables(backgroundTrack(line)))).toEqual(["first", "middle", "last"]);
   });
 
   it("moveWordFromBg expands a single-syllable bg selection to the whole syllable group", () => {
@@ -579,8 +581,8 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [1], -4, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
-    expect(getSyllablePositions(line.words ?? [])).toEqual(["first", "middle", "last"]);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(getSyllablePositions(timedSyllables(mainTrack(line)))).toEqual(["first", "middle", "last"]);
     expect(line.backgroundWords).toBeUndefined();
   });
 });
@@ -634,8 +636,8 @@ describe("cross-track moves preserve syllable bonds", () => {
     useProjectStore.getState().moveWordToBg("line-1", [4], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "ev", "er", "y"]);
-    expect(getSyllablePositions(line.words ?? [])).toEqual(["none", "first", "middle", "last"]);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "ev", "er", "y"]);
+    expect(getSyllablePositions(timedSyllables(mainTrack(line)))).toEqual(["none", "first", "middle", "last"]);
   });
 
   it("moveWordToBg keeps a whole syllable group bonded when all its indices move together", () => {
@@ -659,9 +661,9 @@ describe("cross-track moves preserve syllable bonds", () => {
     useProjectStore.getState().moveWordToBg("line-1", [1, 2, 3], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
-    expect(getSyllablePositions(line.backgroundWords ?? [])).toEqual(["first", "middle", "last"]);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(getSyllablePositions(timedSyllables(backgroundTrack(line)))).toEqual(["first", "middle", "last"]);
   });
 
   it("moveWordFromBg adds trailing space to previously-last main word when receiving a new tail", () => {
@@ -681,7 +683,7 @@ describe("cross-track moves preserve syllable bonds", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(line.backgroundWords).toBeUndefined();
   });
 
@@ -706,8 +708,8 @@ describe("cross-track moves preserve syllable bonds", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0, 1, 2], -4, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
-    expect(getSyllablePositions(line.words ?? [])).toEqual(["first", "middle", "last"]);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(getSyllablePositions(timedSyllables(mainTrack(line)))).toEqual(["first", "middle", "last"]);
     expect(line.backgroundWords).toBeUndefined();
   });
 });
@@ -759,10 +761,10 @@ describe("moveWordFromBg · linked propagation", () => {
     const a1 = lines.find((l) => l.id === "a1");
 
     expect(a0?.backgroundWords).toBeUndefined();
-    expect(a0?.words?.find((w) => w.text === "ooh")?.begin).toBe(2);
+    expect(timedSyllables(mainTrack(a0!)).find((w) => w.text === "ooh")?.begin).toBe(2);
 
     expect(a1?.backgroundWords).toBeUndefined();
-    expect(a1?.words?.find((w) => w.text === "ooh")?.begin).toBe(12);
+    expect(timedSyllables(mainTrack(a1!)).find((w) => w.text === "ooh")?.begin).toBe(12);
   });
 });
 
@@ -785,8 +787,8 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ah ", "goodbye ", "ooh"]);
-    const groups = computeSyllableGroups(line.backgroundWords ?? []);
+    expect(timedSyllables(backgroundTrack(line)).map((w) => w.text + w.sep)).toEqual(["ah ", "goodbye ", "ooh"]);
+    const groups = computeSyllableGroups(timedSyllables(backgroundTrack(line)));
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });
 
@@ -807,8 +809,8 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "ooh ", "world"]);
-    const groups = computeSyllableGroups(line.words ?? []);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "ooh ", "world"]);
+    const groups = computeSyllableGroups(timedSyllables(mainTrack(line)));
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });
 });

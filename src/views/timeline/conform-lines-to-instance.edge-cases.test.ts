@@ -1,12 +1,14 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -75,9 +77,9 @@ describe("conformLinesToInstance · edge cases", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.updatedLines?.[0].text).toBe("Oh oh oh");
-    expect(result.updatedLines?.[0].words?.[0].begin).toBe(8);
-    expect(result.updatedLines?.[0].words?.[0].end).toBe(9.5);
+    expect(lineText(result.updatedLines![0])).toBe("Oh oh oh");
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].end).toBe(9.5);
   });
 
   it("keeps a line-synced template line-synced, with no words array", () => {
@@ -133,11 +135,11 @@ describe("conformLinesToInstance · edge cases", () => {
 
     expect(result.ok).toBe(true);
     const first = result.updatedLines?.[0];
-    expect(first?.backgroundText).toBe("in the dark");
-    expect(first?.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["in ", "the dark"]);
-    expect(first?.backgroundWords?.[0].begin).toBe(21.2);
-    expect(first?.backgroundWords?.[1].end).toBe(22);
-    expect(first?.backgroundTextSource).toBe("extraction");
+    expect(backgroundText(first!)).toBe("in the dark");
+    expect(timedSyllables(backgroundTrack(first!)).map((w) => w.text + w.sep)).toEqual(["in ", "the dark"]);
+    expect(timedSyllables(backgroundTrack(first!))[0].begin).toBe(21.2);
+    expect(timedSyllables(backgroundTrack(first!))[1].end).toBe(22);
+    expect(backgroundTrack(first!)?.source).toBe("extraction");
     expect(result.updatedLines?.[1].backgroundText).toBeUndefined();
     expect(result.updatedLines?.[1].backgroundWords).toBeUndefined();
   });
@@ -184,7 +186,7 @@ describe("conformLinesToInstance · edge cases", () => {
       playheadTime: 0,
     });
 
-    expect(result.updatedLines?.[0].words?.[0].begin).toBe(18);
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].begin).toBe(18);
   });
 
   it("conforms a selection at the very start of the project", () => {

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { setWordBoundary } from "@/domain/commands/word-timing";
-import { addressAt } from "@/domain/selection/resolve";
-import type { LyricLine } from "@/domain/line/model";
 import { retimeSyncWord } from "@/domain/commands/sync";
+import { setWordBoundary } from "@/domain/commands/word-timing";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { addressAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 
@@ -51,8 +52,8 @@ describe("word timing ops with a shared time range", () => {
         ),
       );
 
-    expect(lineById("c1")?.words?.[0].begin).toBe(7);
-    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
   it("stops a first word set before the range", () => {
@@ -69,8 +70,8 @@ describe("word timing ops with a shared time range", () => {
         ),
       );
 
-    expect(lineById("c1")?.words?.[0].begin).toBe(7);
-    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
   it("stops a first background word at the start of the range", () => {
@@ -87,8 +88,8 @@ describe("word timing ops with a shared time range", () => {
         ),
       );
 
-    expect(lineById("c1")?.backgroundWords?.[0].begin).toBe(7);
-    expect(lineById("c0")?.backgroundWords?.[0].begin).toBe(0);
+    expect(timedSyllables(backgroundTrack(lineById("c1")!))[0].begin).toBe(7);
+    expect(timedSyllables(backgroundTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
   describe("regressions", () => {
@@ -106,8 +107,8 @@ describe("word timing ops with a shared time range", () => {
           ),
         );
 
-      expect(lineById("c1")?.words?.[0].begin).toBe(0);
-      expect(lineById("c0")?.words?.[0].begin).toBe(3);
+      expect(timedSyllables(mainTrack(lineById("c1")!))[0].begin).toBe(0);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(3);
     });
 
     it("keeps no end limit for a last word", () => {
@@ -124,8 +125,8 @@ describe("word timing ops with a shared time range", () => {
           ),
         );
 
-      expect(lineById("c1")?.words?.[1].end).toBe(111);
-      expect(lineById("c0")?.words?.[1].end).toBe(104);
+      expect(timedSyllables(mainTrack(lineById("c1")!))[1].end).toBe(111);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[1].end).toBe(104);
     });
   });
 });
@@ -142,8 +143,8 @@ describe("word timing ops with a song end", () => {
         retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { by: 100 }, SONG_END),
       );
 
-    expect(lineById("c0")?.words?.[1].end).toBe(5);
-    expect(lineById("c1")?.words?.[1].end).toBe(12);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[1].end).toBe(5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1].end).toBe(12);
   });
 
   it("stops a last word set past the range", () => {
@@ -155,8 +156,8 @@ describe("word timing ops with a song end", () => {
         retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { to: 100 }, SONG_END),
       );
 
-    expect(lineById("c0")?.words?.[1].end).toBe(5);
-    expect(lineById("c1")?.words?.[1].end).toBe(12);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[1].end).toBe(5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1].end).toBe(12);
   });
 
   it("stops a last background word end where the latest instance reaches the song end", () => {
@@ -166,8 +167,8 @@ describe("word timing ops with a song end", () => {
       .getState()
       .commit(retimeSyncWord({ lineId: store().lines[0].id, track: "bg", wordIndex: 0 }, "end", { by: 100 }, SONG_END));
 
-    expect(lineById("c0")?.backgroundWords?.[0].end).toBe(5);
-    expect(lineById("c1")?.backgroundWords?.[0].end).toBe(12);
+    expect(timedSyllables(backgroundTrack(lineById("c0")!))[0].end).toBe(5);
+    expect(timedSyllables(backgroundTrack(lineById("c1")!))[0].end).toBe(12);
   });
 
   describe("edge cases", () => {
@@ -180,8 +181,8 @@ describe("word timing ops with a song end", () => {
           retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { by: 100 }, duration),
         );
 
-      expect(lineById("c0")?.words?.[1].end).toBe(104);
-      expect(lineById("c1")?.words?.[1].end).toBe(111);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[1].end).toBe(104);
+      expect(timedSyllables(mainTrack(lineById("c1")!))[1].end).toBe(111);
     });
   });
 
@@ -195,8 +196,8 @@ describe("word timing ops with a song end", () => {
           retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { by: 3 }, SONG_END),
         );
 
-      expect(lineById("c0")?.words?.[1].end).toBe(7);
-      expect(lineById("c1")?.words?.[1].end).toBe(11);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[1].end).toBe(7);
+      expect(timedSyllables(mainTrack(lineById("c1")!))[1].end).toBe(11);
     });
   });
 });
@@ -220,8 +221,8 @@ describe("setWordBoundary with a shared time range", () => {
 
     setBoundary(1, "begin", 0, 1);
 
-    expect(lineById("c1")?.words?.[0].begin).toBe(7);
-    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
   it("stops a last word end where the latest instance reaches the song end", () => {
@@ -229,8 +230,8 @@ describe("setWordBoundary with a shared time range", () => {
 
     setBoundary(0, "end", 1, 100);
 
-    expect(lineById("c0")?.words?.[1].end).toBe(5);
-    expect(lineById("c1")?.words?.[1].end).toBe(12);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[1].end).toBe(5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1].end).toBe(12);
   });
 
   describe("regressions", () => {
@@ -239,7 +240,7 @@ describe("setWordBoundary with a shared time range", () => {
 
       setBoundary(1, "begin", 0, -1);
 
-      expect(lineById("c1")?.words?.[0].begin).toBe(0);
+      expect(timedSyllables(mainTrack(lineById("c1")!))[0].begin).toBe(0);
     });
   });
 });

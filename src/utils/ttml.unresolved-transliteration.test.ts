@@ -1,8 +1,9 @@
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { renderTransliterationContent } from "@/utils/ttml-alternate-content";
-import { describe, expect, it } from "vitest";
 
 function lineWithMappings(): LyricLine {
   return {
@@ -88,8 +89,10 @@ describe("TTML unresolved transliteration", () => {
     line.transliteration!.text = "&";
     line.transliteration!.backgroundText = "<";
     if (!cached) {
-      line.words = line.words!.map(({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word);
-      line.backgroundWords = line.backgroundWords!.map(
+      line.words = timedSyllables(mainTrack(line)).map(
+        ({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word,
+      );
+      line.backgroundWords = timedSyllables(backgroundTrack(line)).map(
         ({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word,
       );
     }

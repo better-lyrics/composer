@@ -1,6 +1,7 @@
+import { describe, expect, it } from "vitest";
 import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -179,7 +180,7 @@ describe("unlinkLines", () => {
   it("keeps timing and content on the unlinked line", () => {
     const words = [{ id: "w1", text: "Hello", sep: "", begin: 1, end: 2 }];
     const lines = [line({ id: "a", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, words })];
-    expect(unlinkLines(lines, () => true)[0].words).toEqual(words);
+    expect(timedSyllables(mainTrack(unlinkLines(lines, () => true)[0]))).toEqual(words);
   });
 
   it("does not modify its input", () => {

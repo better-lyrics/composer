@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { wordAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
 
 describe("markerMode", () => {
   beforeEach(() => {
@@ -206,7 +208,7 @@ describe("selection after a lines change", () => {
   it("regression: a split before a selected word keeps the selection on that word", () => {
     useTimelineStore.getState().setSelectedWords([address("w2")]);
     splitFirstWord();
-    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual([
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word) => word.text)).toEqual([
       "Fa",
       "ll",
       "in",
@@ -251,9 +253,11 @@ describe("selection after a lines change", () => {
   it("regression: a word dragged between two queued words takes its new place in the Step queue", () => {
     useTimelineStore.getState().setStepTiming(true);
     useTimelineStore.getState().setSelectedWords([address("w1"), address("w2"), address("w3")], true);
-    const [fall, into, to, place] = line.words ?? [];
+    const [fall, into, to, place] = timedSyllables(mainTrack(line));
     const reordered = [fall, { ...to, begin: 1.5 }, into, place];
-    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "a", text: line.text, words: reordered })] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [createLine({ id: "a", text: lineText(line), words: reordered })] });
     expect(useTimelineStore.getState().stepQueue).toEqual([address("w1"), address("w3"), address("w2")]);
     expect(selectedTexts()).toEqual(["Fall"]);
   });
