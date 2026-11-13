@@ -118,6 +118,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   }, [autoAlignInfo, autoAlign, clearContextMenu]);
 
   return {
+    activeAgentIdAt: (lineIndex: number) => lines[lineIndex] && mainTrack(lines[lineIndex]).agentId,
     handleAutoAlign,
     handlePlaceLineHere,
     handlePlaceAtPlayhead,
