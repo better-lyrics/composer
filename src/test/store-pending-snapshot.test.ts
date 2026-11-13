@@ -21,6 +21,8 @@ const ALLOWED: Record<string, string> = {
 
 const LYRIC_FIELD_WRITE = /(?<![.\w])(lines|groups)\s*[:,}]/;
 const LYRIC_HISTORY_WRITE = /\b(commitCommand|undoState|redoState)\b/;
+// Spreads that carry lines or groups, such as a whole fresh project state.
+const LYRIC_STATE_SPREAD = /\.\.\.createProjectInitialState\(/;
 
 const LYRIC_WRITERS: Record<string, string> = {
   commit: "runs a named command, the one write path for lyric edits",
@@ -31,6 +33,7 @@ const LYRIC_WRITERS: Record<string, string> = {
   restorePreviewLines: "puts back the pre-gesture lines a preview replaced, which history already holds",
   replaceLyricsWithHistory: "commits the replace-lyrics command and its song details in one write",
   applyEditedLyricsWithHistory: "commits the edited-lyrics command and its song details in one write",
+  reset: "a fresh project starts with no lyrics and an empty history",
 };
 
 interface SliceAction {
@@ -61,7 +64,7 @@ const actionName = (action: SliceAction) => action.name.split(":")[1];
 
 function writesLyrics({ body }: SliceAction): boolean {
   if (!/\b_?set\(/.test(body)) return false;
-  return LYRIC_FIELD_WRITE.test(body) || LYRIC_HISTORY_WRITE.test(body);
+  return LYRIC_FIELD_WRITE.test(body) || LYRIC_HISTORY_WRITE.test(body) || LYRIC_STATE_SPREAD.test(body);
 }
 
 describe("snapshot writes outside history flag the pending snapshot", () => {
