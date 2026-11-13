@@ -43,7 +43,7 @@ describe("createLanguageAutoRefresh failures", () => {
       "pending",
     );
     await refresher.refreshNow();
-    expect(lineById("a").transliteration?.text).toBe("Silnyy  dozhd");
+    expect(lineById("a").languages?.transliteration?.main.text).toBe("Silnyy  dozhd");
   });
 
   it("asks Google again for a failed line when another project opens", async () => {
@@ -62,7 +62,7 @@ describe("createLanguageAutoRefresh failures", () => {
     });
     await refresher.refreshNow();
 
-    expect(lineById("a").transliteration?.text).toBe("Ranniy  sneg");
+    expect(lineById("a").languages?.transliteration?.main.text).toBe("Ranniy  sneg");
   });
 
   it("refreshes a failed line by itself when the browser comes back online", async () => {
@@ -80,7 +80,7 @@ describe("createLanguageAutoRefresh failures", () => {
     window.dispatchEvent(new Event("online"));
     await vi.advanceTimersByTimeAsync(1000);
 
-    await vi.waitFor(() => expect(lineById("a").transliteration?.text).toBe("Novaya  vesna"));
+    await vi.waitFor(() => expect(lineById("a").languages?.transliteration?.main.text).toBe("Novaya  vesna"));
   });
 
   it("regression: a request that fails while reconnecting does not block the line", async () => {
@@ -106,6 +106,6 @@ describe("createLanguageAutoRefresh failures", () => {
     });
     await refresher.refreshNow();
 
-    expect(lineById("a").transliteration?.text).toBe("Yarkoye  solntse");
+    expect(lineById("a").languages?.transliteration?.main.text).toBe("Yarkoye  solntse");
   });
 });

@@ -7,7 +7,7 @@ import { distributeTiming } from "@/utils/syllable-utils";
 function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming[] {
   const trimmed = word.text;
   const hadTrailingSpace = word.sep.endsWith(" ");
-  const { transliteration: _transliteration, transliterationJoinerAfter: _joiner, joinsNext, ...base } = word;
+  const { joinsNext, ...base } = word;
 
   const parts: Array<{ text: string; begin: number; end: number }> = [];
   let orphanBegin: number | null = null;

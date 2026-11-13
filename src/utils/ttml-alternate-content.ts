@@ -1,5 +1,8 @@
 import { alignTrackToLine } from "@/domain/language/align";
 import { type BackgroundPlacement, alternateBackgroundPlacement } from "@/domain/language/background-placement";
+import { lineTransliteration } from "@/domain/language/line-languages";
+import type { LanguagePieces, LineLanguage } from "@/domain/language/model";
+import { pieceOf } from "@/domain/language/pieces";
 import {
   hasLexicalBoundaryAfter,
   normalizeTransliterationForEditing,
@@ -11,8 +14,8 @@ import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track"
 import type { WordTiming } from "@/domain/word/timing";
 import { emitWordSpan, escapeXml } from "@/utils/ttml-markup";
 
-function hasAlternateText(track: { text: string; backgroundText?: string } | undefined): boolean {
-  return !!track && (!!track.text.trim() || !!track.backgroundText?.trim());
+function hasAlternateText(track: LineLanguage | undefined): boolean {
+  return !!track && (!!track.main.text.trim() || !!track.bg?.text?.trim());
 }
 
 function backgroundInsertionIndex(
@@ -56,11 +59,12 @@ function emitTransliterationSpans(word: WordTiming, text: string): string {
   return emitWordSpan(word, text.trim());
 }
 
-function alignedTransliterationChunks(words: WordTiming[]): string[] {
+function alignedTransliterationChunks(words: WordTiming[], pieces: LanguagePieces | undefined): string[] {
   return words.map((word, index) => {
-    const text = word.transliteration?.trim() || word.text;
+    const piece = pieceOf(pieces, word);
+    const text = piece?.text?.trim() || word.text;
     if (index === words.length - 1) return emitTransliterationSpans(word, text);
-    const joiner = word.transliterationJoinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
+    const joiner = piece?.joinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
     const timed = timedTransliterationSlice({ text, joinerAfter: joiner });
     return `${emitTransliterationSpans(word, timed.text)}${escapeXml(timed.joinerAfter ?? "")}`;
   });
@@ -72,23 +76,20 @@ function emitUntimedTransliteration(text: string): string {
 
 function transliterationChunks(line: LyricLine, timed: boolean, background = false): string[] {
   const words = timedSyllables(background ? backgroundTrack(line) : mainTrack(line));
-  const text = background ? line.transliteration?.backgroundText : line.transliteration?.text;
-  const alignmentStatus = background
-    ? line.transliteration?.backgroundAlignmentStatus
-    : line.transliteration?.alignmentStatus;
+  const side = lineTransliteration(line)?.[background ? "bg" : "main"];
+  const text = side?.text;
   if (!text?.trim()) return [];
-  if (timed && alignmentStatus !== "unresolved" && words.some((word) => word.transliteration)) {
-    return alignedTransliterationChunks(words);
+  if (timed && side?.alignmentStatus !== "unresolved" && words.some((word) => pieceOf(side?.pieces, word)?.text)) {
+    return alignedTransliterationChunks(words, side?.pieces);
   }
   return text ? [escapeXml(emitUntimedTransliteration(text))] : [];
 }
 
 function renderTransliterationContent(rawLine: LyricLine, timed = true): string {
-  const line = rawLine.transliteration
-    ? ({ ...rawLine, ...alignTrackToLine(rawLine, rawLine.transliteration) } as LyricLine)
-    : rawLine;
+  const track = lineTransliteration(rawLine);
+  const line = track ? { ...rawLine, ...alignTrackToLine(rawLine, track) } : rawLine;
   const mainChunks = transliterationChunks(line, timed);
-  if (!line.transliteration?.backgroundText?.trim()) return mainChunks.join("");
+  if (!lineTransliteration(line)?.bg?.text?.trim()) return mainChunks.join("");
 
   const backgroundContent = transliterationChunks(line, timed, true).join("");
   const placement = alternateBackgroundPlacement(line);

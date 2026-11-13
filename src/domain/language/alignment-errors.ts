@@ -1,4 +1,5 @@
 import { validateTransliterationAlignment } from "@/domain/language/align";
+import { lineTransliteration } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 
 type LanguageAlignmentErrorField = "transliteration" | "background-transliteration";
@@ -17,14 +18,21 @@ interface LanguageAlignmentErrorItem {
 
 function getLanguageAlignmentErrors(line: LyricLine): LanguageAlignmentError[] {
   const errors: LanguageAlignmentError[] = [];
-  const transliteration = validateTransliterationAlignment(line.text, line.transliteration?.text ?? "", line.words);
+  const track = lineTransliteration(line);
+  const transliteration = validateTransliterationAlignment(
+    line.text,
+    track?.main.text ?? "",
+    line.words,
+    track?.main.pieces,
+  );
   if (transliteration) errors.push({ field: "transliteration", message: transliteration });
 
   if (line.backgroundText) {
     const background = validateTransliterationAlignment(
       line.backgroundText,
-      line.transliteration?.backgroundText ?? "",
+      track?.bg?.text ?? "",
       line.backgroundWords,
+      track?.bg?.pieces,
     );
     if (background) errors.push({ field: "background-transliteration", message: background });
   }

@@ -7,16 +7,25 @@ import { describe, expect, it } from "vitest";
 
 const METADATA = { title: "Song", artists: [], album: "", duration: 0 };
 const SPANISH = (text: string) => ({
-  es: { language: "es", text, origin: "manual" as const, sourceFingerprint: "fp" },
+  es: { language: "es", main: { text }, origin: "manual" as const, sourceFingerprint: "fp" },
 });
 
 function exported(lines: Parameters<typeof generateTTML>[0]["lines"]): string {
   return generateTTML({ metadata: METADATA, agents: [], lines });
 }
 
-const ALPHA = { ...createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }), translations: SPANISH("Alfa") };
-const BRAVO = { ...createLine({ id: "b", text: "Bravo", begin: 2, end: 3 }), translations: SPANISH("Bravo es") };
-const CHARLIE = { ...createLine({ id: "c", text: "Charlie", begin: 3, end: 4 }), translations: SPANISH("Carlos") };
+const ALPHA = {
+  ...createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }),
+  languages: { translations: SPANISH("Alfa") },
+};
+const BRAVO = {
+  ...createLine({ id: "b", text: "Bravo", begin: 2, end: 3 }),
+  languages: { translations: SPANISH("Bravo es") },
+};
+const CHARLIE = {
+  ...createLine({ id: "c", text: "Charlie", begin: 3, end: 4 }),
+  languages: { translations: SPANISH("Carlos") },
+};
 
 // -- Tests --------------------------------------------------------------------
 

@@ -1,5 +1,7 @@
+import { lineTranslations } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { sameTransliteration } from "@/views/languages/same-transliteration";
 
 interface GenerationEdits {
   transliteration: Set<string>;
@@ -19,9 +21,10 @@ function watchGenerationEdits(
     for (const id of startingLines.keys()) {
       const before = previousLines.get(id);
       const after = currentLines.get(id);
-      if (before?.transliteration !== after?.transliteration) edits.transliteration.add(id);
+      if (!sameTransliteration(before, after)) edits.transliteration.add(id);
       for (const language of targets) {
-        if (before?.translations?.[language] === after?.translations?.[language]) continue;
+        if ((before && lineTranslations(before))?.[language] === (after && lineTranslations(after))?.[language])
+          continue;
         const languages = edits.translations.get(id) ?? new Set<string>();
         languages.add(language);
         edits.translations.set(id, languages);

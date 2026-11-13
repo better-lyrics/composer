@@ -1,3 +1,5 @@
+import { alignedPieceOf } from "@/domain/language/aligned-piece";
+import type { LanguagePiece } from "@/domain/language/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -6,6 +8,7 @@ import { Popover } from "@/ui/popover";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
 import {
+  type SyllableSplitHandler,
   type UseSyllableSplitterStateResult,
   useSyllableSplitterState,
 } from "@/views/sync/use-syllable-splitter-state";
@@ -19,10 +22,11 @@ interface SyllableSplitterProps {
   type: "word" | "bg";
   word: WordTiming;
   wordIndex: number;
-  onSplit: (wordIndex: number, newWords: WordTiming[]) => void;
+  onSplit: SyllableSplitHandler;
 }
 
 interface SyllableSplitPanelProps extends Pick<SyllableSplitterProps, "lineId" | "type" | "word" | "wordIndex"> {
+  piece: LanguagePiece | undefined;
   panelId: string;
   state: UseSyllableSplitterStateResult;
   close: () => void;
@@ -35,6 +39,7 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
   lineId,
   type,
   word,
+  piece,
   wordIndex,
   state,
   close,
@@ -64,8 +69,8 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
         onCaseInsensitiveChange={state.setCaseInsensitive}
         identicalCount={identicalCount}
         sourceText={text}
-        showApplyControls={!word.transliteration}
-        secondaryText={word.transliteration?.trim()}
+        showApplyControls={!piece?.text}
+        secondaryText={piece?.text?.trim()}
         secondarySplitPoints={state.transliterationSplitPoints}
         onToggleSecondarySplit={state.toggleTransliterationSplit}
       />
@@ -87,8 +92,10 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
   onOpenChange,
   ...splitter
 }) => {
-  const state = useSyllableSplitterState(splitter);
   const { lineId, type, word, wordIndex } = splitter;
+  const line = useProjectStore((s) => s.lines.find((candidate) => candidate.id === lineId));
+  const piece = useMemo(() => line && alignedPieceOf(line, type, word), [line, type, word]);
+  const state = useSyllableSplitterState({ ...splitter, piece });
   return (
     <Popover reference={trigger} open={open} onOpenChange={onOpenChange}>
       {(close) => (
@@ -97,6 +104,7 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
           lineId={lineId}
           type={type}
           word={word}
+          piece={piece}
           wordIndex={wordIndex}
           state={state}
           close={close}

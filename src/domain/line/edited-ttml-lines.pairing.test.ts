@@ -7,7 +7,12 @@ import { createLine } from "@/test/factories";
 
 // -- Fixtures -----------------------------------------------------------------
 
-const BRAVO_SPANISH = { language: "es", text: "Bravo es", origin: "manual" as const, sourceFingerprint: "fp-b" };
+const BRAVO_SPANISH = {
+  language: "es",
+  main: { text: "Bravo es" },
+  origin: "manual" as const,
+  sourceFingerprint: "fp-b",
+};
 
 function bravo(): LyricLine {
   return {
@@ -19,7 +24,7 @@ function bravo(): LyricLine {
       backgroundText: "ooh",
       backgroundTextSource: "extraction",
     }),
-    translations: { es: BRAVO_SPANISH },
+    languages: { translations: { es: BRAVO_SPANISH } },
   };
 }
 
@@ -30,7 +35,7 @@ function paragraphs(ttml: string): string[] {
 function expectBravoKeptItsData(merged: LyricLine[]): void {
   const line = merged.find((candidate) => lineText(candidate) === "Bravo!");
   expect(line?.id).toBe("b");
-  expect(line?.translations?.es).toEqual(BRAVO_SPANISH);
+  expect(line?.languages?.translations?.es).toEqual(BRAVO_SPANISH);
   expect(backgroundTrack(line!)?.source).toBe("extraction");
 }
 
@@ -43,7 +48,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
         createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }),
         {
           ...createLine({ id: "k", text: "Kay", begin: 2, end: 3 }),
-          translations: { es: { ...BRAVO_SPANISH, text: "Ka" } },
+          languages: { translations: { es: { ...BRAVO_SPANISH, main: { text: "Ka" } } } },
         },
         bravo(),
         createLine({ id: "z", text: "Zulu", begin: 4, end: 5 }),
@@ -74,13 +79,13 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
     it("regression: reordering and editing a line keeps its id and translation origin", () => {
       const google = {
         language: "es",
-        text: "Hola",
+        main: { text: "Hola" },
         origin: "google" as const,
         sourceFingerprint: "fp-h",
         stale: true,
       };
       const stored = [
-        { ...createLine({ id: "h", text: "Hel|lo", begin: 1, end: 2 }), translations: { es: google } },
+        { ...createLine({ id: "h", text: "Hel|lo", begin: 1, end: 2 }), languages: { translations: { es: google } } },
         createLine({ id: "w", text: "Wor|ld", begin: 2, end: 3 }),
         createLine({ id: "e", text: "End", begin: 3, end: 4 }),
       ];
@@ -97,7 +102,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
         ["h", "Hello!"],
         ["e", "End"],
       ]);
-      expect(merged[1]?.translations?.es).toEqual(google);
+      expect(merged[1]?.languages?.translations?.es).toEqual(google);
     });
   });
 

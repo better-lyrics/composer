@@ -1,4 +1,6 @@
 import type { WordTiming } from "@/domain/word/timing";
+import { useProjectStore } from "@/stores/project";
+import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { describe, expect, it } from "vitest";
@@ -33,22 +35,26 @@ describe("SyllableSplitter", () => {
   });
 
   it("shows an inferred split that lands on a transliteration space as selected", async () => {
-    const screen = await render(
-      <SyllableSplitter
-        lineId="test-line"
-        type="word"
-        word={{
-          id: "w3",
+    const word: WordTiming = { id: "w3", text: "붙어있던", sep: "", begin: 0, end: 1, joinsNext: true };
+    useProjectStore.setState({
+      lines: [
+        legacyLine({
+          id: "test-line",
+          agentId: "v1",
           text: "붙어있던",
-          sep: "",
-          transliteration: "but eoissdeon",
-          begin: 0,
-          end: 1,
-          joinsNext: true,
-        }}
-        wordIndex={0}
-        onSplit={() => {}}
-      />,
+          words: [{ ...word, transliteration: "but eoissdeon" }],
+          transliteration: {
+            language: "ko-Latn",
+            text: "but eoissdeon",
+            segments: [],
+            origin: "manual",
+            sourceFingerprint: "test",
+          },
+        }),
+      ],
+    });
+    const screen = await render(
+      <SyllableSplitter lineId="test-line" type="word" word={word} wordIndex={0} onSplit={() => {}} />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
     expect(document.querySelectorAll('button[aria-label^="Transliteration pronunciation break"]')).toHaveLength(1);

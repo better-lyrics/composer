@@ -9,6 +9,7 @@ import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { createWords } from "@/test/factories";
+import { legacyLine, legacyWords } from "@/test/legacy-languages";
 
 function line(id: string, text: string, words?: Partial<WordTiming>[], extra: Partial<LyricLine> = {}): LyricLine {
   return reconcileLine({
@@ -202,17 +203,24 @@ describe("withEvenSyllableSplits", () => {
     });
 
     it("drops a transliteration piece the new syllables cannot spell", () => {
-      const timed = line("a", "falling too", [
-        { id: "w26", text: "falling", sep: " ", begin: 0, end: 1, transliteration: "FALLING", joinsNext: false },
-        { id: "w27", text: "too", sep: "", begin: 1, end: 2, transliteration: "TOO", joinsNext: false },
-      ]);
+      const timed = legacyLine({
+        ...line("a", "falling too"),
+        words: [
+          { id: "w26", text: "falling", sep: " ", begin: 0, end: 1, transliteration: "FALLING", joinsNext: false },
+          { id: "w27", text: "too", sep: "", begin: 1, end: 2, transliteration: "TOO", joinsNext: false },
+        ],
+        transliteration: {
+          language: "en-Latn",
+          text: "FALLING  TOO",
+          segments: [],
+          origin: "manual",
+          sourceFingerprint: "test",
+        },
+      });
       const result = even(timed, line("b", "fal|ling too"));
-      expect(
-        timedSyllables(mainTrack(result![0]))
-          .slice(0, 2)
-          .every((word) => word.transliteration === undefined),
-      ).toBe(true);
-      expect(timedSyllables(mainTrack(result![0]))[2]?.transliteration).toBe("TOO");
+      const words = legacyWords(timedSyllables(mainTrack(result![0])), result![0].languages);
+      expect(words?.slice(0, 2).every((word) => word.transliteration === undefined)).toBe(true);
+      expect(words?.[2]?.transliteration).toBe("TOO");
     });
 
     it("refuses timed words that do not line up with the text's words", () => {

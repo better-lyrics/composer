@@ -1,5 +1,4 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine } from "@/domain/line/model";
 import { findOpenProjectId, forgetOpenProjectId } from "@/lib/open-project-session";
 import { clearAudioFile, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { DB_NAME, DB_VERSION } from "@/lib/persistence-idb";
@@ -68,7 +67,7 @@ describe("persistence · open project", () => {
         granularity: "word",
         agents: DEFAULT_AGENTS,
         lines: [
-          reconcileLine({
+          {
             id: "L1",
             text: "걸음은 Like a dance",
             agentId: "v1",
@@ -79,7 +78,7 @@ describe("persistence · open project", () => {
               origin: "google",
               sourceFingerprint: "legacy",
             },
-          }),
+          },
         ],
       });
       forgetOpenProjectId();

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { type LegacyLine, legacyLine, legacyWords } from "@/test/legacy-languages";
 
-function legacyLine(overrides: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({
+function oldLine(overrides: Partial<LegacyLine> = {}): LyricLine {
+  return legacyLine({
     id: "legacy",
     text: "걸음은 Like a dance",
     agentId: "v1",
@@ -21,15 +22,15 @@ function legacyLine(overrides: Partial<LooseLine> = {}): LyricLine {
 
 describe("legacy transliteration migration", () => {
   it("turns old Google dashes into pronunciation spaces and old spaces into word spaces", () => {
-    const migrated = migrateLegacyTransliterationLine(legacyLine());
+    const migrated = migrateLegacyTransliterationLine(oldLine());
 
-    expect(migrated.transliteration?.text).toBe("geol eum eun  Like  a  dance");
-    expect(migrated.transliteration?.alignmentStatus).toBe("inferred");
+    expect(migrated.languages?.transliteration?.main.text).toBe("geol eum eun  Like  a  dance");
+    expect(migrated.languages?.transliteration?.main.alignmentStatus).toBe("inferred");
   });
 
   it("uses complete timed mappings instead of reinterpreting their display text", () => {
     const migrated = migrateLegacyTransliterationLine(
-      legacyLine({
+      oldLine({
         text: "今日",
         words: [
           {
@@ -54,13 +55,15 @@ describe("legacy transliteration migration", () => {
       }),
     );
 
-    expect(migrated.transliteration?.text).toBe("kyouhi");
-    expect(timedSyllables(mainTrack(migrated)).map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(migrated.languages?.transliteration?.main.text).toBe("kyouhi");
+    expect(
+      legacyWords(timedSyllables(mainTrack(migrated)), migrated.languages)?.map((word) => word.transliteration),
+    ).toEqual(["kyou", "hi"]);
   });
 
   it("preserves potentially literal dashes and asks for review", () => {
     const migrated = migrateLegacyTransliterationLine(
-      legacyLine({
+      oldLine({
         text: "to-do",
         transliteration: {
           language: "en-Latn",
@@ -72,13 +75,13 @@ describe("legacy transliteration migration", () => {
       }),
     );
 
-    expect(migrated.transliteration?.text).toBe("to-do");
-    expect(migrated.transliteration?.alignmentStatus).toBe("needs-review");
+    expect(migrated.languages?.transliteration?.main.text).toBe("to-do");
+    expect(migrated.languages?.transliteration?.main.alignmentStatus).toBe("needs-review");
   });
 
   it("does not treat a partial timed prefix as a complete mapping", () => {
     const migrated = migrateLegacyTransliterationLine(
-      legacyLine({
+      oldLine({
         text: "안녕 하세요",
         words: [{ id: "w3", text: "안녕", sep: " ", begin: 0, end: 1, transliteration: "stale", joinsNext: false }],
         transliteration: {
@@ -91,6 +94,6 @@ describe("legacy transliteration migration", () => {
       }),
     );
 
-    expect(migrated.transliteration?.text).toBe("an nyeong  haseyo");
+    expect(migrated.languages?.transliteration?.main.text).toBe("an nyeong  haseyo");
   });
 });

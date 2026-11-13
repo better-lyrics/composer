@@ -1,4 +1,5 @@
 import { convertToWordTiming } from "@/domain/commands/line-timing";
+import { withKeptSyllablePieces } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -29,7 +30,7 @@ function splitMultiWordWord(word: WordTiming): WordTiming[] {
   };
   const parts = convertLineToWord(asLine).words;
   if (!parts || parts.length < 2) return [word];
-  const { transliteration: _t, transliterationJoinerAfter: _j, joinsNext, ...base } = word;
+  const { joinsNext, ...base } = word;
   const lastIndex = parts.length - 1;
   return parts.map((part, index) => ({
     ...base,
@@ -65,8 +66,13 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
       const converted = convertLineToWord(realLine);
       if (converted.words) Object.assign(lineUpdates, { words: converted.words, begin: undefined, end: undefined });
     }
-    const splitBg = tracks.has("bg") ? splitMultiWordBgWords(timedSyllables(backgroundTrack(realLine))) : null;
-    if (splitBg) Object.assign(lineUpdates, manualBackgroundWordEdit(splitBg));
+    const bgWords = timedSyllables(backgroundTrack(realLine));
+    const splitBg = tracks.has("bg") ? splitMultiWordBgWords(bgWords) : null;
+    if (splitBg) {
+      Object.assign(lineUpdates, manualBackgroundWordEdit(splitBg), {
+        languages: withKeptSyllablePieces(realLine, "bg", bgWords, splitBg),
+      });
+    }
     if (Object.keys(lineUpdates).length > 0) updates.push({ id, updates: lineUpdates });
   }
   return updates;

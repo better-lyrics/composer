@@ -1,3 +1,5 @@
+import type { LanguagePiece } from "@/domain/language/model";
+import type { PositionalPieces } from "@/domain/language/pieces";
 import {
   leadingUntimedSeparator,
   trailingUntimedSeparator,
@@ -12,7 +14,6 @@ import { splitSourceWord } from "@/utils/word-timing";
 interface SplitOneWordParams {
   word: WordTiming;
   splitPoints: number[];
-  transliterationSplitPoints?: number[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -39,26 +40,9 @@ function splitParts(text: string, splitPoints: number[]): { parts: string[]; joi
   };
 }
 
-function splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints }: SplitOneWordParams): WordTiming[] {
-  const { transliterationJoinerAfter: outerTransliterationJoiner, ...wordWithoutJoiner } = word;
+function splitWordIntoSyllables({ word, splitPoints }: SplitOneWordParams): WordTiming[] {
   const partitions = distributeTiming(word.text, splitPoints, word.begin, word.end);
-  const newWords = splitSourceWord(wordWithoutJoiner, partitions);
-  if (word.transliteration && transliterationSplitPoints) {
-    const { parts: transliterations, joiners } = splitParts(word.transliteration.trim(), transliterationSplitPoints);
-    if (transliterations.length === newWords.length) {
-      for (let i = 0; i < newWords.length; i++) {
-        newWords[i] = {
-          ...newWords[i],
-          transliteration: transliterations[i],
-          ...(i < joiners.length ? { transliterationJoinerAfter: joiners[i] } : {}),
-        };
-      }
-    }
-  }
-  if (outerTransliterationJoiner !== undefined && newWords.length > 0) {
-    const last = newWords[newWords.length - 1];
-    newWords[newWords.length - 1] = { ...last, transliterationJoinerAfter: outerTransliterationJoiner };
-  }
+  const newWords = splitSourceWord(word, partitions);
   if (word.sep && newWords.length > 0) {
     const last = newWords[newWords.length - 1];
     newWords[newWords.length - 1] = { ...last, sep: `${last.sep}${word.sep}` };
@@ -66,6 +50,25 @@ function splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints 
   return newWords;
 }
 
+function splitSyllablePieces(
+  piece: LanguagePiece | undefined,
+  transliterationSplitPoints: number[] | undefined,
+  count: number,
+): PositionalPieces | undefined {
+  if (count === 0) return undefined;
+  const pieces: (LanguagePiece | undefined)[] = new Array(count).fill(undefined);
+  if (piece?.text && transliterationSplitPoints) {
+    const { parts, joiners } = splitParts(piece.text.trim(), transliterationSplitPoints);
+    if (parts.length === count) {
+      for (let i = 0; i < count; i++) {
+        pieces[i] = { text: parts[i], ...(i < joiners.length ? { joinerAfter: joiners[i] } : {}) };
+      }
+    }
+  }
+  if (piece?.joinerAfter !== undefined) pieces[count - 1] = { ...pieces[count - 1], joinerAfter: piece.joinerAfter };
+  return pieces.some(Boolean) ? pieces : undefined;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { splitWordIntoSyllables };
+export { splitSyllablePieces, splitWordIntoSyllables };

@@ -1,4 +1,7 @@
 import { withAlignedTransliteration } from "@/domain/language/align";
+import { lineTransliteration } from "@/domain/language/line-languages";
+import type { LanguagePieces, LineLanguages } from "@/domain/language/model";
+import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import {
   normalizeTransliterationForEditing,
   sourceWordCount,
@@ -21,6 +24,8 @@ interface LanguageDisplayLine {
   backgroundText?: string;
   words?: WordTiming[];
   backgroundWords?: WordTiming[];
+  /** The line's languages with each timed syllable's reading aligned to the current text. */
+  languages?: LineLanguages;
   wordTexts?: string[];
   backgroundWordTexts?: string[];
 }
@@ -42,37 +47,50 @@ function comparableText(value: string): string {
   return stripSplitCharacter(value).replace(/\s+/g, " ").trim();
 }
 
-function displayText(word: WordTiming, index: number, words: WordTiming[]): string {
+interface PiecedWords {
+  words: WordTiming[];
+  pieces: LanguagePieces | undefined;
+}
+
+function displayText({ words, pieces }: PiecedWords, index: number): string {
+  const piece = pieceOf(pieces, words[index]);
   return timedTransliterationSlice({
-    text: word.transliteration || word.text,
-    joinerAfter: index < words.length - 1 ? word.transliterationJoinerAfter : undefined,
+    text: piece?.text || words[index].text,
+    joinerAfter: index < words.length - 1 ? piece?.joinerAfter : undefined,
   }).text;
 }
 
-function displayAlignedText(words: WordTiming[], index: number, fallback: string): string {
+function displayAlignedText({ words, pieces }: PiecedWords, index: number, fallback: string): string {
   const word = words[index];
-  const text = word.transliteration ?? fallback;
+  const piece = pieceOf(pieces, word);
+  const text = piece?.text ?? fallback;
   if (index === words.length - 1) return text;
   const timed = timedTransliterationSlice({
     text,
-    joinerAfter: word.transliterationJoinerAfter ?? (word.sep.endsWith(" ") ? "  " : " "),
+    joinerAfter: piece?.joinerAfter ?? (word.sep.endsWith(" ") ? "  " : " "),
   });
   return `${timed.text}${timed.joinerAfter ?? ""}`;
 }
 
+function piecedWords(line: LyricLine, side: "main" | "bg"): PiecedWords | undefined {
+  const words = side === "main" ? line.words : line.backgroundWords;
+  return words && { words, pieces: trackPieces(line, side) };
+}
+
 function displayTrackTexts(
   originalText: string,
-  alignedWords: WordTiming[] | undefined,
-  alignedSourceSlots: WordTiming[] | undefined,
+  aligned: PiecedWords | undefined,
+  alignedSourceSlots: PiecedWords | undefined,
 ): string[] {
-  const sourceTexts = alignedSourceSlots?.map(displayText) ?? [];
-  if (!alignedWords?.length) return sourceTexts;
+  const sourceTexts = alignedSourceSlots?.words.map((_, index) => displayText(alignedSourceSlots, index)) ?? [];
+  if (!aligned?.words.length) return sourceTexts;
+  const alignedWords = aligned.words;
 
   const coversFullTrack = comparableText(spacedText(alignedWords)) === comparableText(originalText);
   if (coversFullTrack) {
     const canUseSourceFallbackByIndex = alignedWords.length === sourceTexts.length;
     return alignedWords.map((word, index) =>
-      displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text),
+      displayAlignedText(aligned, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text),
     );
   }
 
@@ -82,13 +100,14 @@ function displayTrackTexts(
   const coveredSourceSlots = Math.min(sourceWordCount(spacedText(alignedWords)), sourceTexts.length);
   const canUseSourceFallbackByIndex = alignedWords.length === coveredSourceSlots;
   const timedTexts = alignedWords.map((word, index) =>
-    displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text),
+    displayAlignedText(aligned, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text),
   );
   return [...timedTexts, ...sourceTexts.slice(coveredSourceSlots)];
 }
 
 function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): LanguageDisplayLine {
-  if (variant === "original" || !line.transliteration) {
+  const transliteration = lineTransliteration(line);
+  if (variant === "original" || !transliteration) {
     return {
       text: line.text,
       backgroundText: line.backgroundText,
@@ -107,18 +126,19 @@ function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): 
   );
 
   return {
-    text: line.transliteration.text ? normalizeTransliterationForEditing(line.transliteration.text) : line.text,
-    backgroundText: line.transliteration.backgroundText
-      ? normalizeTransliterationForEditing(line.transliteration.backgroundText)
+    text: transliteration.main.text ? normalizeTransliterationForEditing(transliteration.main.text) : line.text,
+    backgroundText: transliteration.bg?.text
+      ? normalizeTransliterationForEditing(transliteration.bg.text)
       : line.backgroundText,
     words: alignedLine.words,
     backgroundWords: alignedLine.backgroundWords,
-    wordTexts: line.transliteration.text
-      ? displayTrackTexts(line.text, alignedLine.words, sourceLine.words)
+    languages: alignedLine.languages,
+    wordTexts: transliteration.main.text
+      ? displayTrackTexts(line.text, piecedWords(alignedLine, "main"), piecedWords(sourceLine, "main"))
       : undefined,
     backgroundWordTexts:
-      line.backgroundText && line.transliteration.backgroundText
-        ? displayTrackTexts(line.backgroundText, alignedLine.backgroundWords, sourceLine.backgroundWords)
+      line.backgroundText && transliteration.bg?.text
+        ? displayTrackTexts(line.backgroundText, piecedWords(alignedLine, "bg"), piecedWords(sourceLine, "bg"))
         : undefined,
   };
 }

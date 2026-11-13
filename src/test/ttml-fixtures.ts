@@ -2,6 +2,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
 import { generateTTML } from "@/utils/ttml";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -88,24 +89,28 @@ function buildAlternateLanguageTtml(): string {
       ],
     }),
   ];
-  lines[0].words?.forEach((word, index) => {
-    word.transliteration = index === 0 ? "annyeong" : "sesang";
-  });
-  lines[0].transliteration = {
-    language: "ko-Latn",
-    text: "annyeong sesang",
-    segments: [{ original: "안녕 세상", transliteration: "annyeong sesang" }],
-    origin: "manual",
-    sourceFingerprint: "preview-fixture",
-  };
-  lines[0].translations = {
-    en: {
-      language: "en",
-      text: "Hello world",
+  lines[0] = legacyLine({
+    ...lines[0],
+    words: lines[0].words?.map((word, index) => ({
+      ...word,
+      transliteration: index === 0 ? "annyeong" : "sesang",
+    })),
+    transliteration: {
+      language: "ko-Latn",
+      text: "annyeong sesang",
+      segments: [{ original: "안녕 세상", transliteration: "annyeong sesang" }],
       origin: "manual",
       sourceFingerprint: "preview-fixture",
     },
-  };
+    translations: {
+      en: {
+        language: "en",
+        text: "Hello world",
+        origin: "manual",
+        sourceFingerprint: "preview-fixture",
+      },
+    },
+  });
 
   const { metadata, agents } = useProjectStore.getState();
   return generateTTML({ metadata, agents, lines, groups: [] });
@@ -125,27 +130,34 @@ function buildAlternateBackgroundLanguageTtml(): string {
       backgroundWords: [{ text: "오", begin: 3.2, end: 3.8 }],
     }),
   ];
-  timedSyllables(mainTrack(lines[0]))[0].transliteration = "annyeong";
-  timedSyllables(mainTrack(lines[0]))[1].transliteration = "sesang";
-  timedSyllables(backgroundTrack(lines[0]))[0].transliteration = "oh";
-  lines[0].transliteration = {
-    language: "ko-Latn",
-    text: "annyeong sesang",
-    backgroundText: "oh",
-    segments: [{ original: "안녕 세상", transliteration: "annyeong sesang" }],
-    backgroundSegments: [{ original: "오", transliteration: "oh" }],
-    origin: "manual",
-    sourceFingerprint: "preview-background-fixture",
-  };
-  lines[0].translations = {
-    en: {
-      language: "en",
-      text: "Hello world",
-      backgroundText: "Oh",
+  const [annyeong, sesang] = timedSyllables(mainTrack(lines[0]));
+  const [oh] = timedSyllables(backgroundTrack(lines[0]));
+  lines[0] = legacyLine({
+    ...lines[0],
+    words: [
+      { ...annyeong, transliteration: "annyeong" },
+      { ...sesang, transliteration: "sesang" },
+    ],
+    backgroundWords: [{ ...oh, transliteration: "oh" }],
+    transliteration: {
+      language: "ko-Latn",
+      text: "annyeong sesang",
+      backgroundText: "oh",
+      segments: [{ original: "안녕 세상", transliteration: "annyeong sesang" }],
+      backgroundSegments: [{ original: "오", transliteration: "oh" }],
       origin: "manual",
       sourceFingerprint: "preview-background-fixture",
     },
-  };
+    translations: {
+      en: {
+        language: "en",
+        text: "Hello world",
+        backgroundText: "Oh",
+        origin: "manual",
+        sourceFingerprint: "preview-background-fixture",
+      },
+    },
+  });
 
   const { metadata, agents } = useProjectStore.getState();
   return generateTTML({ metadata, agents, lines, groups: [] });
@@ -163,24 +175,28 @@ function buildMatchingAlternateLanguageTtml(): string {
       ],
     }),
   ];
-  for (const [index, word] of timedSyllables(mainTrack(lines[0])).entries()) {
-    word.transliteration = index === 0 ? "Same," : "LINE!";
-  }
-  lines[0].transliteration = {
-    language: "en-Latn",
-    text: "Same, LINE!",
-    segments: [{ original: "same line", transliteration: "Same, LINE!" }],
-    origin: "manual",
-    sourceFingerprint: "matching-preview-fixture",
-  };
-  lines[0].translations = {
-    en: {
-      language: "en",
-      text: "SAME, LINE!",
+  lines[0] = legacyLine({
+    ...lines[0],
+    words: timedSyllables(mainTrack(lines[0])).map((word, index) => ({
+      ...word,
+      transliteration: index === 0 ? "Same," : "LINE!",
+    })),
+    transliteration: {
+      language: "en-Latn",
+      text: "Same, LINE!",
+      segments: [{ original: "same line", transliteration: "Same, LINE!" }],
       origin: "manual",
       sourceFingerprint: "matching-preview-fixture",
     },
-  };
+    translations: {
+      en: {
+        language: "en",
+        text: "SAME, LINE!",
+        origin: "manual",
+        sourceFingerprint: "matching-preview-fixture",
+      },
+    },
+  });
 
   const { metadata, agents } = useProjectStore.getState();
   return generateTTML({

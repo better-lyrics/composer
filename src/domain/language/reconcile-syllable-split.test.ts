@@ -1,21 +1,69 @@
 import { describe, expect, it } from "vitest";
 import { planTransliterationAlignment } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { TransliterationTrack } from "@/domain/language/model";
+import { positionalPieces, withoutPieces } from "@/domain/language/pieces";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
+  type WordSplitResult,
 } from "@/domain/language/reconcile-syllable-split";
+import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { WordTrack } from "@/domain/line/tracks";
 import { newWordId } from "@/domain/word/id";
 import { createWords } from "@/test/factories";
+import {
+  type LegacyWord,
+  legacyLanguages,
+  legacyLine,
+  legacyWords,
+  piecesOfLegacyWords,
+} from "@/test/legacy-languages";
+import { isStructurallyEqual } from "@/utils/structural-equal";
+
+// -- Helpers ------------------------------------------------------------------
+
+interface LegacySplit {
+  words: LegacyWord[];
+  /** The track the split rewrote, or null when it left the track as it was. */
+  transliteration: V3TransliterationTrack | null;
+}
+
+function asLegacySplit(line: LyricLine, type: WordTrack, result: WordSplitResult | null): LegacySplit | null {
+  if (!result) return null;
+  const before = line.languages?.transliteration;
+  const after = result.languages?.transliteration;
+  const rewritten = after && !(before && isStructurallyEqual(withoutPieces(before), withoutPieces(after)));
+  return {
+    words: legacyWords(result.words, result.languages, type === "word" ? "main" : "bg") ?? [],
+    transliteration: rewritten ? (legacyLanguages(result.languages).transliteration ?? null) : null,
+  };
+}
+
+function splitKeeping(line: LyricLine, type: WordTrack, index: number, replacements: LegacyWord[]) {
+  const { words, pieces } = piecesOfLegacyWords(replacements);
+  return asLegacySplit(
+    line,
+    type,
+    splitWordsKeepingTransliteration(line, type, index, words, positionalPieces(words, pieces)),
+  );
+}
+
+function splitIntoWordsKeeping(line: LyricLine, type: WordTrack, index: number, replacements: LegacyWord[]) {
+  const { words, pieces } = piecesOfLegacyWords(replacements);
+  return asLegacySplit(
+    line,
+    type,
+    splitWordIntoWordsKeepingTransliteration(line, type, index, words, "|", positionalPieces(words, pieces)),
+  );
+}
 
 // -- Fixtures -----------------------------------------------------------------
 
-const track: TransliterationTrack = {
+const track: V3TransliterationTrack = {
   language: "ko-Latn",
   text: "Uh  ildan eun  na",
   segments: [{ original: "Uh 일단은 나", transliteration: "Uh  ildan eun  na" }],
@@ -39,7 +87,7 @@ const ILDAN_SPLIT = [
 
 function koreanLine(pieces: [string?, string?, string?] = []): LyricLine {
   const [first, second, third] = pieces;
-  return {
+  return legacyLine({
     id: "line",
     agentId: "v1",
     text: "Uh 일단은 나",
@@ -56,7 +104,7 @@ function koreanLine(pieces: [string?, string?, string?] = []): LyricLine {
       { id: "w-na", text: "나", sep: "", begin: 1.5, end: 2, ...(third ? { transliteration: third } : {}) },
     ]),
     transliteration: track,
-  };
+  });
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -65,7 +113,7 @@ describe("splitWordsKeepingTransliteration", () => {
   it("writes manually selected timing boundaries back to the canonical transliteration", () => {
     const line = koreanLine(["Uh", "ildan eun", "na"]);
 
-    const result = splitWordsKeepingTransliteration(line, "word", 1, [
+    const result = splitKeeping(line, "word", 1, [
       {
         id: "w3",
         text: "일",
@@ -98,7 +146,7 @@ describe("splitWordsKeepingTransliteration", () => {
   });
 
   it("rebuilds the whole syllable group when an existing syllable is split again", () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "line",
       agentId: "v1",
       text: "일|단은",
@@ -107,9 +155,9 @@ describe("splitWordsKeepingTransliteration", () => {
         { id: "w7", text: "단은", sep: "", begin: 0.5, end: 1, transliteration: "daneun", joinsNext: false },
       ],
       transliteration: { ...track, text: "il daneun" },
-    };
+    });
 
-    const result = splitWordsKeepingTransliteration(line, "word", 0, [
+    const result = splitKeeping(line, "word", 0, [
       {
         id: "w8",
         text: "ㅇ",
@@ -128,7 +176,7 @@ describe("splitWordsKeepingTransliteration", () => {
 
   describe("regressions", () => {
     it("regression: an unpaired split never duplicates the piece into the track (#283)", () => {
-      const result = splitWordsKeepingTransliteration(koreanLine(), "word", 1, [
+      const result = splitKeeping(koreanLine(), "word", 1, [
         { id: "w10", text: "일", sep: "", begin: 0.5, end: 0.8, transliteration: "ildan eun", joinsNext: true },
         { id: "w11", text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "ildan eun", joinsNext: false },
       ]);
@@ -138,14 +186,14 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("regression: keeps the user's split when stored words lost their pieces (#283)", () => {
-      const result = splitWordsKeepingTransliteration(koreanLine(), "word", 1, ILDAN_SPLIT);
+      const result = splitKeeping(koreanLine(), "word", 1, ILDAN_SPLIT);
 
       expect(result?.words.map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
       expect(result?.transliteration?.text).toBe("Uh  ildan eun  na");
     });
 
     it("regression: ignores stale stored pieces that no longer match the track (#283)", () => {
-      const result = splitWordsKeepingTransliteration(koreanLine(["Oh", "ildaneun", "nah"]), "word", 0, [
+      const result = splitKeeping(koreanLine(["Oh", "ildaneun", "nah"]), "word", 0, [
         {
           id: "w12",
           text: "U",
@@ -166,7 +214,7 @@ describe("splitWordsKeepingTransliteration", () => {
 
   describe("invariants", () => {
     it("never upgrades a guessed alignment to confirmed", () => {
-      const line: LyricLine = {
+      const line: LyricLine = legacyLine({
         id: "line",
         agentId: "v1",
         text: "붙어있던",
@@ -176,12 +224,12 @@ describe("splitWordsKeepingTransliteration", () => {
           { id: "w16", text: "있던", sep: "", begin: 2, end: 3, joinsNext: false },
         ],
         transliteration: { ...track, text: "but eoissdeon", alignmentStatus: "confirmed" },
-      };
-      expect(planTransliterationAlignment(timedSyllables(mainTrack(line)) ?? [], "but eoissdeon").status).toBe(
-        "needs-review",
-      );
+      });
+      expect(
+        planTransliterationAlignment(timedSyllables(mainTrack(line)) ?? [], undefined, "but eoissdeon").status,
+      ).toBe("needs-review");
 
-      const result = splitWordsKeepingTransliteration(line, "word", 2, [
+      const result = splitKeeping(line, "word", 2, [
         {
           id: "w17",
           text: "있",
@@ -200,13 +248,13 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("keeps the base alignment status of an exact mapping", () => {
-      const result = splitWordsKeepingTransliteration(koreanLine(), "word", 1, ILDAN_SPLIT);
+      const result = splitKeeping(koreanLine(), "word", 1, ILDAN_SPLIT);
       expect(result?.transliteration?.alignmentStatus).toBe("inferred");
     });
 
     it("drops the stale flag and keeps the rest of the track", () => {
-      const line = { ...koreanLine(), transliteration: { ...track, stale: true } };
-      const result = splitWordsKeepingTransliteration(line, "word", 1, ILDAN_SPLIT);
+      const line = legacyLine({ ...koreanLine(), transliteration: { ...track, stale: true } });
+      const result = splitKeeping(line, "word", 1, ILDAN_SPLIT);
       expect(result?.transliteration).not.toHaveProperty("stale");
       expect(result?.transliteration?.language).toBe("ko-Latn");
       expect(result?.transliteration?.sourceFingerprint).toBe("source");
@@ -217,7 +265,7 @@ describe("splitWordsKeepingTransliteration", () => {
       const lineBefore = structuredClone(line);
       const replacementsBefore = structuredClone(ILDAN_SPLIT);
 
-      splitWordsKeepingTransliteration(line, "word", 1, ILDAN_SPLIT);
+      splitKeeping(line, "word", 1, ILDAN_SPLIT);
 
       expect(line).toEqual(lineBefore);
       expect(ILDAN_SPLIT).toEqual(replacementsBefore);
@@ -226,7 +274,7 @@ describe("splitWordsKeepingTransliteration", () => {
 
   describe("edge cases", () => {
     it("returns no track change when a replacement has no piece", () => {
-      const line: LyricLine = {
+      const line: LyricLine = legacyLine({
         id: "line",
         agentId: "v1",
         text: "일단은",
@@ -234,9 +282,9 @@ describe("splitWordsKeepingTransliteration", () => {
           { id: "w19", text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun", joinsNext: false },
         ],
         transliteration: { ...track, text: "ildan eun" },
-      };
+      });
 
-      const result = splitWordsKeepingTransliteration(line, "word", 0, [
+      const result = splitKeeping(line, "word", 0, [
         { id: "w20", text: "일", sep: "", begin: 0, end: 0.5, transliteration: "il", joinsNext: true },
         { id: "w21", text: "단은", sep: "", begin: 0.5, end: 1, joinsNext: false },
       ]);
@@ -246,9 +294,9 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("splits a line without a transliteration track", () => {
-      const { transliteration: _track, ...line } = koreanLine();
+      const { languages: _languages, ...line } = koreanLine();
 
-      const result = splitWordsKeepingTransliteration(line, "word", 1, [
+      const result = splitKeeping(line, "word", 1, [
         { id: "w22", text: "일", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
         { id: "w23", text: "단은", sep: " ", begin: 0.8, end: 1.5, joinsNext: false },
       ]);
@@ -259,16 +307,16 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("splits a line-synced line through its effective word", () => {
-      const line: LyricLine = {
+      const line: LyricLine = legacyLine({
         id: "line",
         agentId: "v1",
         text: "일단은",
         begin: 0,
         end: 1,
         transliteration: { ...track, text: "ildan eun" },
-      };
+      });
 
-      const result = splitWordsKeepingTransliteration(line, "word", 0, [
+      const result = splitKeeping(line, "word", 0, [
         {
           id: "w24",
           text: "일",
@@ -287,18 +335,21 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("regression: a multi-word line-synced line keeps every word of its transliteration (#296)", () => {
-      const line: LyricLine = {
+      const line: LyricLine = legacyLine({
         id: "line",
         agentId: "v1",
         text: "일단은 나",
         begin: 0,
         end: 1,
         transliteration: { ...track, text: "ildan eun  na" },
-      };
+      });
 
-      expect(timedSyllables(mainTrack(getEffectiveLines([line])[0]))[0].transliteration).toBe("ildan eun  na");
+      const effective = getEffectiveLines([line])[0];
+      expect(legacyWords(timedSyllables(mainTrack(effective)), effective.languages)?.[0].transliteration).toBe(
+        "ildan eun  na",
+      );
 
-      const result = splitWordsKeepingTransliteration(line, "word", 0, [
+      const result = splitKeeping(line, "word", 0, [
         {
           id: "w26",
           text: "일",
@@ -325,7 +376,7 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("splits the background track and writes backgroundText", () => {
-      const line: LyricLine = {
+      const line: LyricLine = legacyLine({
         ...koreanLine(),
         backgroundText: "그래 yeah",
         backgroundWords: [
@@ -338,9 +389,9 @@ describe("splitWordsKeepingTransliteration", () => {
           backgroundSegments: [{ original: "그래 yeah", transliteration: "geurae  yeah" }],
           backgroundAlignmentStatus: "confirmed",
         },
-      };
+      });
 
-      const result = splitWordsKeepingTransliteration(line, "bg", 0, [
+      const result = splitKeeping(line, "bg", 0, [
         {
           id: "w30",
           text: "그",
@@ -366,16 +417,16 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("returns null for a line with no words on that track", () => {
-      const untimed: LyricLine = { id: "line", agentId: "v1", text: "일단은", transliteration: track };
-      expect(splitWordsKeepingTransliteration(untimed, "word", 0, ILDAN_SPLIT)).toBeNull();
-      expect(splitWordsKeepingTransliteration(koreanLine(), "bg", 0, ILDAN_SPLIT)).toBeNull();
+      const untimed: LyricLine = legacyLine({ id: "line", agentId: "v1", text: "일단은", transliteration: track });
+      expect(splitKeeping(untimed, "word", 0, ILDAN_SPLIT)).toBeNull();
+      expect(splitKeeping(koreanLine(), "bg", 0, ILDAN_SPLIT)).toBeNull();
     });
   });
 });
 
 describe("splitWordIntoWordsKeepingTransliteration", () => {
   function line(sourceFingerprint: string): LyricLine {
-    return {
+    return legacyLine({
       id: "line",
       agentId: "v1",
       text: "хорошо",
@@ -390,7 +441,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
         sourceFingerprint,
         alignmentStatus: "confirmed",
       },
-    };
+    });
   }
   const pieces = [
     {
@@ -407,13 +458,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
   ];
 
   it("re-stamps the track against the split text", () => {
-    const result = splitWordIntoWordsKeepingTransliteration(
-      line(languageSourceFingerprint("хорошо")),
-      "word",
-      0,
-      pieces,
-      "|",
-    )?.transliteration;
+    const result = splitIntoWordsKeeping(line(languageSourceFingerprint("хорошо")), "word", 0, pieces)?.transliteration;
 
     expect(result?.text).toBe("khorosho");
     expect(result?.segments).toEqual([{ original: "хор ошо", transliteration: "khorosho" }]);
@@ -422,20 +467,14 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
 
   it("re-stamps the track of a line-timed line, whose words are derived", () => {
     const { words: _words, ...lineTimed } = line(languageSourceFingerprint("хорошо"));
-    const result = splitWordIntoWordsKeepingTransliteration(
-      { ...lineTimed, begin: 0, end: 1 },
-      "word",
-      0,
-      pieces,
-      "|",
-    )?.transliteration;
+    const result = splitIntoWordsKeeping({ ...lineTimed, begin: 0, end: 1 }, "word", 0, pieces)?.transliteration;
 
     expect(result?.text).toBe("khorosho");
     expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
   });
 
   it("keeps the other words' transliteration when one word of a line is split", () => {
-    const multiWord: LyricLine = {
+    const multiWord: LyricLine = legacyLine({
       id: "line",
       agentId: "v1",
       text: "да хорошо",
@@ -450,26 +489,20 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
         origin: "manual",
         sourceFingerprint: languageSourceFingerprint("да хорошо"),
       },
-    };
-    const result = splitWordIntoWordsKeepingTransliteration(
-      multiWord,
-      "word",
-      1,
-      [
-        {
-          id: "w36",
-          text: "хор",
-          sep: " ",
-          begin: 0.5,
-          end: 0.75,
-          transliteration: "khor",
-          transliterationJoinerAfter: "",
-          joinsNext: false,
-        },
-        { id: "w37", text: "ошо", sep: "", begin: 0.75, end: 1, transliteration: "osho", joinsNext: false },
-      ],
-      "|",
-    )?.transliteration;
+    });
+    const result = splitIntoWordsKeeping(multiWord, "word", 1, [
+      {
+        id: "w36",
+        text: "хор",
+        sep: " ",
+        begin: 0.5,
+        end: 0.75,
+        transliteration: "khor",
+        transliterationJoinerAfter: "",
+        joinsNext: false,
+      },
+      { id: "w37", text: "ошо", sep: "", begin: 0.75, end: 1, transliteration: "osho", joinsNext: false },
+    ])?.transliteration;
 
     expect(result?.text).toBe("da  khorosho");
     expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("да хор ошо"));
@@ -477,15 +510,14 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
 
   it("keeps the track's origin", () => {
     const google = line(languageSourceFingerprint("хорошо"));
-    google.transliteration!.origin = "google";
+    const googleTrack = google.languages?.transliteration;
+    if (googleTrack) googleTrack.origin = "google";
 
-    expect(splitWordIntoWordsKeepingTransliteration(google, "word", 0, pieces, "|")?.transliteration?.origin).toBe(
-      "google",
-    );
+    expect(splitIntoWordsKeeping(google, "word", 0, pieces)?.transliteration?.origin).toBe("google");
   });
 
   it("re-stamps a background-only track when the main words are split", () => {
-    const backgroundOnly: LyricLine = {
+    const backgroundOnly: LyricLine = legacyLine({
       id: "line",
       agentId: "v1",
       text: "everyday",
@@ -499,24 +531,18 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
         origin: "manual",
         sourceFingerprint: languageSourceFingerprint("everyday", "привет"),
       },
-    };
-    const result = splitWordIntoWordsKeepingTransliteration(
-      backgroundOnly,
-      "word",
-      0,
-      [
-        { id: "w39", text: "every", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-        { id: "w40", text: "day", sep: "", begin: 0.5, end: 1, joinsNext: false },
-      ],
-      "|",
-    )?.transliteration;
+    });
+    const result = splitIntoWordsKeeping(backgroundOnly, "word", 0, [
+      { id: "w39", text: "every", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { id: "w40", text: "day", sep: "", begin: 0.5, end: 1, joinsNext: false },
+    ])?.transliteration;
 
     expect(result).toMatchObject({ text: "", backgroundText: "privet", origin: "manual" });
     expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("every day", "привет"));
   });
 
   it("rewrites the background side when a background word is split", () => {
-    const background: LyricLine = {
+    const background: LyricLine = legacyLine({
       id: "line",
       agentId: "v1",
       text: "da",
@@ -532,8 +558,8 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
         origin: "manual",
         sourceFingerprint: languageSourceFingerprint("da", "хорошо"),
       },
-    };
-    const result = splitWordIntoWordsKeepingTransliteration(background, "bg", 0, pieces, "|")?.transliteration;
+    });
+    const result = splitIntoWordsKeeping(background, "bg", 0, pieces)?.transliteration;
 
     expect(result).toMatchObject({ text: "da", backgroundText: "khorosho" });
     expect(result?.backgroundSegments).toEqual([{ original: "хор ошо", transliteration: "khorosho" }]);
@@ -541,13 +567,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
   });
 
   it("keeps an already out-of-date track flagged for review", () => {
-    const result = splitWordIntoWordsKeepingTransliteration(
-      line("older source"),
-      "word",
-      0,
-      pieces,
-      "|",
-    )?.transliteration;
+    const result = splitIntoWordsKeeping(line("older source"), "word", 0, pieces)?.transliteration;
 
     expect(result?.sourceFingerprint).toBe("older source");
   });

@@ -45,8 +45,8 @@ describe("parseTtml · line keys", () => {
           '<text for="L1">Bravo es</text>',
         ),
       );
-      expect(parsed.lines[0]?.translations?.es?.text).toBe("Bravo es");
-      expect(parsed.lines[1]?.translations).toBeUndefined();
+      expect(parsed.lines[0]?.languages?.translations?.es?.main.text).toBe("Bravo es");
+      expect(parsed.lines[1]?.languages?.translations).toBeUndefined();
       expect(parsed.lineKeys).toEqual(["L1", "L1"]);
     });
   });

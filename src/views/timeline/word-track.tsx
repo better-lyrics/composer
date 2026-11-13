@@ -1,4 +1,6 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import type { LanguagePieces } from "@/domain/language/model";
+import { pieceOf } from "@/domain/language/pieces";
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { insertWord } from "@/domain/commands/word-structure";
 import { isAddressed } from "@/domain/selection/identity";
@@ -30,6 +32,7 @@ interface WordTrackProps {
   lineId: string;
   lineIndex: number;
   words: WordTiming[];
+  pieces?: LanguagePieces;
   color: string;
   trackType: "word" | "bg";
   duration: number;
@@ -43,6 +46,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   lineId,
   lineIndex,
   words,
+  pieces,
   color,
   trackType,
   duration,
@@ -235,8 +239,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
             text={
               textVariant === "transliteration"
                 ? timedTransliterationSlice({
-                    text: word.transliteration || word.text + word.sep,
-                    joinerAfter: wordIndex < words.length - 1 ? word.transliterationJoinerAfter : undefined,
+                    text: pieceOf(pieces, word)?.text || word.text + word.sep,
+                    joinerAfter: wordIndex < words.length - 1 ? pieceOf(pieces, word)?.joinerAfter : undefined,
                   }).text
                 : word.text + word.sep
             }

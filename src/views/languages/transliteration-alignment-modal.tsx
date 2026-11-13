@@ -1,5 +1,8 @@
 import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { planTransliterationAlignment } from "@/domain/language/align";
+import { lineTransliteration } from "@/domain/language/line-languages";
+import type { LanguagePiece, LanguagePieces } from "@/domain/language/model";
+import { keyedPieces, pieceOf, positionalPieces } from "@/domain/language/pieces";
 import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import { spacedText } from "@/domain/word/spaced-words";
@@ -28,19 +31,20 @@ interface TransliterationAlignmentModalProps {
 
 // -- Helpers ------------------------------------------------------------------
 
-function groupReading(words: WordTiming[]): string {
+function groupReading(words: WordTiming[], pieces: LanguagePieces | undefined): string {
   return words
-    .map(
-      (word, index) =>
-        `${word.transliteration ?? ""}${index < words.length - 1 ? (word.transliterationJoinerAfter ?? "") : ""}`,
-    )
+    .map((word, index) => {
+      const piece = pieceOf(pieces, word);
+      return `${piece?.text ?? ""}${index < words.length - 1 ? (piece?.joinerAfter ?? "") : ""}`;
+    })
     .join("");
 }
 
-function groupBoundaryPoints(words: WordTiming[]): number[] {
+function groupBoundaryPoints(words: WordTiming[], pieces: LanguagePieces | undefined): number[] {
   let offset = 0;
   return words.slice(0, -1).map((word) => {
-    offset += (word.transliteration ?? "").length + (word.transliterationJoinerAfter?.length ?? 0);
+    const piece = pieceOf(pieces, word);
+    offset += (piece?.text ?? "").length + (piece?.joinerAfter?.length ?? 0);
     return offset;
   });
 }
@@ -48,12 +52,18 @@ function groupBoundaryPoints(words: WordTiming[]): number[] {
 // -- Component ----------------------------------------------------------------
 
 const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps> = ({ line, field, onClose }) => {
-  const track = line.transliteration;
-  const canonicalText = field === "words" ? track?.text : track?.backgroundText;
+  const track = lineTransliteration(line);
+  const side = field === "words" ? "main" : "bg";
+  const canonicalText = track?.[side]?.text;
+  const sourcePieces = track?.[side]?.pieces;
   const sourceWords = line[field];
-  const plannedWords = useMemo(
-    () => (sourceWords && canonicalText ? planTransliterationAlignment(sourceWords, canonicalText).words : []),
-    [canonicalText, sourceWords],
+  const plannedWords = useMemo(() => (sourceWords && canonicalText ? sourceWords : []), [canonicalText, sourceWords]);
+  const plannedPieces = useMemo(
+    () =>
+      sourceWords && canonicalText
+        ? planTransliterationAlignment(sourceWords, sourcePieces, canonicalText).pieces
+        : undefined,
+    [canonicalText, sourcePieces, sourceWords],
   );
   const groups = useMemo(() => timingLexicalWordGroups(plannedWords), [plannedWords]);
   const [groupIndex, setGroupIndex] = useState(() =>
@@ -62,9 +72,11 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
       groups.findIndex((group) => group.words.length > 1),
     ),
   );
-  const [pointsByGroup, setPointsByGroup] = useState(() => groups.map((group) => groupBoundaryPoints(group.words)));
+  const [pointsByGroup, setPointsByGroup] = useState(() =>
+    groups.map((group) => groupBoundaryPoints(group.words, plannedPieces)),
+  );
   const group = groups[groupIndex];
-  const reading = group ? groupReading(group.words) : "";
+  const reading = group ? groupReading(group.words, plannedPieces) : "";
   const points = pointsByGroup[groupIndex] ?? [];
   const required = Math.max(0, (group?.words.length ?? 1) - 1);
   const slices = splitTransliterationAtBoundaries(reading, points, { preserveEdgeDashes: true });
@@ -94,29 +106,29 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
 
   const save = () => {
     if (!track || !sourceWords || !allValid) return;
-    const nextWords = plannedWords.slice();
+    const nextPieces: (LanguagePiece | undefined)[] = [...positionalPieces(plannedWords, plannedPieces)];
     for (let index = 0; index < groups.length; index++) {
       const current = groups[index];
-      const currentReading = groupReading(current.words);
+      const currentReading = groupReading(current.words, plannedPieces);
       const currentSlices = splitTransliterationAtBoundaries(currentReading, pointsByGroup[index] ?? [], {
         preserveEdgeDashes: true,
       });
-      const outerJoiner = current.words[current.words.length - 1]?.transliterationJoinerAfter;
+      const outerJoiner = pieceOf(plannedPieces, current.words[current.words.length - 1])?.joinerAfter;
       for (let offset = 0; offset < current.words.length; offset++) {
-        const wordIndex = current.startIndex + offset;
         const slice = currentSlices[offset];
-        nextWords[wordIndex] = {
-          ...nextWords[wordIndex],
-          transliteration: slice?.text ?? "",
+        nextPieces[current.startIndex + offset] = {
+          text: slice?.text ?? "",
           ...(offset < current.words.length - 1
-            ? { transliterationJoinerAfter: slice?.joinerAfter ?? "" }
+            ? { joinerAfter: slice?.joinerAfter ?? "" }
             : outerJoiner !== undefined
-              ? { transliterationJoinerAfter: outerJoiner }
+              ? { joinerAfter: outerJoiner }
               : {}),
         };
       }
     }
-    useProjectStore.getState().commit(saveTransliterationAlignment(line.id, field, nextWords));
+    useProjectStore
+      .getState()
+      .commit(saveTransliterationAlignment(line.id, field, keyedPieces(plannedWords, nextPieces)));
     onClose();
   };
 
@@ -169,7 +181,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
             slices={slices}
             trailingJoiner={
               group.startIndex + group.words.length < plannedWords.length
-                ? group.words.at(-1)?.transliterationJoinerAfter
+                ? pieceOf(plannedPieces, group.words[group.words.length - 1])?.joinerAfter
                 : undefined
             }
           />

@@ -8,6 +8,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { assignBinding } from "@/stores/shortcut-bindings";
 import { snapPoints } from "@/test/factories";
 import { createLine } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
@@ -117,7 +118,7 @@ describe("useTimelineKeyboard", () => {
   });
 
   it("toggles original and transliteration labels when L is pressed", async () => {
-    const line = {
+    const line = legacyLine({
       ...createLine({ text: "일단은" }),
       transliteration: {
         language: "ko-Latn",
@@ -126,7 +127,7 @@ describe("useTimelineKeyboard", () => {
         origin: "google" as const,
         sourceFingerprint: "source",
       },
-    };
+    });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({ textVariant: "original" });
     const scrollContainerRef = createRef<HTMLDivElement | null>();

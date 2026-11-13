@@ -110,12 +110,13 @@ describe("getEffectiveLines timing source", () => {
         id: "t",
         text: "Привет",
         words: [{ id: "w4", text: "Привет", sep: "", begin: 6, end: 7, joinsNext: false }],
-        transliteration: {
-          language: "ru-Latn",
-          text: "privet",
-          segments: [],
-          origin: "manual",
-          sourceFingerprint: languageSourceFingerprint("Привет"),
+        languages: {
+          transliteration: {
+            language: "ru-Latn",
+            main: { text: "privet", segments: [] },
+            origin: "manual",
+            sourceFingerprint: languageSourceFingerprint("Привет"),
+          },
         },
       }),
     ];

@@ -23,7 +23,7 @@ import {
 } from "@/lib/project-restore";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { getSaveStatus } from "@/lib/save-status";
-import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -39,12 +39,13 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 const TRANSLITERATED_LINE: LyricLine = {
   ...createLine({ text: "今日" }),
-  transliteration: {
-    language: "ja-Latn",
-    text: "kyou",
-    segments: [{ original: "今日", transliteration: "kyou" }],
-    origin: "manual",
-    sourceFingerprint: "test",
+  languages: {
+    transliteration: {
+      language: "ja-Latn",
+      main: { text: "kyou", segments: [{ original: "今日", transliteration: "kyou" }] },
+      origin: "manual",
+      sourceFingerprint: "test",
+    },
   },
 };
 
@@ -78,7 +79,7 @@ describe("project-restore", () => {
   });
 
   it("restores the project's Original or Transliteration choice", async () => {
-    await seedStoredProject("p1", { project: { lines: [TRANSLITERATED_LINE] } });
+    await seedStoredProject("p1", { project: { lines: savedLines([TRANSLITERATED_LINE]) } });
     await setProjectTextVariant("p1", "transliteration");
     applyProjectToStores(await loadProjectForRestore("p1"));
     expect(useTimelineStore.getState().textVariant).toBe("transliteration");
@@ -246,7 +247,10 @@ describe("project-restore", () => {
     });
 
     it("switching to Transliteration remembers it for the open project without saving the record", async () => {
-      await seedStoredProject("p1", { open: true, project: { savedAt: 333, lines: [TRANSLITERATED_LINE] } });
+      await seedStoredProject("p1", {
+        open: true,
+        project: { savedAt: 333, lines: savedLines([TRANSLITERATED_LINE]) },
+      });
       await render(<PersistenceHost />);
       await getPersistenceSettled();
       useTimelineStore.getState().toggleTextVariant();

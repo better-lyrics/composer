@@ -5,8 +5,9 @@ import { setLanguageFields } from "@/domain/commands/languages";
 import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
 import { manualSegments } from "@/domain/language/manual-segments";
-import type { TranslationTrack } from "@/domain/language/model";
+import type { LineLanguage } from "@/domain/language/model";
 import {
   alignmentNeedsReview,
   getLanguageReviewTracks,
@@ -51,21 +52,16 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
     (error) => error.field === "background-transliteration",
   )?.message;
   const hasAlignmentError = alignmentErrors.length > 0;
-  const transliterationStale = line.transliteration
-    ? isTransliterationSourceStale(line, "words") || alignmentNeedsReview(line.transliteration, "main")
+  const transliteration = lineTransliteration(line);
+  const transliterationStale = transliteration
+    ? isTransliterationSourceStale(line, "words") || alignmentNeedsReview(transliteration, "main")
     : false;
   const canAlignMain = Boolean(
-    timedSyllables(mainTrack(line)).length && line.transliteration?.text && !transliterationError,
+    timedSyllables(mainTrack(line)).length && transliteration?.main.text && !transliterationError,
   );
   const update = (updates: Partial<LyricLine>) =>
     useProjectStore.getState().commit(setLanguageFields(line.id, updates), "pending");
-  const clearTransliteration = () =>
-    update({
-      ...(line.transliteration
-        ? alignTrackToLine(line, { ...line.transliteration, text: "", backgroundText: undefined })
-        : {}),
-      transliteration: undefined,
-    });
+  const clearTransliteration = () => update(withLanguages(line, { transliteration: undefined }));
 
   return (
     <section
@@ -103,7 +99,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
         <Field
           label="Transliteration"
           mono
-          value={line.transliteration?.text ?? ""}
+          value={transliteration?.main.text ?? ""}
           placeholder="Type one, or generate"
           status={transliterationStale ? "review" : undefined}
           error={transliterationError}
@@ -111,23 +107,22 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
           action={
             canAlignMain ? (
               <AlignButton
-                needsReview={alignmentNeedsReview(line.transliteration, "main")}
+                needsReview={alignmentNeedsReview(transliteration, "main")}
                 onClick={() => setAlignmentField("words")}
               />
             ) : null
           }
           onChange={(value) => {
-            if (!value && !line.transliteration?.backgroundText) {
+            const bg = transliteration?.bg;
+            if (!value && !bg?.text) {
               clearTransliteration();
               return;
             }
             update(
               alignTrackToLine(line, {
-                language: line.transliteration?.language ?? `${sourceLanguage || "und"}-Latn`,
-                text: value,
-                backgroundText: line.transliteration?.backgroundText,
-                segments: manualSegments(line, value),
-                backgroundSegments: line.transliteration?.backgroundSegments,
+                language: transliteration?.language ?? `${sourceLanguage || "und"}-Latn`,
+                main: { text: value, segments: manualSegments(line, value) },
+                ...(bg && { bg: { text: bg.text, ...(bg.segments && { segments: bg.segments }) } }),
                 origin: "manual",
                 sourceFingerprint: fingerprint,
               }),
@@ -135,27 +130,27 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
           }}
         />
         {targets.map((language) => {
-          const track = line.translations?.[language];
+          const track = lineTranslations(line)?.[language];
           return (
             <Field
               key={language}
               label={languageNames.get(language) ?? language}
-              value={track?.text ?? ""}
+              value={track?.main.text ?? ""}
               status={track && track.sourceFingerprint !== fingerprint ? "review" : undefined}
               pasteKind="translation"
               pasteLanguage={language}
               onChange={(value) => {
-                const translations = { ...(line.translations ?? {}) };
-                if (value || track?.backgroundText)
+                const translations = { ...(lineTranslations(line) ?? {}) };
+                if (value || track?.bg?.text)
                   translations[language] = {
                     language,
-                    text: value,
-                    backgroundText: track?.backgroundText,
+                    main: { text: value },
+                    ...(track?.bg && { bg: { text: track.bg.text } }),
                     origin: "manual",
                     sourceFingerprint: fingerprint,
-                  } satisfies TranslationTrack;
+                  } satisfies LineLanguage;
                 else delete translations[language];
-                update({ translations });
+                update(withLanguages(line, { translations }));
               }}
             />
           );

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { getLanguageDisplayLine } from "@/domain/language/display";
-import type { LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 
-const line: LyricLine = {
+const line: LyricLine = legacyLine({
   id: "mixed",
   agentId: "v1",
   text: "걸음은 Like a dance",
@@ -21,7 +22,7 @@ const line: LyricLine = {
     origin: "google",
     sourceFingerprint: "test",
   },
-};
+});
 
 describe("language display alignment", () => {
   it("includes literal dashes in untimed Sync labels as well as timed foreground and background slots", () => {
@@ -38,16 +39,16 @@ describe("language display alignment", () => {
       },
       { id: "w6", text: "風", sep: "", begin: 1, end: 2, transliteration: "ra", joinsNext: false },
     ];
-    const dashed: LyricLine = {
+    const dashed: LyricLine = legacyLine({
       ...line,
       text: "空|風",
       words,
       backgroundText: "空|風",
       backgroundWords: words,
-      transliteration: { ...line.transliteration!, text: "so-ra", backgroundText: "so-ra" },
-    };
+      transliteration: { ...legacyLanguages(line.languages).transliteration!, text: "so-ra", backgroundText: "so-ra" },
+    });
     const before = structuredClone(dashed);
-    for (const candidate of [dashed, { ...dashed, words: [], backgroundWords: [] }]) {
+    for (const candidate of [dashed, reconcileLine({ ...dashed, words: [], backgroundWords: [] })]) {
       const display = getLanguageDisplayLine(candidate, "transliteration");
       expect(display.wordTexts).toEqual(["so-", "ra"]);
       expect(display.backgroundWordTexts).toEqual(["so-", "ra"]);
@@ -56,18 +57,23 @@ describe("language display alignment", () => {
   });
 
   it("displays a background-only alternate while retaining the original foreground", () => {
-    const backgroundOnly: LyricLine = {
+    const backgroundOnly: LyricLine = legacyLine({
       ...line,
       text: "Hello",
       words: [{ id: "w7", text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale", joinsNext: false }],
       backgroundText: "空",
       backgroundWords: [{ id: "w8", text: "空", sep: "", begin: 1, end: 2, joinsNext: false }],
-      transliteration: { ...line.transliteration!, text: "", backgroundText: "sora", segments: [] },
-    };
+      transliteration: {
+        ...legacyLanguages(line.languages).transliteration!,
+        text: "",
+        backgroundText: "sora",
+        segments: [],
+      },
+    });
     const display = getLanguageDisplayLine(backgroundOnly, "transliteration");
     expect(display.text).toBe("Hello");
     expect(display.wordTexts).toBeUndefined();
-    expect(display.words?.[0].transliteration).toBeUndefined();
+    expect(legacyWords(display.words, display.languages)?.[0].transliteration).toBeUndefined();
     expect(display.backgroundText).toBe("sora");
     expect(display.backgroundWordTexts).toEqual(["sora"]);
   });
@@ -87,15 +93,15 @@ describe("language display alignment", () => {
   });
 
   it("keeps all labels visible while only the timed prefix has timing", () => {
-    const partial = { ...line, words: timedSyllables(mainTrack(line)).slice(0, 1) } satisfies LyricLine;
+    const partial = reconcileLine({ ...line, words: timedSyllables(mainTrack(line)).slice(0, 1) });
     const display = getLanguageDisplayLine(partial, "transliteration");
     expect(display.wordTexts).toEqual(["geol eum eun", "Like", "a", "dance"]);
     expect(display.words).toHaveLength(1);
-    expect(display.words?.[0].transliteration).toBe("geol eum eun");
+    expect(legacyWords(display.words, display.languages)?.[0].transliteration).toBe("geol eum eun");
   });
 
   it("uses canonical timed-word transliterations when provider segments cannot be realigned", () => {
-    const mismatched: LyricLine = {
+    const mismatched: LyricLine = legacyLine({
       id: "canonical-words",
       agentId: "v1",
       text: "한국 노래",
@@ -110,11 +116,14 @@ describe("language display alignment", () => {
         origin: "import",
         sourceFingerprint: "test",
       },
-    };
+    });
 
     const display = getLanguageDisplayLine(mismatched, "transliteration");
 
     expect(display.wordTexts).toEqual(["hanguk", "norae"]);
-    expect(display.words?.map((word) => word.transliteration)).toEqual(["hanguk", "norae"]);
+    expect(legacyWords(display.words, display.languages)?.map((word) => word.transliteration)).toEqual([
+      "hanguk",
+      "norae",
+    ]);
   });
 });

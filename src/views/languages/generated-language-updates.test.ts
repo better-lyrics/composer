@@ -4,10 +4,12 @@ import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
+import { type LegacyLine, legacyLanguages, legacyLine, legacyView, legacyWords } from "@/test/legacy-languages";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
 
 function sourceLine(): LyricLine {
-  return {
+  return legacyLine({
     id: "line",
     agentId: "v1",
     text: "Hello",
@@ -34,7 +36,18 @@ function sourceLine(): LyricLine {
         sourceFingerprint: "older source",
       },
     },
-  };
+  });
+}
+
+function changedParts(line: LyricLine, updates: Partial<LyricLine>): Partial<LegacyLine> {
+  if (!("languages" in updates)) return {};
+  const before = legacyView(line);
+  const after = legacyView({ ...line, languages: updates.languages });
+  const parts: Partial<LegacyLine> = {};
+  for (const key of ["transliteration", "translations", "words", "backgroundWords"] as const) {
+    if (!isStructurallyEqual(after[key], before[key])) Object.assign(parts, { [key]: after[key] });
+  }
+  return parts;
 }
 
 function roman(text: string | null, failed = false): Map<string, TransliterationLineResult> {
@@ -66,18 +79,18 @@ describe("generated language updates", () => {
         ],
       });
 
-      expect(updates).not.toHaveProperty("transliteration");
-      expect(updates).not.toHaveProperty("words");
-      expect(updates).not.toHaveProperty("backgroundWords");
-      expect(updates.translations?.en).toBe(line.translations?.en);
-      expect(updates.translations?.es.text).toBe("Hola");
+      const parts = changedParts(line, updates);
+      expect(parts).not.toHaveProperty("transliteration");
+      expect(parts).not.toHaveProperty("words");
+      expect(parts).not.toHaveProperty("backgroundWords");
+      expect(updates.languages?.translations?.en).toBe(line.languages?.translations?.en);
+      expect(updates.languages?.translations?.es.main.text).toBe("Hola");
     }
   });
 
   it("creates background-only tracks after a successful empty main result", () => {
     const line = sourceLine();
-    line.transliteration = undefined;
-    line.translations = undefined;
+    line.languages = undefined;
     const updates = generatedLanguageUpdates(line, {
       force: false,
       transliteration: {
@@ -89,28 +102,29 @@ describe("generated language updates", () => {
       translations: [{ language: "en", main: translation(null), background: translation("Hello") }],
     });
 
-    expect(updates.transliteration).toMatchObject({
+    expect(changedParts(line, updates).transliteration).toMatchObject({
       language: "ko-Latn",
       text: "",
       backgroundText: "an nyeong",
       origin: "google",
       sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
     });
-    expect(updates.words?.[0]).not.toHaveProperty("transliteration");
-    expect(updates.backgroundWords?.[0].transliteration).toBe("an nyeong");
-    expect(updates.translations?.en).toMatchObject({ text: "", backgroundText: "Hello" });
+    expect(legacyWords(line.words, updates.languages)?.[0]).not.toHaveProperty("transliteration");
+    expect(legacyWords(line.backgroundWords, updates.languages, "bg")?.[0].transliteration).toBe("an nyeong");
+    expect(legacyLanguages(updates.languages).translations?.en).toMatchObject({ text: "", backgroundText: "Hello" });
   });
 
   it("removes obsolete Google transliteration and word mappings on successful empty results", () => {
-    const updates = generatedLanguageUpdates(sourceLine(), {
+    const line = sourceLine();
+    const updates = generatedLanguageUpdates(line, {
       force: false,
       transliteration: { language: "ko-Latn", main: roman(null), background: roman(null) },
       translations: [],
     });
 
-    expect(updates).toHaveProperty("transliteration", undefined);
-    expect(updates.words?.[0]).not.toHaveProperty("transliteration");
-    expect(updates.backgroundWords?.[0]).not.toHaveProperty("transliteration");
+    expect(changedParts(line, updates)).toHaveProperty("transliteration", undefined);
+    expect(legacyWords(line.words, updates.languages)?.[0]).not.toHaveProperty("transliteration");
+    expect(legacyWords(line.backgroundWords, updates.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
   });
 
   it("removes obsolete Google translations on successful empty results", () => {
@@ -119,7 +133,7 @@ describe("generated language updates", () => {
       translations: [{ language: "en", main: translation(null), background: translation(null) }],
     });
 
-    expect(updates.translations).not.toHaveProperty("en");
+    expect(updates.languages?.translations).not.toHaveProperty("en");
   });
 
   it("removes obsolete Google translations for lines that were not sent, such as empty lines", () => {
@@ -128,36 +142,40 @@ describe("generated language updates", () => {
       translations: [{ language: "en", main: new Map(), background: new Map() }],
     });
 
-    expect(updates.translations).not.toHaveProperty("en");
+    expect(updates.languages?.translations).not.toHaveProperty("en");
   });
 
   it("keeps a stale manual translation on successful empty results", () => {
     const line = sourceLine();
-    line.translations!.en.origin = "manual";
+    line.languages!.translations!.en.origin = "manual";
     const updates = generatedLanguageUpdates(line, {
       force: false,
       translations: [{ language: "en", main: translation(null), background: translation(null) }],
     });
 
-    expect(updates.translations?.en).toMatchObject({ text: "old translation", stale: true });
+    expect(legacyLanguages(updates.languages).translations?.en).toMatchObject({ text: "old translation", stale: true });
   });
 
   it("preserves manual tracks unless replacement was requested", () => {
     const line = sourceLine();
-    line.transliteration!.origin = "manual";
-    line.translations!.en.origin = "manual";
+    line.languages!.transliteration!.origin = "manual";
+    line.languages!.translations!.en.origin = "manual";
     const options = {
       transliteration: { language: "ko-Latn", main: roman(null), background: roman("an nyeong") },
       translations: [{ language: "en", main: translation(null), background: translation("Hello") }],
     };
     const preserved = generatedLanguageUpdates(line, { ...options, force: false });
-    expect(preserved.transliteration?.text).toBe("old main");
-    expect(preserved.translations?.en.text).toBe("old translation");
+    expect(preserved.languages?.transliteration?.main.text).toBe("old main");
+    expect(preserved.languages?.translations?.en.main.text).toBe("old translation");
 
     const replaced = generatedLanguageUpdates(line, { ...options, force: true });
-    expect(replaced.transliteration?.text).toBe("");
-    expect(replaced.transliteration?.backgroundText).toBe("an nyeong");
-    expect(replaced.translations?.en).toMatchObject({ text: "", backgroundText: "Hello", origin: "google" });
+    expect(replaced.languages?.transliteration?.main.text).toBe("");
+    expect(replaced.languages?.transliteration?.bg?.text).toBe("an nyeong");
+    expect(legacyLanguages(replaced.languages).translations?.en).toMatchObject({
+      text: "",
+      backgroundText: "Hello",
+      origin: "google",
+    });
   });
 
   describe("regressions", () => {
@@ -173,8 +191,8 @@ describe("generated language updates", () => {
 
     it("regression: leaves a manual track already marked stale untouched when Google has no new text", () => {
       const line = sourceLine();
-      line.translations!.en.origin = "manual";
-      line.translations!.en.stale = true;
+      line.languages!.translations!.en.origin = "manual";
+      line.languages!.translations!.en.stale = true;
       const updates = generatedLanguageUpdates(line, {
         force: false,
         translations: [{ language: "en", main: translation(null), background: translation(null) }],
@@ -198,7 +216,8 @@ describe("generated language updates", () => {
     });
 
     it("regression: returns no update for a line without transliteration when Google has none", () => {
-      const { transliteration: _transliteration, ...line } = sourceLine();
+      const source = sourceLine();
+      const line = { ...source, languages: { translations: source.languages?.translations } };
       const updates = generatedLanguageUpdates(line, {
         force: false,
         transliteration: { language: "en", main: roman(null), background: roman(null) },
