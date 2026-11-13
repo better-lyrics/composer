@@ -109,7 +109,7 @@ function TabStrip<T extends string>({
       <span
         ref={capRef}
         aria-hidden="true"
-        className="absolute top-(--tray-pad) left-0 h-[calc(100%-2*var(--tray-pad))] w-0 rounded-[9px] bg-(--cap) shadow-(--raised-edge) data-placed:transition-[transform,width] data-placed:duration-400 data-placed:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+        className="absolute top-(--tray-pad) left-0 h-[calc(100%-2*var(--tray-pad))] w-0 rounded-[9px] bg-(--cap) shadow-(--raised-edge) data-placed:transition-[transform,width] data-placed:duration-150 data-placed:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
       />
       {tabs.map((tab, index) => {
         const isActive = active === tab.id;
