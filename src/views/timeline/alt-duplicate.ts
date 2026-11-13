@@ -1,7 +1,5 @@
-import { duplicateWords, planDuplicate } from "@/domain/commands/word-moves";
-import type { TimeRange } from "@/domain/group/shared-timing";
+import { duplicateWords } from "@/domain/commands/word-moves";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
 import { toAddress } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import {
@@ -18,13 +16,7 @@ import { toast } from "sonner";
 
 // -- Alt duplicate -------------------------------------------------------------
 
-function handleAltDuplicate(
-  event: DragEndEvent,
-  lines: readonly ReadableLine[],
-  zoom: number,
-  rangeOf: (line: LyricLine) => TimeRange,
-  duration: number,
-) {
+function handleAltDuplicate(event: DragEndEvent, lines: readonly ReadableLine[], zoom: number, duration: number) {
   const { active, delta } = event;
   const activeData = active.data.current as DragData | undefined;
   if (!activeData) return;
@@ -33,12 +25,15 @@ function handleAltDuplicate(
   const { selectedWords } = useTimelineStore.getState();
   const wordsToDuplicate = expandSelectionsAcrossLines(lines, resolveWordsToOperate(lines, activeData, selectedWords));
 
-  const timeDelta = delta.x / zoom;
   const words = resolvedWords(lines, wordsToDuplicate);
-  const plan = planDuplicate(lines, words, timeDelta, rangeOf);
-  if (plan.rejectedLineSynced) toast.error(LINE_SYNCED_REJECT_MESSAGE);
-  if (plan.updates.length === 0) return;
-  useProjectStore.getState().commit(duplicateWords({ addresses: words.map(toAddress), timeDelta, duration }));
+  if (words.length === 0) return;
+  let rejectedLineSynced = false;
+  const command = duplicateWords(
+    { addresses: words.map(toAddress), timeDelta: delta.x / zoom, duration },
+    (plan) => (rejectedLineSynced = plan.rejectedLineSynced),
+  );
+  useProjectStore.getState().commit(command);
+  if (rejectedLineSynced) toast.error(LINE_SYNCED_REJECT_MESSAGE);
 }
 
 // -- Exports -------------------------------------------------------------------

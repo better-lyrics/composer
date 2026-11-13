@@ -1,9 +1,7 @@
-import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { handleAltDuplicate } from "@/views/timeline/alt-duplicate";
 import { hitTestTrack, resolveDropTarget } from "@/views/timeline/drag-end-resolution";
 import {
@@ -102,11 +100,9 @@ function useTimelineDnd(lines: ReadableLine[]) {
       if (!activeData) return;
 
       const { zoom } = useTimelineStore.getState();
-      const { lines: rawLines, groups } = useProjectStore.getState();
-      const rangeOf = timeRangeResolver(rawLines, groups, duration);
 
       if (isAltDrag) {
-        handleAltDuplicate(event, lines, zoom, rangeOf, duration);
+        handleAltDuplicate(event, lines, zoom, duration);
         return;
       }
 

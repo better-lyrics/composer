@@ -13,7 +13,7 @@ import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-acro
 import { boundsOverlap } from "@/domain/word/overlap";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
 import type { WordTiming } from "@/domain/word/timing";
-import { cloneWord, duplicateWord } from "@/utils/word-timing";
+import { cloneWord } from "@/utils/word-timing";
 
 // -- Types --------------------------------------------------------------------
 
@@ -111,7 +111,13 @@ function crossLineMoves(
   });
 }
 
-function duplicatesFor(line: ReadableLine, forLine: readonly ResolvedAddress[], timeDelta: number, range: TimeRange) {
+function duplicatesFor(
+  line: ReadableLine,
+  forLine: readonly ResolvedAddress[],
+  timeDelta: number,
+  range: TimeRange,
+  newId: () => string,
+) {
   const wordDups: WordTiming[] = [];
   const bgDups: WordTiming[] = [];
   for (const selection of forLine) {
@@ -120,7 +126,7 @@ function duplicatesFor(line: ReadableLine, forLine: readonly ResolvedAddress[], 
     const newBegin = Math.max(range.min, word.begin + timeDelta);
     const newEnd = Math.min(range.max, word.end + timeDelta);
     if (newEnd <= newBegin) continue;
-    const dup = duplicateWord(word, { begin: newBegin, end: newEnd });
+    const dup = cloneWord(word, { begin: newBegin, end: newEnd, id: newId() });
     if (selection.type === "word") wordDups.push(dup);
     else bgDups.push(dup);
   }
@@ -138,13 +144,14 @@ function planDuplicate(
   selections: readonly ResolvedAddress[],
   timeDelta: number,
   rangeOf: (line: LyricLine) => TimeRange,
+  newId: () => string,
 ): DuplicatePlan {
   const byId = linesById(lines);
   let rejectedLineSynced = false;
   const updates = [...byLine(selections)].flatMap(([lineId, forLine]) => {
     const line = byId.get(lineId);
     if (!line) return [];
-    const { wordDups, bgDups } = duplicatesFor(line, forLine, timeDelta, rangeOf(line));
+    const { wordDups, bgDups } = duplicatesFor(line, forLine, timeDelta, rangeOf(line), newId);
     const lineUpdates: Partial<LyricLine> = {};
     const existingWords = line.words ?? [];
     if (wordDups.length > 0 && !overlapsAny(wordDups, existingWords)) {
@@ -194,13 +201,16 @@ function moveWordsAcrossLines(args: CrossLineMoveArgs): LyricCommand {
   );
 }
 
-function duplicateWords(args: MoveArgs): LyricCommand {
+// `report` receives the committed plan, so the caller never plans a second time.
+function duplicateWords(args: MoveArgs, report?: (plan: DuplicatePlan) => void): LyricCommand {
   return lineEditCommand(
     { command: "duplicate words", args: [args.timeDelta, ...args.addresses.map((address) => address.syllableId)] },
-    (root) => {
+    (root, ctx) => {
       const lines = getEffectiveLines(root.lines);
       const rangeOf = timeRangeResolver(root.lines, root.groups, args.duration);
-      return planDuplicate(lines, resolveAddresses(lines, args.addresses), args.timeDelta, rangeOf).updates;
+      const plan = planDuplicate(lines, resolveAddresses(lines, args.addresses), args.timeDelta, rangeOf, ctx.newId);
+      report?.(plan);
+      return plan.updates;
     },
     OWN_LINE_ONLY,
   );
@@ -208,4 +218,4 @@ function duplicateWords(args: MoveArgs): LyricCommand {
 
 // -- Exports ------------------------------------------------------------------
 
-export { duplicateWords, moveWords, moveWordsAcrossLines, planDuplicate };
+export { duplicateWords, moveWords, moveWordsAcrossLines };
