@@ -1,7 +1,8 @@
 import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 import { useCallback } from "react";
 import { fillEmptyTrack, insertWord } from "@/domain/commands/word-structure";
-import { trackWords } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
@@ -68,7 +69,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!line) return;
 
     const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-    const existingWords = trackWords(line, type);
+    const existingWords = drawnSyllables(line, trackRole(type));
     const range = storedLineTimeRange(lineId, duration);
     const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, range, minWordDuration);
     if (!slot) {

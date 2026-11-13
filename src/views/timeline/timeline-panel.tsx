@@ -29,7 +29,7 @@ import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { StepViewPublisher } from "@/views/timeline/step-timing/step-next";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
-import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
+import { useTimelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
@@ -83,7 +83,7 @@ const TimelinePanel: React.FC = () => {
   const [rulerMarkerHost, setRulerMarkerHost] = useState<HTMLDivElement | null>(null);
   const openImportModal = useImportModal();
 
-  const effectiveLines = useTimelineEffectiveLines(lines);
+  const drawnLines = useTimelineDrawnLines(lines);
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const timelineShown = !!source && lines.length > 0;
 
@@ -111,7 +111,7 @@ const TimelinePanel: React.FC = () => {
   }, [initOverlayScrollbars, overlayScrollbars, timelineShown]);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
-  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
+  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(drawnLines);
   const dragZoom = useTimelineStore((s) => (activeDrag ? s.zoom : null));
   // DndContext runs the snap modifier only when it renders, so a bypass change during a held drag must re-render it.
   useTimelineStore((s) => activeDrag !== null && s.isBypassing);
@@ -132,8 +132,8 @@ const TimelinePanel: React.FC = () => {
 
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
-  useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
-  useLineRevealRequest(scrollContainerRef, effectiveLines);
+  useTimelineKeyboard(scrollContainerRef, drawnLines, duration, openLyricsModal);
+  useLineRevealRequest(scrollContainerRef, drawnLines);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
   useTimelineWheel(scrollContainerRef, timelineShown);
@@ -168,12 +168,12 @@ const TimelinePanel: React.FC = () => {
 
   const handleAudioDrop = useLoadAudioFile();
 
-  const dragLine = activeDrag ? effectiveLines.find((l) => l.id === activeDrag.lineId) : undefined;
+  const dragLine = activeDrag ? drawnLines.find((l) => l.id === activeDrag.lineId) : undefined;
   const dragColor = activeDrag ? getAgentColor(dragLine ? mainTrack(dragLine).agentId : "") : "#888";
 
   const dragCells = useMemo(
-    () => (activeDrag && dragZoom !== null ? dragGhostCells(activeDrag, dragZoom, effectiveLines) : null),
-    [activeDrag, dragZoom, effectiveLines],
+    () => (activeDrag && dragZoom !== null ? dragGhostCells(activeDrag, dragZoom, drawnLines) : null),
+    [activeDrag, dragZoom, drawnLines],
   );
 
   if (!source) {
@@ -284,7 +284,7 @@ const TimelinePanel: React.FC = () => {
                   <BeatGridCorner />
                   <TimelineWaveform />
 
-                  <StepViewPublisher lines={effectiveLines} />
+                  <StepViewPublisher lines={drawnLines} />
                   <TimelineRows scrollContainerRef={scrollContainerRef} />
                 </div>
 
@@ -333,7 +333,7 @@ const TimelinePanel: React.FC = () => {
         <TimelineDragOverlay>
           {activeDrag && dragCells && (
             <HoverSizedDragGhost
-              lines={effectiveLines}
+              lines={drawnLines}
               cells={dragCells.cells}
               anchorWidth={dragCells.anchorWidth}
               anchorHeight={dragCells.anchorHeight}

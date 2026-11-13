@@ -1,7 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import type { RealignRefusal } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
-import type { RawLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { StepRefusal } from "@/domain/step-timing/step-write";
 import type { MoveRejectReason } from "@/domain/word/move-across-lines";
@@ -9,7 +9,7 @@ import type { MoveRejectReason } from "@/domain/word/move-across-lines";
 // -- Types --------------------------------------------------------------------
 
 interface LyricRoot {
-  lines: RawLine[];
+  lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[];
 }
@@ -46,13 +46,13 @@ function isRefused(outcome: Outcome): outcome is { refused: Refusal } {
   return "refused" in outcome;
 }
 
-function changedLineIds(before: readonly RawLine[], after: readonly RawLine[]): string[] {
+function changedLineIds(before: readonly LyricLine[], after: readonly LyricLine[]): string[] {
   const beforeById = new Map(before.map((line) => [line.id, line]));
   return after.filter((line) => beforeById.get(line.id) !== line).map((line) => line.id);
 }
 
 // Returning the input root unchanged tells commit there is nothing to write.
-function withLines(root: LyricRoot, lines: RawLine[] | null): Outcome {
+function withLines(root: LyricRoot, lines: LyricLine[] | null): Outcome {
   if (!lines || lines === root.lines) return applied(root, []);
   return applied({ ...root, lines }, changedLineIds(root.lines, lines));
 }

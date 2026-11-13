@@ -1,6 +1,5 @@
 import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { withKeptSyllablePieces } from "@/domain/language/pieces";
-import { type ReadableLine, rawLineOf } from "@/domain/line/effective-words";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -79,11 +78,8 @@ function splitTargetsForMenu(target: SplitTarget, selectedWords: SyllableAddress
   return selectedWords.some((w) => w.lineId === target.lineId) ? [target, ...selectedWords] : [target];
 }
 
-function computeSplitSelections(
-  updates: LineWordsUpdate[],
-  effectiveLines: readonly ReadableLine[],
-): SyllableAddress[] {
-  const shownById = new Map(effectiveLines.map((line) => [line.id, rawLineOf(line)]));
+function computeSplitSelections(updates: LineWordsUpdate[], lines: readonly LyricLine[]): SyllableAddress[] {
+  const shownById = new Map(lines.map((line) => [line.id, line]));
   const selections: SyllableAddress[] = [];
   for (const update of updates) {
     const shown = shownById.get(update.id);
@@ -102,13 +98,13 @@ function computeSplitSelections(
 
 // -- Store-mutating operation --------------------------------------------------
 
-function splitLinesIntoWords(targets: Iterable<SplitTarget>, effectiveLines: readonly ReadableLine[]): void {
+function splitLinesIntoWords(targets: Iterable<SplitTarget>, lines: readonly LyricLine[]): void {
   const projectState = useProjectStore.getState();
   const updates = computeSplitIntoWordsUpdates(targets, projectState.lines);
 
   if (updates.length > 0) projectState.commit(convertToWordTiming(updates));
 
-  const newSelections = computeSplitSelections(updates, effectiveLines);
+  const newSelections = computeSplitSelections(updates, lines);
   if (newSelections.length > 0) {
     useTimelineStore.getState().setSelectedWords(newSelections);
   }

@@ -1,3 +1,4 @@
+import type { LyricLine } from "@/domain/line/model";
 import { mainTrack } from "@/domain/line/track";
 import { withAgent } from "@/domain/line/track-writes";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
@@ -5,13 +6,12 @@ import type { Agent } from "@/domain/agent/model";
 import type { LyricCommand } from "@/domain/commands/command";
 import { applied, changedLineIds } from "@/domain/commands/outcome";
 import type { LinkGroup } from "@/domain/group/template";
-import type { RawLine } from "@/domain/line/model";
 import { type EditedLyrics, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 
 // -- Commands -----------------------------------------------------------------
 
-function replaceLyrics(lines: RawLine[], groups: LinkGroup[], agents: Agent[] | undefined): LyricCommand {
+function replaceLyrics(lines: LyricLine[], groups: LinkGroup[], agents: Agent[] | undefined): LyricCommand {
   return {
     note: { command: "replace lyrics", args: [lines.length] },
     copiesSharedTiming: false,

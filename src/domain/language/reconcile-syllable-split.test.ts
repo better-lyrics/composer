@@ -11,7 +11,7 @@ import {
   type WordSplitResult,
 } from "@/domain/language/reconcile-syllable-split";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables, type WordTrack } from "@/domain/line/track";
@@ -346,8 +346,7 @@ describe("splitWordsKeepingTransliteration", () => {
         transliteration: { ...track, text: "ildan eun  na" },
       });
 
-      const effective = getEffectiveLines([line])[0];
-      expect(legacyWords(timedSyllables(mainTrack(effective)), effective.languages)?.[0].transliteration).toBe(
+      expect(legacyWords(drawnSyllables(line, "main"), drawnLanguages(line))?.[0].transliteration).toBe(
         "ildan eun  na",
       );
 

@@ -1,5 +1,5 @@
 import { lineInstanceKey } from "@/domain/instance/key";
-import type { ReadableLine } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -8,7 +8,7 @@ import { scrollView } from "@/views/timeline/view-scroll";
 
 // -- Functions ----------------------------------------------------------------
 
-function centreLineRow(container: HTMLElement, lines: ReadableLine[], line: ReadableLine): void {
+function centreLineRow(container: HTMLElement, lines: LyricLine[], line: LyricLine): void {
   const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
   const layout = computeRowLayout({
     lines,

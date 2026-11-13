@@ -4,7 +4,6 @@
 
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
@@ -755,9 +754,9 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
   });
 });
 
-// -- Effective lines ----------------------------------------------------------
+// -- Drawn lines --------------------------------------------------------------
 
-describe("applyWordMoveAcrossLines: effective lines", () => {
+describe("applyWordMoveAcrossLines: drawn lines", () => {
   const moveAlphaTo = (targetLineId: string) => ({
     sourceLineId: "A",
     sourceWordIndex: 0,
@@ -768,7 +767,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
   });
 
   it("returns updates for exactly the source and target lines", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({
         id: "A",
         words: [
@@ -778,14 +777,14 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
       }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "U", text: "untouched", words: [{ text: "untouched", begin: 9, end: 10 }] }),
-    ]);
+    ];
     const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.map((u) => u.id)).toEqual(["A", "B"]);
   });
 
   it("regression D6: never includes an unrelated line-synced line", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({
         id: "A",
         words: [
@@ -795,14 +794,14 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
       }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "C", text: "Line synced only", begin: 17, end: 20 }),
-    ]);
+    ];
     const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.some((u) => u.id === "C")).toBe(false);
   });
 
   it("regression D6 sibling: rejects a word-track target that is a line-synced source", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({
         id: "A",
         words: [
@@ -811,25 +810,25 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
         ],
       }),
       createLine({ id: "B", text: "delta", begin: 5, end: 5.4 }),
-    ]);
+    ];
     const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     expect(result).toEqual({ ok: false, reject: "line-synced-target" });
   });
 
   it("rejects moving the only synthetic word out of a line-synced source", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({ id: "A", text: "Line synced only", begin: 1, end: 2 }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
-    ]);
+    ];
     const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     expect(result).toEqual({ ok: false, reject: "line-synced-source" });
   });
 
   it("a background move onto a line-synced row leaves its main timing line-synced", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({ id: "A", text: "lead", words: [{ text: "lead", begin: 0, end: 1 }] }),
       createLine({ id: "B", text: "Line synced", begin: 5, end: 8 }),
-    ]);
+    ];
     const result = applyWordMoveAcrossLines(
       lines,
       [

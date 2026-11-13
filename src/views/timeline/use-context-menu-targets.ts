@@ -8,7 +8,7 @@ import {
 import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
-import type { EffectiveLine } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "@/domain/line/track";
 import { isAddressed } from "@/domain/selection/identity";
@@ -27,7 +27,7 @@ import {
   selectionTouchesAnyGroup,
 } from "@/views/timeline/group-ops";
 import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
-import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
+import { timelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
@@ -39,7 +39,7 @@ import {
 
 // -- Constants ----------------------------------------------------------------
 
-const NO_EFFECTIVE_LINES: EffectiveLine[] = [];
+const NO_LINES: LyricLine[] = [];
 
 // -- Selection ----------------------------------------------------------------
 
@@ -58,7 +58,7 @@ function useContextMenuTargets() {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
 
-  const lines = contextMenu ? timelineEffectiveLines(rawLines) : NO_EFFECTIVE_LINES;
+  const lines = contextMenu ? timelineDrawnLines(rawLines) : NO_LINES;
 
   const explicitToggle = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;

@@ -1,3 +1,4 @@
+import type { LyricLine } from "@/domain/line/model";
 /**
  * @vitest-environment node
  */
@@ -7,13 +8,12 @@ import { splitSyncWord } from "@/domain/commands/sync";
 import { realignSharedInstance } from "@/domain/group/shared-placement";
 import type { LineLanguages } from "@/domain/language/model";
 import { trackPieces } from "@/domain/language/pieces";
-import type { RawLine } from "@/domain/line/model";
 import { roleWords } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
 
-function chorusLine(id: string, instanceIdx: number, begin: number): RawLine {
+function chorusLine(id: string, instanceIdx: number, begin: number): LyricLine {
   const sky = createWord({ text: "하늘", begin, end: begin + 1 });
   const languages: LineLanguages = {
     transliteration: {
@@ -70,7 +70,7 @@ describe("readings when an instance takes the shared timing again", () => {
       createWord({ text: "하", begin: 1, end: 1.5, joinsNext: true }),
       createWord({ text: "늘", begin: 1.5, end: 2 }),
     ];
-    const reference: RawLine = {
+    const reference: LyricLine = {
       ...createLine({ id: "a", text: "하|늘", words: syllables, groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
       languages: {
         transliteration: {
@@ -97,7 +97,7 @@ describe("readings when an instance takes the shared timing again", () => {
 
 describe("readings of linked lines", () => {
   it("keeps a linked line's own readings when a word of its source is split", () => {
-    const linkedLine = (id: string, instanceIdx: number, begin: number): RawLine => {
+    const linkedLine = (id: string, instanceIdx: number, begin: number): LyricLine => {
       const sky = createWord({ text: "하늘 ", begin, end: begin + 1 });
       const sea = createWord({ text: "바다", begin: begin + 1, end: begin + 2 });
       const line = createLine({

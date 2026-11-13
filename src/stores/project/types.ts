@@ -2,7 +2,7 @@ import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/proj
 import type { Agent } from "@/domain/agent/model";
 import type { LyricRoot } from "@/domain/commands/outcome";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine, RawLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import type { EditedLyrics } from "@/domain/project/edited-lyrics";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -82,7 +82,7 @@ interface MetadataActions {
   resetSongIdentity: (title: string) => void;
   restoreSongIdentity: (identity: SongIdentity) => void;
   replaceLyricsWithHistory: (input: {
-    lines: RawLine[];
+    lines: LyricLine[];
     groups: LinkGroup[];
     agents: Agent[] | undefined;
     metadata: Partial<ProjectMetadata>;
@@ -142,8 +142,8 @@ interface BeatGridActions {
 interface LineActions {
   // Loads and restores only: the one write of lines, groups and agents outside commands.
   restoreLyrics: (root: Partial<LyricRoot>) => void;
-  previewLines: (lines: RawLine[]) => void;
-  restorePreviewLines: (lines: RawLine[]) => void;
+  previewLines: (lines: LyricLine[]) => void;
+  restorePreviewLines: (lines: LyricLine[]) => void;
 }
 
 // -- Composed Store -----------------------------------------------------------

@@ -3,11 +3,12 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LanguagePieces, LanguageSide } from "@/domain/language/model";
-import { languageSide, pieceOf, trackPieces, withAddedPieces } from "@/domain/language/pieces";
-import { type ReadableLine, effectiveMainWordEdit, getEffectiveLines, rawLineOf } from "@/domain/line/effective-words";
+import { languageSide, pieceOf, withAddedPieces } from "@/domain/language/pieces";
+import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
-import { roleWords, trackWords, type WordTrack, untimedSyllablesOf } from "@/domain/line/track";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { trackRole, type WordTrack, untimedSyllablesOf } from "@/domain/line/track";
+import { mainTimingEdit } from "@/domain/line/track-writes";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -52,12 +53,12 @@ function byLine(selections: readonly ResolvedAddress[]): Map<string, ResolvedAdd
   return grouped;
 }
 
-function linesById(lines: readonly ReadableLine[]): Map<string, ReadableLine> {
+function linesById(lines: readonly LyricLine[]): Map<string, LyricLine> {
   return new Map(lines.map((line) => [line.id, line]));
 }
 
 function reorderUpdates(
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   selections: readonly ResolvedAddress[],
   timeDelta: number,
   rangeOf: (line: LyricLine) => TimeRange,
@@ -70,13 +71,13 @@ function reorderUpdates(
     const range = rangeOf(line);
     const wordIndices = new Set(forLine.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
     const bgIndices = new Set(forLine.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
-    const mainWords = roleWords(line, "main");
-    if (wordIndices.size > 0 && mainWords) {
-      const edit = effectiveMainWordEdit(line, reorderWordTrack(mainWords, wordIndices, timeDelta, range));
+    const mainWords = drawnSyllables(line, "main");
+    if (wordIndices.size > 0 && mainWords.length > 0) {
+      const edit = mainTimingEdit(line, reorderWordTrack(mainWords, wordIndices, timeDelta, range));
       if (edit) Object.assign(lineUpdates, edit);
     }
-    const bgWords = roleWords(line, "bg");
-    if (bgIndices.size > 0 && bgWords) {
+    const bgWords = drawnSyllables(line, "bg");
+    if (bgIndices.size > 0 && bgWords.length > 0) {
       const reordered = reorderWordTrack(bgWords, bgIndices, timeDelta, range);
       Object.assign(lineUpdates, manualBackgroundWordEdit(line, reordered, lineUpdates));
     }
@@ -85,7 +86,7 @@ function reorderUpdates(
 }
 
 function crossLineMoves(
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   selections: readonly ResolvedAddress[],
   args: CrossLineMoveArgs,
   rangeOf: (line: LyricLine) => TimeRange,
@@ -97,7 +98,7 @@ function crossLineMoves(
   return selections.flatMap((selection) => {
     if (selection.lineId !== args.fromLineId) return [];
     const sourceLine = byId.get(selection.lineId);
-    const source = sourceLine && trackWords(sourceLine, selection.type)?.[selection.wordIndex];
+    const source = sourceLine && drawnSyllables(sourceLine, trackRole(selection.type))[selection.wordIndex];
     if (!source) return [];
     const newBegin = Math.max(targetRange.min, source.begin + args.timeDelta);
     const newEnd = Math.min(targetRange.max, source.end + args.timeDelta);
@@ -116,31 +117,25 @@ function crossLineMoves(
 }
 
 // A moved word keeps its id, so its reading is written under that id on the side it lands on.
-function withMovedPieces(
-  rawLines: readonly RawLine[],
-  lines: readonly ReadableLine[],
-  moves: readonly WordMove[],
-  updates: LineUpdate[],
-): LineUpdate[] {
+function withMovedPieces(lines: readonly LyricLine[], moves: readonly WordMove[], updates: LineUpdate[]): LineUpdate[] {
   const byId = linesById(lines);
-  const rawById = new Map(rawLines.map((line) => [line.id, line]));
   return updates.map((update) => {
     const carried = moves.flatMap((move) => {
       const source = move.targetLineId === update.id ? byId.get(move.sourceLineId) : undefined;
-      const piece = source && pieceOf(trackPieces(source, languageSide(move.sourceTrack)), move.word);
+      const piece = source && pieceOf(drawnPieces(source, languageSide(move.sourceTrack)), move.word);
       return piece ? [{ side: languageSide(move.targetTrack), pieces: { [move.word.id]: piece } }] : [];
     });
     if (!carried.length) return update;
     const languages = carried.reduce(
       (written, { side, pieces }) => withAddedPieces(written, side, pieces),
-      update.updates.languages ?? rawById.get(update.id)?.languages,
+      update.updates.languages ?? byId.get(update.id)?.languages,
     );
     return { id: update.id, updates: { ...update.updates, languages } };
   });
 }
 
 function duplicatesFor(
-  line: ReadableLine,
+  line: LyricLine,
   forLine: readonly ResolvedAddress[],
   timeDelta: number,
   range: TimeRange,
@@ -150,7 +145,7 @@ function duplicatesFor(
   const bgDups: WordTiming[] = [];
   const readings: { side: LanguageSide; pieces: LanguagePieces }[] = [];
   for (const selection of forLine) {
-    const word = trackWords(line, selection.type)?.[selection.wordIndex];
+    const word = drawnSyllables(line, trackRole(selection.type))[selection.wordIndex];
     if (!word) continue;
     const newBegin = Math.max(range.min, word.begin + timeDelta);
     const newEnd = Math.min(range.max, word.end + timeDelta);
@@ -159,7 +154,7 @@ function duplicatesFor(
     if (selection.type === "word") wordDups.push(dup);
     else bgDups.push(dup);
     const side = languageSide(selection.type);
-    const piece = pieceOf(trackPieces(line, side), word);
+    const piece = pieceOf(drawnPieces(line, side), word);
     if (piece) readings.push({ side, pieces: { [dup.id]: piece } });
   }
   return { wordDups, bgDups, readings };
@@ -172,37 +167,32 @@ const overlapsAny = (dups: readonly WordTiming[], existing: readonly WordTiming[
 
 // Copies that land on a taken spot are dropped; a line-synced line cannot take word copies.
 function planDuplicate(
-  rawLines: readonly RawLine[],
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   selections: readonly ResolvedAddress[],
   timeDelta: number,
   rangeOf: (line: LyricLine) => TimeRange,
   newId: () => string,
 ): DuplicatePlan {
   const byId = linesById(lines);
-  const rawById = new Map(rawLines.map((line) => [line.id, line]));
   let rejectedLineSynced = false;
   const updates = [...byLine(selections)].flatMap(([lineId, forLine]) => {
     const line = byId.get(lineId);
     if (!line) return [];
     const { wordDups, bgDups, readings } = duplicatesFor(line, forLine, timeDelta, rangeOf(line), newId);
     const lineUpdates: Partial<LyricLine> = {};
-    const existingWords = roleWords(line, "main") ?? [];
+    const existingWords = drawnSyllables(line, "main");
     if (wordDups.length > 0 && !overlapsAny(wordDups, existingWords)) {
-      const edit = effectiveMainWordEdit(
-        line,
-        mergeWordsIntoTrack(existingWords, wordDups, untimedSyllablesOf(rawLineOf(line), "main")),
-      );
+      const edit = mainTimingEdit(line, mergeWordsIntoTrack(existingWords, wordDups, untimedSyllablesOf(line, "main")));
       if (edit) Object.assign(lineUpdates, edit);
       else rejectedLineSynced = true;
     }
-    const existingBg = roleWords(line, "bg") ?? [];
+    const existingBg = drawnSyllables(line, "bg");
     if (bgDups.length > 0 && !overlapsAny(bgDups, existingBg)) {
       Object.assign(
         lineUpdates,
         manualBackgroundWordEdit(
           line,
-          mergeWordsIntoTrack(existingBg, bgDups, untimedSyllablesOf(rawLineOf(line), "bg")),
+          mergeWordsIntoTrack(existingBg, bgDups, untimedSyllablesOf(line, "bg")),
           lineUpdates,
         ),
       );
@@ -210,7 +200,7 @@ function planDuplicate(
     if (Object.keys(lineUpdates).length > 0 && readings.length > 0) {
       lineUpdates.languages = readings.reduce(
         (written, { side, pieces }) => withAddedPieces(written, side, pieces),
-        lineUpdates.languages ?? rawById.get(lineId)?.languages,
+        lineUpdates.languages ?? line.languages,
       );
     }
     return Object.keys(lineUpdates).length > 0 ? [{ id: lineId, updates: lineUpdates }] : [];
@@ -224,7 +214,7 @@ function moveWords(args: MoveArgs): LyricCommand {
   return lineEditCommand(
     { command: "move words", args: [args.timeDelta, ...args.addresses.map((address) => address.syllableId)] },
     (root) => {
-      const lines = getEffectiveLines(root.lines);
+      const { lines } = root;
       const rangeOf = timeRangeResolver(root.lines, root.groups, args.duration);
       return reorderUpdates(lines, resolveAddresses(lines, args.addresses), args.timeDelta, rangeOf);
     },
@@ -240,13 +230,13 @@ function moveWordsAcrossLines(args: CrossLineMoveArgs): LyricCommand {
       args: [args.targetLineId, args.targetTrack, args.timeDelta, ...args.addresses.map((a) => a.syllableId)],
     },
     (root) => {
-      const lines = getEffectiveLines(root.lines);
+      const { lines } = root;
       const rangeOf = timeRangeResolver(root.lines, root.groups, args.duration);
       const moves = crossLineMoves(lines, resolveAddresses(lines, args.addresses), args, rangeOf);
       if (moves.length === 0) return [];
       const result = applyWordMoveAcrossLines(lines, moves, rangeOf);
       if (!result.ok) return refused({ reason: "move", reject: result.reject });
-      return withMovedPieces(root.lines, lines, moves, result.updates);
+      return withMovedPieces(lines, moves, result.updates);
     },
     OWN_LINE_ONLY,
   );
@@ -257,16 +247,9 @@ function duplicateWords(args: MoveArgs, report?: (plan: DuplicatePlan) => void):
   return lineEditCommand(
     { command: "duplicate words", args: [args.timeDelta, ...args.addresses.map((address) => address.syllableId)] },
     (root, ctx) => {
-      const lines = getEffectiveLines(root.lines);
+      const { lines } = root;
       const rangeOf = timeRangeResolver(root.lines, root.groups, args.duration);
-      const plan = planDuplicate(
-        root.lines,
-        lines,
-        resolveAddresses(lines, args.addresses),
-        args.timeDelta,
-        rangeOf,
-        ctx.newId,
-      );
+      const plan = planDuplicate(lines, resolveAddresses(lines, args.addresses), args.timeDelta, rangeOf, ctx.newId);
       report?.(plan);
       return plan.updates;
     },

@@ -1,6 +1,6 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/track";
+import { trackRole, type WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { memoByIdentity } from "@/utils/memo-by-identity";
@@ -52,7 +52,7 @@ function resolvedAt(
   wordIndex: number,
 ): ResolvedAddress | null {
   const line = lines[lineIndex];
-  const word = line ? effectiveTrackWords(line, type)?.[wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(type))[wordIndex] : undefined;
   return word ? { lineId: line.id, type, syllableId: word.id, lineIndex, wordIndex } : null;
 }
 
@@ -70,7 +70,7 @@ function addressAt(
 function resolveAddress(lines: readonly LyricLine[], address: SyllableAddress): ResolvedAddress | null {
   const lineIndex = lineIndexById(lines).get(address.lineId);
   if (lineIndex === undefined) return null;
-  const words = effectiveTrackWords(lines[lineIndex], address.type);
+  const words = drawnSyllables(lines[lineIndex], trackRole(address.type));
   const wordIndex = words && wordIndexById(words).get(address.syllableId);
   if (wordIndex === undefined) return null;
   const { lineId, type, syllableId } = address;
@@ -84,7 +84,9 @@ function resolveAddresses(lines: readonly LyricLine[], addresses: readonly Sylla
 function wordAt(lines: readonly LyricLine[], address: SyllableAddress): WordTiming | null {
   const lineIndex = lineIndexById(lines).get(address.lineId);
   if (lineIndex === undefined) return null;
-  return effectiveTrackWords(lines[lineIndex], address.type)?.find((word) => word.id === address.syllableId) ?? null;
+  return (
+    drawnSyllables(lines[lineIndex], trackRole(address.type)).find((word) => word.id === address.syllableId) ?? null
+  );
 }
 
 // The same array when every address still resolves, so subscribers see no change.

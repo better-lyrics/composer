@@ -27,6 +27,12 @@ function withTrackWords<T extends LineTrack>(track: T, words: readonly WordTimin
   return syllableTimed(track, untaken.length === 0 ? words : [...words, ...untaken]);
 }
 
+// A timing write: one syllable sets a span track's edges, so a line-synced track stays line synced.
+function trackTimingWrite<T extends LineTrack>(track: T, syllables: readonly WordTiming[]): T {
+  if (isSpanTimed(track) && syllables.length === 1) return withTrackSpan(track, syllables[0].begin, syllables[0].end);
+  return withTrackWords(track, syllables);
+}
+
 function withTrackSyllables<T extends LineTrack>(track: T, syllables: readonly Syllable[]): T {
   return syllableTimed(track, syllables);
 }
@@ -83,6 +89,15 @@ function withoutLineTiming(line: LyricLine): LyricLine {
   );
 }
 
+function mainTimingWrite(line: LyricLine, syllables: readonly WordTiming[]): Partial<LyricLine> {
+  return { tracks: withMainTrack(line, trackTimingWrite(mainTrack(line), syllables)).tracks };
+}
+
+// An edit that keeps a line-synced main track line synced, or null when it would give it more than one syllable.
+function mainTimingEdit(line: LyricLine, syllables: readonly WordTiming[]): Partial<LyricLine> | null {
+  return isSpanTimed(mainTrack(line)) && syllables.length !== 1 ? null : mainTimingWrite(line, syllables);
+}
+
 function withRoleWords(line: LyricLine, role: TrackRole, words: readonly WordTiming[]): LyricLine {
   return withRoleTrack(line, role, (track) => withTrackWords(track, words));
 }
@@ -90,6 +105,8 @@ function withRoleWords(line: LyricLine, role: TrackRole, words: readonly WordTim
 // -- Exports ------------------------------------------------------------------
 
 export {
+  mainTimingEdit,
+  mainTimingWrite,
   newBackgroundTrack,
   withAgent,
   withBackgroundTrack,

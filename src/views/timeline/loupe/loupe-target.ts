@@ -1,4 +1,3 @@
-import { getEffectiveLine } from "@/domain/line/effective-words";
 import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { wordAt } from "@/domain/selection/resolve";
@@ -61,8 +60,8 @@ function clearLoupe(): void {
 }
 
 function storedEdgeTime(word: SyllableAddress, edge: LoupeEdge): number | null {
-  const rawLine = useProjectStore.getState().lines.find((candidate) => candidate.id === word.lineId);
-  const timing = rawLine ? wordAt([getEffectiveLine(rawLine)], word) : null;
+  const line = useProjectStore.getState().lines.find((candidate) => candidate.id === word.lineId);
+  const timing = line ? wordAt([line], word) : null;
   return timing ? timing[edge] : null;
 }
 

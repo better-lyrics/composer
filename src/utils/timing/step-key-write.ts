@@ -1,7 +1,6 @@
 import { isSharedLine, type TimeRange } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import type { ReadableLine } from "@/domain/line/effective-words";
-import type { LineUpdate } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { stepBgWordEdit } from "@/utils/timing/bg-word-timing";
@@ -11,14 +10,14 @@ import type { StepEdit } from "@/utils/timing/word-timing-ops";
 // -- Types --------------------------------------------------------------------
 
 interface StepKeyWriteInput {
-  lines: readonly ReadableLine[];
+  lines: readonly LyricLine[];
   groups: readonly LinkGroup[];
   cursor: ResolvedAddress;
   startNext: ResolvedAddress | null;
   key: StepKey;
   time: number;
   minDuration: number;
-  rangeOf: (line: ReadableLine) => TimeRange;
+  rangeOf: (line: LyricLine) => TimeRange;
 }
 
 type StepKeyPlan =

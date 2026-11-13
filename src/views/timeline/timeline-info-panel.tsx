@@ -2,7 +2,7 @@ import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tab
 import { useCallback, useMemo } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { setWordBoundary } from "@/domain/commands/word-timing";
-import type { ReadableLine } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
 import { mainTrack } from "@/domain/line/track";
 import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
@@ -23,7 +23,7 @@ import {
   selectionCountLabel,
   selectionGroupHighlight,
 } from "@/views/timeline/selection-info";
-import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
+import { useTimelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
 
@@ -68,7 +68,7 @@ const MultiSelectionInfo: React.FC<{ summary: MultiSelectionSummary; highlight: 
 
 interface SingleWordInfoProps {
   selection: ResolvedAddress;
-  line: ReadableLine;
+  line: LyricLine;
   item: Pick<WordTiming, "text" | "begin" | "end">;
   highlight: GroupHighlight | null;
   onSetBegin: () => void;
@@ -112,7 +112,7 @@ const TimelineInfoPanel: React.FC = () => {
   const groups = useProjectStore((s) => s.groups);
   const duration = useAudioStore((s) => s.duration);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
-  const lines = useTimelineEffectiveLines(rawLines);
+  const lines = useTimelineDrawnLines(rawLines);
   const selectedWord = useMemo(
     () => (selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null),
     [selectedWords, lines],
@@ -121,10 +121,7 @@ const TimelineInfoPanel: React.FC = () => {
     () => selectionGroupHighlight(selectedWords, rawLines, groups),
     [selectedWords, rawLines, groups],
   );
-  const summary = useMemo(
-    () => multiSelectionSummary(selectedWords, lines, rawLines),
-    [selectedWords, lines, rawLines],
-  );
+  const summary = useMemo(() => multiSelectionSummary(selectedWords, lines), [selectedWords, lines]);
   const item = useMemo(() => (selectedWord ? selectedWordTiming(selectedWord, lines) : null), [selectedWord, lines]);
 
   const setSelectedWordBoundary = useCallback(

@@ -1,7 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import type { HistoryNote } from "@/domain/commands/command";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine, RawLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { deepFreeze } from "@/stores/project/deep-freeze";
@@ -49,7 +49,7 @@ function capHistory(history: HistoryEntry[]): HistoryEntry[] {
 function commitHistory(
   state: ProjectState,
   changes: {
-    lines?: RawLine[];
+    lines?: LyricLine[];
     groups?: LinkGroup[];
     agents?: Agent[];
     customSnapPoints?: SnapPoint[];
@@ -180,7 +180,7 @@ function redoState(state: ProjectState) {
 }
 
 // Data that follows the lyrics joins the step that changed them, so undo never stops between the two.
-function amendCurrentStep(state: ProjectState, lines: RawLine[]) {
+function amendCurrentStep(state: ProjectState, lines: LyricLine[]) {
   if (state.isDirtySinceHistory || state.historyIndex < 0) return { lines, isDirty: true, isDirtySinceHistory: true };
   const current = state.history[state.historyIndex];
   return {

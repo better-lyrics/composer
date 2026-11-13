@@ -1,5 +1,5 @@
+import type { LyricLine } from "@/domain/line/model";
 import { duplicateWords } from "@/domain/commands/word-moves";
-import type { ReadableLine } from "@/domain/line/effective-words";
 import { toAddress } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import {
@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 // -- Alt duplicate -------------------------------------------------------------
 
-function handleAltDuplicate(event: DragEndEvent, lines: readonly ReadableLine[], zoom: number, duration: number) {
+function handleAltDuplicate(event: DragEndEvent, lines: readonly LyricLine[], zoom: number, duration: number) {
   const { active, delta } = event;
   const activeData = active.data.current as DragData | undefined;
   if (!activeData) return;

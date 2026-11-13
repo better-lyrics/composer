@@ -1,8 +1,8 @@
+import type { LyricLine } from "@/domain/line/model";
 import type { CommandContext, LyricCommand } from "@/domain/commands/command";
 import { type Applied, type LyricRoot, type Outcome, applied, isRefused, refused } from "@/domain/commands/outcome";
 import { sharedTimingFanOut } from "@/domain/group/shared-timing";
 import { withoutOrphanPieces } from "@/domain/language/pieces";
-import type { RawLine } from "@/domain/line/model";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
 import type { CommitMode } from "@/stores/project/history-types";
@@ -22,15 +22,15 @@ function rootOf(state: ProjectState): LyricRoot {
   return { lines: state.lines, groups: state.groups, agents: state.agents };
 }
 
-function withChangedLinesSettled(before: readonly RawLine[], after: RawLine[]): RawLine[] {
+function withChangedLinesSettled(before: readonly LyricLine[], after: LyricLine[]): LyricLine[] {
   if (before === after) return after;
-  const unchangedLines = new Set<RawLine>(before);
+  const unchangedLines = new Set<LyricLine>(before);
   const settled = after.map((line) => (unchangedLines.has(line) ? line : withoutOrphanPieces(line)));
   return settled.every((line, index) => line === after[index]) ? after : settled;
 }
 
 // A command that touched no line keeps the lines array, so line subscribers and history sharing see no change.
-function sameLines(before: readonly RawLine[], after: readonly RawLine[]): boolean {
+function sameLines(before: readonly LyricLine[], after: readonly LyricLine[]): boolean {
   return before === after || (before.length === after.length && after.every((line, index) => line === before[index]));
 }
 
