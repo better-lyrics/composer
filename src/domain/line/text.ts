@@ -40,4 +40,4 @@ function backgroundText(line: LyricLine | undefined): string | undefined {
 
 // -- Exports ------------------------------------------------------------------
 
-export { backgroundText, lineText, syllablesText, trackText };
+export { backgroundText, lineText, syllableJoint, syllablesText, trackText };

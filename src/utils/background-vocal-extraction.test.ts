@@ -516,6 +516,22 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     ]);
   });
 
+  it("regression: extracts a paren word after an ideographic space joint", () => {
+    const line: LyricLine = lineFromFields({
+      id: "1",
+      text: "go\u3000(oh) now",
+      agentId: "v1",
+      words: [
+        { id: "w90", text: "go", sep: "\u3000", begin: 0.5, end: 1.2, joinsNext: false },
+        { id: "w91", text: "(oh)", sep: " ", begin: 1.2, end: 1.9, joinsNext: false },
+        { id: "w92", text: "now", sep: "", begin: 1.9, end: 2.7, joinsNext: false },
+      ],
+    });
+    const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
+    expect(backgroundText(result)).toBe("oh");
+    expect(timedSyllables(mainTrack(result)).map((word) => word.text)).toEqual(["go", "now"]);
+  });
+
   it("extracts a trailing paren word and trims the last survivor's trailing space", () => {
     const line: LyricLine = lineFromFields({
       id: "1",
