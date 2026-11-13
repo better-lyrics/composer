@@ -1,4 +1,3 @@
-import { moveWordsFromBackground, moveWordsToBackground } from "@/domain/commands/background-moves";
 import { writingLyrics } from "@/stores/project/lyric-change-listeners";
 import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
@@ -36,14 +35,6 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
   },
 
   restorePreviewLines: (lines) => writingLyrics(get, "preview", () => set({ lines })),
-
-  moveWordToBg: (lineId, wordIndices, timeDelta, duration) => {
-    get().commit(moveWordsToBackground({ lineId, wordIndices, timeDelta, duration }));
-  },
-
-  moveWordFromBg: (lineId, wordIndices, timeDelta, duration) => {
-    get().commit(moveWordsFromBackground({ lineId, wordIndices, timeDelta, duration }));
-  },
 });
 
 // -- Exports ------------------------------------------------------------------

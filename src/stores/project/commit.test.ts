@@ -3,6 +3,7 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { addGroup } from "@/domain/commands/group-edits";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
@@ -38,7 +39,7 @@ describe("commit", () => {
 
   it("a command that changes no line keeps the lines array", () => {
     const before = useProjectStore.getState().lines;
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#ffffff", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#ffffff", templateVersion: 1 }));
     expect(useProjectStore.getState().groups).toHaveLength(1);
     expect(useProjectStore.getState().lines).toBe(before);
   });
