@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { APP_STATE_STORE_NAME, getFromStore } from "@/lib/persistence-idb";
 import { deleteProjectAudio, loadProjectAudio, saveProjectAudio } from "@/lib/project-audio";
@@ -25,7 +26,10 @@ function project(overrides: Partial<SavedProject> = {}): SavedProject {
     savedAt: 1_758_900_000_000,
     metadata: { title: "Espresso", artists: ["Sabrina Carpenter"], album: "Short n' Sweet", duration: 175 },
     agents: DEFAULT_AGENTS,
-    lines: [createLine({ text: "Now he's thinking bout me", begin: 1, end: 3 }), createLine({ text: "Every night" })],
+    lines: savedLines([
+      createLine({ text: "Now he's thinking bout me", begin: 1, end: 3 }),
+      createLine({ text: "Every night" }),
+    ]),
     granularity: "word",
     audioSource: { kind: "file", name: "espresso.flac" },
     ...overrides,

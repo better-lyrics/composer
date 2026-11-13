@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { wordAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
@@ -220,7 +220,7 @@ describe("selection after a lines change", () => {
 
   it("drops a selected word that undo removed and keeps the rest, the same array when nothing drops", () => {
     splitFirstWord();
-    const piece = useProjectStore.getState().lines[0].words?.[1];
+    const piece = roleWords(useProjectStore.getState().lines[0], "main")?.[1];
     useTimelineStore.getState().setSelectedWords([address("w1"), address(piece?.id ?? ""), address("w3")]);
     useTimelineStore.getState().setEditingWord(address(piece?.id ?? ""));
     useProjectStore.getState().undo();
@@ -242,7 +242,7 @@ describe("selection after a lines change", () => {
 
   it("regression: a Step cursor that undo removed moves to the first queued word left", () => {
     splitFirstWord();
-    const piece = useProjectStore.getState().lines[0].words?.[1];
+    const piece = roleWords(useProjectStore.getState().lines[0], "main")?.[1];
     useTimelineStore.getState().setStepTiming(true);
     useTimelineStore.getState().setSelectedWords([address(piece?.id ?? ""), address("w3"), address("w4")], true);
     useProjectStore.getState().undo();

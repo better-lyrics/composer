@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import { estimateRecordBytes } from "@/domain/project/record-bytes";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { loadProjectIndexEntry, saveProjectRecord, saveProjectRecordWithAudio } from "@/lib/project-repository";
@@ -19,7 +20,9 @@ describe("project repository · storage", () => {
   it("updates the record size when the record grows", async () => {
     await saveProjectRecord("a", storedProject());
     const before = (await loadProjectIndexEntry("a"))?.recordBytes ?? 0;
-    const longer = storedProject({ lines: Array.from({ length: 40 }, (_, i) => createLine({ text: `Line ${i}` })) });
+    const longer = storedProject({
+      lines: savedLines(Array.from({ length: 40 }, (_, i) => createLine({ text: `Line ${i}` }))),
+    });
     await saveProjectRecord("a", longer);
     expect((await loadProjectIndexEntry("a"))?.recordBytes).toBeGreaterThan(before);
   });

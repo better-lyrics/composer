@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWords } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -168,7 +169,7 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
     useSettingsStore.setState({ defaultWordDuration: 1, minWordDuration: 0.05 });
     useProjectStore.setState({
       groups: [createGroup({ id: "g1", label: "Chorus", ...(sharesTiming ? { sharesTiming: true } : {}) })],
-      lines: [{ ...chorus("c0", 0, 3), ...(backgroundText ? { backgroundText } : {}) }, chorus("c1", 1, 10)],
+      lines: [withFields(chorus("c0", 0, 3), backgroundText ? { backgroundText } : {}), chorus("c1", 1, 10)],
     });
     useProjectStore.getState().clearHistory();
   }
@@ -186,7 +187,7 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
 
     await addWordHere("word", 12.9);
 
-    await expect.poll(() => lineById("c0")?.words?.length).toBe(3);
+    await expect.poll(() => roleWords(lineById("c0"), "main")?.length).toBe(3);
     expect(timedSyllables(mainTrack(lineById("c0")!))[2]).toMatchObject({ begin: 12, end: 13 });
     expect(timedSyllables(mainTrack(lineById("c1")!))[2]).toMatchObject({ begin: 19, end: 20 });
   });
@@ -197,7 +198,7 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
 
     await addWordHere("bg", 12.9);
 
-    await expect.poll(() => lineById("c0")?.backgroundWords?.length).toBe(3);
+    await expect.poll(() => roleWords(lineById("c0"), "bg")?.length).toBe(3);
     expect(timedSyllables(backgroundTrack(lineById("c0")!)).at(-1)?.end).toBeLessThanOrEqual(13);
     expect(timedSyllables(backgroundTrack(lineById("c1")!)).at(-1)?.end).toBeLessThanOrEqual(20);
   });
@@ -208,7 +209,7 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
 
       await addWordHere("word", 12.9);
 
-      await expect.poll(() => lineById("c0")?.words?.length).toBe(3);
+      await expect.poll(() => roleWords(lineById("c0"), "main")?.length).toBe(3);
       expect(timedSyllables(mainTrack(lineById("c0")!))[2].begin).toBeCloseTo(12.9, 5);
       expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBeCloseTo(13.9, 5);
     });

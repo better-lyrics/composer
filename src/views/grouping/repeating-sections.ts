@@ -204,7 +204,7 @@ function fingerprintBlock(lines: LyricLine[], start: number, length: number): st
     const bgKey = timedSyllables(backgroundTrack(l))
       .map((w) => w.text + w.sep)
       .join(FS);
-    parts.push([lineText(l), l.agentId, backgroundText(l) ?? "", wordsKey, bgKey].join(RS));
+    parts.push([lineText(l), mainTrack(l).agentId, backgroundText(l) ?? "", wordsKey, bgKey].join(RS));
   }
   return parts.join("\n");
 }

@@ -2,12 +2,12 @@ import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "@/domain/instance/key";
 import { type LinkedLine, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
-import { withReadingsOf } from "@/domain/language/pieces";
-import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
+import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
+import { mainTrack, roleWords } from "@/domain/line/track";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
-import { withIdsOf, withoutWordIds } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
+import { withoutWordIds } from "@/domain/word/id";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
@@ -110,52 +110,16 @@ function instanceOffset(lines: readonly LyricLine[], groupId: string, from: numb
   return fromStart === undefined || toStart === undefined ? null : toStart - fromStart;
 }
 
-// -- Timing fields ------------------------------------------------------------
-
-function offsetWords(words: readonly WordTiming[] | undefined, offset: number, target?: readonly WordTiming[]) {
-  return withIdsOf(
-    words?.map((word) => ({ ...word, begin: word.begin + offset, end: word.end + offset })),
-    target,
-  );
-}
-
-function offsetTiming(source: LyricLine, offset: number, target: LyricLine): LineUpdate["updates"] {
-  const backgroundWords = offsetWords(source.backgroundWords, offset, target.backgroundWords);
-  const words = offsetWords(source.words, offset, target.words);
-  if (words) return { words, backgroundWords, begin: undefined, end: undefined };
-  if (source.begin !== undefined) {
-    return { begin: source.begin + offset, end: source.end + offset, backgroundWords, words: undefined };
-  }
-  return { words: undefined, begin: undefined, end: undefined, backgroundWords };
-}
-
-// The copied syllables bring their readings, as words carrying them always did.
-function offsetTimingFields(source: LyricLine, offset: number, target: LyricLine): LineUpdate["updates"] {
-  const timing = offsetTiming(source, offset, target);
-  const languages = withReadingsOf(reconcileLine({ ...target, ...timing }), source);
-  return { ...timing, languages: isStructurallyEqual(languages, target.languages) ? target.languages : languages };
-}
-
 // -- Fan out ------------------------------------------------------------------
 
 function timingChanged(before: LyricLine | undefined, after: LyricLine): boolean {
   if (!before) return false;
   return (
-    before.begin !== after.begin ||
-    before.end !== after.end ||
-    !isStructurallyEqual(withoutWordIds(before.words), withoutWordIds(after.words)) ||
-    !isStructurallyEqual(withoutWordIds(before.backgroundWords), withoutWordIds(after.backgroundWords))
+    mainTrack(before).begin !== mainTrack(after).begin ||
+    mainTrack(before).end !== mainTrack(after).end ||
+    !isStructurallyEqual(withoutWordIds(roleWords(before, "main")), withoutWordIds(roleWords(after, "main"))) ||
+    !isStructurallyEqual(withoutWordIds(roleWords(before, "bg")), withoutWordIds(roleWords(after, "bg")))
   );
-}
-
-function hasNegativeTime(updates: LineUpdate["updates"]): boolean {
-  if (updates.begin !== undefined && updates.begin < 0) return true;
-  return [...(updates.words ?? []), ...(updates.backgroundWords ?? [])].some((word) => word.begin < 0);
-}
-
-function endsAfter(updates: LineUpdate["updates"], songEnd: number): boolean {
-  if (updates.end !== undefined && updates.end > songEnd) return true;
-  return [...(updates.words ?? []), ...(updates.backgroundWords ?? [])].some((word) => word.end > songEnd);
 }
 
 function fanOutSources(
@@ -221,7 +185,7 @@ function sharedTimingFanOut(
       if (!target) continue;
       const updates = offsetTimingFields(source, offset, target);
       if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
-      const copied = reconcileLine({ ...target, ...updates });
+      const copied = { ...target, ...updates };
       if (!timingChanged(target, copied) && copied.languages === target.languages) continue;
       const targetIndex = indexById.get(target.id);
       if (targetIndex === undefined) continue;
@@ -280,16 +244,13 @@ function timeRangeResolver(
 
 export {
   attachedLinesOfInstance,
-  endsAfter,
   firstFullyTimedInstance,
-  hasNegativeTime,
   instanceOffset,
   instanceStart,
   instancesInLineOrder,
   isInstanceFullyTimed,
   isSharedLine,
   keepsOwnTiming,
-  offsetTimingFields,
   sharedInstancesInLineOrder,
   sharedTimingFanOut,
   sharesTiming,

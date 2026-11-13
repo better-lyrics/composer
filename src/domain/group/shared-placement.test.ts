@@ -1,3 +1,7 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { mainBounds } from "@/domain/line/bounds";
+import { updatedLine, withFields } from "@/test/field-updates";
+import { roleWords } from "@/domain/line/track";
 import { placeSharedInstance, realignSharedInstance, realignSharedInstances } from "@/domain/group/shared-placement";
 import type { LyricLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
@@ -24,7 +28,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
 describe("placeSharedInstance", () => {
   const sharing = [createGroup({ id: "g1", sharesTiming: true })];
   const wordTimes = (line: LyricLine | Partial<LyricLine> | undefined) =>
-    line?.words?.map((word) => [word.begin, word.end]);
+    roleWords(updatedLine(line), "main")?.map((word) => [word.begin, word.end]);
   const expectTimes = (actual: number[][] | undefined, expected: number[][]) => {
     expect(actual).toHaveLength(expected.length);
     expected.forEach(([begin, end], i) => {
@@ -67,11 +71,11 @@ describe("placeSharedInstance", () => {
     ];
     const updates = placeSharedInstance(lines, sharing, "g1", 1, 40);
     const lineSynced = updates.find((update) => update.id === "c1-1")?.updates;
-    expect(lineSynced?.begin).toBeCloseTo(42, 6);
-    expect(lineSynced?.end).toBeCloseTo(44, 6);
-    expect(lineSynced?.words).toBeUndefined();
+    expect(mainBounds(updatedLine(lineSynced)!)?.begin).toBeCloseTo(42, 6);
+    expect(mainBounds(updatedLine(lineSynced)!)?.end).toBeCloseTo(44, 6);
+    expect(roleWords(updatedLine(lineSynced), "main")).toBeUndefined();
     expectTimes(
-      lineSynced?.backgroundWords?.map((word) => [word.begin, word.end]),
+      roleWords(updatedLine(lineSynced), "bg")?.map((word) => [word.begin, word.end]),
       [[42.5, 43]],
     );
   });
@@ -112,8 +116,8 @@ describe("placeSharedInstance", () => {
       templateLineIdx: 0,
     });
     const updates = placeSharedInstance([reference, target], sharing, "g1", 1, 100)[0]?.updates;
-    expect(updates?.words?.[0]?.begin).toBeCloseTo(100, 6);
-    expect(updates?.backgroundWords?.[0]?.begin).toBeCloseTo(99.6, 6);
+    expect(roleWords(updatedLine(updates), "main")?.[0]?.begin).toBeCloseTo(100, 6);
+    expect(roleWords(updatedLine(updates), "bg")?.[0]?.begin).toBeCloseTo(99.6, 6);
   });
 
   describe("edge cases", () => {
@@ -199,7 +203,10 @@ describe("placeSharedInstance", () => {
         templateLineIdx: 0,
       });
       const target = createLine({ id: "c1-0", text: "a|way", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 });
-      const words = placeSharedInstance([reference, target], sharing, "g1", 1, 40)[0]?.updates.words;
+      const words = roleWords(
+        updatedLine(placeSharedInstance([reference, target], sharing, "g1", 1, 40)[0]?.updates),
+        "main",
+      );
       expect(words?.map((word) => [word.text, word.joinsNext])).toEqual([
         ["a", true],
         ["way", false],
@@ -225,7 +232,10 @@ describe("realignSharedInstance", () => {
       instanceIdx: 1,
       templateLineIdx: 0,
     });
-    const words = updatesOf(realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1))[0]?.updates.words;
+    const words = roleWords(
+      updatedLine(updatesOf(realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1))[0]?.updates),
+      "main",
+    );
     expect(words?.map((word) => word.begin)).toEqual([40, 40.5]);
   });
 
@@ -262,16 +272,16 @@ describe("realignSharedInstance", () => {
 
     it("refuses an instance whose timed background vocals the reference has no timing for", () => {
       const withBackground = createLine({
-        ...chorus(1, 0, 40),
+        ...fieldsOfLine(chorus(1, 0, 40)),
         backgroundText: "oh",
         backgroundWords: [{ text: "oh", begin: 40.2, end: 40.6 }],
       });
-      const lines = [createLine({ ...chorus(0, 0, 10), backgroundText: "oh" }), withBackground];
+      const lines = [createLine({ ...fieldsOfLine(chorus(0, 0, 10)), backgroundText: "oh" }), withBackground];
       expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "would-lose-word-timing" });
     });
 
     it("refuses a word-synced instance when the reference mixes word and line timing", () => {
-      const lineSynced = createLine({ ...chorus(0, 1), begin: 13, end: 14 });
+      const lineSynced = createLine({ ...fieldsOfLine(chorus(0, 1)), begin: 13, end: 14 });
       const lines = [chorus(0, 0, 10), lineSynced, chorus(1, 0, 40), chorus(1, 1, 43.2)];
       expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "would-lose-word-timing" });
     });
@@ -281,17 +291,14 @@ describe("realignSharedInstance", () => {
         backgroundText: "oh",
         backgroundWords: [{ id: newWordId(), text: "oh", sep: "", begin, end: begin + 0.4, joinsNext: false }],
       });
-      const lines = [
-        { ...chorus(0, 0, 10), ...background(10.2) },
-        { ...chorus(1, 0, 40), ...background(40.5) },
-      ];
+      const lines = [withFields(chorus(0, 0, 10), background(10.2)), withFields(chorus(1, 0, 40), background(40.5))];
       expect(
-        updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates.backgroundWords?.[0]?.begin,
+        roleWords(updatedLine(updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates), "bg")?.[0]?.begin,
       ).toBeCloseTo(40.2, 6);
     });
 
     it("refuses a timed instance with no synced line in common with the reference", () => {
-      const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 0), chorus(1, 1), { ...chorus(1, 2, 60), text: "" }];
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 0), chorus(1, 1), chorus(1, 2, 60)];
       expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "no-common-timed-line" });
     });
 
@@ -304,7 +311,10 @@ describe("realignSharedInstance", () => {
 
     it("anchors on lines both instances have", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
-      const words = updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates.words;
+      const words = roleWords(
+        updatedLine(updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates),
+        "main",
+      );
       expect(words?.[0]?.begin).toBeCloseTo(54, 6);
     });
   });
@@ -313,7 +323,10 @@ describe("realignSharedInstance", () => {
 describe("realignSharedInstances", () => {
   const sharing = [createGroup({ id: "g1", sharesTiming: true })];
   const firstBegin = (lines: readonly LyricLine[], id: string) =>
-    lines.find((line) => line.id === id)?.words?.[0]?.begin;
+    roleWords(
+      lines.find((line) => line.id === id),
+      "main",
+    )?.[0]?.begin;
 
   it("realigns every listed instance and keeps none on its own timing", () => {
     const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1), chorus(2, 0, 70), chorus(2, 1)];

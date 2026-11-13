@@ -1,3 +1,5 @@
+import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/language/display";
+import type { LyricLine } from "@/domain/line/model";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { buildLaneRows } from "@/views/sync/lane-rows";
@@ -5,7 +7,13 @@ import { describe, expect, it } from "vitest";
 
 const rowFor = (text: string) => {
   const line = createLine({ id: "l0", text });
-  return buildLaneRows({ lines: [line], displayLines: [line], agents: [], groupTags: new Map(), folded: new Set() })[0];
+  return buildLaneRows({
+    lines: [line],
+    displayLines: [getLanguageDisplayLine(line, "original")],
+    agents: [],
+    groupTags: new Map(),
+    folded: new Set(),
+  })[0];
 };
 
 describe("buildLaneRows word runs", () => {
@@ -43,8 +51,18 @@ describe("buildLaneRows word runs", () => {
 });
 
 describe("buildLaneRows per-line reuse", () => {
+  // Display lines are kept per line and split character, as the Sync view keeps them.
+  const displays = new WeakMap<LyricLine, { splitCharacter: string; display: LanguageDisplayLine }>();
+  const displayOf = (line: LyricLine) => {
+    const splitCharacter = useSettingsStore.getState().splitCharacter;
+    const cached = displays.get(line);
+    if (cached?.splitCharacter === splitCharacter) return cached.display;
+    const display = getLanguageDisplayLine(line, "original");
+    displays.set(line, { splitCharacter, display });
+    return display;
+  };
   const rowsOf = (lines: ReturnType<typeof createLine>[]) =>
-    buildLaneRows({ lines, displayLines: lines, agents: [], groupTags: new Map(), folded: new Set() });
+    buildLaneRows({ lines, displayLines: lines.map(displayOf), agents: [], groupTags: new Map(), folded: new Set() });
 
   it("rebuilds only a replaced line, matches a fresh computation, and follows the split character", () => {
     useSettingsStore.setState({ splitCharacter: "|" });
@@ -63,6 +81,6 @@ describe("buildLaneRows per-line reuse", () => {
     expect(after).toEqual(rowsOf(next.map((line) => ({ ...line }))));
 
     useSettingsStore.setState({ splitCharacter: "/" });
-    expect(rowsOf(next)[0].wordTexts).toEqual(["Walk|ing", "the", "line"]);
+    expect(rowsOf(next)[0].wordTexts).toEqual(["Walk", "ing", "the", "line"]);
   });
 });

@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 
 describe("reconcileMatchedTiming", () => {
   it("returns the same reference when the typed text is identical", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L1",
       text: "Dengar|lah rindu yang menyik|sa i|ni",
       agentId: "v1",
@@ -20,25 +21,25 @@ describe("reconcileMatchedTiming", () => {
         { id: "w7", text: "i", sep: "", begin: 2.2, end: 2.4, joinsNext: true },
         { id: "w8", text: "ni", sep: "", begin: 2.4, end: 2.6, joinsNext: false },
       ],
-    };
+    });
     const result = reconcileMatchedTiming(line, "Dengar|lah rindu yang menyik|sa i|ni");
     expect(result).toBe(line);
   });
 
   it("preserves begin/end on an untouched line-synced line that contains split characters", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Dengar|lah rindu",
       agentId: "v1",
       begin: 1,
       end: 2,
-    };
+    });
     const result = reconcileMatchedTiming(line, "Dengar|lah rindu");
     expect(result).toBe(line);
   });
 
   it("remaps words when split positions move but the syllable count is unchanged", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Den|garlah rin|du",
       agentId: "v1",
@@ -48,7 +49,7 @@ describe("reconcileMatchedTiming", () => {
         { id: "w11", text: "rin", sep: "", begin: 1, end: 1.5, joinsNext: true },
         { id: "w12", text: "du", sep: "", begin: 1.5, end: 2, joinsNext: false },
       ],
-    };
+    });
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
     expect(lineText(result)).toBe("Dengar|lah rin|du");
     expect(timedSyllables(mainTrack(result)).map((w) => w.begin)).toEqual([0, 0.5, 1, 1.5]);
@@ -57,7 +58,7 @@ describe("reconcileMatchedTiming", () => {
   });
 
   it("keeps untouched syllable timing when the syllable count changes", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Dengar|lah",
       agentId: "v1",
@@ -65,7 +66,7 @@ describe("reconcileMatchedTiming", () => {
         { id: "w13", text: "Dengar", sep: "", begin: 0, end: 0.5, joinsNext: true },
         { id: "w14", text: "lah", sep: "", begin: 0.5, end: 1, joinsNext: false },
       ],
-    };
+    });
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
     expect(lineText(result)).toBe("Dengar|lah|extra");
     expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Dengar", "lah", "extra"]);
@@ -80,22 +81,22 @@ describe("reconcileMatchedTiming", () => {
   });
 
   it("keeps begin/end on a line-synced line whose text content changed", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Dengarlah rindu",
       agentId: "v1",
       begin: 1,
       end: 2,
-    };
+    });
     const result = reconcileMatchedTiming(line, "Dengarlah rindu sayang");
     expect(lineText(result)).toBe("Dengarlah rindu sayang");
-    expect(result.begin).toBe(1);
-    expect(result.end).toBe(2);
-    expect(result.words).toBeUndefined();
+    expect(mainTrack(result).begin).toBe(1);
+    expect(mainTrack(result).end).toBe(2);
+    expect(roleWords(result, "main")).toBeUndefined();
   });
 
   it("clears word timing when the line text is emptied", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Dengar|lah",
       agentId: "v1",
@@ -103,48 +104,48 @@ describe("reconcileMatchedTiming", () => {
         { id: "w15", text: "Dengar", sep: "", begin: 0, end: 0.5, joinsNext: true },
         { id: "w16", text: "lah", sep: "", begin: 0.5, end: 1, joinsNext: false },
       ],
-    };
+    });
     const result = reconcileMatchedTiming(line, "");
     expect(lineText(result)).toBe("");
-    expect(result.words).toBeUndefined();
+    expect(roleWords(result, "main")).toBeUndefined();
   });
 
   it("clears begin/end when a line-synced line's text is emptied", () => {
-    const line: LyricLine = { id: "L0", text: "Dengarlah", agentId: "v1", begin: 1, end: 2 };
+    const line: LyricLine = lineFromFields({ id: "L0", text: "Dengarlah", agentId: "v1", begin: 1, end: 2 });
     const result = reconcileMatchedTiming(line, "");
-    expect(result.begin).toBeUndefined();
-    expect(result.end).toBeUndefined();
+    expect(mainTrack(result).begin).toBeUndefined();
+    expect(mainTrack(result).end).toBeUndefined();
   });
 });
 
 describe("reconcileMatchedTiming · edge cases", () => {
   it("returns the same reference for an untimed line whose text is identical", () => {
-    const line: LyricLine = { id: "L0", text: "no timing here", agentId: "v1" };
+    const line: LyricLine = lineFromFields({ id: "L0", text: "no timing here", agentId: "v1" });
     const result = reconcileMatchedTiming(line, "no timing here");
     expect(result).toBe(line);
   });
 
   it("updates text on an untimed line whose text changed", () => {
-    const line: LyricLine = { id: "L0", text: "old", agentId: "v1" };
+    const line: LyricLine = lineFromFields({ id: "L0", text: "old", agentId: "v1" });
     const result = reconcileMatchedTiming(line, "new");
     expect(lineText(result)).toBe("new");
-    expect(result.words).toBeUndefined();
-    expect(result.begin).toBeUndefined();
-    expect(result.end).toBeUndefined();
+    expect(roleWords(result, "main")).toBeUndefined();
+    expect(mainTrack(result).begin).toBeUndefined();
+    expect(mainTrack(result).end).toBeUndefined();
   });
 
   it("treats an empty words array as no timing and clears on text change", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Dengar|lah",
       agentId: "v1",
       words: [],
-    };
+    });
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
     expect(lineText(result)).toBe("Dengar|lah|extra");
-    expect(result.words).toBeUndefined();
-    expect(result.begin).toBeUndefined();
-    expect(result.end).toBeUndefined();
+    expect(roleWords(result, "main")).toBeUndefined();
+    expect(mainTrack(result).begin).toBeUndefined();
+    expect(mainTrack(result).end).toBeUndefined();
   });
 
   it("does not mutate the input line or its words array", () => {
@@ -154,23 +155,23 @@ describe("reconcileMatchedTiming · edge cases", () => {
       { id: "w19", text: "rin", sep: "", begin: 1, end: 1.5, joinsNext: true },
       { id: "w20", text: "du", sep: "", begin: 1.5, end: 2, joinsNext: false },
     ];
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Den|garlah rin|du",
       agentId: "v1",
       words: originalWords,
-    };
+    });
     const beforeText = lineText(line);
-    const beforeWords = line.words;
-    const beforeWordsSnapshot = JSON.parse(JSON.stringify(line.words));
+    const beforeWords = roleWords(line, "main");
+    const beforeWordsSnapshot = JSON.parse(JSON.stringify(roleWords(line, "main")));
     reconcileMatchedTiming(line, "Dengar|lah rin|du");
     expect(lineText(line)).toBe(beforeText);
-    expect(line.words).toBe(beforeWords);
-    expect(line.words).toEqual(beforeWordsSnapshot);
+    expect(roleWords(line, "main")).toBe(beforeWords);
+    expect(roleWords(line, "main")).toEqual(beforeWordsSnapshot);
   });
 
   it("preserves background-vocal fields on the remap path", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Den|garlah rin|du",
       agentId: "v1",
@@ -183,7 +184,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
       backgroundText: "ooh",
       backgroundWords: [{ id: "w25", text: "ooh", sep: "", begin: 0.2, end: 0.8, joinsNext: false }],
       backgroundTextSource: "manual",
-    };
+    });
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
     expect(backgroundText(result)).toBe("ooh");
     expect(timedSyllables(backgroundTrack(result))).toEqual([
@@ -193,7 +194,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
   });
 
   it("preserves background-vocal fields on the clear path", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Dengar|lah",
       agentId: "v1",
@@ -204,7 +205,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
       backgroundText: "ooh",
       backgroundWords: [{ id: "w28", text: "ooh", sep: "", begin: 0.2, end: 0.8, joinsNext: false }],
       backgroundTextSource: "extraction",
-    };
+    });
     const result = reconcileMatchedTiming(line, "");
     expect(backgroundText(result)).toBe("ooh");
     expect(timedSyllables(backgroundTrack(result))).toEqual([
@@ -214,7 +215,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
   });
 
   it("preserves group fields (groupId, instanceIdx, templateLineIdx) on both paths", () => {
-    const wordSynced: LyricLine = {
+    const wordSynced: LyricLine = lineFromFields({
       id: "L0",
       text: "Den|garlah rin|du",
       agentId: "v1",
@@ -227,7 +228,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
       groupId: "g1",
       instanceIdx: 0,
       templateLineIdx: 0,
-    };
+    });
     const remapped = reconcileMatchedTiming(wordSynced, "Dengar|lah rin|du");
     expect(remapped.groupId).toBe("g1");
     expect(remapped.instanceIdx).toBe(0);
@@ -242,14 +243,20 @@ describe("reconcileMatchedTiming · edge cases", () => {
 
 describe("reconcileMatchedTiming · regressions", () => {
   it("regression: typing an extra word into a line-synced line keeps its sync", () => {
-    const line: LyricLine = { id: "L0", text: "It hurts for me", agentId: "v1", begin: 107.9, end: 110.425 };
+    const line: LyricLine = lineFromFields({
+      id: "L0",
+      text: "It hurts for me",
+      agentId: "v1",
+      begin: 107.9,
+      end: 110.425,
+    });
     const result = reconcileMatchedTiming(line, "It hurts for me to wait");
-    expect(result.begin).toBe(107.9);
-    expect(result.end).toBe(110.425);
+    expect(mainTrack(result).begin).toBe(107.9);
+    expect(mainTrack(result).end).toBe(110.425);
   });
 
   it("regression: typing an extra word into a word-synced line keeps the other words' timing", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Wish I could",
       agentId: "v1",
@@ -258,7 +265,7 @@ describe("reconcileMatchedTiming · regressions", () => {
         { id: "w34", text: "I", sep: " ", begin: 2, end: 3, joinsNext: false },
         { id: "w35", text: "could", sep: "", begin: 3, end: 4, joinsNext: false },
       ],
-    };
+    });
     const result = reconcileMatchedTiming(line, "Wish I could get it");
     expect(timedSyllables(mainTrack(result)).slice(0, 2)).toEqual([
       { text: "Wish", sep: " ", begin: 1, end: 2, joinsNext: false },
@@ -275,7 +282,7 @@ describe("reconcileMatchedTiming · regressions", () => {
   });
 
   it("regression: deleting a word from a word-synced line keeps the remaining timing exactly", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L0",
       text: "Wish I could",
       agentId: "v1",
@@ -284,7 +291,7 @@ describe("reconcileMatchedTiming · regressions", () => {
         { id: "w37", text: "I", sep: " ", begin: 2, end: 3, joinsNext: false },
         { id: "w38", text: "could", sep: "", begin: 3, end: 4, joinsNext: false },
       ],
-    };
+    });
     const result = reconcileMatchedTiming(line, "Wish could");
     expect(timedSyllables(mainTrack(result))).toEqual([
       { text: "Wish", sep: " ", begin: 1, end: 2, joinsNext: false },

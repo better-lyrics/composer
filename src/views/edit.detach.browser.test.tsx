@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { reconcileLine } from "@/domain/line/model";
+
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
@@ -17,10 +18,10 @@ function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
 
 function linkedProjectLines(): LyricLine[] {
   return [
-    reconcileLine({ id: "a0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-    reconcileLine({ id: "a1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
-    reconcileLine({ id: "b0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
-    reconcileLine({ id: "b1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 }),
+    lineFromFields({ id: "a0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+    lineFromFields({ id: "a1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
+    lineFromFields({ id: "b0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+    lineFromFields({ id: "b1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 }),
   ];
 }
 

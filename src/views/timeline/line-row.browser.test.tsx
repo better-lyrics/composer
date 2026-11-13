@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -48,8 +48,8 @@ describe("LineRow", () => {
     expect(placeButton).toBeDefined();
     placeButton?.click();
     const updated = useProjectStore.getState().lines.find((l) => l.id === line.id);
-    expect(updated?.begin).toBeCloseTo(5, 5);
-    expect((updated?.end ?? 0) > 5).toBe(true);
+    expect(updated && mainTrack(updated).begin).toBeCloseTo(5, 5);
+    expect(((updated && mainTrack(updated).end) ?? 0) > 5).toBe(true);
   });
 
   it("does not show the Place button for a line that already has words", async () => {
@@ -134,7 +134,7 @@ describe("LineRow", () => {
     expect(dropZone).toBeDefined();
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.length).toBe(1);
     expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
@@ -154,11 +154,11 @@ describe("LineRow", () => {
 
     const dropZone = Array.from(screen.container.querySelectorAll("div")).find((d) => d.textContent?.trim() === "BG");
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
-    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "bg")).toBeUndefined();
 
     useSettingsStore.setState({ minWordDuration: 0.05 });
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.length).toBe(1);
   });
 
   it("regression: double-clicking a BG zone that holds untimed bg text times that text instead of replacing it", async () => {
@@ -182,11 +182,11 @@ describe("LineRow", () => {
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
+      .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
       .toEqual(["ah ", "ah"]);
     const after = useProjectStore.getState().lines[0];
     expect(backgroundText(after)).toBe("ah ah");
-    expect(timedSyllables(backgroundTrack(after))[0].begin).toBeLessThan(after.backgroundWords?.[1].begin ?? 0);
+    expect(timedSyllables(backgroundTrack(after))[0].begin).toBeLessThan(roleWords(after, "bg")?.[1].begin ?? 0);
     expect(timedSyllables(backgroundTrack(after))[1].end).toBeLessThanOrEqual(30);
     expect(useTimelineStore.getState().editingWord).toBeNull();
   });
@@ -233,7 +233,7 @@ describe("LineRow", () => {
       hitTestedEvent(zone, "dblclick");
 
       await expect
-        .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
+        .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
         .toEqual(["ooh ", "ah"]);
     });
 

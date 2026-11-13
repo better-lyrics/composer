@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readExportTiming, withExportTiming } from "@/domain/alignment/export-timing";
 import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
@@ -70,7 +70,7 @@ describe("withExportTiming", () => {
       ],
     });
     const settled = withExportTiming([ALIGNED, next], new Set(["a", "b"]));
-    expect(settled.map((line) => line.words?.[0].begin)).toEqual([12.34, 14.204]);
+    expect(settled.map((line) => roleWords(line, "main")?.[0].begin)).toEqual([12.34, 14.204]);
     expect(readExportTiming(ttmlOf(settled)).markedLines).toBe(2);
   });
 });

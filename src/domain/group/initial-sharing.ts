@@ -1,3 +1,4 @@
+import { mainTrack, roleWords } from "@/domain/line/track";
 import { withSharing } from "@/domain/group/own-timing";
 import { sameTime } from "@/domain/group/same-timing";
 import { type SharingOutcome, realignSharedInstances } from "@/domain/group/shared-placement";
@@ -39,10 +40,10 @@ function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source
     const match = sourceByTemplateLine.get(line.templateLineIdx);
     if (!match) return true;
     return (
-      sameTime(match.begin, line.begin, offset) &&
-      sameTime(match.end, line.end, offset) &&
-      sameWords(match.words, line.words, offset) &&
-      sameWords(match.backgroundWords, line.backgroundWords, offset)
+      sameTime(mainTrack(match).begin, mainTrack(line).begin, offset) &&
+      sameTime(mainTrack(match).end, mainTrack(line).end, offset) &&
+      sameWords(roleWords(match, "main"), roleWords(line, "main"), offset) &&
+      sameWords(roleWords(match, "bg"), roleWords(line, "bg"), offset)
     );
   });
 }

@@ -2,7 +2,7 @@ import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -157,7 +157,7 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
 
     pressBoundaryKey("[");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[1].begin).toBeCloseTo(1.7, 10);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.[1].begin).toBeCloseTo(1.7, 10);
     expect(timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]))[0].end).toBeCloseTo(1.7, 10);
     expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });

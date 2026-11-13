@@ -1,7 +1,8 @@
-import { mainBounds } from "@/domain/line/bounds";
 import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
+import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
@@ -67,9 +68,13 @@ function mergedWords(stored: WordTiming[] | undefined, edited: WordTiming[] | un
 
 // -- Field merges -------------------------------------------------------------
 
-function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined, edited: LyricLine): boolean {
+function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined, edited: LineFields): boolean {
   const words = edited.backgroundWords;
-  const bounds = mainBounds(edited);
+  const bounds = edited.words?.length
+    ? { begin: edited.words[0].begin, end: edited.words[edited.words.length - 1].end }
+    : edited.begin !== undefined && edited.end !== undefined
+      ? { begin: edited.begin, end: edited.end }
+      : null;
   return (
     !storedWords?.length &&
     words?.length === 1 &&
@@ -79,7 +84,7 @@ function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined
   );
 }
 
-function mergedBackground(stored: LyricLine, edited: LyricLine): Partial<LyricLine> {
+function mergedBackground(stored: LineFields, edited: LineFields): Partial<LineFields> {
   const storedWords = stored.backgroundWords;
   const seeded = hasSeededBackgroundWords(storedWords, edited);
   if (stored.backgroundText !== edited.backgroundText) {
@@ -93,31 +98,34 @@ function mergedBackground(stored: LyricLine, edited: LyricLine): Partial<LyricLi
 }
 
 function withoutSeededBackground(line: LyricLine): LyricLine {
-  if (!hasSeededBackgroundWords(undefined, line)) return line;
-  const { backgroundWords: _seeded, ...rest } = line;
-  return rest;
+  const fields = fieldsOfLine(line);
+  if (!hasSeededBackgroundWords(undefined, fields)) return line;
+  const { backgroundWords: _seeded, ...rest } = fields;
+  return lineFromFields(rest);
 }
 
-function mergedTiming(stored: LyricLine, edited: LyricLine): Pick<LyricLine, "words" | "begin" | "end"> {
+function mergedTiming(stored: LineFields, edited: LineFields): Pick<LineFields, "words" | "begin" | "end"> {
   if (edited.words) return { words: mergedWords(stored.words, edited.words) ?? edited.words };
   const keepsBounds =
     !stored.words && sameExportedTime(stored.begin, edited.begin) && sameExportedTime(stored.end, edited.end);
   return keepsBounds ? { begin: stored.begin, end: stored.end } : { begin: edited.begin, end: edited.end };
 }
 
-function mergedText(stored: LyricLine, edited: LyricLine): string {
+function mergedText(stored: LineFields, edited: LineFields): string {
   return !edited.words && edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
 }
 
-function fieldMergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
+function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLine {
+  const stored = fieldsOfLine(storedLine);
+  const edited = fieldsOfLine(editedLine);
   const { languages: _languages, ...editedFields } = edited;
   const background = mergedBackground(stored, edited);
   const timing = mergedTiming(stored, edited);
-  const languages = mergedLanguages(stored, edited, {
+  const languages = mergedLanguages(storedLine, editedLine, {
     words: timing.words,
     backgroundWords: background.backgroundWords,
   });
-  return reconcileLine({
+  const merged = lineFromFields({
     ...editedFields,
     text: mergedText(stored, edited),
     ...background,
@@ -125,6 +133,7 @@ function fieldMergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
     id: stored.id,
     ...(languages ? { languages } : {}),
   });
+  return withUntimedIdsOf(merged, storedLine);
 }
 
 function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {

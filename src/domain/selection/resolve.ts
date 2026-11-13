@@ -1,6 +1,6 @@
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { memoByIdentity } from "@/utils/memo-by-identity";

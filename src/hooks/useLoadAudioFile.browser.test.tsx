@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { usePersistence } from "@/hooks/usePersistence";
 import { ensureOpenProjectId, openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -278,7 +279,7 @@ describe("useLoadAudioFile priming flags", () => {
     await seedStoredProject("old", {
       open: true,
       project: {
-        lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+        lines: savedLines([createLine({ text: "Waiting in a car", begin: 1, end: 2 })]),
         primingStripped: true,
         primingCorrected: false,
       },
@@ -291,7 +292,7 @@ describe("useLoadAudioFile priming flags", () => {
     await saveOpenProjectNow();
     const reloaded = (await loadProjectForRestore("old")).project;
 
-    expect((reloaded?.lines[0] as { begin: number }).begin).toBeCloseTo(1, 9);
+    expect(reloaded?.lines[0]?.begin).toBeCloseTo(1, 9);
     expect(reloaded).toMatchObject({ primingStripped: true, primingCorrected: true });
   });
 });

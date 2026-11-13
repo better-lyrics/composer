@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { reconcileLine } from "@/domain/line/model";
+
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -29,9 +30,9 @@ function pasteTextareaValue(textarea: HTMLTextAreaElement, value: string): void 
 
 function linkedChorusAroundVerse(): LyricLine[] {
   return [
-    reconcileLine({ id: "a0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-    reconcileLine({ id: "x", text: "Verse", agentId: "v1" }),
-    reconcileLine({ id: "b0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+    lineFromFields({ id: "a0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+    lineFromFields({ id: "x", text: "Verse", agentId: "v1" }),
+    lineFromFields({ id: "b0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
   ];
 }
 
@@ -103,7 +104,7 @@ describe("pasting over a linked line", () => {
     useProjectStore.setState({
       activeTab: "edit",
       lines: [
-        reconcileLine({
+        lineFromFields({
           id: "a0",
           text: "Chorus line",
           agentId: "v1",
@@ -111,10 +112,10 @@ describe("pasting over a linked line", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
         }),
-        reconcileLine({ id: "x", text: "Verse", agentId: "v1" }),
-        reconcileLine({ id: "bg1", text: "(oh)", agentId: "v1" }),
-        reconcileLine({ id: "bg2", text: "(yeah)", agentId: "v1" }),
-        reconcileLine({
+        lineFromFields({ id: "x", text: "Verse", agentId: "v1" }),
+        lineFromFields({ id: "bg1", text: "(oh)", agentId: "v1" }),
+        lineFromFields({ id: "bg2", text: "(yeah)", agentId: "v1" }),
+        lineFromFields({
           id: "b0",
           text: "Chorus line",
           agentId: "v1",

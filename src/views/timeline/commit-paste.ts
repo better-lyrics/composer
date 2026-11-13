@@ -6,7 +6,7 @@ import type { LineTemplate } from "@/domain/group/template";
 import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceCount } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";

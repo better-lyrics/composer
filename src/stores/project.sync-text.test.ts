@@ -5,6 +5,7 @@ import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 
 describe("sync incremental tap preserves line.text", () => {
   beforeEach(() => {
@@ -30,7 +31,6 @@ describe("sync incremental tap preserves line.text", () => {
     if (!commit) throw new Error("expected a commit");
     useProjectStore.getState().commit(
       lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-        derivesText: false,
         propagateToSiblings: false,
       }),
     );
@@ -51,7 +51,6 @@ describe("sync incremental tap preserves line.text", () => {
       if (!commit) throw new Error("expected a commit");
       useProjectStore.getState().commit(
         lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-          derivesText: false,
           propagateToSiblings: false,
         }),
       );
@@ -73,7 +72,6 @@ describe("sync incremental tap preserves line.text", () => {
     if (!commit) throw new Error("expected a commit");
     useProjectStore.getState().commit(
       lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-        derivesText: false,
         propagateToSiblings: false,
       }),
     );
@@ -81,11 +79,14 @@ describe("sync incremental tap preserves line.text", () => {
     const partialPrev = [...timedSyllables(mainTrack(useProjectStore.getState().lines[0]))];
     partialPrev[partialPrev.length - 1] = { ...partialPrev[partialPrev.length - 1], end: 2 };
     useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "l0", updates: { words: partialPrev } }], {
-        derivesText: false,
-        propagateToSiblings: false,
-        copiesSharedTiming: false,
-      }),
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "l0", updates: { words: partialPrev } }]),
+        {
+          propagateToSiblings: false,
+          copiesSharedTiming: false,
+        },
+      ),
       "pending",
     );
 

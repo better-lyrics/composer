@@ -1,9 +1,10 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { lineInstanceKey } from "@/domain/instance/key";
-import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
-import { withDerivedText } from "@/domain/line/reconstruct-text";
+import { withManualBackgroundWords, withoutBackground } from "@/domain/line/background";
+import type { LyricLine } from "@/domain/line/model";
+import { hasAnyTiming, isLineSynced } from "@/domain/line/predicates";
+import { mainTrack, roleWords } from "@/domain/line/track";
+import { withMainTrack, withoutTrackTiming, withTrackWords } from "@/domain/line/track-writes";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 
 interface DeletionSelection {
@@ -15,24 +16,15 @@ interface DeletionSelection {
 // -- Helpers ------------------------------------------------------------------
 
 function isLineFullyEmpty(line: LyricLine): boolean {
-  return (
-    (line.words?.length ?? 0) === 0 &&
-    (line.backgroundWords?.length ?? 0) === 0 &&
-    line.begin === undefined &&
-    line.end === undefined
-  );
+  return !hasAnyTiming(line);
 }
 
 function trackLength(line: LyricLine, type: "word" | "bg"): number {
-  if (type === "bg") return line.backgroundWords?.length ?? 0;
-  return isLineSynced(line) ? 1 : (line.words?.length ?? 0);
+  if (type === "bg") return roleWords(line, "bg")?.length ?? 0;
+  return isLineSynced(line) ? 1 : (roleWords(line, "main")?.length ?? 0);
 }
 
-function deleteFromLines(
-  lines: LyricLine[],
-  selections: ReadonlyArray<DeletionSelection>,
-  splitChar: string,
-): Map<string, LyricLine> {
+function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionSelection>): Map<string, LyricLine> {
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number> }>();
   for (const sel of selections) {
     let entry = byLine.get(sel.lineId);
@@ -53,38 +45,27 @@ function deleteFromLines(
     const line = linesById.get(lineId);
     if (!line) continue;
 
-    const realMainCount = line.words?.length ?? 0;
-    const lineSynced = isLineSynced(line);
-
-    let nextMain = line.words;
-    let willHaveNoMainWords = realMainCount === 0;
-    if (lineSynced && mainIdxs.has(0)) {
-      nextMain = undefined;
-      willHaveNoMainWords = true;
-    } else if (realMainCount > 0 && mainIdxs.size > 0 && line.words) {
-      const absorbed = absorbDeletedSyllablesIntoNeighbors(line.words, mainIdxs);
-      nextMain = absorbed.filter((_, i) => !mainIdxs.has(i));
-      willHaveNoMainWords = nextMain.length === 0;
+    const mainWords = roleWords(line, "main") ?? [];
+    const main = mainTrack(line);
+    let updatedLine = line;
+    if (isLineSynced(line) && mainIdxs.has(0)) {
+      updatedLine = withMainTrack(line, withoutTrackTiming(main));
+    } else if (mainWords.length > 0 && mainIdxs.size > 0) {
+      const absorbed = absorbDeletedSyllablesIntoNeighbors(mainWords, mainIdxs);
+      const nextMain = absorbed.filter((_, i) => !mainIdxs.has(i));
+      updatedLine = withMainTrack(
+        line,
+        nextMain.length > 0 ? withTrackWords(main, nextMain) : withoutTrackTiming(main),
+      );
     }
 
-    const bgEdited = (line.backgroundWords?.length ?? 0) > 0 && bgIdxs.size > 0 && line.backgroundWords !== undefined;
-    let bgFields: Partial<LyricLine> = {};
-    if (bgEdited && line.backgroundWords) {
-      const absorbed = absorbDeletedSyllablesIntoNeighbors(line.backgroundWords, bgIdxs);
+    const bgWords = roleWords(line, "bg") ?? [];
+    if (bgWords.length > 0 && bgIdxs.size > 0) {
+      const absorbed = absorbDeletedSyllablesIntoNeighbors(bgWords, bgIdxs);
       const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));
-      bgFields = remaining.length > 0 ? manualBackgroundWordEdit(remaining) : CLEARED_BACKGROUND;
+      updatedLine =
+        remaining.length > 0 ? withManualBackgroundWords(updatedLine, remaining) : withoutBackground(updatedLine);
     }
-
-    const updatedLine = reconcileLine({
-      ...line,
-      words: nextMain,
-      text:
-        nextMain && nextMain.length > 0
-          ? withDerivedText(reconcileLine({ ...line, words: nextMain }), splitChar, line).text
-          : line.text,
-      ...bgFields,
-      ...(willHaveNoMainWords ? { begin: undefined, end: undefined } : {}),
-    });
 
     updatedById.set(lineId, updatedLine);
   }
@@ -133,16 +114,12 @@ function withLinkedSiblings(
 
 // -- Deletion -----------------------------------------------------------------
 
-function applyWordDeletion(
-  lines: LyricLine[],
-  selectedWords: ReadonlyArray<DeletionSelection>,
-  splitChar: string,
-): LyricLine[] {
+function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<DeletionSelection>): LyricLine[] {
   if (selectedWords.length === 0) return lines;
 
-  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords, splitChar));
+  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords));
   const selections = withLinkedSiblings(lines, selectedWords, emptied);
-  const updatedById = deleteFromLines(lines, selections, splitChar);
+  const updatedById = deleteFromLines(lines, selections);
 
   const result = lines.map((line) => updatedById.get(line.id) ?? line);
   if (emptied.size === 0) return result;

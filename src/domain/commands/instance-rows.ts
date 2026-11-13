@@ -10,7 +10,6 @@ import type { LineUpdate, RawLine } from "@/domain/line/model";
 function adoptInstance(command: string, groupId: string, instanceIdx: number, lines: RawLine[]): LyricCommand {
   return {
     note: { command, args: [groupId, instanceIdx] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root) =>
       applied(
@@ -38,7 +37,6 @@ function pasteLines(updates: readonly LineUpdate[]): LyricCommand {
 function deleteLine(lineId: string): LyricCommand {
   return {
     note: { command: "delete line", args: [lineId] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root) =>
       root.lines.some((line) => line.id === lineId)

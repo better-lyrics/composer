@@ -11,9 +11,13 @@ import {
   wholeSongRange,
 } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import type { LyricLine } from "@/domain/line/model";
+import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
+import { mainTrack, roleWords } from "@/domain/line/track";
 import { createGroup, createLine } from "@/test/factories";
+import { type FieldPatch, withFields } from "@/test/field-updates";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -146,13 +150,13 @@ describe("sharedInstancesInLineOrder", () => {
 describe("sharedTimingFanOut", () => {
   const sharing = [createGroup({ id: "g1", sharesTiming: true })];
 
-  function edit(lines: LyricLine[], id: string, change: (line: LyricLine) => LineUpdate["updates"]): LyricLine[] {
-    return lines.map((line) => (line.id === id ? reconcileLine({ ...line, ...change(line) }) : line));
+  function edit(lines: LyricLine[], id: string, change: (line: LyricLine) => FieldPatch): LyricLine[] {
+    return lines.map((line) => (line.id === id ? withFields(line, change(line)) : line));
   }
 
   function nudgeWord(wordIdx: number, delta: number) {
-    return (line: LyricLine): LineUpdate["updates"] => ({
-      words: line.words?.map((word, i) =>
+    return (line: LyricLine): FieldPatch => ({
+      words: roleWords(line, "main")?.map((word, i) =>
         i === wordIdx ? { ...word, begin: word.begin + delta, end: word.end + delta } : word,
       ),
     });
@@ -164,15 +168,16 @@ describe("sharedTimingFanOut", () => {
     const round = (time: number) => Math.round((time - start) * 1e6) / 1e6;
     return members.map((line) => ({
       templateLineIdx: line.templateLineIdx,
-      words: line.words?.map((word) => [round(word.begin), round(word.end)]),
-      backgroundWords: line.backgroundWords?.map((word) => [round(word.begin), round(word.end)]),
-      begin: line.begin === undefined ? undefined : round(line.begin),
-      end: line.end === undefined ? undefined : round(line.end),
+      words: roleWords(line, "main")?.map((word) => [round(word.begin), round(word.end)]),
+      backgroundWords: roleWords(line, "bg")?.map((word) => [round(word.begin), round(word.end)]),
+      begin: isLineSynced(line) ? round(mainBounds(line)!.begin) : undefined,
+      end: isLineSynced(line) ? round(mainBounds(line)!.end) : undefined,
     }));
   }
 
   const byId = (lines: readonly LyricLine[], id: string) => lines.find((line) => line.id === id);
-  const times = (line: LyricLine | undefined) => line?.words?.map((word) => [word.begin, word.end]);
+  const times = (line: LyricLine | undefined) =>
+    (line && roleWords(line, "main"))?.map((word) => [word.begin, word.end]);
   const expectTimes = (actual: number[][] | undefined, expected: number[][]) => {
     expect(actual).toHaveLength(expected.length);
     expected.forEach(([begin, end], i) => {
@@ -210,13 +215,13 @@ describe("sharedTimingFanOut", () => {
     const after = edit(before, "o0", (line) => ({
       begin: 11.2,
       end: 13.5,
-      backgroundWords: line.backgroundWords?.map((word) => ({ ...word, begin: 12, end: 12.6 })),
+      backgroundWords: roleWords(line, "bg")?.map((word) => ({ ...word, begin: 12, end: 12.6 })),
     }));
     const copied = byId(sharedTimingFanOut(before, after, sharing, ["o0"]).lines, "o1");
-    expect(copied?.begin).toBeCloseTo(41.2, 6);
-    expect(copied?.end).toBeCloseTo(43.5, 6);
+    expect(copied && mainTrack(copied).begin).toBeCloseTo(41.2, 6);
+    expect(copied && mainTrack(copied).end).toBeCloseTo(43.5, 6);
     expectTimes(
-      copied?.backgroundWords?.map((word) => [word.begin, word.end]),
+      (copied && roleWords(copied, "bg"))?.map((word) => [word.begin, word.end]),
       [[42, 42.6]],
     );
   });
@@ -225,7 +230,7 @@ describe("sharedTimingFanOut", () => {
     const before = [chorus(0, 0, 10), chorus(1, 0, 40)];
     const after = edit(before, "c0-0", (line) => ({ ...nudgeWord(1, 0.1)(line), agentId: "v2" }));
     const copied = byId(sharedTimingFanOut(before, after, sharing, ["c0-0"]).lines, "c1-0");
-    expect(copied?.agentId).toBe(before[1].agentId);
+    expect(copied && mainTrack(copied).agentId).toBe(mainTrack(before[1]).agentId);
     expect(lineText(copied!)).toBe("I want");
   });
 
@@ -266,8 +271,8 @@ describe("sharedTimingFanOut", () => {
       const before = [chorus(0, 0, 10), chorus(0, 1, 12), chorus(1, 0, 40), chorus(1, 1, 42)];
       const after = edit(before, "c0-1", () => ({ words: undefined }));
       const copied = byId(sharedTimingFanOut(before, after, sharing, ["c0-1"]).lines, "c1-1");
-      expect(copied?.words).toBeUndefined();
-      expect(copied?.begin).toBeUndefined();
+      expect(copied && roleWords(copied, "main")).toBeUndefined();
+      expect(copied && mainTrack(copied).begin).toBeUndefined();
     });
 
     it("returns the same array when timing did not change", () => {

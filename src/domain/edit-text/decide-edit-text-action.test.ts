@@ -1,8 +1,10 @@
 /**
  * @vitest-environment node
  */
+
 import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "@/domain/group/template";
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
@@ -13,11 +15,25 @@ const groupChorus: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", te
 
 function chorusLines(): LyricLine[] {
   return [
-    { id: "c1a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-    { id: "c1b", text: "more than words", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-    { id: "v1", text: "verse line", agentId: "v1" },
-    { id: "c2a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
-    { id: "c2b", text: "more than words", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 },
+    lineFromFields({ id: "c1a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+    lineFromFields({
+      id: "c1b",
+      text: "more than words",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 0,
+      templateLineIdx: 1,
+    }),
+    lineFromFields({ id: "v1", text: "verse line", agentId: "v1" }),
+    lineFromFields({ id: "c2a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+    lineFromFields({
+      id: "c2b",
+      text: "more than words",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 1,
+      templateLineIdx: 1,
+    }),
   ];
 }
 
@@ -142,8 +158,8 @@ describe("decideEditTextAction", () => {
 
   it("dedups labels when multiple impacted instances share a group", () => {
     const lines: LyricLine[] = [
-      { id: "a", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "b", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      lineFromFields({ id: "a", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      lineFromFields({ id: "b", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
     ];
     const action = decideEditTextAction({
       text: "",
@@ -160,7 +176,7 @@ describe("decideEditTextAction", () => {
 
   it("propagates a content edit to a sibling instance via apply", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "I love you",
         agentId: "v1",
@@ -172,8 +188,8 @@ describe("decideEditTextAction", () => {
           { id: "w2", text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
           { id: "w3", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
         ],
-      },
-      {
+      }),
+      lineFromFields({
         id: "b",
         text: "I love you",
         agentId: "v1",
@@ -185,7 +201,7 @@ describe("decideEditTextAction", () => {
           { id: "w5", text: "love", sep: " ", begin: 30.5, end: 31.0, joinsNext: false },
           { id: "w6", text: "you", sep: "", begin: 31.0, end: 31.5, joinsNext: false },
         ],
-      },
+      }),
     ];
     const action = decideEditTextAction({
       text: "I luv you\nI love you",
@@ -207,7 +223,7 @@ describe("decideEditTextAction", () => {
   });
 
   it("returns apply (with empty group cleanup unrelated) when impacted is empty even on length change outside group", () => {
-    const lines: LyricLine[] = [{ id: "a", text: "first", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "a", text: "first", agentId: "v1" })];
     const action = decideEditTextAction({
       text: "first\nsecond",
       defaultAgentId: "v1",
@@ -258,9 +274,16 @@ describe("regressions", () => {
   });
   it("keeps every untouched line as the same object through a keystroke", () => {
     const lines: LyricLine[] = [
-      { id: "a", text: "Under the porch light (hey)", agentId: "v2", begin: 1, end: 3 },
-      { id: "b", text: "we counted the trains", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "c", text: "(ooh) slow and steady", agentId: "v1" },
+      lineFromFields({ id: "a", text: "Under the porch light (hey)", agentId: "v2", begin: 1, end: 3 }),
+      lineFromFields({
+        id: "b",
+        text: "we counted the trains",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+      }),
+      lineFromFields({ id: "c", text: "(ooh) slow and steady", agentId: "v1" }),
     ];
     const action = decideEditTextAction({
       text: "Under the porch light (hey)\nwe counted the train\n(ooh) slow and steady",
@@ -272,7 +295,7 @@ describe("regressions", () => {
     if (action.kind !== "apply") throw new Error(action.kind);
     expect(action.finalLines[0]).toBe(lines[0]);
     expect(action.finalLines[2]).toBe(lines[2]);
-    expect(action.finalLines[1]).toMatchObject({
+    expect(fieldsOfLine(action.finalLines[1])).toMatchObject({
       id: "b",
       text: "we counted the train",
       agentId: "v1",

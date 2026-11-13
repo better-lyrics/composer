@@ -1,7 +1,8 @@
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 
 function linesToEditText(lines: readonly LyricLine[]): string {
-  return lines.map((line) => line.text).join("\n");
+  return lines.map((line) => lineText(line)).join("\n");
 }
 
 // Rows the user typed stay verbatim (spaces mid-typing survive); only rows a linked edit rewrote show the committed text.
@@ -12,7 +13,7 @@ function editTextWithRewrittenRows(
 ): string {
   return typedText
     .split("\n")
-    .map((row, i) => (finalLines[i] === typedLines[i] ? row : finalLines[i].text))
+    .map((row, i) => (finalLines[i] === typedLines[i] ? row : lineText(finalLines[i])))
     .join("\n");
 }
 

@@ -1,5 +1,6 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
@@ -60,7 +61,7 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
   const id = opts.id ?? `line-${++lineCounter}`;
   const text = opts.text ?? "Test lyric line";
   const agentId = opts.agentId ?? DEFAULT_AGENTS[0]?.id ?? "v1";
-  return reconcileLine({
+  return lineFromFields({
     id,
     text,
     agentId,
@@ -96,7 +97,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
   return {
     metadata: { title: "t", artists: [], album: "", duration: 0 },
     agents: DEFAULT_AGENTS,
-    lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+    lines: [createLine({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })],
     groups: [],
     granularity: "word",
     exportTiming: "word",
@@ -121,4 +122,5 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
   };
 }
 
+export type { FactoryLineOptions };
 export { createGroup, createLine, createProjectSaveInput, createWord, createWords, snapPoints };

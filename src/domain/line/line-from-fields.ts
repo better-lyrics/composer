@@ -1,13 +1,42 @@
-import type { LineTrack, Syllable, UntimedSyllable } from "@/domain/line/track";
-import type { LyricLine } from "@/domain/line/model";
-import { lcsPairs } from "@/domain/word/alignment";
-import { newWordId } from "@/domain/word/id";
+import type { LineLanguages } from "@/domain/language/model";
+import type {
+  BackgroundSource,
+  BackgroundTrack,
+  LyricLine,
+  MainTrack,
+  Syllable,
+  TrackTiming,
+} from "@/domain/line/model";
+import { textSyllables } from "@/domain/line/syllables-from-text";
+import { trackText } from "@/domain/line/text";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
+import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
-// -- Untimed tail -------------------------------------------------------------
+// -- Types --------------------------------------------------------------------
 
-function wordAtoms(words: WordTiming[]): string[] {
+// A line spelled the way version 3 records, links and parsers spell it: stored text, words and background fields.
+interface LineFields {
+  id: string;
+  text: string;
+  agentId: string;
+  words?: WordTiming[];
+  begin?: number;
+  end?: number;
+  backgroundText?: string;
+  backgroundWords?: WordTiming[];
+  backgroundTextSource?: BackgroundSource;
+  languages?: LineLanguages;
+  groupId?: string;
+  instanceIdx?: number;
+  templateLineIdx?: number;
+  detached?: boolean;
+}
+
+// -- Untimed rest -------------------------------------------------------------
+
+function wordAtoms(words: readonly WordTiming[]): string[] {
   return words.flatMap((word) => splitIntoWordsWithMeta(word.text).parts);
 }
 
@@ -22,34 +51,9 @@ function partEnds(text: string, parts: string[]): number[] {
   return ends;
 }
 
-// The last new word that matches an old one, aligning old words as early as they can go, so a word
-// repeated later in the line is never mistaken for the one that was already timed.
-function lastSurvivingIndex(covered: string[], timed: string[]): number {
-  const reversedPairs = lcsPairs(covered.toReversed(), timed.toReversed());
-  if (reversedPairs.length === 0) return -1;
-  return timed.length - 1 - Math.min(...reversedPairs.map(([, timedIndex]) => timedIndex));
-}
-
-// The words of a partly synced track cover the start of its text; the rest is lyrics not timed yet.
-// Words added after the last surviving timed word that spell the start of that rest were just timed,
-// so they leave it. Returns the rest as typed, with the separator that leads into it.
-function untimedTail(text: string, previousWords: WordTiming[], words: WordTiming[]): string {
-  const written = splitIntoWordsWithMeta(text);
-  const covered = wordAtoms(previousWords);
-  if (covered.length === 0 || covered.length >= written.parts.length) return "";
-  if (covered.some((atom, i) => atom !== written.parts[i])) return "";
-  const timed = wordAtoms(words);
-  const added = timed.slice(lastSurvivingIndex(covered, timed) + 1);
-  const tail = written.parts.slice(covered.length);
-  let nowTimed = Math.min(added.length, tail.length);
-  while (nowTimed > 0 && added.slice(added.length - nowTimed).some((atom, i) => atom !== tail[i])) nowTimed--;
-  const start = covered.length + nowTimed;
-  if (start >= written.parts.length) return "";
-  return text.slice(partEnds(text, written.parts)[start - 1]);
-}
-
-// The words a line already has, read against its own text: the rest after a matching prefix is untimed.
-function untimedRest(text: string, words: WordTiming[]): string {
+// The words of a partly synced track spell the start of its text; the rest is lyrics not timed yet,
+// returned with the separator that leads into it.
+function untimedRest(text: string, words: readonly WordTiming[]): string {
   const written = splitIntoWordsWithMeta(text);
   const covered = wordAtoms(words);
   if (covered.length === 0 || covered.length >= written.parts.length) return "";
@@ -57,59 +61,107 @@ function untimedRest(text: string, words: WordTiming[]): string {
   return text.slice(partEnds(text, written.parts)[covered.length - 1]);
 }
 
-// A save cannot spell a join on the last timed word, so the line text decides it once on load.
-function withTrailingJoinFromText(text: string, words: WordTiming[]): WordTiming[] {
-  if (untimedRest(text, words) === "") return words;
+// A save cannot spell what joins the last timed word to the untimed rest, so the text decides it once on load.
+function withClosingJoint(words: readonly WordTiming[], rest: string, splitChar: string): WordTiming[] {
   const last = words.length - 1;
-  const joinsNext = !splitIntoWordsWithMeta(text).trailingSpace[wordAtoms(words).length - 1];
-  return words[last].joinsNext === joinsNext ? words : words.with(last, { ...words[last], joinsNext });
+  const space = /^\s*/.exec(rest)?.[0] ?? "";
+  const joinsNext = space === "" && rest.startsWith(splitChar);
+  const sep = words[last].sep === "" ? space : words[last].sep;
+  const closing = words[last];
+  if (closing.sep === sep && closing.joinsNext === joinsNext) return [...words];
+  return words.with(last, { ...closing, sep, joinsNext });
+}
+
+// Untimed syllables built here are new to the session. Ids count back from the end of the track, so separately built
+// lines stay comparable and an untimed syllable keeps its id when more of the line before it is timed.
+function untimedFromText(text: string, splitChar: string): Syllable[] {
+  const syllables = textSyllables(text, splitChar);
+  return syllables.map((syllable, index) => ({ ...syllable, id: `untimed-${syllables.length - 1 - index}` }));
+}
+
+function syllablesFromFields(text: string, words: readonly WordTiming[] | undefined, splitChar: string): Syllable[] {
+  if (!words?.length) return untimedFromText(text, splitChar);
+  const rest = untimedRest(text, words);
+  if (rest === "") return [...words];
+  return [...withClosingJoint(words, rest, splitChar), ...untimedFromText(rest, splitChar)];
 }
 
 // -- Tracks -------------------------------------------------------------------
 
-function untimedSyllables(text: string): UntimedSyllable[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
-  return parts.map((part, index) => ({
-    id: newWordId(),
-    text: part,
-    sep: trailingSpace[index] ? " " : "",
-    joinsNext: !trailingSpace[index] && index < parts.length - 1,
-  }));
-}
-
-function syllablesOf(text: string, words: WordTiming[] | undefined): readonly Syllable[] {
-  if (!words?.length) return untimedSyllables(text);
-  const tail = untimedRest(text, words);
-  return tail === "" ? words : [...words, ...untimedSyllables(tail)];
-}
-
-function mainTrackFromFields(line: LyricLine): LineTrack {
-  const syllables = syllablesOf(line.text, line.words);
-  const span = line.words?.length || line.begin === undefined ? {} : { begin: line.begin, end: line.end };
-  return { id: `${line.id}:main`, role: "main", syllables, ...span };
-}
-
-function backgroundTrackFromFields(line: LyricLine): LineTrack | undefined {
-  const { backgroundText, backgroundWords, backgroundTextSource } = line;
-  if (backgroundText === undefined && backgroundWords === undefined && backgroundTextSource === undefined) {
-    return undefined;
-  }
-  const syllables = syllablesOf(backgroundText ?? "", backgroundWords);
+function trackTiming(
+  id: string,
+  text: string,
+  words: WordTiming[] | undefined,
+  span: { begin?: number; end?: number },
+  splitChar: string,
+): TrackTiming {
+  const syllables = syllablesFromFields(text, words, splitChar);
+  if (words?.length || span.begin === undefined || span.end === undefined) return { id, syllables };
   return {
-    id: `${line.id}:bg`,
-    role: "bg",
-    syllables,
-    ...(backgroundTextSource ? { source: backgroundTextSource } : {}),
+    id,
+    syllables: syllables.map(({ begin: _b, end: _e, ...untimed }) => untimed),
+    begin: span.begin,
+    end: span.end,
   };
 }
 
-// Today's flat line fields read as tracks: the timed words first, then the untimed rest of the text.
-function tracksFromFields(line: LyricLine): readonly [LineTrack] | readonly [LineTrack, LineTrack] {
-  const main = mainTrackFromFields(line);
-  const background = backgroundTrackFromFields(line);
-  return background ? [main, background] : [main];
+function mainTrackFromFields(fields: LineFields, splitChar: string): MainTrack {
+  const timing = trackTiming(`${fields.id}:main`, fields.text, fields.words, fields, splitChar);
+  return { ...timing, role: "main", agentId: fields.agentId };
+}
+
+function backgroundTrackFromFields(fields: LineFields, splitChar: string): BackgroundTrack | undefined {
+  const { backgroundText, backgroundWords, backgroundTextSource } = fields;
+  if (backgroundText === undefined && backgroundWords === undefined && backgroundTextSource === undefined) {
+    return undefined;
+  }
+  const timing = trackTiming(`${fields.id}:bg`, backgroundText ?? "", backgroundWords, {}, splitChar);
+  return { ...timing, role: "bg", ...(backgroundTextSource && { source: backgroundTextSource }) };
+}
+
+// -- Functions ----------------------------------------------------------------
+
+// A line from flat fields: timed words first, then the untimed rest of the text. Words win over a line span.
+function lineFromFields(fields: LineFields, splitChar = getSplitCharacter()): LyricLine {
+  const main = mainTrackFromFields(fields, splitChar);
+  const background = backgroundTrackFromFields(fields, splitChar);
+  return {
+    id: fields.id,
+    tracks: background ? [main, background] : [main],
+    ...(fields.languages && { languages: fields.languages }),
+    ...(fields.groupId !== undefined && { groupId: fields.groupId }),
+    ...(fields.instanceIdx !== undefined && { instanceIdx: fields.instanceIdx }),
+    ...(fields.templateLineIdx !== undefined && { templateLineIdx: fields.templateLineIdx }),
+    ...(fields.detached !== undefined && { detached: fields.detached }),
+  };
+}
+
+// The line spelled as flat fields again: the text read from the syllables, the timed ones as words.
+function fieldsOfLine(line: LyricLine): LineFields {
+  const main = mainTrack(line);
+  const background = backgroundTrack(line);
+  const words = timedSyllables(main);
+  const backgroundWords = timedSyllables(background);
+  return {
+    id: line.id,
+    text: trackText(main),
+    agentId: main.agentId,
+    ...(words.length > 0 && { words }),
+    ...(isSpanTimed(main) && { begin: main.begin, end: main.end }),
+    ...(background && {
+      backgroundText: trackText(background),
+      ...(backgroundWords.length > 0 && { backgroundWords }),
+      ...(background.source && { backgroundTextSource: background.source }),
+    }),
+    ...(line.languages && { languages: line.languages }),
+    ...(line.groupId !== undefined && { groupId: line.groupId }),
+    ...(line.instanceIdx !== undefined && { instanceIdx: line.instanceIdx }),
+    ...(line.templateLineIdx !== undefined && { templateLineIdx: line.templateLineIdx }),
+    ...(line.detached !== undefined && { detached: line.detached }),
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { tracksFromFields, untimedTail, withTrailingJoinFromText };
+export { fieldsOfLine, lineFromFields, syllablesFromFields };
+export type { LineFields };

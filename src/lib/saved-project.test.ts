@@ -1,3 +1,5 @@
+import { roleWords } from "@/domain/line/track";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import {
@@ -88,7 +90,7 @@ describe("linesFromSaved", () => {
         ],
       },
     ]);
-    const ids = line.words?.map((word) => word.id) ?? [];
+    const ids = roleWords(line, "main")?.map((word) => word.id) ?? [];
     expect(new Set(ids).size).toBe(2);
     expect(ids).not.toContain("x");
   });
@@ -111,10 +113,10 @@ describe("linesFromSaved", () => {
         ],
       },
     ]);
-    expect(line.text).toBe("Pa|per lanterns");
-    expect(line.backgroundText).toBe("drif|ting");
+    expect(lineText(line)).toBe("Pa|per lanterns");
+    expect(backgroundText(line)).toBe("drif|ting");
     const [reloaded] = linesFromSaved(savedLines([line]));
-    expect([reloaded.text, reloaded.backgroundText]).toEqual(["Pa|per lanterns", "drif|ting"]);
+    expect([lineText(reloaded), backgroundText(reloaded)]).toEqual(["Pa|per lanterns", "drif|ting"]);
   });
 
   it("regression: a partly synced line's last timed syllable joins the untimed part after it", () => {
@@ -128,8 +130,8 @@ describe("linesFromSaved", () => {
         backgroundWords: [{ text: "o", begin: 1, end: 1.2 }],
       },
     ]);
-    expect(line.words?.map((word) => word.joinsNext)).toEqual([true]);
-    expect(line.backgroundWords?.map((word) => word.joinsNext)).toEqual([true]);
+    expect(roleWords(line, "main")?.map((word) => word.joinsNext)).toEqual([true]);
+    expect(roleWords(line, "bg")?.map((word) => word.joinsNext)).toEqual([true]);
   });
 
   it("keeps a line's languages and syllable readings where a version 3 record spells them", () => {
@@ -160,7 +162,7 @@ describe("linesFromSaved", () => {
       },
     };
     const [line] = linesFromSaved([saved]);
-    const firstWord = line.words?.[0];
+    const firstWord = roleWords(line, "main")?.[0];
     expect(firstWord && pieceOf(trackPieces(line, "main"), firstWord)).toEqual({ text: "pēpā", joinerAfter: "  " });
     expect(line.languages?.transliteration?.bg?.alignmentStatus).toBe("inferred");
     expect(savedLines([line])).toEqual([saved]);

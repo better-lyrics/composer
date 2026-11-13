@@ -11,7 +11,7 @@ import type { LineUpdate, LyricLine } from "@/domain/line/model";
 
 const ALIGN_TRANSLITERATION = "align transliteration";
 // Language data never changes the text and stays on its own line.
-const LANGUAGE_ONLY = { derivesText: false, propagateToSiblings: false } as const;
+const LANGUAGE_ONLY = { propagateToSiblings: false } as const;
 // Typed and confirmed language fields never reach the shared timing copy either.
 const LANGUAGE_FIELD_EDIT = { ...LANGUAGE_ONLY, copiesSharedTiming: false } as const;
 

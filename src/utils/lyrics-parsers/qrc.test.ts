@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
+import { fieldsOfLine, type LineFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { lineText, syllablesText } from "@/domain/line/text";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useSettingsStore } from "@/stores/settings";
 import { SICKO_MODE_QRC, SICKO_MODE_WRITERS, WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";
@@ -70,8 +70,8 @@ function sickoModeLyrics(): string[] {
   ];
 }
 
-function withoutLineId(line: LyricLine): Omit<LyricLine, "id"> {
-  const { id, ...rest } = line;
+function withoutLineId(line: LyricLine): Omit<LineFields, "id"> {
+  const { id, ...rest } = fieldsOfLine(line);
   return rest;
 }
 
@@ -129,7 +129,7 @@ describe("parseQrc", () => {
     it("preserves trailing spaces as word separators", () => {
       const result = parseQrc(WANDERLUST_QRC);
       const first = result.lines.find((line) => lineText(line) === FIRST_LYRIC_TEXT);
-      const words = first?.words ?? [];
+      const words = (first && roleWords(first, "main")) ?? [];
       expect(words.map((word) => word.text + word.sep).join("")).toBe(FIRST_LYRIC_TEXT);
     });
 
@@ -143,20 +143,26 @@ describe("parseQrc", () => {
       const result = parseQrc(
         '<?xml version="1.0" encoding="utf-8"?>\n<QrcInfos>\n<LyricInfo LyricCount="1">\n<Lyric_1 LyricType="1" LyricContent="[1000,800]Say "(1000,300)Come(1300,500)\n[2000,500]Ooh(2000,500)\n"/>\n</LyricInfo>\n</QrcInfos>',
       );
-      expect(result.lines.map((line) => line.words?.map((word) => word.text + word.sep).join(""))).toEqual([
-        'Say "Come',
-        "Ooh",
-      ]);
+      expect(
+        result.lines.map((line) =>
+          roleWords(line, "main")
+            ?.map((word) => word.text + word.sep)
+            .join(""),
+        ),
+      ).toEqual(['Say "Come', "Ooh"]);
     });
 
     it("regression: keeps reading past an unescaped quote followed by text that looks like an attribute", () => {
       const result = parseQrc(
         '<QrcInfos>\n<Lyric_1 LyricType="1" LyricContent="[1000,800]Say (1000,300)"E=mc²"(1300,500)\n[2000,500]Ooh(2000,500)\n"/>\n</QrcInfos>',
       );
-      expect(result.lines.map((line) => line.words?.map((word) => word.text + word.sep).join(""))).toEqual([
-        'Say "E=mc²"',
-        "Ooh",
-      ]);
+      expect(
+        result.lines.map((line) =>
+          roleWords(line, "main")
+            ?.map((word) => word.text + word.sep)
+            .join(""),
+        ),
+      ).toEqual(['Say "E=mc²"', "Ooh"]);
     });
   });
 
@@ -182,8 +188,8 @@ describe("parseQrc", () => {
 
     it("shifts a line-synced line by the header offset", () => {
       const result = parseQrc("[offset:1000]\n[1000,2500]No word tags here");
-      expect(result.lines[0].begin).toBe(2);
-      expect(result.lines[0].end).toBe(4.5);
+      expect(mainTrack(result.lines[0]).begin).toBe(2);
+      expect(mainTrack(result.lines[0]).end).toBe(4.5);
     });
 
     it("clamps a negative offset so no time drops below zero", () => {
@@ -406,7 +412,7 @@ describe("parseQrc", () => {
 
     it("attributes lines to the singer marked most recently before them", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      const foxLines = result.lines.filter((line) => line.agentId === "v2");
+      const foxLines = result.lines.filter((line) => mainTrack(line).agentId === "v2");
       expect(foxLines).toHaveLength(9);
       expect(lineText(foxLines[0])).toBe("Precious little diamond");
     });
@@ -420,7 +426,7 @@ describe("parseQrc", () => {
     it("returns no agents when the document has no singer markers", () => {
       const result = parseQrc("[34059,2299]Is (34059,2299)");
       expect(result.agents).toBeUndefined();
-      expect(result.lines[0].agentId).toBe("v1");
+      expect(mainTrack(result.lines[0]).agentId).toBe("v1");
     });
 
     it("gives lines before the first marker the default voice instead of the first singer", () => {
@@ -431,7 +437,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
         { id: "v2", type: "person", name: "Fox the Fox" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v2"]);
     });
 
     it("names the default voice as the project already names an unnamed one", () => {
@@ -447,14 +453,14 @@ describe("parseQrc", () => {
         "[1000,500]The Weeknd：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]THE WEEKND：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1", type: "person", name: "The Weeknd" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1"]);
     });
 
     it("reads a marker name QQ tagged one character at a time", () => {
       const result = parseQrc("[1000,500]周(1000,150)杰(1150,150)倫(1300,100)：(1400,100)\n[2000,500]歌(2000,500)");
       expect(result.agents).toEqual([{ id: "v1", type: "person", name: "周杰倫" }]);
       expect(result.agents?.[0].name).not.toContain(getSplitCharacter());
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1"]);
     });
 
     it("reads a marker name whose word tags split a word", () => {
@@ -470,7 +476,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: "A" },
         { id: "v2", type: "person", name: "B" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2", "v1"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v2", "v1"]);
     });
 
     it("does not treat a credit line as a singer marker", () => {
@@ -483,7 +489,7 @@ describe("parseQrc", () => {
     it("mints one group agent for a marker that names several performers", () => {
       const result = parseQrc("[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)");
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000"]);
     });
 
     it("names every singer combination SICKO MODE marks", () => {
@@ -492,13 +498,13 @@ describe("parseQrc", () => {
 
     it("attributes every SICKO MODE line to the combination marked before it", () => {
       const result = parseQrc(SICKO_MODE_QRC);
-      expect(result.lines.map((line) => line.agentId)).toEqual(SICKO_MODE_AGENT_IDS);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(SICKO_MODE_AGENT_IDS);
     });
 
     it("gives every combination one shared group singer", () => {
       const result = parseQrc(SICKO_MODE_QRC);
       expect(result.agents?.filter((agent) => agent.type === "group")).toHaveLength(1);
-      expect(result.lines.filter((line) => line.agentId === "v1000")).toHaveLength(8);
+      expect(result.lines.filter((line) => mainTrack(line).agentId === "v1000")).toHaveLength(8);
     });
 
     it("treats combinations that differ only in case as one singer", () => {
@@ -506,7 +512,7 @@ describe("parseQrc", () => {
         "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]DRAKE/TRAVIS SCOTT：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("treats a reordered combination as the same singer", () => {
@@ -514,7 +520,7 @@ describe("parseQrc", () => {
         "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Travis Scott/Drake：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("names the group singer Chorus once two different combinations share it", () => {
@@ -522,7 +528,7 @@ describe("parseQrc", () => {
         "[1000,500]Drake Travis/Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Drake/Travis Scott：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Chorus" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("gives lines before a combination marker the default voice", () => {
@@ -533,7 +539,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
         { id: "v1000", type: "group", name: "Drake, Travis Scott" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1000"]);
     });
 
     it("keeps a solo marker apart from a combination that names the same performer", () => {
@@ -544,7 +550,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: "Drake" },
         { id: "v1000", type: "group", name: "Drake, Travis Scott" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1000"]);
     });
 
     it("reads a combination QQ tagged one word at a time", () => {
@@ -557,14 +563,14 @@ describe("parseQrc", () => {
       for (const name of ["合", "合唱", "ALL", "all"]) {
         const result = parseQrc(`[1000,500]${name}：(1000,500)\n[2000,500]One(2000,500)`);
         expect(result.agents).toEqual([{ id: "v1000", type: "group", name }]);
-        expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
+        expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000"]);
       }
     });
 
     it("regression: reads back the Chorus group singer an export writes", () => {
       const result = parseQrc("[1000,500]Chorus：(1000,500)\n[2000,500]One(2000,500)");
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Chorus" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000"]);
     });
 
     it("keeps an ordinary solo performer a person", () => {
@@ -576,7 +582,7 @@ describe("parseQrc", () => {
       it("regression: reads a marker whose performer name is an initialism instead of keeping it as a lyric", () => {
         const result = parseQrc(SICKO_MODE_QRC);
         expect(result.lines.map((line) => lineText(line))).not.toContain("Travis Scott/The Notorious B.I.G.：");
-        expect(result.lines[2].agentId).toBe("v1000");
+        expect(mainTrack(result.lines[2]).agentId).toBe("v1000");
       });
 
       it("regression: never leaves a marker line in the lyrics of a document that marks its singers", () => {
@@ -613,9 +619,9 @@ describe("parseQrc", () => {
       const result = parseQrc("[1000,2000]Hello (1000,500)world");
       expect(result.lines).toHaveLength(1);
       expect(lineText(result.lines[0])).toBe("Hello world");
-      expect(result.lines[0].words).toBeUndefined();
-      expect(result.lines[0].begin).toBe(1);
-      expect(result.lines[0].end).toBe(3);
+      expect(roleWords(result.lines[0], "main")).toBeUndefined();
+      expect(mainTrack(result.lines[0]).begin).toBe(1);
+      expect(mainTrack(result.lines[0]).end).toBe(3);
     });
 
     it("drops a header whose body is empty", () => {
@@ -628,15 +634,15 @@ describe("parseQrc", () => {
       const result = parseQrc("[1000,1000]Baby：I (1000,500)need you(1500,500)");
       expect(result.agents).toBeUndefined();
       expect(result.lines.map((line) => lineText(line))).toEqual(["Baby：I need you"]);
-      expect(result.lines[0].agentId).toBe("v1");
+      expect(mainTrack(result.lines[0]).agentId).toBe("v1");
     });
   });
 
   describe("zero durations", () => {
     it("stretches a line that declares no duration to the next line's start", () => {
       const result = parseQrc("[1000,0]No word tags here\n[3000,500]Next(3000,500)");
-      expect(result.lines[0].begin).toBe(1);
-      expect(result.lines[0].end).toBe(3);
+      expect(mainTrack(result.lines[0]).begin).toBe(1);
+      expect(mainTrack(result.lines[0]).end).toBe(3);
     });
 
     it("stretches a final word that declares no duration to the next line's start", () => {
@@ -663,7 +669,7 @@ describe("parseQrc", () => {
 
     it("stretches the last line-synced line of a document to the song duration", () => {
       const result = parseQrc("[1000,0]No word tags here", 5);
-      expect(result.lines[0].end).toBe(5);
+      expect(mainTrack(result.lines[0]).end).toBe(5);
     });
 
     describe("edge cases", () => {
@@ -680,12 +686,12 @@ describe("parseQrc", () => {
 
       it("leaves a zero duration alone when the next line starts no later", () => {
         const result = parseQrc("[3000,0]First\n[1000,500]Second(1000,500)");
-        expect(result.lines[0].end).toBe(3);
+        expect(mainTrack(result.lines[0]).end).toBe(3);
       });
 
       it("leaves a zero duration alone when the song is shorter than the line", () => {
         const result = parseQrc("[9000,0]Late line", 5);
-        expect(result.lines[0].end).toBe(9);
+        expect(mainTrack(result.lines[0]).end).toBe(9);
       });
 
       it("leaves a word that declares a duration untouched", () => {
@@ -706,13 +712,13 @@ describe("parseQrc", () => {
 
       it("reads the next line's start through a marker line", () => {
         const result = parseQrc("[1000,0]No word tags here\n[2000,500]Drake：(2000,500)\n[3000,500]Next(3000,500)");
-        expect(result.lines[0].end).toBe(2);
+        expect(mainTrack(result.lines[0]).end).toBe(2);
       });
 
       it("shifts a backfilled end by the header offset like every other time", () => {
         const result = parseQrc("[offset:1000]\n[1000,0]No word tags here\n[3000,500]Next(3000,500)");
-        expect(result.lines[0].begin).toBe(2);
-        expect(result.lines[0].end).toBe(4);
+        expect(mainTrack(result.lines[0]).begin).toBe(2);
+        expect(mainTrack(result.lines[0]).end).toBe(4);
       });
     });
   });
@@ -723,14 +729,14 @@ describe("parseQrc", () => {
       const splitChar = getSplitCharacter();
       for (const line of result.lines) {
         if (!timedSyllables(mainTrack(line)).length) continue;
-        expect(lineText(line)).toBe(reconstructLineText(timedSyllables(mainTrack(line)), splitChar));
+        expect(lineText(line)).toBe(syllablesText(timedSyllables(mainTrack(line)), splitChar));
       }
     });
 
     it("never returns a line that is both word-synced and line-synced", () => {
       const result = parseQrc(WANDERLUST_QRC);
       for (const line of result.lines) {
-        if (line.words) expect(line.begin).toBeUndefined();
+        if (roleWords(line, "main")) expect(mainTrack(line).begin).toBeUndefined();
       }
     });
 
@@ -755,8 +761,8 @@ describe("parseQrc", () => {
           expect(result.lines).toHaveLength(baseline.lines.length);
           expect(result.metadata).toEqual(baseline.metadata);
           expect(result.agents).toEqual(baseline.agents);
-          expect(result.lines.map((line) => line.words?.map((word) => word.text))).toEqual(
-            baseline.lines.map((line) => line.words?.map((word) => word.text)),
+          expect(result.lines.map((line) => roleWords(line, "main")?.map((word) => word.text))).toEqual(
+            baseline.lines.map((line) => roleWords(line, "main")?.map((word) => word.text)),
           );
         }
       } finally {
@@ -780,7 +786,7 @@ describe("parseQrc", () => {
     it("every line references an agent that exists", () => {
       const result = parseQrc(WANDERLUST_QRC);
       const ids = new Set((result.agents ?? []).map((agent) => agent.id));
-      for (const line of result.lines) expect(ids.has(line.agentId)).toBe(true);
+      for (const line of result.lines) expect(ids.has(mainTrack(line).agentId)).toBe(true);
     });
 
     it("is idempotent across repeated parses apart from generated line ids", () => {
@@ -820,9 +826,9 @@ describe("parseQrc", () => {
       const result = parseQrc("[1000,2500]No word tags here");
       expect(result.lines).toHaveLength(1);
       expect(lineText(result.lines[0])).toBe("No word tags here");
-      expect(result.lines[0].words).toBeUndefined();
-      expect(result.lines[0].begin).toBe(1);
-      expect(result.lines[0].end).toBe(3.5);
+      expect(roleWords(result.lines[0], "main")).toBeUndefined();
+      expect(mainTrack(result.lines[0]).begin).toBe(1);
+      expect(mainTrack(result.lines[0]).end).toBe(3.5);
       expect(result.hasTimingData).toBe(true);
     });
 

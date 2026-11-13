@@ -1,7 +1,7 @@
 import { Activity } from "react";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { isCountingIn, togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -243,7 +243,7 @@ describe("Sync count-in · invariants", () => {
     space();
     key({ key: "f", code: "KeyF" });
     key({ key: "f", code: "KeyF" }, "keyup");
-    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "main")).toBeUndefined();
     expect(useProjectStore.getState().history.length).toBe(0);
   });
 });

@@ -1,8 +1,9 @@
-import { CLEARED_BACKGROUND } from "@/domain/line/background";
+import { withoutBackground } from "@/domain/line/background";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
@@ -14,7 +15,7 @@ function matchKey(text: string): string {
 function carriesBackground(line: LyricLine): boolean {
   return (
     backgroundText(line) !== undefined ||
-    line.backgroundWords !== undefined ||
+    roleWords(line, "bg") !== undefined ||
     backgroundTrack(line)?.source !== undefined
   );
 }
@@ -84,18 +85,14 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
       }
     }
 
-    return {
-      id: crypto.randomUUID(),
-      text: cleanedText,
-      agentId: defaultAgentId,
-    };
+    return lineFromFields({ id: crypto.randomUUID(), text: cleanedText, agentId: defaultAgentId });
   });
 
   // Parentheses in a row stand for its background vocals, so a carried-over background would double on
   // re-extraction. Timed background words on a row the edit left unchanged are kept.
   return mapped.map((line, index) =>
     carriesBackground(line) && keepsNoTimedBackground(line, sources[index]) && /\([^)]*\)/.test(lineText(line))
-      ? { ...line, ...CLEARED_BACKGROUND }
+      ? withoutBackground(line)
       : line,
   );
 }

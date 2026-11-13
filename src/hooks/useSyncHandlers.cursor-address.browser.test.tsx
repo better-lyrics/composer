@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
@@ -18,7 +18,7 @@ describe("useSyncHandlers cursor address", () => {
       await rerender({ syncState: getSyncState(), currentTime: time });
       await act(() => result.current.handleTap());
     }
-    const river = useProjectStore.getState().lines[0].words?.[0];
+    const river = roleWords(useProjectStore.getState().lines[0], "main")?.[0];
     if (!river) throw new Error("expected a timed first word");
 
     await act(() =>

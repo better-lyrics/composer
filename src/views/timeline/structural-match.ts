@@ -21,7 +21,7 @@ function timedWordsAgree(
 
 function linesStructurallyEqual(a: LyricLine, b: LyricLine): boolean {
   if (lineText(a) !== lineText(b)) return false;
-  if (a.agentId !== b.agentId) return false;
+  if (mainTrack(a).agentId !== mainTrack(b).agentId) return false;
   if ((backgroundText(a) ?? "") !== (backgroundText(b) ?? "")) return false;
   return (
     timedWordsAgree(timedSyllables(mainTrack(a)), timedSyllables(mainTrack(b))) &&

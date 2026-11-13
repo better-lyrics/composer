@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import {
-  reconstructLineText,
-  withDerivedText,
-  withSplitMarksFromWords,
-  wordContentSpans,
-} from "@/domain/line/reconstruct-text";
-import { lineText } from "@/domain/line/text";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
+import { withSplitMarksFromWords, wordContentSpans } from "@/domain/line/reconstruct-text";
+import { lineText, syllablesText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
+import { wordKey } from "@/domain/word/alignment";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -17,35 +16,35 @@ function w(text: string): WordTiming {
   return wordFromSpaced({ text, begin: 0, end: 1 });
 }
 
-// -- reconstructLineText ------------------------------------------------------
+// -- syllablesText ------------------------------------------------------------
 
-describe("reconstructLineText", () => {
+describe("syllablesText", () => {
   it("returns an empty string for no words", () => {
-    expect(reconstructLineText([], "|")).toBe("");
+    expect(syllablesText([], "|")).toBe("");
   });
 
   it("returns a single word's text unchanged", () => {
-    expect(reconstructLineText([w("world")], "|")).toBe("world");
+    expect(syllablesText([w("world")], "|")).toBe("world");
   });
 
   it("joins space-separated words via their embedded trailing spaces", () => {
-    expect(reconstructLineText([w("hello "), w("world")], "|")).toBe("hello world");
+    expect(syllablesText([w("hello "), w("world")], "|")).toBe("hello world");
   });
 
   it("inserts the split character at a space-free joint (same-token syllables)", () => {
-    expect(reconstructLineText([w("hel"), w("lo")], "|")).toBe("hel|lo");
+    expect(syllablesText([w("hel"), w("lo")], "|")).toBe("hel|lo");
   });
 
   it("mixes syllable joints and word spaces", () => {
-    expect(reconstructLineText([w("hel"), w("lo "), w("world")], "|")).toBe("hel|lo world");
+    expect(syllablesText([w("hel"), w("lo "), w("world")], "|")).toBe("hel|lo world");
   });
 
   it("uses the provided split character", () => {
-    expect(reconstructLineText([w("a"), w("b")], "/")).toBe("a/b");
+    expect(syllablesText([w("a"), w("b")], "/")).toBe("a/b");
   });
 
   it("never appends a split character after the final word", () => {
-    expect(reconstructLineText([w("foo"), w("bar")], "|")).toBe("foo|bar");
+    expect(syllablesText([w("foo"), w("bar")], "|")).toBe("foo|bar");
   });
 });
 
@@ -54,12 +53,12 @@ describe("reconstructLineText", () => {
 // The whole point of reinserting the split character: reconstructed text must
 // tokenize 1:1 back to the same word count it was built from.
 
-describe("reconstructLineText round-trips through splitIntoWordsWithMeta", () => {
+describe("syllablesText round-trips through splitIntoWordsWithMeta", () => {
   for (const text of ["hello world", "hel|lo world", "one two three", "a|b|c", "single", "two|part"]) {
     it(`round-trips "${text}"`, () => {
       const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
       const words = parts.map((part, i) => w(trailingSpace[i] ? `${part} ` : part));
-      const reconstructed = reconstructLineText(words, "|");
+      const reconstructed = syllablesText(words, "|");
       expect(reconstructed).toBe(text);
       expect(splitIntoWordsWithMeta(reconstructed).parts).toEqual(parts);
     });
@@ -87,7 +86,7 @@ describe("wordContentSpans", () => {
 
   it("skips a leading space in the span start", () => {
     const words = [w("hello "), w(" world")];
-    const reconstructed = reconstructLineText(words, "|");
+    const reconstructed = syllablesText(words, "|");
     const spans = wordContentSpans(words, "|");
     expect(reconstructed).toBe("hello  world");
     expect(spans[1]).toEqual({ start: 7, end: 12 });
@@ -96,7 +95,7 @@ describe("wordContentSpans", () => {
 
   it("shifts subsequent offsets by the split character at a space-free joint", () => {
     const words = [w("hel"), w("lo world")];
-    const reconstructed = reconstructLineText(words, "|");
+    const reconstructed = syllablesText(words, "|");
     const spans = wordContentSpans(words, "|");
     expect(reconstructed).toBe("hel|lo world");
     expect(spans).toEqual([
@@ -110,7 +109,7 @@ describe("wordContentSpans", () => {
 
   it("accounts for a multi-character split string", () => {
     const words = [w("hel"), w("lo")];
-    const reconstructed = reconstructLineText(words, "::");
+    const reconstructed = syllablesText(words, "::");
     const spans = wordContentSpans(words, "::");
     expect(reconstructed).toBe("hel::lo");
     expect(spans).toEqual([
@@ -122,7 +121,7 @@ describe("wordContentSpans", () => {
   it("cross-checks every span against reconstructLineText output", () => {
     const splitChar = "|";
     const words = [w("hel"), w("lo "), w("brave "), w("new"), w(" world")];
-    const reconstructed = reconstructLineText(words, splitChar);
+    const reconstructed = syllablesText(words, splitChar);
     const spans = wordContentSpans(words, splitChar);
     expect(spans).toHaveLength(words.length);
     for (let i = 0; i < words.length; i++) {
@@ -131,12 +130,25 @@ describe("wordContentSpans", () => {
   });
 });
 
-// -- withDerivedText ----------------------------------------------------------
+// -- Untimed rest of a partly synced line --------------------------------------
 
-describe("withDerivedText on a partly synced line", () => {
-  const partly = (text: string, words: string[]): LyricLine => ({ id: "l1", agentId: "v1", text, words: words.map(w) });
-  const derivedText = (previous: LyricLine, words: string[], text = lineText(previous)) =>
-    lineText(withDerivedText(reconcileLine({ ...previous, text, words: words.map(w) }), "|", previous));
+describe("timed words written on a partly synced line", () => {
+  const partly = (text: string, words: string[]): LyricLine =>
+    lineFromFields({ id: "l1", agentId: "v1", text, words: words.map(w) });
+  // Words the writer kept are the same words: they keep their ids, as every writer keeps them.
+  const keptIds = (previous: LyricLine, words: WordTiming[]): WordTiming[] => {
+    const before = [...timedSyllables(mainTrack(previous))];
+    return words.map((word) => {
+      const at = before.findIndex((old) => wordKey(old.text) === wordKey(word.text));
+      if (at === -1) return word;
+      const [kept] = before.splice(0, at + 1).slice(-1);
+      return { ...word, id: kept.id };
+    });
+  };
+  const derivedText = (previous: LyricLine, words: string[], text = lineText(previous)) => {
+    expect(text).toBe(lineText(previous));
+    return lineText(withRoleWords(previous, "main", keptIds(previous, words.map(w))));
+  };
 
   it("keeps the untimed words when the timed words only change in place", () => {
     const previous = partly("la la la", ["la "]);

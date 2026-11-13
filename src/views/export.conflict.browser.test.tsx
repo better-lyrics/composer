@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
 
@@ -23,7 +24,7 @@ async function renderConflicted() {
   const generated = (textarea.element() as HTMLTextAreaElement).value;
   await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
   useProjectStore.setState((state) => ({
-    lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+    lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
   }));
   await expect.element(screen.getByRole("alert")).toBeInTheDocument();
   return { screen, textarea };
@@ -47,7 +48,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 2 ? { ...line, text: "THIRD CHANGED" } : line)),
+      lines: state.lines.map((line, index) => (index === 2 ? withFields(line, { text: "THIRD CHANGED" }) : line)),
     }));
 
     await expect.poll(() => (textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
@@ -65,7 +66,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+      lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
     }));
 
     await expect.element(screen.getByRole("alert")).toBeInTheDocument();
@@ -84,7 +85,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+      lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
     }));
     await expect.element(screen.getByRole("alert")).toBeInTheDocument();
 
@@ -104,7 +105,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+      lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
     }));
     await expect.element(screen.getByRole("alert")).toBeInTheDocument();
 

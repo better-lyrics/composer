@@ -1,10 +1,19 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
-import type { LineSyncedLine, LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
+import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import { trackWords } from "@/domain/line/track";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types ---------------------------------------------------------------------
+
+// A line-synced row: its line and the span it is timed by.
+interface LineSpanTarget {
+  line: LyricLine;
+  id: string;
+  begin: number;
+  end: number;
+}
 
 interface StretchSelectionRef {
   lineId: string;
@@ -33,7 +42,7 @@ interface StretchTargets {
   tracks: Map<string, StretchTrack>;
   // Narrowed by the isLineSynced guard during partitioning, so begin/end are
   // plain numbers downstream — no `as number` assertions needed.
-  lineSynced: LineSyncedLine[];
+  lineSynced: LineSpanTarget[];
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -59,7 +68,7 @@ function resolveStretchTargets(
 
   const tracks = new Map<string, StretchTrack>();
   const seenWord = new Set<string>();
-  const lineSynced: LineSyncedLine[] = [];
+  const lineSynced: LineSpanTarget[] = [];
   const seenLineSynced = new Set<string>();
 
   const pushWord = (sel: StretchSelectionRef, line: LyricLine) => {
@@ -85,9 +94,10 @@ function resolveStretchTargets(
     if (sel.type === "bg" || isWordSynced(line)) {
       pushWord(sel, line);
     } else if (isLineSynced(line)) {
-      if (seenLineSynced.has(sel.lineId)) continue;
+      const span = mainBounds(line);
+      if (!span || seenLineSynced.has(sel.lineId)) continue;
       seenLineSynced.add(sel.lineId);
-      lineSynced.push(line);
+      lineSynced.push({ line, id: line.id, begin: span.begin, end: span.end });
     }
   }
 
@@ -228,7 +238,7 @@ function deriveBounds(
   // shiftLineSyncedRows in utils.ts).
   for (const line of targets.lineSynced) {
     if (!Number.isFinite(line.begin) || !Number.isFinite(line.end)) continue;
-    const range = options.rangeOf(line);
+    const range = options.rangeOf(line.line);
     if (!Number.isFinite(range.max)) return null;
     limitFactor(bounds, anchorTime, options.minWordDuration, {
       begin: line.begin,

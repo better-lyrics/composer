@@ -1,3 +1,5 @@
+import { mainBounds } from "@/domain/line/bounds";
+import { savedLines } from "@/lib/saved-project";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
@@ -122,14 +124,14 @@ describe("an old YouTube project whose MP3 audio arrives", () => {
     let beginWhenPublished: number | undefined;
     const unsubscribe = useAudioStore.subscribe((state) => {
       if (beginWhenPublished !== undefined || state.source?.type !== "youtube" || !state.source.file) return;
-      beginWhenPublished = (useProjectStore.getState().lines[0] as { begin: number }).begin;
+      beginWhenPublished = mainBounds(useProjectStore.getState().lines[0])!.begin;
     });
     await seedStoredProject("p", {
       open: true,
       project: {
         ...songTitled("Song"),
         audioSource: { kind: "youtube", videoId: VIDEO_ID },
-        lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+        lines: savedLines([createLine({ text: "Waiting in a car", begin: 1, end: 2 })]),
         primingStripped: true,
         primingCorrected: false,
       },

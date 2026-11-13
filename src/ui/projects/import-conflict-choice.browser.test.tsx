@@ -7,6 +7,7 @@ import { projectFileFrom } from "@/lib/project-file";
 import { importProjectFile } from "@/lib/project-import";
 import { listProjectIndex } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
+import { savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
@@ -20,7 +21,7 @@ function fileFrom(projectId: string, title: string, lineText: string): File {
   const project = storedProject({
     ...songTitled(title),
     savedAt: 1_758_300_000_000,
-    lines: [createLine({ text: lineText })],
+    lines: savedLines([createLine({ text: lineText })]),
   });
   return new File([JSON.stringify(projectFileFrom(projectId, project))], "song.ttml-project.json");
 }
@@ -31,7 +32,7 @@ async function seedAlpha(open = false): Promise<void> {
     project: {
       ...songTitled("Alpha"),
       audioSource: { kind: "file", name: "alpha.wav" },
-      lines: [createLine({ text: "Library line", begin: 1, end: 2 })],
+      lines: savedLines([createLine({ text: "Library line", begin: 1, end: 2 })]),
     },
     audio: createAudioFile("alpha.wav"),
   });

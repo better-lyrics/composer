@@ -1,6 +1,6 @@
 import { languageSide, pieceOf, trackPieces } from "@/domain/language/pieces";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import { trackWords } from "@/domain/line/tracks";
+import { trackWords } from "@/domain/line/track";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { copiedSyllable } from "@/domain/word/syllable-groups";
 import { pluralize } from "@/utils/pluralize";

@@ -1,15 +1,13 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused, withLines } from "@/domain/commands/outcome";
-import {
-  CLEARED_BACKGROUND,
-  backgroundFields,
-  manualBackgroundWordEdit,
-  withSeededBackground,
-} from "@/domain/line/background";
+import type { WordWriteExtras } from "@/domain/commands/word-edits";
+import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
 import { effectiveWordTextEdit, getEffectiveLine } from "@/domain/line/effective-words";
+import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
-import { type TrackField, type WordTrack, trackWords } from "@/domain/line/tracks";
+import { trackWords, type TrackField, type WordTrack } from "@/domain/line/track";
+import { withFieldWords } from "@/domain/line/word-track-edits";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { applyWordDeletion } from "@/domain/word/apply-word-deletion";
@@ -24,13 +22,8 @@ type TrackFill =
 
 // -- Helpers ------------------------------------------------------------------
 
-function trackWrite(type: WordTrack, words: WordTiming[]): Partial<LyricLine> {
-  return type === "word" ? { words } : manualBackgroundWordEdit(words);
-}
-
-function placeholderWrite(type: WordTrack, placeholder: WordTiming): Partial<LyricLine> {
-  if (type === "word") return { words: [placeholder] };
-  return backgroundFields({ text: placeholder.text, words: [placeholder], source: "manual" });
+function trackWrite(line: LyricLine, type: WordTrack, words: WordTiming[]): Partial<LyricLine> {
+  return type === "word" ? mainWordsEdit(line, words) : manualBackgroundWordEdit(line, words);
 }
 
 function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefined {
@@ -42,10 +35,8 @@ function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefi
 function deleteWords(addresses: readonly SyllableAddress[]): LyricCommand {
   return {
     note: { command: "delete words", args: addresses.map((address) => address.syllableId) },
-    derivesText: true,
     copiesSharedTiming: false,
-    run: (root, ctx) =>
-      withLines(root, applyWordDeletion(root.lines, resolveAddresses(root.lines, addresses), ctx.splitChar)),
+    run: (root) => withLines(root, applyWordDeletion(root.lines, resolveAddresses(root.lines, addresses))),
   };
 }
 
@@ -63,7 +54,7 @@ function typeWordText(address: SyllableAddress, text: string): LyricCommand {
       if (text === word.text) return [];
       const updated = words.with(wordIndex, { ...word, text, sep: word.sep.endsWith(" ") ? " " : "" });
       const updates =
-        address.type === "word" ? effectiveWordTextEdit(line, updated) : manualBackgroundWordEdit(updated);
+        address.type === "word" ? effectiveWordTextEdit(line, updated) : manualBackgroundWordEdit(line, updated);
       return [{ id: line.id, updates }];
     },
   );
@@ -75,17 +66,17 @@ function insertWord(lineId: string, type: WordTrack, word: WordTiming): LyricCom
     const raw = lineOf(root.lines, lineId);
     if (!raw) return refused({ reason: "line-gone", lineId });
     const words = trackWords(getEffectiveLine(raw), type) ?? [];
-    return [{ id: lineId, updates: trackWrite(type, mergeWordsIntoTrack(words, [word])) }];
+    return [{ id: lineId, updates: trackWrite(raw, type, mergeWordsIntoTrack(words, [word])) }];
   });
 }
 
 // An empty track takes the line's own text timed from a point, or one placeholder word to type into.
 function fillEmptyTrack(fill: TrackFill): LyricCommand {
   return lineEditCommand({ command: "fill track", args: [fill.lineId, fill.type] }, (root) => {
-    if (!lineOf(root.lines, fill.lineId)) return refused({ reason: "line-gone", lineId: fill.lineId });
-    const updates =
-      "timedText" in fill ? trackWrite(fill.type, fill.timedText) : placeholderWrite(fill.type, fill.placeholder);
-    return [{ id: fill.lineId, updates }];
+    const line = lineOf(root.lines, fill.lineId);
+    if (!line) return refused({ reason: "line-gone", lineId: fill.lineId });
+    const words = "timedText" in fill ? fill.timedText : [fill.placeholder];
+    return [{ id: fill.lineId, updates: trackWrite(line, fill.type, words) }];
   });
 }
 
@@ -93,31 +84,27 @@ function setBackgroundText(lineId: string, text: string): LyricCommand {
   return lineEditCommand({ command: "set background text", args: [lineId, text] }, (root) => {
     const line = lineOf(root.lines, lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
-    const words = withSeededBackground({ ...line, backgroundText: text, backgroundWords: undefined }).backgroundWords;
-    return [{ id: lineId, updates: backgroundFields({ text, words, source: "manual" }) }];
+    const written = withSeededBackground(withBackground(line, { text, source: "manual" }));
+    return [{ id: lineId, updates: { tracks: written.tracks } }];
   });
 }
 
 function clearBackground(lineId: string): LyricCommand {
-  return lineEditCommand({ command: "clear background", args: [lineId] }, (root) =>
-    lineOf(root.lines, lineId)
-      ? [{ id: lineId, updates: CLEARED_BACKGROUND }]
-      : refused({ reason: "line-gone", lineId }),
-  );
+  return lineEditCommand({ command: "clear background", args: [lineId] }, (root) => {
+    const line = lineOf(root.lines, lineId);
+    return line
+      ? [{ id: lineId, updates: { tracks: withoutBackground(line).tracks } }]
+      : refused({ reason: "line-gone", lineId });
+  });
 }
 
 // A split that keeps the word count on a line, or one with no linked copies to follow it.
-function splitWord(
-  lineId: string,
-  field: TrackField,
-  words: WordTiming[],
-  extraUpdates: Partial<LyricLine>,
-): LyricCommand {
-  return lineEditCommand({ command: "split word", args: [lineId, field, words.length] }, (root) =>
-    lineOf(root.lines, lineId)
-      ? [{ id: lineId, updates: { ...extraUpdates, [field]: words } }]
-      : refused({ reason: "line-gone", lineId }),
-  );
+function splitWord(lineId: string, field: TrackField, words: WordTiming[], extras: WordWriteExtras): LyricCommand {
+  return lineEditCommand({ command: "split word", args: [lineId, field, words.length] }, (root) => {
+    const line = lineOf(root.lines, lineId);
+    if (!line) return refused({ reason: "line-gone", lineId });
+    return [{ id: lineId, updates: { ...extras, tracks: withFieldWords(line, field, words).tracks } }];
+  });
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -9,7 +9,7 @@ import { projectFileFrom } from "@/lib/project-file";
 import { importProjectFile } from "@/lib/project-import";
 import { listProjectIndex, removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
@@ -21,7 +21,7 @@ import { ChoiceModalHost } from "@/ui/choice-modal";
 // -- Helpers ------------------------------------------------------------------
 
 function fileFor(projectId: string | undefined, title: string): File {
-  const project = storedProject({ ...songTitled(title), lines: [createLine({ text: `${title} line` })] });
+  const project = storedProject({ ...songTitled(title), lines: savedLines([createLine({ text: `${title} line` })]) });
   return new File([JSON.stringify(projectFileFrom(projectId, project))], `${title}.ttml-project.json`);
 }
 

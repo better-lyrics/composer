@@ -1,10 +1,12 @@
 /**
  * @vitest-environment node
  */
+
 import { beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 
 type StoreState = ReturnType<typeof useProjectStore.getState>;
@@ -27,12 +29,12 @@ describe("gutter add/delete preserves line-sync granularity", () => {
 
   it("inserting a line above a line-synced row leaves the row line-synced", () => {
     useProjectStore.setState({
-      lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }],
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })],
     });
     // Simulating what the FIXED handler does: read raw lines, splice, write.
     const raw = useProjectStore.getState().lines;
     const targetIdx = raw.findIndex((l) => l.id === "L1");
-    const newLine = { id: "X", text: "", agentId: "v1" };
+    const newLine = lineFromFields({ id: "X", text: "", agentId: "v1" });
     const newLines = [...raw];
     newLines.splice(targetIdx, 0, newLine);
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
@@ -40,14 +42,14 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     const after = useProjectStore.getState().lines;
     expect(after).toHaveLength(2);
     const L1 = after.find((l) => l.id === "L1");
-    expect(L1?.words).toBeUndefined();
-    expect(L1?.begin).toBe(5);
-    expect(L1?.end).toBe(7);
+    expect(L1 && roleWords(L1, "main")).toBeUndefined();
+    expect(L1 && mainTrack(L1).begin).toBe(5);
+    expect(L1 && mainTrack(L1).end).toBe(7);
   });
 
   it("regression: writing effective-line synthesised words back is a compile error (the bug shape)", () => {
     useProjectStore.setState({
-      lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }],
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })],
     });
     const effective = getEffectiveLines(useProjectStore.getState().lines);
     // effective[0] now has a synthesised single-word array
@@ -58,14 +60,14 @@ describe("gutter add/delete preserves line-sync granularity", () => {
   it("deleting a line by id (not effective index) does not perturb other rows", () => {
     useProjectStore.setState({
       lines: [
-        { id: "A", text: "synced", agentId: "v1", begin: 0, end: 2 },
-        {
+        lineFromFields({ id: "A", text: "synced", agentId: "v1", begin: 0, end: 2 }),
+        lineFromFields({
           id: "B",
           text: "with words",
           agentId: "v1",
           words: [{ id: "w1", text: "with words", sep: "", begin: 2, end: 4, joinsNext: false }],
-        },
-        { id: "C", text: "another synced", agentId: "v1", begin: 4, end: 6 },
+        }),
+        lineFromFields({ id: "C", text: "another synced", agentId: "v1", begin: 4, end: 6 }),
       ],
     });
     // Simulating the fixed delete: filter raw by id
@@ -82,16 +84,16 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     const A = after.find((l) => l.id === "A");
     const C = after.find((l) => l.id === "C");
     // A and C remain line-synced
-    expect(A?.words).toBeUndefined();
-    expect(A?.begin).toBe(0);
-    expect(C?.words).toBeUndefined();
-    expect(C?.begin).toBe(4);
+    expect(A && roleWords(A, "main")).toBeUndefined();
+    expect(A && mainTrack(A).begin).toBe(0);
+    expect(C && roleWords(C, "main")).toBeUndefined();
+    expect(C && mainTrack(C).begin).toBe(4);
   });
 
   it("inserting between a grouped instance's lines does not detach the instance", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "x",
           agentId: "v1",
@@ -100,8 +102,8 @@ describe("gutter add/delete preserves line-sync granularity", () => {
           templateLineIdx: 0,
           begin: 0,
           end: 1,
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "y",
           agentId: "v1",
@@ -110,14 +112,14 @@ describe("gutter add/delete preserves line-sync granularity", () => {
           templateLineIdx: 1,
           begin: 1,
           end: 2,
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
     // The handler doesn't strip group attrs on adjacent rows
     const raw = useProjectStore.getState().lines;
     const newLines = [...raw];
-    newLines.splice(1, 0, { id: "X", text: "", agentId: "v1" });
+    newLines.splice(1, 0, lineFromFields({ id: "X", text: "", agentId: "v1" }));
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
 
     const after = useProjectStore.getState().lines;

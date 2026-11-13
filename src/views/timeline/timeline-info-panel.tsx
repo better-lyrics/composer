@@ -4,6 +4,7 @@ import { getAgentColor } from "@/domain/agent/colors";
 import { setWordBoundary } from "@/domain/commands/word-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { backgroundText } from "@/domain/line/text";
+import { mainTrack } from "@/domain/line/track";
 import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
@@ -77,7 +78,7 @@ interface SingleWordInfoProps {
 const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, highlight, onSetBegin, onSetEnd }) => (
   <div className="relative flex items-center gap-6 px-6 py-3 border-t border-(--divider) bg-(--pop)">
     {highlight && <GroupBadge highlight={highlight} title="This word belongs to a linked group" />}
-    <SingerTag color={getAgentColor(line.agentId)}>
+    <SingerTag color={getAgentColor(mainTrack(line).agentId)}>
       {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
     </SingerTag>
 

@@ -2,8 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { mainBounds } from "@/domain/line/bounds";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { useAudioStore } from "@/stores/audio";
@@ -238,7 +239,7 @@ describe("LyricsImportModal search section commit", () => {
   it("confirm-replace runs when project already has lines (cancel keeps existing)", async () => {
     useSettingsStore.setState({ confirmReplaceLyrics: true });
     useProjectStore.setState({
-      lines: [{ id: "existing", text: "Old line", agentId: "v1" }],
+      lines: [lineFromFields({ id: "existing", text: "Old line", agentId: "v1" })],
     });
     const screen = await render(withQueryClient(<LyricsImportModalHost />));
     openModal({ prefill: { track: "Bohemian" } });
@@ -375,7 +376,7 @@ describe("LyricsImportModal settings integration", () => {
     await screen.getByRole("button", { name: /^Import$/ }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeDefined();
+    expect(roleWords(lines[0], "main")).toBeDefined();
     expect(timedSyllables(mainTrack(lines[0])).length).toBeGreaterThan(0);
   });
 

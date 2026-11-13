@@ -4,10 +4,10 @@ import { refused } from "@/domain/commands/outcome";
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LanguagePieces, LanguageSide } from "@/domain/language/model";
 import { languageSide, pieceOf, trackPieces, withAddedPieces } from "@/domain/language/pieces";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit, getEffectiveLines } from "@/domain/line/effective-words";
+import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
-import { type WordTrack, trackWords } from "@/domain/line/tracks";
+import { roleWords, trackWords, type WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -70,13 +70,15 @@ function reorderUpdates(
     const range = rangeOf(line);
     const wordIndices = new Set(forLine.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
     const bgIndices = new Set(forLine.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
-    if (wordIndices.size > 0 && line.words) {
-      const edit = effectiveMainWordEdit(line, reorderWordTrack(line.words, wordIndices, timeDelta, range));
+    const mainWords = roleWords(line, "main");
+    if (wordIndices.size > 0 && mainWords) {
+      const edit = effectiveMainWordEdit(line, reorderWordTrack(mainWords, wordIndices, timeDelta, range));
       if (edit) Object.assign(lineUpdates, edit);
     }
-    if (bgIndices.size > 0 && line.backgroundWords) {
-      const reordered = reorderWordTrack(line.backgroundWords, bgIndices, timeDelta, range);
-      Object.assign(lineUpdates, manualBackgroundWordEdit(reordered));
+    const bgWords = roleWords(line, "bg");
+    if (bgIndices.size > 0 && bgWords) {
+      const reordered = reorderWordTrack(bgWords, bgIndices, timeDelta, range);
+      Object.assign(lineUpdates, manualBackgroundWordEdit(line, reordered, lineUpdates));
     }
     return Object.keys(lineUpdates).length > 0 ? [{ id: lineId, updates: lineUpdates }] : [];
   });
@@ -185,15 +187,15 @@ function planDuplicate(
     if (!line) return [];
     const { wordDups, bgDups, readings } = duplicatesFor(line, forLine, timeDelta, rangeOf(line), newId);
     const lineUpdates: Partial<LyricLine> = {};
-    const existingWords = line.words ?? [];
+    const existingWords = roleWords(line, "main") ?? [];
     if (wordDups.length > 0 && !overlapsAny(wordDups, existingWords)) {
       const edit = effectiveMainWordEdit(line, mergeWordsIntoTrack(existingWords, wordDups));
       if (edit) Object.assign(lineUpdates, edit);
       else rejectedLineSynced = true;
     }
-    const existingBg = line.backgroundWords ?? [];
+    const existingBg = roleWords(line, "bg") ?? [];
     if (bgDups.length > 0 && !overlapsAny(bgDups, existingBg)) {
-      Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(existingBg, bgDups)));
+      Object.assign(lineUpdates, manualBackgroundWordEdit(line, mergeWordsIntoTrack(existingBg, bgDups), lineUpdates));
     }
     if (Object.keys(lineUpdates).length > 0 && readings.length > 0) {
       lineUpdates.languages = readings.reduce(

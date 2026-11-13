@@ -1,8 +1,10 @@
 import { lineInstanceKey } from "@/domain/instance/key";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
-import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
 import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
@@ -10,12 +12,8 @@ import { lineRowHeight } from "@/views/timeline/row-geometry";
 
 // -- Functions -----------------------------------------------------------------
 
-// Distributed lines are word-synced: the per-line span lives in `words`, not in
-// line-level begin/end. Emitting both would produce an invalid both-state line.
-function distributeLinesTiming<T extends { id: string; text: string }>(
-  lines: T[],
-  duration: number,
-): (T & { words: WordTiming[] })[] {
+// Distributed lines are word-synced: each line's syllables share its slice of the song by length.
+function distributeLinesTiming(lines: readonly LyricLine[], duration: number): LyricLine[] {
   if (lines.length === 0) return [];
 
   const lineDuration = duration / lines.length;
@@ -23,10 +21,13 @@ function distributeLinesTiming<T extends { id: string; text: string }>(
   return lines.map((line, index) => {
     const begin = index * lineDuration;
     const end = (index + 1) * lineDuration;
-    return {
-      ...line,
-      words: distributeWordsInLine(line.text, begin, end),
-    };
+    const distributed = distributeWordsInLine(lineText(line), begin, end);
+    const syllables = mainTrack(line).syllables;
+    const words =
+      distributed.length === syllables.length
+        ? distributed.map((word, i) => ({ ...syllables[i], begin: word.begin, end: word.end }))
+        : distributed;
+    return withRoleWords(line, "main", words);
   });
 }
 

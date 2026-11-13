@@ -1,3 +1,4 @@
+import { fieldUpdates } from "@/test/field-updates";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { useProjectStore } from "@/stores/project";
@@ -50,7 +51,9 @@ it("regression: undo still puts the cursor back after a language refresh amends 
   useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [line(1.5)]));
   useTimelineStore.setState({ selectedWords: [slot(1)] });
   rememberStepPress({ selectedWords: [slot(0)], stepQueue: null });
-  useProjectStore.getState().commit(refreshGeneratedLanguages([{ id: "a", updates: { agentId: "v2" } }]), "amend");
+  useProjectStore
+    .getState()
+    .commit(refreshGeneratedLanguages(fieldUpdates([{ id: "a", updates: { agentId: "v2" } }])), "amend");
 
   useProjectStore.getState().undo();
   expect(useTimelineStore.getState().selectedWords).toEqual([slot(0)]);

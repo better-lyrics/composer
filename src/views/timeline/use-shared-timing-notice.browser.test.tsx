@@ -1,3 +1,4 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
@@ -115,7 +116,10 @@ describe("Shared timing notice", () => {
         [OLD_CHORUS],
         [
           member(0, 10),
-          createLine({ ...member(1, 30), words: [createWord({ text: "go", sep: " ", begin: 30, end: 31.5 })] }),
+          createLine({
+            ...fieldsOfLine(member(1, 30)),
+            words: [createWord({ text: "go", sep: " ", begin: 30, end: 31.5 })],
+          }),
           member(2),
         ],
       );

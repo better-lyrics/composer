@@ -1,10 +1,9 @@
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { trackWords } from "@/domain/line/tracks";
+import { trackWords } from "@/domain/line/track";
 import type { SyncAddress } from "@/domain/sync/address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
-import { lineTimingWordId } from "@/domain/word/id";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
@@ -76,36 +75,17 @@ function parseTimeMs(str: string): number | null {
 
 // -- Conversion Functions -----------------------------------------------------
 
-interface ConvertibleLine {
-  id?: string;
-  text: string;
-  begin?: number;
-  end?: number;
-  words?: WordTiming[];
-}
-
-function convertLineToWord<T extends ConvertibleLine>(line: T): T {
-  if (line.words?.length) return line;
-  if (line.begin === undefined || line.end === undefined) return line;
-
-  const lineBegin = line.begin;
-  const lineEnd = line.end;
-  const { parts: wordTexts, trailingSpace } = splitIntoWordsWithMeta(line.text);
-  if (wordTexts.length === 0) return line;
-
-  const duration = lineEnd - lineBegin;
-  const wordDuration = duration / wordTexts.length;
-
-  const words = wordsFromSpaced(
-    wordTexts.map((text, i) => ({
-      text: trailingSpace[i] ? `${text} ` : text,
-      begin: lineBegin + i * wordDuration,
-      end: lineBegin + (i + 1) * wordDuration,
-      ...(i === 0 && line.id !== undefined && { id: lineTimingWordId(line.id) }),
+// Evenly timed parts of a text, as a line-synced line's span becomes words.
+function evenlyTimedWords(text: string, begin: number, end: number): WordTiming[] {
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+  const wordDuration = (end - begin) / parts.length;
+  return wordsFromSpaced(
+    parts.map((part, i) => ({
+      text: trailingSpace[i] ? `${part} ` : part,
+      begin: begin + i * wordDuration,
+      end: begin + (i + 1) * wordDuration,
     })),
   );
-
-  return { ...line, words, begin: undefined, end: undefined };
 }
 
 // -- Word Distribution --------------------------------------------------------
@@ -164,7 +144,7 @@ export {
   createInitialBgWords,
   distributeWordsInLine,
   getNudgeAmount,
-  convertLineToWord,
+  evenlyTimedWords,
   formatTimeMs,
   parseTimeMs,
   splitIntoWords,

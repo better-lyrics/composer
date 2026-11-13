@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 
@@ -15,7 +15,7 @@ describe("mergeEditedTtmlLines · background vocals", () => {
       ];
       const merged = mergeEditedExport(stored);
       expect(backgroundText(merged[0]!)).toBe("ooh");
-      expect(merged[0]?.backgroundWords).toBeUndefined();
+      expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
       expect(merged).toEqual(stored);
     });
 
@@ -32,7 +32,7 @@ describe("mergeEditedTtmlLines · background vocals", () => {
       ];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">ooh yeah<", ">ooh no<"));
       expect(backgroundText(merged[0]!)).toBe("ooh no");
-      expect(merged[0]?.backgroundWords).toBeUndefined();
+      expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
       expect(isProjectFullySynced(merged)).toBe(true);
     });
 
@@ -59,7 +59,7 @@ describe("mergeEditedTtmlLines · background vocals", () => {
       );
       expect(lineText(merged[1]!)).toBe("New");
       expect(backgroundText(merged[1]!)).toBe("ooh");
-      expect(merged[1]?.backgroundWords).toBeUndefined();
+      expect(merged[1] && roleWords(merged[1], "bg")).toBeUndefined();
       expect(isProjectFullySynced(merged)).toBe(true);
     });
 
@@ -79,7 +79,7 @@ describe("mergeEditedTtmlLines · background vocals", () => {
           .replace(">One<", ">One!<")
           .replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Two</p></div>'),
       );
-      expect(merged[0]?.backgroundWords).toBeUndefined();
+      expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
       expect(isProjectFullySynced(merged)).toBe(true);
     });
 

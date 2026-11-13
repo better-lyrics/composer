@@ -1,3 +1,4 @@
+import { mainTrack } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -121,7 +122,7 @@ describe("SyncLineList", () => {
     setIsPlaying(true);
     setCurrentTime(300);
     key({ key: " ", code: "Space" });
-    await expect.poll(() => useProjectStore.getState().lines[299].begin).toBe(300);
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[299]).begin).toBe(300);
     setIsPlaying(false);
 
     await expect

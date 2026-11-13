@@ -1,3 +1,5 @@
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { mainTrack } from "@/domain/line/track";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
@@ -5,13 +7,13 @@ import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { insertEmptyLine } from "@/domain/commands/line-edits";
 
-const LINE_SYNCED = { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 };
-const WORD_SYNCED = {
+const LINE_SYNCED = lineFromFields({ id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 });
+const WORD_SYNCED = lineFromFields({
   id: "w",
   text: "hi",
   agentId: "v1",
   words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
-};
+});
 
 describe("project store · insertEmptyLineWithHistory", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
@@ -22,7 +24,7 @@ describe("project store · insertEmptyLineWithHistory", () => {
       useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "below" }));
       const after = useProjectStore.getState().lines;
       expect(after.map((l) => l.id)[0]).toBe("w");
-      expect(after[1]).toMatchObject({ text: "", agentId: "v1" });
+      expect(fieldsOfLine(after[1])).toMatchObject({ text: "", agentId: "v1" });
       expect(after[2].id).toBe("ls");
     });
 
@@ -31,7 +33,7 @@ describe("project store · insertEmptyLineWithHistory", () => {
       useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "ls", position: "above" }));
       const after = useProjectStore.getState().lines;
       expect(after[0].id).toBe("w");
-      expect(after[1]).toMatchObject({ text: "", agentId: "v1" });
+      expect(fieldsOfLine(after[1])).toMatchObject({ text: "", agentId: "v1" });
       expect(after[2].id).toBe("ls");
     });
 
@@ -44,7 +46,7 @@ describe("project store · insertEmptyLineWithHistory", () => {
         ],
       });
       useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "below" }));
-      expect(useProjectStore.getState().lines[1].agentId).toBe("v7");
+      expect(mainTrack(useProjectStore.getState().lines[1]).agentId).toBe("v7");
     });
   });
 
@@ -52,7 +54,7 @@ describe("project store · insertEmptyLineWithHistory", () => {
     it("falls back to v1 when there are no agents", () => {
       useProjectStore.setState({ lines: [WORD_SYNCED], agents: [] });
       useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "above" }));
-      expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+      expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
     });
 
     it("does nothing when the anchor is missing", () => {

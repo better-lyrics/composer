@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { roleWords } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
@@ -26,10 +27,10 @@ async function dragAlphaIntoBgZoneOf(lineIndex: number) {
 }
 
 function bgWordsOf(lineId: string): string[] | undefined {
-  return useProjectStore
-    .getState()
-    .lines.find((l) => l.id === lineId)
-    ?.backgroundWords?.map((w) => w.text.trim());
+  return roleWords(
+    useProjectStore.getState().lines.find((l) => l.id === lineId),
+    "bg",
+  )?.map((w) => w.text.trim());
 }
 
 // -- Tests ---------------------------------------------------------------------

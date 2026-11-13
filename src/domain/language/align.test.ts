@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "@/domain/language/align";
 import type { LineLanguage, TransliterationAlignmentStatus } from "@/domain/language/model";
 import { mappedTransliteration } from "@/domain/language/pieces";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import {
@@ -123,8 +124,8 @@ describe("transliteration alignment", () => {
       origin: "google",
       sourceFingerprint: "test",
     });
-    const line = reconcileLine({ id: "line", agentId: "v1", text: "붙어있던", words });
-    const first = reconcileLine({ ...line, ...alignTrackToLine(line, track) });
+    const line = lineFromFields({ id: "line", agentId: "v1", text: "붙어있던", words });
+    const first = { ...line, ...alignTrackToLine(line, track) };
     const firstTrack = first.languages?.transliteration;
     expect(firstTrack?.main.alignmentStatus).toBe("needs-review");
     const reused = firstTrack && alignTrackToLine(first, firstTrack).languages?.transliteration;
@@ -185,7 +186,8 @@ describe("transliteration alignment", () => {
     });
     expect(
       legacyLanguages(
-        alignTrackToLine({ id: "line", agentId: "v1", text: "가", backgroundText: "나" }, track).languages,
+        alignTrackToLine(lineFromFields({ id: "line", agentId: "v1", text: "가", backgroundText: "나" }), track)
+          .languages,
       ).transliteration,
     ).toMatchObject({ alignmentStatus: "inferred", backgroundAlignmentStatus: "inferred" });
   });
@@ -244,12 +246,12 @@ describe("withAlignedWords", () => {
   });
 
   it("returns the same line when there is no transliteration track", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "line",
       agentId: "v1",
       text: "Hello",
       words: [{ id: "w18", text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false }],
-    };
+    });
     expect(withAlignedWords(line)).toBe(line);
   });
 

@@ -2,7 +2,7 @@ import { toast } from "sonner";
 import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
 import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";

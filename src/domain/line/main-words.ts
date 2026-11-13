@@ -1,19 +1,14 @@
-import type { LineFields } from "@/domain/line/model";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import type { LyricLine } from "@/domain/line/model";
+import { mainTrack } from "@/domain/line/track";
+import { withMainTrack } from "@/domain/line/track-writes";
 import type { WordTiming } from "@/domain/word/timing";
-import { getSplitCharacter } from "@/utils/split-character";
-
-// -- Types --------------------------------------------------------------------
-
-type MainWordFields = Pick<LineFields, "text"> & { words: WordTiming[] };
 
 // -- Functions ----------------------------------------------------------------
 
-// Spread-friendly partial for the main-word funnel: returns the reconciled
-// `{ words, text }` pair so callers building Partial<LyricLine> updates can
-// Object.assign without first constructing a full line.
-function mainWordEditFields(words: WordTiming[]): MainWordFields {
-  return { words, text: reconstructLineText(words, getSplitCharacter()) };
+// The main-word funnel: the words become the whole main track, so their text is the line's text.
+function mainWordEditFields(line: LyricLine, words: readonly WordTiming[]): Partial<LyricLine> {
+  const { begin: _begin, end: _end, ...main } = mainTrack(line);
+  return { tracks: withMainTrack(line, { ...main, syllables: words }).tracks };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { newWordId } from "@/domain/word/id";
 import { type ProjectSaveInput, saveCurrentProject } from "@/lib/persistence";
 import { loadProjectForRestore } from "@/lib/project-restore";
@@ -15,7 +16,7 @@ function seedSavedProject(
   return saveCurrentProject(
     createProjectSaveInput({
       lines: [
-        {
+        lineFromFields({
           id: "L1",
           text: "hello world",
           agentId: DEFAULT_AGENTS[0].id,
@@ -23,7 +24,7 @@ function seedSavedProject(
             { id: newWordId(), text: "hello", sep: "", begin: 1.0, end: 1.5, joinsNext: true },
             { id: newWordId(), text: "world", sep: "", begin: 1.5, end: 2.0, joinsNext: false },
           ],
-        },
+        }),
       ],
       primingStripped,
       primingCorrected,

@@ -4,7 +4,7 @@ import type { ProjectSaveInput } from "@/lib/persistence";
 import { loadProjectAudio, saveProjectAudio } from "@/lib/project-audio";
 import { saveProjectRecord, setOpenProjectId } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/saved-project";
 import { createLine, createProjectSaveInput } from "@/test/factories";
 
 // -- Types --------------------------------------------------------------------
@@ -23,7 +23,10 @@ function storedProject(overrides: Partial<SavedProject> = {}): SavedProject {
     savedAt: 1_758_900_000_000,
     metadata: { title: "Midnight City", artists: ["M83"], album: "Hurry Up, We're Dreaming", duration: 243 },
     agents: DEFAULT_AGENTS,
-    lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 }), createLine({ text: "Waiting for a ride" })],
+    lines: savedLines([
+      createLine({ text: "Waiting in a car", begin: 1, end: 2 }),
+      createLine({ text: "Waiting for a ride" }),
+    ]),
     granularity: "word",
     primingStripped: true,
     primingCorrected: true,

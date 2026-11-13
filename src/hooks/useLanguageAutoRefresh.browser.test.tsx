@@ -1,3 +1,7 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldUpdates } from "@/test/field-updates";
+import { roleWords } from "@/domain/line/track";
+import { lineText } from "@/domain/line/text";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
 import { useProjectStore } from "@/stores/project";
 import { lineById, romanizedWords, timedLine } from "@/test/generated-language-lines";
@@ -33,7 +37,7 @@ describe("useLanguageAutoRefresh", () => {
     expect(requests).toEqual([]);
 
     const pasted = legacyLine({
-      ...lineById("a"),
+      ...fieldsOfLine(lineById("a")),
       text: "Где ты сейчас",
       words: [
         { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde", joinsNext: false },
@@ -42,11 +46,16 @@ describe("useLanguageAutoRefresh", () => {
       ],
       ...legacyLanguages(lineById("a").languages),
     });
-    useProjectStore
-      .getState()
-      .commit(
-        pasteLines([{ id: "a", updates: { text: pasted.text, words: pasted.words, languages: pasted.languages } }]),
-      );
+    useProjectStore.getState().commit(
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a",
+            updates: { text: lineText(pasted), words: roleWords(pasted, "main"), languages: pasted.languages },
+          },
+        ]),
+      ),
+    );
 
     await vi.advanceTimersByTimeAsync(1000);
     await expect.poll(() => romanizedWords("a"), REFRESH_WAIT).toEqual(["Gde", "ty", "seychas"]);

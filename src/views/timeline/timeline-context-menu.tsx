@@ -3,6 +3,7 @@ import { getAgentColor } from "@/domain/agent/colors";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { instanceKey } from "@/domain/instance/key";
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack } from "@/domain/line/track";
 import { selectionBounds } from "@/domain/selection/bounds";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import type { SyllableAddress } from "@/domain/selection/model";
@@ -260,7 +261,7 @@ function AgentAssignment({ targets, clearContextMenu, lineIndex }: SectionProps 
   const agents = useProjectStore((s) => s.agents);
   const { handleAssignAgent } = useLineMenuActions(targets, clearContextMenu);
   if (agents.length <= 1) return null;
-  const activeAgentId = targets.lines[lineIndex]?.agentId;
+  const activeAgentId = targets.lines[lineIndex] && mainTrack(targets.lines[lineIndex]).agentId;
 
   return (
     <>

@@ -1,8 +1,9 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
-import { reconcileLine } from "@/domain/line/model";
+
 import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "@/domain/edit-text/edit-text";
 
-const line = (id: string, text: string) => reconcileLine({ id, text, agentId: "v1" });
+const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" });
 
 describe("linesToEditText", () => {
   it("joins line texts with newlines", () => {

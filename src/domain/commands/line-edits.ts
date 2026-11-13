@@ -3,12 +3,12 @@ import { type Applied, type LyricRoot, type Refusal, applied, refused } from "@/
 import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { type LineUpdate, reconcileLine } from "@/domain/line/model";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import type { LineUpdate } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
 
 interface EditLinesOptions {
-  derivesText?: boolean;
   propagateToSiblings?: boolean;
   copiesSharedTiming?: boolean;
 }
@@ -27,7 +27,7 @@ function withLineUpdates(root: LyricRoot, updates: readonly LineUpdate[], propag
     const targetIdx = indexById.get(id);
     const target = targetIdx !== undefined ? lines[targetIdx] : undefined;
     if (targetIdx === undefined || !target) continue;
-    lines[targetIdx] = reconcileLine({ ...target, ...lineUpdates });
+    lines[targetIdx] = { ...target, ...lineUpdates };
 
     const linkScope = propagateToSiblings ? getLinkScope(target) : null;
     if (!linkScope) continue;
@@ -49,10 +49,9 @@ function lineEditCommand(
   plan: (root: LyricRoot, ctx: CommandContext) => PlannedEdit,
   options: EditLinesOptions = {},
 ): LyricCommand {
-  const { derivesText = true, propagateToSiblings = true, copiesSharedTiming = true } = options;
+  const { propagateToSiblings = true, copiesSharedTiming = true } = options;
   return {
     note,
-    derivesText,
     copiesSharedTiming,
     run: (root, ctx) => {
       const planned = plan(root, ctx);
@@ -68,7 +67,6 @@ function lineEditCommand(
 function patchLines(updates: readonly LineUpdate[]): LyricCommand {
   return {
     note: { command: "patch lines", args: updates.map((update) => update.id) },
-    derivesText: false,
     copiesSharedTiming: false,
     run: (root) =>
       applied(
@@ -87,12 +85,11 @@ function insertEmptyLine({
 }): LyricCommand {
   return {
     note: { command: "insert line", args: [anchorLineId, position] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root, ctx) => {
       const anchorIndex = root.lines.findIndex((line) => line.id === anchorLineId);
       if (anchorIndex === -1) return refused({ reason: "line-gone", lineId: anchorLineId });
-      const newLine = { id: ctx.newId(), text: "", agentId: root.agents?.[0]?.id ?? "v1" };
+      const newLine = lineFromFields({ id: ctx.newId(), text: "", agentId: root.agents?.[0]?.id ?? "v1" });
       const lines = root.lines.toSpliced(position === "above" ? anchorIndex : anchorIndex + 1, 0, newLine);
       return applied({ ...root, lines }, [newLine.id]);
     },

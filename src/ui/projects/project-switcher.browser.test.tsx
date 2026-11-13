@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { PROJECT_CHANNEL_NAME } from "@/lib/project-channel";
@@ -28,7 +29,7 @@ async function seedLibrary(): Promise<void> {
     project: {
       metadata: { title: "Bravo", artists: ["The Band"], album: "First", duration: 0 },
       savedAt: 20,
-      lines: [createLine({ text: "one", begin: 1, end: 2 }), createLine({ text: "two", begin: 3, end: 4 })],
+      lines: savedLines([createLine({ text: "one", begin: 1, end: 2 }), createLine({ text: "two", begin: 3, end: 4 })]),
     },
   });
   await seedStoredProject("c", { project: { ...songTitled("Charlie"), savedAt: 30, lines: [] } });

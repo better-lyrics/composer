@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type PositionalPieces, positionalPieces } from "@/domain/language/pieces";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -36,7 +37,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
-    expect(useProjectStore.getState().lines[0].words?.length).toBe(5);
+    expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(5);
     expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
   });
 
@@ -57,8 +58,8 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
-    expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
-    expect(useProjectStore.getState().lines[1].words?.length).toBe(2);
+    expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
+    expect(roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
     expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
     expect(lineText(useProjectStore.getState().lines[1])).toBe("Foo bar");
   });
@@ -89,7 +90,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       result.current.handleTap();
     });
 
-    const words = useProjectStore.getState().lines[0].words;
+    const words = roleWords(useProjectStore.getState().lines[0], "main");
     expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
     expect(words?.length).toBe(5);
     expect(words?.[1].begin).toBe(5.0);
@@ -158,7 +159,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(timedSyllables(mainTrack(lines[0]))).toHaveLength(2);
     expect(timedSyllables(mainTrack(lines[0]))[1].end).toBe(1.25);
     expect(lineText(lines[1])).toBe("");
-    expect(lines[1].words).toBeUndefined();
+    expect(roleWords(lines[1], "main")).toBeUndefined();
     expect(lineText(lines[2])).toBe("Foo bar");
     expect(timedSyllables(mainTrack(lines[2]))).toHaveLength(1);
   });
@@ -290,7 +291,7 @@ describe("useSyncHandlers live audio time (issue #203)", () => {
 
     await act(() => result.current.handleTap());
 
-    const begin = useProjectStore.getState().lines[0].words?.[0].begin;
+    const begin = roleWords(useProjectStore.getState().lines[0], "main")?.[0].begin;
     expect(begin).toBe(audioElement.currentTime);
     expect(begin).not.toBe(1.0);
   });
@@ -303,7 +304,7 @@ describe("useSyncHandlers live audio time (issue #203)", () => {
 
     await act(() => result.current.handleTap());
 
-    expect(useProjectStore.getState().lines[0].begin).toBe(audioElement.currentTime);
+    expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBe(audioElement.currentTime);
   });
 
   it("regression: a hold start timestamps from the element's live currentTime", async () => {
@@ -372,7 +373,7 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
     });
     expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
     expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
-    expect(useProjectStore.getState().lines[0].begin).toBe(0);
+    expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBe(0);
     await rerender({ syncState: getSyncState(), currentTime: 1.0 });
 
     await act(() => {
@@ -380,7 +381,7 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
     });
     expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
     expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
-    expect(useProjectStore.getState().lines[1].begin).toBe(1.0);
+    expect(mainTrack(useProjectStore.getState().lines[1]).begin).toBe(1.0);
   });
 });
 
@@ -401,7 +402,7 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
       result.current.handleHoldEnd();
     });
     expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TEXT);
-    expect(useProjectStore.getState().lines[0].words?.length).toBe(1);
+    expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
   });
 
   it("preserves text across a handleHoldTap sequence", async () => {
@@ -940,8 +941,8 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     await rerender({ syncState: getSyncState(), currentTime: 7 });
     await act(() => result.current.handleTap());
 
-    expect(useProjectStore.getState().lines[0].end).toBe(1);
-    expect(useProjectStore.getState().lines[1].begin).toBe(7);
+    expect(mainTrack(useProjectStore.getState().lines[0]).end).toBe(1);
+    expect(mainTrack(useProjectStore.getState().lines[1]).begin).toBe(7);
   });
 
   it("still closes the previous line when the cursor advanced there normally", async () => {
@@ -1134,7 +1135,7 @@ describe("sync-panel bg-init contract", () => {
 
     expect(backgroundText(useProjectStore.getState().lines[0])).toBe(BG_TEXT);
     expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_LINE_TEXT);
-    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "bg")).toBeUndefined();
   });
 });
 
@@ -1161,8 +1162,8 @@ describe("useSyncHandlers with shared timing", () => {
       result.current.handleNudgeLastSynced(-5);
     });
 
-    expect(lineById("c1")).toMatchObject({ begin: 7, end: 9 });
-    expect(lineById("c0")).toMatchObject({ begin: 0, end: 2 });
+    expect(fieldsOfLine(lineById("c1")!)).toMatchObject({ begin: 7, end: 9 });
+    expect(fieldsOfLine(lineById("c0")!)).toMatchObject({ begin: 0, end: 2 });
   });
 
   it("stops a first word nudge where the earliest instance reaches zero", async () => {
@@ -1241,7 +1242,7 @@ describe("useSyncHandlers with shared timing", () => {
       result.current.handleNudgeLastSynced(-5);
     });
 
-    expect(lineById("c1")).toMatchObject({ begin: 5, end: 7 });
-    expect(lineById("c0")).toMatchObject({ begin: 3, end: 5 });
+    expect(fieldsOfLine(lineById("c1")!)).toMatchObject({ begin: 5, end: 7 });
+    expect(fieldsOfLine(lineById("c0")!)).toMatchObject({ begin: 3, end: 5 });
   });
 });

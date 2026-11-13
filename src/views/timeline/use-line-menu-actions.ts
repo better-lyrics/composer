@@ -9,6 +9,7 @@ import { instanceName } from "@/domain/instance/name";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
+import { mainTrack } from "@/domain/line/track";
 import { useAutoAlign } from "@/hooks/use-auto-align";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
@@ -94,7 +95,8 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     (agentId: string) => {
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
       const { lineId } = contextMenu.target;
-      if (rawLines.find((line) => line.id === lineId)?.agentId !== agentId) {
+      const line = rawLines.find((candidate) => candidate.id === lineId);
+      if (!line || mainTrack(line).agentId !== agentId) {
         useProjectStore.getState().commit(assignSinger([lineId], agentId));
         noteGuideSignal("edit.singer");
       }

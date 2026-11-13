@@ -1,5 +1,6 @@
 import { DndContext } from "@dnd-kit/core";
 import { afterAll, beforeAll } from "vitest";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
 import { DragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
@@ -9,7 +10,7 @@ import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 // -- Constants -----------------------------------------------------------------
 
 const DND_LINES: LyricLine[] = [
-  {
+  lineFromFields({
     id: "l0",
     text: "alpha beta",
     agentId: "v1",
@@ -17,13 +18,13 @@ const DND_LINES: LyricLine[] = [
       { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
       { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
     ],
-  },
-  {
+  }),
+  lineFromFields({
     id: "l1",
     text: "gamma",
     agentId: "v1",
     words: [{ id: "w3", text: "gamma", sep: "", begin: 5, end: 5.3, joinsNext: false }],
-  },
+  }),
 ];
 
 const ACTIVATION_STEP_PX = 12;

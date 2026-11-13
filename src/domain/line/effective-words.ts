@@ -2,7 +2,9 @@ import { withAlignedTransliteration } from "@/domain/language/align";
 import { mainWordEditFields } from "@/domain/line/main-words";
 import { type LyricLine, effectiveLineBrand } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { trackWords } from "@/domain/line/tracks";
+import { syllablesText, trackText } from "@/domain/line/text";
+import { isSpanTimed, mainTrack, timedSyllables, trackWords } from "@/domain/line/track";
+import { withMainTrack, withRoleWords, withTrackSpan, withTrackText } from "@/domain/line/track-writes";
 import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -18,18 +20,16 @@ type ReadableLine = LyricLine | EffectiveLine;
 // -- Functions ----------------------------------------------------------------
 
 function effectiveWords(line: LyricLine): WordTiming[] {
-  if (line.words?.length) return line.words;
-  if (isLineSynced(line)) {
-    const text = stripSplitCharacter(line.text);
-    return [wordFromSpaced({ id: lineTimingWordId(line.id), text, begin: line.begin, end: line.end })];
-  }
-  return [];
+  const main = mainTrack(line);
+  if (!isSpanTimed(main)) return timedSyllables(main);
+  const text = stripSplitCharacter(trackText(main));
+  return [wordFromSpaced({ id: lineTimingWordId(line.id), text, begin: main.begin, end: main.end })];
 }
 
 function withEffectiveWords(line: LyricLine): LyricLine {
   if (!isLineSynced(line)) return line;
-  const { begin: _begin, end: _end, ...rest } = line;
-  return { ...rest, words: effectiveWords(line) };
+  const { begin: _begin, end: _end, ...main } = mainTrack(line);
+  return withMainTrack(line, { ...main, syllables: effectiveWords(line) });
 }
 
 function effectiveTrackWords(line: LyricLine, type: "word" | "bg"): WordTiming[] | undefined {
@@ -37,20 +37,29 @@ function effectiveTrackWords(line: LyricLine, type: "word" | "bg"): WordTiming[]
 }
 
 function timingSourceOf(line: LyricLine): TimingSource {
-  if (line.words?.length) return "words";
+  if (timedSyllables(mainTrack(line)).length > 0) return "words";
   return isLineSynced(line) ? "line" : "none";
 }
 
-function brand(line: LyricLine, timingSource: TimingSource): EffectiveLine {
-  return { ...line, [effectiveLineBrand]: true, timingSource };
+const rawLineOfEffective = new WeakMap<EffectiveLine, LyricLine>();
+
+function brand(line: LyricLine, raw: LyricLine, timingSource: TimingSource): EffectiveLine {
+  const effective: EffectiveLine = { ...line, [effectiveLineBrand]: true, timingSource };
+  rawLineOfEffective.set(effective, raw);
+  return effective;
 }
 
 function isEffectiveLine(line: ReadableLine): line is EffectiveLine {
   return effectiveLineBrand in line;
 }
 
+// Writes land on the stored line, never on the drawn one.
+function rawLineOf(line: ReadableLine): LyricLine {
+  return (isEffectiveLine(line) && rawLineOfEffective.get(line)) || line;
+}
+
 function computeEffectiveLine(line: LyricLine): EffectiveLine {
-  return brand(withAlignedTransliteration(withEffectiveWords(line)), timingSourceOf(line));
+  return brand(withAlignedTransliteration(withEffectiveWords(line)), line, timingSourceOf(line));
 }
 
 interface CachedEffectiveLine {
@@ -81,9 +90,14 @@ function isLineSyncedSource(line: ReadableLine): boolean {
   return isEffectiveLine(line) ? line.timingSource === "line" : isLineSynced(line);
 }
 
+function spanWrite(line: ReadableLine, word: WordTiming): Partial<LyricLine> {
+  const raw = rawLineOf(line);
+  return { tracks: withMainTrack(raw, withTrackSpan(mainTrack(raw), word.begin, word.end)).tracks };
+}
+
 function effectiveTimingWrite(line: ReadableLine, words: WordTiming[]): Partial<LyricLine> {
-  if (isLineSyncedSource(line) && words.length === 1) return { begin: words[0].begin, end: words[0].end };
-  return { words };
+  if (isLineSyncedSource(line) && words.length === 1) return spanWrite(line, words[0]);
+  return { tracks: withRoleWords(rawLineOf(line), "main", words).tracks };
 }
 
 function effectiveMainWordEdit(
@@ -97,12 +111,16 @@ function effectiveMainWordEdit(
   words: WordTiming[],
   options?: { convertLineSynced: true },
 ): Partial<LyricLine> | null {
-  if (options?.convertLineSynced || !isLineSyncedSource(line)) return mainWordEditFields(words);
-  return words.length === 1 ? { begin: words[0].begin, end: words[0].end } : null;
+  if (options?.convertLineSynced || !isLineSyncedSource(line)) return mainWordEditFields(rawLineOf(line), words);
+  return words.length === 1 ? spanWrite(line, words[0]) : null;
 }
 
 function effectiveWordTextEdit(line: ReadableLine, words: WordTiming[]): Partial<LyricLine> {
-  return isLineSyncedSource(line) ? { text: mainWordEditFields(words).text } : { words };
+  const raw = rawLineOf(line);
+  if (!isLineSyncedSource(line)) return { tracks: withRoleWords(raw, "main", words).tracks };
+  return {
+    tracks: withMainTrack(raw, withTrackText(mainTrack(raw), syllablesText(words, getSplitCharacter()))).tracks,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -116,6 +134,7 @@ export {
   getEffectiveLine,
   getEffectiveLines,
   isLineSyncedSource,
+  rawLineOf,
 };
 
 export type { EffectiveLine, ReadableLine };

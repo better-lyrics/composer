@@ -1,12 +1,12 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { isLinked } from "@/domain/instance/predicates";
-import { applyBackground, backgroundFields, withSeededBackground } from "@/domain/line/background";
+import { withBackground, withSeededBackground } from "@/domain/line/background";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { reconcileLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
-import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
-import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack } from "@/domain/line/track";
+import { wordContentSpans } from "@/domain/line/reconstruct-text";
+import { backgroundText, lineText, syllablesText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, roleWords } from "@/domain/line/track";
+import { withMainTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -99,11 +99,11 @@ function hasSungContent(text: string, splitChar: string): boolean {
 }
 
 function extractInlineWordSynced(line: LyricLine, classified: LineClassification, options: ExtractOptions): LyricLine {
-  const words = line.words;
+  const words = roleWords(line, "main");
   if (!words || words.length === 0) return line;
-  if (line.backgroundWords && line.backgroundWords.length > 0) return line;
+  if (roleWords(line, "bg")) return line;
   const splitChar = getSplitCharacter();
-  if (reconstructLineText(words, splitChar) !== lineText(line)) return line;
+  if (syllablesText(words, splitChar) !== lineText(line)) return line;
   const spans = wordContentSpans(words, splitChar);
   const survivors: WordTiming[] = [];
   const bracketed: WordTiming[] = [];
@@ -126,49 +126,30 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
   const trimmedSurvivors = survivors.map((word, i) =>
     i === survivors.length - 1 ? wordFromSpaced({ ...word, text: (word.text + word.sep).replace(/ +$/, "") }) : word,
   );
-  const base = backgroundTrack(line)?.source === "extraction" ? undefined : line.backgroundText;
-  const backgroundText = joinBackgroundText(base, classified.bgText, options.preserveBrackets, false);
-  return applyBackground(
-    reconcileLine({
-      ...line,
-      words: trimmedSurvivors,
-      text: reconstructLineText(trimmedSurvivors, splitChar),
-    }),
-    {
-      text: backgroundText,
-      words: base ? undefined : remapWordTextsPreservingTiming(bracketed, backgroundText),
-      source: base ? "manual" : "extraction",
-    },
-  );
+  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line);
+  const joined = joinBackgroundText(base, classified.bgText, options.preserveBrackets, false);
+  return withBackground(withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)), {
+    text: joined,
+    words: base ? undefined : remapWordTextsPreservingTiming(bracketed, joined),
+    source: base ? "manual" : "extraction",
+  });
 }
 
 function extractInline(line: LyricLine, options: ExtractOptions): LyricLine {
   const classified = classifyLine(lineText(line));
   if (classified.kind !== "inline") return line;
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options);
-  if (line.backgroundWords && line.backgroundWords.length > 0) return line;
+  if (roleWords(line, "bg")) return line;
   const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line);
-  return applyBackground(
-    { ...line, text: classified.mainText },
-    {
-      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
-      source: base ? "manual" : "extraction",
-    },
-  );
+  return withBackground(withMainTrack(line, withTrackText(mainTrack(line), classified.mainText)), {
+    text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
+    source: base ? "manual" : "extraction",
+  });
 }
 
 function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricLine {
   const extracted = extractInline(line, options);
   return extracted === line ? line : withSeededBackground(extracted);
-}
-
-function extractionUpdate(extracted: LyricLine): Partial<LyricLine> {
-  const background = backgroundFields({
-    text: backgroundText(extracted),
-    words: extracted.backgroundWords,
-    source: backgroundTrack(extracted)?.source ?? "manual",
-  });
-  return { text: lineText(extracted), words: extracted.words, ...background };
 }
 
 function extractInlineAcrossLinkedLines(lines: LyricLine[], lineId: string, options: ExtractOptions): LineUpdate[] {
@@ -180,7 +161,7 @@ function extractInlineAcrossLinkedLines(lines: LyricLine[], lineId: string, opti
     if (line.id !== lineId && !isLinkedSibling(line, scope)) continue;
     const extracted = extractInlineFromLine(line, options);
     if (extracted === line) return [];
-    updates.push({ id: line.id, updates: extractionUpdate(extracted) });
+    updates.push({ id: line.id, updates: { tracks: extracted.tracks } });
   }
   return updates;
 }

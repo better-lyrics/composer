@@ -1,45 +1,41 @@
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack } from "@/domain/line/track";
 import type { SyncCursor } from "@/domain/sync/cursor";
 
 // -- Types --------------------------------------------------------------------
 
-// Untimed words exist only in the line text, so a cursor on one counts into the untimed tail instead of naming it.
-type SyncSlotAddress = { syllableId: string } | { untimed: number };
-
 interface SyncAddress {
   lineId: string | null;
-  at: SyncSlotAddress;
+  syllableId: string | null;
   storedAt: SyncCursor;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const SYNC_START: SyncAddress = { lineId: null, at: { untimed: 0 }, storedAt: { lineIndex: 0, wordIndex: 0 } };
+const SYNC_START: SyncAddress = { lineId: null, syllableId: null, storedAt: { lineIndex: 0, wordIndex: 0 } };
 
 // -- Functions ----------------------------------------------------------------
 
+// Every Sync slot is a syllable of the main track, timed or not, so the cursor names it by id.
 function syncAddressAt(lines: readonly LyricLine[], cursor: SyncCursor): SyncAddress {
   const line = lines[cursor.lineIndex];
-  if (!line) return { lineId: null, at: { untimed: 0 }, storedAt: cursor };
-  const words = line.words ?? [];
-  const word = words[cursor.wordIndex];
-  const at = word ? { syllableId: word.id } : { untimed: cursor.wordIndex - words.length };
-  return { lineId: line.id, at, storedAt: cursor };
+  if (!line) return { lineId: null, syllableId: null, storedAt: cursor };
+  const syllable = mainTrack(line).syllables[cursor.wordIndex];
+  return { lineId: line.id, syllableId: syllable?.id ?? null, storedAt: cursor };
 }
 
-// A cursor whose line or word is gone falls back to where it stood, which the cursor resolver then clamps.
+// A cursor whose line or syllable is gone falls back to where it stood, which the cursor resolver then clamps.
 function syncAddressPosition(lines: readonly LyricLine[], address: SyncAddress): SyncCursor {
   if (address.lineId === null) return address.storedAt;
   const lineIndex = lines.findIndex((line) => line.id === address.lineId);
   if (lineIndex === -1) return address.storedAt;
-  const words = lines[lineIndex].words ?? [];
-  const { at } = address;
-  if ("untimed" in at) return { lineIndex, wordIndex: words.length + at.untimed };
-  const wordIndex = words.findIndex((word) => word.id === at.syllableId);
+  const syllables = mainTrack(lines[lineIndex]).syllables;
+  if (address.syllableId === null) return { lineIndex, wordIndex: syllables.length };
+  const wordIndex = syllables.findIndex((syllable) => syllable.id === address.syllableId);
   return wordIndex === -1 ? address.storedAt : { lineIndex, wordIndex };
 }
 
-// Addresses match by where they resolve, so an untimed slot that became a timed word in place still matches.
+// Addresses match by where they resolve, so a syllable timed in place still matches.
 function sameSyncPosition(lines: readonly LyricLine[], a: SyncAddress, b: SyncAddress): boolean {
   const first = syncAddressPosition(lines, a);
   const second = syncAddressPosition(lines, b);

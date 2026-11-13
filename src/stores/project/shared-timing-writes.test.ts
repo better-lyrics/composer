@@ -1,17 +1,19 @@
 /**
  * @vitest-environment node
  */
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { applyAlignedTimings } from "@/domain/commands/alignment";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 
 const chorus = (instanceIdx: number, begin: number) =>
   createLine({
@@ -36,12 +38,14 @@ function nudgedSecondWord(delta: number): WordTiming[] {
 }
 
 function secondWordBegin(id: string) {
-  return useProjectStore.getState().lines.find((line) => line.id === id)?.words?.[1]?.begin;
+  return roleWords(
+    useProjectStore.getState().lines.find((line) => line.id === id),
+    "main",
+  )?.[1]?.begin;
 }
 
 const timingWrite = (updates: LineUpdate[]) =>
   lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
-    derivesText: false,
     propagateToSiblings: false,
   });
 let unsubscribe: (() => void) | undefined;
@@ -59,19 +63,25 @@ afterEach(() => {
 describe("shared timing in history writes", () => {
   it("updateLinesWithHistory copies a timing edit to the placed sibling", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }));
-    useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }]));
+    useProjectStore
+      .getState()
+      .commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }])));
     expect(secondWordBegin("c1")).toBeCloseTo(40.7, 6);
   });
 
   it("updateLineWithHistory copies a timing edit to the placed sibling", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }));
-    useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }]));
+    useProjectStore
+      .getState()
+      .commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }])));
     expect(secondWordBegin("c1")).toBeCloseTo(40.7, 6);
   });
 
   it("makes the edit and its copies one undo step", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }));
-    useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }]));
+    useProjectStore
+      .getState()
+      .commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }])));
     useProjectStore.getState().undo();
     expect(secondWordBegin("c0")).toBeCloseTo(10.5, 6);
     expect(secondWordBegin("c1")).toBeCloseTo(40.5, 6);
@@ -81,14 +91,18 @@ describe("shared timing in history writes", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }));
     const notified: (readonly string[])[] = [];
     unsubscribe = subscribeSharedTimingCopied((groupIds) => notified.push(groupIds));
-    useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }]));
+    useProjectStore
+      .getState()
+      .commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }])));
     expect(notified).toEqual([["g1"]]);
   });
 
   describe("edge cases", () => {
     it("leaves the sibling of an old group where it was", () => {
       seed(createGroup({ id: "g1" }));
-      useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }]));
+      useProjectStore
+        .getState()
+        .commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }])));
       expect(secondWordBegin("c1")).toBeCloseTo(40.5, 6);
     });
 
@@ -98,7 +112,7 @@ describe("shared timing in history writes", () => {
       const words = timedSyllables(mainTrack(before.lines[0])).map((word, i) =>
         i === 0 ? { ...word, begin: 9.8 } : word,
       );
-      before.commit(timingWrite([{ id: "c0", updates: { words } }]));
+      before.commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
       const after = useProjectStore.getState();
       expect(after.lines).toBe(before.lines);
       expect(after.history).toBe(before.history);
@@ -110,7 +124,7 @@ describe("shared timing in history writes", () => {
       const words = timedSyllables(mainTrack(before.lines[0])).map((word, i) =>
         i === 0 ? { ...word, begin: 9.8 } : word,
       );
-      const outcome = before.commit(applyAlignedTimings([{ id: "c0", updates: { words } }]));
+      const outcome = before.commit(applyAlignedTimings(fieldUpdates([{ id: "c0", updates: { words } }])));
       expect(outcome).toEqual({ refused: { reason: "copy-below-zero" } });
       expect(useProjectStore.getState().history).toBe(before.history);
     });
@@ -119,7 +133,9 @@ describe("shared timing in history writes", () => {
       seed(createGroup({ id: "g1" }));
       const notified: (readonly string[])[] = [];
       unsubscribe = subscribeSharedTimingCopied((groupIds) => notified.push(groupIds));
-      useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }]));
+      useProjectStore
+        .getState()
+        .commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }])));
       expect(notified).toEqual([]);
     });
   });
@@ -143,7 +159,10 @@ describe("shared timing in structural word writes", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }), [syllables(0, 10), syllables(1, 40)]);
     useProjectStore.getState().commit(snapSyllablesFlush("s0", "words"));
     const sibling = useProjectStore.getState().lines.find((line) => line.id === "s1");
-    expect(timedSyllables(mainTrack(sibling!))[1]?.begin).toBeCloseTo(sibling?.words?.[0]?.end ?? Number.NaN, 6);
+    expect(timedSyllables(mainTrack(sibling!))[1]?.begin).toBeCloseTo(
+      (sibling && roleWords(sibling, "main"))?.[0]?.end ?? Number.NaN,
+      6,
+    );
   });
 
   it("keeps an old group's sibling where it was", () => {

@@ -45,10 +45,10 @@ function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]
 
 // The project language when set, else a guess from the lyrics' script. Kana
 // anywhere wins over Han, as in `hanReadingFor`.
-function songLanguage(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): string | null {
+function songLanguage(language: string | undefined, lines: readonly LyricLine[]): string | null {
   const base = baseLanguage(language);
   if (base) return base;
-  const text = lines.map((line) => line.text).join("\n");
+  const text = lines.map(lineText).join("\n");
   return detectNonLatinLanguage(text) ?? (hasLatinLetter(text) ? "en" : null);
 }
 

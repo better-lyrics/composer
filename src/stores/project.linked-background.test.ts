@@ -1,16 +1,20 @@
-/**
- * @vitest-environment node
- */
 import { beforeEach, describe, expect, it } from "vitest";
 import { addGroup } from "@/domain/commands/group-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { applyWordCountChange } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
-import { backgroundFields, manualBackgroundWordEdit, withSeededBackground } from "@/domain/line/background";
+import { withBackground, withSeededBackground } from "@/domain/line/background";
+import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+/**
+ * @vitest-environment node
+ */
+import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import { withFields } from "@/test/field-updates";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -25,7 +29,7 @@ function seedTwoInstancesWithTimings() {
   useProjectStore.getState().commit(addGroup(seedGroup("g1")));
   useProjectStore.setState({
     lines: [
-      {
+      lineFromFields({
         id: "a0",
         text: "I love you",
         agentId: "v1",
@@ -34,8 +38,8 @@ function seedTwoInstancesWithTimings() {
         templateLineIdx: 0,
         begin: 30,
         end: 32,
-      },
-      {
+      }),
+      lineFromFields({
         id: "a1",
         text: "I love you",
         agentId: "v1",
@@ -44,9 +48,15 @@ function seedTwoInstancesWithTimings() {
         templateLineIdx: 0,
         begin: 60,
         end: 62,
-      },
+      }),
     ],
   });
+}
+
+function lineById(id: string): LyricLine {
+  const line = useProjectStore.getState().lines.find((candidate) => candidate.id === id);
+  if (!line) throw new Error(`${id} not found`);
+  return line;
 }
 
 describe("project store · background vocals across linked instances", () => {
@@ -54,15 +64,18 @@ describe("project store · background vocals across linked instances", () => {
     seedTwoInstancesWithTimings();
     const source = useProjectStore.getState().lines.find((l) => l.id === "a0");
     if (!source) throw new Error("a0 not found");
-    const seededWords = withSeededBackground({ ...source, backgroundText: "ooh yeah" }).backgroundWords;
+    const seededWords = roleWords(withSeededBackground(withFields(source, { backgroundText: "ooh yeah" })), "bg");
 
-    useProjectStore
-      .getState()
-      .commit(
-        pasteLines([
-          { id: "a0", updates: backgroundFields({ text: "ooh yeah", words: seededWords, source: "manual" }) },
-        ]),
-      );
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            tracks: withBackground(source, { text: "ooh yeah", words: seededWords, source: "manual" }).tracks,
+          },
+        },
+      ]),
+    );
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(backgroundText(sibling!)).toBe("ooh yeah");
@@ -77,19 +90,20 @@ describe("project store · background vocals across linked instances", () => {
 
   it("regression: a background edit reaches an instance with a diverged split, and later splits stay in step", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
-    const instance = (id: string, instanceIdx: number, backgroundWords: LyricLine["backgroundWords"]): LyricLine => ({
-      id,
-      text: "hold me",
-      agentId: "v1",
-      groupId: "g1",
-      instanceIdx,
-      templateLineIdx: 0,
-      begin: (backgroundWords?.[0].begin ?? 0) - 1,
-      end: backgroundWords?.at(-1)?.end ?? 0,
-      backgroundText: backgroundWords?.map((w) => w.text + w.sep).join(""),
-      backgroundWords,
-      backgroundTextSource: "manual",
-    });
+    const instance = (id: string, instanceIdx: number, backgroundWords: WordTiming[] | undefined): LyricLine =>
+      lineFromFields({
+        id,
+        text: "hold me",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+        begin: (backgroundWords?.[0].begin ?? 0) - 1,
+        end: backgroundWords?.at(-1)?.end ?? 0,
+        backgroundText: backgroundWords?.map((w) => w.text + w.sep).join(""),
+        backgroundWords,
+        backgroundTextSource: "manual",
+      });
     useProjectStore.setState({
       lines: [
         instance("a0", 0, [
@@ -104,16 +118,16 @@ describe("project store · background vocals across linked instances", () => {
       ],
     });
     const bgTexts = (id: string) =>
-      useProjectStore
-        .getState()
-        .lines.find((l) => l.id === id)
-        ?.backgroundWords?.map((w) => w.text + w.sep);
+      roleWords(
+        useProjectStore.getState().lines.find((l) => l.id === id),
+        "bg",
+      )?.map((w) => w.text + w.sep);
 
     useProjectStore.getState().commit(
       pasteLines([
         {
           id: "a0",
-          updates: manualBackgroundWordEdit([
+          updates: manualBackgroundWordEdit(lineById("a0"), [
             { id: "w6", text: "ahh", sep: " ", begin: 10, end: 10.5, joinsNext: false },
             { id: "w7", text: "yeah", sep: "", begin: 10.5, end: 11, joinsNext: false },
           ]),
@@ -132,9 +146,7 @@ describe("project store · background vocals across linked instances", () => {
       { id: "w9", text: "ye", sep: "", begin: 10.5, end: 10.75, joinsNext: true },
       { id: "w10", text: "ah", sep: "", begin: 10.75, end: 11, joinsNext: false },
     ];
-    useProjectStore
-      .getState()
-      .commit(applyWordCountChange("a0", split, "backgroundWords", "apply", manualBackgroundWordEdit(split)));
+    useProjectStore.getState().commit(applyWordCountChange("a0", split, "backgroundWords", "apply"));
 
     expect(bgTexts("a1")).toEqual(["ahh ", "ye", "ah"]);
   });

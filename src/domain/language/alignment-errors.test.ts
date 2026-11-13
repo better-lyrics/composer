@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
 import type { LyricLine } from "@/domain/line/model";
 import { legacyLine } from "@/test/legacy-languages";
@@ -52,7 +53,7 @@ describe("getLanguageAlignmentErrorItems", () => {
 
   it("omits aligned and empty transliterations", () => {
     const lines: LyricLine[] = [
-      { id: "empty", text: "가|나", agentId: "v1" },
+      lineFromFields({ id: "empty", text: "가|나", agentId: "v1" }),
       legacyLine({
         id: "aligned",
         text: "가|나",

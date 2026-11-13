@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import type { LyricLine } from "@/domain/line/model";
 
 type BackgroundPlacement = { position: "front" } | { position: "middle"; afterWordIndex: number } | { position: "end" };
@@ -5,8 +6,8 @@ type BackgroundPlacement = { position: "front" } | { position: "middle"; afterWo
 const TIMING_EPSILON = 1e-4;
 
 function alternateBackgroundPlacement(line: LyricLine): BackgroundPlacement {
-  const mainWords = line.words;
-  const backgroundWords = line.backgroundWords;
+  const mainWords = roleWords(line, "main");
+  const backgroundWords = roleWords(line, "bg");
   if (!mainWords?.length || !backgroundWords?.length) return { position: "end" };
 
   const mainBegin = Math.min(...mainWords.map((word) => word.begin));

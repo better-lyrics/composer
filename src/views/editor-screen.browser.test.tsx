@@ -4,6 +4,7 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { TabBar } from "@/ui/tab-bar";
 import { isMac } from "@/utils/platform";
@@ -60,7 +61,7 @@ describe("EditorScreen", () => {
       activeTab: "export",
       lines: [createLine({ id: "line", text: "Before", begin: 0, end: 1 })],
     });
-    useProjectStore.getState().commit(pasteLines([{ id: "line", updates: { text: "After" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "line", updates: { text: "After" } }])));
     const screen = await render(<EditorScreen />, { withRouter: true });
 
     await screen.getByRole("button", { name: /Edit$/ }).click();

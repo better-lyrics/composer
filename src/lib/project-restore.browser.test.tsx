@@ -177,7 +177,7 @@ describe("project-restore", () => {
     });
 
     it("upgrades an old record without moving its edit time", async () => {
-      await seedStoredProject("p1", { project: { version: 1, lines: [createLine({ text: "hello" })] } });
+      await seedStoredProject("p1", { project: { version: 1, lines: savedLines([createLine({ text: "hello" })]) } });
       await loadProjectForRestore("p1");
       expect((await loadProjectRecord("p1"))?.version).toBe(SAVED_PROJECT_VERSION);
       expect((await loadProjectRecord("p1"))?.savedAt).toBe(1_758_900_000_000);

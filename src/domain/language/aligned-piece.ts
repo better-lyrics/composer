@@ -2,7 +2,7 @@ import { withAlignedTransliteration } from "@/domain/language/align";
 import type { LanguagePiece } from "@/domain/language/model";
 import { languageSide, pieceOf, trackPieces } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Functions ----------------------------------------------------------------

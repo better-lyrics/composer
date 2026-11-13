@@ -1,12 +1,15 @@
+import { mainBounds } from "@/domain/line/bounds";
 /**
  * @vitest-environment node
  */
+import { patchOf, updatedLine } from "@/test/field-updates";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "@/domain/line/model";
 import {
   nudgeSelectedWords,
   partitionNudgeSelections,
@@ -66,31 +69,31 @@ describe("distributeWordsInLine", () => {
 describe("distributeLinesTiming", () => {
   it("distributes lines evenly across duration as word-synced lines", () => {
     const lines = [
-      { id: "1", text: "Line one", agentId: "v1" },
-      { id: "2", text: "Line two", agentId: "v1" },
+      lineFromFields({ id: "1", text: "Line one", agentId: "v1" }),
+      lineFromFields({ id: "2", text: "Line two", agentId: "v1" }),
     ];
     const duration = 10;
 
     const result = distributeLinesTiming(lines, duration);
 
-    expect(result[0].words[0].begin).toBe(0);
-    expect(result[0].words[result[0].words.length - 1].end).toBe(5);
-    expect(result[1].words[0].begin).toBe(5);
-    expect(result[1].words[result[1].words.length - 1].end).toBe(10);
+    expect(roleWords(result[0], "main")![0].begin).toBe(0);
+    expect(roleWords(result[0], "main")![roleWords(result[0], "main")!.length - 1].end).toBe(5);
+    expect(roleWords(result[1], "main")![0].begin).toBe(5);
+    expect(roleWords(result[1], "main")![roleWords(result[1], "main")!.length - 1].end).toBe(10);
     // Distributed lines are word-synced: no line-level begin/end (both-state).
-    expect("begin" in result[0]).toBe(false);
-    expect("end" in result[0]).toBe(false);
+    expect("begin" in mainTrack(result[0])).toBe(false);
+    expect("end" in mainTrack(result[0])).toBe(false);
   });
 
   it("includes distributed words for each line", () => {
-    const lines = [{ id: "1", text: "Hello World", agentId: "v1" }];
+    const lines = [lineFromFields({ id: "1", text: "Hello World", agentId: "v1" })];
     const duration = 11;
 
     const result = distributeLinesTiming(lines, duration);
 
-    expect(result[0].words).toHaveLength(2);
-    expect(result[0].words[0]).toMatchObject({ text: "Hello", sep: " " });
-    expect(result[0].words[1].text).toBe("World");
+    expect(roleWords(result[0], "main")).toHaveLength(2);
+    expect(roleWords(result[0], "main")![0]).toMatchObject({ text: "Hello", sep: " " });
+    expect(roleWords(result[0], "main")![1].text).toBe("World");
   });
 
   it("handles empty array", () => {
@@ -99,12 +102,12 @@ describe("distributeLinesTiming", () => {
   });
 
   it("preserves original line properties", () => {
-    const lines = [{ id: "abc", text: "Test", agentId: "v2", extra: "data" }];
+    const lines = [{ ...lineFromFields({ id: "abc", text: "Test", agentId: "v2" }), extra: "data" }];
     const result = distributeLinesTiming(lines, 5);
 
     expect(result[0].id).toBe("abc");
-    expect(result[0].agentId).toBe("v2");
-    expect((result[0] as { extra: string }).extra).toBe("data");
+    expect(mainTrack(result[0]).agentId).toBe("v2");
+    expect((result[0] as LyricLine & { extra?: string }).extra).toBe("data");
   });
 });
 
@@ -112,7 +115,7 @@ describe("distributeLinesTiming", () => {
 
 describe("effectiveBounds (legacy call site coverage)", () => {
   it("returns timing from words when available", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
@@ -120,7 +123,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
         { id: "w1", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: true },
         { id: "w2", text: "World", sep: "", begin: 5, end: 8, joinsNext: false },
       ],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -128,13 +131,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns direct timing when no words", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       begin: 3,
       end: 7,
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -142,13 +145,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null when no timing available", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       begin: undefined,
       end: undefined,
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -156,12 +159,12 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("prefers words timing over direct timing", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ id: "w3", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: false }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -169,12 +172,12 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null for a word-synced line with an empty words array", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [] as WordTiming[],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -182,7 +185,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("extends end past main words when bg words end later", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
@@ -195,7 +198,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
         { id: "w6", text: "ech", sep: "", begin: 6, end: 9, joinsNext: true },
         { id: "w7", text: "o", sep: "", begin: 9, end: 12, joinsNext: false },
       ],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -203,14 +206,14 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("pulls begin earlier when bg words begin before main words", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ id: "w8", text: "Hello", sep: "", begin: 5, end: 8, joinsNext: false }],
       backgroundText: "ooh",
       backgroundWords: [{ id: "w9", text: "ooh", sep: "", begin: 3, end: 6, joinsNext: false }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -218,7 +221,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("extends line-synced end when bg words extend past it", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
@@ -226,7 +229,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       end: 7,
       backgroundText: "ahh",
       backgroundWords: [{ id: "w10", text: "ahh", sep: "", begin: 6, end: 10, joinsNext: false }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -234,14 +237,14 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("leaves timing unchanged when bg words sit fully inside main range", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ id: "w11", text: "Hello", sep: "", begin: 2, end: 10, joinsNext: false }],
       backgroundText: "yeah",
       backgroundWords: [{ id: "w12", text: "yeah", sep: "", begin: 4, end: 7, joinsNext: false }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -249,13 +252,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("ignores empty bg words array", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ id: "w13", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: false }],
       backgroundWords: [],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -263,13 +266,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null when bg words exist but no main timing is set", () => {
-    const line = {
+    const line = lineFromFields({
       id: "1",
       text: "Hello",
       agentId: "v1",
       backgroundText: "ooh",
       backgroundWords: [{ id: "w14", text: "ooh", sep: "", begin: 3, end: 6, joinsNext: false }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -308,8 +311,8 @@ describe("formatTime", () => {
 // -- getEffectiveRows ---------------------------------------------------------
 
 describe("getEffectiveRows", () => {
-  function l(id: string, extras: Partial<LooseLine> = {}): LyricLine {
-    return reconcileLine({ id, text: "x", agentId: "v1", ...extras });
+  function l(id: string, extras: Partial<LineFields> = {}): LyricLine {
+    return lineFromFields({ id, text: "x", agentId: "v1", ...extras });
   }
 
   it("interleaves a header before each instance run", () => {
@@ -449,7 +452,7 @@ describe("getEffectiveRows", () => {
 describe("instanceBounds (legacy call site coverage)", () => {
   it("uses min/max across word and bg word timings", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "x",
         agentId: "v1",
@@ -458,14 +461,14 @@ describe("instanceBounds (legacy call site coverage)", () => {
           { id: "w23", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
         ],
         backgroundWords: [{ id: "w24", text: "yeah", sep: "", begin: 4, end: 4.5, joinsNext: false }],
-      },
+      }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 4, end: 7 });
   });
 
   it("ignores stale line.begin/end when words are present", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "x",
         agentId: "v1",
@@ -473,39 +476,39 @@ describe("instanceBounds (legacy call site coverage)", () => {
           { id: "w25", text: "hello", sep: "", begin: 5, end: 6, joinsNext: true },
           { id: "w26", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
         ],
-      },
+      }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
   it("ignores stale line.begin/end when only bg words are present", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "x",
         agentId: "v1",
         begin: 10,
         end: 20,
         backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 5, end: 6, joinsNext: false }],
-      },
+      }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 6 });
   });
 
   it("falls back to line.begin/end ONLY when the line is truly line-synced (no words and no bg words)", () => {
-    const lines: LyricLine[] = [{ id: "a", text: "x", agentId: "v1", begin: 5, end: 7 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "a", text: "x", agentId: "v1", begin: 5, end: 7 })];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
   it("mixes correctly across multiple lines: word-synced lines use words, line-synced uses begin/end", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "x",
         agentId: "v1",
         words: [{ id: "w28", text: "hello", sep: "", begin: 5, end: 6, joinsNext: false }],
-      },
-      { id: "b", text: "y", agentId: "v1", begin: 10, end: 12 },
+      }),
+      lineFromFields({ id: "b", text: "y", agentId: "v1", begin: 10, end: 12 }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 12 });
   });
@@ -514,7 +517,7 @@ describe("instanceBounds (legacy call site coverage)", () => {
 describe("getWordsInInstance", () => {
   it("collects all words and bg words across all lines of an instance", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "x",
         agentId: "v1",
@@ -526,8 +529,8 @@ describe("getWordsInInstance", () => {
           { id: "w30", text: "love", sep: "", begin: 1, end: 2, joinsNext: false },
         ],
         backgroundWords: [{ id: "w31", text: "yeah", sep: "", begin: 0.5, end: 1.5, joinsNext: false }],
-      },
-      {
+      }),
+      lineFromFields({
         id: "b",
         text: "x",
         agentId: "v1",
@@ -535,9 +538,9 @@ describe("getWordsInInstance", () => {
         instanceIdx: 0,
         templateLineIdx: 1,
         words: [{ id: "w32", text: "you", sep: "", begin: 2, end: 3, joinsNext: false }],
-      },
+      }),
       // Other instance
-      {
+      lineFromFields({
         id: "c",
         text: "x",
         agentId: "v1",
@@ -545,7 +548,7 @@ describe("getWordsInInstance", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [{ id: "w33", text: "I", sep: "", begin: 30, end: 31, joinsNext: false }],
-      },
+      }),
     ];
 
     const sels = getWordsInInstance(lines, "g1", 0);
@@ -563,7 +566,7 @@ describe("getWordsInInstance", () => {
 // -- nudgeSelectedWords --------------------------------------------------------
 
 function makeLine(id: string, words: WordTiming[]): LyricLine {
-  return { id, text: spacedText(words), agentId: "v1", words };
+  return lineFromFields({ id, text: spacedText(words), agentId: "v1", words });
 }
 
 describe("nudgeSelectedWords", () => {
@@ -578,7 +581,7 @@ describe("nudgeSelectedWords", () => {
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(0.05);
     expect(result.updates).toHaveLength(1);
-    const updatedWords = result.updates[0].updates.words!;
+    const updatedWords = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(updatedWords[1].begin).toBeCloseTo(1.05);
     expect(updatedWords[1].end).toBeCloseTo(2.05);
     expect(updatedWords[0]).toEqual(timedSyllables(mainTrack(lines[0]))[0]);
@@ -594,8 +597,8 @@ describe("nudgeSelectedWords", () => {
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(-0.05);
-    expect(result.updates[0].updates.words![1].begin).toBeCloseTo(2.95);
-    expect(result.updates[0].updates.words![1].end).toBeCloseTo(3.95);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].begin).toBeCloseTo(2.95);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].end).toBeCloseTo(3.95);
   });
 
   it("clamps to neighbor end when partial room left", () => {
@@ -607,8 +610,8 @@ describe("nudgeSelectedWords", () => {
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(-0.02);
-    expect(result.updates[0].updates.words![1].begin).toBeCloseTo(1);
-    expect(result.updates[0].updates.words![1].end).toBeCloseTo(1.98);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].begin).toBeCloseTo(1);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].end).toBeCloseTo(1.98);
   });
 
   it("is a no-op when already touching previous word", () => {
@@ -639,15 +642,15 @@ describe("nudgeSelectedWords", () => {
     const lines = [makeLine("L", [{ id: "w45", text: "a", sep: "", begin: 0.02, end: 1, joinsNext: false }])];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(-0.02);
-    expect(result.updates[0].updates.words![0].begin).toBeCloseTo(0);
-    expect(result.updates[0].updates.words![0].end).toBeCloseTo(0.98);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![0].begin).toBeCloseTo(0);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![0].end).toBeCloseTo(0.98);
   });
 
   it("clamps to duration for the last word", () => {
     const lines = [makeLine("L", [{ id: "w46", text: "a", sep: "", begin: 8, end: 9.98, joinsNext: false }])];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(0.02);
-    expect(result.updates[0].updates.words![0].end).toBeCloseTo(10);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![0].end).toBeCloseTo(10);
   });
 
   it("shifts consecutive selected words as a block", () => {
@@ -669,7 +672,7 @@ describe("nudgeSelectedWords", () => {
       wholeSong(10),
     );
     expect(result.appliedDelta).toBeCloseTo(0.05);
-    const updated = result.updates[0].updates.words!;
+    const updated = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(updated[0]).toEqual(timedSyllables(mainTrack(lines[0]))[0]);
     expect(updated[1].begin).toBeCloseTo(1.05);
     expect(updated[1].end).toBeCloseTo(2.05);
@@ -697,13 +700,13 @@ describe("nudgeSelectedWords", () => {
       wholeSong(10),
     );
     expect(result.appliedDelta).toBeCloseTo(0.02);
-    const updated = result.updates[0].updates.words!;
+    const updated = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(updated[2].end).toBeCloseTo(3.02);
   });
 
   it("nudges background words via backgroundWords", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "L",
         text: "a",
         agentId: "v1",
@@ -713,13 +716,13 @@ describe("nudgeSelectedWords", () => {
           { id: "w56", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: true },
           { id: "w57", text: "ah", sep: "", begin: 5, end: 6, joinsNext: false },
         ],
-      },
+      }),
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "bg", wordIndex: 0 }], 0.1, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(0.1);
-    expect(result.updates[0].updates.backgroundWords![0].begin).toBeCloseTo(2.1);
-    expect(result.updates[0].updates.backgroundWords![0].end).toBeCloseTo(3.1);
-    expect(result.updates[0].updates.words).toBeUndefined();
+    expect(roleWords(updatedLine(result.updates[0].updates), "bg")![0].begin).toBeCloseTo(2.1);
+    expect(roleWords(updatedLine(result.updates[0].updates), "bg")![0].end).toBeCloseTo(3.1);
+    expect("words" in patchOf(result.updates[0].updates, lines[0])).toBe(false);
   });
 
   it("applies the same clamped delta across multiple lines", () => {
@@ -760,7 +763,7 @@ describe("nudgeSelectedWords", () => {
 describe("nudgeSelectedWords as instance shift", () => {
   it("shifts every word in an instance by the same delta when all words are selected", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "I love",
         agentId: "v1",
@@ -771,8 +774,8 @@ describe("nudgeSelectedWords as instance shift", () => {
           { id: "w62", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
           { id: "w63", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
         ],
-      },
-      {
+      }),
+      lineFromFields({
         id: "B",
         text: "all night",
         agentId: "v1",
@@ -783,14 +786,14 @@ describe("nudgeSelectedWords as instance shift", () => {
           { id: "w64", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
           { id: "w65", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
         ],
-      },
+      }),
       // Standalone line OUTSIDE the instance, must NOT be touched
-      {
+      lineFromFields({
         id: "C",
         text: "outside",
         agentId: "v1",
         words: [{ id: "w66", text: "outside", sep: "", begin: 30, end: 31, joinsNext: false }],
-      },
+      }),
     ];
     const allInstanceSelections = [
       { lineId: "A", type: "word" as const, wordIndex: 0 },
@@ -800,8 +803,14 @@ describe("nudgeSelectedWords as instance shift", () => {
     ];
     const result = nudgeSelectedWords(lines, allInstanceSelections, 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0.5);
-    const aWords = (result.updates.find((u) => u.id === "A")?.updates.words ?? []) as { begin: number; end: number }[];
-    const bWords = (result.updates.find((u) => u.id === "B")?.updates.words ?? []) as { begin: number; end: number }[];
+    const aWords = (roleWords(updatedLine(result.updates.find((u) => u.id === "A")?.updates), "main") ?? []) as {
+      begin: number;
+      end: number;
+    }[];
+    const bWords = (roleWords(updatedLine(result.updates.find((u) => u.id === "B")?.updates), "main") ?? []) as {
+      begin: number;
+      end: number;
+    }[];
     expect(aWords[0].begin).toBeCloseTo(10.5);
     expect(aWords[1].end).toBeCloseTo(11.3);
     expect(bWords[0].begin).toBeCloseTo(11.5);
@@ -811,12 +820,12 @@ describe("nudgeSelectedWords as instance shift", () => {
 
   it("clamps shift to song duration when selection touches the end", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "x",
         agentId: "v1",
         words: [{ id: "w67", text: "x", sep: "", begin: 59.7, end: 60, joinsNext: false }],
-      },
+      }),
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "A", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
@@ -828,12 +837,12 @@ describe("nudgeSelectedWords as instance shift", () => {
 describe("partitionNudgeSelections", () => {
   it("classifies word-synced lines as wordSynced", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "L1",
         text: "hello",
         agentId: "v1",
         words: [{ id: "w68", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
-      },
+      }),
     ];
     const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 0 }];
     const result = partitionNudgeSelections(lines, sels);
@@ -842,7 +851,7 @@ describe("partitionNudgeSelections", () => {
   });
 
   it("classifies line-synced lines as lineSynced", () => {
-    const lines: LyricLine[] = [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })];
     const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 0 }];
     const result = partitionNudgeSelections(lines, sels);
     expect(result.lineSynced).toEqual(sels);
@@ -853,7 +862,7 @@ describe("partitionNudgeSelections", () => {
     // Effective lines synthesize a single 'word' for line-synced rows. If a user marquee-selected
     // a line-synced row from a viewport that briefly produced multiple synthetic indices,
     // we should still only shift the line once.
-    const lines: LyricLine[] = [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })];
     const sels = [
       { lineId: "L1", type: "word" as const, wordIndex: 0 },
       { lineId: "L1", type: "word" as const, wordIndex: 0 },
@@ -865,14 +874,14 @@ describe("partitionNudgeSelections", () => {
   it("treats backgroundWords selections as wordSynced regardless of line-sync state", () => {
     // BG words always have explicit timing even on otherwise line-synced rows
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "L1",
         text: "main",
         agentId: "v1",
         begin: 5,
         end: 7,
         backgroundWords: [{ id: "w69", text: "ah", sep: "", begin: 5.2, end: 5.6, joinsNext: false }],
-      },
+      }),
     ];
     const sels = [{ lineId: "L1", type: "bg" as const, wordIndex: 0 }];
     const result = partitionNudgeSelections(lines, sels);
@@ -882,13 +891,13 @@ describe("partitionNudgeSelections", () => {
 
   it("handles mixed selections across line-synced and word-synced rows", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "synced", agentId: "v1", begin: 0, end: 1 },
-      {
+      lineFromFields({ id: "A", text: "synced", agentId: "v1", begin: 0, end: 1 }),
+      lineFromFields({
         id: "B",
         text: "with words",
         agentId: "v1",
         words: [{ id: "w70", text: "with words", sep: "", begin: 1, end: 2, joinsNext: false }],
-      },
+      }),
     ];
     const sels = [
       { lineId: "A", type: "word" as const, wordIndex: 0 },
@@ -906,7 +915,7 @@ describe("partitionNudgeSelections", () => {
   });
 
   it("treats lines with no words and no begin/end as neither (skipped)", () => {
-    const lines: LyricLine[] = [{ id: "empty", text: "", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "empty", text: "", agentId: "v1" })];
     const result = partitionNudgeSelections(lines, [{ lineId: "empty", type: "word", wordIndex: 0 }]);
     expect(result.wordSynced).toEqual([]);
     expect(result.lineSynced).toEqual([]);
@@ -914,7 +923,7 @@ describe("partitionNudgeSelections", () => {
 
   it("expands a syllable-group selection to all groupmates in the wordSynced bucket", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "L1",
         text: "every",
         agentId: "v1",
@@ -923,7 +932,7 @@ describe("partitionNudgeSelections", () => {
           { id: "w72", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
           { id: "w73", text: "y", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ],
-      },
+      }),
     ];
     const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 1 }];
     const result = partitionNudgeSelections(lines, sels);
@@ -935,20 +944,18 @@ describe("partitionNudgeSelections", () => {
 
 describe("shiftLineSyncedRows", () => {
   it("shifts begin and end by the requested delta and preserves line-sync (no words written)", () => {
-    const lines: LyricLine[] = [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })];
     const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0.5);
     expect(result.updates).toHaveLength(1);
     expect(result.updates[0].id).toBe("L1");
-    expect(result.updates[0].updates).toEqual({ begin: 5.5, end: 7.5 });
-    // Critical: no `words` key in the update payload
-    expect("words" in result.updates[0].updates).toBe(false);
+    expect(patchOf(result.updates[0].updates, lines[0])).toEqual({ begin: 5.5, end: 7.5 });
   });
 
   it("shifts multiple line-synced rows together by the smallest allowed delta", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "a", agentId: "v1", begin: 0.1, end: 1 },
-      { id: "B", text: "b", agentId: "v1", begin: 5, end: 6 },
+      lineFromFields({ id: "A", text: "a", agentId: "v1", begin: 0.1, end: 1 }),
+      lineFromFields({ id: "B", text: "b", agentId: "v1", begin: 5, end: 6 }),
     ];
     // Request -0.5s shift; A only has 0.1s headroom on the left, so applied delta is -0.1
     const result = shiftLineSyncedRows(
@@ -961,21 +968,21 @@ describe("shiftLineSyncedRows", () => {
       wholeSong(60),
     );
     expect(result.appliedDelta).toBeCloseTo(-0.1);
-    expect((result.updates.find((u) => u.id === "A")?.updates as { begin: number }).begin).toBeCloseTo(0);
-    expect((result.updates.find((u) => u.id === "B")?.updates as { begin: number }).begin).toBeCloseTo(4.9);
+    expect(mainBounds(updatedLine(result.updates.find((u) => u.id === "A")?.updates)!)?.begin).toBeCloseTo(0);
+    expect(mainBounds(updatedLine(result.updates.find((u) => u.id === "B")?.updates)!)?.begin).toBeCloseTo(4.9);
   });
 
   it("returns no-op when shift would push past 0 or duration", () => {
-    const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", begin: 0, end: 1 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 0, end: 1 })];
     const r1 = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], -0.5, wholeSong(60));
     expect(r1.appliedDelta).toBe(0);
-    const lines2: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", begin: 59, end: 60 }];
+    const lines2: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 59, end: 60 })];
     const r2 = shiftLineSyncedRows(lines2, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(r2.appliedDelta).toBe(0);
   });
 
   it("returns no-op for zero delta", () => {
-    const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", begin: 5, end: 6 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 5, end: 6 })];
     const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
@@ -988,7 +995,7 @@ describe("shiftLineSyncedRows", () => {
   });
 
   it("skips selections where line is missing or has no begin/end", () => {
-    const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1" })];
     const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
@@ -1004,14 +1011,14 @@ describe("shiftSelectionsTogether", () => {
     // If they apply different deltas, the group banner stretches asymmetrically.
     const lines: LyricLine[] = [
       // Word-synced row whose first word starts at 0.05 → max left shift = 0.05
-      {
+      lineFromFields({
         id: "A",
         text: "x",
         agentId: "v1",
         words: [{ id: "w74", text: "x", sep: "", begin: 0.05, end: 1, joinsNext: false }],
-      },
+      }),
       // Line-synced row with much more left headroom (begin=10)
-      { id: "B", text: "y", agentId: "v1", begin: 10, end: 11 },
+      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 10, end: 11 }),
     ];
     const partitioned = partitionNudgeSelections(lines, [
       { lineId: "A", type: "word", wordIndex: 0 },
@@ -1023,31 +1030,33 @@ describe("shiftSelectionsTogether", () => {
     expect(result.appliedDelta).toBeCloseTo(-0.05);
     const aUpdate = result.updates.find((u) => u.id === "A");
     const bUpdate = result.updates.find((u) => u.id === "B");
-    expect((aUpdate?.updates.words as { begin: number }[])?.[0].begin).toBeCloseTo(0);
-    expect((bUpdate?.updates as { begin: number }).begin).toBeCloseTo(9.95);
+    expect((roleWords(updatedLine(aUpdate?.updates), "main") as { begin: number }[])?.[0].begin).toBeCloseTo(0);
+    expect(mainBounds(updatedLine(bUpdate?.updates)!)!.begin).toBeCloseTo(9.95);
   });
 
   it("works when only the line-synced partition has selections", () => {
-    const lines: LyricLine[] = [{ id: "A", text: "x", agentId: "v1", begin: 5, end: 6 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "A", text: "x", agentId: "v1", begin: 5, end: 6 })];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     expect(result.appliedDelta).toBeCloseTo(0.1);
-    expect((result.updates[0].updates as { begin: number }).begin).toBeCloseTo(5.1);
+    expect(mainBounds(updatedLine(result.updates[0].updates)!)!.begin).toBeCloseTo(5.1);
   });
 
   it("works when only the word-synced partition has selections", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "x",
         agentId: "v1",
         words: [{ id: "w75", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
-      },
+      }),
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     expect(result.appliedDelta).toBeCloseTo(0.1);
-    expect((result.updates[0].updates.words as { begin: number }[])[0].begin).toBeCloseTo(5.1);
+    expect((roleWords(updatedLine(result.updates[0].updates), "main") as { begin: number }[])[0].begin).toBeCloseTo(
+      5.1,
+    );
   });
 
   it("returns empty when both partitions are empty", () => {
@@ -1059,14 +1068,14 @@ describe("shiftSelectionsTogether", () => {
   it("clamps to the smaller of word-synced and line-synced headroom (line-synced wins)", () => {
     const lines: LyricLine[] = [
       // Word-synced row with tons of headroom on both sides
-      {
+      lineFromFields({
         id: "A",
         text: "x",
         agentId: "v1",
         words: [{ id: "w76", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
-      },
+      }),
       // Line-synced row with only 0.01s headroom on the right (close to duration=60)
-      { id: "B", text: "y", agentId: "v1", begin: 58.99, end: 59.99 },
+      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 58.99, end: 59.99 }),
     ];
     const partitioned = partitionNudgeSelections(lines, [
       { lineId: "A", type: "word", wordIndex: 0 },
@@ -1078,12 +1087,12 @@ describe("shiftSelectionsTogether", () => {
 
   it("preserves direction when clamping (negative requestedDelta yields negative applied)", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "x",
         agentId: "v1",
         words: [{ id: "w77", text: "x", sep: "", begin: 0.05, end: 1, joinsNext: false }],
-      },
+      }),
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
@@ -1095,7 +1104,7 @@ describe("shiftSelectionsTogether", () => {
     // The user-reported bug: instance with all members selected, nudge left,
     // header right edge stays affixed while left edge moves. Unified clamp prevents.
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "L1",
         text: "I love",
         agentId: "v1",
@@ -1106,8 +1115,8 @@ describe("shiftSelectionsTogether", () => {
           { id: "w78", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
           { id: "w79", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
         ],
-      },
-      {
+      }),
+      lineFromFields({
         id: "L2",
         text: "all night",
         agentId: "v1",
@@ -1118,7 +1127,7 @@ describe("shiftSelectionsTogether", () => {
           { id: "w80", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
           { id: "w81", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
         ],
-      },
+      }),
     ];
     const partitioned = partitionNudgeSelections(lines, [
       { lineId: "L1", type: "word", wordIndex: 0 },
@@ -1128,11 +1137,11 @@ describe("shiftSelectionsTogether", () => {
     ]);
     const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
     expect(result.appliedDelta).toBeCloseTo(-0.5);
-    const l1Words = (result.updates.find((u) => u.id === "L1")?.updates.words ?? []) as {
+    const l1Words = (roleWords(updatedLine(result.updates.find((u) => u.id === "L1")?.updates), "main") ?? []) as {
       begin: number;
       end: number;
     }[];
-    const l2Words = (result.updates.find((u) => u.id === "L2")?.updates.words ?? []) as {
+    const l2Words = (roleWords(updatedLine(result.updates.find((u) => u.id === "L2")?.updates), "main") ?? []) as {
       begin: number;
       end: number;
     }[];
@@ -1148,7 +1157,7 @@ describe("shiftSelectionsTogether", () => {
 describe("shiftSelectionsTogether · background provenance", () => {
   it("stamps backgroundTextSource manual when nudging background words", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "main",
         agentId: "v1",
@@ -1156,18 +1165,18 @@ describe("shiftSelectionsTogether · background provenance", () => {
         backgroundText: "ooh",
         backgroundWords: [{ id: "w83", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: false }],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "bg", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     const update = result.updates.find((u) => u.id === "A");
-    expect((update?.updates.backgroundWords as { begin: number }[])?.[0].begin).toBeCloseTo(2.1);
-    expect(update?.updates.backgroundTextSource).toBe("manual");
+    expect((roleWords(updatedLine(update?.updates), "bg") as { begin: number }[])?.[0].begin).toBeCloseTo(2.1);
+    expect(updatedLine(update?.updates) && backgroundTrack(updatedLine(update?.updates)!)?.source).toBe("manual");
   });
 
   it("leaves the nudged background word data unchanged apart from timing", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "main",
         agentId: "v1",
@@ -1178,14 +1187,14 @@ describe("shiftSelectionsTogether · background provenance", () => {
           { id: "w86", text: "aah", sep: "", begin: 2.5, end: 3, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const partitioned = partitionNudgeSelections(lines, [
       { lineId: "A", type: "bg", wordIndex: 0 },
       { lineId: "A", type: "bg", wordIndex: 1 },
     ]);
     const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
-    const bg = result.updates.find((u) => u.id === "A")?.updates.backgroundWords as {
+    const bg = roleWords(updatedLine(result.updates.find((u) => u.id === "A")?.updates), "bg") as {
       text: string;
       sep: string;
       begin: number;
@@ -1197,7 +1206,7 @@ describe("shiftSelectionsTogether · background provenance", () => {
 
   it("does not touch background provenance when nudging only main words", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "main",
         agentId: "v1",
@@ -1205,12 +1214,12 @@ describe("shiftSelectionsTogether · background provenance", () => {
         backgroundText: "ooh",
         backgroundWords: [{ id: "w88", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: false }],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     const update = result.updates.find((u) => u.id === "A");
-    expect(update?.updates.backgroundTextSource).toBeUndefined();
-    expect(update?.updates.backgroundWords).toBeUndefined();
+    expect("backgroundTextSource" in patchOf(update?.updates, lines[0])).toBe(false);
+    expect("backgroundWords" in patchOf(update?.updates, lines[0])).toBe(false);
   });
 });
