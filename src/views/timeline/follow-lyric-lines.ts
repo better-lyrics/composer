@@ -1,8 +1,10 @@
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
+import { memoByIdentity } from "@/utils/memo-by-identity";
 import { selectionPatch } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -19,6 +21,11 @@ type AddressedPatch = Partial<Pick<TimelineState, keyof AddressedState | "loopRe
 
 // Where each addressed line was last found, so an edit that moves no line never indexes every line.
 const lineIndexHints = new Map<string, number>();
+
+const trackWordIds: Record<WordTrack, (line: LyricLine) => ReadonlySet<string>> = {
+  word: memoByIdentity((line) => new Set(effectiveTrackWords(line, "word")?.map((word) => word.id))),
+  bg: memoByIdentity((line) => new Set(effectiveTrackWords(line, "bg")?.map((word) => word.id))),
+};
 
 // -- Functions ----------------------------------------------------------------
 
@@ -48,13 +55,14 @@ function liveCheck(lines: readonly LyricLine[], previous: readonly LyricLine[]) 
     if (index === undefined) return false;
     const line = lines[index];
     if (previous[index] === line) return true;
-    return effectiveTrackWords(line, address.type)?.some((word) => word.id === address.syllableId) ?? false;
+    return trackWordIds[address.type](line).has(address.syllableId);
   };
 }
 
 function liveList<A extends SyllableAddress>(addresses: A[], isLive: (address: A) => boolean): A[] {
-  const live = addresses.filter(isLive);
-  return live.length === addresses.length ? addresses : live;
+  const firstGone = addresses.findIndex((address) => !isLive(address));
+  if (firstGone === -1) return addresses;
+  return [...addresses.slice(0, firstGone), ...addresses.slice(firstGone + 1).filter(isLive)];
 }
 
 // Only the fields that lost a word, or null when every addressed word is still there.
