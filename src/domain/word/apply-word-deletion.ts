@@ -5,7 +5,6 @@ import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
-import { getSplitCharacter } from "@/utils/split-character";
 
 interface DeletionSelection {
   lineId: string;
@@ -29,9 +28,11 @@ function trackLength(line: LyricLine, type: "word" | "bg"): number {
   return isLineSynced(line) ? 1 : (line.words?.length ?? 0);
 }
 
-function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionSelection>): Map<string, LyricLine> {
-  const splitChar = getSplitCharacter();
-
+function deleteFromLines(
+  lines: LyricLine[],
+  selections: ReadonlyArray<DeletionSelection>,
+  splitChar: string,
+): Map<string, LyricLine> {
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number> }>();
   for (const sel of selections) {
     let entry = byLine.get(sel.lineId);
@@ -132,12 +133,16 @@ function withLinkedSiblings(
 
 // -- Deletion -----------------------------------------------------------------
 
-function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<DeletionSelection>): LyricLine[] {
+function applyWordDeletion(
+  lines: LyricLine[],
+  selectedWords: ReadonlyArray<DeletionSelection>,
+  splitChar: string,
+): LyricLine[] {
   if (selectedWords.length === 0) return lines;
 
-  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords));
+  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords, splitChar));
   const selections = withLinkedSiblings(lines, selectedWords, emptied);
-  const updatedById = deleteFromLines(lines, selections);
+  const updatedById = deleteFromLines(lines, selections, splitChar);
 
   const result = lines.map((line) => updatedById.get(line.id) ?? line);
   if (emptied.size === 0) return result;

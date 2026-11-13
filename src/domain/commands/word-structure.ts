@@ -44,7 +44,8 @@ function deleteWords(addresses: readonly SyllableAddress[]): LyricCommand {
     note: { command: "delete words", args: addresses.map((address) => address.syllableId) },
     derivesText: true,
     copiesSharedTiming: false,
-    run: (root) => withLines(root, applyWordDeletion(root.lines, resolveAddresses(root.lines, addresses))),
+    run: (root, ctx) =>
+      withLines(root, applyWordDeletion(root.lines, resolveAddresses(root.lines, addresses), ctx.splitChar)),
   };
 }
 

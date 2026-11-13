@@ -7,6 +7,8 @@ import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 
+const SPLIT_CHAR = "|";
+
 describe("applyWordDeletion", () => {
   it("regression: deleting a timed word on a partly synced line keeps the untimed lyrics", () => {
     const lines: LyricLine[] = [
@@ -21,7 +23,7 @@ describe("applyWordDeletion", () => {
         ],
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 1 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 1 }], SPLIT_CHAR);
     expect(result[0].text).toBe("every in my dreams");
   });
 
@@ -39,7 +41,7 @@ describe("applyWordDeletion", () => {
       },
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 1 }];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].words?.map((w) => w.text + w.sep)).toEqual(["I ", "you"]);
   });
@@ -60,7 +62,7 @@ describe("applyWordDeletion", () => {
       { lineId: "l1", type: "word", wordIndex: 0 },
       { lineId: "l1", type: "word", wordIndex: 1 },
     ];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
@@ -78,7 +80,7 @@ describe("applyWordDeletion", () => {
       },
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 0 }];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
@@ -87,7 +89,7 @@ describe("applyWordDeletion", () => {
   it("clears a line-synced line's timing (no longer renders as line-synced) when synthetic word is deleted", () => {
     const lines: LyricLine[] = [{ id: "l1", text: "I love you", agentId: "v1", begin: 1, end: 2 }];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 0 }];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].text).toBe("I love you");
     expect(result[0].words).toBeUndefined();
@@ -106,7 +108,7 @@ describe("applyWordDeletion", () => {
       { lineId: "l2", type: "word", wordIndex: 0 },
       { lineId: "l3", type: "word", wordIndex: 0 },
     ];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(3);
     for (const line of result) {
       expect(line.begin).toBeUndefined();
@@ -134,7 +136,7 @@ describe("applyWordDeletion", () => {
       { lineId: "edit", type: "word", wordIndex: 0 },
       { lineId: "drop", type: "word", wordIndex: 0 },
     ];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result.map((l) => l.id)).toEqual(["keep1", "edit", "drop", "keep2"]);
     expect(result[1].words?.map((w) => w.text)).toEqual(["love"]);
     expect(result[2].begin).toBeUndefined();
@@ -155,7 +157,7 @@ describe("applyWordDeletion", () => {
       },
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "bg", wordIndex: 0 }];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].backgroundWords).toBeUndefined();
     expect(result[0].backgroundText).toBeUndefined();
@@ -177,7 +179,7 @@ describe("applyWordDeletion", () => {
       },
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "bg", wordIndex: 0 }];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].backgroundWords?.map((w) => w.text)).toEqual(["oh"]);
     expect(result[0].backgroundText).toBe("oh");
@@ -195,7 +197,7 @@ describe("applyWordDeletion", () => {
         backgroundTextSource: "extraction",
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].backgroundWords).toBeUndefined();
     expect(result[0].backgroundText).toBeUndefined();
     expect(result[0].backgroundTextSource).toBeUndefined();
@@ -216,7 +218,7 @@ describe("applyWordDeletion", () => {
         backgroundTextSource: "extraction",
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].backgroundWords?.map((w) => w.text)).toEqual(["oh"]);
     expect(result[0].backgroundTextSource).toBe("manual");
   });
@@ -239,7 +241,7 @@ describe("applyWordDeletion", () => {
         backgroundTextSource: "extraction",
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].words?.map((w) => w.text)).toEqual(["love"]);
     expect(result[0].backgroundWords?.length).toBe(2);
     expect(result[0].backgroundTextSource).toBe("extraction");
@@ -260,7 +262,7 @@ describe("applyWordDeletion", () => {
       { lineId: "l1", type: "word", wordIndex: 0 },
       { lineId: "l1", type: "bg", wordIndex: 0 },
     ];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].words).toBeUndefined();
     expect(result[0].backgroundWords).toBeUndefined();
@@ -270,13 +272,13 @@ describe("applyWordDeletion", () => {
 
   it("returns the original array when there are no selections", () => {
     const lines: LyricLine[] = [{ id: "l1", text: "x", agentId: "v1" }];
-    expect(applyWordDeletion(lines, [])).toBe(lines);
+    expect(applyWordDeletion(lines, [], SPLIT_CHAR)).toBe(lines);
   });
 
   it("ignores selections referencing missing lines", () => {
     const lines: LyricLine[] = [{ id: "l1", text: "x", agentId: "v1", begin: 0, end: 1 }];
     const sel: DeletionSelection[] = [{ lineId: "ghost", type: "word", wordIndex: 0 }];
-    const result = applyWordDeletion(lines, sel);
+    const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toEqual(lines);
   });
 
@@ -294,7 +296,7 @@ describe("applyWordDeletion", () => {
         ],
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 3 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 3 }], SPLIT_CHAR);
     expect(result[0].words?.[0].end).toBe(0.2);
     expect(result[0].words?.[1].begin).toBe(0.3);
   });
@@ -321,7 +323,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         words: [{ id: "w32", text: "x", sep: "", begin: 5, end: 6 }],
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].groupId).toBeUndefined();
     expect(result[0].instanceIdx).toBeUndefined();
     expect(result[0].templateLineIdx).toBeUndefined();
@@ -358,11 +360,15 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         words: [{ id: "w35", text: "you", sep: "", begin: 6, end: 7 }],
       },
     ];
-    const result = applyWordDeletion(lines, [
-      { lineId: "A1", type: "word", wordIndex: 0 },
-      { lineId: "A1", type: "word", wordIndex: 1 },
-      { lineId: "A2", type: "word", wordIndex: 0 },
-    ]);
+    const result = applyWordDeletion(
+      lines,
+      [
+        { lineId: "A1", type: "word", wordIndex: 0 },
+        { lineId: "A1", type: "word", wordIndex: 1 },
+        { lineId: "A2", type: "word", wordIndex: 0 },
+      ],
+      SPLIT_CHAR,
+    );
     expect(result.every((l) => l.groupId === undefined)).toBe(true);
     expect(result.every((l) => l.instanceIdx === undefined)).toBe(true);
     expect(result.every((l) => l.templateLineIdx === undefined)).toBe(true);
@@ -390,7 +396,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         words: [{ id: "w37", text: "you", sep: "", begin: 6, end: 7 }],
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "A1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "A1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     // A1 is now empty but A2 still has words → instance stays alive
     expect(result.find((l) => l.id === "A1")?.groupId).toBe("cannon");
     expect(result.find((l) => l.id === "A2")?.groupId).toBe("cannon");
@@ -414,10 +420,14 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         ],
       },
     ];
-    const result = applyWordDeletion(lines, [
-      { lineId: "L1", type: "bg", wordIndex: 0 },
-      { lineId: "L1", type: "bg", wordIndex: 1 },
-    ]);
+    const result = applyWordDeletion(
+      lines,
+      [
+        { lineId: "L1", type: "bg", wordIndex: 0 },
+        { lineId: "L1", type: "bg", wordIndex: 1 },
+      ],
+      SPLIT_CHAR,
+    );
     expect(result[0].groupId).toBeUndefined();
     expect(result[0].backgroundWords).toBeUndefined();
   });
@@ -436,7 +446,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         backgroundWords: [{ id: "w41", text: "ah", sep: "", begin: 5, end: 5.5 }],
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     // Main words gone but bg still present → not fully empty → instance stays
     expect(result[0].groupId).toBe("cannon");
     expect(result[0].words).toBeUndefined();
@@ -457,7 +467,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
       },
     ];
     // Selecting wordIndex 0 on a line-synced row deletes the synthetic word AND clears begin/end
-    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].groupId).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
@@ -484,10 +494,14 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         words: [{ id: "w43", text: "y", sep: "", begin: 10, end: 11 }],
       },
     ];
-    const result = applyWordDeletion(lines, [
-      { lineId: "A1", type: "word", wordIndex: 0 },
-      { lineId: "B1", type: "word", wordIndex: 0 },
-    ]);
+    const result = applyWordDeletion(
+      lines,
+      [
+        { lineId: "A1", type: "word", wordIndex: 0 },
+        { lineId: "B1", type: "word", wordIndex: 0 },
+      ],
+      SPLIT_CHAR,
+    );
     expect(result.every((l) => l.groupId === undefined)).toBe(true);
   });
 
@@ -513,7 +527,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
       },
     ];
     // Only delete A1's word, not B1's
-    const result = applyWordDeletion(lines, [{ lineId: "A1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "A1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     expect(result.find((l) => l.id === "A1")?.groupId).toBeUndefined();
     expect(result.find((l) => l.id === "B1")?.groupId).toBe("cannon");
   });
@@ -522,7 +536,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     const lines: LyricLine[] = [
       { id: "L1", text: "x", agentId: "v1", words: [{ id: "w46", text: "x", sep: "", begin: 5, end: 6 }] },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].groupId).toBeUndefined();
     expect(result[0].words).toBeUndefined();
     expect(result[0].id).toBe("L1");
@@ -542,7 +556,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         words: [{ id: "w47", text: "x", sep: "", begin: 5, end: 6 }],
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].groupId).toBeUndefined();
     expect(result[0].detached).toBeUndefined();
   });
@@ -563,7 +577,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         ],
       },
     ];
-    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 1 }]);
+    const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 1 }], SPLIT_CHAR);
     expect(result[0].groupId).toBe("cannon");
     expect(result[0].words?.length).toBe(2);
   });
@@ -585,10 +599,14 @@ describe("applyWordDeletion · regressions", () => {
         ],
       },
     ];
-    const deleted = applyWordDeletion(lines, [
-      { lineId: "c1", type: "word", wordIndex: 0 },
-      { lineId: "c1", type: "word", wordIndex: 1 },
-    ]);
+    const deleted = applyWordDeletion(
+      lines,
+      [
+        { lineId: "c1", type: "word", wordIndex: 0 },
+        { lineId: "c1", type: "word", wordIndex: 1 },
+      ],
+      SPLIT_CHAR,
+    );
     useProjectStore.setState({ lines: deleted, groups: [] });
 
     useProjectStore.getState().updateLineWithHistory("c1", { begin: 7, end: 8 });
