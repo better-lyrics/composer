@@ -3,6 +3,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import { type LineFields, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { withSplitMarksFromWords } from "@/domain/line/reconstruct-text";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -14,6 +15,7 @@ import { type SpacedWord, spacedFromWords, wordsFromSpaced } from "@/domain/word
 import type { WordTiming } from "@/domain/word/timing";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -83,12 +85,19 @@ function wordsFromSaved(words: readonly SpacedWord[]): WordTiming[] {
   return wordsFromSpaced(words.map(({ id: _id, ...word }) => word));
 }
 
-function storeLine(line: SavedLine): LyricLine {
+function storeLine(line: SavedLine, splitChar: string): LyricLine {
   const { words, backgroundWords, ...fields } = line;
+  const storeWords = words && wordsFromSaved(words);
+  const storeBackgroundWords = backgroundWords && wordsFromSaved(backgroundWords);
   return reconcileLine({
     ...fields,
-    words: words && wordsFromSaved(words),
-    ...(backgroundWords && { backgroundWords: wordsFromSaved(backgroundWords) }),
+    ...(storeWords?.length && { text: withSplitMarksFromWords(fields.text, storeWords, splitChar) }),
+    ...(storeBackgroundWords?.length &&
+      fields.backgroundText !== undefined && {
+        backgroundText: withSplitMarksFromWords(fields.backgroundText, storeBackgroundWords, splitChar),
+      }),
+    words: storeWords,
+    ...(storeBackgroundWords && { backgroundWords: storeBackgroundWords }),
   });
 }
 
@@ -101,7 +110,8 @@ function savedLine(line: LyricLine): SavedLine {
 }
 
 function linesFromSaved(lines: readonly SavedLine[]): LyricLine[] {
-  return lines.map(storeLine);
+  const splitChar = getSplitCharacter();
+  return lines.map((line) => storeLine(line, splitChar));
 }
 
 function savedLines(lines: readonly LyricLine[]): SavedLine[] {
