@@ -3,6 +3,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { memoByIdentity } from "@/utils/memo-by-identity";
 
 // -- Types --------------------------------------------------------------------
 
@@ -15,6 +16,11 @@ interface ResolvedAddress extends SyllableAddress {
 // -- State --------------------------------------------------------------------
 
 const lineIndexCache = new WeakMap<readonly LyricLine[], Map<string, number>>();
+
+// Keyed by track array, so resolving a whole selection reads each track once.
+const wordIndexById = memoByIdentity(
+  (words: readonly WordTiming[]) => new Map(words.map((word, index) => [word.id, index])),
+);
 
 // -- Functions ----------------------------------------------------------------
 
@@ -65,8 +71,8 @@ function resolveAddress(lines: readonly LyricLine[], address: SyllableAddress): 
   const lineIndex = lineIndexById(lines).get(address.lineId);
   if (lineIndex === undefined) return null;
   const words = effectiveTrackWords(lines[lineIndex], address.type);
-  const wordIndex = words ? words.findIndex((word) => word.id === address.syllableId) : -1;
-  if (wordIndex === -1) return null;
+  const wordIndex = words && wordIndexById(words).get(address.syllableId);
+  if (wordIndex === undefined) return null;
   const { lineId, type, syllableId } = address;
   return { lineId, type, syllableId, lineIndex, wordIndex };
 }
