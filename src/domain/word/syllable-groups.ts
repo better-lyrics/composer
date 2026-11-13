@@ -146,10 +146,16 @@ function boundariesHandedBack(words: WordTiming[], deleted: Set<number>): Map<nu
   return handed;
 }
 
-// A copy of a syllable whose next groupmate stays behind joins nothing, so a paste never glues it to a stranger.
+// A word that stops joining gets a space after it, or reconstructLineText would glue it to the next word.
+function endedWord(word: WordTiming): WordTiming {
+  return { ...word, joinsNext: false, sep: word.sep.endsWith(" ") ? word.sep : `${word.sep} ` };
+}
+
+// A copy of a syllable whose next groupmate stays behind ends its word, so a paste never glues it to a stranger.
 function copiedSyllable(words: readonly WordTiming[], index: number, copied: ReadonlySet<number>): WordTiming {
   const word = words[index];
-  return joinsNextAt(words, index) && copied.has(index + 1) ? { ...word } : { ...word, joinsNext: false };
+  if (!word.joinsNext || (joinsNextAt(words, index) && copied.has(index + 1))) return { ...word };
+  return endedWord(word);
 }
 
 function hasIntraGroupGap(words: WordTiming[]): boolean {
@@ -180,6 +186,7 @@ export {
   closeIntraGroupGaps,
   computeSyllableGroups,
   copiedSyllable,
+  endedWord,
   expandSelectionToGroupmates,
   getSyllablePositions,
   hasIntraGroupGap,

@@ -403,7 +403,7 @@ describe("copiedSyllable", () => {
   ];
 
   it("stops joining when its next groupmate is not copied with it", () => {
-    expect(copiedSyllable(words, 0, new Set([0, 2])).joinsNext).toBe(false);
+    expect(copiedSyllable(words, 0, new Set([0, 2]))).toMatchObject({ text: "hel", sep: " ", joinsNext: false });
   });
 
   it("keeps the join when the next groupmate is copied too", () => {

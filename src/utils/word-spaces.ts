@@ -1,4 +1,5 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
+import { endedWord } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Constants -----------------------------------------------------------------
@@ -21,7 +22,7 @@ function withTrailingSpace(words: WordTiming[]): WordTiming[] {
   if (!last) return words;
   const { sep, joinsNext } = last;
   if (sep.endsWith(" ") && !joinsNext) return words;
-  return [...words.slice(0, -1), { ...last, sep: sep.endsWith(" ") ? sep : `${sep} `, joinsNext: false }];
+  return [...words.slice(0, -1), endedWord(last)];
 }
 
 function resolveOverlapsForward(words: WordTiming[], duration: number): WordTiming[] {

@@ -1,5 +1,5 @@
 import { withFreeIds } from "@/domain/word/id";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups, endedWord } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 
@@ -40,8 +40,7 @@ function mergeWordsIntoTrack(existing: WordTiming[], incoming: WordTiming[]): Wo
   const spaced = tagged.map((tag, index) => {
     const next = tagged[index + 1];
     if (!next || next.isIncoming === tag.isIncoming) return tag.word;
-    const sep = tag.word.sep.endsWith(" ") ? tag.word.sep : `${tag.word.sep} `;
-    return { ...tag.word, sep, joinsNext: false };
+    return endedWord(tag.word);
   });
 
   return trimTrailingSpaceFromLast(spaced);
