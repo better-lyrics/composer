@@ -8,7 +8,6 @@ import { getSplitCharacter } from "@/utils/split-character";
 type UntimedSyllable = Omit<WordTiming, "begin" | "end"> & { begin?: never; end?: never };
 type Syllable = WordTiming | UntimedSyllable;
 type TrackRole = "main" | "bg";
-type TrackSyncLevel = "word" | "line" | "none";
 
 interface LineTrack {
   readonly id: string;
@@ -71,13 +70,8 @@ function timedSyllables(track: LineTrack | undefined): WordTiming[] {
   return timed;
 }
 
-function trackSyncLevel(track: LineTrack): TrackSyncLevel {
-  if (timedSyllables(track).length > 0) return "word";
-  return track.begin === undefined ? "none" : "line";
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { backgroundTrack, mainTrack, timedSyllables, trackSyncLevel };
+export { backgroundTrack, mainTrack, timedSyllables };
 
 export type { LineTrack, Syllable, UntimedSyllable };
