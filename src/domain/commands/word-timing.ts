@@ -21,7 +21,7 @@ import type { StepKey } from "@/domain/step-timing/step-write";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
 import { bgWordBoundaryEdit } from "@/utils/timing/bg-word-timing";
-import { planStepKey } from "@/utils/timing/step-key-write";
+import { type StepKeyPlan, planStepKey } from "@/utils/timing/step-key-write";
 import { wordBoundaryEdit } from "@/utils/timing/word-timing";
 import { applyWordPatch } from "@/utils/word-patch";
 
@@ -169,7 +169,8 @@ function stretchSelection(args: StretchArgs): LyricCommand {
   );
 }
 
-function pressStepKey(args: StepKeyArgs): LyricCommand {
+// `report` receives the committed plan (null when the key changes nothing), so the caller never plans a second time.
+function pressStepKey(args: StepKeyArgs, report?: (plan: StepKeyPlan | null) => void): LyricCommand {
   const { cursor, startNext, key } = args;
   return lineEditCommand(
     { command: "step key", args: [key, cursor.lineId, cursor.type, cursor.syllableId, args.time] },
@@ -187,6 +188,7 @@ function pressStepKey(args: StepKeyArgs): LyricCommand {
         minDuration: args.minDuration,
         rangeOf: timeRangeResolver(root.lines, root.groups, args.duration),
       });
+      report?.(plan);
       if (!plan) return [];
       return plan.kind === "refused" ? refused({ reason: "step", refusal: plan.refusal }) : plan.updates;
     },
