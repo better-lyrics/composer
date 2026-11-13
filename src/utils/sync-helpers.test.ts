@@ -3,7 +3,8 @@ import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useSettingsStore } from "@/stores/settings";
 import { getSplitCharacter } from "@/utils/split-character";
-import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
+import { lineTimingWordId } from "@/domain/word/id";
+import { convertLineToWord, createTrackWordsFromTextAt } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
 
 describe("createTrackWordsFromTextAt", () => {
@@ -88,5 +89,14 @@ describe("createTrackWordsFromTextAt", () => {
         expect(reconstructLineText(words, split)).toBe(untimed.text);
       });
     });
+  });
+});
+
+describe("convertLineToWord", () => {
+  it("keeps the line-synced word id on the first word", () => {
+    const line: Parameters<typeof convertLineToWord>[0] = { id: "line-1", text: "Into the quiet", begin: 1, end: 4 };
+    const converted = convertLineToWord(line);
+    expect(converted.words?.[0].id).toBe(lineTimingWordId("line-1"));
+    expect(new Set(converted.words?.map((word) => word.id)).size).toBe(3);
   });
 });
