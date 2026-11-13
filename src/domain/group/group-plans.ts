@@ -110,4 +110,4 @@ function planGroupSharing(root: LyricRoot, groupId: string, duration: number): G
 // -- Exports ------------------------------------------------------------------
 
 export type { GroupPlan, RepeatingSections };
-export { planGroupSharing, planRepeatingSections };
+export { NOTHING_SHARED, planGroupSharing, planRepeatingSections };

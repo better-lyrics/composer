@@ -15,8 +15,8 @@ import {
   shiftInstance,
 } from "@/domain/commands/instance-edits";
 import { isRefused } from "@/domain/commands/outcome";
-import { planGroupSharing, planRepeatingSections } from "@/domain/group/group-plans";
-import { commandContext } from "@/stores/project/command-context";
+import { NOTHING_SHARED } from "@/domain/group/group-plans";
+import type { SharingOutcome } from "@/domain/group/shared-placement";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
@@ -45,10 +45,9 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
 
   groupRepeatingSections: (starts, length, options = {}) => {
     const sections = { starts, length, ...options };
-    const { splitChar, shareTimingInNewGroups } = commandContext();
-    const plan = planRepeatingSections(get(), sections, splitChar, shareTimingInNewGroups);
-    get().commit(groupRepeatingSections(sections));
-    return plan.sharing;
+    let sharing: SharingOutcome = NOTHING_SHARED;
+    get().commit(groupRepeatingSections(sections, (planned) => (sharing = planned)));
+    return sharing;
   },
 
   updateGroup: (id, updates) => {
@@ -81,9 +80,9 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
   },
 
   shareGroupTiming: (groupId, duration) => {
-    const plan = planGroupSharing(get(), groupId, duration);
-    get().commit(shareGroupTiming(groupId, duration));
-    return plan.sharing;
+    let sharing: SharingOutcome = NOTHING_SHARED;
+    get().commit(shareGroupTiming(groupId, duration, (planned) => (sharing = planned)));
+    return sharing;
   },
 
   placeInstance: (groupId, instanceIdx, start, duration, precedingUpdates = []) =>
