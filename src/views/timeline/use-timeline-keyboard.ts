@@ -1,8 +1,7 @@
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
+import { type NudgeReport, nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
 import { fillInstanceRows } from "@/domain/commands/instance-rows";
-import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
@@ -14,8 +13,7 @@ import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { lineWordSelections } from "@/domain/selection/line-selections";
-import { partitionNudgeSelections, shiftSelectionsTogether } from "@/domain/selection/nudge";
-import { resolveAddress, resolveAddresses, toAddress } from "@/domain/selection/resolve";
+import { resolveAddress, toAddress } from "@/domain/selection/resolve";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
@@ -574,18 +572,13 @@ function useTimelineKeyboard(
           e.preventDefault();
           const nudgeAmount = useSettingsStore.getState().nudgeAmount;
           const requestedDelta = matched === "timeline.nudgeLeft" ? -nudgeAmount : nudgeAmount;
-          const { lines: rawLines, groups } = useProjectStore.getState();
-          const partitioned = partitionNudgeSelections(rawLines, resolveAddresses(rawLines, nudgeSel));
-          const rangeOf = timeRangeResolver(rawLines, groups, duration);
-          const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
-          if (Math.abs(result.appliedDelta) < Math.abs(requestedDelta)) {
-            const wholeSong = () => wholeSongRange(duration);
-            const unshared = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, wholeSong);
-            if (Math.abs(unshared.appliedDelta) > Math.abs(result.appliedDelta)) showSharedSongEdgeToast();
-          }
-          if (result.updates.length === 0) break;
           const nudgedFrom = storedEdgeTime(nudgeSel[0], "begin");
-          useProjectStore.getState().commit(nudgeSelection(nudgeSel, requestedDelta, duration));
+          let nudge = null as NudgeReport | null;
+          useProjectStore
+            .getState()
+            .commit(nudgeSelection(nudgeSel, requestedDelta, duration, (reported) => (nudge = reported)));
+          if (nudge?.sharedCopyLimited) showSharedSongEdgeToast();
+          if (!nudge?.moved) break;
           noteGuideSignal("timeline.nudge");
           if (nudgedFrom !== null) showLoupeAfterKeyEdit(nudgeSel[0], "begin", nudgedFrom);
           break;

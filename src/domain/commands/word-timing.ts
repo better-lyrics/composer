@@ -1,7 +1,7 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import {
   type EffectiveLine,
@@ -48,6 +48,13 @@ interface StretchArgs {
   anchor: StretchAnchor;
   minWordDuration: number;
   duration: number;
+}
+
+interface NudgeReport {
+  appliedDelta: number;
+  moved: boolean;
+  // The song edge stopped a shared copy before it stopped the selection itself.
+  sharedCopyLimited: boolean;
 }
 
 interface StepKeyArgs {
@@ -141,13 +148,27 @@ function setWordBoundary(args: BoundaryArgs): LyricCommand {
   );
 }
 
-function nudgeSelection(addresses: readonly SyllableAddress[], delta: number, duration: number): LyricCommand {
+// `report` receives the committed result, so the caller never plans a second time.
+function nudgeSelection(
+  addresses: readonly SyllableAddress[],
+  delta: number,
+  duration: number,
+  report?: (nudge: NudgeReport) => void,
+): LyricCommand {
   return lineEditCommand(
     { command: "nudge", args: [delta, ...addresses.map((address) => address.syllableId)] },
     (root) => {
       const partitioned = partitionNudgeSelections(root.lines, resolveAddresses(root.lines, addresses));
       const rangeOf = timeRangeResolver(root.lines, root.groups, duration);
-      return shiftSelectionsTogether(root.lines, partitioned, delta, rangeOf).updates;
+      const result = shiftSelectionsTogether(root.lines, partitioned, delta, rangeOf);
+      const { appliedDelta } = result;
+      const wholeSong = () => wholeSongRange(duration);
+      const sharedCopyLimited =
+        Math.abs(appliedDelta) < Math.abs(delta) &&
+        Math.abs(shiftSelectionsTogether(root.lines, partitioned, delta, wholeSong).appliedDelta) >
+          Math.abs(appliedDelta);
+      report?.({ appliedDelta, moved: result.updates.length > 0, sharedCopyLimited });
+      return result.updates;
     },
     OWN_LINE_ONLY,
   );
@@ -198,4 +219,5 @@ function pressStepKey(args: StepKeyArgs, report?: (plan: StepKeyPlan | null) => 
 
 // -- Exports ------------------------------------------------------------------
 
+export type { NudgeReport };
 export { nudgeSelection, pressStepKey, retimeWord, setWordBoundary, stretchSelection };
