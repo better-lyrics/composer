@@ -39,20 +39,14 @@ function syncAddressPosition(lines: readonly LyricLine[], address: SyncAddress):
   return wordIndex === -1 ? address.storedAt : { lineIndex, wordIndex };
 }
 
-function sameSyncAddress(a: SyncAddress, b: SyncAddress): boolean {
-  const sameSlot =
-    "untimed" in a.at
-      ? "untimed" in b.at && a.at.untimed === b.at.untimed
-      : "syllableId" in b.at && a.at.syllableId === b.at.syllableId;
-  return (
-    a.lineId === b.lineId &&
-    sameSlot &&
-    a.storedAt.lineIndex === b.storedAt.lineIndex &&
-    a.storedAt.wordIndex === b.storedAt.wordIndex
-  );
+// Addresses match by where they resolve, so an untimed slot that became a timed word in place still matches.
+function sameSyncPosition(lines: readonly LyricLine[], a: SyncAddress, b: SyncAddress): boolean {
+  const first = syncAddressPosition(lines, a);
+  const second = syncAddressPosition(lines, b);
+  return first.lineIndex === second.lineIndex && first.wordIndex === second.wordIndex;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { SYNC_START, sameSyncAddress, syncAddressAt, syncAddressPosition };
+export { SYNC_START, sameSyncPosition, syncAddressAt, syncAddressPosition };
 export type { SyncAddress };

@@ -44,7 +44,7 @@ function useSyncCursor(lines: readonly LyricLine[], syncState: SyncState, granul
   const historyIndex = useProjectStore((s) => s.historyIndex);
   const groups = useProjectStore((s) => s.groups);
   const skippedInstances = useMemo(() => skippedSharedInstances(lines, groups), [lines, groups]);
-  const stored = storedSyncPosition(syncState, { history, historyIndex });
+  const stored = storedSyncPosition(syncState, lines, { history, historyIndex });
   const openProjectId = useOpenProjectId();
   const reRecording = syncState.reRecording?.projectId === openProjectId ? syncState.reRecording : undefined;
   const { cursor, jumped } = useMemo(
