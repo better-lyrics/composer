@@ -1,6 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { trackWords } from "@/domain/line/track";
+import { trackWords, untimedSyllablesOf } from "@/domain/line/track";
 import type { SyncAddress } from "@/domain/sync/address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
@@ -136,7 +136,11 @@ function createTrackWordsFromTextAt(
   const partDuration = type === "word" ? useSettingsStore.getState().defaultWordDuration : DEFAULT_BG_WORD_DURATION;
   const naturalEnd = begin + splitIntoWords(text).length * partDuration;
   const words = distributeWordsInLine(text, begin, Math.min(maxEnd, naturalEnd));
-  return words.length > 0 ? words : null;
+  if (words.length === 0) return null;
+  // The text's own syllables are timed in place, so they keep their ids and readings.
+  const untimed = untimedSyllablesOf(line, type === "word" ? "main" : "bg");
+  if (untimed.length !== words.length) return words;
+  return words.map((word, index) => ({ ...untimed[index], begin: word.begin, end: word.end }));
 }
 
 // -- Exports ------------------------------------------------------------------

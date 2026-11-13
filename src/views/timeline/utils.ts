@@ -3,7 +3,7 @@ import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack } from "@/domain/line/track";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
@@ -27,7 +27,7 @@ function distributeLinesTiming(lines: readonly LyricLine[], duration: number): L
       distributed.length === syllables.length
         ? distributed.map((word, i) => ({ ...syllables[i], begin: word.begin, end: word.end }))
         : distributed;
-    return withRoleWords(line, "main", words);
+    return withMainTrack(line, withTrackSyllables(mainTrack(line), words));
   });
 }
 
