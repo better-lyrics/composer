@@ -61,7 +61,6 @@ interface LineLanguages {
 
 export type {
   BackgroundLanguage,
-  HeldReadings,
   LanguageContentMeta,
   LanguageContentOrigin,
   LanguagePiece,
