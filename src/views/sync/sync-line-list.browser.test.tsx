@@ -1,3 +1,4 @@
+import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -12,6 +13,7 @@ import { SyncPanel } from "@/views/sync/sync-panel";
 import { Activity } from "react";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -144,6 +146,9 @@ describe("SyncLineList", () => {
       granularity: "word",
     });
     const screen = await renderBoundedPanel();
+    await renderHook(() =>
+      useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }),
+    );
     await expect.poll(() => lineRow(screen.container, 3)).not.toBeNull();
     const row = lineRow(screen.container, 3);
     if (!row) throw new Error("no third sync line");
@@ -153,6 +158,7 @@ describe("SyncLineList", () => {
     setCurrentTime(12);
     await userEvent.keyboard("{Enter}");
 
+    expect(useAudioStore.getState().isPlaying).toBe(true);
     expect(useAudioStore.getState().currentTime).toBe(12);
   });
 });
