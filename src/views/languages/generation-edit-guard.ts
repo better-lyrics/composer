@@ -1,3 +1,4 @@
+import { ALIGN_TRANSLITERATION } from "@/domain/commands/languages";
 import { lineTranslations } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
@@ -18,10 +19,13 @@ function watchGenerationEdits(
     if (current.lines === previous.lines) return;
     const previousLines = new Map(previous.lines.map((line) => [line.id, line]));
     const currentLines = new Map(current.lines.map((line) => [line.id, line]));
+    // A re-saved alignment can leave the track as it was, but it is still the user's reading.
+    const step = current.history === previous.history ? undefined : current.history[current.historyIndex];
+    const realignedId = step?.note?.command === ALIGN_TRANSLITERATION ? step.note.args[0] : undefined;
     for (const id of startingLines.keys()) {
       const before = previousLines.get(id);
       const after = currentLines.get(id);
-      if (!sameTransliteration(before, after)) edits.transliteration.add(id);
+      if (id === realignedId || !sameTransliteration(before, after)) edits.transliteration.add(id);
       for (const language of targets) {
         if ((before && lineTranslations(before))?.[language] === (after && lineTranslations(after))?.[language])
           continue;

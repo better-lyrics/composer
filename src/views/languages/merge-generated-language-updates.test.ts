@@ -2,7 +2,9 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
+import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { moveWords } from "@/domain/commands/word-moves";
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
@@ -64,4 +66,51 @@ describe("mergeGeneratedLanguageUpdates", () => {
     expect(useProjectStore.getState().lines[1].words?.[0].begin).toBe(11.1);
     expect(updates.map((update) => update.updates.languages?.transliteration?.main.text)).toEqual(["ha neul"]);
   });
+
+  it("keeps a line off the request when its readings were re-saved in the alignment editor", () => {
+    const line = legacyLine({
+      id: "line",
+      agentId: "v1",
+      text: "하|늘",
+      words: [
+        { id: "w1", text: "하", sep: "", begin: 0, end: 0.5, transliteration: "ha", transliterationJoinerAfter: "", joinsNext: true },
+        { id: "w2", text: "늘", sep: "", begin: 0.5, end: 1, transliteration: "neul", joinsNext: false },
+      ],
+      transliteration: {
+        language: "ko-Latn",
+        text: "haneul",
+        segments: [],
+        alignmentStatus: "confirmed",
+        origin: "google",
+        sourceFingerprint: languageSourceFingerprint("하|늘", undefined),
+      },
+    });
+    useProjectStore.getState().reset();
+    useProjectStore.setState({ lines: [line] });
+    const startingLines = new Map([[line.id, line]]);
+    const request = new AbortController();
+    const { edits, stop } = watchGenerationEdits(startingLines, [], request.signal);
+    useProjectStore
+      .getState()
+      .commit(saveTransliterationAlignment("line", "words", { w1: { text: "han", joinerAfter: "" }, w2: { text: "eul" } }));
+    stop();
+
+    const updates = mergeGeneratedLanguageUpdates(
+      startingLines,
+      useProjectStore.getState().lines,
+      [],
+      {
+        force: true,
+        transliteration: {
+          language: "ko-Latn",
+          main: new Map([["line", { id: "line", text: "ha neul", segments: [] }]]),
+          background: new Map(),
+        },
+        translations: [],
+      },
+      edits,
+    );
+    expect(updates).toEqual([]);
+  });
 });
+

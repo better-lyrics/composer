@@ -9,6 +9,7 @@ import type { LineUpdate, LyricLine } from "@/domain/line/model";
 
 // -- Constants ----------------------------------------------------------------
 
+const ALIGN_TRANSLITERATION = "align transliteration";
 // Language data never changes the text and stays on its own line.
 const LANGUAGE_ONLY = { derivesText: false, propagateToSiblings: false } as const;
 // Typed and confirmed language fields never reach the shared timing copy either.
@@ -39,7 +40,7 @@ function saveTransliterationAlignment(
   pieces: LanguagePieces | undefined,
 ): LyricCommand {
   return lineEditCommand(
-    { command: "align transliteration", args: [lineId, field] },
+    { command: ALIGN_TRANSLITERATION, args: [lineId, field] },
     (root) => {
       const line = root.lines.find((candidate) => candidate.id === lineId);
       if (!line) return refused({ reason: "line-gone", lineId });
@@ -83,6 +84,7 @@ function refreshGeneratedLanguages(updates: readonly LineUpdate[]): LyricCommand
 // -- Exports ------------------------------------------------------------------
 
 export {
+  ALIGN_TRANSLITERATION,
   applyGeneratedLanguages,
   pasteLanguageLines,
   refreshGeneratedLanguages,
