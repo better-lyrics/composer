@@ -697,7 +697,6 @@ braccato-lyrics .blyrics-container {
     opacity: 0;
     translate: 0 6px;
     scale: 0.98;
-    filter: blur(4px);
   }
 }
 
@@ -705,7 +704,6 @@ braccato-lyrics .blyrics-container {
   to {
     opacity: 0;
     translate: 0 -12px;
-    filter: blur(4px);
   }
 }
 
