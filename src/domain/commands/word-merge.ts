@@ -22,7 +22,7 @@ interface MergePlan {
   sourceUpdate: LineUpdate;
   copies: { line: LyricLine; cover: ReturnType<typeof copyMergeCover> }[];
   // Linked copies whose blocks cross the merged text and must widen to follow it.
-  crossing: number;
+  crossingIds: string[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -62,14 +62,21 @@ function planMerge(lines: readonly LyricLine[], addresses: readonly SyllableAddr
   const sourceUpdate = mergedFieldUpdate(source, field, indices);
   if (!sourceWords || !sourceUpdate) return null;
   const covers = linkedCopyCovers(lines, source, sourceWords, field, indices);
-  const crossing = covers.filter(({ cover }) => cover.inside.length !== cover.overlapping.length).length;
-  return { source, field, sourceUpdate, copies: covers, crossing };
+  const crossingIds = covers.flatMap(({ line, cover }) =>
+    cover.inside.length !== cover.overlapping.length ? [line.id] : [],
+  );
+  return { source, field, sourceUpdate, copies: covers, crossingIds };
 }
 
 // -- Commands -----------------------------------------------------------------
 
 // "apply" widens every linked copy to follow the merge; "detach" merges this line alone and unlinks it.
-function mergeWords(addresses: readonly SyllableAddress[], resolution: MergeResolution): LyricCommand {
+// `confirmedCrossing` is the crossing count the user answered; more copies crossing by commit time means they never agreed to widen them.
+function mergeWords(
+  addresses: readonly SyllableAddress[],
+  resolution: MergeResolution,
+  confirmedCrossing: number,
+): LyricCommand {
   return {
     note: { command: "merge words", args: [resolution, ...addresses.map((address) => address.syllableId)] },
     derivesText: true,
@@ -84,6 +91,9 @@ function mergeWords(addresses: readonly SyllableAddress[], resolution: MergeReso
           root,
           ctx,
         );
+      }
+      if (plan.crossingIds.length > confirmedCrossing) {
+        return refused({ reason: "needs-detach-confirm", impacted: plan.crossingIds });
       }
       const copyUpdates = plan.copies.flatMap(
         ({ line, cover }) => mergedFieldUpdate(line, field, cover.overlapping) ?? [],

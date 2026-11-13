@@ -34,17 +34,18 @@ async function mergeSelectedWords(lineId: string, type: WordTrack, indices: numb
   const addresses = indices.flatMap((index) => addressAt(lines, lineId, type, index) ?? []);
   const plan = planMerge(lines, addresses);
   if (!plan) return;
+  const crossing = plan.crossingIds.length;
   const resolution =
-    plan.crossing > 0
+    crossing > 0
       ? await askWordDivergence({
-          affectedSiblingCount: plan.crossing,
+          affectedSiblingCount: crossing,
           groupLabel: groups.find((group) => group.id === plan.source.groupId)?.label,
           widensCopies: true,
         })
       : "apply";
   if (resolution === "cancel") return;
   useTimelineStore.getState().clearSelection();
-  useProjectStore.getState().commit(mergeWords(addresses.map(toAddress), resolution));
+  useProjectStore.getState().commit(mergeWords(addresses.map(toAddress), resolution, crossing));
 }
 
 // -- Exports -------------------------------------------------------------------
