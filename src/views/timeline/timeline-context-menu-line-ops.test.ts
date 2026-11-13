@@ -61,7 +61,7 @@ describe("gutter add/delete preserves line-sync granularity", () => {
           id: "B",
           text: "with words",
           agentId: "v1",
-          words: [{ text: "with words", sep: "", begin: 2, end: 4 }],
+          words: [{ id: "w1", text: "with words", sep: "", begin: 2, end: 4 }],
         },
         { id: "C", text: "another synced", agentId: "v1", begin: 4, end: 6 },
       ],

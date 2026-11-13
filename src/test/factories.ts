@@ -3,6 +3,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import type { ProjectSaveInput } from "@/lib/persistence";
 
@@ -22,6 +23,7 @@ interface FactoryLineOptions {
 }
 
 interface FactoryWordOptions {
+  id?: string;
   text: string;
   sep?: string;
   begin: number;
@@ -47,6 +49,7 @@ function createWord(opts: FactoryWordOptions): WordTiming {
   const { text, sep } =
     opts.sep === undefined ? splitTrailingWhitespace(opts.text) : { text: opts.text, sep: opts.sep };
   return {
+    id: opts.id ?? newWordId(),
     text,
     sep,
     begin: opts.begin,

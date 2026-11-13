@@ -80,13 +80,13 @@ describe("project store · background vocals across linked instances", () => {
     useProjectStore.setState({
       lines: [
         instance("a0", 0, [
-          { text: "ooh", sep: " ", begin: 10, end: 10.5 },
-          { text: "yeah", sep: "", begin: 10.5, end: 11 },
+          { id: "w1", text: "ooh", sep: " ", begin: 10, end: 10.5 },
+          { id: "w2", text: "yeah", sep: "", begin: 10.5, end: 11 },
         ]),
         instance("a1", 1, [
-          { text: "oo", sep: "", begin: 60, end: 60.5 },
-          { text: "oh", sep: " ", begin: 60.5, end: 61 },
-          { text: "yeah", sep: "", begin: 61, end: 61.5 },
+          { id: "w3", text: "oo", sep: "", begin: 60, end: 60.5 },
+          { id: "w4", text: "oh", sep: " ", begin: 60.5, end: 61 },
+          { id: "w5", text: "yeah", sep: "", begin: 61, end: 61.5 },
         ]),
       ],
     });
@@ -99,8 +99,8 @@ describe("project store · background vocals across linked instances", () => {
     useProjectStore.getState().updateLineWithHistory(
       "a0",
       manualBackgroundWordEdit([
-        { text: "ahh", sep: " ", begin: 10, end: 10.5 },
-        { text: "yeah", sep: "", begin: 10.5, end: 11 },
+        { id: "w6", text: "ahh", sep: " ", begin: 10, end: 10.5 },
+        { id: "w7", text: "yeah", sep: "", begin: 10.5, end: 11 },
       ]),
     );
 
@@ -111,9 +111,9 @@ describe("project store · background vocals across linked instances", () => {
     expect(a1?.backgroundWords?.at(-1)?.end).toBe(61.5);
 
     const split = [
-      { text: "ahh", sep: " ", begin: 10, end: 10.5 },
-      { text: "ye", sep: "", begin: 10.5, end: 10.75 },
-      { text: "ah", sep: "", begin: 10.75, end: 11 },
+      { id: "w8", text: "ahh", sep: " ", begin: 10, end: 10.5 },
+      { id: "w9", text: "ye", sep: "", begin: 10.5, end: 10.75 },
+      { id: "w10", text: "ah", sep: "", begin: 10.75, end: 11 },
     ];
     useProjectStore
       .getState()

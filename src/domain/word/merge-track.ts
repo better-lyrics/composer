@@ -1,3 +1,4 @@
+import { withFreeIds } from "@/domain/word/id";
 import { computeByGroupId } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { trimTrailingSpaceFromLast } from "@/utils/word-spaces";
@@ -47,7 +48,7 @@ function atomicUnits(words: WordTiming[], isIncoming: boolean): TaggedWord[][] {
 function mergeWordsIntoTrack(existing: WordTiming[], incoming: WordTiming[]): WordTiming[] {
   if (incoming.length === 0) return existing;
 
-  const freshIncoming = regenerateSyllableGroupIds(incoming);
+  const freshIncoming = withFreeIds(regenerateSyllableGroupIds(incoming), existing);
   const tagged = [...atomicUnits(existing, false), ...atomicUnits(freshIncoming, true)]
     .sort((a, b) => a[0].word.begin - b[0].word.begin)
     .flat();

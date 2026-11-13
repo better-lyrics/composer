@@ -22,8 +22,8 @@ function line(extras: Partial<LooseLine> = {}): LyricLine {
 describe("effectiveWords", () => {
   it("returns the words array when word-synced", () => {
     const words = [
-      { text: "Hello", sep: " ", begin: 0, end: 1 },
-      { text: "world", sep: "", begin: 1, end: 2 },
+      { id: "w1", text: "Hello", sep: " ", begin: 0, end: 1 },
+      { id: "w2", text: "world", sep: "", begin: 1, end: 2 },
     ];
     expect(effectiveWords(line({ words }))).toEqual(words);
   });
@@ -47,6 +47,13 @@ describe("effectiveWords", () => {
   it("returns empty array for a word-synced line with an empty words array", () => {
     expect(effectiveWords(line({ words: [] }))).toEqual([]);
   });
+
+  it("keeps the line-synced word id across a timing change", () => {
+    const line = createLine({ id: "l7", text: "Into the quiet", begin: 1, end: 3 });
+    const moved = reconcileLine({ ...line, begin: 2, end: 4 });
+    expect(effectiveWords(line)[0].id).toBeTruthy();
+    expect(effectiveWords(moved)[0].id).toBe(effectiveWords(line)[0].id);
+  });
 });
 
 // -- getEffectiveLines --------------------------------------------------------
@@ -58,7 +65,7 @@ describe("getEffectiveLines", () => {
   });
 
   it("leaves word-synced lines untouched", () => {
-    const words = [{ text: "Hi", sep: " ", begin: 0, end: 1 }];
+    const words = [{ id: "w3", text: "Hi", sep: " ", begin: 0, end: 1 }];
     const lines: LyricLine[] = [line({ words })];
     expect(getEffectiveLines(lines)[0].words).toBe(words);
   });
@@ -97,7 +104,7 @@ describe("getEffectiveLines timing source", () => {
       line({
         id: "t",
         text: "Привет",
-        words: [{ text: "Привет", sep: "", begin: 6, end: 7 }],
+        words: [{ id: "w4", text: "Привет", sep: "", begin: 6, end: 7 }],
         transliteration: {
           language: "ru-Latn",
           text: "privet",
@@ -133,7 +140,7 @@ describe("getEffectiveLines timing source", () => {
 describe("effectiveTimingWrite", () => {
   it("regression D7/[: a timing edit of a line-synced row writes begin/end, not words", () => {
     const [line] = getEffectiveLines([createLine({ text: "Line synced", begin: 3, end: 5 })]);
-    expect(effectiveTimingWrite(line, [{ text: "Line synced", sep: "", begin: 4, end: 6 }])).toEqual({
+    expect(effectiveTimingWrite(line, [{ id: "w3", text: "Line synced", sep: "", begin: 4, end: 6 }])).toEqual({
       begin: 4,
       end: 6,
     });
@@ -141,13 +148,15 @@ describe("effectiveTimingWrite", () => {
 
   it("writes words for a word-synced line and never writes text", () => {
     const [line] = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a", sep: " ", begin: 1, end: 2 }] })]);
-    const words = [{ text: "a", sep: " ", begin: 1.5, end: 2 }];
+    const words = [{ id: "w5", text: "a", sep: " ", begin: 1.5, end: 2 }];
     expect(effectiveTimingWrite(line, words)).toEqual({ words });
   });
 
   it("accepts a raw line too", () => {
     expect(
-      effectiveTimingWrite(createLine({ text: "x", begin: 1, end: 2 }), [{ text: "x", sep: "", begin: 2, end: 3 }]),
+      effectiveTimingWrite(createLine({ text: "x", begin: 1, end: 2 }), [
+        { id: "w4", text: "x", sep: "", begin: 2, end: 3 },
+      ]),
     ).toEqual({
       begin: 2,
       end: 3,
@@ -158,7 +167,7 @@ describe("effectiveTimingWrite", () => {
 describe("effectiveMainWordEdit", () => {
   it("keeps a line-synced row line-synced when a structural edit leaves one word", () => {
     const [line] = getEffectiveLines([createLine({ text: "Line synced", begin: 3, end: 5 })]);
-    expect(effectiveMainWordEdit(line, [{ text: "Line synced", sep: "", begin: 6, end: 8 }])).toEqual({
+    expect(effectiveMainWordEdit(line, [{ id: "w5", text: "Line synced", sep: "", begin: 6, end: 8 }])).toEqual({
       begin: 6,
       end: 8,
     });
@@ -168,8 +177,8 @@ describe("effectiveMainWordEdit", () => {
     const [line] = getEffectiveLines([createLine({ text: "L", begin: 3, end: 5 })]);
     expect(
       effectiveMainWordEdit(line, [
-        { text: "L", sep: " ", begin: 3, end: 5 },
-        { text: "L", sep: "", begin: 6, end: 8 },
+        { id: "w6", text: "L", sep: " ", begin: 3, end: 5 },
+        { id: "w7", text: "L", sep: "", begin: 6, end: 8 },
       ]),
     ).toBeNull();
   });
@@ -177,8 +186,8 @@ describe("effectiveMainWordEdit", () => {
   it("regression #213: converts a line-synced row to words when the caller opts in", () => {
     const [line] = getEffectiveLines([createLine({ text: "It hurts", begin: 3, end: 5 })]);
     const words = [
-      { text: "It hurts", sep: " ", begin: 3, end: 5 },
-      { text: "never", sep: "", begin: 6, end: 7 },
+      { id: "w8", text: "It hurts", sep: " ", begin: 3, end: 5 },
+      { id: "w9", text: "never", sep: "", begin: 6, end: 7 },
     ];
     expect(effectiveMainWordEdit(line, words, { convertLineSynced: true })).toEqual({
       words,
@@ -189,8 +198,8 @@ describe("effectiveMainWordEdit", () => {
   it("converting leaves a word-synced line on the normal word edit", () => {
     const [line] = getEffectiveLines([createLine({ text: "a", words: [{ text: "a", begin: 1, end: 2 }] })]);
     const words = [
-      { text: "a", sep: " ", begin: 1, end: 2 },
-      { text: "b", sep: "", begin: 2, end: 3 },
+      { id: "w10", text: "a", sep: " ", begin: 1, end: 2 },
+      { id: "w11", text: "b", sep: "", begin: 2, end: 3 },
     ];
     expect(effectiveMainWordEdit(line, words, { convertLineSynced: true })).toEqual({ words, text: "a b" });
   });
@@ -206,8 +215,8 @@ describe("effectiveMainWordEdit", () => {
       }),
     ]);
     const reordered = [
-      { text: "b", sep: " ", begin: 0, end: 1 },
-      { text: "a", sep: "", begin: 1, end: 2 },
+      { id: "w12", text: "b", sep: " ", begin: 0, end: 1 },
+      { id: "w13", text: "a", sep: "", begin: 1, end: 2 },
     ];
     expect(effectiveMainWordEdit(line, reordered)).toEqual({ words: reordered, text: "b a" });
   });
@@ -216,24 +225,24 @@ describe("effectiveMainWordEdit", () => {
 describe("effectiveWordTextEdit", () => {
   it("regression: renaming the word of a line-synced row updates text and keeps it line-synced", () => {
     const [line] = getEffectiveLines([createLine({ text: "Old", begin: 3, end: 5 })]);
-    expect(effectiveWordTextEdit(line, [{ text: "New words", sep: "", begin: 3, end: 5 }])).toEqual({
+    expect(effectiveWordTextEdit(line, [{ id: "w6", text: "New words", sep: "", begin: 3, end: 5 }])).toEqual({
       text: "New words",
     });
   });
 
   it("writes words for a word-synced line", () => {
     const [line] = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a", sep: " ", begin: 1, end: 2 }] })]);
-    const words = [{ text: "z", sep: " ", begin: 1, end: 2 }];
+    const words = [{ id: "w14", text: "z", sep: " ", begin: 1, end: 2 }];
     expect(effectiveWordTextEdit(line, words)).toEqual({ words });
   });
 
   it("writes words for a raw line with no timing", () => {
-    const words = [{ text: "z", sep: "", begin: 1, end: 2 }];
+    const words = [{ id: "w15", text: "z", sep: "", begin: 1, end: 2 }];
     expect(effectiveWordTextEdit(createLine({ text: "a" }), words)).toEqual({ words });
   });
 
   it("accepts a raw line-synced line", () => {
     const raw = createLine({ text: "Old", begin: 3, end: 5 });
-    expect(effectiveWordTextEdit(raw, [{ text: "New", sep: "", begin: 3, end: 5 }])).toEqual({ text: "New" });
+    expect(effectiveWordTextEdit(raw, [{ id: "w7", text: "New", sep: "", begin: 3, end: 5 }])).toEqual({ text: "New" });
   });
 });

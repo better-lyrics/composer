@@ -11,8 +11,8 @@ function sourceLine(): LyricLine {
     agentId: "v1",
     text: "Hello",
     backgroundText: "안녕",
-    words: [{ text: "Hello", sep: "", begin: 0, end: 1, transliteration: "old main" }],
-    backgroundWords: [{ text: "안녕", sep: "", begin: 0, end: 1, transliteration: "old bg" }],
+    words: [{ id: "w1", text: "Hello", sep: "", begin: 0, end: 1, transliteration: "old main" }],
+    backgroundWords: [{ id: "w2", text: "안녕", sep: "", begin: 0, end: 1, transliteration: "old bg" }],
     transliteration: {
       language: "ko-Latn",
       text: "old main",

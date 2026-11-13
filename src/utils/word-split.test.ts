@@ -4,7 +4,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { splitWordIntoWords } from "@/utils/word-split";
 
 describe("splitWordIntoWords", () => {
-  const source: WordTiming = { text: "everyday", sep: "", begin: 1, end: 2 };
+  const source: WordTiming = { id: "w1", text: "everyday", sep: "", begin: 1, end: 2 };
 
   it("splits into independent words with a trailing space on the non-final word", () => {
     const out = splitWordIntoWords(source, [5]);
@@ -37,13 +37,13 @@ describe("splitWordIntoWords", () => {
 
   it("output is NOT a syllable group when the line also has a syllableGroupId word", () => {
     const out = splitWordIntoWords(source, [5]);
-    const line = [...out, { text: "x", sep: "", begin: 2, end: 3, syllableGroupId: "g1" }];
+    const line = [...out, { id: "w2", text: "x", sep: "", begin: 2, end: 3, syllableGroupId: "g1" }];
     expect(getSyllablePositions(line).slice(0, 2)).toEqual(["none", "none"]);
   });
 });
 
 describe("splitWordIntoWords · text containing spaces", () => {
-  const line = { text: "It hurts for me", sep: "", begin: 10, end: 12 };
+  const line = { id: "w3", text: "It hurts for me", sep: "", begin: 10, end: 12 };
 
   it("regression: splitting right before a space does not leave a leading space on the next word", () => {
     const out = splitWordIntoWords(line, [2, 8]);
@@ -91,6 +91,7 @@ describe("splitWordIntoWords · text containing spaces", () => {
 
 describe("splitWordIntoWords · transliteration", () => {
   const word: WordTiming = {
+    id: "w4",
     text: "приветмир",
     sep: " ",
     begin: 3,

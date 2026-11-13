@@ -1,6 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { newWordId } from "@/domain/word/id";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
@@ -14,11 +15,11 @@ function languageLine(): LyricLine {
     text: "今日",
     agentId: "v1",
     words: [
-      { text: "今", sep: "", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
-      { text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi" },
+      { id: "w1", text: "今", sep: "", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
+      { id: "w2", text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi" },
     ],
     backgroundText: "空",
-    backgroundWords: [{ text: "空", sep: "", begin: 1.2, end: 1.8, transliteration: "sora" }],
+    backgroundWords: [{ id: "w3", text: "空", sep: "", begin: 1.2, end: 1.8, transliteration: "sora" }],
     backgroundTextSource: "manual",
     translations: {
       en: {
@@ -49,7 +50,10 @@ describe("TTML alternate-language sidecars", () => {
     const { words: _languageWords, ...untimedLine } = languageLine();
     const line = reconcileLine(
       mainTiming === "word"
-        ? { ...untimedLine, words: [{ text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale" }] }
+        ? {
+            ...untimedLine,
+            words: [{ id: newWordId(), text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale" }],
+          }
         : { ...untimedLine, begin: 1, end: 2 },
     );
     line.text = "Hello";
@@ -80,7 +84,7 @@ describe("TTML alternate-language sidecars", () => {
 
   it("places alternate background text first when it begins before the foreground", () => {
     const line = languageLine();
-    line.backgroundWords = [{ text: "空", sep: "", begin: 0.5, end: 0.9, transliteration: "sora" }];
+    line.backgroundWords = [{ id: "w4", text: "空", sep: "", begin: 0.5, end: 0.9, transliteration: "sora" }];
 
     const ttml = generateTTML({ metadata, agents, lines: [line] });
 
@@ -94,10 +98,10 @@ describe("TTML alternate-language sidecars", () => {
     const line = languageLine();
     line.text = "今 日";
     line.words = [
-      { text: "今", sep: " ", begin: 1, end: 1.4, transliteration: "kyou" },
-      { text: "日", sep: "", begin: 2, end: 2.5, transliteration: "hi" },
+      { id: "w5", text: "今", sep: " ", begin: 1, end: 1.4, transliteration: "kyou" },
+      { id: "w6", text: "日", sep: "", begin: 2, end: 2.5, transliteration: "hi" },
     ];
-    line.backgroundWords = [{ text: "空", sep: "", begin: 1.6, end: 1.9, transliteration: "sora" }];
+    line.backgroundWords = [{ id: "w7", text: "空", sep: "", begin: 1.6, end: 1.9, transliteration: "sora" }];
     line.translations!.en.text = "Right now";
     line.transliteration!.text = "kyou hi";
     line.transliteration!.segments = [{ original: "今 日", transliteration: "kyou hi" }];
@@ -127,9 +131,9 @@ describe("TTML alternate-language sidecars", () => {
     const line = languageLine();
     line.text = "今日 は";
     line.words = [
-      { text: "今", sep: "", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
-      { text: "日", sep: " ", begin: 1.5, end: 2, transliteration: "hi", transliterationJoinerAfter: "  " },
-      { text: "は", sep: "", begin: 2, end: 2.5, transliteration: "wa" },
+      { id: "w8", text: "今", sep: "", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
+      { id: "w9", text: "日", sep: " ", begin: 1.5, end: 2, transliteration: "hi", transliterationJoinerAfter: "  " },
+      { id: "w10", text: "は", sep: "", begin: 2, end: 2.5, transliteration: "wa" },
     ];
     line.transliteration!.text = "kyou hi  wa";
     line.transliteration!.segments = [{ original: "今日 は", transliteration: "kyou hi  wa" }];
@@ -144,8 +148,8 @@ describe("TTML alternate-language sidecars", () => {
   it("keeps an invisible timing boundary out of the rendered transliteration", () => {
     const line = languageLine();
     line.words = [
-      { text: "今", sep: "", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: "" },
-      { text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi" },
+      { id: "w11", text: "今", sep: "", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: "" },
+      { id: "w12", text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi" },
     ];
     line.transliteration!.text = "kyouhi";
     line.transliteration!.segments = [{ original: "今日", transliteration: "kyouhi" }];
@@ -162,8 +166,8 @@ describe("TTML alternate-language sidecars", () => {
     const line = languageLine();
     line.text = "to-do";
     line.words = [
-      { text: "to-", sep: "", begin: 1, end: 1.5, transliteration: "to", transliterationJoinerAfter: "-" },
-      { text: "do", sep: "", begin: 1.5, end: 2, transliteration: "do" },
+      { id: "w13", text: "to-", sep: "", begin: 1, end: 1.5, transliteration: "to", transliterationJoinerAfter: "-" },
+      { id: "w14", text: "do", sep: "", begin: 1.5, end: 2, transliteration: "do" },
     ];
     line.transliteration!.language = "en-Latn";
     line.transliteration!.text = "to-do";
@@ -187,8 +191,16 @@ describe("TTML alternate-language sidecars", () => {
     const line = languageLine();
     line.backgroundText = "空風";
     line.backgroundWords = [
-      { text: "空", sep: "", begin: 1.25, end: 1.5, transliteration: "sora", transliterationJoinerAfter: joiner },
-      { text: "風", sep: "", begin: 1.5, end: 1.75, transliteration: "kaze" },
+      {
+        id: newWordId(),
+        text: "空",
+        sep: "",
+        begin: 1.25,
+        end: 1.5,
+        transliteration: "sora",
+        transliterationJoinerAfter: joiner,
+      },
+      { id: newWordId(), text: "風", sep: "", begin: 1.5, end: 1.75, transliteration: "kaze" },
     ];
     line.transliteration!.backgroundText = `sora${joiner}kaze`;
     const before = structuredClone(line);

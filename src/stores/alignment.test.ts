@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { newWordId } from "@/domain/word/id";
 import { useAlignmentStore } from "@/stores/alignment";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -188,7 +189,7 @@ describe("alignment store", () => {
   });
 
   it("leaves word-synced and unselected lines alone", async () => {
-    const words = [{ text: "kept", sep: "", begin: 3, end: 4 }];
+    const words = [{ id: "w1", text: "kept", sep: "", begin: 3, end: 4 }];
     useProjectStore.getState().setLines([
       { id: "L1", text: "kept", agentId: "v1", words },
       { id: "L2", text: "not chosen", agentId: "v1", begin: 5, end: 6 },
@@ -205,9 +206,9 @@ describe("alignment store", () => {
 
   it("re-aligns word-synced lines, keeping each part and only changing its times", async () => {
     const words = [
-      { text: "hel", sep: "", begin: 1, end: 1.1, syllableGroupId: "g1" },
-      { text: "lo", sep: " ", begin: 1.1, end: 1.2, syllableGroupId: "g1" },
-      { text: "you", sep: "", begin: 1.2, end: 3, explicit: true as const },
+      { id: "w2", text: "hel", sep: "", begin: 1, end: 1.1, syllableGroupId: "g1" },
+      { id: "w3", text: "lo", sep: " ", begin: 1.1, end: 1.2, syllableGroupId: "g1" },
+      { id: "w4", text: "you", sep: "", begin: 1.2, end: 3, explicit: true as const },
     ];
     useProjectStore.getState().setLines([{ id: "L1", text: "hel|lo you", agentId: "v1", words }]);
 
@@ -305,7 +306,12 @@ describe("alignment store", () => {
   it("regression: keeps the untimed text of a partly synced line it doesn't touch", async () => {
     useProjectStore.getState().setLines([
       { id: "L1", text: "hello there", agentId: "v1", begin: 1, end: 2 },
-      { id: "L2", text: "one more line", agentId: "v1", words: [{ text: "one", sep: " ", begin: 3, end: 4 }] },
+      {
+        id: "L2",
+        text: "one more line",
+        agentId: "v1",
+        words: [{ id: "w5", text: "one", sep: " ", begin: 3, end: 4 }],
+      },
     ]);
 
     await useAlignmentStore.getState().alignLines(["L1"]);
@@ -314,7 +320,7 @@ describe("alignment store", () => {
   });
 
   it("regression: a split and the syllable timing that follows it undo in one step", async () => {
-    const whole = { text: "hello", sep: "", begin: 1, end: 2 };
+    const whole = { id: "w6", text: "hello", sep: "", begin: 1, end: 2 };
     useProjectStore.getState().setLinesWithHistory([{ id: "L1", text: "hello", agentId: "v1", words: [whole] }]);
     const before = useProjectStore.getState().lines;
     // Split off-centre, so the model's even-by-letter timing moves the boundary.
@@ -324,8 +330,8 @@ describe("alignment store", () => {
         text: "hello",
         agentId: "v1",
         words: [
-          { text: "hel", sep: "", begin: 1, end: 1.9, syllableGroupId: "g" },
-          { text: "lo", sep: "", begin: 1.9, end: 2, syllableGroupId: "g" },
+          { id: "w7", text: "hel", sep: "", begin: 1, end: 1.9, syllableGroupId: "g" },
+          { id: "w8", text: "lo", sep: "", begin: 1.9, end: 2, syllableGroupId: "g" },
         ],
       },
     ]);
@@ -346,8 +352,15 @@ describe("alignment store", () => {
       instanceIdx,
       templateLineIdx: 0,
       words: [
-        { text: "hel", sep: "", begin, end: begin + split, syllableGroupId: `s${instanceIdx}` },
-        { text: "lo", sep: "", begin: begin + split, end: begin + 1, syllableGroupId: `s${instanceIdx}` },
+        { id: newWordId(), text: "hel", sep: "", begin, end: begin + split, syllableGroupId: `s${instanceIdx}` },
+        {
+          id: newWordId(),
+          text: "lo",
+          sep: "",
+          begin: begin + split,
+          end: begin + 1,
+          syllableGroupId: `s${instanceIdx}`,
+        },
       ],
     });
     useProjectStore.setState({ groups: [createGroup({ id: "g1", sharesTiming: true })] });
@@ -359,7 +372,7 @@ describe("alignment store", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "hello", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w9", text: "hello", sep: "", begin: 10, end: 11 }],
       },
       {
         id: "c1",
@@ -368,7 +381,7 @@ describe("alignment store", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "hello", sep: "", begin: 40, end: 41 }],
+        words: [{ id: "w10", text: "hello", sep: "", begin: 40, end: 41 }],
       },
     ]);
     const before = useProjectStore.getState().lines;

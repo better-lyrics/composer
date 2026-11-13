@@ -1,3 +1,5 @@
+import "@/test/word-id-equality";
+import "@/test/word-id-invariant";
 import { appQueryClient } from "@/lib/app-query-client";
 import { forgetOpenProjectId } from "@/lib/open-project-session";
 import { __resetPendingDeletionsForTests } from "@/lib/pending-deletions";

@@ -1,4 +1,5 @@
 import { splitTrailingWhitespace } from "insync/from-words";
+import { newWordId, withSplitIds } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Field policy for WordTiming creation flows -------------------------------
@@ -13,6 +14,9 @@ import type { WordTiming } from "@/domain/word/timing";
 //   transliterationJoinerAfter
 //                    structural: assigned and transferred by syllable splitting;
 //                    consumed when the complete syllable group is merged
+//
+//   id               identity: kept by every transform (spread); the first split piece keeps it,
+//                    other pieces and copies into the same track take newWordId()
 //
 // When adding a new WordTiming field, decide its policy and update the relevant
 // factory below. Default policy ("rides along via spread") requires no factory
@@ -43,6 +47,11 @@ function cloneWord(source: WordTiming, overrides: Partial<WordTiming>): WordTimi
   return { ...source, ...overrides };
 }
 
+// A copy placed in the same track is a new word.
+function duplicateWord(source: WordTiming, overrides: Partial<WordTiming>): WordTiming {
+  return { ...source, ...overrides, id: newWordId() };
+}
+
 function synthesizeBracketedWord(input: BracketedSynthesisInput): WordTiming {
   const { text, sep, begin, end, leftBracket, rightBracket, explicit } = input;
   const leftId = leftBracket?.syllableGroupId;
@@ -53,22 +62,24 @@ function synthesizeBracketedWord(input: BracketedSynthesisInput): WordTiming {
       : rightId !== undefined && leftBracket === undefined
         ? rightId
         : undefined;
-  const result: WordTiming = { text, sep, begin, end };
+  const result: WordTiming = { id: newWordId(), text, sep, begin, end };
   if (explicit) result.explicit = true;
   if (inheritedGroupId !== undefined) result.syllableGroupId = inheritedGroupId;
   return result;
 }
 
 function splitSourceWord(source: WordTiming, subPartitions: SubPartition[]): WordTiming[] {
-  return subPartitions.map((sub) => ({
-    ...source,
-    ...splitTrailingWhitespace(sub.text),
-    begin: sub.begin,
-    end: sub.end,
-  }));
+  return withSplitIds(
+    subPartitions.map((sub) => ({
+      ...source,
+      ...splitTrailingWhitespace(sub.text),
+      begin: sub.begin,
+      end: sub.end,
+    })),
+  );
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { cloneWord, splitSourceWord, synthesizeBracketedWord };
+export { cloneWord, duplicateWord, splitSourceWord, synthesizeBracketedWord };
 export type { SubPartition };

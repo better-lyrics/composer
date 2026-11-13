@@ -32,6 +32,7 @@ function splitMultiWordWord(word: WordTiming): WordTiming[] {
   return parts.map((part, index) => ({
     ...base,
     ...part,
+    id: index === 0 ? word.id : part.id,
     sep: index === lastIndex ? (word.sep.endsWith(" ") ? " " : "") : part.sep,
   }));
 }

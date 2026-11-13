@@ -166,9 +166,9 @@ describe("decideEditTextAction", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I", sep: " ", begin: 0, end: 0.4 },
-          { text: "love", sep: " ", begin: 0.4, end: 0.8 },
-          { text: "you", sep: "", begin: 0.8, end: 1.2 },
+          { id: "w1", text: "I", sep: " ", begin: 0, end: 0.4 },
+          { id: "w2", text: "love", sep: " ", begin: 0.4, end: 0.8 },
+          { id: "w3", text: "you", sep: "", begin: 0.8, end: 1.2 },
         ],
       },
       {
@@ -179,9 +179,9 @@ describe("decideEditTextAction", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "I", sep: " ", begin: 30, end: 30.5 },
-          { text: "love", sep: " ", begin: 30.5, end: 31.0 },
-          { text: "you", sep: "", begin: 31.0, end: 31.5 },
+          { id: "w4", text: "I", sep: " ", begin: 30, end: 30.5 },
+          { id: "w5", text: "love", sep: " ", begin: 30.5, end: 31.0 },
+          { id: "w6", text: "you", sep: "", begin: 31.0, end: 31.5 },
         ],
       },
     ];
@@ -220,9 +220,9 @@ describe("decideEditTextAction", () => {
 describe("regressions", () => {
   it("regression: restores the neighbour word timing after the added word is removed", () => {
     const words = [
-      { text: "one", sep: " ", begin: 0, end: 1 },
-      { text: "two", sep: " ", begin: 1, end: 2 },
-      { text: "three", sep: "", begin: 2, end: 3 },
+      { id: "w7", text: "one", sep: " ", begin: 0, end: 1 },
+      { id: "w8", text: "two", sep: " ", begin: 1, end: 2 },
+      { id: "w9", text: "three", sep: "", begin: 2, end: 3 },
     ];
     const lines = [
       createLine({ id: "a", text: "one two three", words, groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),

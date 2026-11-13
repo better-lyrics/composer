@@ -24,15 +24,15 @@ function seedGroup(id: string): LinkGroup {
 }
 
 const INSTANCE_A_WORDS: WordTiming[] = [
-  { text: "I", sep: " ", begin: 0, end: 0.4 },
-  { text: "love", sep: " ", begin: 0.4, end: 0.8 },
-  { text: "you", sep: "", begin: 0.8, end: 1.2 },
+  { id: "w1", text: "I", sep: " ", begin: 0, end: 0.4 },
+  { id: "w2", text: "love", sep: " ", begin: 0.4, end: 0.8 },
+  { id: "w3", text: "you", sep: "", begin: 0.8, end: 1.2 },
 ];
 
 const INSTANCE_B_WORDS: WordTiming[] = [
-  { text: "I", sep: " ", begin: 10, end: 10.5 },
-  { text: "love", sep: " ", begin: 10.5, end: 11.0 },
-  { text: "you", sep: "", begin: 11.0, end: 11.5 },
+  { id: "w4", text: "I", sep: " ", begin: 10, end: 10.5 },
+  { id: "w5", text: "love", sep: " ", begin: 10.5, end: 11.0 },
+  { id: "w6", text: "you", sep: "", begin: 11.0, end: 11.5 },
 ];
 
 // Seeds in a single setState and marks the store dirty-since-history so the
@@ -65,8 +65,8 @@ function seedTwoWordSyncedInstances() {
 }
 
 const MERGED_WORDS: WordTiming[] = [
-  { text: "I", sep: " ", begin: 0, end: 0.4 },
-  { text: "love you", sep: "", begin: 0.4, end: 1.2 },
+  { id: "w7", text: "I", sep: " ", begin: 0, end: 0.4 },
+  { id: "w8", text: "love you", sep: "", begin: 0.4, end: 1.2 },
 ];
 
 function getLine(id: string) {
@@ -83,7 +83,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       .getState()
       .updateLineWithHistory(
         "a0",
-        { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] },
+        { words: [{ id: "w9", text: "I", sep: " ", begin: 5, end: 5.4 }] },
         { propagateToSiblings: false },
       );
 
@@ -93,7 +93,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
   it("does not retime a sibling when the source word count grows", () => {
     seedTwoWordSyncedInstances();
 
-    const grown: WordTiming[] = [...INSTANCE_A_WORDS, { text: "you", sep: "", begin: 1.2, end: 1.6 }];
+    const grown: WordTiming[] = [...INSTANCE_A_WORDS, { id: "w10", text: "you", sep: "", begin: 1.2, end: 1.6 }];
     useProjectStore.getState().updateLineWithHistory("a0", { words: grown }, { propagateToSiblings: false });
 
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
@@ -103,9 +103,9 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
     seedTwoWordSyncedInstances();
 
     const reordered: WordTiming[] = [
-      { text: "love", sep: " ", begin: 0, end: 0.4 },
-      { text: "I", sep: " ", begin: 0.4, end: 0.8 },
-      { text: "you", sep: "", begin: 0.8, end: 1.2 },
+      { id: "w11", text: "love", sep: " ", begin: 0, end: 0.4 },
+      { id: "w12", text: "I", sep: " ", begin: 0.4, end: 0.8 },
+      { id: "w13", text: "you", sep: "", begin: 0.8, end: 1.2 },
     ];
     useProjectStore.getState().updateLineWithHistory("a0", { words: reordered }, { propagateToSiblings: false });
 
@@ -114,8 +114,8 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
 
   it("does not retime a sibling's background words", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
-    const bgA: WordTiming[] = [{ text: "ah", sep: "", begin: 0, end: 0.5 }];
-    const bgB: WordTiming[] = [{ text: "ah", sep: "", begin: 20, end: 20.5 }];
+    const bgA: WordTiming[] = [{ id: "w14", text: "ah", sep: "", begin: 0, end: 0.5 }];
+    const bgB: WordTiming[] = [{ id: "w15", text: "ah", sep: "", begin: 20, end: 20.5 }];
     useProjectStore.setState({
       lines: [
         {
@@ -145,8 +145,8 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       "a0",
       {
         backgroundWords: [
-          { text: "ah", sep: "", begin: 1, end: 1.2 },
-          { text: "ah", sep: "", begin: 1.2, end: 1.4 },
+          { id: "w16", text: "ah", sep: "", begin: 1, end: 1.2 },
+          { id: "w17", text: "ah", sep: "", begin: 1.2, end: 1.4 },
         ],
       },
       { propagateToSiblings: false },
@@ -157,7 +157,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
 
   it("still writes the source line", () => {
     seedTwoWordSyncedInstances();
-    const sourceWords: WordTiming[] = [{ text: "I", sep: " ", begin: 9, end: 9.5 }];
+    const sourceWords: WordTiming[] = [{ id: "w18", text: "I", sep: " ", begin: 9, end: 9.5 }];
 
     useProjectStore.getState().updateLineWithHistory("a0", { words: sourceWords }, { propagateToSiblings: false });
 
@@ -179,7 +179,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       .getState()
       .updateLineWithHistory(
         "s",
-        { words: [{ text: "standalone", sep: "", begin: 1, end: 2 }] },
+        { words: [{ id: "w19", text: "standalone", sep: "", begin: 1, end: 2 }] },
         { propagateToSiblings: false },
       );
 
@@ -193,7 +193,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       .getState()
       .updateLineWithHistory(
         "a0",
-        { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] },
+        { words: [{ id: "w20", text: "I", sep: " ", begin: 5, end: 5.4 }] },
         { propagateToSiblings: false },
       );
     useProjectStore.getState().undo();
@@ -209,9 +209,12 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
 
     useProjectStore
       .getState()
-      .updateLinesWithHistory([{ id: "a0", updates: { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] } }], {
-        propagateToSiblings: false,
-      });
+      .updateLinesWithHistory(
+        [{ id: "a0", updates: { words: [{ id: "w21", text: "I", sep: " ", begin: 5, end: 5.4 }] } }],
+        {
+          propagateToSiblings: false,
+        },
+      );
 
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
@@ -269,9 +272,9 @@ describe("instance resync · issue #96 reproduction", () => {
   it("resyncing does not squash a third instance either", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     const cWords: WordTiming[] = [
-      { text: "I", sep: " ", begin: 30, end: 30.6 },
-      { text: "love", sep: " ", begin: 30.6, end: 31.2 },
-      { text: "you", sep: "", begin: 31.2, end: 31.8 },
+      { id: "w22", text: "I", sep: " ", begin: 30, end: 30.6 },
+      { id: "w23", text: "love", sep: " ", begin: 30.6, end: 31.2 },
+      { id: "w24", text: "you", sep: "", begin: 31.2, end: 31.8 },
     ];
     useProjectStore.setState({
       lines: [
@@ -354,7 +357,7 @@ describe("propagateToSiblings: false · edge cases", () => {
       .getState()
       .updateLineWithHistory(
         "a0",
-        { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] },
+        { words: [{ id: "w25", text: "I", sep: " ", begin: 5, end: 5.4 }] },
         { propagateToSiblings: false },
       );
 
@@ -392,7 +395,7 @@ describe("propagateToSiblings: false · edge cases", () => {
         .getState()
         .updateLineWithHistory(
           "solo",
-          { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] },
+          { words: [{ id: "w26", text: "I", sep: " ", begin: 5, end: 5.4 }] },
           { propagateToSiblings: false },
         ),
     ).not.toThrow();
@@ -401,7 +404,7 @@ describe("propagateToSiblings: false · edge cases", () => {
 
   it("does not touch lines belonging to a different group", () => {
     seedTwoWordSyncedInstances();
-    const otherWords: WordTiming[] = [{ text: "other", sep: "", begin: 50, end: 51 }];
+    const otherWords: WordTiming[] = [{ id: "w27", text: "other", sep: "", begin: 50, end: 51 }];
     useProjectStore.setState((s) => ({
       lines: [
         ...s.lines,
@@ -421,7 +424,7 @@ describe("propagateToSiblings: false · edge cases", () => {
       .getState()
       .updateLineWithHistory(
         "a0",
-        { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] },
+        { words: [{ id: "w28", text: "I", sep: " ", begin: 5, end: 5.4 }] },
         { propagateToSiblings: false },
       );
 
@@ -431,8 +434,8 @@ describe("propagateToSiblings: false · edge cases", () => {
   it("leaves the sibling intact even when the sibling already diverged in word count", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     const divergedB: WordTiming[] = [
-      { text: "I", sep: " ", begin: 10, end: 10.5 },
-      { text: "love you", sep: "", begin: 10.5, end: 11.5 },
+      { id: "w29", text: "I", sep: " ", begin: 10, end: 10.5 },
+      { id: "w30", text: "love you", sep: "", begin: 10.5, end: 11.5 },
     ];
     useProjectStore.setState({
       lines: [
@@ -461,7 +464,7 @@ describe("propagateToSiblings: false · edge cases", () => {
       .getState()
       .updateLineWithHistory(
         "a0",
-        { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] },
+        { words: [{ id: "w31", text: "I", sep: " ", begin: 5, end: 5.4 }] },
         { propagateToSiblings: false },
       );
 
@@ -495,8 +498,8 @@ describe("propagateToSiblings: false · edge cases", () => {
 
     useProjectStore.getState().updateLinesWithHistory(
       [
-        { id: "t0i0", updates: { words: [{ text: "I", sep: " ", begin: 5, end: 5.4 }] } },
-        { id: "t1i0", updates: { words: [{ text: "I", sep: " ", begin: 6, end: 6.4 }] } },
+        { id: "t0i0", updates: { words: [{ id: "w32", text: "I", sep: " ", begin: 5, end: 5.4 }] } },
+        { id: "t1i0", updates: { words: [{ id: "w33", text: "I", sep: " ", begin: 6, end: 6.4 }] } },
       ],
       { propagateToSiblings: false },
     );
@@ -539,9 +542,9 @@ describe("timing nudges · do not propagate to siblings", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 10, end: 10.5 },
-            { text: "LOVE", sep: " ", begin: 10.5, end: 11.0 },
-            { text: "you", sep: "", begin: 11.0, end: 11.5 },
+            { id: "w34", text: "I", sep: " ", begin: 10, end: 10.5 },
+            { id: "w35", text: "LOVE", sep: " ", begin: 10.5, end: 11.0 },
+            { id: "w36", text: "you", sep: "", begin: 11.0, end: 11.5 },
           ],
         },
       ],

@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
@@ -20,9 +21,9 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fu|cking yeah",
         agentId: "v1",
         words: [
-          { text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
-          { text: "cking", sep: " ", begin: 0.2, end: 0.5 },
-          { text: "yeah", sep: "", begin: 0.5, end: 1 },
+          { id: "w1", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
+          { id: "w2", text: "cking", sep: " ", begin: 0.2, end: 0.5 },
+          { id: "w3", text: "yeah", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -38,9 +39,9 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fu|cking yeah",
         agentId: "v1",
         words: [
-          { text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
-          { text: "cking", sep: " ", begin: 0.2, end: 0.5, explicit: true },
-          { text: "yeah", sep: "", begin: 0.5, end: 1 },
+          { id: "w4", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
+          { id: "w5", text: "cking", sep: " ", begin: 0.2, end: 0.5, explicit: true },
+          { id: "w6", text: "yeah", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -56,8 +57,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { text: "fuck", sep: " ", begin: 0, end: 0.5 },
-          { text: "this", sep: "", begin: 0.5, end: 1 },
+          { id: "w7", text: "fuck", sep: " ", begin: 0, end: 0.5 },
+          { id: "w8", text: "this", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -73,8 +74,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true },
-          { text: "this", sep: "", begin: 0.5, end: 1 },
+          { id: "w9", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true },
+          { id: "w10", text: "this", sep: "", begin: 0.5, end: 1 },
         ],
       },
       {
@@ -82,8 +83,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "shit happens",
         agentId: "v1",
         words: [
-          { text: "shit", sep: " ", begin: 1, end: 1.5 },
-          { text: "happens", sep: "", begin: 1.5, end: 2 },
+          { id: "w11", text: "shit", sep: " ", begin: 1, end: 1.5 },
+          { id: "w12", text: "happens", sep: "", begin: 1.5, end: 2 },
         ],
       },
     ];
@@ -101,11 +102,11 @@ describe("resolveExplicitSelectionToggle", () => {
         id: "L1",
         text: "main",
         agentId: "v1",
-        words: [{ text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w13", text: "main", sep: "", begin: 0, end: 1 }],
         backgroundText: "oh shit",
         backgroundWords: [
-          { text: "oh", sep: " ", begin: 1, end: 1.25 },
-          { text: "shit", sep: "", begin: 1.25, end: 1.5 },
+          { id: "w14", text: "oh", sep: " ", begin: 1, end: 1.25 },
+          { id: "w15", text: "shit", sep: "", begin: 1.25, end: 1.5 },
         ],
       },
     ];
@@ -121,8 +122,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { text: "fuck", sep: " ", begin: 0, end: 0.5 },
-          { text: "this", sep: "", begin: 0.5, end: 1 },
+          { id: "w16", text: "fuck", sep: " ", begin: 0, end: 0.5 },
+          { id: "w17", text: "this", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -155,13 +156,14 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
         templateLineIdx: 0,
         words: [
           {
+            id: newWordId(),
             text: "fuck",
             sep: " ",
             begin: idx * 30,
             end: idx * 30 + 0.5,
             ...(explicit ? { explicit: true as const } : {}),
           },
-          { text: "this", sep: "", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
+          { id: newWordId(), text: "this", sep: "", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
         ],
       })),
     );
