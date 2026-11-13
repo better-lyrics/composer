@@ -169,6 +169,47 @@ function withOwnPieces(languages: LineLanguages | undefined, line: LyricLine): L
   return { ...languages, transliteration: withTrackPieces(main, "bg", trackPieces(line, "bg")) };
 }
 
+function withAddedPieces(
+  languages: LineLanguages | undefined,
+  side: LanguageSide,
+  added: LanguagePieces,
+): LineLanguages | undefined {
+  const track = languages?.transliteration;
+  if (!track) return languages;
+  const sideTrack = side === "main" ? track.main : (track.bg ?? {});
+  const pieces = { ...sideTrack.pieces, ...added };
+  const transliteration =
+    side === "main"
+      ? { ...track, main: withSidePieces(track.main, pieces) }
+      : { ...track, bg: withSidePieces(sideTrack, pieces) };
+  return { ...languages, transliteration };
+}
+
+// -- Orphans ------------------------------------------------------------------
+
+function ownedPieces(
+  pieces: LanguagePieces | undefined,
+  words: readonly WordTiming[] | undefined,
+): LanguagePieces | undefined {
+  if (!pieces) return undefined;
+  const ids = new Set(words?.map((word) => word.id));
+  const keys = Object.keys(pieces);
+  if (keys.every((id) => ids.has(id))) return pieces;
+  const kept = keys.filter((id) => ids.has(id));
+  return kept.length ? Object.fromEntries(kept.map((id) => [id, pieces[id]])) : undefined;
+}
+
+// A piece is kept only while its syllable is on that side of the line.
+function withoutOrphanPieces<T extends LyricLine>(line: T): T {
+  const track = lineTransliteration(line);
+  if (!track) return line;
+  const main = ownedPieces(track.main.pieces, line.words);
+  const bg = track.bg && ownedPieces(track.bg.pieces, line.backgroundWords);
+  if (main === track.main.pieces && bg === track.bg?.pieces) return line;
+  const kept = withTrackPieces(withTrackPieces(track, "main", main), "bg", bg);
+  return { ...line, languages: languagesWith(line.languages, { transliteration: kept }) };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { PositionalPieces };
@@ -183,8 +224,10 @@ export {
   regroupedPieces,
   slicedPieces,
   trackPieces,
+  withAddedPieces,
   withKeptSyllablePieces,
   withOwnPieces,
+  withoutOrphanPieces,
   withoutPieces,
   withSidePieces,
   withTrackPieces,

@@ -1,6 +1,7 @@
 import type { CommandContext, LyricCommand } from "@/domain/commands/command";
 import { type Applied, type LyricRoot, type Outcome, applied, isRefused, refused } from "@/domain/commands/outcome";
 import { sharedTimingFanOut } from "@/domain/group/shared-timing";
+import { withoutOrphanPieces } from "@/domain/language/pieces";
 import type { RawLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { commandContext } from "@/stores/project/command-context";
@@ -22,12 +23,20 @@ function rootOf(state: ProjectState): LyricRoot {
   return { lines: state.lines, groups: state.groups, agents: state.agents };
 }
 
-function withChangedTextDerived(before: readonly RawLine[], after: RawLine[], splitChar: string): RawLine[] {
+function withChangedLinesSettled(
+  before: readonly RawLine[],
+  after: RawLine[],
+  splitChar: string,
+  derivesText: boolean,
+): RawLine[] {
+  if (before === after) return after;
   const unchangedLines = new Set<RawLine>(before);
-  const previousById = new Map(before.map((line) => [line.id, line]));
-  return after.map((line) =>
-    unchangedLines.has(line) ? line : withDerivedText(line, splitChar, previousById.get(line.id)),
-  );
+  const previousById = derivesText ? new Map(before.map((line) => [line.id, line])) : undefined;
+  return after.map((line) => {
+    if (unchangedLines.has(line)) return line;
+    const derived = previousById ? withDerivedText(line, splitChar, previousById.get(line.id)) : line;
+    return withoutOrphanPieces(derived);
+  });
 }
 
 // A command that touched no line keeps the lines array, so line subscribers and history sharing see no change.
@@ -55,7 +64,7 @@ function writeRoot(
   mode: CommitMode,
   ctx: CommandContext,
 ): Partial<ProjectState> {
-  const written = command.derivesText ? withChangedTextDerived(state.lines, root.lines, ctx.splitChar) : root.lines;
+  const written = withChangedLinesSettled(state.lines, root.lines, ctx.splitChar, command.derivesText);
   const lines = sameLines(state.lines, written) ? state.lines : written;
   if (mode === "amend") return amendCurrentStep(state, lines);
   if (mode === "pending") {
