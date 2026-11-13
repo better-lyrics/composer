@@ -1,8 +1,10 @@
 import { useCallback } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { backgroundFields, manualBackgroundWordEdit } from "@/domain/line/background";
+import { placeLineAt } from "@/domain/commands/line-timing";
+import { fillEmptyTrack } from "@/domain/commands/word-structure";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import { addressOf } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
@@ -64,34 +66,19 @@ function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: nu
   });
 }
 
-function addWordAt(line: LyricLine, time: number): void {
+function addTrackWordAt(line: LyricLine, type: WordTrack, time: number): void {
   const range = lineRangeOf(line);
   const slot = insertionSlotAt(range, time);
   if (!slot) return;
-  const { updateLineWithHistory } = useProjectStore.getState();
-  const timedText = createTrackWordsFromTextAt(line, "word", slot.begin, range.max);
+  const { commit } = useProjectStore.getState();
+  const timedText = createTrackWordsFromTextAt(line, type, slot.begin, range.max);
   if (timedText) {
-    updateLineWithHistory(line.id, { words: timedText });
+    commit(fillEmptyTrack({ lineId: line.id, type, timedText }));
     return;
   }
   const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
-  updateLineWithHistory(line.id, { words: [placeholder] });
-  useTimelineStore.getState().setEditingWord(addressOf(line, "word", placeholder));
-}
-
-function addBackgroundWordAt(line: LyricLine, time: number): void {
-  const range = lineRangeOf(line);
-  const slot = insertionSlotAt(range, time);
-  if (!slot) return;
-  const { updateLineWithHistory } = useProjectStore.getState();
-  const timedText = createTrackWordsFromTextAt(line, "bg", slot.begin, range.max);
-  if (timedText) {
-    updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
-    return;
-  }
-  const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
-  updateLineWithHistory(line.id, backgroundFields({ text: placeholder.text, words: [placeholder], source: "manual" }));
-  useTimelineStore.getState().setEditingWord(addressOf(line, "bg", placeholder));
+  commit(fillEmptyTrack({ lineId: line.id, type, placeholder }));
+  useTimelineStore.getState().setEditingWord(addressOf(line, type, placeholder));
 }
 
 function truncateLabel(text: string, maxChars: number): string {
@@ -108,10 +95,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
       const wordDuration = useSettingsStore.getState().defaultWordDuration;
       const lineDuration = Math.max(wordCount, 1) * wordDuration;
 
-      useProjectStore.getState().updateLineWithHistory(lineId, {
-        begin: currentTime,
-        end: currentTime + lineDuration,
-      });
+      useProjectStore.getState().commit(placeLineAt(lineId, currentTime, currentTime + lineDuration));
     },
     [lineId, wordCount],
   );
@@ -136,7 +120,7 @@ const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, durati
     <div
       className="relative cursor-pointer"
       style={{ width: duration * zoom, height: rowHeight }}
-      onDoubleClick={(e) => addWordAt(line, pointerTime(e))}
+      onDoubleClick={(e) => addTrackWordAt(line, "word", pointerTime(e))}
       onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "word")}
     >
       <div
@@ -163,7 +147,7 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
         : "text-composer-text-muted/50 bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
     )}
     style={{ height: BG_DROP_ZONE_HEIGHT }}
-    onDoubleClick={(e) => addBackgroundWordAt(line, pointerTime(e))}
+    onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
     {line.backgroundText ? truncateLabel(line.backgroundText, BG_LABEL_MAX_CHARS) : "BG"}

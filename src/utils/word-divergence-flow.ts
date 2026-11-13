@@ -1,3 +1,4 @@
+import { splitWord } from "@/domain/commands/word-structure";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -8,7 +9,7 @@ import { wouldDivergenceCauseRetiming } from "@/utils/word-diff";
 // Wraps a word-array write so that linked-line word-count changes prompt the
 // user (Apply / Detach / Cancel) when at least one sibling would have its
 // per-word timing rewritten by the propagation. Falls through to a direct
-// updateLineWithHistory write for:
+// split write for:
 //   - non-linked lines
 //   - count-unchanged edits (no structural change)
 //   - linked lines where every sibling already has timing identical to source
@@ -29,7 +30,7 @@ async function handleWordChangeWithDivergenceCheck(
   const countChanged = isLinked && newWords.length !== oldCount;
 
   if (!countChanged) {
-    useProjectStore.getState().updateLineWithHistory(lineId, { ...extraUpdates, [field]: newWords });
+    useProjectStore.getState().commit(splitWord(lineId, field, newWords, extraUpdates));
     return true;
   }
 

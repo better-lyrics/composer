@@ -1,9 +1,7 @@
-import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { handleAltDuplicate } from "@/views/timeline/alt-duplicate";
 import { hitTestTrack, resolveDropTarget } from "@/views/timeline/drag-end-resolution";
 import {
@@ -24,7 +22,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineDnd(lines: ReadableLine[]) {
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
 
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
@@ -103,11 +100,9 @@ function useTimelineDnd(lines: ReadableLine[]) {
       if (!activeData) return;
 
       const { zoom } = useTimelineStore.getState();
-      const { lines: rawLines, groups } = useProjectStore.getState();
-      const rangeOf = timeRangeResolver(rawLines, groups, duration);
 
       if (isAltDrag) {
-        handleAltDuplicate(event, lines, zoom, rangeOf);
+        handleAltDuplicate(event, lines, zoom, duration);
         return;
       }
 
@@ -129,7 +124,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
 
       if (sameLine && sameTrack) {
         if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
-        applySameLineReorder(activeData, wordsToMove, lines, timeDelta, rangeOf, updateLineWithHistory);
+        applySameLineReorder(wordsToMove, lines, timeDelta, duration);
         noteGuideSignal("timeline.move");
         noteWordDragShift(activeData.lineId, activeData.trackType, activeData.wordIndex, timeDelta);
         if (wordsToMove.length === 1) noteLoneWordMove(activeData.lineId, activeData.trackType, activeData.wordIndex);
@@ -143,11 +138,11 @@ function useTimelineDnd(lines: ReadableLine[]) {
         wordsToMove,
         lines,
         timeDelta,
-        rangeOf,
+        duration,
       });
       noteGuideSignal("timeline.move");
     },
-    [updateLineWithHistory, duration, lines],
+    [duration, lines],
   );
 
   const handleDragCancel = useCallback(() => {

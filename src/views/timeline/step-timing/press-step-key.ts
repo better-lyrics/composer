@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
 import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
@@ -11,7 +11,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { writeStepKey } from "@/utils/timing/step-key-write";
+import type { StepKeyPlan } from "@/utils/timing/step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
@@ -74,7 +74,6 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   const project = useProjectStore.getState();
   const { skippedLineIds } = stepSkipView(lines, project.groups, timeline.collapsedInstances, line);
   const include = (candidate: ReadableLine) => isInFocus(candidate, focus) && !skippedLineIds.has(candidate.id);
-  const rangeOf = timeRangeResolver(project.lines, project.groups, duration);
   const queue = live.cursor ? live.queue : null;
   if (queue && timeline.stepQueue && queue.length !== timeline.stepQueue.length) timeline.setSelectedWords(queue, true);
   const next =
@@ -82,17 +81,19 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
       ? null
       : nextCursorSlot(lines, cursor, queue, include, useSettingsStore.getState().stepTimingBackground);
   const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
-  const outcome = writeStepKey({
-    lines,
-    groups: project.groups,
-    cursor,
-    startNext,
-    key,
-    time,
-    minDuration: useSettingsStore.getState().minWordDuration,
-    rangeOf,
-    updateLinesWithHistory: project.updateLinesWithHistory,
-  });
+  let outcome = null as StepKeyPlan | null;
+  const command = stepKeyCommand(
+    {
+      cursor: toAddress(cursor),
+      startNext: startNext && toAddress(startNext),
+      key,
+      time,
+      minDuration: useSettingsStore.getState().minWordDuration,
+      duration,
+    },
+    (plan) => (outcome = plan),
+  );
+  project.commit(command);
   if (outcome?.kind === "refused") {
     toast(refusalMessage(outcome.refusal));
     timeline.setSelectedWords([cursor]);

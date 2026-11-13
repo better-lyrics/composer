@@ -1,3 +1,4 @@
+import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -99,11 +100,7 @@ function splitLinesIntoWords(targets: Iterable<SplitTarget>, effectiveLines: rea
   const projectState = useProjectStore.getState();
   const updates = computeSplitIntoWordsUpdates(targets, projectState.lines);
 
-  if (updates.length === 1) {
-    projectState.updateLineWithHistory(updates[0].id, updates[0].updates);
-  } else if (updates.length > 1) {
-    projectState.updateLinesWithHistory(updates);
-  }
+  if (updates.length > 0) projectState.commit(convertToWordTiming(updates));
 
   const newSelections = computeSplitSelections(updates, effectiveLines);
   if (newSelections.length > 0) {

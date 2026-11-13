@@ -1,4 +1,4 @@
-import { withNewInstance } from "@/domain/group/own-timing";
+import { fillInstanceRows } from "@/domain/commands/instance-rows";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
@@ -55,9 +55,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       playheadTime,
     });
     if (placement.kind === "fill") {
-      useProjectStore
-        .getState()
-        .setLinesWithHistory(placement.updatedLines, withNewInstance(groups, groupId, placement.instanceIdx));
+      useProjectStore.getState().commit(fillInstanceRows(groupId, placement.instanceIdx, placement.updatedLines));
       toast.success("Linked instance placed in empty rows");
     } else if (placement.kind === "insert") {
       useProjectStore.getState().addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);

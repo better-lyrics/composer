@@ -1,7 +1,7 @@
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { withNewInstance } from "@/domain/group/own-timing";
-import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
+import { type NudgeReport, nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
+import { fillInstanceRows } from "@/domain/commands/instance-rows";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
@@ -13,7 +13,7 @@ import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { lineWordSelections } from "@/domain/selection/line-selections";
-import { resolveAddress, resolveAddresses } from "@/domain/selection/resolve";
+import { resolveAddress, toAddress } from "@/domain/selection/resolve";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
@@ -25,8 +25,6 @@ import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { showGroupActionToast, showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
-import { setWordBoundary } from "@/utils/timing/word-timing";
 import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
@@ -59,7 +57,7 @@ import { escapeStepTiming, pressStepShortcut } from "@/views/timeline/step-timin
 import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
+import { computeRowLayout } from "@/views/timeline/utils";
 import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import {
@@ -148,19 +146,18 @@ function useTimelineKeyboard(
         }
       }
 
-      const setBoundaryOp = targetWord.type === "word" ? setWordBoundary : setBgWordBoundary;
-      setBoundaryOp({
-        lines,
-        lineIdx: targetWord.lineIndex,
-        wordIdx: wordIndex,
-        edge,
-        time: currentTime,
-        minDuration: useSettingsStore.getState().minWordDuration,
-        range: timeRangeResolver(useProjectStore.getState().lines, useProjectStore.getState().groups, duration)(line),
-        rolling: useSettingsStore.getState().rollingEdit,
-        syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
-        updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
-      });
+      const settings = useSettingsStore.getState();
+      useProjectStore.getState().commit(
+        setWordBoundary({
+          address: toAddress(targetWord),
+          edge,
+          time: currentTime,
+          minDuration: settings.minWordDuration,
+          rolling: settings.rollingEdit,
+          syllablesFollowRolling: settings.syllablesFollowRolling,
+          duration,
+        }),
+      );
       noteGuideSignal("timeline.resize");
       showLoupeAfterKeyEdit(targetWord, edge, word[edge]);
     },
@@ -466,10 +463,7 @@ function useTimelineKeyboard(
             playheadTime: playheadAt,
           });
           if (placement.kind === "fill") {
-            projectState.setLinesWithHistory(
-              placement.updatedLines,
-              withNewInstance(projectState.groups, groupId, placement.instanceIdx),
-            );
+            projectState.commit(fillInstanceRows(groupId, placement.instanceIdx, placement.updatedLines));
             toast.success("Linked instance placed in empty rows");
           } else if (placement.kind === "insert") {
             projectState.addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
@@ -578,24 +572,13 @@ function useTimelineKeyboard(
           e.preventDefault();
           const nudgeAmount = useSettingsStore.getState().nudgeAmount;
           const requestedDelta = matched === "timeline.nudgeLeft" ? -nudgeAmount : nudgeAmount;
-          const { lines: rawLines, groups } = useProjectStore.getState();
-          const partitioned = partitionNudgeSelections(rawLines, resolveAddresses(rawLines, nudgeSel));
-          const rangeOf = timeRangeResolver(rawLines, groups, duration);
-          const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
-          if (Math.abs(result.appliedDelta) < Math.abs(requestedDelta)) {
-            const wholeSong = () => wholeSongRange(duration);
-            const unshared = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, wholeSong);
-            if (Math.abs(unshared.appliedDelta) > Math.abs(result.appliedDelta)) showSharedSongEdgeToast();
-          }
-          if (result.updates.length === 0) break;
           const nudgedFrom = storedEdgeTime(nudgeSel[0], "begin");
-          if (result.updates.length === 1) {
-            useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates, {
-              propagateToSiblings: false,
-            });
-          } else {
-            useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
-          }
+          let nudge = null as NudgeReport | null;
+          useProjectStore
+            .getState()
+            .commit(nudgeSelection(nudgeSel, requestedDelta, duration, (reported) => (nudge = reported)));
+          if (nudge?.sharedCopyLimited) showSharedSongEdgeToast();
+          if (!nudge?.moved) break;
           noteGuideSignal("timeline.nudge");
           if (nudgedFrom !== null) showLoupeAfterKeyEdit(nudgeSel[0], "begin", nudgedFrom);
           break;

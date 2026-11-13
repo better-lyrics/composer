@@ -9,7 +9,7 @@ import {
   deriveBounds,
   isFiniteWord,
   resolveStretchTargets,
-} from "@/views/timeline/stretch-targets";
+} from "@/domain/selection/stretch-targets";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 
 // -- Types ---------------------------------------------------------------------

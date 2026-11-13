@@ -1,16 +1,14 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
+import { isRefused } from "@/domain/commands/outcome";
+import { moveWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
+import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
-import { addressAt, type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
-import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
-import { reorderWordTrack } from "@/domain/word/reorder-track";
+import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "@/domain/selection/resolve";
+import type { MoveRejectReason } from "@/domain/word/move-across-lines";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { useProjectStore } from "@/stores/project";
-import { cloneWord } from "@/utils/word-timing";
 import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
@@ -77,74 +75,24 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
   return result;
 }
 
-function groupSelectionsByLine(selections: DragWord[]): Map<string, DragWord[]> {
-  const grouped = new Map<string, DragWord[]>();
-  for (const sel of selections) {
-    const arr = grouped.get(sel.lineId) ?? [];
-    arr.push(sel);
-    grouped.set(sel.lineId, arr);
-  }
-  return grouped;
+function resolvedWords(lines: readonly ReadableLine[], words: readonly DragWord[]): ResolvedAddress[] {
+  return words.flatMap((word) => addressAt(lines, word.lineId, word.type, word.wordIndex) ?? []);
+}
+
+function addressesOf(lines: readonly ReadableLine[], words: readonly DragWord[]): SyllableAddress[] {
+  return resolvedWords(lines, words).map(toAddress);
 }
 
 // -- Same-line reorder --------------------------------------------------------
 
 function applySameLineReorder(
-  activeData: DragData,
   wordsToMove: DragWord[],
   lines: readonly ReadableLine[],
   timeDelta: number,
-  rangeOf: (line: LyricLine) => TimeRange,
-  updateLineWithHistory: ReturnType<typeof useProjectStore.getState>["updateLineWithHistory"],
+  duration: number,
 ) {
-  if (wordsToMove.length > 1) {
-    const grouped = groupSelectionsByLine(wordsToMove);
-    const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-    const linesById = new Map<string, LyricLine>();
-    for (const l of lines) linesById.set(l.id, l);
-
-    for (const [lineId, selections] of grouped) {
-      const line = linesById.get(lineId);
-      if (!line) continue;
-
-      const lineUpdates: Partial<LyricLine> = {};
-      const range = rangeOf(line);
-      const wordIndices = new Set(selections.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
-      const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
-
-      if (wordIndices.size > 0 && line.words) {
-        const edit = effectiveMainWordEdit(line, reorderWordTrack(line.words, wordIndices, timeDelta, range));
-        if (edit) Object.assign(lineUpdates, edit);
-      }
-      if (bgIndices.size > 0 && line.backgroundWords) {
-        const reordered = reorderWordTrack(line.backgroundWords, bgIndices, timeDelta, range);
-        Object.assign(lineUpdates, manualBackgroundWordEdit(reordered));
-      }
-
-      if (Object.keys(lineUpdates).length > 0) updates.push({ id: lineId, updates: lineUpdates });
-    }
-
-    if (updates.length > 0) {
-      useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
-    }
-    return;
-  }
-
-  const line = lines.find((l) => l.id === activeData.lineId);
-  if (!line) return;
-  const wordsArray = trackWords(line, activeData.trackType);
-  if (!wordsArray) return;
-
-  const wordIndex = activeData.wordIndex;
-  if (wordIndex < 0 || wordIndex >= wordsArray.length) return;
-
-  const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, rangeOf(line));
-  if (activeData.trackType === "word") {
-    const edit = effectiveMainWordEdit(line, normalized);
-    if (edit) updateLineWithHistory(activeData.lineId, edit, { propagateToSiblings: false });
-  } else {
-    updateLineWithHistory(activeData.lineId, manualBackgroundWordEdit(normalized), { propagateToSiblings: false });
-  }
+  const addresses = addressesOf(lines, wordsToMove);
+  useProjectStore.getState().commit(moveWords({ addresses, timeDelta, duration }));
 }
 
 // -- Cross-line move ----------------------------------------------------------
@@ -156,72 +104,29 @@ interface CrossLineMoveArgs {
   wordsToMove: DragWord[];
   lines: readonly ReadableLine[];
   timeDelta: number;
-  rangeOf: (line: LyricLine) => TimeRange;
+  duration: number;
 }
 
-function buildCrossLineMoves({
-  activeData,
-  targetLine,
-  targetTrack,
-  wordsToMove,
-  lines,
-  timeDelta,
-  rangeOf,
-}: CrossLineMoveArgs): WordMove[] {
-  const linesById = new Map<string, LyricLine>();
-  for (const l of lines) linesById.set(l.id, l);
-  const moves: WordMove[] = [];
-  const targetRange = rangeOf(targetLine);
+const MOVE_REJECT_MESSAGE: Record<MoveRejectReason, string> = {
+  "cross-instance": "Detach the line first to move it out of the group",
+  "line-synced-target": LINE_SYNCED_REJECT_MESSAGE,
+  "line-synced-source": LINE_SYNCED_REJECT_MESSAGE,
+  overlap: OVERLAP_REJECT_MESSAGE,
+};
 
-  for (const sel of wordsToMove) {
-    if (sel.lineId !== activeData.lineId) continue;
-    const sourceLine = linesById.get(sel.lineId);
-    if (!sourceLine) continue;
-    const sourceArr = trackWords(sourceLine, sel.type);
-    const source = sourceArr?.[sel.wordIndex];
-    if (!source) continue;
-
-    const newBegin = Math.max(targetRange.min, source.begin + timeDelta);
-    const newEnd = Math.min(targetRange.max, source.end + timeDelta);
-    if (newEnd <= newBegin) continue;
-
-    moves.push({
-      sourceLineId: sel.lineId,
-      sourceWordIndex: sel.wordIndex,
-      sourceTrack: sel.type,
-      targetLineId: targetLine.id,
-      targetTrack,
-      word: cloneWord(source, { begin: newBegin, end: newEnd }),
-    });
-  }
-  return moves;
-}
-
-// Drives every cross-track drag: across different lines, AND across tracks on
-// the same line (main<->bg toggles). Routing both through the same primitive
-// keeps user-facing behaviour consistent: neither path propagates to linked
-// siblings. The cross-line case can't propagate cleanly anyway (two distinct
-// sibling sets), and matching same-line to cross-line removes a silent
-// divergence that previously made a same-line bg toggle mutate every linked
-// instance while a cross-line drag did not.
+// Drives every cross-track drag: across different lines, AND across tracks on the same line (main<->bg toggles).
 function applyCrossLineMove(args: CrossLineMoveArgs) {
-  const moves = buildCrossLineMoves(args);
-  if (moves.length === 0) return;
-
-  const result = applyWordMoveAcrossLines(args.lines, moves, args.rangeOf);
-  if (result.ok) {
-    useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
-    return;
-  }
-  if (result.reject === "cross-instance") {
-    toast.error("Detach the line first to move it out of the group");
-    return;
-  }
-  if (result.reject === "line-synced-target" || result.reject === "line-synced-source") {
-    toast.error(LINE_SYNCED_REJECT_MESSAGE);
-    return;
-  }
-  if (result.reject === "overlap") toast.error(OVERLAP_REJECT_MESSAGE);
+  const outcome = useProjectStore.getState().commit(
+    moveWordsAcrossLines({
+      addresses: addressesOf(args.lines, args.wordsToMove),
+      fromLineId: args.activeData.lineId,
+      targetLineId: args.targetLine.id,
+      targetTrack: args.targetTrack,
+      timeDelta: args.timeDelta,
+      duration: args.duration,
+    }),
+  );
+  if (isRefused(outcome) && outcome.refused.reason === "move") toast.error(MOVE_REJECT_MESSAGE[outcome.refused.reject]);
 }
 
 // -- Exports -------------------------------------------------------------------
@@ -233,7 +138,7 @@ export {
   DRAG_X_MIN_THRESHOLD,
   draggedWord,
   expandSelectionsAcrossLines,
-  groupSelectionsByLine,
   LINE_SYNCED_REJECT_MESSAGE,
+  resolvedWords,
   resolveWordsToOperate,
 };

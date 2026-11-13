@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { setWordBoundary } from "@/domain/commands/word-timing";
+import { addressAt } from "@/domain/selection/resolve";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { nudgeBgWordBegin, nudgeBgWordEnd } from "@/utils/timing/bg-word-timing";
-import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordBoundary, setWordEnd } from "@/utils/timing/word-timing";
+import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -30,6 +31,11 @@ function seed(sharesTiming: boolean): void {
 
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
+const wordAddress = (lineIdx: number, wordIdx: number) => {
+  const address = addressAt(store().lines, store().lines[lineIdx].id, "word", wordIdx);
+  if (!address) throw new Error("no word there");
+  return address;
+};
 
 describe("word timing ops with a shared time range", () => {
   it("stops a first word nudge where the earliest instance reaches zero", () => {
@@ -145,18 +151,17 @@ describe("word timing ops with a song end", () => {
 
 describe("setWordBoundary with a shared time range", () => {
   const setBoundary = (lineIdx: number, edge: "begin" | "end", wordIdx: number, time: number) =>
-    setWordBoundary({
-      lines: store().lines,
-      lineIdx,
-      wordIdx,
-      edge,
-      time,
-      minDuration: 0.05,
-      rolling: false,
-      syllablesFollowRolling: false,
-      range: timeRangeResolver(store().lines, store().groups, 12)(store().lines[lineIdx]),
-      updateLineWithHistory: store().updateLineWithHistory,
-    });
+    store().commit(
+      setWordBoundary({
+        address: wordAddress(lineIdx, wordIdx),
+        edge,
+        time,
+        minDuration: 0.05,
+        rolling: false,
+        syllablesFollowRolling: false,
+        duration: 12,
+      }),
+    );
 
   it("stops a first word begin where the earliest instance reaches zero", () => {
     seed(true);
