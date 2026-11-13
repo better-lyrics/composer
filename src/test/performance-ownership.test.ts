@@ -9,9 +9,13 @@ import { matchLines, productionSources, type ScannedSource, stylesheetSources } 
 const DEEP_COPY = /\bstructuredClone\(|JSON\.parse\(\s*JSON\.stringify\(|\b(?:cloneDeep|deepClone|deepCopy)\(/;
 const HISTORY_ENTRY_SHAPE = /\bHistoryEntry\b|\bhistoryIndex\b/;
 
-const DRAWN_LINES_CALL = /\bdrawnLines\(/;
+const DRAWN_LINES_CALL = /\b(?:use)?[tT]imelineDrawnLines\(/;
 const DRAWN_LINES_CALLERS = new Map<string, string>([
   ["views/timeline/timeline-drawn-lines.ts", "the owner: one shared array per lines change"],
+  ["views/timeline/drawn-rows.ts", "the rows read the shared array once per lines change"],
+  ["views/timeline/timeline-panel.tsx", "the panel reads the shared array and hands it to its handlers"],
+  ["views/timeline/timeline-info-panel.tsx", "the info panel reads the shared array for the selected word"],
+  ["views/timeline/use-context-menu-targets.ts", "the context menu reads the shared array only while it is open"],
 ]);
 
 const GROUPING_SCAN_CALL = /(?<!function )\bfindRepeatingStandaloneSections\(/;
