@@ -43,7 +43,9 @@ const BUILTIN_ALIGNMENT_MODEL = {
 const RECOMMENDED_ALIGNMENT_MODEL = "recommended";
 const DICTIONARY_FILENAME = "hubertfa_v007_cmudict.txt";
 const DICTIONARY_APPROX_BYTES = 3.3 * MIB;
-const MANIFEST_FILENAME = "hubertfa-models.json";
+// A checkpoint that finds lines takes inputs older builds don't send, so those are listed in a second manifest
+// that older builds never read. A deployment with only the first one keeps working.
+const MANIFEST_FILENAMES = ["hubertfa-models-2.json", "hubertfa-models.json"];
 const LOG_PREFIX = "[alignment-models]";
 
 // -- State --------------------------------------------------------------------
@@ -137,24 +139,27 @@ function parseAlignmentManifest(json: unknown, manifestUrl: string, baseUrl: str
   return models;
 }
 
-function getManifestUrl(baseUrl: string): string {
+function getManifestUrls(baseUrl: string): string[] {
   const override = import.meta.env.VITE_ALIGNMENT_MODEL_MANIFEST_URL;
-  return typeof override === "string" && override.trim() ? override.trim() : `${baseUrl}/${MANIFEST_FILENAME}`;
+  if (typeof override === "string" && override.trim()) return [override.trim()];
+  return MANIFEST_FILENAMES.map((name) => `${baseUrl}/${name}`);
 }
 
 // No manifest is the normal case for a deployment: only the built-in model.
 async function fetchModels(baseUrl: string): Promise<AlignmentModel[]> {
-  const url = getManifestUrl(baseUrl);
-  try {
-    // The models host caches everything at the edge; the manifest must stay fresh.
-    const response = await fetch(url, { cache: "no-store" });
-    if (response.status === 404) return [builtinModel(baseUrl)];
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-    return parseAlignmentManifest(await response.json(), url, baseUrl);
-  } catch (err) {
-    console.warn(`${LOG_PREFIX} could not load ${url}; only the built-in model is available`, err);
-    return [builtinModel(baseUrl)];
+  for (const url of getManifestUrls(baseUrl)) {
+    try {
+      // The models host caches everything at the edge; the manifest must stay fresh.
+      const response = await fetch(url, { cache: "no-store" });
+      if (response.status === 404) continue;
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return parseAlignmentManifest(await response.json(), url, baseUrl);
+    } catch (err) {
+      console.warn(`${LOG_PREFIX} could not load ${url}; only the built-in model is available`, err);
+      break;
+    }
   }
+  return [builtinModel(baseUrl)];
 }
 
 /** Every selectable model, fetched once per page load. Empty when model hosting isn't configured. */

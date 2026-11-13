@@ -48,6 +48,7 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       },
       release: () => {},
       isLoaded: () => true,
+      findsLines: () => false,
       locate: async () => null,
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });

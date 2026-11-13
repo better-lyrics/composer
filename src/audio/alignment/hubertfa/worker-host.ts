@@ -97,12 +97,12 @@ class AlignmentWorker {
     assets: AlignmentAssets,
     onProgress?: (loaded: number, total: number) => void,
     japanese = false,
-  ): Promise<Backend> {
+  ): Promise<{ backend: Backend; findsLines: boolean }> {
     const promise = this.request({ type: "init", assets, japanese }, [], onProgress);
     this.armInitTimeout();
     const msg = await promise;
     if (msg.type !== "init-done") throw workerError("Unexpected reply to init.", "protocol");
-    return msg.backend;
+    return { backend: msg.backend, findsLines: msg.findsLines };
   }
 
   async align(request: LineRequest, anchor: string[] | null): Promise<AlignOutcome> {

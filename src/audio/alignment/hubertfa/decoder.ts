@@ -19,6 +19,30 @@ interface DecoderInput {
   hopSize: number;
   /** Vocabulary ids of the forced sequence. Id 0 is silence (SP). */
   phoneIds: Int32Array;
+  /**
+   * The line's own part of a sequence that also holds its lyric neighbours' words (hubertfa-posttrain
+   * hfapt/nb_decode.py). The path may begin at any state up to `first` and end at any state from `last`, so each
+   * neighbour side may be cut short or left out.
+   */
+  own?: OwnSpan;
+}
+
+interface OwnSpan {
+  /** Sequence index of the line's first phone. */
+  first: number;
+  /** Sequence index of the line's last phone. */
+  last: number;
+  /**
+   * The begin tap as a soft hint: the line is expected to start between frames `from` and `to`. Every frame it has
+   * started before `from`, or hasn't started from `to` on, costs `cost` (log-probability).
+   */
+  hint?: { from: number; to: number; cost: number };
+  /**
+   * A model's per-frame "this frame is the line's" logits as a soft gate: each frame, the states from `first` to
+   * `last` gain `weight` x log sigmoid(z) and every other state `weight` x log(1 - sigmoid(z)), with z clipped to
+   * +-`clip`.
+   */
+  gate?: { logits: Float32Array; weight: number; clip: number };
 }
 
 interface PhoneInterval {
@@ -60,7 +84,33 @@ function sequenceLogProbs(input: DecoderInput, T: number): Float32Array {
     const logSum = max + Math.log(sum);
     for (let s = 0; s < S; s++) out[s * T + t] = frameLogits[phoneIds[s] * frames + t] - logSum;
   }
+  if (input.own) addOwnBias(out, input.own, S, T);
   return out;
+}
+
+// numpy's logaddexp(0, -x), negated: log sigmoid(x) in float64.
+function logSigmoid(x: number): number {
+  return -(Math.max(0, -x) + Math.log1p(Math.exp(-Math.abs(x))));
+}
+
+// The gate and the tap hint, added as nb_decode.py does: a float32 bias per state and frame, then one float32 sum.
+function addOwnBias(logProbs: Float32Array, own: OwnSpan, S: number, T: number) {
+  const { hint, gate } = own;
+  if (!hint && !gate) return;
+  const f = Math.fround;
+  const from = hint ? Math.max(0, Math.min(T, Math.trunc(hint.from))) : 0;
+  const to = hint ? Math.max(0, Math.min(T, Math.trunc(hint.to))) : T;
+  for (let t = 0; t < T; t++) {
+    const z = gate ? Math.max(-gate.clip, Math.min(gate.clip, gate.logits[t])) : 0;
+    const inside = gate ? f(gate.weight * logSigmoid(z)) : 0;
+    const outside = gate ? f(gate.weight * logSigmoid(-z)) : 0;
+    for (let s = 0; s < S; s++) {
+      let bias = s >= own.first && s <= own.last ? inside : outside;
+      // Started before the hint's first frame, or not started from its last on.
+      if (hint && (s >= own.first ? t < from : t >= to)) bias = f(bias - hint.cost);
+      if (bias !== 0) logProbs[s * T + t] += bias;
+    }
+  }
 }
 
 function edgeProbabilities(edgeLogits: Float32Array, T: number): { edgeProb: Float32Array; edgeDiff: Float32Array } {
@@ -83,6 +133,7 @@ function viterbi(
   edgeProb: Float32Array,
   phoneIds: Int32Array,
   T: number,
+  own?: OwnSpan,
 ): { states: number[]; starts: number[] } | null {
   const S = phoneIds.length;
   const f = Math.fround;
@@ -91,11 +142,11 @@ function viterbi(
   const currMax = new Float64Array(S).fill(Number.NEGATIVE_INFINITY);
   const at = (s: number, t: number) => s * T + t;
 
-  dp[at(0, 0)] = logProbs[at(0, 0)];
-  currMax[0] = logProbs[at(0, 0)];
-  if (phoneIds[0] === SILENCE_ID && S > 1) {
-    dp[at(1, 0)] = logProbs[at(1, 0)];
-    currMax[1] = logProbs[at(1, 0)];
+  // The path starts in the first silence or the first phone; with neighbours, in any state up to the line's first phone.
+  const startTo = own ? own.first : phoneIds[0] === SILENCE_ID && S > 1 ? 1 : 0;
+  for (let s = 0; s <= Math.min(startTo, S - 1); s++) {
+    dp[at(s, 0)] = logProbs[at(s, 0)];
+    currMax[s] = logProbs[at(s, 0)];
   }
 
   const skip = S >= 2 ? 2 : 1;
@@ -147,6 +198,12 @@ function viterbi(
   }
 
   let s = S === 1 ? 0 : dp[at(S - 2, T - 1)] > dp[at(S - 1, T - 1)] && phoneIds[S - 1] === SILENCE_ID ? S - 2 : S - 1;
+  // With words after the line's, the best end from the line's last phone on; the earliest on a tie, so an unsung
+  // neighbour takes nothing from the line.
+  if (own && own.last < S - 2) {
+    s = own.last;
+    for (let k = own.last + 1; k < S; k++) if (dp[at(k, T - 1)] > dp[at(s, T - 1)]) s = k;
+  }
   // No path reaches the end when the window is too short for every phone; backtracking would invent one.
   if (!Number.isFinite(dp[at(s, T - 1)])) return null;
   const states: number[] = [];
@@ -177,7 +234,7 @@ function decodeAlignment(input: DecoderInput): PhoneInterval[] | null {
 
   const logProbs = sequenceLogProbs(input, T);
   const { edgeProb, edgeDiff } = edgeProbabilities(input.edgeLogits, T);
-  const path = viterbi(logProbs, edgeProb, input.phoneIds, T);
+  const path = viterbi(logProbs, edgeProb, input.phoneIds, T, input.own);
   if (!path) return null;
 
   const frameSeconds = input.hopSize / input.sampleRate;

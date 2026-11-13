@@ -10,7 +10,7 @@ import type { WordInterval } from "@/domain/alignment/words";
 
 let worker: AlignmentWorker | null = null;
 // What the loaded worker was set up with, so a kept model is only reused when it fits the run.
-let loaded: { modelId: string; japanese: boolean } | null = null;
+let loaded: { modelId: string; japanese: boolean; findsLines: boolean } | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -21,6 +21,8 @@ function lineRequest(segment: AlignmentSegment): LineRequest {
     words: segment.words.map((word) => word.parts),
     hanReading: segment.hanReading,
     transliteration: segment.transliteration,
+    ...(segment.context ? { context: segment.context } : {}),
+    tap: segment.taps.begin - segment.windowBegin,
   };
 }
 
@@ -61,9 +63,9 @@ const hubertfaAligner: Aligner = {
     const onAbort = () => next.cancel();
     signal.addEventListener("abort", onAbort);
     try {
-      await next.init(assets, onProgress, japanese);
+      const { findsLines } = await next.init(assets, onProgress, japanese);
       worker = next;
-      loaded = { modelId, japanese };
+      loaded = { modelId, japanese, findsLines };
     } catch (err) {
       next.dispose();
       throw err;
@@ -98,6 +100,8 @@ const hubertfaAligner: Aligner = {
     const bounds = await withWorker(signal, (active) => active.locate(lineRequest(segment)));
     return bounds && { begin: segment.windowBegin + bounds.begin, end: segment.windowBegin + bounds.end };
   },
+
+  findsLines: () => loaded?.findsLines ?? false,
 
   release: () => {
     worker?.dispose();
