@@ -96,4 +96,16 @@ describe("legacy transliteration migration", () => {
 
     expect(migrated.languages?.transliteration?.main.text).toBe("an nyeong  haseyo");
   });
+
+  it("drops background readings an old save kept beside a romanization with no background", () => {
+    const migrated = migrateLegacyTransliterationLine(
+      oldLine({
+        backgroundText: "바다",
+        backgroundWords: [{ id: "b1", text: "바다", sep: "", begin: 1, end: 2, transliteration: "bada", joinsNext: false }],
+      }),
+    );
+
+    expect(legacyWords(migrated.backgroundWords, migrated.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
+  });
 });
+

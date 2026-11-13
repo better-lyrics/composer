@@ -70,11 +70,12 @@ function migrateLegacyTransliterationLine(line: LyricLine): LyricLine {
         }
       : {}),
   };
-  const aligned = alignTrackToLine(line, migratedTrack).languages?.transliteration;
+  const alignedLine = { ...line, ...alignTrackToLine(line, migratedTrack) };
+  const aligned = lineTransliteration(alignedLine);
   if (!aligned) return line;
   return {
-    ...line,
-    ...withLanguages(line, {
+    ...alignedLine,
+    ...withLanguages(alignedLine, {
       transliteration: {
         ...aligned,
         main: { ...aligned.main, ...(main.ambiguous ? { alignmentStatus: "needs-review" } : {}) },
