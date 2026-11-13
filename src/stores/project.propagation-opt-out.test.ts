@@ -4,9 +4,8 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "@/domain/word/timing";
+import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
 import { useProjectStore } from "@/stores/project";
-import { nudgeLineBegin } from "@/utils/timing/line-timing";
-import { nudgeWordBegin, setWordBegin } from "@/utils/timing/word-timing";
 import { beforeEach, describe, expect, it } from "vitest";
 
 // Regression coverage for issue #96: resyncing one instance of a group must not
@@ -513,7 +512,16 @@ describe("timing nudges · do not propagate to siblings", () => {
   it("nudgeWordBegin on one instance leaves the sibling's words untouched", () => {
     seedTwoWordSyncedInstances();
 
-    nudgeWordBegin(useProjectStore.getState().lines, 0, 1, 0.1, useProjectStore.getState().updateLineWithHistory);
+    useProjectStore
+      .getState()
+      .commit(
+        retimeSyncWord(
+          { lineId: useProjectStore.getState().lines[0].id, track: "word", wordIndex: 1 },
+          "begin",
+          { by: 0.1 },
+          Number.POSITIVE_INFINITY,
+        ),
+      );
 
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
@@ -551,7 +559,16 @@ describe("timing nudges · do not propagate to siblings", () => {
       isDirtySinceHistory: true,
     });
 
-    setWordBegin(useProjectStore.getState().lines, 0, 0, 0.2, useProjectStore.getState().updateLineWithHistory);
+    useProjectStore
+      .getState()
+      .commit(
+        retimeSyncWord(
+          { lineId: useProjectStore.getState().lines[0].id, track: "word", wordIndex: 0 },
+          "begin",
+          { to: 0.2 },
+          Number.POSITIVE_INFINITY,
+        ),
+      );
 
     expect(getLine("a1").words?.[1]).toMatchObject({ text: "LOVE", sep: " " });
   });
@@ -584,7 +601,9 @@ describe("timing nudges · do not propagate to siblings", () => {
       isDirtySinceHistory: true,
     });
 
-    nudgeLineBegin(useProjectStore.getState().lines, 0, 0.5, useProjectStore.getState().updateLineWithHistory);
+    useProjectStore
+      .getState()
+      .commit(shiftSyncLine(useProjectStore.getState().lines[0].id, { by: 0.5 }, Number.POSITIVE_INFINITY));
 
     expect(getLine("a1").begin).toBe(60);
     expect(getLine("a1").end).toBe(62);

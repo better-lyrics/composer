@@ -1,11 +1,17 @@
-import type { LinkGroup } from "@/domain/group/template";
-import { backgroundFields, withSeededBackground } from "@/domain/line/background";
+import type { LyricCommand } from "@/domain/commands/command";
+import {
+  applyEditTextDetaching,
+  editBackgroundText,
+  extractBackground,
+  extractLineBackground,
+  pasteLyrics,
+  typeLyrics,
+} from "@/domain/commands/edit-text";
+import { assignSinger } from "@/domain/commands/singer";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import type { WordTiming } from "@/domain/word/timing";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -13,20 +19,16 @@ import { useConfirm } from "@/stores/confirm-store";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
+import type { LyricBurst } from "@/stores/project/history-types";
 import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
-import {
-  extractBackgroundVocals,
-  extractInlineAcrossLinkedLines,
-  lineHasInlineParens,
-} from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
-import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
-import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
-import { linesToEditText } from "@/views/edit/edit-text";
+import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { linesToEditText } from "@/domain/edit-text/edit-text";
 import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
@@ -81,7 +83,7 @@ const EditPanel: React.FC = () => {
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
-  const runBaselineRef = useRef<{ lines: LyricLine[]; wasDirty: boolean } | null>(null);
+  const runBurstRef = useRef<LyricBurst | null>(null);
   const debounceRef = useRef<number | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
   const [isTypingLyrics, setIsTypingLyrics] = useState(false);
@@ -111,52 +113,39 @@ const EditPanel: React.FC = () => {
   );
   const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
 
-  const commitLinesWithHistory = useCallback((nextLines: LyricLine[], nextGroups?: LinkGroup[]) => {
-    useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
+  // Shows the committed lyrics in the textarea only when the command changed them.
+  const commitAndShow = useCallback((command: LyricCommand): boolean => {
+    const before = useProjectStore.getState().lines;
+    useProjectStore.getState().commit(command);
     const committed = useProjectStore.getState().lines;
+    if (committed === before) return false;
     linesSetByUs.current = committed;
     setRawText(linesToEditText(committed));
+    return true;
   }, []);
 
   const handleExtractBackgroundVocals = useCallback(() => {
-    const current = useProjectStore.getState().lines;
-    const next = extractBackgroundVocals(current, extractOptions);
-    if (next.length === current.length && next.every((line, i) => line === current[i])) return;
-    commitLinesWithHistory(next);
+    if (!commitAndShow(extractBackground(extractOptions))) return;
     noteGuideSignal("edit.background");
     noteGuideSignal("edit.extractAll");
-  }, [extractOptions, commitLinesWithHistory]);
+  }, [extractOptions, commitAndShow]);
 
   const handleAgentChange = useCallback((lineId: string, agentId: string) => {
-    useProjectStore.getState().updateLineWithHistory(lineId, { agentId });
+    useProjectStore.getState().commit(assignSinger([lineId], agentId));
     noteGuideSignal("edit.singer");
     noteGuideSignal("edit.singerOneLine");
   }, []);
 
   const handleBackgroundChange = useCallback((lineId: string, text: string) => {
-    const newBgText = text || undefined;
-    const target = useProjectStore.getState().lines.find((l) => l.id === lineId);
-
-    let words: WordTiming[] | undefined;
-    if (newBgText && target?.backgroundWords?.length) {
-      words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText);
-    } else if (newBgText && target) {
-      words = withSeededBackground({ ...target, backgroundText: newBgText }).backgroundWords;
-    }
-
-    useProjectStore
-      .getState()
-      .updateLineWithHistory(lineId, backgroundFields({ text: newBgText, words, source: "manual" }));
-    if (newBgText) noteGuideSignal("edit.background");
+    useProjectStore.getState().commit(editBackgroundText(lineId, text));
+    if (text) noteGuideSignal("edit.background");
   }, []);
 
   const handleExtractLine = useCallback((lineId: string) => {
-    const updates = extractInlineAcrossLinkedLines(useProjectStore.getState().lines, lineId, {
-      mergeStandaloneLines: false,
-      preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
-    });
-    if (updates.length === 0) return;
-    useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
+    const before = useProjectStore.getState().lines;
+    const preserveBrackets = useSettingsStore.getState().preserveBracketsOnExtraction;
+    useProjectStore.getState().commit(extractLineBackground(lineId, preserveBrackets));
+    if (useProjectStore.getState().lines === before) return;
     noteGuideSignal("edit.background");
     noteGuideSignal("edit.extractOneLine");
   }, []);
@@ -217,8 +206,7 @@ const EditPanel: React.FC = () => {
       const selectedLineIds = new Set(
         parsed.flatMap((p) => (selectedLines.has(p.lineNumber) && p.lineId ? [p.lineId] : [])),
       );
-      const updates = [...selectedLineIds].map((id) => ({ id: id as string, updates: { agentId } }));
-      useProjectStore.getState().updateLinesWithHistory(updates);
+      useProjectStore.getState().commit(assignSinger([...selectedLineIds], agentId));
       noteGuideSignal("edit.singer");
       setSelectedLines(new Set());
     },
@@ -234,11 +222,11 @@ const EditPanel: React.FC = () => {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
     }
-    const baseline = runBaselineRef.current;
-    if (baseline) {
-      runBaselineRef.current = null;
-      const { lines, commitPendingLineEdit } = useProjectStore.getState();
-      commitPendingLineEdit(baseline.lines, baseline.wasDirty);
+    const burst = runBurstRef.current;
+    if (burst) {
+      runBurstRef.current = null;
+      const { lines, closeLyricBurst } = useProjectStore.getState();
+      closeLyricBurst(burst);
       noteTypedLyrics(lines);
     }
   }, []);
@@ -260,14 +248,12 @@ const EditPanel: React.FC = () => {
       if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
       return;
     }
-    const next = extractBackgroundVocals(current, {
+    const extracted = extractBackground({
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
       preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
     });
-    if (next.length === current.length && next.every((line, i) => line === current[i])) return;
-    commitLinesWithHistory(next);
-    noteGuideSignal("edit.background");
-  }, [commitLinesWithHistory, finalizeRun]);
+    if (commitAndShow(extracted)) noteGuideSignal("edit.background");
+  }, [commitAndShow, finalizeRun]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -338,11 +324,8 @@ const EditPanel: React.FC = () => {
         }).then((ok) => {
           modalPendingRef.current = false;
           if (!ok) return;
-          const detached = detachInstancesFromLines(action.lyricLines, action.impacted);
-          const remainingGroupIds = new Set(detached.flatMap((l) => (l.groupId ? [l.groupId] : [])));
-          const nextGroups = groups.filter((g) => remainingGroupIds.has(g.id));
           finalizeRun();
-          commitLinesWithHistory(detached, nextGroups);
+          commitAndShow(applyEditTextDetaching(text, defaultAgentId));
         });
         return;
       }
@@ -365,7 +348,7 @@ const EditPanel: React.FC = () => {
           });
         }
         finalizeRun();
-        commitLinesWithHistory(finalLines);
+        commitAndShow(pasteLyrics(lines, finalLines));
         noteTypedLyrics(finalLines);
         if (finalLines.length !== pastedLines.length || finalLines.some((line, i) => line !== pastedLines[i])) {
           noteGuideSignal("edit.background");
@@ -375,25 +358,12 @@ const EditPanel: React.FC = () => {
 
       showEditText(text, action.editText, textarea);
 
-      if (runBaselineRef.current === null) {
-        const projectState = useProjectStore.getState();
-        runBaselineRef.current = { lines: projectState.lines, wasDirty: projectState.isDirtySinceHistory };
-      }
+      runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;
-      useProjectStore.getState().setLines(finalLines);
+      useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");
       scheduleRunFinalize();
     },
-    [
-      confirm,
-      defaultAgentId,
-      groups,
-      lines,
-      rawText,
-      scheduleRunFinalize,
-      commitLinesWithHistory,
-      finalizeRun,
-      showEditText,
-    ],
+    [confirm, defaultAgentId, groups, lines, rawText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });

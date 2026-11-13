@@ -38,8 +38,14 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
 
   redo: () => set(redoState),
 
-  commitPendingLineEdit: (baseline, baselineWasDirty) =>
-    set((state) => commitPendingEdit(state, baseline, baselineWasDirty)),
+  beginLyricBurst: () => ({ lines: get().lines, wasPending: get().isDirtySinceHistory }),
+
+  closeLyricBurst: (burst) => set((state) => commitPendingEdit(state, burst.lines, burst.wasPending)),
+
+  isCurrentStep: (entry) => {
+    const { history, historyIndex, isDirtySinceHistory } = get();
+    return history[historyIndex] === entry && !isDirtySinceHistory;
+  },
 
   applyLineUpdatesToCurrentStep: (updates) => {
     get().commit(patchLines(updates), "amend");

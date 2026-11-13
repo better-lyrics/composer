@@ -1,3 +1,4 @@
+import { pasteLanguageLines } from "@/domain/commands/languages";
 import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
@@ -58,7 +59,6 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
   onClose,
   onImportedTranslation,
 }) => {
-  const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const [kind, setKind] = useState<"transliteration" | "translation">(defaultKind);
   const [targetLanguage, setTargetLanguage] = useState(defaultTargetLanguage);
   const [pastedText, setPastedText] = useState(initialText);
@@ -120,7 +120,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       };
       updates.push({ id: line.id, updates: { translations } });
     });
-    updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+    useProjectStore.getState().commit(pasteLanguageLines(updates));
     noteGuideSignal("languages.paste");
     if (kind === "transliteration") noteGuideSignal("languages.romanize");
     if (kind === "translation") onImportedTranslation(targetLanguage);

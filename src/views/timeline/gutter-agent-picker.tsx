@@ -33,7 +33,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
   const handleAssign = useCallback(
     (newAgentId: string, close: () => void) => {
       if (newAgentId !== agentId) {
-        useProjectStore.getState().commit(assignSinger(lineId, newAgentId));
+        useProjectStore.getState().commit(assignSinger([lineId], newAgentId));
         noteGuideSignal("edit.singer");
       }
       close();
@@ -46,7 +46,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
       if (!newAgentName.trim()) return;
       const newId = nextAgentId(agents);
       addAgent({ id: newId, type: "person", name: newAgentName.trim() });
-      useProjectStore.getState().commit(assignSinger(lineId, newId));
+      useProjectStore.getState().commit(assignSinger([lineId], newId));
       noteGuideSignal("edit.singer");
       setNewAgentName("");
       close();

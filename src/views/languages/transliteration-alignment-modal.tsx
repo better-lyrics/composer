@@ -1,5 +1,5 @@
+import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { planTransliterationAlignment } from "@/domain/language/align";
-import { confirmTransliterationAlignment } from "@/domain/language/review";
 import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import { spacedText } from "@/domain/word/spaced-words";
@@ -48,8 +48,6 @@ function groupBoundaryPoints(words: WordTiming[]): number[] {
 // -- Component ----------------------------------------------------------------
 
 const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps> = ({ line, field, onClose }) => {
-  const updateLine = useProjectStore((state) => state.updateLine);
-  const commitPendingLineEdit = useProjectStore((state) => state.commitPendingLineEdit);
   const track = line.transliteration;
   const canonicalText = field === "words" ? track?.text : track?.backgroundText;
   const sourceWords = line[field];
@@ -118,17 +116,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
         };
       }
     }
-    // A language-only edit, so it must not reach the shared timing copy that history writes run.
-    const { lines: baseline, isDirtySinceHistory: baselineWasDirty } = useProjectStore.getState();
-    updateLine(
-      line.id,
-      {
-        [field]: nextWords,
-        transliteration: confirmTransliterationAlignment(line, field),
-      },
-      { deriveText: false },
-    );
-    commitPendingLineEdit(baseline, baselineWasDirty);
+    useProjectStore.getState().commit(saveTransliterationAlignment(line.id, field, nextWords));
     onClose();
   };
 

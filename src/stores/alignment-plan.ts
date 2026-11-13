@@ -3,11 +3,8 @@ import type { HanReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
-import type { LinkGroup } from "@/domain/group/template";
-import { sharedTimingFanOut } from "@/domain/group/shared-timing";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -148,39 +145,7 @@ function hasTappedEnd(plan: PlannedLine): boolean {
   return plan.guide.end === plan.taps.end;
 }
 
-/**
- * The updates with their timing copied to linked instances that share it, as
- * every timing write does: the first instance's timing wins, so an instance
- * aligned on its own (or one whose alignment fell back) can't drift from it.
- * Null when the copy is refused.
- */
-function withSharedTiming(
-  lines: readonly LyricLine[],
-  groups: readonly LinkGroup[],
-  updates: readonly LineUpdate[],
-): LineUpdate[] | null {
-  const after = applyLineUpdates(lines, updates);
-  const shared = sharedTimingFanOut(
-    lines,
-    after,
-    groups,
-    updates.map((u) => u.id),
-  );
-  if (shared.rejected) return null;
-  return shared.lines.flatMap((line, i) => (line === lines[i] ? [] : [{ id: line.id, updates: line }]));
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export {
-  countAlignableLines,
-  guideTaps,
-  hasTappedEnd,
-  isUnchanged,
-  planLines,
-  plainWindow,
-  segmentFor,
-  segmentIn,
-  withSharedTiming,
-};
+export { countAlignableLines, guideTaps, hasTappedEnd, isUnchanged, planLines, plainWindow, segmentFor, segmentIn };
 export type { PlannedLine };
