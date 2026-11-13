@@ -64,6 +64,9 @@ importers:
       driver.js:
         specifier: ^1.10.2
         version: 1.10.2
+      insync:
+        specifier: workspace:*
+        version: link:packages/insync
       lit:
         specifier: ^3.3.3
         version: 3.3.3
@@ -182,6 +185,8 @@ importers:
       vitest-browser-react:
         specifier: ^2.3.0
         version: 2.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@4.1.12)
+
+  packages/insync: {}
 
 packages:
 

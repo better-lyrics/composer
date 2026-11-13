@@ -39,6 +39,7 @@
     "clsx": "^2.1.1",
     "diff": "^9.0.0",
     "driver.js": "^1.10.2",
+    "insync": "workspace:*",
     "lit": "^3.3.3",
     "motion": "^14.8.0",
     "music-metadata": "^12.3.2",
