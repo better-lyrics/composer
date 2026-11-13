@@ -121,5 +121,4 @@ function splitWord(
 
 // -- Exports ------------------------------------------------------------------
 
-export type { TrackFill };
 export { clearBackground, deleteWords, fillEmptyTrack, insertWord, setBackgroundText, splitWord, typeWordText };

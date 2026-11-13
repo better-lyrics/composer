@@ -208,5 +208,4 @@ function duplicateWords(args: MoveArgs): LyricCommand {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { CrossLineMoveArgs, MoveArgs };
 export { duplicateWords, moveWords, moveWordsAcrossLines, planDuplicate };

@@ -95,5 +95,4 @@ function mergeWords(addresses: readonly SyllableAddress[], resolution: MergeReso
 
 // -- Exports ------------------------------------------------------------------
 
-export type { MergePlan, MergeResolution };
 export { mergeWords, planMerge };

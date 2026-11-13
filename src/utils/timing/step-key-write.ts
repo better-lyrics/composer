@@ -73,5 +73,4 @@ function planStepKey(input: StepKeyWriteInput): StepKeyPlan | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { StepKeyPlan, StepKeyWriteInput };
 export { planStepKey };

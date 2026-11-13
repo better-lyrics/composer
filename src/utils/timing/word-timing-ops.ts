@@ -209,5 +209,5 @@ function createWordTimingOps(config: WordFieldConfig) {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { BoundaryEditInput, StepEdit };
+export type { StepEdit };
 export { createWordTimingOps };

@@ -129,5 +129,4 @@ function insertEmptyLine({
 
 // -- Exports ------------------------------------------------------------------
 
-export type { EditLinesOptions, PlannedEdit };
 export { editLines, insertEmptyLine, lineEditCommand, patchLines, replaceLines, withLineUpdates };

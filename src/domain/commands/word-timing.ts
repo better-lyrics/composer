@@ -196,5 +196,4 @@ function pressStepKey(args: StepKeyArgs): LyricCommand {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { BoundaryArgs, StepKeyArgs, StretchArgs, WordPatch };
 export { nudgeSelection, pressStepKey, retimeWord, setWordBoundary, stretchSelection };

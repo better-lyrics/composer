@@ -4,6 +4,7 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import { placeLineAt } from "@/domain/commands/line-timing";
 import { fillEmptyTrack } from "@/domain/commands/word-structure";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import { addressOf } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
@@ -65,34 +66,19 @@ function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: nu
   });
 }
 
-function addWordAt(line: LyricLine, time: number): void {
+function addTrackWordAt(line: LyricLine, type: WordTrack, time: number): void {
   const range = lineRangeOf(line);
   const slot = insertionSlotAt(range, time);
   if (!slot) return;
   const { commit } = useProjectStore.getState();
-  const timedText = createTrackWordsFromTextAt(line, "word", slot.begin, range.max);
+  const timedText = createTrackWordsFromTextAt(line, type, slot.begin, range.max);
   if (timedText) {
-    commit(fillEmptyTrack({ lineId: line.id, type: "word", timedText }));
+    commit(fillEmptyTrack({ lineId: line.id, type, timedText }));
     return;
   }
   const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
-  commit(fillEmptyTrack({ lineId: line.id, type: "word", placeholder }));
-  useTimelineStore.getState().setEditingWord(addressOf(line, "word", placeholder));
-}
-
-function addBackgroundWordAt(line: LyricLine, time: number): void {
-  const range = lineRangeOf(line);
-  const slot = insertionSlotAt(range, time);
-  if (!slot) return;
-  const { commit } = useProjectStore.getState();
-  const timedText = createTrackWordsFromTextAt(line, "bg", slot.begin, range.max);
-  if (timedText) {
-    commit(fillEmptyTrack({ lineId: line.id, type: "bg", timedText }));
-    return;
-  }
-  const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
-  commit(fillEmptyTrack({ lineId: line.id, type: "bg", placeholder }));
-  useTimelineStore.getState().setEditingWord(addressOf(line, "bg", placeholder));
+  commit(fillEmptyTrack({ lineId: line.id, type, placeholder }));
+  useTimelineStore.getState().setEditingWord(addressOf(line, type, placeholder));
 }
 
 function truncateLabel(text: string, maxChars: number): string {
@@ -134,7 +120,7 @@ const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, durati
     <div
       className="relative cursor-pointer"
       style={{ width: duration * zoom, height: rowHeight }}
-      onDoubleClick={(e) => addWordAt(line, pointerTime(e))}
+      onDoubleClick={(e) => addTrackWordAt(line, "word", pointerTime(e))}
       onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "word")}
     >
       <div
@@ -161,7 +147,7 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
         : "text-composer-text-muted/50 bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
     )}
     style={{ height: BG_DROP_ZONE_HEIGHT }}
-    onDoubleClick={(e) => addBackgroundWordAt(line, pointerTime(e))}
+    onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
     {line.backgroundText ? truncateLabel(line.backgroundText, BG_LABEL_MAX_CHARS) : "BG"}
