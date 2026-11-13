@@ -8,6 +8,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
+import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
@@ -101,13 +102,17 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
       const group = useProjectStore.getState().groups.find((g) => g.id === match.groupId);
       const groupLabel = group?.label ?? "group";
       const matchedInstances = instanceCount(lines, match.groupId);
-      const ok = await useConfirmStore.getState().open({
+      const answer = await askChoice({
         title: `Link as another ${groupLabel}?`,
-        description: `These ${clipboard.candidateLines.length} lines look like a ${groupLabel} (matches ${pluralize(matchedInstances, "instance")}). Link as another instance, or paste as plain words?`,
-        confirmLabel: "Link as instance",
-        cancelLabel: "Paste as words",
+        body: `These ${clipboard.candidateLines.length} lines look like a ${groupLabel} (matches ${pluralize(matchedInstances, "instance")}). Link as another instance, or paste as plain words?`,
+        busyMessage: FINISH_OPEN_PROMPT_FIRST,
+        options: [
+          { value: "words", label: "Paste as words", variant: "secondary" },
+          { value: "link", label: "Link as instance", variant: "primary" },
+        ],
       });
-      if (ok) {
+      if (answer === "cancel") return "cancelled";
+      if (answer === "link") {
         const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx);
         const template = instanceToTemplate(lines, match.groupId, sourceIdx);
         return placeInstance(lines, target, match.groupId, template, `Linked as another ${groupLabel}`);
