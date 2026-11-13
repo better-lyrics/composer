@@ -4,6 +4,8 @@
 
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { useSettingsStore } from "@/stores/settings";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { describe, expect, it } from "vitest";
 import { buildCandidateLines } from "./build-candidate-lines";
@@ -88,5 +90,12 @@ describe("buildCandidateLines", () => {
   it("returns undefined when a selected line is missing from project", () => {
     const sel: SyllableAddress[] = [{ lineId: "ghost", type: "word", syllableId: "w1" }];
     expect(buildCandidateLines([lineA], sel)).toBeUndefined();
+  });
+
+  it("regression: a line-synced line is copied as the Timeline draws it, one timed block", () => {
+    useSettingsStore.getState().set("splitCharacter", "|");
+    const synced = lineFromFields({ id: "s", text: "Fa|ding", agentId: "v1", begin: 3, end: 5 });
+    const [candidate] = buildCandidateLines([synced], selectAll(synced)) ?? [];
+    expect(lineText(candidate)).toBe("Fading");
   });
 });

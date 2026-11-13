@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnLine, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
@@ -37,7 +37,7 @@ function buildCandidateLines(
   }
 
   candidates.sort((a, b) => a.lineIndex - b.lineIndex);
-  return candidates.map((c) => c.line);
+  return candidates.map((c) => drawnLine(c.line));
 }
 
 export { buildCandidateLines };

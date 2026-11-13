@@ -18,6 +18,11 @@ interface CachedSpanBlock {
   syllables: WordTiming[];
 }
 
+interface CachedLine {
+  splitChar: string;
+  line: LyricLine;
+}
+
 interface CachedLanguages {
   splitChar: string;
   languages: LineLanguages | undefined;
@@ -26,6 +31,7 @@ interface CachedLanguages {
 // -- Caches -------------------------------------------------------------------
 
 const spanBlockByTrack = new WeakMap<MainTrack, CachedSpanBlock>();
+const drawnLineByLine = new WeakMap<LyricLine, CachedLine>();
 const languagesByLine = new WeakMap<LyricLine, CachedLanguages>();
 
 // -- Syllables ----------------------------------------------------------------
@@ -47,14 +53,22 @@ function drawnSyllables(line: LyricLine, role: TrackRole): WordTiming[] {
   return isSpanTimed(main) ? spanBlock(line.id, main, getSplitCharacter()) : timedSyllables(main);
 }
 
-// -- Languages ----------------------------------------------------------------
+// -- Lines --------------------------------------------------------------------
 
+// The line as the Timeline draws it, for reads only: a line-synced line reads as one partly timed word.
 function drawnLine(line: LyricLine): LyricLine {
   const main = mainTrack(line);
   if (!isSpanTimed(main)) return line;
+  const splitChar = getSplitCharacter();
+  const cached = drawnLineByLine.get(line);
+  if (cached?.splitChar === splitChar) return cached.line;
   const { begin: _begin, end: _end, ...syllableTimed } = main;
-  return withMainTrack(line, { ...syllableTimed, syllables: drawnSyllables(line, "main") });
+  const drawn = withMainTrack(line, { ...syllableTimed, syllables: drawnSyllables(line, "main") });
+  drawnLineByLine.set(line, { splitChar, line: drawn });
+  return drawn;
 }
+
+// -- Languages ----------------------------------------------------------------
 
 // The languages aligned to the drawn syllables, the ones the Timeline shows readings from.
 function drawnLanguages(line: LyricLine): LineLanguages | undefined {
@@ -72,4 +86,4 @@ function drawnPieces(line: LyricLine, role: TrackRole): LanguagePieces | undefin
 
 // -- Exports ------------------------------------------------------------------
 
-export { drawnLanguages, drawnPieces, drawnSyllables };
+export { drawnLanguages, drawnLine, drawnPieces, drawnSyllables };
