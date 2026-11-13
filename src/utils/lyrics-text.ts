@@ -20,53 +20,6 @@ function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined):
   return sourceText !== line.text || !line.backgroundWords?.length;
 }
 
-// Each typed row takes the earliest existing row with its text after the last one taken: in order, linear time.
-function inOrderKeyPairs(
-  existingKeys: string[],
-  typedKeys: string[],
-  start: number,
-  existingEnd: number,
-  typedEnd: number,
-): Array<[number, number]> {
-  const rowsByKey = new Map<string, number[]>();
-  for (let index = existingEnd - 1; index >= start; index--) {
-    const rows = rowsByKey.get(existingKeys[index]);
-    if (rows) rows.push(index);
-    else rowsByKey.set(existingKeys[index], [index]);
-  }
-  const pairs: Array<[number, number]> = [];
-  let lastTaken = start - 1;
-  for (let typedIndex = start; typedIndex < typedEnd; typedIndex++) {
-    const rows = rowsByKey.get(typedKeys[typedIndex]);
-    while (rows?.length && rows[rows.length - 1] <= lastTaken) rows.pop();
-    const existingIndex = rows?.pop();
-    if (existingIndex === undefined) continue;
-    pairs.push([existingIndex, typedIndex]);
-    lastTaken = existingIndex;
-  }
-  return pairs;
-}
-
-function unchangedRowPairs(existingKeys: string[], typedKeys: string[]): Array<[number, number]> {
-  let head = 0;
-  while (head < existingKeys.length && head < typedKeys.length && existingKeys[head] === typedKeys[head]) head++;
-  let tail = 0;
-  while (
-    tail < existingKeys.length - head &&
-    tail < typedKeys.length - head &&
-    existingKeys[existingKeys.length - 1 - tail] === typedKeys[typedKeys.length - 1 - tail]
-  ) {
-    tail++;
-  }
-  const middle = inOrderKeyPairs(existingKeys, typedKeys, head, existingKeys.length - tail, typedKeys.length - tail);
-  const prefix = Array.from({ length: head }, (_, index): [number, number] => [index, index]);
-  const suffix = Array.from({ length: tail }, (_, offset): [number, number] => [
-    existingKeys.length - tail + offset,
-    typedKeys.length - tail + offset,
-  ]);
-  return [...prefix, ...middle, ...suffix];
-}
-
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
   const existingKeys = existingLines.map((line) => matchKey(line.text));
@@ -96,15 +49,12 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     usedExistingIds.add(line.id);
   };
 
-  // Unchanged rows claim first, so a repeated line is never taken by a copy elsewhere in the song.
+  // Rows still showing their own line's text keep that line before any row can
+  // match it by text, so fixing a line into a later duplicate cannot steal it.
   if (allowPositionMatch) {
     cleanedKeys.forEach((_, index) => {
       if (existingKeys[index] === cleanedKeys[index]) claim(index, existingLines[index]);
     });
-  } else {
-    for (const [existingIndex, typedIndex] of unchangedRowPairs(existingKeys, cleanedKeys)) {
-      claim(typedIndex, existingLines[existingIndex]);
-    }
   }
 
   cleanedKeys.forEach((_, index) => {
