@@ -198,11 +198,14 @@ function planDuplicate(
     }
     const existingBg = roleWords(line, "bg") ?? [];
     if (bgDups.length > 0 && !overlapsAny(bgDups, existingBg)) {
-      Object.assign(lineUpdates, manualBackgroundWordEdit(
+      Object.assign(
+        lineUpdates,
+        manualBackgroundWordEdit(
           line,
           mergeWordsIntoTrack(existingBg, bgDups, untimedSyllablesOf(rawLineOf(line), "bg")),
           lineUpdates,
-        ));
+        ),
+      );
     }
     if (Object.keys(lineUpdates).length > 0 && readings.length > 0) {
       lineUpdates.languages = readings.reduce(

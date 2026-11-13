@@ -43,7 +43,10 @@ const isLetter = (char: string | undefined) => char !== undefined && LETTER.test
 // The text after the timed words, matched letter by letter so split marks of any character and unmarked splits
 // still line up. A load never drops text: when the words do not spell the start of the text, all of it stays.
 function untimedRest(text: string, words: readonly WordTiming[], splitChar: string): string {
-  const letters = words.map((word) => word.text).join("").replace(/\s+/g, "");
+  const letters = words
+    .map((word) => word.text)
+    .join("")
+    .replace(/\s+/g, "");
   let at = 0;
   for (const { 0: token, index } of text.matchAll(TEXT_WORD)) {
     let offset = 0;

@@ -66,7 +66,12 @@ function insertWord(lineId: string, type: WordTrack, word: WordTiming): LyricCom
     const raw = lineOf(root.lines, lineId);
     if (!raw) return refused({ reason: "line-gone", lineId });
     const words = trackWords(getEffectiveLine(raw), type) ?? [];
-    return [{ id: lineId, updates: trackWrite(raw, type, mergeWordsIntoTrack(words, [word], untimedSyllablesOf(raw, trackRole(type)))) }];
+    return [
+      {
+        id: lineId,
+        updates: trackWrite(raw, type, mergeWordsIntoTrack(words, [word], untimedSyllablesOf(raw, trackRole(type)))),
+      },
+    ];
   });
 }
 

@@ -271,7 +271,9 @@ describe("applyWordCountChange derives text from words", () => {
 
     useProjectStore
       .getState()
-      .commit(applyWordCountChange("l1", [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"));
+      .commit(
+        applyWordCountChange("l1", [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"),
+      );
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });

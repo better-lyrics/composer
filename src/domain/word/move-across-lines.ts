@@ -121,11 +121,17 @@ function lineUpdateFor(
     bgChanged = true;
   }
   if (inserts?.word.length) {
-    words = resolveOverlapsForward(mergeWordsIntoTrack(words ?? [], inserts.word, untimedSyllablesOf(rawLineOf(line), "main")), rangeEnd);
+    words = resolveOverlapsForward(
+      mergeWordsIntoTrack(words ?? [], inserts.word, untimedSyllablesOf(rawLineOf(line), "main")),
+      rangeEnd,
+    );
     mainChanged = true;
   }
   if (inserts?.bg.length) {
-    backgroundWords = resolveOverlapsForward(mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg, untimedSyllablesOf(rawLineOf(line), "bg")), rangeEnd);
+    backgroundWords = resolveOverlapsForward(
+      mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg, untimedSyllablesOf(rawLineOf(line), "bg")),
+      rangeEnd,
+    );
     bgChanged = true;
   }
 

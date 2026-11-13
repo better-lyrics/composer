@@ -1,7 +1,13 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LanguagePiece } from "@/domain/language/model";
 import { withAddedPieces } from "@/domain/language/pieces";
-import { type ReadableLine, effectiveMainWordEdit, effectiveTrackWords, effectiveWords, rawLineOf } from "@/domain/line/effective-words";
+import {
+  type ReadableLine,
+  effectiveMainWordEdit,
+  effectiveTrackWords,
+  effectiveWords,
+  rawLineOf,
+} from "@/domain/line/effective-words";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, timedSyllables, type WordTrack, untimedSyllablesOf } from "@/domain/line/track";
