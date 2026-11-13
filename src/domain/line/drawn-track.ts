@@ -23,16 +23,10 @@ interface CachedLine {
   line: LyricLine;
 }
 
-interface CachedLanguages {
-  splitChar: string;
-  languages: LineLanguages | undefined;
-}
-
 // -- Caches -------------------------------------------------------------------
 
 const spanBlockByTrack = new WeakMap<MainTrack, CachedSpanBlock>();
 const drawnLineByLine = new WeakMap<LyricLine, CachedLine>();
-const languagesByLine = new WeakMap<LyricLine, CachedLanguages>();
 
 // -- Syllables ----------------------------------------------------------------
 
@@ -55,29 +49,28 @@ function drawnSyllables(line: LyricLine, role: TrackRole): WordTiming[] {
 
 // -- Lines --------------------------------------------------------------------
 
-// The line as the Timeline draws it, for reads only: a line-synced line reads as one partly timed word.
-function drawnLine(line: LyricLine): LyricLine {
+function withDrawnMain(line: LyricLine): LyricLine {
   const main = mainTrack(line);
   if (!isSpanTimed(main)) return line;
+  const { begin: _begin, end: _end, ...syllableTimed } = main;
+  return withMainTrack(line, { ...syllableTimed, syllables: drawnSyllables(line, "main") });
+}
+
+// The line as the Timeline draws it, for reads only: a span as one block, readings aligned to the drawn syllables.
+function drawnLine(line: LyricLine): LyricLine {
   const splitChar = getSplitCharacter();
   const cached = drawnLineByLine.get(line);
   if (cached?.splitChar === splitChar) return cached.line;
-  const { begin: _begin, end: _end, ...syllableTimed } = main;
-  const drawn = withMainTrack(line, { ...syllableTimed, syllables: drawnSyllables(line, "main") });
+  const drawn = withAlignedTransliteration(withDrawnMain(line));
   drawnLineByLine.set(line, { splitChar, line: drawn });
   return drawn;
 }
 
 // -- Languages ----------------------------------------------------------------
 
-// The languages aligned to the drawn syllables, the ones the Timeline shows readings from.
+// The languages the Timeline shows readings from.
 function drawnLanguages(line: LyricLine): LineLanguages | undefined {
-  const splitChar = getSplitCharacter();
-  const cached = languagesByLine.get(line);
-  if (cached?.splitChar === splitChar) return cached.languages;
-  const { languages } = withAlignedTransliteration(drawnLine(line));
-  languagesByLine.set(line, { splitChar, languages });
-  return languages;
+  return drawnLine(line).languages;
 }
 
 function drawnPieces(line: LyricLine, role: TrackRole): LanguagePieces | undefined {

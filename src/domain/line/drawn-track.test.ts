@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnLanguages, drawnLine, drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
@@ -67,21 +67,29 @@ describe("drawnSyllables", () => {
 // -- drawnPieces --------------------------------------------------------------
 
 describe("drawnPieces", () => {
-  it("reads the romanization aligned to the drawn syllables", () => {
-    const romanized = line({
-      text: "Привет",
-      words: [{ id: "w4", text: "Привет", sep: "", begin: 6, end: 7, joinsNext: false }],
-      languages: {
-        transliteration: {
-          language: "ru-Latn",
-          main: { text: "privet", segments: [] },
-          origin: "manual",
-          sourceFingerprint: languageSourceFingerprint("Привет"),
-        },
+  const romanized = line({
+    text: "Привет",
+    words: [{ id: "w4", text: "Привет", sep: "", begin: 6, end: 7, joinsNext: false }],
+    languages: {
+      transliteration: {
+        language: "ru-Latn",
+        main: { text: "privet", segments: [] },
+        origin: "manual",
+        sourceFingerprint: languageSourceFingerprint("Привет"),
       },
-    });
+    },
+  });
+
+  it("reads the romanization aligned to the drawn syllables", () => {
     expect(drawnPieces(romanized, "main")?.w4?.text).toBe("privet");
     expect(drawnPieces(romanized, "main")).toBe(drawnPieces(romanized, "main"));
+  });
+
+  it("invariant: an unchanged line gives the same drawn line and languages", () => {
+    const synced = line({ text: "Fa|ding", begin: 3, end: 5 });
+    expect(drawnLine(synced)).toBe(drawnLine(synced));
+    expect(drawnLanguages(romanized)).toBe(drawnLanguages(romanized));
+    expect(drawnLine(lineFromFields({ ...fieldsOfLine(synced), begin: 4 }))).not.toBe(drawnLine(synced));
   });
 });
 

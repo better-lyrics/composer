@@ -2,6 +2,8 @@
  * @vitest-environment node
  */
 
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { trackPieces } from "@/domain/language/pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
@@ -97,5 +99,24 @@ describe("buildCandidateLines", () => {
     const synced = lineFromFields({ id: "s", text: "Fa|ding", agentId: "v1", begin: 3, end: 5 });
     const [candidate] = buildCandidateLines([synced], selectAll(synced)) ?? [];
     expect(lineText(candidate)).toBe("Fading");
+  });
+
+  it("regression: a copied line carries its romanization aligned to the drawn syllables", () => {
+    const romanized = lineFromFields({
+      id: "r",
+      text: "Привет",
+      agentId: "v1",
+      words: [{ id: "w10", text: "Привет", sep: "", begin: 6, end: 7, joinsNext: false }],
+      languages: {
+        transliteration: {
+          language: "ru-Latn",
+          main: { text: "privet", segments: [] },
+          origin: "manual",
+          sourceFingerprint: languageSourceFingerprint("Привет"),
+        },
+      },
+    });
+    const [candidate] = buildCandidateLines([romanized], selectAll(romanized)) ?? [];
+    expect(trackPieces(candidate, "main")?.w10?.text).toBe("privet");
   });
 });
