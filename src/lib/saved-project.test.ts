@@ -1,6 +1,12 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { reconcileLine } from "@/domain/line/model";
-import { linesFromSaved, SAVED_PROJECT_VERSION, type SavedProject, upgradeSavedProject } from "@/lib/saved-project";
+import {
+  linesFromSaved,
+  SAVED_PROJECT_VERSION,
+  type SavedProject,
+  savedLines,
+  upgradeSavedProject,
+} from "@/lib/saved-project";
 import { describe, expect, it } from "vitest";
 
 function legacyProject(version: SavedProject["version"]): SavedProject {
@@ -84,5 +90,29 @@ describe("linesFromSaved", () => {
     const ids = line.words?.map((word) => word.id) ?? [];
     expect(new Set(ids).size).toBe(2);
     expect(ids).not.toContain("x");
+  });
+
+  it("regression: puts back syllable marks the saved text lost and keeps them on the next load", () => {
+    const [line] = linesFromSaved([
+      {
+        id: "line-1",
+        text: "Paper lanterns",
+        agentId: "v1",
+        words: [
+          { text: "Pa", begin: 1, end: 1.2 },
+          { text: "per ", begin: 1.2, end: 1.6 },
+          { text: "lanterns", begin: 1.6, end: 2.2 },
+        ],
+        backgroundText: "drifting",
+        backgroundWords: [
+          { text: "drif", begin: 2.2, end: 2.5 },
+          { text: "ting", begin: 2.5, end: 2.9 },
+        ],
+      },
+    ]);
+    expect(line.text).toBe("Pa|per lanterns");
+    expect(line.backgroundText).toBe("drif|ting");
+    const [reloaded] = linesFromSaved(savedLines([line]));
+    expect([reloaded.text, reloaded.backgroundText]).toEqual(["Pa|per lanterns", "drif|ting"]);
   });
 });
