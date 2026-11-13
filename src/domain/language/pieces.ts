@@ -31,10 +31,13 @@ function withSidePieces<T extends BackgroundLanguage>(track: T, pieces: Language
   return (pieces ? { ...rest, pieces } : rest) as T;
 }
 
-// A side the language does not have holds no pieces.
+// A side the language does not have holds no pieces, and a background side left with nothing is no side.
 function withTrackPieces(language: LineLanguage, side: LanguageSide, pieces: LanguagePieces | undefined): LineLanguage {
   if (side === "main") return { ...language, main: withSidePieces(language.main, pieces) };
-  return language.bg ? { ...language, bg: withSidePieces(language.bg, pieces) } : language;
+  if (!language.bg) return language;
+  const { bg: _bg, ...rest } = language;
+  const bg = withSidePieces(language.bg, pieces);
+  return Object.keys(bg).length ? { ...rest, bg } : rest;
 }
 
 function withoutPieces(language: LineLanguage): LineLanguage {
@@ -212,10 +215,20 @@ function ownedPieces(
   return kept.length ? Object.fromEntries(kept.map((id) => [id, pieces[id]])) : undefined;
 }
 
+function withoutOrphanHeldReadings<T extends LyricLine>(line: T): T {
+  const held = line.languages?.heldReadings;
+  if (!held) return line;
+  const main = ownedPieces(held.main, line.words);
+  const bg = ownedPieces(held.bg, line.backgroundWords);
+  if (main === held.main && bg === held.bg) return line;
+  const heldReadings = main || bg ? { ...(main && { main }), ...(bg && { bg }) } : undefined;
+  return { ...line, languages: languagesWith(line.languages, { heldReadings }) };
+}
+
 // A piece is kept only while its syllable is on that side of the line.
 function withoutOrphanPieces<T extends LyricLine>(line: T): T {
   const track = lineTransliteration(line);
-  if (!track) return line;
+  if (!track) return withoutOrphanHeldReadings(line);
   const main = ownedPieces(track.main.pieces, line.words);
   const bg = track.bg && ownedPieces(track.bg.pieces, line.backgroundWords);
   if (main === track.main.pieces && bg === track.bg?.pieces) return line;

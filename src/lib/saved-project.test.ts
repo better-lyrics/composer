@@ -165,4 +165,26 @@ describe("linesFromSaved", () => {
     expect(line.languages?.transliteration?.bg?.alignmentStatus).toBe("inferred");
     expect(savedLines([line])).toEqual([saved]);
   });
+
+  it("keeps syllable readings a version 3 record holds without a romanization side for them", () => {
+    const withoutRomanization: SavedLine = {
+      id: "line-1",
+      text: "Paper",
+      agentId: "v1",
+      words: [{ text: "Paper", begin: 1, end: 1.6, transliteration: "pēpā" }],
+    };
+    const withoutBackground: SavedLine = {
+      id: "line-2",
+      text: "lanterns",
+      agentId: "v1",
+      words: [{ text: "lanterns", begin: 2, end: 2.6, transliteration: "rantan" }],
+      backgroundText: "drifting",
+      backgroundWords: [{ text: "drifting", begin: 2.6, end: 3, transliteration: "dorifuto" }],
+      transliteration: { language: "ja-Latn", text: "rantan", origin: "manual", sourceFingerprint: "a" },
+    };
+    expect(savedLines(linesFromSaved([withoutRomanization, withoutBackground]))).toEqual([
+      withoutRomanization,
+      withoutBackground,
+    ]);
+  });
 });

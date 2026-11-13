@@ -2,6 +2,7 @@ import type {
   BackgroundLanguage,
   LanguageContentMeta,
   LanguagePiece,
+  LanguageSide,
   LineLanguage,
   LineLanguages,
   TrackLanguage,
@@ -23,7 +24,7 @@ interface V3TranslationTrack extends LanguageContentMeta {
 }
 
 interface V3TransliterationTrack extends V3TranslationTrack {
-  segments: TransliterationSegment[];
+  segments?: TransliterationSegment[];
   backgroundSegments?: TransliterationSegment[];
   alignmentStatus?: TransliterationAlignmentStatus;
   backgroundAlignmentStatus?: TransliterationAlignmentStatus;
@@ -82,10 +83,11 @@ function v3PiecesOf(words: readonly V3Piece[] | undefined): PositionalPieces | u
 
 function v3WordPieces(
   words: readonly WordTiming[] | undefined,
-  language: LineLanguage | undefined,
-  side: "main" | "bg",
+  languages: LineLanguages | undefined,
+  side: LanguageSide,
 ): V3Piece[] | undefined {
-  return words && positionalPieces(words, language?.[side]?.pieces).map(v3Piece);
+  const pieces = languages?.transliteration?.[side]?.pieces ?? languages?.heldReadings?.[side];
+  return words && positionalPieces(words, pieces).map(v3Piece);
 }
 
 // -- Tracks -------------------------------------------------------------------
@@ -134,7 +136,7 @@ function v3Transliteration(language: LineLanguage): V3TransliterationTrack {
   const { main, bg } = language;
   return {
     ...v3Translation(language),
-    segments: main.segments ?? [],
+    ...(main.segments && { segments: main.segments }),
     ...(bg?.segments && { backgroundSegments: bg.segments }),
     ...(main.alignmentStatus !== undefined && { alignmentStatus: main.alignmentStatus }),
     ...(bg?.alignmentStatus !== undefined && { backgroundAlignmentStatus: bg.alignmentStatus }),
@@ -155,14 +157,17 @@ function languagesFromV3(
   const lineTransliteration = transliteration && lineLanguageFromV3(transliteration);
   const mainPieces = words.words && pieces.main && keyedPieces(words.words, pieces.main);
   const bgPieces = words.backgroundWords && pieces.bg && keyedPieces(words.backgroundWords, pieces.bg);
+  const bg = lineTransliteration?.bg ?? (bgPieces && {});
   const withPieces = lineTransliteration && {
     ...lineTransliteration,
     main: { ...lineTransliteration.main, ...(mainPieces && { pieces: mainPieces }) },
-    ...(lineTransliteration.bg && {
-      bg: { ...lineTransliteration.bg, ...(bgPieces && { pieces: bgPieces }) },
-    }),
+    ...(bg && { bg: { ...bg, ...(bgPieces && { pieces: bgPieces }) } }),
   };
-  if (!translations && !withPieces) return undefined;
+  const heldReadings = !lineTransliteration && (mainPieces || bgPieces) && {
+    ...(mainPieces && { main: mainPieces }),
+    ...(bgPieces && { bg: bgPieces }),
+  };
+  if (!translations && !withPieces && !heldReadings) return undefined;
   return {
     ...(translations && {
       translations: Object.fromEntries(
@@ -170,6 +175,7 @@ function languagesFromV3(
       ),
     }),
     ...(withPieces && { transliteration: withPieces }),
+    ...(heldReadings && { heldReadings }),
   };
 }
 

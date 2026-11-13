@@ -18,6 +18,7 @@ function languagesWith(languages: LineLanguages | undefined, patch: Partial<Line
   const next: LineLanguages = { ...languages, ...patch };
   if (next.translations === undefined) delete next.translations;
   if (next.transliteration === undefined) delete next.transliteration;
+  if (next.heldReadings === undefined) delete next.heldReadings;
   return Object.keys(next).length ? next : undefined;
 }
 

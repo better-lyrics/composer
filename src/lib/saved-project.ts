@@ -130,12 +130,11 @@ function storeLine(line: SavedLine, splitChar: string): LyricLine {
 
 function savedLine(line: LyricLine): SavedLine {
   const { languages, ...fields } = line;
-  const transliteration = languages?.transliteration;
   return {
     ...fields,
-    ...(line.words && { words: savedWords(line.words, v3WordPieces(line.words, transliteration, "main")) }),
+    ...(line.words && { words: savedWords(line.words, v3WordPieces(line.words, languages, "main")) }),
     ...(line.backgroundWords && {
-      backgroundWords: savedWords(line.backgroundWords, v3WordPieces(line.backgroundWords, transliteration, "bg")),
+      backgroundWords: savedWords(line.backgroundWords, v3WordPieces(line.backgroundWords, languages, "bg")),
     }),
     ...v3Languages(languages),
   };

@@ -47,13 +47,21 @@ interface LineLanguage extends LanguageContentMeta {
 
 type LineTranslations = Record<string, LineLanguage>;
 
+/** Syllable readings a saved line holds with no romanization; kept only so a save writes them back. */
+interface HeldReadings {
+  main?: LanguagePieces;
+  bg?: LanguagePieces;
+}
+
 interface LineLanguages {
   translations?: LineTranslations;
   transliteration?: LineLanguage;
+  heldReadings?: HeldReadings;
 }
 
 export type {
   BackgroundLanguage,
+  HeldReadings,
   LanguageContentMeta,
   LanguageContentOrigin,
   LanguagePiece,

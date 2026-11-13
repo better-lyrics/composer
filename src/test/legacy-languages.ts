@@ -49,7 +49,7 @@ function legacyWords(
   languages: LineLanguages | undefined,
   side: "main" | "bg" = "main",
 ): LegacyWord[] | undefined {
-  const pieces = v3WordPieces(words, languages?.transliteration, side);
+  const pieces = v3WordPieces(words, languages, side);
   return words?.map((word, index) => ({ ...word, ...pieces?.[index] }));
 }
 
