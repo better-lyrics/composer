@@ -16,7 +16,7 @@ const ENTRY_CAST = /\bas\s+HistoryEntry\b|\bsatisfies\s+HistoryEntry\b/;
 const HISTORY_WRITE_CALL = /\b(?:commitHistory|amendCurrentStep)\(/;
 const LYRIC_FIELD = /\b(?:lines|groups|agents)\b/;
 const GENERIC_LINE_SETTER =
-  /\b(?:setLines|setLinesWithHistory|updateLine|updateLineWithHistory|updateLinesWithHistory)\b/;
+  /\b(?:setLines|setLinesWithHistory|updateLine|updateLineWithHistory|updateLinesWithHistory|editLines|patchLines|replaceLines)\b/;
 const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);
 const NON_LYRIC_HISTORY_WRITERS = new Map<string, string>([
   ["stores/project/beat-grid-slice.ts", "writes the beat grid only"],
