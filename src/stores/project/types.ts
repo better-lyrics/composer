@@ -1,5 +1,6 @@
 import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
 import type { Agent } from "@/domain/agent/model";
+import type { LyricRoot } from "@/domain/commands/outcome";
 import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
@@ -144,9 +145,10 @@ interface BeatGridActions {
 
 interface LineActions {
   setLines: (lines: RawLine[]) => void;
-  // See the JSDoc on the implementation in lines-slice.ts before using this.
-  setTransientLines: (lines: RawLine[]) => void;
-  restoreTransientLines: (lines: RawLine[]) => void;
+  // Loads and restores only: the one write of lines, groups and agents outside commands.
+  restoreLyrics: (root: Partial<LyricRoot>) => void;
+  previewLines: (lines: RawLine[]) => void;
+  restorePreviewLines: (lines: RawLine[]) => void;
   setLinesWithHistory: (lines: RawLine[], groups?: LinkGroup[]) => void;
   insertEmptyLineWithHistory: (anchorLineId: string, position: "above" | "below") => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;

@@ -32,12 +32,14 @@ function malformedFieldsOf(project: SavedProject): string[] {
 function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): string[] {
   const state = useProjectStore.getState();
   state.setMetadata(normalizeLoadedMetadata(project.metadata));
-  state.setLines(linesFromSaved(project.lines ?? []).map(withSeededBackground));
-  state.setGroups(project.groups ?? []);
+  state.restoreLyrics({
+    lines: linesFromSaved(project.lines ?? []).map(withSeededBackground),
+    groups: project.groups ?? [],
+    agents: project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS,
+  });
   state.setGranularity(project.granularity ?? useSettingsStore.getState().defaultGranularity);
   state.setExportTiming(savedExportTiming(project.exportTiming));
   state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
-  state.setAgents(project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS);
   state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
   state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
   state.setDismissedMetadataMatches(project.dismissedMetadataMatches ?? []);

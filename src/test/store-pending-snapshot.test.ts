@@ -11,8 +11,8 @@ const SNAPSHOT_FIELD_WRITE = /(?<![.\w])(lines|groups|agents|customSnapPoints|be
 const OPAQUE_SPREAD = /\.\.\.(?!state\b)[A-Za-z_]\w*/;
 
 const ALLOWED: Record<string, string> = {
-  setTransientLines: "gesture preview; the caller restores or commits through history before the gesture ends",
-  restoreTransientLines: "puts back the pre-gesture lines a preview replaced, which history already holds",
+  previewLines: "gesture preview; the caller restores or commits through history before the gesture ends",
+  restorePreviewLines: "puts back the pre-gesture lines a preview replaced, which history already holds",
   moveCustomSnapPoint: "drag preview; commitSnapPointDrag records the drag as one entry",
   setCustomSnapPoints: "project load, which starts from an empty history",
   reset: "a fresh project starts from an empty history",

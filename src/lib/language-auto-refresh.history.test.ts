@@ -97,14 +97,14 @@ describe("createLanguageAutoRefresh history", () => {
       const refreshing = refresher.refreshNow();
       await vi.waitFor(() => expect(requests.length).toBeGreaterThan(0));
       const preview = [stretched(lineById("a"))];
-      useProjectStore.getState().setTransientLines(preview);
+      useProjectStore.getState().previewLines(preview);
       answer.open();
       await refreshing;
 
       expect(useProjectStore.getState().lines).toBe(preview);
       expect(useProjectStore.getState().history).toBe(historyBefore);
 
-      useProjectStore.getState().setTransientLines([edited]);
+      useProjectStore.getState().previewLines([edited]);
       useProjectStore.getState().updateLinesWithHistory([{ id: "a", updates: { words: preview[0].words } }]);
       await refresher.refreshNow();
       expect(lineById("a").transliteration?.text).toBe(`Dlinnaya  doroga  ${typed}`);
@@ -121,8 +121,8 @@ describe("createLanguageAutoRefresh history", () => {
         .setLinesWithHistory([timedLine("a", ["Тихий", "берег"], ["Shumnyy", "bereg"], "Шумный берег")]);
       const committed = useProjectStore.getState().lines;
 
-      useProjectStore.getState().setTransientLines([stretched(lineById("a"))]);
-      useProjectStore.getState().restoreTransientLines(committed);
+      useProjectStore.getState().previewLines([stretched(lineById("a"))]);
+      useProjectStore.getState().restorePreviewLines(committed);
       await createRefresher().refreshNow();
 
       expect(lineById("a").transliteration?.text).toBe("Tikhiy  bereg");

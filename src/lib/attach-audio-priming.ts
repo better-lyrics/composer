@@ -24,7 +24,7 @@ async function correctOnce(projectId: string, audio: File): Promise<void> {
   if (state.primingCorrected) return;
   if (shift !== 0) {
     const shifted = shiftedSongTimings(state, shift);
-    state.setLines(shifted.lines);
+    state.restoreLyrics({ lines: shifted.lines });
     state.setCustomSnapPoints(shifted.customSnapPoints);
     state.setBeatGrid(shifted.beatGrid);
     state.clearHistory();

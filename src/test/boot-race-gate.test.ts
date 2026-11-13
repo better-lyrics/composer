@@ -29,6 +29,7 @@ const STATE_WRITER_PATTERNS: RegExp[] = [
   /\.setLines\b/,
   /\.setGroups\b/,
   /\.setAgents\b/,
+  /\.restoreLyrics\b/,
   /\.setGranularity\b/,
   /\.setSyllableSplitDefaults\b/,
   /\.setDismissedSuggestions\b/,
