@@ -131,7 +131,13 @@ describe("generated language updates", () => {
     const { translations: _translations, ...source } = legacyView(sourceLine());
     const line = legacyLine({
       ...source,
-      transliteration: { language: "ko-Latn", text: "old main", segments: [], origin: "google", sourceFingerprint: "x" },
+      transliteration: {
+        language: "ko-Latn",
+        text: "old main",
+        segments: [],
+        origin: "google",
+        sourceFingerprint: "x",
+      },
     });
     expect(legacyWords(line.backgroundWords, line.languages, "bg")?.[0]).toHaveProperty("transliteration", "old bg");
 

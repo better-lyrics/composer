@@ -89,9 +89,7 @@ function generatedTransliteration(
   }
   // Re-aligning an unchanged track would reset its review status; Regenerate still re-aligns.
   if (!force && transliteration === current) return null;
-  return transliteration
-    ? alignTrackToLine(line, transliteration)
-    : withoutTransliteration(line);
+  return transliteration ? alignTrackToLine(line, transliteration) : withoutTransliteration(line);
 }
 
 function generatedTranslations(

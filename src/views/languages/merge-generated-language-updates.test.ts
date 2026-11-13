@@ -73,7 +73,16 @@ describe("mergeGeneratedLanguageUpdates", () => {
       agentId: "v1",
       text: "하|늘",
       words: [
-        { id: "w1", text: "하", sep: "", begin: 0, end: 0.5, transliteration: "ha", transliterationJoinerAfter: "", joinsNext: true },
+        {
+          id: "w1",
+          text: "하",
+          sep: "",
+          begin: 0,
+          end: 0.5,
+          transliteration: "ha",
+          transliterationJoinerAfter: "",
+          joinsNext: true,
+        },
         { id: "w2", text: "늘", sep: "", begin: 0.5, end: 1, transliteration: "neul", joinsNext: false },
       ],
       transliteration: {
@@ -92,7 +101,9 @@ describe("mergeGeneratedLanguageUpdates", () => {
     const { edits, stop } = watchGenerationEdits(startingLines, [], request.signal);
     useProjectStore
       .getState()
-      .commit(saveTransliterationAlignment("line", "words", { w1: { text: "han", joinerAfter: "" }, w2: { text: "eul" } }));
+      .commit(
+        saveTransliterationAlignment("line", "words", { w1: { text: "han", joinerAfter: "" }, w2: { text: "eul" } }),
+      );
     stop();
 
     const updates = mergeGeneratedLanguageUpdates(
@@ -113,4 +124,3 @@ describe("mergeGeneratedLanguageUpdates", () => {
     expect(updates).toEqual([]);
   });
 });
-

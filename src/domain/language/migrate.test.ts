@@ -101,11 +101,12 @@ describe("legacy transliteration migration", () => {
     const migrated = migrateLegacyTransliterationLine(
       oldLine({
         backgroundText: "바다",
-        backgroundWords: [{ id: "b1", text: "바다", sep: "", begin: 1, end: 2, transliteration: "bada", joinsNext: false }],
+        backgroundWords: [
+          { id: "b1", text: "바다", sep: "", begin: 1, end: 2, transliteration: "bada", joinsNext: false },
+        ],
       }),
     );
 
     expect(legacyWords(migrated.backgroundWords, migrated.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
   });
 });
-
