@@ -1,4 +1,6 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
+import type { LanguagePiece } from "@/domain/language/model";
+import { withAddedPieces } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import {
   type ReadableLine,
@@ -79,11 +81,14 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
     const range = rangeOf(line);
     const newWords: WordTiming[] = [];
     const newBgWords: WordTiming[] = [];
+    const mainPieces: Record<string, LanguagePiece> = {};
+    const bgPieces: Record<string, LanguagePiece> = {};
 
     for (const entry of entries) {
       const newWord = withNewId({ ...entry.word, ...pastedWordBounds(entry.word, timeDelta, range) });
       if (entry.trackType === "word") newWords.push(newWord);
       else newBgWords.push(newWord);
+      if (entry.piece) (entry.trackType === "word" ? mainPieces : bgPieces)[newWord.id] = entry.piece;
     }
 
     const lineUpdates: Partial<LyricLine> = {};
@@ -97,6 +102,9 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
         manualBackgroundWordEdit(mergeWordsIntoTrack(timedSyllables(backgroundTrack(line)), newBgWords)),
       );
     }
+
+    const languages = withAddedPieces(withAddedPieces(line.languages, "main", mainPieces), "bg", bgPieces);
+    if (languages !== line.languages) lineUpdates.languages = languages;
 
     updates.push({ id: line.id, updates: lineUpdates });
   }

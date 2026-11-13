@@ -175,7 +175,7 @@ function withAddedPieces(
   added: LanguagePieces,
 ): LineLanguages | undefined {
   const track = languages?.transliteration;
-  if (!track) return languages;
+  if (!track || Object.keys(added).length === 0) return languages;
   const sideTrack = side === "main" ? track.main : (track.bg ?? {});
   const pieces = { ...sideTrack.pieces, ...added };
   const transliteration =
