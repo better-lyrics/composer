@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
+import { addGroup } from "@/domain/commands/group-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { applyWordCountChange } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
@@ -21,7 +22,7 @@ function seedGroup(id: string): LinkGroup {
 }
 
 function seedTwoInstancesWithTimings() {
-  useProjectStore.getState().addGroup(seedGroup("g1"));
+  useProjectStore.getState().commit(addGroup(seedGroup("g1")));
   useProjectStore.setState({
     lines: [
       {
@@ -75,7 +76,7 @@ describe("project store · background vocals across linked instances", () => {
   });
 
   it("regression: a background edit reaches an instance with a diverged split, and later splits stay in step", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const instance = (id: string, instanceIdx: number, backgroundWords: LyricLine["backgroundWords"]): LyricLine => ({
       id,
       text: "hold me",

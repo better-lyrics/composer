@@ -260,26 +260,3 @@ describe("applyWordCountChange derives text from words", () => {
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });
 });
-
-// -- moveWordToBg -------------------------------------------------------------
-
-describe("moveWordToBg derives text from both tracks", () => {
-  it("re-derives main text and backgroundText after a move", () => {
-    useProjectStore.getState().restoreLyrics({
-      lines: [
-        {
-          id: "l1",
-          text: "hello world goodbye",
-          agentId: "v1",
-          words: [w("hello ", 0, 1), w("world ", 1, 2), w("goodbye", 2, 3)],
-        },
-      ],
-    });
-
-    useProjectStore.getState().moveWordToBg("l1", [2], 5, 30);
-
-    const line = useProjectStore.getState().lines[0];
-    expect(lineText(line)).toBe("hello world");
-    expect(backgroundText(line)).toBe("goodbye");
-  });
-});

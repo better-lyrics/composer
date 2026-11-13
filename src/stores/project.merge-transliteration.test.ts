@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
+import { addGroup } from "@/domain/commands/group-edits";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
@@ -130,7 +131,9 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
 
   describe("cross-field interactions", () => {
     it("merges a linked sibling with its own aligned pieces", () => {
-      useProjectStore.getState().addGroup({ id: "chorus", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+      useProjectStore
+        .getState()
+        .commit(addGroup({ id: "chorus", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
       const linked = { groupId: "chorus", templateLineIdx: 0 };
       useProjectStore.getState().restoreLyrics({
         lines: [

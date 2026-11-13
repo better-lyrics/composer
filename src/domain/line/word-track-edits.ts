@@ -1,16 +1,11 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { withAlignedWords } from "@/domain/language/align";
-import { CLEARED_BACKGROUND, applyBackground, manualBackgroundWordEdit } from "@/domain/line/background";
-import { applyMainWordEdit } from "@/domain/line/main-words";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { mergedWord } from "@/domain/word/merge-run";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { getSplitCharacter } from "@/utils/split-character";
 import { applySiblingWords } from "@/utils/word-diff";
-import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 
 // -- Types --------------------------------------------------------------------
 
@@ -64,59 +59,6 @@ function applyExplicitTargetToLines(
       if (propagated) return writeFieldWords(line, field, propagated);
     }
     return line;
-  });
-}
-
-function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number, duration: number): LyricLine | null {
-  if (!line.words) return null;
-  const indexSet = new Set(wordIndices);
-  const movedWords = line.words.flatMap((word, index) => {
-    if (!indexSet.has(index)) return [];
-    const dur = word.end - word.begin;
-    const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
-    return [{ ...word, begin: newBegin, end: newBegin + dur }];
-  });
-
-  if (movedWords.length === 0) return null;
-
-  const remainingMain = trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i)));
-  const mergedBg = resolveOverlapsForward(mergeWordsIntoTrack(line.backgroundWords ?? [], movedWords), duration);
-
-  return applyBackground(reconcileLine({ ...line, words: remainingMain }), {
-    words: mergedBg,
-    text: reconstructLineText(mergedBg, getSplitCharacter()),
-    source: "manual",
-  });
-}
-
-function applyMoveFromBg(
-  line: LyricLine,
-  wordIndices: number[],
-  timeDelta: number,
-  duration: number,
-): LyricLine | null {
-  if (!line.backgroundWords) return null;
-  const indexSet = new Set(wordIndices);
-  const movedWords = line.backgroundWords.flatMap((word, index) => {
-    if (!indexSet.has(index)) return [];
-    const dur = word.end - word.begin;
-    const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
-    return [{ ...word, begin: newBegin, end: newBegin + dur }];
-  });
-
-  if (movedWords.length === 0) return null;
-
-  const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
-  const mergedMain = resolveOverlapsForward(mergeWordsIntoTrack(line.words ?? [], movedWords), duration);
-
-  const withMain = applyMainWordEdit(line, mergedMain);
-  if (remainingBg.length === 0) {
-    return reconcileLine({ ...withMain, ...CLEARED_BACKGROUND });
-  }
-  return applyBackground(withMain, {
-    words: remainingBg,
-    text: reconstructLineText(remainingBg, getSplitCharacter()),
-    source: "manual",
   });
 }
 
@@ -211,4 +153,4 @@ function applyMarkWordsExplicit(lines: LyricLine[], targets: ExplicitTarget[], v
 // -- Exports ------------------------------------------------------------------
 
 export type { ExplicitTarget };
-export { applyMarkWordsExplicit, applyMergeSyllableGroup, applyMoveFromBg, applyMoveToBg };
+export { applyMarkWordsExplicit, applyMergeSyllableGroup };

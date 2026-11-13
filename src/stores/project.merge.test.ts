@@ -3,6 +3,7 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { addGroup } from "@/domain/commands/group-edits";
 import { mergeSyllableGroup, snapSyllablesFlush } from "@/domain/commands/word-edits";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
@@ -206,7 +207,7 @@ describe("mergeSyllableGroupIntoWord", () => {
 
 describe("mergeSyllableGroupIntoWord · linked propagation", () => {
   function seedTwoLinkedInstances() {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     useProjectStore.getState().restoreLyrics({
       lines: [
         {
@@ -298,7 +299,7 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
   });
 
   it("flips linked siblings to manual when a background-track merge propagates", () => {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     useProjectStore.getState().restoreLyrics({
       lines: [
         {
@@ -451,7 +452,7 @@ describe("snapSyllablesFlush", () => {
   });
 
   it("does not touch a linked sibling", () => {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     useProjectStore.getState().restoreLyrics({
       lines: [
         {
@@ -601,7 +602,7 @@ describe("mergeSelectedWords", () => {
   });
 
   it("carries the merge to linked siblings with the same rhythm without asking", async () => {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, offset: number): LyricLine => ({
       id,
       text: "every",
@@ -627,7 +628,7 @@ describe("mergeSelectedWords", () => {
   });
 
   it("regression: a linked sibling keeps its syllable group after a partial merge", async () => {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, offset: number): LyricLine => ({
       id,
       text: "so beautiful",
@@ -658,7 +659,7 @@ describe("mergeSelectedWords", () => {
   });
 
   it("regression: a linked copy split differently follows the merge", async () => {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, words: NonNullable<LyricLine["words"]>): LyricLine => ({
       id,
       text: "every day",
@@ -695,7 +696,7 @@ describe("mergeSelectedWords", () => {
   });
 
   it("regression: a merge leaves the other words of a differently split copy untouched", async () => {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, words: NonNullable<LyricLine["words"]>): LyricLine => ({
       id,
       text: "one two three",
@@ -731,7 +732,7 @@ describe("mergeSelectedWords", () => {
   });
   describe("a linked copy whose blocks cross the merged text", () => {
     function seedCrossingCopies(): void {
-      useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+      useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
       const linked = (id: string, instanceIdx: number, words: NonNullable<LyricLine["words"]>): LyricLine => ({
         id,
         text: "beautiful",
