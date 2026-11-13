@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { createLine } from "@/test/factories";
 import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
-import { nudgeWordEnd, setWordBegin, setWordBoundary } from "@/utils/timing/word-timing";
+import { nudgeWordEnd, setWordBegin, wordBoundaryEdit } from "@/utils/timing/word-timing";
 
 describe("createWordTimingOps: early returns", () => {
   it("nudgeBegin no-ops when line missing", () => {
@@ -144,20 +144,17 @@ describe("main-track ops on effective lines", () => {
   });
 
   it("regression info panel: set boundary on a line-synced row writes begin/end, not words", () => {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    const lines = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
-    setWordBoundary({
-      lines,
-      lineIdx: 0,
+    const [line] = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
+    const edit = wordBoundaryEdit({
+      line,
       wordIdx: 0,
       edge: "end",
       time: 21,
       minDuration: 0.05,
       rolling: false,
       syllablesFollowRolling: false,
-      updateLineWithHistory,
     });
-    expect(calls[0].updates).toEqual({ begin: 17, end: 21 });
+    expect(edit?.updates).toEqual({ begin: 17, end: 21 });
   });
 
   it("writes words and never text for a partially synced line", () => {

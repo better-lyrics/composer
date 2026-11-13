@@ -1,15 +1,14 @@
 import { instanceKey, lineInstanceKey } from "@/domain/instance/key";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
+import { retimeWord } from "@/domain/commands/word-timing";
+import type { WordTrack } from "@/domain/line/tracks";
+import { addressAt } from "@/domain/selection/resolve";
 import type { WordTiming } from "@/domain/word/timing";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
-import { LineRow } from "@/views/timeline/line-row";
+import { LineRow, type LineWordUpdate } from "@/views/timeline/line-row";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { PitchRowsScope } from "@/views/timeline/pitch/pitch-rows";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
@@ -29,6 +28,32 @@ interface TimelineRowsProps {
 function rowKey(_: number, row: EffectiveRow): string {
   return row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id;
 }
+
+// Rows report words by index; the store's own lines name them, so the command acts on the word that was drawn.
+function retimeWordAt(
+  lineId: string,
+  type: WordTrack,
+  wordIndex: number,
+  updates: Partial<WordTiming>,
+  adjacentIndex?: number,
+  adjacentUpdates?: Partial<WordTiming>,
+): void {
+  const project = useProjectStore.getState();
+  const address = addressAt(project.lines, lineId, type, wordIndex);
+  if (!address) return;
+  const neighbour =
+    adjacentIndex !== undefined && adjacentUpdates ? addressAt(project.lines, lineId, type, adjacentIndex) : null;
+  if (adjacentIndex !== undefined && adjacentUpdates && !neighbour) return;
+  project.commit(
+    retimeWord({ address, updates }, neighbour ? { address: neighbour, updates: adjacentUpdates ?? {} } : undefined),
+  );
+}
+
+const handleUpdateWord: LineWordUpdate = (lineId, wordIndex, updates, adjacentIndex, adjacentUpdates) =>
+  retimeWordAt(lineId, "word", wordIndex, updates, adjacentIndex, adjacentUpdates);
+
+const handleUpdateBgWord: LineWordUpdate = (lineId, wordIndex, updates, adjacentIndex, adjacentUpdates) =>
+  retimeWordAt(lineId, "bg", wordIndex, updates, adjacentIndex, adjacentUpdates);
 
 // -- Component -----------------------------------------------------------------
 
@@ -74,63 +99,6 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
 
   const groupsById = useMemo(() => new Map((groups ?? []).map((g) => [g.id, g])), [groups]);
 
-  const handleUpdateWord = useCallback(
-    (
-      lineId: string,
-      wordIndex: number,
-      updates: Partial<WordTiming>,
-      adjacentIndex?: number,
-      adjacentUpdates?: Partial<WordTiming>,
-    ) => {
-      const realLine = useProjectStore.getState().lines.find((l) => l.id === lineId);
-      if (!realLine) return;
-
-      if (isLineSynced(realLine)) {
-        const lineUpdates: Partial<LyricLine> = {};
-        if (updates.begin !== undefined) lineUpdates.begin = updates.begin;
-        if (updates.end !== undefined) lineUpdates.end = updates.end;
-        useProjectStore.getState().updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });
-        return;
-      }
-
-      if (!realLine.words) return;
-      const updatedWords = applyWordPatch(
-        realLine.words,
-        wordIndex,
-        updates,
-        adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
-      );
-      if (!updatedWords) return;
-      useProjectStore.getState().updateLineWithHistory(lineId, { words: updatedWords }, { propagateToSiblings: false });
-    },
-    [],
-  );
-
-  const handleUpdateBgWord = useCallback(
-    (
-      lineId: string,
-      wordIndex: number,
-      updates: Partial<WordTiming>,
-      adjacentIndex?: number,
-      adjacentUpdates?: Partial<WordTiming>,
-    ) => {
-      const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
-      if (!line?.backgroundWords) return;
-
-      const updatedWords = applyWordPatch(
-        line.backgroundWords,
-        wordIndex,
-        updates,
-        adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
-      );
-      if (!updatedWords) return;
-      useProjectStore
-        .getState()
-        .updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
-    },
-    [],
-  );
-
   const renderRow = useCallback(
     (_: number, row: EffectiveRow) => {
       if (row.kind === "group-header") {
@@ -157,7 +125,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         />
       );
     },
-    [groupsById, duration, handleUpdateWord, handleUpdateBgWord],
+    [groupsById, duration],
   );
 
   const totalWidth = duration * zoom;

@@ -176,4 +176,4 @@ function applyWordMoveAcrossLines(
 // -- Exports ------------------------------------------------------------------
 
 export { applyWordMoveAcrossLines };
-export type { WordMove };
+export type { MoveRejectReason, WordMove };

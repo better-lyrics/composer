@@ -1,3 +1,4 @@
+import { stretchSelection } from "@/domain/commands/word-timing";
 import { sharedTimingFanOut, timeRangeResolver } from "@/domain/group/shared-timing";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
@@ -8,8 +9,8 @@ import { useSettingsStore } from "@/stores/settings";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { selfKey } from "@/views/timeline/snap";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
-import { mapStretchTargets, stretchSelections } from "@/views/timeline/stretch-selection";
-import { STRETCH_EPS } from "@/views/timeline/stretch-targets";
+import { mapStretchTargets } from "@/domain/selection/stretch";
+import { STRETCH_EPS } from "@/domain/selection/stretch-targets";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
@@ -48,14 +49,14 @@ const COMMIT_FACTOR_EPS = 1e-3;
 // -- Helpers -------------------------------------------------------------------
 
 // Preview writes go through setTransientLines: transient states that must not
-// mark the project dirty. The committed result goes through
-// updateLinesWithHistory, which owns history and dirty flags. The action keeps
+// mark the project dirty. The committed result goes through the stretch
+// command, which owns history and dirty flags. The action keeps
 // the array reference, which the drag relies on for its external-writer check.
 function writePreviewLines(lines: LyricLine[]): void {
   useProjectStore.getState().setTransientLines(lines);
 }
 
-// Applies stretch updates to the pre-drag snapshot the way updateLinesWithHistory will commit them: each line
+// Applies stretch updates to the pre-drag snapshot the way the stretch command will commit them: each line
 // reconciled, no sibling propagation, and shared group timing copied, so the preview matches the release.
 function applyStretchUpdates(
   snapshotLines: LyricLine[],
@@ -115,9 +116,11 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       cleanupRef.current = null;
 
       const { lines: snapshotLines, groups } = useProjectStore.getState();
-      const selection = resolveAddresses(snapshotLines, useTimelineStore.getState().selectedWords);
+      const selectedAddresses = useTimelineStore.getState().selectedWords;
+      const selection = resolveAddresses(snapshotLines, selectedAddresses);
+      const duration = useAudioStore.getState().duration;
       const options = {
-        rangeOf: timeRangeResolver(snapshotLines, groups, useAudioStore.getState().duration),
+        rangeOf: timeRangeResolver(snapshotLines, groups, duration),
         minWordDuration: useSettingsStore.getState().minWordDuration,
       };
       const plan = planStretchDrag(snapshotLines, selection, { lineId, type, wordIndex, edge }, options);
@@ -218,10 +221,15 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
         }
         teardown();
         if (stillOurs && commit && dragged && Math.abs(currentFactor - 1) >= COMMIT_FACTOR_EPS) {
-          const result = stretchSelections(snapshotLines, selection, currentFactor, { ...options, anchor });
-          if (result.updates.length > 0) {
-            useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
-          }
+          useProjectStore.getState().commit(
+            stretchSelection({
+              addresses: selectedAddresses,
+              factor: currentFactor,
+              anchor,
+              minWordDuration: options.minWordDuration,
+              duration,
+            }),
+          );
         }
         onDragEndRef.current?.(dragged);
       }

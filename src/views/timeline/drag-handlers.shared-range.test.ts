@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
@@ -34,16 +33,14 @@ function seed(sharesTiming: boolean): void {
 
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
-const rangeOf = () => timeRangeResolver(store().lines, store().groups, DURATION);
 
 function dragOf(trackType: "word" | "bg", wordIndex: number, begin: number, end: number): DragData {
   return { lineId: "c1", lineIndex: 1, wordIndex, trackType, text: "go ", begin, end };
 }
 
 function reorderFirstWord(timeDelta: number): void {
-  const drag = dragOf("word", 0, 10, 11);
   const selection = [{ lineId: "c1", lineIndex: 1, wordIndex: 0, type: "word" as const }];
-  applySameLineReorder(drag, selection, store().lines, timeDelta, rangeOf(), store().updateLineWithHistory);
+  applySameLineReorder(selection, store().lines, timeDelta, DURATION);
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -83,7 +80,7 @@ describe("applyCrossLineMove with a shared time range", () => {
       wordsToMove: [{ lineId: "c1", lineIndex: 1, wordIndex: 0, type: "bg" }],
       lines: store().lines,
       timeDelta: 2.8,
-      rangeOf: rangeOf(),
+      duration: DURATION,
     });
 
     const moved = lineById("c1")?.words?.at(-1);

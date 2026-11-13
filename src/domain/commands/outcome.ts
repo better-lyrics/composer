@@ -3,6 +3,8 @@ import type { RealignRefusal } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
 import type { RawLine } from "@/domain/line/model";
 import type { SyllableAddress } from "@/domain/selection/model";
+import type { StepRefusal } from "@/domain/step-timing/step-write";
+import type { MoveRejectReason } from "@/domain/word/move-across-lines";
 
 // -- Types --------------------------------------------------------------------
 
@@ -21,7 +23,9 @@ type Refusal =
   | { reason: "uneven-syllable-splits" }
   | { reason: "needs-detach-confirm"; impacted: string[] }
   | { reason: "needs-one-word"; selected: number }
-  | { reason: "needs-one-run" };
+  | { reason: "needs-one-run" }
+  | { reason: "step"; refusal: StepRefusal }
+  | { reason: "move"; reject: MoveRejectReason };
 
 // Refusals are returned, never thrown, so a caller cannot drop one without the type saying so.
 type Applied = { root: LyricRoot; touched: string[] };
@@ -33,7 +37,7 @@ function applied(root: LyricRoot, touched: string[]): Applied {
   return { root, touched };
 }
 
-function refused(refusal: Refusal): Outcome {
+function refused(refusal: Refusal): { refused: Refusal } {
   return { refused: refusal };
 }
 

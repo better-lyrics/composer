@@ -1,5 +1,12 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { applied, changedLineIds, refused } from "@/domain/commands/outcome";
+import type { CommandContext, HistoryNote, LyricCommand } from "@/domain/commands/command";
+import {
+  type Applied,
+  type LyricRoot,
+  type Refusal,
+  applied,
+  changedLineIds,
+  refused,
+} from "@/domain/commands/outcome";
 import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import type { LinkGroup } from "@/domain/group/template";
@@ -14,6 +21,55 @@ interface EditLinesOptions {
   copiesSharedTiming?: boolean;
 }
 
+type PlannedEdit = readonly LineUpdate[] | { refused: Refusal };
+
+// -- Functions ----------------------------------------------------------------
+
+// The one way a command writes line patches: each patch lands on its line and, when asked, on its linked copies.
+function withLineUpdates(root: LyricRoot, updates: readonly LineUpdate[], propagateToSiblings: boolean): Applied {
+  const lines = [...root.lines];
+  const indexById = new Map<string, number>();
+  for (let i = 0; i < lines.length; i++) indexById.set(lines[i].id, i);
+
+  for (const { id, updates: lineUpdates } of updates) {
+    const targetIdx = indexById.get(id);
+    const target = targetIdx !== undefined ? lines[targetIdx] : undefined;
+    if (targetIdx === undefined || !target) continue;
+    lines[targetIdx] = reconcileLine({ ...target, ...lineUpdates });
+
+    const linkScope = propagateToSiblings ? getLinkScope(target) : null;
+    if (!linkScope) continue;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.id === id || !isLinkedSibling(line, linkScope)) continue;
+      lines[i] = updatedLinkedSibling(line, target, lineUpdates);
+    }
+  }
+  return applied(
+    { ...root, lines },
+    updates.map((update) => update.id),
+  );
+}
+
+// A command that plans line patches; an empty plan writes nothing.
+function lineEditCommand(
+  note: HistoryNote,
+  plan: (root: LyricRoot, ctx: CommandContext) => PlannedEdit,
+  options: EditLinesOptions = {},
+): LyricCommand {
+  const { derivesText = true, propagateToSiblings = true, copiesSharedTiming = true } = options;
+  return {
+    note,
+    derivesText,
+    copiesSharedTiming,
+    run: (root, ctx) => {
+      const planned = plan(root, ctx);
+      if ("refused" in planned) return planned;
+      return planned.length === 0 ? applied(root, []) : withLineUpdates(root, planned, propagateToSiblings);
+    },
+  };
+}
+
 // -- Commands -----------------------------------------------------------------
 
 // Generic line patch for callers that still compute lines themselves; named commands replace it.
@@ -23,30 +79,7 @@ function editLines(updates: readonly LineUpdate[], options: EditLinesOptions = {
     note: { command: "edit lines", args: updates.map((update) => update.id) },
     derivesText,
     copiesSharedTiming,
-    run: (root) => {
-      const lines = [...root.lines];
-      const indexById = new Map<string, number>();
-      for (let i = 0; i < lines.length; i++) indexById.set(lines[i].id, i);
-
-      for (const { id, updates: lineUpdates } of updates) {
-        const targetIdx = indexById.get(id);
-        const target = targetIdx !== undefined ? lines[targetIdx] : undefined;
-        if (targetIdx === undefined || !target) continue;
-        lines[targetIdx] = reconcileLine({ ...target, ...lineUpdates });
-
-        const linkScope = propagateToSiblings ? getLinkScope(target) : null;
-        if (!linkScope) continue;
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (line.id === id || !isLinkedSibling(line, linkScope)) continue;
-          lines[i] = updatedLinkedSibling(line, target, lineUpdates);
-        }
-      }
-      return applied(
-        { ...root, lines },
-        updates.map((update) => update.id),
-      );
-    },
+    run: (root) => withLineUpdates(root, updates, propagateToSiblings),
   };
 }
 
@@ -96,4 +129,5 @@ function insertEmptyLine({
 
 // -- Exports ------------------------------------------------------------------
 
-export { editLines, insertEmptyLine, patchLines, replaceLines };
+export type { EditLinesOptions, PlannedEdit };
+export { editLines, insertEmptyLine, lineEditCommand, patchLines, replaceLines, withLineUpdates };

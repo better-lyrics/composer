@@ -24,7 +24,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineDnd(lines: ReadableLine[]) {
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
 
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
@@ -107,7 +106,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
       const rangeOf = timeRangeResolver(rawLines, groups, duration);
 
       if (isAltDrag) {
-        handleAltDuplicate(event, lines, zoom, rangeOf);
+        handleAltDuplicate(event, lines, zoom, rangeOf, duration);
         return;
       }
 
@@ -129,7 +128,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
 
       if (sameLine && sameTrack) {
         if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
-        applySameLineReorder(activeData, wordsToMove, lines, timeDelta, rangeOf, updateLineWithHistory);
+        applySameLineReorder(wordsToMove, lines, timeDelta, duration);
         noteGuideSignal("timeline.move");
         noteWordDragShift(activeData.lineId, activeData.trackType, activeData.wordIndex, timeDelta);
         if (wordsToMove.length === 1) noteLoneWordMove(activeData.lineId, activeData.trackType, activeData.wordIndex);
@@ -143,11 +142,11 @@ function useTimelineDnd(lines: ReadableLine[]) {
         wordsToMove,
         lines,
         timeDelta,
-        rangeOf,
+        duration,
       });
       noteGuideSignal("timeline.move");
     },
-    [updateLineWithHistory, duration, lines],
+    [duration, lines],
   );
 
   const handleDragCancel = useCallback(() => {

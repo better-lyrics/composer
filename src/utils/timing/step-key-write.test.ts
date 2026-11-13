@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
-import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
+import { pressStepKey } from "@/domain/commands/word-timing";
+import { type ResolvedAddress, resolvedAt, toAddress } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { writeStepKey } from "@/utils/timing/step-key-write";
+import { planStepKey } from "@/utils/timing/step-key-write";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const chorus = (id: string, instanceIdx: number, begin: number): LyricLine =>
@@ -28,18 +29,23 @@ const slot = (_lineId: string, lineIndex: number, wordIndex: number, type: WordT
 };
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
-const press = (cursor: ResolvedAddress, startNext: ResolvedAddress | null, time: number) =>
-  writeStepKey({
+const press = (cursor: ResolvedAddress, startNext: ResolvedAddress | null, time: number) => {
+  const step = { key: "step" as const, time, minDuration: 0.05 };
+  const plan = planStepKey({
     lines: store().lines,
     groups: store().groups,
     cursor,
     startNext,
-    key: "step",
-    time,
-    minDuration: 0.05,
+    ...step,
     rangeOf: () => UNBOUNDED_TIME_RANGE,
-    updateLinesWithHistory: store().updateLinesWithHistory,
   });
+  if (plan?.kind !== "written") return plan;
+  const next = startNext && toAddress(startNext);
+  store().commit(
+    pressStepKey({ cursor: toAddress(cursor), startNext: next, ...step, duration: Number.POSITIVE_INFINITY }),
+  );
+  return { kind: plan.kind, endedPrevious: plan.endedPrevious };
+};
 
 describe("writeStepKey", () => {
   it("writes one step as one undo step", () => {

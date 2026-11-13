@@ -3,7 +3,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
-import { setBgWordBegin, setBgWordBoundary } from "@/utils/timing/bg-word-timing";
+import { bgWordBoundaryEdit, setBgWordBegin } from "@/utils/timing/bg-word-timing";
 
 describe("createWordTimingOps: setBoundary", () => {
   interface BoundaryCase {
@@ -19,20 +19,20 @@ describe("createWordTimingOps: setBoundary", () => {
   }
 
   function run(boundaryCase: BoundaryCase) {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    const line = boundaryCase.line ?? makeLine();
-    wordsOps.setBoundary({
-      lines: boundaryCase.lines ?? [line],
-      lineIdx: 0,
-      wordIdx: boundaryCase.wordIdx,
-      edge: boundaryCase.edge,
-      time: boundaryCase.time,
-      minDuration: boundaryCase.minDuration ?? 0.05,
-      rolling: boundaryCase.rolling,
-      syllablesFollowRolling: boundaryCase.syllablesFollowRolling ?? false,
-      ...(boundaryCase.duration !== undefined ? { range: { min: 0, max: boundaryCase.duration } } : {}),
-      updateLineWithHistory,
-    });
+    const target = (boundaryCase.lines ?? [boundaryCase.line ?? makeLine()])[0];
+    const edit =
+      target &&
+      wordsOps.boundaryEdit({
+        line: target,
+        wordIdx: boundaryCase.wordIdx,
+        edge: boundaryCase.edge,
+        time: boundaryCase.time,
+        minDuration: boundaryCase.minDuration ?? 0.05,
+        rolling: boundaryCase.rolling,
+        syllablesFollowRolling: boundaryCase.syllablesFollowRolling ?? false,
+        ...(boundaryCase.duration !== undefined ? { range: { min: 0, max: boundaryCase.duration } } : {}),
+      });
+    const calls = edit ? [edit] : [];
     return { calls, words: calls[0]?.updates.words ?? [] };
   }
 
@@ -168,14 +168,9 @@ describe("createWordTimingOps: setBoundary", () => {
     expect(run({ wordIdx: 2, edge: "end", time: 99, rolling: false }).words[2].end).toBe(99);
   });
 
-  it("calls updateLineWithHistory exactly once when rolling", () => {
+  it("plans one line update when rolling", () => {
     expect(run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: true }).calls).toHaveLength(1);
     expect(run({ wordIdx: 1, edge: "end", time: 1.5, rolling: true }).calls).toHaveLength(1);
-  });
-
-  it("passes propagateToSiblings: false", () => {
-    const { calls } = run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: true });
-    expect(calls[0].options?.propagateToSiblings).toBe(false);
   });
 
   describe("edge cases", () => {
@@ -188,19 +183,16 @@ describe("createWordTimingOps: setBoundary", () => {
     });
 
     it("no-ops when getWords returns undefined", () => {
-      const { calls, updateLineWithHistory } = captureUpdates();
-      setBgWordBoundary({
-        lines: [createLine({ text: "Lead" })],
-        lineIdx: 0,
+      const edit = bgWordBoundaryEdit({
+        line: createLine({ text: "Lead" }),
         wordIdx: 0,
         edge: "begin",
         time: 1,
         minDuration: 0.05,
         rolling: true,
         syllablesFollowRolling: false,
-        updateLineWithHistory,
       });
-      expect(calls).toHaveLength(0);
+      expect(edit).toBeNull();
     });
 
     it("never sets a begin below zero", () => {
@@ -282,19 +274,16 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
   }
 
   function runBgBoundary() {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    setBgWordBoundary({
-      lines: [bgLine()],
-      lineIdx: 0,
+    const edit = bgWordBoundaryEdit({
+      line: bgLine(),
       wordIdx: 1,
       edge: "begin",
       time: 1.5,
       minDuration: 0.05,
       rolling: false,
       syllablesFollowRolling: false,
-      updateLineWithHistory,
     });
-    return calls;
+    return edit ? [edit] : [];
   }
 
   it("setBoundary marks a background edit as manual", () => {

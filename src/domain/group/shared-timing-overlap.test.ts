@@ -7,8 +7,8 @@ import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
-import { stretchSelections } from "@/views/timeline/stretch-selection";
-import { nudgeSelectedWords } from "@/views/timeline/utils";
+import { stretchSelections } from "@/domain/selection/stretch";
+import { nudgeSelectedWords } from "@/domain/selection/nudge";
 import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------

@@ -31,9 +31,8 @@ interface NeighborContext {
 
 type WordMutator = (ctx: NeighborContext) => WordTiming;
 
-interface SetBoundaryInput {
-  lines: readonly ReadableLine[];
-  lineIdx: number;
+interface BoundaryEditInput {
+  line: ReadableLine;
   wordIdx: number;
   edge: BoundaryEdge;
   time: number;
@@ -41,7 +40,6 @@ interface SetBoundaryInput {
   rolling: boolean;
   syllablesFollowRolling: boolean;
   range?: TimeRange;
-  updateLineWithHistory: UpdateLineWithHistory;
 }
 
 interface StepEditInput {
@@ -158,9 +156,8 @@ function createWordTimingOps(config: WordFieldConfig) {
     mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) => clampEnd(ctx, newEnd));
   }
 
-  function setBoundary({
-    lines,
-    lineIdx,
+  function boundaryEdit({
+    line,
     wordIdx,
     edge,
     time,
@@ -168,12 +165,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     rolling,
     syllablesFollowRolling,
     range,
-    updateLineWithHistory,
-  }: SetBoundaryInput): void {
-    const line = lines[lineIdx];
-    if (!line) return;
+  }: BoundaryEditInput): LineUpdate | null {
     const words = getWords(line);
-    if (!words?.[wordIdx]) return;
+    if (!words?.[wordIdx]) return null;
 
     const rollNeighbour = shouldRollNeighbour({
       words,
@@ -197,10 +191,7 @@ function createWordTimingOps(config: WordFieldConfig) {
       if (rollNeighbour && next) updatedWords[wordIdx + 1] = { ...next, begin: clamped };
     }
 
-    updateLineWithHistory(line.id, boundaryUpdate(line, updatedWords), {
-      deriveText: false,
-      propagateToSiblings: false,
-    });
+    return { id: line.id, updates: boundaryUpdate(line, updatedWords) };
   }
 
   function stepEdit({ lines, lineIdx, wordIdx, key, time, minDuration, range }: StepEditInput): StepEdit {
@@ -213,10 +204,10 @@ function createWordTimingOps(config: WordFieldConfig) {
     return { kind: "written", update, endedPrevious: result.endedPrevious };
   }
 
-  return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary, stepEdit };
+  return { nudgeBegin, setBegin, nudgeEnd, setEnd, boundaryEdit, stepEdit };
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export type { StepEdit };
+export type { BoundaryEditInput, StepEdit };
 export { createWordTimingOps };

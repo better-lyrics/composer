@@ -5,7 +5,7 @@ import {
   resolveStretchTargets,
   selectedFiniteWords,
   selectionExtremes,
-} from "@/views/timeline/stretch-targets";
+} from "@/domain/selection/stretch-targets";
 
 // -- Types ---------------------------------------------------------------------
 
