@@ -4,11 +4,11 @@ import type { LinkGroup } from "@/domain/group/template";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
 import { type LineUpdate, type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { closeSlotWords, closingTime, closingUpdate, overlapEnd } from "@/domain/sync/slot-close";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
 import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -82,38 +82,6 @@ function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureC
   return timeRangeResolver(lines, ctx.groups ?? [], Number.POSITIVE_INFINITY)(line);
 }
 
-function closeSlotWords(words: readonly WordTiming[], index: number, end: number): WordTiming[] {
-  const next = [...words];
-  next[index] = { ...next[index], end: Math.max(end, next[index].begin) };
-  return next;
-}
-
-function closeSlot(line: LyricLine, slot: SyncSlot, end: number): Partial<LyricLine> | null {
-  if (line.words?.length && slot.wordIndex !== null) return { words: closeSlotWords(line.words, slot.wordIndex, end) };
-  if (isLineSynced(line)) return { end: Math.max(end, line.begin) };
-  return null;
-}
-
-// Forward taps end the previous slot at begin and forward holds close it while open; otherwise only an overlap is trimmed.
-function closingTime(
-  lines: readonly LyricLine[],
-  slot: SyncSlot | null,
-  begin: number,
-  { open, jumped }: { open: boolean; jumped: boolean },
-): number {
-  if (!open && !jumped) return begin;
-  const previous = slot ? slotBounds(lines, slot) : null;
-  if (!previous || (previous.begin === previous.end && !jumped)) return begin;
-  return Math.min(previous.end, begin);
-}
-
-function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: number): LineUpdate | null {
-  if (!slot || slotBounds(lines, slot)?.end === end) return null;
-  const line = lines[slot.lineIndex];
-  const updates = closeSlot(line, slot, end);
-  return updates ? { id: line.id, updates } : null;
-}
-
 // -- Background -----------------------------------------------------------------
 
 function backgroundFor(line: LyricLine, begin: number): { backgroundWords?: WordTiming[] } {
@@ -150,7 +118,8 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
 
   const anchor = anchorBefore(lines, ctx, "word");
   const { slot } = anchor;
-  const floor = Math.max(anchor.floor, rangeOfLine(lines, line, ctx).min);
+  const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
+  const floor = Math.max(crossLine ? 0 : anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
   const nextWord = existing[cursor.wordIndex + 1];
   const provisional = open ? begin : begin + ctx.defaultWordDuration;
@@ -165,12 +134,11 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   words = enforceOrderAround(words, cursor.wordIndex);
 
   const background = cursor.wordIndex === 0 ? backgroundFor(line, begin) : {};
-  const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
 
   return {
     update: { id: line.id, updates: { words, ...background } },
     clampedTo: ctx.time < floor ? floor : null,
-    closes: closingUpdate(lines, crossLine, closeAt),
+    closes: closingUpdate(lines, crossLine, overlapEnd(lines, crossLine, begin, ctx.defaultWordDuration) ?? closeAt),
   };
 }
 
@@ -292,5 +260,5 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 
 // -- Exports ------------------------------------------------------------------
 
-export { commitGesture };
 export type { GestureCommit, GestureContext, SyncGesture };
+export { commitGesture };

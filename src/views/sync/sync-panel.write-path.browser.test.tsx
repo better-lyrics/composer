@@ -172,13 +172,19 @@ describe("D5 tap behind the previous committed time", () => {
     assertMonotonic(lines());
   });
 
-  it("word mode, across lines: closing the previous line never writes end < begin", async () => {
+  it("word mode, across lines: an early first word overlaps the previous line", async () => {
     load([createLine({ id: "l0", text: "a b" }), createLine({ id: "l1", text: "c d" })]);
     await render(<SyncPanel />);
     await tapAt(5);
     await tapAt(6);
     await tapAt(2);
-    assertMonotonic(lines());
+    const defaultWordDuration = useSettingsStore.getState().defaultWordDuration;
+    expect(lines()[0].words?.map((w) => [w.begin, w.end])).toEqual([
+      [5, 6],
+      [6, 6 + defaultWordDuration],
+    ]);
+    expect(lines()[1].words?.[0].begin).toBe(2);
+    for (const line of lines()) assertMonotonic([line]);
   });
 
   it("line mode: backwards tap never writes previous line end < begin", async () => {
@@ -202,7 +208,8 @@ describe("song end keeps sync armed", () => {
     await settle();
     expect(useAudioStore.getState().isPlaying).toBe(true);
     await tapAt(0.2);
-    assertMonotonic(lines());
+    expect(lines()[1].words?.[0].begin).toBe(0.2);
+    for (const line of lines()) assertMonotonic([line]);
   });
 });
 

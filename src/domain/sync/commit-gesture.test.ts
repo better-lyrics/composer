@@ -70,12 +70,27 @@ describe("tap-word", () => {
     expectMonotonic(apply(lines, commit));
   });
 
-  it("regression D5: across lines, never writes end < begin", () => {
+  it("starts a line before the previous line's last word and leaves that word alone", () => {
     const lines = [
       createLine({ id: "l0", text: "a b", words: [word("a ", 5, 6), word("b", 6, 6.3)] }),
       createLine({ id: "l1", text: "c d" }),
     ];
-    expectMonotonic(apply(lines, run(lines, "tap-word", [1, 0], 2)));
+    const commit = run(lines, "tap-word", [1, 0], 2);
+    expect(commit?.clampedTo).toBeNull();
+    expect(commit?.lineUpdates).toEqual([{ id: "l1", updates: { words: [word("c ", 2, 2 + DUR)] } }]);
+  });
+
+  it("gives a held last word the default length when the next line starts before it", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 5, 6), word("b", 6, 6)] }),
+      createLine({ id: "l1", text: "c d" }),
+    ];
+    const commit = run(lines, "tap-word", [1, 0], 2);
+    expect(commit?.lineUpdates).toContainEqual({
+      id: "l0",
+      updates: { words: [word("a ", 5, 6), word("b", 6, 6 + DUR)] },
+    });
+    expect(commit?.clampedTo).toBeNull();
   });
 
   it("regression D3: a jumped re-record leaves earlier words intact and clamps to the previous end", () => {

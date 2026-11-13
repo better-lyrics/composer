@@ -121,10 +121,10 @@ describe("anchorGesture", () => {
       expect(gestureAt(lines, "tap-word", { lineIndex: 0, wordIndex: 0 }, 10).anchor).toBeNull();
     });
 
-    it("takes the floored begin of an early tap", () => {
+    it("places an early tap before the previous line where it lands", () => {
       const { anchor } = gestureAt(song(), "tap-word", { lineIndex: 3, wordIndex: 0 }, 5);
-      expect(anchor?.clampedTo).toBe(20.6);
-      expect(anchor?.start).toBe(20.6);
+      expect(anchor?.clampedTo).toBeNull();
+      expect(anchor?.start).toBe(5);
     });
   });
 
