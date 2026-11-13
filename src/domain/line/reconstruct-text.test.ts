@@ -136,9 +136,10 @@ describe("wordContentSpans", () => {
 describe("timed words written on a partly synced line", () => {
   const partly = (text: string, words: string[]): LyricLine =>
     lineFromFields({ id: "l1", agentId: "v1", text, words: words.map(w) });
-  // Words the writer kept are the same words: they keep their ids, as every writer keeps them.
+  // Words the writer kept, or timed from the untimed rest, are the same syllables: they keep their ids, as every
+  // writer keeps them.
   const keptIds = (previous: LyricLine, words: WordTiming[]): WordTiming[] => {
-    const before = [...timedSyllables(mainTrack(previous))];
+    const before = [...mainTrack(previous).syllables];
     return words.map((word) => {
       const at = before.findIndex((old) => wordKey(old.text) === wordKey(word.text));
       if (at === -1) return word;
@@ -178,6 +179,16 @@ describe("timed words written on a partly synced line", () => {
     );
     const placeholder = partly("every night in ... my dreams", ["every ", "night ", "in ", "... "]);
     expect(derivedText(placeholder, ["every ", "night ", "in ", "my "])).toBe("every night in my dreams");
+  });
+
+  it("regression: a split piece spelled like the next untimed syllable keeps that syllable", () => {
+    const previous = partly("nana na yeah", ["nana "]);
+    const [nana] = timedSyllables(mainTrack(previous));
+    const split = [
+      { ...nana, text: "na", sep: "", joinsNext: true, end: 1.5 },
+      { ...w("na "), begin: 1.5 },
+    ];
+    expect(lineText(withRoleWords(previous, "main", split))).toBe("na|na na yeah");
   });
 });
 

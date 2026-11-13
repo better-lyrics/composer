@@ -38,7 +38,7 @@ function withFreeIds(incoming: WordTiming[], existing: readonly { id: string }[]
 // is new words. Lines never share ids, so words joined from two lines never clash.
 function withIdsOf(
   words: WordTiming[] | undefined,
-  target: readonly WordTiming[] | undefined,
+  target: readonly { id: string }[] | undefined,
 ): WordTiming[] | undefined {
   if (!words) return words;
   return words.map((word, index) => ({

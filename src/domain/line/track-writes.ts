@@ -9,7 +9,6 @@ import type {
 } from "@/domain/line/model";
 import { syllablesFromText } from "@/domain/line/syllables-from-text";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack, untimedSyllable } from "@/domain/line/track";
-import { wordKey } from "@/domain/word/alignment";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Tracks -------------------------------------------------------------------
@@ -19,24 +18,13 @@ function syllableTimed<T extends LineTrack>(track: T, syllables: readonly Syllab
   return { ...rest, syllables } as T;
 }
 
-// Words added after the last one the track already had that spell the start of the untimed rest were timed from it.
-function newlyTimedCount(known: ReadonlySet<string>, words: readonly WordTiming[], rest: readonly Syllable[]): number {
-  const added = words.slice(words.findLastIndex((word) => known.has(word.id)) + 1);
-  let count = Math.min(added.length, rest.length);
-  const spells = (n: number) =>
-    added.slice(added.length - n).every((word, index) => wordKey(word.text) === wordKey(rest[index].text));
-  while (count > 0 && !spells(count)) count--;
-  return count;
-}
-
 // Untimed syllables the words did not take stay after them; a span gives way to words that are none of its own.
 function withTrackWords<T extends LineTrack>(track: T, words: readonly WordTiming[]): T {
   const own = new Set(track.syllables.map((syllable) => syllable.id));
   if (isSpanTimed(track) && !words.some((word) => own.has(word.id))) return syllableTimed(track, words);
   const taken = new Set(words.map((word) => word.id));
   const untaken = track.syllables.filter((syllable) => !isTimedSyllable(syllable) && !taken.has(syllable.id));
-  const rest = untaken.slice(newlyTimedCount(own, words, untaken));
-  return syllableTimed(track, rest.length === 0 ? words : [...words, ...rest]);
+  return syllableTimed(track, untaken.length === 0 ? words : [...words, ...untaken]);
 }
 
 function withTrackSyllables<T extends LineTrack>(track: T, syllables: readonly Syllable[]): T {

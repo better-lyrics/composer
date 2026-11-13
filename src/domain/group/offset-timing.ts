@@ -15,15 +15,16 @@ import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Timing fields ------------------------------------------------------------
 
-function offsetWords(words: readonly WordTiming[] | undefined, offset: number, target?: readonly WordTiming[]) {
-  return withIdsOf(
-    words?.map((word) => ({ ...word, begin: word.begin + offset, end: word.end + offset })),
-    target,
-  );
+// A copy has its source's structure, so the timed words land on the target's syllables in order and keep their ids.
+function offsetWords(words: readonly WordTiming[] | undefined, offset: number, target: readonly { id: string }[]) {
+  const shifted = words?.map((word) => ({ ...word, begin: word.begin + offset, end: word.end + offset }));
+  return target.length >= (shifted?.length ?? 0)
+    ? shifted?.map((word, index) => ({ ...word, id: target[index].id }))
+    : withIdsOf(shifted, target);
 }
 
 function offsetTrack<T extends LineTrack>(source: LineTrack | undefined, offset: number, target: T): T {
-  const words = offsetWords(timedSyllables(source), offset, timedSyllables(target));
+  const words = offsetWords(timedSyllables(source), offset, target.syllables);
   if (words?.length) return withTrackWords(target, words);
   if (source && isSpanTimed(source)) return withTrackSpan(target, source.begin + offset, source.end + offset);
   return withoutTrackTiming(target);
