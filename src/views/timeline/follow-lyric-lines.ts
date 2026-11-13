@@ -1,10 +1,9 @@
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
-import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
-import { queueOrder } from "@/domain/step-timing/step-queue";
+import { isInQueueOrder, queueOrder } from "@/domain/step-timing/step-queue";
 import { useProjectStore } from "@/stores/project";
 import { memoByIdentity } from "@/utils/memo-by-identity";
 import { selectionPatch } from "@/views/timeline/step-timing/step-selection";
@@ -71,9 +70,8 @@ function reorderedQueue(
     const index = lineIndexOf(lines, address.lineId);
     return index !== undefined && previous[index] === lines[index];
   });
-  if (untouched) return queue;
-  const ordered = queueOrder(lines, queue);
-  return ordered.every((address, index) => sameAddress(address, queue[index])) ? queue : ordered;
+  if (untouched || isInQueueOrder(lines, queue)) return queue;
+  return queueOrder(lines, queue);
 }
 
 function liveList<A extends SyllableAddress>(addresses: A[], isLive: (address: A) => boolean): A[] {
