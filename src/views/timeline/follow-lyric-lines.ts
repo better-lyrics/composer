@@ -1,8 +1,10 @@
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
+import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
+import { queueOrder } from "@/domain/step-timing/step-queue";
 import { useProjectStore } from "@/stores/project";
 import { memoByIdentity } from "@/utils/memo-by-identity";
 import { selectionPatch } from "@/views/timeline/step-timing/step-selection";
@@ -59,6 +61,21 @@ function liveCheck(lines: readonly LyricLine[], previous: readonly LyricLine[]) 
   };
 }
 
+// Words keep their ids when a drag reorders them, so the queue follows the new structural order.
+function reorderedQueue(
+  lines: readonly LyricLine[],
+  previous: readonly LyricLine[],
+  queue: SyllableAddress[],
+): SyllableAddress[] {
+  const untouched = queue.every((address) => {
+    const index = lineIndexOf(lines, address.lineId);
+    return index !== undefined && previous[index] === lines[index];
+  });
+  if (untouched) return queue;
+  const ordered = queueOrder(lines, queue);
+  return ordered.every((address, index) => sameAddress(address, queue[index])) ? queue : ordered;
+}
+
 function liveList<A extends SyllableAddress>(addresses: A[], isLive: (address: A) => boolean): A[] {
   const firstGone = addresses.findIndex((address) => !isLive(address));
   if (firstGone === -1) return addresses;
@@ -76,7 +93,7 @@ function liveTimelinePatch(
   const patch: AddressedPatch = {};
   const selectedWords = liveList(state.selectedWords, isLive);
   if (selectedWords !== state.selectedWords) patch.selectedWords = selectedWords;
-  const stepQueue = state.stepQueue && liveList(state.stepQueue, isLive);
+  const stepQueue = state.stepQueue && reorderedQueue(lines, previous, liveList(state.stepQueue, isLive));
   if (stepQueue !== state.stepQueue) patch.stepQueue = stepQueue?.length ? stepQueue : null;
   const cursorGone = state.selectedWords.length > 0 && selectedWords[0] !== state.selectedWords[0];
   if (cursorGone && stepQueue?.length)

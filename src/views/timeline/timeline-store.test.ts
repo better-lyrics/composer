@@ -236,4 +236,14 @@ describe("selection after a lines change", () => {
     expect(selectedTexts()).toEqual(["to"]);
     expect(useTimelineStore.getState().stepQueue).toEqual([address("w3"), address("w4")]);
   });
+
+  it("regression: a word dragged between two queued words takes its new place in the Step queue", () => {
+    useTimelineStore.getState().setStepTiming(true);
+    useTimelineStore.getState().setSelectedWords([address("w1"), address("w2"), address("w3")], true);
+    const [fall, into, to, place] = line.words ?? [];
+    const reordered = [fall, { ...to, begin: 1.5 }, into, place];
+    useProjectStore.getState().setLines([createLine({ id: "a", text: line.text, words: reordered })]);
+    expect(useTimelineStore.getState().stepQueue).toEqual([address("w1"), address("w3"), address("w2")]);
+    expect(selectedTexts()).toEqual(["Fall"]);
+  });
 });
