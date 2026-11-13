@@ -62,24 +62,20 @@ function reported(plan: GroupPlan, report?: (sharing: SharingOutcome) => void): 
   return plan;
 }
 
-function groupRepeatingSections(
-  sections: RepeatingSections,
-  report?: (sharing: SharingOutcome) => void,
-): LyricCommand {
+function groupRepeatingSections(sections: RepeatingSections, report?: (sharing: SharingOutcome) => void): LyricCommand {
   return {
     note: { command: "group sections", args: [sections.length, ...sections.starts] },
     derivesText: false,
     copiesSharedTiming: false,
     run: (root, ctx) =>
-      appliedPlan(root, reported(planRepeatingSections(root, sections, ctx.splitChar, ctx.shareTimingInNewGroups), report)),
+      appliedPlan(
+        root,
+        reported(planRepeatingSections(root, sections, ctx.splitChar, ctx.shareTimingInNewGroups), report),
+      ),
   };
 }
 
-function shareGroupTiming(
-  groupId: string,
-  duration: number,
-  report?: (sharing: SharingOutcome) => void,
-): LyricCommand {
+function shareGroupTiming(groupId: string, duration: number, report?: (sharing: SharingOutcome) => void): LyricCommand {
   return {
     note: { command: "share group timing", args: [groupId] },
     derivesText: false,
