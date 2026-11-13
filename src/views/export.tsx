@@ -184,7 +184,12 @@ const ExportPanel: React.FC = () => {
   if (lineCount === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to export" hint="Add lyrics in the Edit tab first" action={importAction} />
+        <EmptyState
+          message="No lyrics to export"
+          hint="Add lyrics in the Edit tab first"
+          goTo="edit"
+          action={importAction}
+        />
       </div>
     );
   }
@@ -192,7 +197,12 @@ const ExportPanel: React.FC = () => {
   if (!hasSyncedContent) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" action={importAction} />
+        <EmptyState
+          message="No synced content"
+          hint="Sync lyrics in the Sync tab first"
+          goTo="sync"
+          action={importAction}
+        />
       </div>
     );
   }

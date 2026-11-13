@@ -1,8 +1,9 @@
+import { useErrorAfterBlur } from "@/hooks/useErrorAfterBlur";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { focusOnMount } from "@/utils/focus-on-mount";
 import { displayHostFromUrl, ensureHttpScheme, isValidHttpUrl } from "@/utils/url";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -20,11 +21,17 @@ const CobaltInstanceEditRow: React.FC<{
   const trimmedLabel = label.trim();
   const trimmedUrl = url.trim();
   const urlValid = trimmedUrl.length > 0 && isValidHttpUrl(trimmedUrl);
-  const showUrlError = trimmedUrl.length > 0 && !urlValid;
+  const urlInvalid = trimmedUrl.length > 0 && !urlValid;
+  const urlError = useErrorAfterBlur(urlInvalid);
+  const showUrlError = urlError.shown;
+  const urlErrorId = useId();
   const canSave = trimmedLabel.length > 0 && urlValid;
 
   const submit = () => {
-    if (!canSave) return;
+    if (!canSave) {
+      urlError.reveal();
+      return;
+    }
     onSave(trimmedLabel, ensureHttpScheme(url));
   };
 
@@ -54,6 +61,9 @@ const CobaltInstanceEditRow: React.FC<{
           type="url"
           inputMode="url"
           aria-label="Instance URL"
+          aria-invalid={showUrlError}
+          aria-describedby={showUrlError ? urlErrorId : undefined}
+          onBlur={urlError.reveal}
           value={url}
           onChange={(e) => setUrl(e.target.value.replace(/\s+/g, ""))}
           onKeyDown={handleKeyDown}
@@ -69,7 +79,11 @@ const CobaltInstanceEditRow: React.FC<{
           Cancel
         </Button>
       </div>
-      {showUrlError && <span className="text-[11px] text-composer-error-text">Enter a valid http(s) URL.</span>}
+      {showUrlError && (
+        <span id={urlErrorId} className="text-[11px] text-composer-error-text select-text">
+          Enter a valid http(s) URL.
+        </span>
+      )}
     </div>
   );
 };
@@ -83,11 +97,17 @@ const CobaltInstanceAddForm: React.FC<{
   const trimmedLabel = label.trim();
   const trimmedUrl = url.trim();
   const urlValid = trimmedUrl.length > 0 && isValidHttpUrl(trimmedUrl);
-  const showUrlError = trimmedUrl.length > 0 && !urlValid;
+  const urlInvalid = trimmedUrl.length > 0 && !urlValid;
+  const urlError = useErrorAfterBlur(urlInvalid);
+  const showUrlError = urlError.shown;
+  const urlErrorId = useId();
   const canAdd = trimmedLabel.length > 0 && urlValid;
 
   const submit = () => {
-    if (!canAdd) return;
+    if (!canAdd) {
+      urlError.reveal();
+      return;
+    }
     onAdd(trimmedLabel, ensureHttpScheme(url));
     setLabel("");
     setUrl("");
@@ -121,6 +141,9 @@ const CobaltInstanceAddForm: React.FC<{
           type="url"
           inputMode="url"
           aria-label="Instance URL"
+          aria-invalid={showUrlError}
+          aria-describedby={showUrlError ? urlErrorId : undefined}
+          onBlur={urlError.reveal}
           placeholder="https://your-cobalt-instance"
           value={url}
           onChange={handleUrlChange}
@@ -134,7 +157,11 @@ const CobaltInstanceAddForm: React.FC<{
           Add
         </Button>
       </div>
-      {showUrlError && <span className="text-[11px] text-composer-error-text">Enter a valid http(s) URL.</span>}
+      {showUrlError && (
+        <span id={urlErrorId} className="text-[11px] text-composer-error-text select-text">
+          Enter a valid http(s) URL.
+        </span>
+      )}
     </div>
   );
 };

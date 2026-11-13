@@ -6,6 +6,18 @@ const PROJECT_TABS = ["import", "edit", "languages", "sync", "timeline", "previe
 
 type ProjectTab = (typeof PROJECT_TABS)[number];
 
+// -- Labels -------------------------------------------------------------------
+
+const TAB_LABELS: Record<ProjectTab, string> = {
+  import: "Import",
+  edit: "Edit",
+  languages: "Languages",
+  sync: "Sync",
+  timeline: "Timeline",
+  preview: "Preview",
+  export: "Export",
+};
+
 // -- Predicates ---------------------------------------------------------------
 
 function isProjectTab(value: unknown): value is ProjectTab {
@@ -14,5 +26,5 @@ function isProjectTab(value: unknown): value is ProjectTab {
 
 // -- Exports ------------------------------------------------------------------
 
-export { PROJECT_TABS, isProjectTab };
+export { PROJECT_TABS, TAB_LABELS, isProjectTab };
 export type { ProjectTab };

@@ -35,8 +35,23 @@ class YouTubeLoadFailedError extends Error {
   }
 }
 
+class YouTubeLoadCancelledError extends Error {
+  constructor() {
+    super("youtube_load_cancelled");
+    this.name = "YouTubeLoadCancelledError";
+  }
+}
+
 function isYouTubeLoadError(error: unknown): boolean {
-  return error instanceof YouTubeLoadFailedError || error instanceof YouTubeLoadSupersededError;
+  return (
+    error instanceof YouTubeLoadFailedError ||
+    error instanceof YouTubeLoadSupersededError ||
+    error instanceof YouTubeLoadCancelledError
+  );
+}
+
+function isYouTubeLoadCancelled(error: unknown): error is YouTubeLoadCancelledError {
+  return error instanceof YouTubeLoadCancelledError;
 }
 
 function isYouTubeLoadFailure(error: unknown): error is YouTubeLoadFailedError {
@@ -85,7 +100,8 @@ function swapVideoInPlace(videoId: string, previous: AudioSource): Promise<void>
     const swap = await swapped;
     const stillThisProject = openProjectIdSnapshot() === projectId;
     const fellBack = !isYouTubeSourceFor(useAudioStore.getState().source, videoId);
-    if (swap && stillThisProject && fellBack && isYouTubeLoadFailure(error)) {
+    const abandoned = isYouTubeLoadFailure(error) || isYouTubeLoadCancelled(error);
+    if (swap && stillThisProject && fellBack && abandoned) {
       const undo = undoSourceSwap(useProjectStore.getState().metadata, swap.beforeSwap, swap.patch);
       if (Object.keys(undo).length > 0) useProjectStore.getState().setMetadata(undo);
     }
@@ -205,6 +221,11 @@ function waitForYouTubeLoad(videoId: string): Promise<void> {
         reject(new YouTubeLoadFailedError(state.youtubeLoadError));
         return;
       }
+      if (state.youtubeLoadFailure === "cancelled") {
+        unsubscribe();
+        reject(new YouTubeLoadCancelledError());
+        return;
+      }
       if (!isYouTubeSourceFor(state.source, videoId)) {
         unsubscribe();
         reject(new YouTubeLoadSupersededError());
@@ -215,4 +236,11 @@ function waitForYouTubeLoad(videoId: string): Promise<void> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { useLoadYouTubeSource, loadVideoWithRollback, isYouTubeLoadError, isYouTubeLoadFailure, waitForYouTubeLoad };
+export {
+  useLoadYouTubeSource,
+  loadVideoWithRollback,
+  isYouTubeLoadCancelled,
+  isYouTubeLoadError,
+  isYouTubeLoadFailure,
+  waitForYouTubeLoad,
+};
