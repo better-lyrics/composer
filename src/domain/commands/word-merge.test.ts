@@ -44,7 +44,9 @@ describe("word merge command", () => {
       id: "l2",
       instanceIdx: 1,
       text: "still water runs",
-      words: ["still ", "wa", "ter runs"].map((text, index) => createWord({ text, begin: 9 + index, end: 9.8 + index })),
+      words: ["still ", "wa", "ter runs"].map((text, index) =>
+        createWord({ text, begin: 9 + index, end: 9.8 + index }),
+      ),
     });
     useProjectStore.setState({ lines: [source, crossingCopy], groups: [group] });
     const before = useProjectStore.getState().history;
