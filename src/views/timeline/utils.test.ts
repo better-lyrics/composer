@@ -1204,6 +1204,54 @@ describe("shiftSelectionsTogether · background provenance", () => {
     expect(bg).toHaveLength(2);
   });
 
+  it("regression: nudging main and background words on one line moves both in one update", () => {
+    const lines: LyricLine[] = [
+      lineFromFields({
+        id: "A",
+        text: "call me",
+        agentId: "v1",
+        words: [
+          { id: "w89", text: "call", sep: " ", begin: 4, end: 4.5, joinsNext: false },
+          { id: "w90", text: "me", sep: "", begin: 4.5, end: 5, joinsNext: false },
+        ],
+        backgroundText: "ooh",
+        backgroundWords: [{ id: "w91", text: "ooh", sep: "", begin: 4.2, end: 4.8, joinsNext: false }],
+      }),
+    ];
+    const partitioned = partitionNudgeSelections(lines, [
+      { lineId: "A", type: "word", wordIndex: 1 },
+      { lineId: "A", type: "bg", wordIndex: 0 },
+    ]);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    expect(result.updates).toHaveLength(1);
+    const moved = updatedLine(result.updates[0].updates);
+    expect(roleWords(moved, "main")?.[1].begin).toBeCloseTo(4.6);
+    expect(roleWords(moved, "bg")?.[0].begin).toBeCloseTo(4.3);
+  });
+
+  it("regression: nudging a line-timed row with its background words moves both in one update", () => {
+    const lines: LyricLine[] = [
+      lineFromFields({
+        id: "A",
+        text: "call me",
+        agentId: "v1",
+        begin: 4,
+        end: 5,
+        backgroundText: "ooh",
+        backgroundWords: [{ id: "w92", text: "ooh", sep: "", begin: 4.2, end: 4.8, joinsNext: false }],
+      }),
+    ];
+    const partitioned = partitionNudgeSelections(lines, [
+      { lineId: "A", type: "word", wordIndex: 0 },
+      { lineId: "A", type: "bg", wordIndex: 0 },
+    ]);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    expect(result.updates).toHaveLength(1);
+    const moved = updatedLine(result.updates[0].updates);
+    expect(moved && mainBounds(moved)?.begin).toBeCloseTo(4.1);
+    expect(roleWords(moved, "bg")?.[0].begin).toBeCloseTo(4.3);
+  });
+
   it("does not touch background provenance when nudging only main words", () => {
     const lines: LyricLine[] = [
       lineFromFields({

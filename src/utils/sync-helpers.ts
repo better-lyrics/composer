@@ -6,6 +6,7 @@ import type { SyncAddress } from "@/domain/sync/address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
+import { textParts } from "@/domain/word/text-parts";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
@@ -38,28 +39,18 @@ function getNudgeAmount(): number {
 // -- Functions ----------------------------------------------------------------
 
 function splitIntoWords(text: string): string[] {
-  if (!text) return [];
-  const char = getSplitCharacter();
-  return text.split(/\s+/).flatMap((w) => (w.length > 0 ? w.split(char).filter((p) => p.length > 0) : []));
+  return splitIntoWordsWithMeta(text).parts;
 }
 
 function splitIntoWordsWithMeta(
   text: string,
   char = getSplitCharacter(),
 ): { parts: string[]; trailingSpace: boolean[] } {
-  const tokens = text.split(/\s+/).filter((w) => w.length > 0);
-  const parts: string[] = [];
-  const trailingSpace: boolean[] = [];
-  for (let t = 0; t < tokens.length; t++) {
-    const syllables = tokens[t].split(char).filter((p) => p.length > 0);
-    const isLastToken = t === tokens.length - 1;
-    for (let s = 0; s < syllables.length; s++) {
-      parts.push(syllables[s]);
-      const isLastSyllable = s === syllables.length - 1;
-      trailingSpace.push(isLastSyllable && !isLastToken);
-    }
-  }
-  return { parts, trailingSpace };
+  const parts = textParts(text, char);
+  return {
+    parts: parts.map((part) => part.text),
+    trailingSpace: parts.map((part, index) => part.sep !== "" && index < parts.length - 1),
+  };
 }
 
 const formatTimeMs = (seconds: number) => formatTime(seconds, 3);

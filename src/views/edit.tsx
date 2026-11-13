@@ -40,7 +40,7 @@ import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
-import { useRenderedSplitCharacter } from "@/views/edit/use-rendered-split-character";
+import { useShownEditText } from "@/views/edit/use-shown-edit-text";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
@@ -80,9 +80,8 @@ const EditPanel: React.FC = () => {
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
-  const [rawText, setRawText] = useState(() => linesToEditText(lines));
-  const renderedSplitCharacterRef = useRef(useSettingsStore.getState().splitCharacter);
-  useRenderedSplitCharacter(renderedSplitCharacterRef, setRawText);
+  const { shownText, setRawText } = useShownEditText(lines);
+  const rawText = shownText.text;
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
@@ -103,7 +102,7 @@ const EditPanel: React.FC = () => {
       return;
     }
     setRawText(linesToEditText(lines));
-  }, [lines]);
+  }, [lines, setRawText]);
 
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
@@ -119,15 +118,18 @@ const EditPanel: React.FC = () => {
   const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
 
   // Shows the committed lyrics in the textarea only when the command changed them.
-  const commitAndShow = useCallback((command: LyricCommand): boolean => {
-    const before = useProjectStore.getState().lines;
-    useProjectStore.getState().commit(command);
-    const committed = useProjectStore.getState().lines;
-    if (committed === before) return false;
-    linesSetByUs.current = committed;
-    setRawText(linesToEditText(committed));
-    return true;
-  }, []);
+  const commitAndShow = useCallback(
+    (command: LyricCommand): boolean => {
+      const before = useProjectStore.getState().lines;
+      useProjectStore.getState().commit(command);
+      const committed = useProjectStore.getState().lines;
+      if (committed === before) return false;
+      linesSetByUs.current = committed;
+      setRawText(linesToEditText(committed));
+      return true;
+    },
+    [setRawText],
+  );
 
   const handleExtractBackgroundVocals = useCallback(() => {
     if (!commitAndShow(extractBackground(extractOptions))) return;
@@ -285,7 +287,7 @@ const EditPanel: React.FC = () => {
       pastedRef.current = false;
 
       const text = textarea.value;
-      const splitCharacter = renderedSplitCharacterRef.current;
+      const { splitCharacter } = shownText;
       const action = decideEditTextAction({
         text,
         defaultAgentId,
@@ -300,8 +302,8 @@ const EditPanel: React.FC = () => {
       // textarea on a state-less return path and the user's keystrokes persist
       // visually even though the store rejected them.
       const snapBack = () => {
-        if (textarea.value !== rawText) {
-          textarea.value = rawText;
+        if (textarea.value !== shownText.text) {
+          textarea.value = shownText.text;
         }
       };
 
@@ -355,7 +357,7 @@ const EditPanel: React.FC = () => {
       useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, rawText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
+    [confirm, defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });

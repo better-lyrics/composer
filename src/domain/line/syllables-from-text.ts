@@ -3,27 +3,15 @@ import { timedSyllables } from "@/domain/line/track";
 import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import { newWordId } from "@/domain/word/id";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { textParts } from "@/domain/word/text-parts";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Tokens -------------------------------------------------------------------
 
-const TOKEN_AND_SPACE = /(\S+)(\s*)/g;
-
-// Text split the way Edit splits it, keeping each separator as typed. Leading whitespace has no home.
+// Text split the way Edit splits it, keeping each separator as typed.
 function textSyllables(text: string, splitChar = getSplitCharacter()): UntimedSyllable[] {
-  const syllables: UntimedSyllable[] = [];
-  for (const [, token, space] of text.matchAll(TOKEN_AND_SPACE)) {
-    const parts = token.split(splitChar).filter((part) => part.length > 0);
-    parts.forEach((part, index) => {
-      const endsToken = index === parts.length - 1;
-      syllables.push({ id: newWordId(), text: part, sep: endsToken ? space : "", joinsNext: !endsToken });
-    });
-  }
-  const last = syllables.length - 1;
-  return last >= 0 && syllables[last].joinsNext
-    ? syllables.with(last, { ...syllables[last], joinsNext: false })
-    : syllables;
+  return textParts(text, splitChar).map((part) => ({ id: newWordId(), ...part }));
 }
 
 // -- Matching -----------------------------------------------------------------

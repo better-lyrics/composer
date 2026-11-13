@@ -1,4 +1,5 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
@@ -103,12 +104,12 @@ function shiftSelectionsTogether(
     !wordHasSelection || Math.abs(wordProbe.appliedDelta) === unifiedMag
       ? wordProbe
       : nudgeSelectedWords(rawLines, partitioned.wordSynced, unifiedDelta, rangeOf);
-  const lineFinal =
-    !lineHasSelection || Math.abs(lineProbe.appliedDelta) === unifiedMag
-      ? lineProbe
-      : shiftLineSyncedRows(rawLines, partitioned.lineSynced, unifiedDelta, rangeOf);
-
-  return { appliedDelta: unifiedDelta, updates: [...wordFinal.updates, ...lineFinal.updates] };
+  const lineFinal = lineHasSelection
+    ? shiftLineSyncedRows(applyLineUpdates(rawLines, wordFinal.updates), partitioned.lineSynced, unifiedDelta, rangeOf)
+    : lineProbe;
+  const shiftedLineIds = new Set(lineFinal.updates.map((update) => update.id));
+  const wordOnly = wordFinal.updates.filter((update) => !shiftedLineIds.has(update.id));
+  return { appliedDelta: unifiedDelta, updates: [...wordOnly, ...lineFinal.updates] };
 }
 
 function shiftLineSyncedRows(
@@ -210,23 +211,18 @@ function nudgeSelectedWords(
   }
 
   const appliedDelta = direction * allowedMagnitude;
-  const updates: NudgeUpdate[] = [];
+  const editsByLine = new Map<string, Partial<LyricLine>>();
   for (const group of groups.values()) {
     const wordsArray = trackWords(group.line, group.type);
     if (!wordsArray) continue;
     const updatedWords = wordsArray.map((w, i) =>
       group.indices.has(i) ? { ...w, begin: w.begin + appliedDelta, end: w.end + appliedDelta } : w,
     );
-    updates.push({
-      id: group.line.id,
-      updates:
-        group.type === "word"
-          ? mainWordsEdit(group.line, updatedWords)
-          : manualBackgroundWordEdit(group.line, updatedWords),
-    });
+    const edit = group.type === "word" ? mainWordsEdit : manualBackgroundWordEdit;
+    editsByLine.set(group.line.id, edit(group.line, updatedWords, editsByLine.get(group.line.id)));
   }
 
-  return { appliedDelta, updates };
+  return { appliedDelta, updates: [...editsByLine].map(([id, updates]) => ({ id, updates })) };
 }
 
 // -- Exports ------------------------------------------------------------------

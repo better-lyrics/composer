@@ -125,4 +125,23 @@ describe("writeStepKey", () => {
     expect(timedSyllables(backgroundTrack(lineById("e")!))[0].end).toBe(30.7);
     expect(timedSyllables(mainTrack(lineById("n")!))[0].begin).toBe(33);
   });
+
+  it("regression: a step from a main word into a background word on the same line writes both", () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "c0",
+          text: "Hold the light",
+          words: [word("Hold ", 28, 28.4), word("the ", 28.44, 28.6), word("light", 28.66, 29.5)],
+          backgroundText: "ooh",
+          backgroundWords: [word("ooh", 29.8, 30.4)],
+        }),
+      ],
+      groups: [],
+    });
+    press(slot("c0", 0, 2), slot("c0", 0, 0, "bg"), 29.6);
+    const written = lineById("c0")!;
+    expect(timedSyllables(mainTrack(written))[2].end).toBe(29.6);
+    expect(timedSyllables(backgroundTrack(written))[0].begin).toBe(29.6);
+  });
 });
