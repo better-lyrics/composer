@@ -5,7 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
-import { addressAt, type ResolvedAddress, resolveAddresses, resolvedAt, toAddress } from "@/domain/selection/resolve";
+import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "@/domain/selection/resolve";
 import type { MoveRejectReason } from "@/domain/word/move-across-lines";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { useProjectStore } from "@/stores/project";
@@ -76,7 +76,7 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
 }
 
 function resolvedWords(lines: readonly ReadableLine[], words: readonly DragWord[]): ResolvedAddress[] {
-  return words.flatMap((word) => resolvedAt(lines, word.lineIndex, word.type, word.wordIndex) ?? []);
+  return words.flatMap((word) => addressAt(lines, word.lineId, word.type, word.wordIndex) ?? []);
 }
 
 function addressesOf(lines: readonly ReadableLine[], words: readonly DragWord[]): SyllableAddress[] {
