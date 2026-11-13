@@ -4,7 +4,13 @@ import { type LyricLine, effectiveLineBrand } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { syllablesText, trackText } from "@/domain/line/text";
 import { isSpanTimed, mainTrack, timedSyllables, trackWords } from "@/domain/line/track";
-import { withMainTrack, withRoleWords, withTrackSpan, withTrackText } from "@/domain/line/track-writes";
+import {
+  withMainTrack,
+  withRoleWords,
+  withTrackSpan,
+  withTrackSyllables,
+  withTrackText,
+} from "@/domain/line/track-writes";
 import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -111,7 +117,12 @@ function effectiveMainWordEdit(
   words: WordTiming[],
   options?: { convertLineSynced: true },
 ): Partial<LyricLine> | null {
-  if (options?.convertLineSynced || !isLineSyncedSource(line)) return mainWordEditFields(rawLineOf(line), words);
+  // Converting a line-synced line writes the words over its whole track: its one drawn word stands for all of it.
+  if (options?.convertLineSynced && isLineSyncedSource(line)) {
+    const raw = rawLineOf(line);
+    return { tracks: withMainTrack(raw, withTrackSyllables(mainTrack(raw), words)).tracks };
+  }
+  if (!isLineSyncedSource(line)) return mainWordEditFields(rawLineOf(line), words);
   return words.length === 1 ? spanWrite(line, words[0]) : null;
 }
 

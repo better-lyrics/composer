@@ -4,8 +4,9 @@ import { pieceOf } from "@/domain/language/pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
-import { newWordId } from "@/domain/word/id";
+import { mainTrack, roleWords } from "@/domain/line/track";
+import { withMainTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
+import { lineTimingWordId, newWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { createGroup, createLine, createWords } from "@/test/factories";
@@ -245,6 +246,32 @@ describe("pasting onto a line-synced row", () => {
         trackType: "word",
       },
     ],
+  });
+
+  it("regression: pasting onto a line-synced line of several words writes each word once", () => {
+    // A line converted to words once and back to a line span keeps the id its drawn word had on syllable 0.
+    const fresh = lineFromFields({ id: "s3", agentId: "a", text: "one two three", begin: 10, end: 12 });
+    const main = mainTrack(fresh);
+    const renamed = main.syllables.map((syllable, index) =>
+      index === 0 ? { ...syllable, id: lineTimingWordId("s3") } : syllable,
+    );
+    const synced = withMainTrack(fresh, withTrackSpan(withTrackSyllables(main, renamed), 10, 12));
+    const updates = applyPasteToLines({
+      lines: [synced],
+      clipboard: {
+        entries: [
+          {
+            word: { id: newWordId(), text: "yeah", sep: "", begin: 13, end: 13.5, joinsNext: false },
+            lineOffset: 0,
+            trackType: "word",
+          },
+        ],
+      },
+      targetLineIndex: 0,
+      timeDelta: 0,
+      rangeOf: wholeSong(60),
+    });
+    expect(lineText(updatedLine(updates?.[0].updates)!)).toBe("one two three yeah");
   });
 
   it("regression: pasting after the line's span keeps its text and timing as the first word", () => {
