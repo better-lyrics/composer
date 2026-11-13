@@ -1,3 +1,5 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
 import { googleLanguageProvider } from "@/services/google-language-provider";
@@ -12,7 +14,7 @@ const source = "こんにちは";
 const GENERATE_ALL = /^(Generate|Regenerate) all$/;
 
 function translatedLine(language: string, text: string, id = "line"): LyricLine {
-  return {
+  return lineFromFields({
     id,
     text: source,
     agentId: "v1",
@@ -26,7 +28,7 @@ function translatedLine(language: string, text: string, id = "line"): LyricLine 
         },
       },
     },
-  };
+  });
 }
 
 function ActivityPanel() {
@@ -50,7 +52,7 @@ describe("language generation lifecycle", () => {
     transliterationRequests = 0;
     defer = false;
     useProjectStore.getState().setMetadata({ language: "ja" });
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "line", text: source, agentId: "v1" }] });
+    useProjectStore.getState().restoreLyrics({ lines: [lineFromFields({ id: "line", text: source, agentId: "v1" })] });
     useProjectStore.getState().setActiveTab("languages");
     // Deliberately ignore AbortSignal: completion guards must protect the store
     // even if a response has already arrived when the request is cancelled.
@@ -180,11 +182,14 @@ describe("language generation lifecycle", () => {
     await regenerateAll(screen);
     await expect.poll(() => pending.length).toBe(2);
     useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "line", updates: { text: "別の歌詞" } }], {
-        derivesText: true,
-        propagateToSiblings: false,
-        copiesSharedTiming: false,
-      }),
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "line", updates: { text: "別の歌詞" } }]),
+        {
+          propagateToSiblings: false,
+          copiesSharedTiming: false,
+        },
+      ),
       "pending",
     );
     await releaseRequests();
@@ -243,7 +248,7 @@ describe("language generation lifecycle", () => {
     useProjectStore.getState().setActiveTab("edit");
     await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
     useProjectStore.getState().startProjectSession();
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "line", text: source, agentId: "v1" }] });
+    useProjectStore.getState().restoreLyrics({ lines: [lineFromFields({ id: "line", text: source, agentId: "v1" })] });
     await releaseRequests();
     requestedTargets = [];
     useProjectStore.getState().setActiveTab("languages");

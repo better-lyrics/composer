@@ -1,4 +1,5 @@
 import type { LanguageTextVariant } from "@/domain/language/display";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming, hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
@@ -6,6 +7,8 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
+import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
+import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
@@ -56,13 +59,32 @@ function isStoredLine(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function hasStoredMainLyrics(line: Record<string, unknown>): boolean {
-  return typeof line.text === "string" && hasMainLyrics(line as unknown as LyricLine);
+function isStoredLyricLine(line: Record<string, unknown>): boolean {
+  return typeof line.text === "string";
+}
+
+// Saved words spell their trailing space in the text, so they are read the way a load reads them.
+function isStoredWord(word: unknown): word is SpacedWord {
+  return typeof word === "object" && word !== null && typeof (word as { text?: unknown }).text === "string";
+}
+
+// A malformed saved word counts as no word: the index never throws on a record it can list.
+function storedWords(words: unknown): WordTiming[] | undefined {
+  return Array.isArray(words) ? wordsFromSpaced(words.filter(isStoredWord)) : undefined;
 }
 
 function normalizeStoredLines(lines: unknown): LyricLine[] {
   const entries = Array.isArray(lines) ? lines : [];
-  return entries.filter(isStoredLine).filter(hasStoredMainLyrics) as unknown as LyricLine[];
+  const records = entries.filter(isStoredLine).filter(isStoredLyricLine) as unknown as LineFields[];
+  return records
+    .map((record) =>
+      lineFromFields({
+        ...record,
+        words: storedWords(record.words),
+        backgroundWords: storedWords(record.backgroundWords),
+      }),
+    )
+    .filter(hasMainLyrics);
 }
 
 function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {

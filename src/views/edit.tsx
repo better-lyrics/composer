@@ -29,9 +29,10 @@ import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
 import { historyShortcutAction } from "@/utils/history-shortcut";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
+import { detachEditPrompt } from "@/views/edit/detach-edit-prompt";
 import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
@@ -39,6 +40,7 @@ import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
+import { useRenderedSplitCharacter } from "@/views/edit/use-rendered-split-character";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
@@ -79,6 +81,8 @@ const EditPanel: React.FC = () => {
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
+  const renderedSplitCharacterRef = useRef(useSettingsStore.getState().splitCharacter);
+  useRenderedSplitCharacter(renderedSplitCharacterRef, setRawText);
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
@@ -281,12 +285,14 @@ const EditPanel: React.FC = () => {
       pastedRef.current = false;
 
       const text = textarea.value;
+      const splitCharacter = renderedSplitCharacterRef.current;
       const action = decideEditTextAction({
         text,
         defaultAgentId,
         lines,
         groups,
         modalPending: modalPendingRef.current,
+        splitCharacter,
       });
 
       // Snap the controlled DOM input back to the source-of-truth rawText whenever
@@ -307,26 +313,11 @@ const EditPanel: React.FC = () => {
       if (action.kind === "needs-confirm") {
         snapBack();
         modalPendingRef.current = true;
-        const labelText =
-          action.labels.length === 0
-            ? pluralize(action.impacted.length, "instance")
-            : action.labels.length === 1
-              ? `[${action.labels[0]}]`
-              : action.labels.map((l) => `[${l}]`).join(", ");
-
-        confirm({
-          title: `Detach ${labelText} to apply this edit?`,
-          description: `Adding or removing rows inside ${
-            action.labels.length === 1 ? `the ${labelText} group` : "these groups"
-          } will detach ${action.impacted.length === 1 ? "this instance" : "these instances"} from the link. Other instances stay linked.`,
-          confirmLabel: "Detach and apply",
-          variant: "destructive",
-          recoverable: true,
-        }).then((ok) => {
+        confirm(detachEditPrompt(action.labels, action.impacted.length)).then((ok) => {
           modalPendingRef.current = false;
           if (!ok) return;
           finalizeRun();
-          commitAndShow(applyEditTextDetaching(text, defaultAgentId));
+          commitAndShow(applyEditTextDetaching(text, defaultAgentId, splitCharacter));
         });
         return;
       }

@@ -1,3 +1,4 @@
+import { fieldUpdates } from "@/test/field-updates";
 import { useProjectStore } from "@/stores/project";
 import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
@@ -35,11 +36,14 @@ describe("createLanguageAutoRefresh failures", () => {
     expect(requests.length).toBe(failedRequests);
 
     useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a", updates: { text: "Сильный дождь" } }], {
-        derivesText: false,
-        propagateToSiblings: false,
-        copiesSharedTiming: false,
-      }),
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "a", updates: { text: "Сильный дождь" } }]),
+        {
+          propagateToSiblings: false,
+          copiesSharedTiming: false,
+        },
+      ),
       "pending",
     );
     await refresher.refreshNow();

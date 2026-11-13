@@ -1,14 +1,15 @@
 import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { withKeptSyllablePieces } from "@/domain/language/pieces";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import type { ReadableLine } from "@/domain/line/effective-words";
+import { type ReadableLine, rawLineOf } from "@/domain/line/effective-words";
+import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { convertLineToWord } from "@/domain/line/span-to-words";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
-import { convertLineToWord } from "@/utils/sync-helpers";
+import { evenlyTimedWords } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
@@ -23,13 +24,8 @@ interface LineWordsUpdate {
 type SplitTarget = Pick<SyllableAddress, "lineId" | "type">;
 
 function splitMultiWordWord(word: WordTiming): WordTiming[] {
-  const asLine: { text: string; begin: number; end: number; words?: WordTiming[] } = {
-    text: word.text,
-    begin: word.begin,
-    end: word.end,
-  };
-  const parts = convertLineToWord(asLine).words;
-  if (!parts || parts.length < 2) return [word];
+  const parts = evenlyTimedWords(word.text, word.begin, word.end);
+  if (parts.length < 2) return [word];
   const { joinsNext, ...base } = word;
   const lastIndex = parts.length - 1;
   return parts.map((part, index) => ({
@@ -61,15 +57,16 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
   for (const [id, tracks] of tracksByLine) {
     const realLine = rawLinesById.get(id);
     if (!realLine) continue;
-    const lineUpdates: Partial<LyricLine> = {};
+    let lineUpdates: Partial<LyricLine> = {};
     if (tracks.has("word") && isLineSynced(realLine)) {
       const converted = convertLineToWord(realLine);
-      if (converted.words) Object.assign(lineUpdates, { words: converted.words, begin: undefined, end: undefined });
+      if (converted !== realLine) lineUpdates = { tracks: converted.tracks };
     }
     const bgWords = timedSyllables(backgroundTrack(realLine));
     const splitBg = tracks.has("bg") ? splitMultiWordBgWords(bgWords) : null;
     if (splitBg) {
-      Object.assign(lineUpdates, manualBackgroundWordEdit(splitBg), {
+      lineUpdates = manualBackgroundWordEdit(realLine, splitBg, {
+        ...lineUpdates,
         languages: withKeptSyllablePieces(realLine, "bg", bgWords, splitBg),
       });
     }
@@ -86,16 +83,18 @@ function computeSplitSelections(
   updates: LineWordsUpdate[],
   effectiveLines: readonly ReadableLine[],
 ): SyllableAddress[] {
-  const shownLineIds = new Set(effectiveLines.map((line) => line.id));
+  const shownById = new Map(effectiveLines.map((line) => [line.id, rawLineOf(line)]));
   const selections: SyllableAddress[] = [];
   for (const update of updates) {
-    if (!shownLineIds.has(update.id)) continue;
+    const shown = shownById.get(update.id);
+    if (!shown) continue;
+    const written = { ...shown, ...update.updates };
     const tracks = [
-      ["word", update.updates.words],
-      ["bg", update.updates.backgroundWords],
+      ["word", mainTrack(written) !== mainTrack(shown) ? timedSyllables(mainTrack(written)) : []],
+      ["bg", backgroundTrack(written) !== backgroundTrack(shown) ? timedSyllables(backgroundTrack(written)) : []],
     ] as const;
     for (const [type, words] of tracks) {
-      for (const word of words ?? []) selections.push({ lineId: update.id, type, syllableId: word.id });
+      for (const word of words) selections.push({ lineId: update.id, type, syllableId: word.id });
     }
   }
   return selections;

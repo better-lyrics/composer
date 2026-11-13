@@ -32,10 +32,15 @@ function incomingUnits(words: WordTiming[], existing: readonly WordTiming[]): Ta
 // Merges incoming words into an existing word track in time order. Incoming words keep their own
 // internal structure, and every seam between existing and incoming content, or any join whose
 // syllable no longer follows it, becomes a word boundary.
-function mergeWordsIntoTrack(existing: WordTiming[], incoming: WordTiming[]): WordTiming[] {
+// `untimed` are the track's untimed syllables, whose ids incoming words must not take either.
+function mergeWordsIntoTrack(
+  existing: WordTiming[],
+  incoming: WordTiming[],
+  untimed: readonly { id: string }[] = [],
+): WordTiming[] {
   if (incoming.length === 0) return existing;
 
-  const freshIncoming = withFreeIds(incoming, existing);
+  const freshIncoming = withFreeIds(incoming, [...existing, ...untimed]);
   const successor = new Map<WordTiming, WordTiming>();
   for (const words of [existing, freshIncoming]) words.forEach((word, i) => successor.set(word, words[i + 1]));
   const existingUnits = existing.map((word): TaggedWord[] => [{ word, isIncoming: false }]);

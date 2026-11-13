@@ -1,3 +1,5 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { mainTrack } from "@/domain/line/track";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import type { LyricLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
@@ -67,26 +69,33 @@ describe("replacedInstances", () => {
 
     it("reports timed background words that move", () => {
       const background = (begin: number) =>
-        createLine({ ...lineSynced("b", 1, 40), backgroundWords: [{ text: "oh", begin, end: begin + 0.4 }] });
+        createLine({
+          ...fieldsOfLine(lineSynced("b", 1, 40)),
+          backgroundWords: [{ text: "oh", begin, end: begin + 0.4 }],
+        });
       expect(replacedInstances([background(40.2)], [background(40.6)])).toEqual([{ groupId: "g1", instanceIdx: 1 }]);
     });
 
     it("ignores lines outside every group and lines that are gone", () => {
       const loose = createLine({ id: "v", text: "walk", begin: 1, end: 2 });
-      expect(replacedInstances([loose, lineSynced("b", 1, 40)], [createLine({ ...loose, begin: 5, end: 6 })])).toEqual(
-        [],
-      );
+      expect(
+        replacedInstances([loose, lineSynced("b", 1, 40)], [createLine({ ...fieldsOfLine(loose), begin: 5, end: 6 })]),
+      ).toEqual([]);
     });
   });
 
   describe("invariants", () => {
     it("lists each instance once", () => {
       const before = [
-        createLine({ ...lineSynced("a", 1, 40), templateLineIdx: 0 }),
-        createLine({ ...lineSynced("b", 1, 43), templateLineIdx: 1 }),
+        createLine({ ...fieldsOfLine(lineSynced("a", 1, 40)), templateLineIdx: 0 }),
+        createLine({ ...fieldsOfLine(lineSynced("b", 1, 43)), templateLineIdx: 1 }),
       ];
       const after = before.map((line) =>
-        createLine({ ...line, begin: (line.begin ?? 0) + 1, end: (line.end ?? 0) + 1 }),
+        createLine({
+          ...fieldsOfLine(line),
+          begin: (mainTrack(line).begin ?? 0) + 1,
+          end: (mainTrack(line).end ?? 0) + 1,
+        }),
       );
       expect(replacedInstances(before, after)).toEqual([{ groupId: "g1", instanceIdx: 1 }]);
     });

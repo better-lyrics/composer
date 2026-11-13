@@ -1,16 +1,16 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LanguagePiece } from "@/domain/language/model";
 import { withAddedPieces } from "@/domain/language/pieces";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
 import {
   type ReadableLine,
   effectiveMainWordEdit,
   effectiveTrackWords,
   effectiveWords,
+  rawLineOf,
 } from "@/domain/line/effective-words";
+import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
-import type { WordTrack } from "@/domain/line/tracks";
+import { backgroundTrack, timedSyllables, type WordTrack, untimedSyllablesOf } from "@/domain/line/track";
 import { withNewId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -91,16 +91,18 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
       if (entry.piece) (entry.trackType === "word" ? mainPieces : bgPieces)[newWord.id] = entry.piece;
     }
 
-    const lineUpdates: Partial<LyricLine> = {};
+    let lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      const merged = mergeWordsIntoTrack(effectiveWords(line), newWords);
-      Object.assign(lineUpdates, effectiveMainWordEdit(line, merged, { convertLineSynced: true }));
+      const merged = mergeWordsIntoTrack(effectiveWords(line), newWords, untimedSyllablesOf(rawLineOf(line), "main"));
+      lineUpdates = effectiveMainWordEdit(line, merged, { convertLineSynced: true });
     }
     if (newBgWords.length > 0) {
-      Object.assign(
-        lineUpdates,
-        manualBackgroundWordEdit(mergeWordsIntoTrack(timedSyllables(backgroundTrack(line)), newBgWords)),
+      const merged = mergeWordsIntoTrack(
+        timedSyllables(backgroundTrack(line)),
+        newBgWords,
+        untimedSyllablesOf(rawLineOf(line), "bg"),
       );
+      lineUpdates = manualBackgroundWordEdit(line, merged, lineUpdates);
     }
 
     const languages = withAddedPieces(withAddedPieces(line.languages, "main", mainPieces), "bg", bgPieces);

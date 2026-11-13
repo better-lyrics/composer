@@ -7,11 +7,8 @@ import type { LineUpdate } from "@/domain/line/model";
 
 // -- Commands -----------------------------------------------------------------
 
-// Timing only: deriving text would drop the untimed words of partly synced lines.
 function applyAlignedTimings(updates: readonly LineUpdate[]): LyricCommand {
-  return lineEditCommand({ command: "align lines", args: updates.map((update) => update.id) }, () => updates, {
-    derivesText: false,
-  });
+  return lineEditCommand({ command: "align lines", args: updates.map((update) => update.id) }, () => updates);
 }
 
 // Joins the split's step (mode "amend"); the shared copy runs here so it is part of that step without a copy ping.
@@ -19,7 +16,6 @@ function retimeNewSyllables(updates: readonly LineUpdate[]): LyricCommand {
   const ids = updates.map((update) => update.id);
   return {
     note: { command: "retime new syllables", args: ids },
-    derivesText: false,
     copiesSharedTiming: false,
     run: (root) => {
       const shared = sharedTimingFanOut(root.lines, applyLineUpdates(root.lines, updates), root.groups, ids);

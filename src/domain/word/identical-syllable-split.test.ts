@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
 import { createLine } from "@/test/factories";
 
@@ -29,8 +29,8 @@ describe("applySyllableSplitToLines", () => {
       createLine({ id: "l2", words: [{ text: "running", begin: 2, end: 3 }] }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], false);
-    expect(result[0].words?.map((word) => word.joinsNext)).toEqual([true, false]);
-    expect(result[1].words?.map((word) => word.joinsNext)).toEqual([true, false]);
+    expect(roleWords(result[0], "main")?.map((word) => word.joinsNext)).toEqual([true, false]);
+    expect(roleWords(result[1], "main")?.map((word) => word.joinsNext)).toEqual([true, false]);
   });
 
   it("preserves trailing space on the last syllable when the source had one", () => {

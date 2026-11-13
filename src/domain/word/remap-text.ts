@@ -6,8 +6,8 @@ import { synthesizeBracketedWord } from "@/utils/word-timing";
 
 // -- Helpers ------------------------------------------------------------------
 
-function tokenizeWordTexts(text: string): string[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+function tokenizeWordTexts(text: string, splitChar?: string): string[] {
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text, splitChar);
   return parts.map((part, i) => part + (trailingSpace[i] ? " " : ""));
 }
 
@@ -38,8 +38,8 @@ function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: n
   return { begin: prevEnd, end: Math.max(prevEnd, nextBegin) };
 }
 
-function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string): WordTiming[] {
-  const texts = tokenizeWordTexts(newText);
+function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar?: string): WordTiming[] {
+  const texts = tokenizeWordTexts(newText, splitChar);
   if (texts.length === oldWords.length) {
     const remapped = oldWords.map((oldWord, i) => ({ ...oldWord, ...splitTrailingWhitespace(texts[i]) }));
     return joinedToTypedText(

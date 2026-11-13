@@ -1,3 +1,5 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldUpdates } from "@/test/field-updates";
 import { useProjectStore } from "@/stores/project";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { describe, expect, it } from "vitest";
@@ -17,7 +19,7 @@ function importDuet(): void {
 
 function timelineEdit(): void {
   const [first] = useProjectStore.getState().lines;
-  useProjectStore.getState().commit(pasteLines([{ id: first.id, updates: { begin: 1.5, end: 2 } }]));
+  useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: first.id, updates: { begin: 1.5, end: 2 } }])));
 }
 
 const agentNames = () => useProjectStore.getState().agents.map((agent) => agent.name);
@@ -33,7 +35,7 @@ describe("writes outside history leave a pending snapshot", () => {
       useProjectStore.getState().undo();
 
       expect(agentNames()).toEqual(["Lead", undefined]);
-      expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 1, end: 2 });
+      expect(fieldsOfLine(useProjectStore.getState().lines[0])).toMatchObject({ begin: 1, end: 2 });
     });
 
     it("regression: undo after restoring a song identity and a timeline edit keeps the restored names", () => {

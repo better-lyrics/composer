@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
+import { trackWords } from "@/domain/line/track";
 import {
   STRETCH_EPS,
   type StretchAnchor,

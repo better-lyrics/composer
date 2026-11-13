@@ -1,5 +1,6 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { getAgentColor } from "@/domain/agent/colors";
+import { mainTrack } from "@/domain/line/track";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { sameAddress } from "@/domain/selection/identity";
 import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
@@ -167,9 +168,8 @@ const TimelinePanel: React.FC = () => {
 
   const handleAudioDrop = useLoadAudioFile();
 
-  const dragColor = activeDrag
-    ? getAgentColor(effectiveLines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "")
-    : "#888";
+  const dragLine = activeDrag ? effectiveLines.find((l) => l.id === activeDrag.lineId) : undefined;
+  const dragColor = activeDrag ? getAgentColor(dragLine ? mainTrack(dragLine).agentId : "") : "#888";
 
   const dragCells = useMemo(
     () => (activeDrag && dragZoom !== null ? dragGhostCells(activeDrag, dragZoom, effectiveLines) : null),

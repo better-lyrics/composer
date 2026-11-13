@@ -1,3 +1,6 @@
+import { backgroundTrack, roleWords } from "@/domain/line/track";
+import { backgroundText } from "@/domain/line/text";
+import { updatedLine, patchOf } from "@/test/field-updates";
 import { describe, expect, it } from "vitest";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
@@ -29,7 +32,7 @@ describe("createWordTimingOps: setBoundary", () => {
       ...(boundaryCase.duration !== undefined ? { range: { min: 0, max: boundaryCase.duration } } : {}),
     });
     const calls = edit ? [edit] : [];
-    return { calls, words: calls[0]?.updates.words ?? [] };
+    return { calls, words: roleWords(updatedLine(calls[0]?.updates), "main") ?? [] };
   }
 
   const gappedLine = () =>
@@ -245,10 +248,10 @@ describe("createWordTimingOps: setBoundary", () => {
 
     it("does not modify the input words array", () => {
       const line = makeLine();
-      const snapshot = structuredClone(line.words);
+      const snapshot = structuredClone(roleWords(line, "main"));
       const { calls } = run({ line, wordIdx: 1, edge: "begin", time: 1.5, rolling: true });
-      expect(line.words).toEqual(snapshot);
-      expect(calls[0].updates.words).not.toBe(line.words);
+      expect(roleWords(line, "main")).toEqual(snapshot);
+      expect(roleWords(updatedLine(calls[0].updates), "main")).not.toBe(roleWords(line, "main"));
     });
   });
 });
@@ -280,25 +283,27 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
 
   it("setBoundary marks a background edit as manual", () => {
     const calls = runBgBoundary();
-    expect(calls[0].updates.backgroundTextSource).toBe("manual");
-    expect((calls[0].updates.backgroundWords ?? [])[1].begin).toBe(1.5);
+    expect(updatedLine(calls[0].updates) && backgroundTrack(updatedLine(calls[0].updates)!)?.source).toBe("manual");
+    expect((roleWords(updatedLine(calls[0].updates), "bg") ?? [])[1].begin).toBe(1.5);
   });
 
   it("setBoundary leaves backgroundText unchanged for a timing-only edit", () => {
-    expect(runBgBoundary()[0].updates.backgroundText).toBe("ooh aah");
+    expect(backgroundText(updatedLine(runBgBoundary()[0].updates))).toBe("ooh aah");
   });
 
   it("setBgWordBegin still writes raw, leaving background provenance untouched", () => {
     const calls: LineUpdate[] = [];
-    retimeInto(calls, bgWordRetimeEdit, "begin", { to: 1.5 }, [bgLine()], 0, 1);
-    expect("backgroundTextSource" in calls[0].updates).toBe(false);
-    expect("backgroundText" in calls[0].updates).toBe(false);
-    expect((calls[0].updates.backgroundWords ?? [])[1].begin).toBe(1.5);
+    const line = bgLine();
+    retimeInto(calls, bgWordRetimeEdit, "begin", { to: 1.5 }, [line], 0, 1);
+    expect("backgroundTextSource" in patchOf(calls[0].updates, line)).toBe(false);
+    expect("backgroundText" in patchOf(calls[0].updates, line)).toBe(false);
+    expect((roleWords(updatedLine(calls[0].updates), "bg") ?? [])[1].begin).toBe(1.5);
   });
 
   it("an instance without a buildBoundaryUpdate hook writes only the word array", () => {
     const calls: LineUpdate[] = [];
-    retimeInto(calls, bgOps.retimeEdit, "begin", { to: 1.5 }, [bgLine()], 0, 1);
-    expect(Object.keys(calls[0].updates)).toEqual(["backgroundWords"]);
+    const line = bgLine();
+    retimeInto(calls, bgOps.retimeEdit, "begin", { to: 1.5 }, [line], 0, 1);
+    expect(Object.keys(patchOf(calls[0].updates, line))).toEqual(["backgroundWords"]);
   });
 });

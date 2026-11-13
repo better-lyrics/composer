@@ -1,6 +1,6 @@
 import { buildProjectBundle } from "@/lib/project-bundle";
 import { type ProjectFile, projectFileFrom } from "@/lib/project-file";
-import type { SavedProject } from "@/lib/saved-project";
+import { type SavedProject, savedLines } from "@/lib/saved-project";
 import { createGroup, createLine } from "@/test/factories";
 import { storedProject } from "@/test/projects";
 
@@ -17,10 +17,10 @@ function lustForLifeProject(overrides: Partial<SavedProject> = {}): ProjectFile 
         { id: "v1", type: "person", name: "Lana" },
         { id: "v2", type: "person", name: "Abel" },
       ],
-      lines: [
+      lines: savedLines([
         createLine({ id: "lust-1", text: "Climb up the H of the Hollywood sign", begin: 12, end: 15 }),
         createLine({ id: "lust-2", text: "In these stolen moments", agentId: "v2", groupId: "chorus", instanceIdx: 0 }),
-      ],
+      ]),
       groups: [createGroup({ id: "chorus", label: "Chorus" })],
       audioSource: { kind: "file", name: "lust-for-life.opus" },
       ...overrides,
@@ -41,7 +41,7 @@ function backupText(titles: readonly string[]): string {
     id: `backup-${index}`,
     project: storedProject({
       metadata: { title, artists: [], album: "", duration: 0 },
-      lines: [createLine({ text: `${title} line` })],
+      lines: savedLines([createLine({ text: `${title} line` })]),
     }),
   }));
   return JSON.stringify(buildProjectBundle(sources, 1_759_300_000_000));

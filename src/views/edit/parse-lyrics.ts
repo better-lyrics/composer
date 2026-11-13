@@ -1,3 +1,4 @@
+import { mainTrack } from "@/domain/line/track";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
@@ -34,7 +35,7 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
       isEmpty,
       hasBrackets: /\[.*?\]/.test(line),
       hasTiming,
-      agentId: lyricLine?.agentId ?? defaultAgentId,
+      agentId: (lyricLine && mainTrack(lyricLine).agentId) ?? defaultAgentId,
       backgroundText: lyricLine && backgroundText(lyricLine),
       groupId: lyricLine?.groupId,
       instanceIdx: lyricLine?.instanceIdx,

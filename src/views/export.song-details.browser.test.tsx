@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord } from "@/test/factories";
@@ -53,7 +54,7 @@ describe("ExportPanel · imported song details", () => {
       savedAt: Date.now(),
       metadata: { title: "Imported", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
-      lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+      lines: savedLines([createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })]),
       groups: [],
       granularity: "word" as const,
     };

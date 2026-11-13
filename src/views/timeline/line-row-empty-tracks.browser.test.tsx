@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
@@ -121,7 +123,7 @@ describe("EmptyWordTrack", () => {
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 0) }));
 
-      expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+      expect(roleWords(useProjectStore.getState().lines[0], "main")).toBeUndefined();
     });
   });
 });
@@ -170,7 +172,7 @@ describe("EmptyBgTrack", () => {
   describe("regressions", () => {
     it("regression: times existing untimed bg text instead of replacing it with a placeholder", async () => {
       useAudioStore.setState({ duration: 30 });
-      const zone = await renderBgTrack({ ...syncedLine(), backgroundText: "ooh ah" });
+      const zone = await renderBgTrack(lineFromFields({ ...fieldsOfLine(syncedLine()), backgroundText: "ooh ah" }));
 
       zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
@@ -183,12 +185,16 @@ describe("EmptyBgTrack", () => {
 
   describe("edge cases", () => {
     it("truncates background text longer than 40 characters", async () => {
-      const zone = await renderBgTrack({ ...syncedLine(), backgroundText: "b".repeat(41) });
+      const zone = await renderBgTrack(
+        lineFromFields({ ...fieldsOfLine(syncedLine()), backgroundText: "b".repeat(41) }),
+      );
       expect(zone.textContent).toBe(`${"b".repeat(40)}...`);
     });
 
     it("keeps background text of exactly 40 characters whole", async () => {
-      const zone = await renderBgTrack({ ...syncedLine(), backgroundText: "c".repeat(40) });
+      const zone = await renderBgTrack(
+        lineFromFields({ ...fieldsOfLine(syncedLine()), backgroundText: "c".repeat(40) }),
+      );
       expect(zone.textContent).toBe("c".repeat(40));
     });
   });
@@ -228,7 +234,7 @@ describe("empty tracks in a group that shares timing", () => {
     useAudioStore.setState({ duration: 20 });
     useTimelineStore.setState({ zoom: 100 });
     useSettingsStore.setState({ defaultWordDuration: 1, minWordDuration: 0.05 });
-    const target = { ...verse("b0", 0, 1), ...(track === "bg" ? { backgroundText: "oh yeah no" } : {}) };
+    const target = withFields(verse("b0", 0, 1), track === "bg" ? { backgroundText: "oh yeah no" } : {});
     useProjectStore.setState({
       lines: [verse("a0", 0, 0, 3), target, verse("a1", 1, 0, 10), verse("b1", 1, 1)],
       groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
@@ -252,7 +258,7 @@ describe("empty tracks in a group that shares timing", () => {
 
     track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
 
-    await expect.poll(() => lineById("b0")?.words?.length).toBe(3);
+    await expect.poll(() => roleWords(lineById("b0"), "main")?.length).toBe(3);
     expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBe(12);
     expect(timedSyllables(mainTrack(lineById("b0")!)).at(-1)?.end).toBeLessThanOrEqual(13);
     expect(timedSyllables(mainTrack(lineById("b1")!))[0].begin).toBe(19);
@@ -265,7 +271,7 @@ describe("empty tracks in a group that shares timing", () => {
 
     track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
 
-    await expect.poll(() => lineById("b0")?.backgroundWords?.length).toBe(3);
+    await expect.poll(() => roleWords(lineById("b0"), "bg")?.length).toBe(3);
     expect(timedSyllables(backgroundTrack(lineById("b0")!)).at(-1)?.end).toBeLessThanOrEqual(13);
     expect(timedSyllables(backgroundTrack(lineById("b1")!)).at(-1)?.end).toBeLessThanOrEqual(20);
   });
@@ -276,10 +282,10 @@ describe("empty tracks in a group that shares timing", () => {
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
 
-      await expect.poll(() => lineById("b0")?.words?.length).toBe(3);
+      await expect.poll(() => roleWords(lineById("b0"), "main")?.length).toBe(3);
       expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBeCloseTo(12.9, 5);
       expect(timedSyllables(mainTrack(lineById("b0")!)).at(-1)?.end).toBeCloseTo(15.9, 5);
-      expect(lineById("b1")?.words).toBeUndefined();
+      expect(roleWords(lineById("b1"), "main")).toBeUndefined();
     });
   });
 });

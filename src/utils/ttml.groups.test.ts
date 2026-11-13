@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -72,14 +73,14 @@ describe("ttml export · per-line group attrs", () => {
     id: string,
     extras: Partial<{ groupId: string; instanceIdx: number; templateLineIdx: number; detached: boolean }>,
   ) {
-    return {
+    return lineFromFields({
       id,
       text: "hello",
       agentId: "v1",
       begin: 0,
       end: 1,
       ...extras,
-    };
+    });
   }
 
   it("emits composer:groupId/instanceIdx/templateLineIdx on grouped lines", () => {
@@ -156,7 +157,7 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "I love you",
           agentId: "v1",
@@ -165,7 +166,7 @@ describe("ttml import · per-line group attrs", () => {
           groupId: "g1",
           instanceIdx: 2,
           templateLineIdx: 0,
-        },
+        }),
       ],
       groups,
     });
@@ -182,7 +183,7 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "yeah",
           agentId: "v1",
@@ -192,7 +193,7 @@ describe("ttml import · per-line group attrs", () => {
           instanceIdx: 0,
           templateLineIdx: 1,
           detached: true,
-        },
+        }),
       ],
       groups,
     });
@@ -205,7 +206,7 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "hi",
           agentId: "v1",
@@ -214,7 +215,7 @@ describe("ttml import · per-line group attrs", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-        },
+        }),
       ],
       groups: [],
     });
@@ -276,7 +277,7 @@ describe("ttml export · explicit word attribute", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "clean dirty",
           agentId: "v1",
@@ -284,7 +285,7 @@ describe("ttml export · explicit word attribute", () => {
             { id: "w1", text: "clean", sep: " ", begin: 1, end: 1.5, joinsNext: false },
             { id: "w2", text: "dirty", sep: "", begin: 1.5, end: 2, explicit: true, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     expect(ttml).toContain(">clean</span>");
@@ -297,7 +298,7 @@ describe("ttml export · explicit word attribute", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "main",
           agentId: "v1",
@@ -307,7 +308,7 @@ describe("ttml export · explicit word attribute", () => {
             { id: "w4", text: "oh", sep: " ", begin: 2, end: 2.25, joinsNext: false },
             { id: "w5", text: "shit", sep: "", begin: 2.25, end: 2.5, explicit: true, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     expect(ttml).toContain(`<span ttm:role="x-bg">`);

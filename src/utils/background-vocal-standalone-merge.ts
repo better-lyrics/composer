@@ -1,10 +1,9 @@
-import { applyBackground, type BackgroundSource, withSeededBackground } from "@/domain/line/background";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { type BackgroundSource, withBackground, withSeededBackground } from "@/domain/line/background";
+import { effectiveBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack } from "@/domain/line/track";
+import { backgroundText, syllablesText } from "@/domain/line/text";
+import { backgroundTrack, roleWords } from "@/domain/line/track";
 import { lastEnd } from "@/domain/word/bounds";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
@@ -27,12 +26,13 @@ function carriedBackgroundWords(
   preserveBrackets: boolean,
   untimedSpan: TimeSpan | null,
 ): WordTiming[] | null {
-  const words = standalone.words;
+  const words = roleWords(standalone, "main");
   let carry: WordTiming[] | null;
   if (words && words.length > 0) {
     carry = remapWordTextsPreservingTiming(words, bgText);
   } else if (isLineSynced(standalone)) {
-    carry = createInitialBgWords(bgText, standalone.begin, standalone.end);
+    const span = mainBounds(standalone);
+    carry = span && createInitialBgWords(bgText, span.begin, span.end);
   } else if (untimedSpan) {
     carry = createInitialBgWords(bgText, untimedSpan.begin, untimedSpan.end);
   } else {
@@ -63,7 +63,7 @@ function mergeStandaloneInto(
   const prevIsExtraction = backgroundTrack(prev)?.source === "extraction";
   const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
   const baseText = prevIsStaleExtraction ? undefined : backgroundText(prev);
-  const storedBaseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
+  const storedBaseWords = prevIsStaleExtraction ? undefined : roleWords(prev, "bg");
   const carried = carriedBackgroundWords(
     standalone,
     bgText,
@@ -71,7 +71,7 @@ function mergeStandaloneInto(
     prevTrailingBracketFromSamePass && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
   );
   const baseWords =
-    carried?.length && !prevIsStaleExtraction ? withSeededBackground(prev).backgroundWords : storedBaseWords;
+    carried?.length && !prevIsStaleExtraction ? roleWords(withSeededBackground(prev), "bg") : storedBaseWords;
 
   // Source for a result that keeps the prev base: a surviving extraction base
   // is necessarily fresh same-pass output (stale extraction was dropped above),
@@ -82,27 +82,27 @@ function mergeStandaloneInto(
     if (baseWords && baseWords.length > 0) {
       const canSeamStrip = preserveBrackets && prevTrailingBracketFromSamePass;
       const combined = joinBracketedCarriedWords(baseWords, carried, canSeamStrip);
-      return applyBackground(prev, {
+      return withBackground(prev, {
         words: combined,
-        text: reconstructLineText(combined, getSplitCharacter()),
+        text: syllablesText(combined, getSplitCharacter()),
         source: keptBaseSource,
       });
     }
     if (!baseText) {
-      return applyBackground(prev, {
+      return withBackground(prev, {
         words: carried,
-        text: reconstructLineText(carried, getSplitCharacter()),
+        text: syllablesText(carried, getSplitCharacter()),
         source: "extraction",
       });
     }
-    return applyBackground(prev, {
+    return withBackground(prev, {
       text: joinBackgroundText(baseText, bgText, preserveBrackets, prevTrailingBracketFromSamePass),
       source: keptBaseSource,
     });
   }
 
   if (baseWords && baseWords.length > 0) return null;
-  return applyBackground(prev, {
+  return withBackground(prev, {
     text: joinBackgroundText(baseText, bgText, preserveBrackets, prevTrailingBracketFromSamePass),
     source: baseText ? keptBaseSource : "extraction",
   });

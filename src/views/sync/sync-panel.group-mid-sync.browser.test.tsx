@@ -1,3 +1,4 @@
+import { mainTrack, roleWords } from "@/domain/line/track";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -42,7 +43,7 @@ function load(granularity: "line" | "word") {
 const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
 const firstBegin = (id: string) => {
   const line = lineById(id);
-  return line?.words?.[0]?.begin ?? line?.begin;
+  return (line && roleWords(line, "main"))?.[0]?.begin ?? (line && mainTrack(line).begin);
 };
 
 async function tapAt(time: number, changed: () => unknown): Promise<void> {
@@ -103,7 +104,7 @@ describe("SyncPanel · grouping mid-sync", () => {
   describe("word sync", () => {
     beforeEach(() => load("word"));
 
-    const wordBegins = (id: string) => lineById(id)?.words?.map((word) => word.begin);
+    const wordBegins = (id: string) => roleWords(lineById(id), "main")?.map((word) => word.begin);
 
     async function renderEditAndSync() {
       return render(

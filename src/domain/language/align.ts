@@ -17,6 +17,8 @@ import {
   twoSpaceSeparatorRegions,
 } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { roleWords } from "@/domain/line/track";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -204,8 +206,8 @@ interface SideSource {
 
 function sideSource(line: LyricLine, side: LanguageSide): SideSource {
   return side === "main"
-    ? { text: line.text, words: line.words }
-    : { text: line.backgroundText ?? "", words: line.backgroundWords };
+    ? { text: lineText(line), words: roleWords(line, "main") }
+    : { text: backgroundText(line) ?? "", words: roleWords(line, "bg") };
 }
 
 function sidePlan(

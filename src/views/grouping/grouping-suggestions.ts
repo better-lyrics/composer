@@ -33,7 +33,7 @@ function sameScanInputLine(a: LyricLine, b: LyricLine): boolean {
   return (
     a === b ||
     (lineText(a) === lineText(b) &&
-      a.agentId === b.agentId &&
+      mainTrack(a).agentId === mainTrack(b).agentId &&
       backgroundText(a) === backgroundText(b) &&
       (a.groupId === undefined) === (b.groupId === undefined) &&
       sameWordTexts(timedSyllables(mainTrack(a)), timedSyllables(mainTrack(b))) &&

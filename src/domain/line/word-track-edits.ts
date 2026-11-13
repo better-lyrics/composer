@@ -1,8 +1,10 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { withAlignedWords } from "@/domain/language/align";
 import { regroupedLanguages } from "@/domain/language/pieces";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { withManualBackgroundWords } from "@/domain/line/background";
+import type { LyricLine } from "@/domain/line/model";
+import { fieldRole, fieldWords, type TrackField } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { mergedWord } from "@/domain/word/merge-run";
 import { computeSyllableGroups, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -10,20 +12,20 @@ import { applySiblingWords } from "@/utils/word-diff";
 
 // -- Types --------------------------------------------------------------------
 
-type ExplicitTarget = { lineId: string; field: "words" | "backgroundWords"; wordIndex: number };
+type ExplicitTarget = { lineId: string; field: TrackField; wordIndex: number };
 
 // -- Helpers ------------------------------------------------------------------
 
 // A field-targeted word write that keeps background provenance coherent: writing
 // the backgroundWords track is a user edit, so it routes through the funnel and
 // stamps source "manual". A main-words write carries no provenance.
-function writeFieldWords(line: LyricLine, field: "words" | "backgroundWords", words: WordTiming[]): LyricLine {
-  if (field === "backgroundWords") return reconcileLine({ ...line, ...manualBackgroundWordEdit(words) });
-  return reconcileLine({ ...line, words });
+function withFieldWords(line: LyricLine, field: TrackField, words: WordTiming[]): LyricLine {
+  if (field === "backgroundWords") return withManualBackgroundWords(line, words);
+  return withRoleWords(line, "main", words);
 }
 
 function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map<string, LyricLine>): ExplicitTarget[] {
-  const byLineField = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
+  const byLineField = new Map<string, { lineId: string; field: TrackField; indices: number[] }>();
   for (const t of targets) {
     const key = `${t.lineId}:${t.field}`;
     const existing = byLineField.get(key);
@@ -33,7 +35,7 @@ function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map
   const out: ExplicitTarget[] = [];
   for (const group of byLineField.values()) {
     const line = linesById.get(group.lineId);
-    const currentWords = line?.[group.field];
+    const currentWords = line && fieldWords(line, group.field);
     const expanded = currentWords ? expandSelectionToGroupmates(currentWords, group.indices) : group.indices;
     for (const idx of expanded) out.push({ lineId: group.lineId, field: group.field, wordIndex: idx });
   }
@@ -43,21 +45,21 @@ function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map
 function applyExplicitTargetToLines(
   lines: LyricLine[],
   lineId: string,
-  field: "words" | "backgroundWords",
+  field: TrackField,
   newWords: WordTiming[],
 ): LyricLine[] {
   const target = lines.find((l) => l.id === lineId);
   if (!target) return lines;
-  const sourceBefore = target[field];
+  const sourceBefore = fieldWords(target, field);
   const linkScope = getLinkScope(target);
 
   return lines.map((line) => {
     if (line.id === lineId) {
-      return writeFieldWords(line, field, newWords);
+      return withFieldWords(line, field, newWords);
     }
     if (isLinkedSibling(line, linkScope)) {
-      const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
-      if (propagated) return writeFieldWords(line, field, propagated);
+      const propagated = applySiblingWords(newWords, sourceBefore, fieldWords(line, field));
+      if (propagated) return withFieldWords(line, field, propagated);
     }
     return line;
   });
@@ -66,12 +68,12 @@ function applyExplicitTargetToLines(
 function applyMergeSyllableGroup(
   lines: LyricLine[],
   lineId: string,
-  field: "words" | "backgroundWords",
+  field: TrackField,
   wordIndices: number[],
 ): LyricLine[] | null {
   const target = lines.find((l) => l.id === lineId);
   if (!target) return null;
-  const sourceWords = target[field];
+  const sourceWords = fieldWords(target, field);
   if (!sourceWords || sourceWords.length === 0) return null;
   const sourceCount = sourceWords.length;
   const selected = new Set(wordIndices.filter((i) => i >= 0 && i < sourceCount));
@@ -81,10 +83,10 @@ function applyMergeSyllableGroup(
   let mutated = false;
   const newLines = lines.map((line) => {
     const isSource = line.id === lineId;
-    const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
+    const isSibling = !isSource && isLinkedSibling(line, linkScope) && fieldWords(line, field)?.length === sourceCount;
     if (!isSource && !isSibling) return line;
     const aligned = withAlignedWords(line);
-    const lineWords = aligned[field];
+    const lineWords = fieldWords(aligned, field);
     if (!lineWords) return line;
 
     const runs = computeSyllableGroups(lineWords);
@@ -112,8 +114,8 @@ function applyMergeSyllableGroup(
     }
     if (!changed) return line;
     mutated = true;
-    const languages = regroupedLanguages(line, aligned, field === "words" ? "main" : "bg", lineWords, collapsed);
-    return writeFieldWords({ ...line, languages }, field, collapsed);
+    const languages = regroupedLanguages(line, aligned, fieldRole(field), lineWords, collapsed);
+    return withFieldWords({ ...line, languages }, field, collapsed);
   });
   if (!mutated) return null;
   return newLines;
@@ -131,7 +133,7 @@ function applyMarkWordsExplicit(lines: LyricLine[], targets: ExplicitTarget[], v
   for (const target of expandedTargets) {
     const line = linesById.get(target.lineId);
     if (!line) continue;
-    const currentWords = line[target.field];
+    const currentWords = fieldWords(line, target.field);
     if (!currentWords || target.wordIndex < 0 || target.wordIndex >= currentWords.length) continue;
     if ((currentWords[target.wordIndex].explicit === true) === value) continue;
 
@@ -156,4 +158,4 @@ function applyMarkWordsExplicit(lines: LyricLine[], targets: ExplicitTarget[], v
 // -- Exports ------------------------------------------------------------------
 
 export type { ExplicitTarget };
-export { applyMarkWordsExplicit, applyMergeSyllableGroup };
+export { applyMarkWordsExplicit, applyMergeSyllableGroup, withFieldWords };

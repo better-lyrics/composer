@@ -6,14 +6,14 @@ type Tester = Parameters<typeof expect.addEqualityTesters>[0][number];
 
 // -- Helpers ------------------------------------------------------------------
 
+// Timed words, and untimed syllables, which carry a join instead of times.
 function isWordShape(value: unknown): value is Record<string, unknown> {
   return (
     typeof value === "object" &&
     value !== null &&
     "text" in value &&
     "sep" in value &&
-    "begin" in value &&
-    "end" in value
+    (("begin" in value && "end" in value) || "joinsNext" in value)
   );
 }
 

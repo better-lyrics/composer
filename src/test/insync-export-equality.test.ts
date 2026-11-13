@@ -1,10 +1,12 @@
+import { withRoleWords } from "@/domain/line/track-writes";
+import { roleWords } from "@/domain/line/track";
 import { joinsFromWords, syllablesFromWords } from "insync/from-words";
 import { wordsFromSyllables } from "insync/to-words";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { withoutV3Piece } from "@/domain/language/v3-languages";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -113,9 +115,10 @@ function wordsThroughSyllables(words: readonly WordTiming[]): WordTiming[] {
 }
 
 function throughSyllables(line: LyricLine): LyricLine {
-  const words = line.words ? wordsThroughSyllables(line.words) : undefined;
-  const backgroundWords = line.backgroundWords ? wordsThroughSyllables(line.backgroundWords) : undefined;
-  return reconcileLine({ ...line, ...(words && { words }), ...(backgroundWords && { backgroundWords }) });
+  const main = roleWords(line, "main");
+  const background = roleWords(line, "bg");
+  const withMain = main ? withRoleWords(line, "main", wordsThroughSyllables(main)) : line;
+  return background ? withRoleWords(withMain, "bg", wordsThroughSyllables(background)) : withMain;
 }
 
 function withoutGroupIds(line: SavedLine): SavedLine {
@@ -142,14 +145,23 @@ function expectSameJoins(resaved: SavedLine, saved: SavedLine, name: string): vo
   }
 }
 
+interface LoadCounts {
+  repaired: number;
+  leadingSpaceDropped: number;
+}
+
+const startsWithSpace = (text: string | undefined) => text !== undefined && text !== text.trimStart();
+
 // A load may only put back syllable marks: everything else, the language fingerprint and the export stay.
-function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: SavedRecord): number {
+function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: SavedRecord): LoadCounts {
   const storeLines = linesFromSaved(record.lines);
   const resaved = savedLines(storeLines);
   expect(savedLines(linesFromSaved(resaved)), record.name).toEqual(resaved);
   let repaired = 0;
+  let leadingSpaceDropped = 0;
   resaved.forEach((line, index) => {
     const saved = record.lines[index];
+    if (startsWithSpace(saved.text) && !startsWithSpace(line.text)) leadingSpaceDropped++;
     expect(withoutGroupIds({ ...line, text: saved.text, backgroundText: saved.backgroundText }), record.name).toEqual(
       withoutGroupIds(saved),
     );
@@ -164,7 +176,7 @@ function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: Sav
     if (line.text !== saved.text || line.backgroundText !== saved.backgroundText) repaired++;
   });
   expect(exportOf({ ...project, lines: storeLines }), record.name).toBe(exportOf(project));
-  return repaired;
+  return { repaired, leadingSpaceDropped };
 }
 
 function exportOf(project: EditedTtmlProject): string {
@@ -190,11 +202,11 @@ describe("insync export equality", () => {
     const records = realRecords();
     const projects = realProjects();
     expect(records.length).toBeGreaterThan(0);
-    const repaired = records.reduce(
-      (count, record, index) => count + expectSaveAndLoadKeepEverything(projects[index], record),
-      0,
-    );
-    console.info(`[insync] lines with restored syllable marks: ${repaired}`);
+    const counts = records.map((record, index) => expectSaveAndLoadKeepEverything(projects[index], record));
+    const total = (key: keyof LoadCounts) => counts.reduce((sum, count) => sum + count[key], 0);
+    console.info(`[insync] lines with restored syllable marks: ${total("repaired")}`);
+    console.info(`[insync] lines whose leading whitespace was dropped: ${total("leadingSpaceDropped")}`);
+    expect(total("leadingSpaceDropped")).toBe(0);
   });
 
   it.runIf(REAL_PROJECT_FILES.length > 0)("syllable round trip keeps the export of real projects", () => {

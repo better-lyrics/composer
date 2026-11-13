@@ -1,5 +1,7 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { beforeEach, describe, expect, it } from "vitest";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { newWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
@@ -26,8 +28,13 @@ function w(text: string, begin: number, end: number): WordTiming {
   return wordFromSpaced({ id: newWordId(), text, begin, end });
 }
 
-function wordSyncedLine(overrides: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({
+// A syllable split from its word, joined to the next.
+function joined(text: string, begin: number, end: number): WordTiming {
+  return wordFromSpaced({ id: newWordId(), text, begin, end, joinsNext: true });
+}
+
+function wordSyncedLine(overrides: Partial<LineFields> = {}): LyricLine {
+  return lineFromFields({
     id: "l1",
     text: "hello world",
     agentId: "v1",
@@ -45,7 +52,7 @@ describe("history writes derive text only for the lines they change", () => {
   it("regression: merging syllables on one line keeps the untimed words of another", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        reconcileLine({
+        lineFromFields({
           id: "split",
           text: "beautiful",
           agentId: "v1",
@@ -55,7 +62,7 @@ describe("history writes derive text only for the lines they change", () => {
             { id: "w3", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
           ],
         }),
-        reconcileLine({ id: "partial", text: "hello world", agentId: "v1", words: [w("hello ", 1, 1.5)] }),
+        lineFromFields({ id: "partial", text: "hello world", agentId: "v1", words: [w("hello ", 1, 1.5)] }),
       ],
     });
 
@@ -68,7 +75,7 @@ describe("history writes derive text only for the lines they change", () => {
   it("regression: a history write after a timed word is deleted keeps the untimed words", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        reconcileLine({
+        lineFromFields({
           id: "partial",
           text: "every night in my dreams",
           agentId: "v1",
@@ -76,7 +83,7 @@ describe("history writes derive text only for the lines they change", () => {
         }),
       ],
     });
-    const afterDelete = reconcileLine({
+    const afterDelete = lineFromFields({
       id: "partial",
       text: "every in my dreams",
       agentId: "v1",
@@ -91,7 +98,7 @@ describe("history writes derive text only for the lines they change", () => {
   it("regression: an edit on a partly synced line keeps its untimed words", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        reconcileLine({
+        lineFromFields({
           id: "partial",
           text: "every night in my dreams",
           agentId: "v1",
@@ -114,14 +121,16 @@ describe("updateLineWithHistory derives text from words", () => {
     useProjectStore.getState().restoreLyrics({ lines: [wordSyncedLine()] });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "l1",
-          updates: {
-            words: [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "l1",
+            updates: {
+              words: [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
@@ -131,14 +140,16 @@ describe("updateLineWithHistory derives text from words", () => {
     useProjectStore.getState().restoreLyrics({ lines: [wordSyncedLine()] });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "l1",
-          updates: {
-            words: [w("hi ", 0, 1), w("world", 1, 2)],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "l1",
+            updates: {
+              words: [w("hi ", 0, 1), w("world", 1, 2)],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hi world");
@@ -147,25 +158,27 @@ describe("updateLineWithHistory derives text from words", () => {
   it("re-derives backgroundText from backgroundWords", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "l1",
           text: "main",
           agentId: "v1",
           backgroundText: "oh yeah",
           backgroundWords: [w("oh ", 0, 1), w("yeah", 1, 2)],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "l1",
-          updates: {
-            backgroundWords: [w("oh ", 0, 1), w("ye", 1, 1.5), w("ah", 1.5, 2)],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "l1",
+            updates: {
+              backgroundWords: [w("oh ", 0, 1), joined("ye", 1, 1.5), w("ah", 1.5, 2)],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     expect(backgroundText(useProjectStore.getState().lines[0])).toBe("oh ye|ah");
@@ -174,9 +187,9 @@ describe("updateLineWithHistory derives text from words", () => {
   it("leaves text untouched for a line with no words", () => {
     useProjectStore
       .getState()
-      .restoreLyrics({ lines: [{ id: "l1", text: "chorus line", agentId: "v1", begin: 0, end: 5 }] });
+      .restoreLyrics({ lines: [lineFromFields({ id: "l1", text: "chorus line", agentId: "v1", begin: 0, end: 5 })] });
 
-    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { begin: 1 } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { begin: 1 } }])));
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("chorus line");
   });
@@ -184,7 +197,7 @@ describe("updateLineWithHistory derives text from words", () => {
   it("propagates derived text to linked siblings", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "hello world",
           agentId: "v1",
@@ -192,8 +205,8 @@ describe("updateLineWithHistory derives text from words", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [w("hello ", 0, 1), w("world", 1, 2)],
-        },
-        {
+        }),
+        lineFromFields({
           id: "b",
           text: "hello world",
           agentId: "v1",
@@ -201,19 +214,21 @@ describe("updateLineWithHistory derives text from words", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [w("hello ", 10, 11), w("world", 11, 12)],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a",
-          updates: {
-            words: [w("hi ", 0, 1), w("world", 1, 2)],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a",
+            updates: {
+              words: [w("hi ", 0, 1), w("world", 1, 2)],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "b");
@@ -230,15 +245,16 @@ describe("updateLine derives text from words", () => {
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "l1",
-            updates: {
-              words: [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)],
+        () =>
+          fieldUpdates([
+            {
+              id: "l1",
+              updates: {
+                words: [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)],
+              },
             },
-          },
-        ],
-        { derivesText: true, propagateToSiblings: false, copiesSharedTiming: false },
+          ]),
+        { propagateToSiblings: false, copiesSharedTiming: false },
       ),
       "pending",
     );
@@ -255,7 +271,9 @@ describe("applyWordCountChange derives text from words", () => {
 
     useProjectStore
       .getState()
-      .commit(applyWordCountChange("l1", [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"));
+      .commit(
+        applyWordCountChange("l1", [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"),
+      );
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });

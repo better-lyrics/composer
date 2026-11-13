@@ -1,17 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { pieceOf } from "@/domain/language/pieces";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { newWordId } from "@/domain/word/id";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { mainTrack, roleWords } from "@/domain/line/track";
+import { withMainTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
+import { lineTimingWordId, newWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
+import type { WordTiming } from "@/domain/word/timing";
 import { createGroup, createLine, createWords } from "@/test/factories";
+import { patchOf, updatedLine } from "@/test/field-updates";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 
 // -- Helpers ------------------------------------------------------------------
 
-const line = (id: string, words: LyricLine["words"], text: string): LyricLine =>
-  ({ id, agentId: "a", text, words }) as LyricLine;
+const line = (id: string, words: WordTiming[] | undefined, text: string): LyricLine =>
+  lineFromFields({ id, agentId: "a", text, words }) as LyricLine;
 
 const wholeSong = (duration: number) => timeRangeResolver([], [], duration);
 
@@ -43,9 +49,9 @@ describe("applyPasteToLines", () => {
         timeDelta: 0,
         rangeOf: wholeSong(10),
       });
-      const [word] = updates?.[0].updates.words ?? [];
+      const [word] = roleWords(updatedLine(updates?.[0].updates), "main") ?? [];
       expect(pieceOf(updates?.[0].updates.languages?.transliteration?.main.pieces, word)).toEqual({ text: "umi" });
-      const [plainWord] = updates?.[1].updates.words ?? [];
+      const [plainWord] = roleWords(updatedLine(updates?.[1].updates), "main") ?? [];
       expect(pieceOf(updates?.[1].updates.languages?.heldReadings?.main, plainWord)).toEqual({ text: "umi" });
     });
 
@@ -71,9 +77,9 @@ describe("applyPasteToLines", () => {
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates).not.toBeNull();
-      expect(updates?.[0].updates.text).toBeDefined();
-      expect(updates?.[0].updates.text).not.toBe("a b");
-      expect(updates?.[0].updates.text).toContain("z");
+      expect(lineText(updatedLine(updates?.[0].updates)!)).toBeDefined();
+      expect(lineText(updatedLine(updates?.[0].updates)!)).not.toBe("a b");
+      expect(lineText(updatedLine(updates?.[0].updates)!)).toContain("z");
     });
 
     it("re-derives bg text on bg paste", () => {
@@ -89,7 +95,7 @@ describe("applyPasteToLines", () => {
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates).not.toBeNull();
-      expect((updates?.[0].updates as { backgroundText?: string }).backgroundText).toBeDefined();
+      expect(backgroundText(updatedLine(updates?.[0].updates))).toBeDefined();
     });
 
     it("distributes entries across multiple destination lines via lineOffset", () => {
@@ -115,8 +121,8 @@ describe("applyPasteToLines", () => {
       expect(updates).not.toBeNull();
       expect(updates).toHaveLength(2);
       const byId = new Map(updates?.map((u) => [u.id, u]));
-      expect(byId.get("l1")?.updates.words?.some((w) => w.text === "x")).toBe(true);
-      expect(byId.get("l2")?.updates.words?.some((w) => w.text === "y")).toBe(true);
+      expect(roleWords(updatedLine(byId.get("l1")?.updates), "main")?.some((w) => w.text === "x")).toBe(true);
+      expect(roleWords(updatedLine(byId.get("l2")?.updates), "main")?.some((w) => w.text === "y")).toBe(true);
     });
   });
 
@@ -169,8 +175,8 @@ describe("applyPasteToLines", () => {
         ],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
-      expect(updates?.[0].updates.words?.[0].begin).toBe(0);
-      expect(updates?.[0].updates.words?.[0].end).toBe(10);
+      expect(roleWords(updatedLine(updates?.[0].updates), "main")?.[0].begin).toBe(0);
+      expect(roleWords(updatedLine(updates?.[0].updates), "main")?.[0].end).toBe(10);
     });
 
     it("handles a clipboard with mixed word and bg entries on the same line", () => {
@@ -190,12 +196,8 @@ describe("applyPasteToLines", () => {
         ],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
-      expect(updates?.[0].updates.words?.some((w) => w.text === "mw")).toBe(true);
-      expect(
-        (updates?.[0].updates as { backgroundWords?: Array<{ text: string }> }).backgroundWords?.some(
-          (w) => w.text === "bw",
-        ),
-      ).toBe(true);
+      expect(roleWords(updatedLine(updates?.[0].updates), "main")?.some((w) => w.text === "mw")).toBe(true);
+      expect(roleWords(updatedLine(updates?.[0].updates), "bg")?.some((w) => w.text === "bw")).toBe(true);
     });
   });
 
@@ -228,14 +230,14 @@ describe("applyPasteToLines", () => {
         ],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 2, rangeOf: wholeSong(10) });
-      expect(updates?.[0].updates.words?.[0].begin).toBe(3);
-      expect(updates?.[0].updates.words?.[0].end).toBe(4);
+      expect(roleWords(updatedLine(updates?.[0].updates), "main")?.[0].begin).toBe(3);
+      expect(roleWords(updatedLine(updates?.[0].updates), "main")?.[0].end).toBe(4);
     });
   });
 });
 
 describe("pasting onto a line-synced row", () => {
-  const lineSynced: LyricLine = { id: "ls", agentId: "a", text: "It hurts for me", begin: 10, end: 12 };
+  const lineSynced: LyricLine = lineFromFields({ id: "ls", agentId: "a", text: "It hurts for me", begin: 10, end: 12 });
   const clipboardAt = (begin: number, end: number): ClipboardData => ({
     entries: [
       {
@@ -246,6 +248,32 @@ describe("pasting onto a line-synced row", () => {
     ],
   });
 
+  it("regression: pasting onto a line-synced line of several words writes each word once", () => {
+    // A line converted to words once and back to a line span keeps the id its drawn word had on syllable 0.
+    const fresh = lineFromFields({ id: "s3", agentId: "a", text: "one two three", begin: 10, end: 12 });
+    const main = mainTrack(fresh);
+    const renamed = main.syllables.map((syllable, index) =>
+      index === 0 ? { ...syllable, id: lineTimingWordId("s3") } : syllable,
+    );
+    const synced = withMainTrack(fresh, withTrackSpan(withTrackSyllables(main, renamed), 10, 12));
+    const updates = applyPasteToLines({
+      lines: [synced],
+      clipboard: {
+        entries: [
+          {
+            word: { id: newWordId(), text: "yeah", sep: "", begin: 13, end: 13.5, joinsNext: false },
+            lineOffset: 0,
+            trackType: "word",
+          },
+        ],
+      },
+      targetLineIndex: 0,
+      timeDelta: 0,
+      rangeOf: wholeSong(60),
+    });
+    expect(lineText(updatedLine(updates?.[0].updates)!)).toBe("one two three yeah");
+  });
+
   it("regression: pasting after the line's span keeps its text and timing as the first word", () => {
     const updates = applyPasteToLines({
       lines: [lineSynced],
@@ -254,12 +282,12 @@ describe("pasting onto a line-synced row", () => {
       timeDelta: 0,
       rangeOf: wholeSong(60),
     });
-    expect(updates?.[0].updates.words).toEqual([
+    expect(roleWords(updatedLine(updates?.[0].updates), "main")).toEqual([
       { text: "It hurts for me", sep: " ", begin: 10, end: 12, joinsNext: false },
       { text: "never", sep: "", begin: 13, end: 13.5, joinsNext: false },
     ]);
-    expect(updates?.[0].updates.text).toContain("It hurts for me");
-    expect(updates?.[0].updates.text).toContain("never");
+    expect(lineText(updatedLine(updates?.[0].updates)!)).toContain("It hurts for me");
+    expect(lineText(updatedLine(updates?.[0].updates)!)).toContain("never");
   });
 
   it("regression: a paste inside the line's span counts as an overlap", () => {
@@ -272,7 +300,7 @@ describe("pasting onto a line-synced row", () => {
 });
 
 describe("pasteOverlaps", () => {
-  const wordLine: LyricLine = {
+  const wordLine: LyricLine = lineFromFields({
     id: "w",
     agentId: "a",
     text: "a b",
@@ -280,7 +308,7 @@ describe("pasteOverlaps", () => {
       { id: "w21", text: "a", sep: " ", begin: 0, end: 1, joinsNext: false },
       { id: "w22", text: "b", sep: "", begin: 1, end: 2, joinsNext: false },
     ],
-  };
+  });
 
   it("reports an overlap with an existing word", () => {
     const clipboard: ClipboardData = {
@@ -336,7 +364,7 @@ describe("pasteOverlaps", () => {
     });
 
     it("ignores an untimed target line", () => {
-      const untimed: LyricLine = { id: "u", agentId: "a", text: "free text" };
+      const untimed: LyricLine = lineFromFields({ id: "u", agentId: "a", text: "free text" });
       const clipboard: ClipboardData = {
         entries: [
           {
@@ -379,16 +407,22 @@ describe("pasting onto a line of a group that shares timing", () => {
     applyPasteToLines({ lines: chorusLines, clipboard, targetLineIndex, timeDelta: 0, rangeOf: rangeOf(sharesTiming) });
 
   it("ends a pasted word where the latest instance reaches the song end", () => {
-    expect(paste(clipboardAt(12.5, 13.5), 0)?.[0].updates.words?.[2]).toMatchObject({ begin: 12.5, end: 13 });
+    expect(roleWords(updatedLine(paste(clipboardAt(12.5, 13.5), 0)?.[0].updates), "main")?.[2]).toMatchObject({
+      begin: 12.5,
+      end: 13,
+    });
   });
 
   it("starts a pasted word where the earliest instance reaches zero", () => {
-    expect(paste(clipboardAt(6.5, 7.5), 1)?.[0].updates.words?.[0]).toMatchObject({ begin: 7, end: 7.5 });
+    expect(roleWords(updatedLine(paste(clipboardAt(6.5, 7.5), 1)?.[0].updates), "main")?.[0]).toMatchObject({
+      begin: 7,
+      end: 7.5,
+    });
   });
 
   it("ends a pasted background word inside the range", () => {
     const updates = paste(clipboardAt(12.5, 13.5, "bg"), 0)?.[0].updates;
-    expect(updates?.backgroundWords?.[0]).toMatchObject({ begin: 12.5, end: 13 });
+    expect(roleWords(updatedLine(updates), "bg")?.[0]).toMatchObject({ begin: 12.5, end: 13 });
   });
 
   it("blocks a word that lies wholly past the range", () => {
@@ -416,14 +450,14 @@ describe("pasting onto a line of a group that shares timing", () => {
         ],
       };
       const updates = paste(clipboard, 0);
-      expect(updates?.[0].updates.words?.[2]).toMatchObject({
+      expect(roleWords(updatedLine(updates?.[0].updates), "main")?.[2]).toMatchObject({
         text: "x",
         sep: "",
         begin: 6.5,
         end: 7.5,
         joinsNext: true,
       });
-      expect(updates?.[1].updates.words?.[2]).toMatchObject({
+      expect(roleWords(updatedLine(updates?.[1].updates), "main")?.[2]).toMatchObject({
         text: "y",
         sep: "",
         begin: 16,
@@ -435,7 +469,7 @@ describe("pasting onto a line of a group that shares timing", () => {
 
   describe("regressions", () => {
     it("regression: a line of an old group still takes a pasted word up to the song end", () => {
-      expect(paste(clipboardAt(12.5, 13.5), 0, false)?.[0].updates.words?.[2]).toMatchObject({
+      expect(roleWords(updatedLine(paste(clipboardAt(12.5, 13.5), 0, false)?.[0].updates), "main")?.[2]).toMatchObject({
         begin: 12.5,
         end: 13.5,
       });
@@ -466,16 +500,16 @@ describe("pasting into the hovered lane", () => {
 
   it("regression: words copied from a main lane paste into the hovered background lane", () => {
     const updates = pasteInto({ entries: [mainWord("you", 2)] }, "bg");
-    expect(updates?.[0].updates.backgroundWords).toEqual([
+    expect(roleWords(updatedLine(updates?.[0].updates), "bg")).toEqual([
       { text: "you", sep: "", begin: 2, end: 2.5, joinsNext: false },
     ]);
-    expect(updates?.[0].updates.words).toBeUndefined();
+    expect("words" in patchOf(updates?.[0].updates, target()[0])).toBe(false);
   });
 
   it("words copied from a background lane paste into the hovered main lane", () => {
     const updates = pasteInto({ entries: [bgWord("ooh", 2)] }, "word");
-    expect(updates?.[0].updates.words?.map((word) => word.text.trim())).toEqual(["a", "ooh"]);
-    expect(updates?.[0].updates.backgroundWords).toBeUndefined();
+    expect(roleWords(updatedLine(updates?.[0].updates), "main")?.map((word) => word.text.trim())).toEqual(["a", "ooh"]);
+    expect("backgroundWords" in patchOf(updates?.[0].updates, target()[0])).toBe(false);
   });
 
   it("checks overlaps against the hovered lane", () => {

@@ -1,10 +1,11 @@
 import { expect } from "vitest";
 import { lineTranslations } from "@/domain/language/line-languages";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import { useProjectStore } from "@/stores/project";
 import {
@@ -44,7 +45,7 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "change a line's timing",
     edit: (project, ttml) => {
       const line = required(project.lines.find(isLineSynced), "line-synced line");
-      const end = required(line.end, "line end");
+      const end = required(mainTrack(line).end, "line end");
       const change = (p: string) => {
         const openTag = p.slice(0, p.indexOf(">") + 1);
         return p.replace(openTag, openTag.replace(`end="${formatTime(end)}"`, `end="${formatTime(end + 0.25)}"`));
@@ -52,7 +53,7 @@ const OPERATIONS: readonly EditOperation[] = [
       return {
         edited: editParagraph(ttml, project, line, change),
         touched: [line.id],
-        expectTaken: (lines) => expect(lineById(lines, line.id).end).toBeCloseTo(end + 0.25, 3),
+        expectTaken: (lines) => expect(mainTrack(lineById(lines, line.id)).end).toBeCloseTo(end + 0.25, 3),
       };
     },
   },
@@ -67,8 +68,8 @@ const OPERATIONS: readonly EditOperation[] = [
           lines.find((line) => lineText(line) === "Brand new line"),
           "added line",
         );
-        expect(added).toMatchObject({ begin: 30, end: 31, backgroundText: "new ooh" });
-        expect(added.backgroundWords).toBeUndefined();
+        expect(fieldsOfLine(added)).toMatchObject({ begin: 30, end: 31, backgroundText: "new ooh" });
+        expect(roleWords(added, "bg")).toBeUndefined();
       },
     }),
   },

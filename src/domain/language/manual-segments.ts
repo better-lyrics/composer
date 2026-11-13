@@ -1,5 +1,6 @@
 import type { TransliterationSegment } from "@/domain/language/model";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 
 // -- Segments -----------------------------------------------------------------
 
@@ -8,7 +9,7 @@ function wholeLineSegments(original: string, transliteration: string): Translite
 }
 
 function manualSegments(line: LyricLine, value: string): TransliterationSegment[] {
-  return value.trim() ? wholeLineSegments(line.text, value.trim()) : [];
+  return value.trim() ? wholeLineSegments(lineText(line), value.trim()) : [];
 }
 
 // -- Exports ------------------------------------------------------------------

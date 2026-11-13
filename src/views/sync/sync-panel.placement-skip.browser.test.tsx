@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
@@ -32,8 +33,8 @@ describe("SyncPanel · skip past a placed instance", () => {
   it("never seeks on a normal tap", async () => {
     load(song());
     await render(<SyncPanel />);
-    await tapAt(10, () => lineById("c0-0")?.words?.length);
-    await tapAt(10.5, () => lineById("c0-0")?.words?.length);
+    await tapAt(10, () => roleWords(lineById("c0-0"), "main")?.length);
+    await tapAt(10.5, () => roleWords(lineById("c0-0"), "main")?.length);
     expect(useAudioStore.getState().currentTime).toBe(10.5);
   });
 
@@ -100,7 +101,7 @@ describe("SyncPanel · skip past a placed instance", () => {
     it("shows no pre-roll countdown on a normal tap", async () => {
       load(song());
       const screen = await render(<SyncPanel />);
-      await tapAt(10, () => lineById("c0-0")?.words?.length);
+      await tapAt(10, () => roleWords(lineById("c0-0"), "main")?.length);
       expect(screen.container.textContent).not.toMatch(/Line \d+ in/);
     });
 

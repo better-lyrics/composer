@@ -1,3 +1,5 @@
+import { updatedLine, withFields } from "@/test/field-updates";
+import { roleWords } from "@/domain/line/track";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
@@ -21,11 +23,10 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
 }
 
 function moveIntoChorus(sharesTiming: boolean) {
-  const target = {
-    ...chorus("c1", 1, 10),
+  const target = withFields(chorus("c1", 1, 10), {
     backgroundText: "hey",
     backgroundWords: [createWord({ text: "hey", begin: 13, end: 14.5 })],
-  };
+  });
   const lines = [chorus("c0", 0, 3), target, chorus("c2", 2, 16)];
   const groups = [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })];
   return applyWordMoveAcrossLines(
@@ -46,7 +47,7 @@ function moveIntoChorus(sharesTiming: boolean) {
 
 function targetWords(result: ReturnType<typeof applyWordMoveAcrossLines>) {
   if (!result.ok) throw new Error(`move rejected: ${result.reject}`);
-  return result.updates.find((update) => update.id === "c1")?.updates.words ?? [];
+  return roleWords(updatedLine(result.updates.find((update) => update.id === "c1")?.updates), "main") ?? [];
 }
 
 describe("applyWordMoveAcrossLines with a shared time range", () => {

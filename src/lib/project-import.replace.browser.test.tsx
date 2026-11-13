@@ -8,7 +8,7 @@ import { loadProjectForRestore } from "@/lib/project-restore";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { getSaveStatus } from "@/lib/save-status";
-import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/saved-project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
@@ -23,7 +23,7 @@ function fileWithLine(text: string): ProjectFile {
     savedAt: Date.now(),
     metadata: { title: "File", artists: [], album: "", duration: 0 },
     agents: DEFAULT_AGENTS,
-    lines: [createLine({ text })],
+    lines: savedLines([createLine({ text })]),
     granularity: "word",
   };
 }
@@ -34,7 +34,7 @@ describe("replaceProjectFromFile", () => {
   it("flushes the open project's pending save before replacing, leaving no later overwrite", async () => {
     await seedStoredProject("a", {
       open: true,
-      project: { ...songTitled("Alpha"), lines: [createLine({ text: "Library line", begin: 1, end: 2 })] },
+      project: { ...songTitled("Alpha"), lines: savedLines([createLine({ text: "Library line", begin: 1, end: 2 })]) },
     });
     await restoreOpenProject();
     useSettingsStore.setState({ autoSaveDelay: 60_000 });
@@ -58,10 +58,10 @@ describe("replaceProjectFromFile", () => {
       await replaceProjectFromFile("a", {
         ...fileWithLine("File line"),
         ...file,
-        lines: [createLine({ text: "File line", begin: 1, end: 2 })],
+        lines: savedLines([createLine({ text: "File line", begin: 1, end: 2 })]),
       });
       const reloaded = (await loadProjectForRestore("a")).project;
-      return (reloaded?.lines[0] as { begin: number }).begin;
+      return reloaded?.lines[0]?.begin ?? Number.NaN;
     }
 
     it("regression: an older export into a corrected project still moves to the corrected decode", async () => {

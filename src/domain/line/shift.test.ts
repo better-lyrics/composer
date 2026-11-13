@@ -1,9 +1,15 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
+import type { LyricLine } from "@/domain/line/model";
+import { changedFields } from "@/test/field-updates";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
+
+const shiftedFields = (line: LyricLine, delta: number, range?: TimeRange) =>
+  changedFields([{ id: line.id, updates: shiftLineTiming(line, delta, range) }], [line])[0].updates;
 
 describe("shiftWords", () => {
   it("moves every word by the delta", () => {
@@ -70,20 +76,20 @@ describe("shiftLineTiming", () => {
       backgroundText: "oh",
       backgroundWords: [word("oh", 20.5, 21.5)],
     });
-    expect(shiftLineTiming(line, -17)).toEqual({
+    expect(shiftedFields(line, -17)).toEqual({
       words: [word("a ", 3, 4), word("b", 4, 5)],
       backgroundWords: [word("oh", 3.5, 4.5)],
     });
   });
   it("shifts a line-synced line", () => {
-    expect(shiftLineTiming(createLine({ text: "a", begin: 26, end: 28 }), -21)).toEqual({ begin: 5, end: 7 });
+    expect(shiftedFields(createLine({ text: "a", begin: 26, end: 28 }), -21)).toEqual({ begin: 5, end: 7 });
   });
   it("edge: a line-synced line nudged past zero keeps its duration", () => {
-    expect(shiftLineTiming(createLine({ text: "a", begin: 0.5, end: 2 }), -1)).toEqual({ begin: 0, end: 1.5 });
+    expect(shiftedFields(createLine({ text: "a", begin: 0.5, end: 2 }), -1)).toEqual({ begin: 0, end: 1.5 });
   });
   it("edge: a word-synced line nudged past zero keeps every word length and gap", () => {
     const line = createLine({ text: "a b", words: [word("a ", 1, 2), word("b", 3, 4)] });
-    expect(shiftLineTiming(line, -5)).toEqual({ words: [word("a ", 0, 1), word("b", 2, 3)] });
+    expect(shiftedFields(line, -5)).toEqual({ words: [word("a ", 0, 1), word("b", 2, 3)] });
   });
   it("edge: background words move by the clamped main delta", () => {
     const line = createLine({
@@ -93,14 +99,14 @@ describe("shiftLineTiming", () => {
       backgroundText: "oh",
       backgroundWords: [word("oh", 1.5, 2.5)],
     });
-    expect(shiftLineTiming(line, -3)).toEqual({ begin: 0, end: 1, backgroundWords: [word("oh", 0.5, 1.5)] });
+    expect(shiftedFields(line, -3)).toEqual({ begin: 0, end: 1, backgroundWords: [word("oh", 0.5, 1.5)] });
   });
   it("edge: an untimed line with no background returns no fields", () => {
-    expect(shiftLineTiming(createLine({ text: "a" }), 3)).toEqual({});
+    expect(shiftedFields(createLine({ text: "a" }), 3)).toEqual({});
   });
   it("edge: an untimed line with background words shifts only the background", () => {
     const line = createLine({ text: "a", backgroundText: "oh", backgroundWords: [word("oh", 1, 2)] });
-    expect(shiftLineTiming(line, 1)).toEqual({ backgroundWords: [word("oh", 2, 3)] });
+    expect(shiftedFields(line, 1)).toEqual({ backgroundWords: [word("oh", 2, 3)] });
   });
 });
 
@@ -117,8 +123,8 @@ describe("time range", () => {
 
   it("moves a shared line only as far as the range allows, keeping its length", () => {
     const line = createLine({ text: "a b", words: [word("a ", 10, 11), word("b", 11, 12)] });
-    expect(shiftLineTiming(line, -5, { min: 8, max: 60 })).toEqual({ words: [word("a ", 8, 9), word("b", 9, 10)] });
-    expect(shiftLineTiming(line, 50, { min: 0, max: 14 })).toEqual({ words: [word("a ", 12, 13), word("b", 13, 14)] });
+    expect(shiftedFields(line, -5, { min: 8, max: 60 })).toEqual({ words: [word("a ", 8, 9), word("b", 9, 10)] });
+    expect(shiftedFields(line, 50, { min: 0, max: 14 })).toEqual({ words: [word("a ", 12, 13), word("b", 13, 14)] });
   });
 
   describe("edge cases", () => {
@@ -145,7 +151,7 @@ describe("time range", () => {
     it("stops a background word that starts before the main words at the range start", () => {
       const line = withBackground({ begin: 10, end: 12 }, { begin: 8, end: 9 });
       expect(clampShiftDelta([line], -5, { min: 6, max: 60 })).toBe(-2);
-      expect(shiftLineTiming(line, -5, { min: 6, max: 60 })).toEqual({
+      expect(shiftedFields(line, -5, { min: 6, max: 60 })).toEqual({
         begin: 8,
         end: 10,
         backgroundWords: [word("oh", 6, 7)],
@@ -155,7 +161,7 @@ describe("time range", () => {
     it("stops a background word that ends after the main words at the range end", () => {
       const line = withBackground({ begin: 10, end: 12 }, { begin: 11, end: 14 });
       expect(clampShiftDelta([line], 10, { min: 0, max: 20 })).toBe(6);
-      expect(shiftLineTiming(line, 10, { min: 0, max: 20 })).toEqual({
+      expect(shiftedFields(line, 10, { min: 0, max: 20 })).toEqual({
         begin: 16,
         end: 18,
         backgroundWords: [word("oh", 17, 20)],
@@ -173,13 +179,13 @@ describe("time range", () => {
     it("stops the background of an untimed line at the range edges", () => {
       const line = createLine({ text: "a", backgroundText: "oh", backgroundWords: [word("oh", 10, 12)] });
       expect(clampShiftDelta([line], 20, { min: 0, max: 15 })).toBe(3);
-      expect(shiftLineTiming(line, -20)).toEqual({ backgroundWords: [word("oh", 0, 2)] });
+      expect(shiftedFields(line, -20)).toEqual({ backgroundWords: [word("oh", 0, 2)] });
     });
 
     describe("invariants", () => {
       it("keeps the background at the same place relative to the main words", () => {
         const line = withBackground({ begin: 10, end: 12 }, { begin: 8, end: 13 });
-        const shifted = shiftLineTiming(line, -50, { min: 0, max: 60 });
+        const shifted = shiftedFields(line, -50, { min: 0, max: 60 });
         expect(shifted).toEqual({ begin: 2, end: 4, backgroundWords: [word("oh", 0, 5)] });
       });
     });
@@ -200,7 +206,7 @@ describe("time range", () => {
 
     it("has no end limit by default, so a line outside a group moves as before", () => {
       expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 12 })], 1e6)).toBe(1e6);
-      expect(shiftLineTiming(createLine({ text: "a", begin: 10, end: 12 }), 1e6)).toEqual({
+      expect(shiftedFields(createLine({ text: "a", begin: 10, end: 12 }), 1e6)).toEqual({
         begin: 1e6 + 10,
         end: 1e6 + 12,
       });

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -49,8 +50,8 @@ describe("SyncPanel granularity switch", () => {
       await expect.poll(() => useProjectStore.getState().granularity).toBe("word");
       const synced = useProjectStore.getState().lines.find((line) => line.id === "line-synced");
       expect(synced && isLineSynced(synced)).toBe(true);
-      expect(synced).toMatchObject({ begin: 1, end: 3 });
-      expect(synced?.words).toBeUndefined();
+      expect(fieldsOfLine(synced!)).toMatchObject({ begin: 1, end: 3 });
+      expect(synced && roleWords(synced, "main")).toBeUndefined();
     });
   });
 
@@ -93,7 +94,7 @@ describe("SyncPanel granularity switch", () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }));
 
       await expect
-        .poll(() => useProjectStore.getState().lines[0].words?.map((word) => word.text + word.sep))
+        .poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.map((word) => word.text + word.sep))
         .toEqual(["Hello "]);
       const [tapped, next] = useProjectStore.getState().lines;
       expect(timedSyllables(mainTrack(tapped))[0].begin).toBe(1.5);
@@ -104,7 +105,7 @@ describe("SyncPanel granularity switch", () => {
 
       const restored = useProjectStore.getState().lines[0];
       expect(isLineSynced(restored)).toBe(true);
-      expect(restored).toMatchObject({ begin: 1, end: 3 });
+      expect(fieldsOfLine(restored)).toMatchObject({ begin: 1, end: 3 });
     });
   });
 
@@ -134,8 +135,8 @@ describe("SyncPanel granularity switch", () => {
       const [, word, plain] = useProjectStore.getState().lines;
       expect(isWordSynced(word)).toBe(true);
       expect(timedSyllables(mainTrack(word))).toEqual(timedSyllables(mainTrack(wordSynced)));
-      expect(plain.words).toBeUndefined();
-      expect(plain.begin).toBeUndefined();
+      expect(roleWords(plain, "main")).toBeUndefined();
+      expect(mainTrack(plain).begin).toBeUndefined();
     });
   });
 });

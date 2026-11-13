@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
+import { fieldUpdates } from "@/test/field-updates";
 import {
   createRefresher,
   disposeRefreshers,
@@ -119,11 +121,14 @@ describe("createLanguageAutoRefresh", () => {
       const refreshing = createRefresher().refreshNow();
       await vi.waitFor(() => expect(requests.length).toBeGreaterThan(0));
       useProjectStore.getState().commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a", updates: { text: "Летний ливень" } }], {
-          derivesText: false,
-          propagateToSiblings: false,
-          copiesSharedTiming: false,
-        }),
+        lineEditCommand(
+          { command: "edit lines", args: [] },
+          () => fieldUpdates([{ id: "a", updates: { text: "Летний ливень" } }]),
+          {
+            propagateToSiblings: false,
+            copiesSharedTiming: false,
+          },
+        ),
         "pending",
       );
       answer.open();
@@ -249,7 +254,7 @@ describe("createLanguageAutoRefresh", () => {
       });
       useProjectStore.setState({ lines: [timedLine("a", ["Привет,", "мир"], ["Privet,", "mir"])] });
       const edited = legacyLine({
-        ...lineById("a"),
+        ...fieldsOfLine(lineById("a")),
         text: "Здравствуй, мир",
         words: [
           { id: "w1", text: "Здравствуй,", sep: " ", begin: 1, end: 2, transliteration: "Privet,", joinsNext: false },
@@ -260,8 +265,8 @@ describe("createLanguageAutoRefresh", () => {
       useProjectStore.getState().commit(
         lineEditCommand(
           { command: "edit lines", args: [] },
-          () => [{ id: "a", updates: { text: edited.text, words: edited.words, languages: edited.languages } }],
-          { derivesText: true, propagateToSiblings: false, copiesSharedTiming: false },
+          () => [{ id: "a", updates: { tracks: edited.tracks, languages: edited.languages } }],
+          { propagateToSiblings: false, copiesSharedTiming: false },
         ),
         "pending",
       );

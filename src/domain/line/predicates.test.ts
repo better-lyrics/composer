@@ -1,11 +1,13 @@
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { isSpanTimed, mainTrack } from "@/domain/line/track";
+import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+function line(extras: Partial<LineFields> = {}): LyricLine {
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- isLineSynced -------------------------------------------------------------
@@ -41,9 +43,11 @@ describe("isLineSynced", () => {
 
   it("narrows type so begin and end are non-optional inside the guard", () => {
     const l = line({ begin: 1, end: 2 });
-    if (isLineSynced(l)) {
-      const begin: number = l.begin;
-      const end: number = l.end;
+    const main = mainTrack(l);
+    expect(isLineSynced(l)).toBe(true);
+    if (isSpanTimed(main)) {
+      const begin: number = main.begin;
+      const end: number = main.end;
       expect(begin).toBe(1);
       expect(end).toBe(2);
     }
@@ -113,7 +117,7 @@ describe("hasAnyTiming", () => {
 });
 
 describe("hasMainLyrics", () => {
-  const line = (text: string): LyricLine => ({ id: "l", text, agentId: "v1" });
+  const line = (text: string): LyricLine => lineFromFields({ id: "l", text, agentId: "v1" });
 
   it("is true for a line with words in its text", () => {
     expect(hasMainLyrics(line("hello world"))).toBe(true);
@@ -141,7 +145,7 @@ describe("hasMainLyrics", () => {
     });
 
     it("ignores background text", () => {
-      expect(hasMainLyrics({ ...line(""), backgroundText: "ooh" })).toBe(false);
+      expect(hasMainLyrics(lineFromFields({ ...fieldsOfLine(line("")), backgroundText: "ooh" }))).toBe(false);
     });
   });
 });

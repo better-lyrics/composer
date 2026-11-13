@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { syllablesText } from "@/domain/line/text";
 import { computeSyllableGroups, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
@@ -19,7 +19,7 @@ describe("reorderWordTrack", () => {
 
     expect(result).toHaveLength(3);
     expect(computeSyllableGroups(result)).toEqual([]);
-    expect(reconstructLineText(result, "|")).not.toContain("|");
+    expect(syllablesText(result, "|")).not.toContain("|");
     const three = result.find((w) => w.text.trimEnd() === "three");
     expect(three).toMatchObject({ text: "three", sep: " " });
     expect(result[result.length - 1].sep.endsWith(" ")).toBe(false);
@@ -36,7 +36,7 @@ describe("reorderWordTrack", () => {
 
     expect(result).toHaveLength(3);
     expect(computeSyllableGroups(result)).toEqual([]);
-    expect(reconstructLineText(result, "|")).not.toContain("|");
+    expect(syllablesText(result, "|")).not.toContain("|");
     expect(result.map((w) => w.text.trimEnd())).toEqual(["beta", "gamma", "alpha"]);
     expect(result[result.length - 1].sep.endsWith(" ")).toBe(false);
   });
@@ -52,7 +52,7 @@ describe("reorderWordTrack", () => {
 
     expect(result.map((w) => w.text.trimEnd())).toEqual(["first", "second", "third"]);
     expect(computeSyllableGroups(result)).toEqual([]);
-    expect(reconstructLineText(result, "|")).toBe("first second third");
+    expect(syllablesText(result, "|")).toBe("first second third");
   });
 
   it("reinserts boundaries for a multi-word dragged set with non-adjacent indices", () => {
@@ -67,7 +67,7 @@ describe("reorderWordTrack", () => {
 
     expect(result).toHaveLength(4);
     expect(computeSyllableGroups(result)).toEqual([]);
-    expect(reconstructLineText(result, "|")).not.toContain("|");
+    expect(syllablesText(result, "|")).not.toContain("|");
     expect(result[result.length - 1].sep.endsWith(" ")).toBe(false);
   });
 
@@ -81,7 +81,7 @@ describe("reorderWordTrack", () => {
     const result = reorderWordTrack(track, new Set([2]), -6, { min: 0, max: 12 });
 
     expect(result).toHaveLength(3);
-    expect(reconstructLineText(result, "|")).not.toContain("|");
+    expect(syllablesText(result, "|")).not.toContain("|");
     expect(result.map((w) => w.text.trimEnd())).toEqual(["head", "tail", "body"]);
     const tail = result.find((w) => w.text.trimEnd() === "tail");
     expect(tail).toMatchObject({ text: "tail", sep: " " });
@@ -274,7 +274,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
     }
     expect(result[result.length - 1].sep.endsWith(" ")).toBe(false);
     expect(computeSyllableGroups(result)).toEqual([]);
-    expect(reconstructLineText(result, "|")).not.toContain("|");
+    expect(syllablesText(result, "|")).not.toContain("|");
   });
 });
 
@@ -297,6 +297,6 @@ describe("regressions: T9 syllable drag past a neighbor", () => {
 
   it("the whole group jumps as one block once it is past 'there'", () => {
     const result = reorderWordTrack(track, new Set([0, 1]), 0.9, { min: 0, max: 10 });
-    expect(reconstructLineText(result, "|")).toBe("there Hel|lo");
+    expect(syllablesText(result, "|")).toBe("there Hel|lo");
   });
 });

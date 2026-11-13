@@ -1,3 +1,5 @@
+import { roleWords } from "@/domain/line/track";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { validateTransliterationAlignment } from "@/domain/language/align";
 import { lineTransliteration } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
@@ -20,21 +22,22 @@ function getLanguageAlignmentErrors(line: LyricLine): LanguageAlignmentError[] {
   const errors: LanguageAlignmentError[] = [];
   const track = lineTransliteration(line);
   const transliteration = validateTransliterationAlignment(
-    line.text,
+    lineText(line),
     track?.main.text ?? "",
-    line.words,
+    roleWords(line, "main"),
     track?.main.pieces,
   );
   if (transliteration) errors.push({ field: "transliteration", message: transliteration });
 
-  if (line.backgroundText) {
-    const background = validateTransliterationAlignment(
-      line.backgroundText,
+  const background = backgroundText(line);
+  if (background) {
+    const backgroundError = validateTransliterationAlignment(
+      background,
       track?.bg?.text ?? "",
-      line.backgroundWords,
+      roleWords(line, "bg"),
       track?.bg?.pieces,
     );
-    if (background) errors.push({ field: "background-transliteration", message: background });
+    if (backgroundError) errors.push({ field: "background-transliteration", message: backgroundError });
   }
   return errors;
 }
@@ -42,7 +45,7 @@ function getLanguageAlignmentErrors(line: LyricLine): LanguageAlignmentError[] {
 function getLanguageAlignmentErrorItems(lines: LyricLine[]): LanguageAlignmentErrorItem[] {
   return lines.flatMap((line, lineIndex) => {
     const errors = getLanguageAlignmentErrors(line);
-    return errors.length > 0 ? [{ lineId: line.id, lineIndex, text: line.text, errors }] : [];
+    return errors.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line), errors }] : [];
   });
 }
 

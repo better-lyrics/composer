@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
@@ -7,7 +8,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { detachLine, removeInstance } from "@/domain/commands/instance-edits";
 
 function linked(id: string, text: string, instanceIdx: number, templateLineIdx: number, begin: number): LyricLine {
-  return { id, text, agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx, begin, end: begin + 1 };
+  return lineFromFields({
+    id,
+    text,
+    agentId: "v1",
+    groupId: "g1",
+    instanceIdx,
+    templateLineIdx,
+    begin,
+    end: begin + 1,
+  });
 }
 
 function seed() {
@@ -17,7 +27,7 @@ function seed() {
       linked("a0", "Chorus a", 0, 0, 0),
       linked("a1", "Chorus b", 0, 1, 1),
       linked("a2", "Chorus c", 0, 2, 2),
-      { id: "v", text: "Verse", agentId: "v1", begin: 4, end: 5 },
+      lineFromFields({ id: "v", text: "Verse", agentId: "v1", begin: 4, end: 5 }),
       linked("b0", "Chorus a", 1, 0, 6),
       linked("b1", "Chorus b", 1, 1, 7),
       linked("b2", "Chorus c", 1, 2, 8),

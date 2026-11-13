@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord, createWords } from "@/test/factories";
@@ -64,7 +64,7 @@ describe("TimelineContextMenu", () => {
     );
     expect(explicitButton).toBeDefined();
     explicitButton?.click();
-    const updated = useProjectStore.getState().lines[0].words?.[0];
+    const updated = roleWords(useProjectStore.getState().lines[0], "main")?.[0];
     expect(updated?.explicit).toBe(true);
   });
 
@@ -232,7 +232,7 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Delete word/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords).toBeUndefined();
+    expect(roleWords(updated, "bg")).toBeUndefined();
     expect(backgroundText(updated)).toBeUndefined();
     expect(backgroundTrack(updated)?.source).toBeUndefined();
   });
@@ -252,7 +252,7 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Add word here/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords?.length).toBe(3);
+    expect(roleWords(updated, "bg")?.length).toBe(3);
     expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
@@ -335,7 +335,7 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
     splitButton?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
+      .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah ", "baby"]);
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual(timedSyllables(mainTrack(line)));
   });
@@ -379,10 +379,10 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     findButton(/Add word here/i)?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
+      .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah"]);
     expect(backgroundText(useProjectStore.getState().lines[0])).toBe("ooh yeah");
-    const firstBegin = useProjectStore.getState().lines[0].backgroundWords?.[0].begin ?? -1;
+    const firstBegin = roleWords(useProjectStore.getState().lines[0], "bg")?.[0].begin ?? -1;
     expect(firstBegin).toBeGreaterThan(4.5);
     expect(firstBegin).toBeLessThanOrEqual(5);
   });
@@ -441,7 +441,7 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     findButton(/^Paste here/)?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[1].words?.[0])
+      .poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.[0])
       .toMatchObject({ text: "hi", sep: "", begin: 5, end: 6, joinsNext: false });
   });
 });

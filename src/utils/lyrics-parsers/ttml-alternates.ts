@@ -5,8 +5,9 @@ import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { LanguagePieces, LineLanguage } from "@/domain/language/model";
 import { keyedPieces } from "@/domain/language/pieces";
 import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { lineText } from "@/domain/line/text";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { roleWords } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 
@@ -88,26 +89,26 @@ function parseTranslations(
       const sidecarBackground = Array.from(textElement.getElementsByTagName("span")).find(
         (span) => role(span) === "x-bg",
       );
-      let backgroundText: string | undefined = sidecarBackground?.textContent?.trim() || undefined;
+      let translatedBackground: string | undefined = sidecarBackground?.textContent?.trim() || undefined;
       const paragraph = key ? paragraphByKey.get(key) : undefined;
-      if (!backgroundText) {
+      if (!translatedBackground) {
         for (const span of Array.from(paragraph?.getElementsByTagName("span") ?? [])) {
           if (role(span) === "x-translation" && languageOf(span, "") === language) {
-            backgroundText = span.textContent?.trim() || undefined;
+            translatedBackground = span.textContent?.trim() || undefined;
           }
         }
       }
       const translation: LineLanguage = {
         language,
         main: { text: textWithoutBackground(textElement) },
-        ...(backgroundText !== undefined && { bg: { text: backgroundText } }),
+        ...(translatedBackground !== undefined && { bg: { text: translatedBackground } }),
         origin: "import",
-        sourceFingerprint: languageSourceFingerprint(lineText(line), line.backgroundText),
+        sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
       };
-      lines[index] = reconcileLine({
+      lines[index] = {
         ...line,
         ...withLanguages(line, { translations: { ...lineTranslations(line), [language]: translation } }),
-      });
+      };
     }
   }
 }
@@ -125,23 +126,24 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
       const background =
         Array.from(textElement.getElementsByTagName("span")).find((span) => role(span) === "x-bg") ?? null;
       const text = decodeTransliterationText(textWithoutBackground(textElement));
-      const backgroundText = background
+      const romanBackground = background
         ? decodeTransliterationText(background.textContent ?? "") || undefined
         : undefined;
-      const mainPieces = mappedPiecesFromSpans(line.words, text, directTimedSpans(textElement));
-      const backgroundPieces = backgroundText
-        ? mappedPiecesFromSpans(line.backgroundWords, backgroundText, background ? directTimedSpans(background) : [])
+      const sourceBackground = backgroundText(line);
+      const mainPieces = mappedPiecesFromSpans(roleWords(line, "main"), text, directTimedSpans(textElement));
+      const backgroundPieces = romanBackground
+        ? mappedPiecesFromSpans(roleWords(line, "bg"), romanBackground, background ? directTimedSpans(background) : [])
         : null;
       const backgroundSegments =
-        backgroundText && line.backgroundText ? wholeLineSegments(line.backgroundText, backgroundText) : undefined;
+        romanBackground && sourceBackground ? wholeLineSegments(sourceBackground, romanBackground) : undefined;
       const track: LineLanguage = {
         language,
         main: { text, segments: wholeLineSegments(lineText(line), text) },
-        ...(backgroundText !== undefined && {
-          bg: { text: backgroundText, ...(backgroundSegments && { segments: backgroundSegments }) },
+        ...(romanBackground !== undefined && {
+          bg: { text: romanBackground, ...(backgroundSegments && { segments: backgroundSegments }) },
         }),
         origin: "import",
-        sourceFingerprint: languageSourceFingerprint(lineText(line), line.backgroundText),
+        sourceFingerprint: languageSourceFingerprint(lineText(line), sourceBackground),
       };
       const mapped: LineLanguage = {
         ...track,
@@ -149,7 +151,7 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
         ...(track.bg && { bg: { ...track.bg, ...(backgroundPieces && { pieces: backgroundPieces }) } }),
       };
       const mappedLine = { ...line, ...withLanguages(line, { transliteration: mapped }) };
-      lines[index] = reconcileLine({ ...mappedLine, ...alignTrackToLine(mappedLine, track) });
+      lines[index] = { ...mappedLine, ...alignTrackToLine(mappedLine, track) };
     }
   }
 }

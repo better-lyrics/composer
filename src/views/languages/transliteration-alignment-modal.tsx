@@ -1,5 +1,6 @@
 import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { planTransliterationAlignment } from "@/domain/language/align";
+import { fieldWords, type TrackField } from "@/domain/line/track";
 import { lineTransliteration } from "@/domain/language/line-languages";
 import type { LanguagePiece, LanguagePieces } from "@/domain/language/model";
 import { keyedPieces, pieceOf, positionalPieces } from "@/domain/language/pieces";
@@ -21,7 +22,7 @@ import { useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
-type AlignmentField = "words" | "backgroundWords";
+type AlignmentField = TrackField;
 
 interface TransliterationAlignmentModalProps {
   line: LyricLine;
@@ -56,7 +57,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
   const side = field === "words" ? "main" : "bg";
   const canonicalText = track?.[side]?.text;
   const sourcePieces = track?.[side]?.pieces;
-  const sourceWords = line[field];
+  const sourceWords = fieldWords(line, field);
   const plannedWords = useMemo(() => (sourceWords && canonicalText ? sourceWords : []), [canonicalText, sourceWords]);
   const plannedPieces = useMemo(
     () =>

@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { trackField, trackWords } from "@/domain/line/tracks";
+import { fieldWords, trackField, trackWords } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -41,7 +41,8 @@ function resolveExplicitSelectionToggle(
   let allMarked = true;
 
   for (const group of groups.values()) {
-    const wordsArr = linesById.get(group.lineId)?.[group.field];
+    const groupLine = linesById.get(group.lineId);
+    const wordsArr = groupLine && fieldWords(groupLine, group.field);
     if (!wordsArr) continue;
     const expanded = expandSelectionToGroupmates(wordsArr, group.indices).filter((i) => i >= 0 && i < wordsArr.length);
     for (const idx of expanded) {

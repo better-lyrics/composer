@@ -11,6 +11,7 @@ import {
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
+import { withFields } from "@/test/field-updates";
 import { legacyLine, legacyTrack } from "@/test/legacy-languages";
 
 describe("getLanguageReviewItems", () => {
@@ -211,7 +212,7 @@ describe("transliteration review", () => {
   it("invalidates a side acknowledgement when the lyrics change again", () => {
     const line = reviewLine();
     line.languages = confirmed(line, "words");
-    line.text = "마나";
+    line.tracks = withFields(line, { text: "마나" }).tracks;
     expect(isTransliterationSourceStale(line, "words")).toBe(true);
   });
 });

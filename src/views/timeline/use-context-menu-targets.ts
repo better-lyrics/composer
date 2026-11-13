@@ -10,8 +10,7 @@ import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import type { EffectiveLine } from "@/domain/line/effective-words";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
-import { trackField, trackWords } from "@/domain/line/tracks";
+import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "@/domain/line/track";
 import { isAddressed } from "@/domain/selection/identity";
 import { resolveAddress } from "@/domain/selection/resolve";
 import { hasIntraGroupGap, isInSyllableGroup } from "@/domain/word/syllable-groups";
@@ -149,7 +148,7 @@ function useContextMenuTargets() {
   const snapNeededInfo = useMemo(() => {
     if (!groupedWordInfo) return null;
     const line = rawLines.find((l) => l.id === groupedWordInfo.lineId);
-    const words = line?.[groupedWordInfo.field];
+    const words = line && fieldWords(line, groupedWordInfo.field);
     if (!words) return null;
     return hasIntraGroupGap(words) ? groupedWordInfo : null;
   }, [groupedWordInfo, rawLines]);
@@ -162,7 +161,7 @@ function useContextMenuTargets() {
     const canPlace =
       lineText(targetLine).trim() !== "" &&
       !timedSyllables(mainTrack(targetLine)).length &&
-      targetLine.begin === undefined;
+      mainTrack(targetLine).begin === undefined;
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 

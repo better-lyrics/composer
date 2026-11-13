@@ -3,47 +3,44 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-interface LineFields {
+type UntimedSyllable = Omit<WordTiming, "begin" | "end"> & { begin?: never; end?: never };
+type Syllable = WordTiming | UntimedSyllable;
+type TrackRole = "main" | "bg";
+type BackgroundSource = "extraction" | "manual";
+
+// A track is timed by its syllables (timed ones first, then the untimed rest) or by one span over untimed
+// syllables. The `never` constraints make a track with both a span and timed syllables a compile error.
+interface SyllableTimedTrack {
+  readonly id: string;
+  readonly syllables: readonly Syllable[];
+  readonly begin?: never;
+  readonly end?: never;
+}
+
+interface SpanTimedTrack {
+  readonly id: string;
+  readonly syllables: readonly UntimedSyllable[];
+  readonly begin: number;
+  readonly end: number;
+}
+
+type TrackTiming = SyllableTimedTrack | SpanTimedTrack;
+
+type MainTrack = TrackTiming & { readonly role: "main"; readonly agentId: string };
+type BackgroundTrack = TrackTiming & { readonly role: "bg"; readonly source?: BackgroundSource };
+type LineTrack = MainTrack | BackgroundTrack;
+
+type LineTracks = readonly [MainTrack] | readonly [MainTrack, BackgroundTrack];
+
+interface LyricLine {
   id: string;
-  text: string;
-  agentId: string;
-  backgroundText?: string;
-  backgroundWords?: WordTiming[];
-  backgroundTextSource?: "extraction" | "manual";
+  tracks: LineTracks;
+  languages?: LineLanguages;
   groupId?: string;
   instanceIdx?: number;
   templateLineIdx?: number;
   detached?: boolean;
-  languages?: LineLanguages;
 }
-
-// LyricLine is a discriminated union over its timing shape. The discriminant is
-// structural (presence of `words` vs `begin`/`end`), not a literal `kind` tag,
-// so saved projects need no migration. The `never` constraints make a both-state
-// line (`words` + `begin`) a compile error at every constructor and write.
-interface WordSyncedLine extends LineFields {
-  words: WordTiming[];
-  begin?: never;
-  end?: never;
-}
-
-interface LineSyncedLine extends LineFields {
-  begin: number;
-  end: number;
-  words?: never;
-}
-
-interface UntimedLine extends LineFields {
-  words?: never;
-  begin?: never;
-  end?: never;
-}
-
-type LyricLine = WordSyncedLine | LineSyncedLine | UntimedLine;
-
-// A line shape before reconcileLine narrows it to a concrete variant: any
-// combination of timing fields may be present. Used for merge scratch objects.
-type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: number };
 
 const effectiveLineBrand: unique symbol = Symbol("effectiveLine");
 
@@ -54,23 +51,21 @@ interface LineUpdate {
   updates: Partial<LyricLine>;
 }
 
-// -- Functions ----------------------------------------------------------------
-
-// The store builds lines by spreading `...line` (a union member) together with
-// Partial<LyricLine> updates or fresh timing fields. A generic spread widens
-// past the LyricLine union, so reconcileLine re-narrows a freshly merged line
-// into exactly one variant by its runtime shape. It enforces the core
-// invariant: a line is never both word-synced and line-synced. A non-empty
-// `words` array wins and drops begin/end; an empty one counts as no words.
-function reconcileLine(line: LooseLine): LyricLine {
-  const { words, begin, end, ...rest } = line;
-  if (words?.length) return { ...rest, words };
-  if (begin !== undefined && end !== undefined) return { ...rest, begin, end };
-  return rest;
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { effectiveLineBrand, reconcileLine };
+export { effectiveLineBrand };
 
-export type { LineFields, LineSyncedLine, LineUpdate, LyricLine, LooseLine, RawLine };
+export type {
+  BackgroundSource,
+  BackgroundTrack,
+  LineTrack,
+  LineUpdate,
+  LyricLine,
+  MainTrack,
+  RawLine,
+  SpanTimedTrack,
+  Syllable,
+  TrackRole,
+  TrackTiming,
+  UntimedSyllable,
+};

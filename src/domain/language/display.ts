@@ -1,3 +1,5 @@
+import { roleWords } from "@/domain/line/track";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { withAlignedTransliteration } from "@/domain/language/align";
 import { lineTransliteration } from "@/domain/language/line-languages";
 import type { LanguagePieces, LineLanguages } from "@/domain/language/model";
@@ -7,7 +9,8 @@ import {
   sourceWordCount,
   timedTransliterationSlice,
 } from "@/domain/language/transliteration-format";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
@@ -73,7 +76,7 @@ function displayAlignedText({ words, pieces }: PiecedWords, index: number, fallb
 }
 
 function piecedWords(line: LyricLine, side: "main" | "bg"): PiecedWords | undefined {
-  const words = side === "main" ? line.words : line.backgroundWords;
+  const words = side === "main" ? roleWords(line, "main") : roleWords(line, "bg");
   return words && { words, pieces: trackPieces(line, side) };
 }
 
@@ -109,36 +112,34 @@ function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): 
   const transliteration = lineTransliteration(line);
   if (variant === "original" || !transliteration) {
     return {
-      text: line.text,
-      backgroundText: line.backgroundText,
-      words: line.words,
-      backgroundWords: line.backgroundWords,
+      text: lineText(line),
+      backgroundText: backgroundText(line),
+      words: roleWords(line, "main"),
+      backgroundWords: roleWords(line, "bg"),
     };
   }
 
   const alignedLine = withAlignedTransliteration(line);
+  const text = lineText(line);
+  const background = backgroundText(line);
   const sourceLine = withAlignedTransliteration(
-    reconcileLine({
-      ...line,
-      words: sourceSlots(line.text),
-      ...(line.backgroundText ? { backgroundWords: sourceSlots(line.backgroundText) } : {}),
-    }),
+    background
+      ? withRoleWords(withRoleWords(line, "main", sourceSlots(text)), "bg", sourceSlots(background))
+      : withRoleWords(line, "main", sourceSlots(text)),
   );
 
   return {
-    text: transliteration.main.text ? normalizeTransliterationForEditing(transliteration.main.text) : line.text,
-    backgroundText: transliteration.bg?.text
-      ? normalizeTransliterationForEditing(transliteration.bg.text)
-      : line.backgroundText,
-    words: alignedLine.words,
-    backgroundWords: alignedLine.backgroundWords,
+    text: transliteration.main.text ? normalizeTransliterationForEditing(transliteration.main.text) : text,
+    backgroundText: transliteration.bg?.text ? normalizeTransliterationForEditing(transliteration.bg.text) : background,
+    words: roleWords(alignedLine, "main"),
+    backgroundWords: roleWords(alignedLine, "bg"),
     languages: alignedLine.languages,
     wordTexts: transliteration.main.text
-      ? displayTrackTexts(line.text, piecedWords(alignedLine, "main"), piecedWords(sourceLine, "main"))
+      ? displayTrackTexts(text, piecedWords(alignedLine, "main"), piecedWords(sourceLine, "main"))
       : undefined,
     backgroundWordTexts:
-      line.backgroundText && transliteration.bg?.text
-        ? displayTrackTexts(line.backgroundText, piecedWords(alignedLine, "bg"), piecedWords(sourceLine, "bg"))
+      background && transliteration.bg?.text
+        ? displayTrackTexts(background, piecedWords(alignedLine, "bg"), piecedWords(sourceLine, "bg"))
         : undefined,
   };
 }

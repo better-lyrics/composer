@@ -1,4 +1,4 @@
-import { reconcileLine } from "@/domain/line/model";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { useProjectStore } from "@/stores/project";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
-const line = (id: string, text: string) => reconcileLine({ id, text, agentId: "v1" });
+const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" });
 
 function songWithTwoChoruses() {
   return [

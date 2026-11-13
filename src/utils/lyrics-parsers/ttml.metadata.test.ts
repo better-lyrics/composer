@@ -1,3 +1,5 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
@@ -12,7 +14,7 @@ const metadata: ProjectMetadata = {
   songwriters: ["W1"],
   extra: { spotifyId: "abc" },
 };
-const lines = [{ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" }];
+const lines = [lineFromFields({ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" })];
 
 describe("parseTtml metadata round-trip", () => {
   const ttml = generateTTML({ metadata, agents: [], lines });
@@ -66,6 +68,6 @@ describe("parseTtml line timing", () => {
     const ttml =
       '<?xml version="1.0" encoding="UTF-8"?><tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0" end="2.5">Hello there</p></div></body></tt>';
     const [line] = parseTtml(ttml).lines;
-    expect(line).toMatchObject({ text: "Hello there", begin: 0, end: 2.5 });
+    expect(fieldsOfLine(line)).toMatchObject({ text: "Hello there", begin: 0, end: 2.5 });
   });
 });

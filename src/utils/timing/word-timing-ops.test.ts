@@ -1,3 +1,5 @@
+import { patchOf, updatedLine } from "@/test/field-updates";
+import { roleWords } from "@/domain/line/track";
 import { describe, expect, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { createLine } from "@/test/factories";
@@ -31,31 +33,31 @@ describe("createWordTimingOps: nudgeBegin / setBegin clamp", () => {
   it("nudgeBegin caps at prev word's end", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "begin", { by: -5 }, [makeLine()], 0, 1);
-    expect((calls[0].updates.words ?? [])[1].begin).toBe(1);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[1].begin).toBe(1);
   });
 
   it("nudgeBegin caps at word's own end", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "begin", { by: +5 }, [makeLine()], 0, 1);
-    expect((calls[0].updates.words ?? [])[1].begin).toBe(2);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[1].begin).toBe(2);
   });
 
   it("nudgeBegin caps at 0 for first word with no prev", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "begin", { by: -5 }, [makeLine()], 0, 0);
-    expect((calls[0].updates.words ?? [])[0].begin).toBe(0);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[0].begin).toBe(0);
   });
 
   it("setBegin clamps to [prev.end, word.end]", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "begin", { to: 0.5 }, [makeLine()], 0, 1);
-    expect((calls[0].updates.words ?? [])[1].begin).toBe(1);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[1].begin).toBe(1);
   });
 
   it("setBegin accepts an in-range value", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "begin", { to: 1.5 }, [makeLine()], 0, 1);
-    expect((calls[0].updates.words ?? [])[1].begin).toBe(1.5);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[1].begin).toBe(1.5);
   });
 });
 
@@ -63,25 +65,25 @@ describe("createWordTimingOps: nudgeEnd / setEnd clamp", () => {
   it("nudgeEnd caps at next word's begin", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "end", { by: +5 }, [makeLine()], 0, 1);
-    expect((calls[0].updates.words ?? [])[1].end).toBe(2);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[1].end).toBe(2);
   });
 
   it("nudgeEnd caps at word's own begin", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "end", { by: -5 }, [makeLine()], 0, 1);
-    expect((calls[0].updates.words ?? [])[1].end).toBe(1);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[1].end).toBe(1);
   });
 
   it("nudgeEnd has no upper bound when next word is missing", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "end", { by: +100 }, [makeLine()], 0, 2);
-    expect((calls[0].updates.words ?? [])[2].end).toBe(103);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[2].end).toBe(103);
   });
 
   it("setEnd clamps to [word.begin, next.begin]", () => {
     const calls: LineUpdate[] = [];
     retimeInto(calls, wordsOps.retimeEdit, "end", { to: 5 }, [makeLine()], 0, 1);
-    expect((calls[0].updates.words ?? [])[1].end).toBe(2);
+    expect((roleWords(updatedLine(calls[0].updates), "main") ?? [])[1].end).toBe(2);
   });
 });
 
@@ -90,8 +92,8 @@ describe("createWordTimingOps: write contract", () => {
     const calls: LineUpdate[] = [];
     const line = createLine({ text: "x", words: [{ text: "x", begin: 0, end: 1 }] });
     retimeInto(calls, wordsOps.retimeEdit, "begin", { to: 0.2 }, [line], 0, 0);
-    expect("words" in calls[0].updates).toBe(true);
-    expect("backgroundWords" in calls[0].updates).toBe(false);
+    expect("words" in patchOf(calls[0].updates, line)).toBe(true);
+    expect("backgroundWords" in patchOf(calls[0].updates, line)).toBe(false);
   });
 
   it("targets the updateKey configured by the factory (backgroundWords)", () => {
@@ -102,8 +104,8 @@ describe("createWordTimingOps: write contract", () => {
       backgroundWords: [{ text: "ooh", begin: 0, end: 1 }],
     });
     retimeInto(calls, bgOps.retimeEdit, "begin", { to: 0.2 }, [line], 0, 0);
-    expect("backgroundWords" in calls[0].updates).toBe(true);
-    expect("words" in calls[0].updates).toBe(false);
+    expect("backgroundWords" in patchOf(calls[0].updates, line)).toBe(true);
+    expect("words" in patchOf(calls[0].updates, line)).toBe(false);
   });
 
   it("produces a new words array (immutability)", () => {
@@ -116,14 +118,14 @@ describe("createWordTimingOps: write contract", () => {
       ],
     });
     retimeInto(calls, wordsOps.retimeEdit, "begin", { to: 1.5 }, [original], 0, 1);
-    expect(calls[0].updates.words).not.toBe(original.words);
+    expect(roleWords(updatedLine(calls[0].updates), "main")).not.toBe(roleWords(original, "main"));
   });
 
   it("does not mutate untouched words in the resulting array", () => {
     const calls: LineUpdate[] = [];
     const line = makeLine();
     retimeInto(calls, wordsOps.retimeEdit, "begin", { to: 1.5 }, [line], 0, 1);
-    const out = calls[0].updates.words ?? [];
+    const out = roleWords(updatedLine(calls[0].updates), "main") ?? [];
     expect(out[0]).toEqual({ text: "a", sep: " ", begin: 0, end: 1, joinsNext: false });
     expect(out[2]).toEqual({ text: "c", sep: "", begin: 2, end: 3, joinsNext: false });
   });
@@ -134,7 +136,7 @@ describe("main-track ops on effective lines", () => {
     const calls: LineUpdate[] = [];
     const lines = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
     retimeInto(calls, wordRetimeEdit, "begin", { to: 18 }, lines, 0, 0);
-    expect(calls[0].updates).toEqual({ begin: 18, end: 20 });
+    expect(patchOf(calls[0].updates, lines[0])).toEqual({ begin: 18 });
   });
 
   it("regression info panel: set boundary on a line-synced row writes begin/end, not words", () => {
@@ -148,14 +150,16 @@ describe("main-track ops on effective lines", () => {
       rolling: false,
       syllablesFollowRolling: false,
     });
-    expect(edit?.updates).toEqual({ begin: 17, end: 21 });
+    expect(patchOf(edit?.updates, line)).toEqual({ end: 21 });
   });
 
   it("writes words and never text for a partially synced line", () => {
     const calls: LineUpdate[] = [];
     const lines = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a", sep: " ", begin: 1, end: 2 }] })]);
     retimeInto(calls, wordRetimeEdit, "end", { by: 0.5 }, lines, 0, 0);
-    expect(calls[0].updates).toEqual({ words: [{ text: "a", sep: " ", begin: 1, end: 2.5, joinsNext: false }] });
+    expect(patchOf(calls[0].updates, lines[0])).toEqual({
+      words: [{ text: "a", sep: " ", begin: 1, end: 2.5, joinsNext: false }],
+    });
   });
 
   it("leaves a raw line-synced row alone because it has no words to edit", () => {

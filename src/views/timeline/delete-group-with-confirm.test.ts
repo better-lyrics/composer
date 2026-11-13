@@ -1,9 +1,11 @@
 /**
  * @vitest-environment node
  */
+
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useConfirmStore } from "@/stores/confirm-store";
@@ -22,7 +24,7 @@ function seedChorusGroup() {
   useProjectStore.setState({
     groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     lines: [
-      {
+      lineFromFields({
         id: "a0",
         text: "I love you",
         agentId: "v1",
@@ -34,8 +36,8 @@ function seedChorusGroup() {
           { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
           { id: "w3", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
         ],
-      },
-      {
+      }),
+      lineFromFields({
         id: "a1",
         text: "I love you",
         agentId: "v1",
@@ -47,7 +49,7 @@ function seedChorusGroup() {
           { id: "w5", text: "love", sep: " ", begin: 60.4, end: 60.8, joinsNext: false },
           { id: "w6", text: "you", sep: "", begin: 60.8, end: 61.2, joinsNext: false },
         ],
-      },
+      }),
     ],
   });
 }

@@ -16,7 +16,7 @@ interface ImportSuccessBannerProps {
 
 const ImportSuccessBanner: React.FC<ImportSuccessBannerProps> = ({ result, filename, onDismiss }) => {
   const lineCount = result.lines.length;
-  const timedLineCount = result.lines.filter((l) => l.begin !== undefined).length;
+  const timedLineCount = result.lines.filter((l) => mainTrack(l).begin !== undefined).length;
   const wordTimedCount = result.lines.filter((l) => timedSyllables(mainTrack(l)).length > 0).length;
 
   return (

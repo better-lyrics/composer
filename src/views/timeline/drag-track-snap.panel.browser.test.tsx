@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -67,10 +68,10 @@ describe("TimelinePanel drag ghost snapping", () => {
     releasePointer(bg.left + 400, bg.top + bg.height / 2);
     await expect
       .poll(() =>
-        useProjectStore
-          .getState()
-          .lines.find((l) => l.id === "line-1")
-          ?.backgroundWords?.map((w) => w.text.trim()),
+        roleWords(
+          useProjectStore.getState().lines.find((l) => l.id === "line-1"),
+          "bg",
+        )?.map((w) => w.text.trim()),
       )
       .toEqual(["first"]);
   });

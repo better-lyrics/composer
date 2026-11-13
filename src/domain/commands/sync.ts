@@ -7,9 +7,9 @@ import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-sy
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { shiftLineTiming } from "@/domain/line/shift";
-import type { WordTrack } from "@/domain/line/tracks";
+import { withRoleWords, withoutLineTiming } from "@/domain/line/track-writes";
+import { roleWords, type WordTrack } from "@/domain/line/track";
 import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";
@@ -27,7 +27,7 @@ interface SyncWordTarget {
 // -- Constants ----------------------------------------------------------------
 
 // Timing-only writes never derive text: during a forward pass the words are a prefix of the text.
-const TIMING_ONLY = { derivesText: false, propagateToSiblings: false } as const;
+const TIMING_ONLY = { propagateToSiblings: false } as const;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -57,11 +57,7 @@ function syncGesture(
 function resetSync(): LyricCommand {
   return lineEditCommand(
     { command: "reset sync", args: [] },
-    (root) =>
-      root.lines.map((line) => ({
-        id: line.id,
-        updates: { words: undefined, begin: undefined, end: undefined, backgroundWords: undefined },
-      })),
+    (root) => root.lines.map((line) => ({ id: line.id, updates: { tracks: withoutLineTiming(line).tracks } })),
     { propagateToSiblings: false },
   );
 }
@@ -112,18 +108,11 @@ function splitSyncWord(
   return lineEditCommand({ command: "split sync word", args: [lineId, wordIndex, newWords.length] }, (root) => {
     const line = lineOf(root.lines, lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
-    if (!line.words) return [];
+    if (!roleWords(line, "main")) return [];
     const split = splitWordsKeepingTransliteration(line, "word", wordIndex, newWords, pieces);
     if (!split) return [];
     return [
-      {
-        id: line.id,
-        updates: {
-          words: split.words,
-          text: spacedText(split.words).trimEnd(),
-          languages: split.languages,
-        },
-      },
+      { id: line.id, updates: { tracks: withRoleWords(line, "main", split.words).tracks, languages: split.languages } },
     ];
   });
 }

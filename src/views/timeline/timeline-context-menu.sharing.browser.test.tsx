@@ -1,3 +1,4 @@
+import { mainTrack, roleWords } from "@/domain/line/track";
 import type { LinkGroup } from "@/domain/group/template";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWords } from "@/test/factories";
@@ -32,7 +33,11 @@ function seedBannerMenu(group: LinkGroup, instanceIdx: number) {
 
 const store = () => useProjectStore.getState();
 const group = () => store().groups[0];
-const secondWordBegin = (id: string) => store().lines.find((line) => line.id === id)?.words?.[1].begin;
+const secondWordBegin = (id: string) =>
+  roleWords(
+    store().lines.find((line) => line.id === id),
+    "main",
+  )?.[1].begin;
 
 async function renderMenu() {
   return render(
@@ -90,7 +95,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await screen.getByRole("menuitem", { name: "Share timing", exact: true }).click();
 
     await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
-    expect(store().lines[3].begin).toBe(43);
+    expect(mainTrack(store().lines[3]).begin).toBe(43);
   });
 
   it("keeps own timing and says why when no instance is fully timed", async () => {

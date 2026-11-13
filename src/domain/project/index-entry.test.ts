@@ -1,16 +1,23 @@
+import { savedLines } from "@/lib/saved-project";
+import type { LyricLine } from "@/domain/line/model";
 import { type IndexEntryInput, buildIndexEntry } from "@/domain/project/index-entry";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
-function input(overrides: Partial<IndexEntryInput> = {}): IndexEntryInput {
+// The project index reads saved records, so lines built in memory are written the way a save writes them.
+function storedRecord(line: unknown): unknown {
+  return typeof line === "object" && line !== null && "tracks" in line ? savedLines([line as LyricLine])[0] : line;
+}
+
+function input({ lines, ...overrides }: Partial<IndexEntryInput> = {}): IndexEntryInput {
   return {
     id: "p1",
     metadata: { title: "Midnight City", artists: ["M83"], album: "Hurry Up, We're Dreaming", duration: 243 },
-    lines: [],
     audioSource: undefined,
     storedAudioBytes: 0,
     updatedAt: 1_758_900_000_000,
     ...overrides,
+    lines: Array.isArray(lines) ? lines.map(storedRecord) : lines,
   };
 }
 
@@ -129,6 +136,13 @@ describe("buildIndexEntry", () => {
     it("regression: treats a line with a missing text field as having no main lyrics", () => {
       const entry = buildIndexEntry(input({ lines: [{ id: "y" }] }));
       expect(entry.lineCount).toBe(0);
+    });
+
+    it("regression: skips a saved word with no text instead of throwing", () => {
+      const lines = [{ id: "w", text: "Night bus", agentId: "v1", words: [{ begin: 1, end: 2 }, null] }];
+      const entry = buildIndexEntry(input({ lines }));
+      expect(entry.lineCount).toBe(1);
+      expect(entry.hasWordTiming).toBe(false);
     });
 
     it("regression: treats a line with a non-string text field as having no main lyrics", () => {

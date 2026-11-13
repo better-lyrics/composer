@@ -2,7 +2,9 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { isSpanTimed, mainTrack, trackWords } from "@/domain/line/track";
+import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
 import {
   type EffectiveLine,
   effectiveTrackWords,
@@ -10,8 +12,6 @@ import {
   getEffectiveLines,
 } from "@/domain/line/effective-words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
-import { trackWords } from "@/domain/line/tracks";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { partitionNudgeSelections, shiftSelectionsTogether } from "@/domain/selection/nudge";
 import { resolveAddress, resolveAddresses, resolveLineIndex } from "@/domain/selection/resolve";
@@ -68,7 +68,7 @@ interface StepKeyArgs {
 
 // -- Constants ----------------------------------------------------------------
 
-const TIMING_ONLY = { derivesText: false, propagateToSiblings: false } as const;
+const TIMING_ONLY = { propagateToSiblings: false } as const;
 const OWN_LINE_ONLY = { propagateToSiblings: false } as const;
 
 // -- Helpers ------------------------------------------------------------------
@@ -94,9 +94,9 @@ function patchedTrack(line: LyricLine, patch: WordPatch, neighbour: WordPatch | 
     neighbour && neighbourIndex !== undefined ? { index: neighbourIndex, updates: neighbour.updates } : undefined;
   const updated = applyWordPatch(words, wordIndex, patch.updates, adjacent);
   if (!updated) return [];
-  return [
-    { id: line.id, updates: patch.address.type === "word" ? { words: updated } : manualBackgroundWordEdit(updated) },
-  ];
+  const updates =
+    patch.address.type === "word" ? mainWordsEdit(line, updated) : manualBackgroundWordEdit(line, updated);
+  return [{ id: line.id, updates }];
 }
 
 // -- Commands -----------------------------------------------------------------
@@ -109,14 +109,10 @@ function retimeWord(patch: WordPatch, neighbour?: WordPatch): LyricCommand {
     (root) => {
       const line = root.lines.find((candidate) => candidate.id === address.lineId);
       if (!line) return refused({ reason: "line-gone", lineId: address.lineId });
-      if (address.type === "word" && isLineSynced(line)) {
-        const { begin, end } = patch.updates;
-        return [
-          {
-            id: line.id,
-            updates: { ...(begin !== undefined ? { begin } : {}), ...(end !== undefined ? { end } : {}) },
-          },
-        ];
+      const main = mainTrack(line);
+      if (address.type === "word" && isSpanTimed(main)) {
+        const { begin = main.begin, end = main.end } = patch.updates;
+        return [{ id: line.id, updates: { tracks: withMainTrack(line, withTrackSpan(main, begin, end)).tracks } }];
       }
       return patchedTrack(line, patch, neighbour);
     },

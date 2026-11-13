@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
@@ -14,8 +14,8 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     expect(result.hasTimingData).toBe(true);
 
     const firstLine = result.lines[0];
-    expect(firstLine.words).toBeDefined();
-    expect(firstLine.words?.length).toBe(7);
+    expect(roleWords(firstLine, "main")).toBeDefined();
+    expect(roleWords(firstLine, "main")?.length).toBe(7);
     expect(timedSyllables(mainTrack(firstLine))[0]).toMatchObject({ text: "Hell", sep: " " });
     expect(timedSyllables(mainTrack(firstLine))[0].begin).toBeCloseTo(1.277, 3);
     expect(timedSyllables(mainTrack(firstLine))[6].text).toBe("man");
@@ -97,7 +97,7 @@ describe("parseLyricsFile - TTML word explicit attribute", () => {
     const result = parseLyricsFile("song.ttml", content);
     const line = result.lines[0];
     expect(timedSyllables(mainTrack(line))[0].explicit).toBeUndefined();
-    expect(line.backgroundWords).toBeDefined();
+    expect(roleWords(line, "bg")).toBeDefined();
     expect(timedSyllables(backgroundTrack(line))[0].explicit).toBeUndefined();
     expect(timedSyllables(backgroundTrack(line))[1].text).toContain("shit");
     expect(timedSyllables(backgroundTrack(line))[1].explicit).toBe(true);
@@ -109,7 +109,7 @@ describe("parseLyricsFile - TTML background provenance", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.500" ttm:agent="v1"><span begin="00:01.000" end="00:02.000">main</span><span ttm:role="x-bg"><span begin="00:02.000" end="00:02.250">oh</span> <span begin="00:02.250" end="00:02.500">yeah</span></span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
     const line = result.lines[0];
-    expect(line.backgroundWords).toBeDefined();
+    expect(roleWords(line, "bg")).toBeDefined();
     expect(backgroundTrack(line)?.source).toBe("manual");
   });
 
@@ -194,6 +194,6 @@ describe("parseLyricsFile - TTML timing at zero", () => {
       "a.ttml",
       '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:00.000" end="00:02.000">Start</p></div></body></tt>',
     );
-    expect(parsed.lines[0].begin).toBe(0);
+    expect(mainTrack(parsed.lines[0]).begin).toBe(0);
   });
 });

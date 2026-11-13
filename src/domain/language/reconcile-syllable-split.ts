@@ -21,9 +21,10 @@ import {
 } from "@/domain/language/pieces";
 import { withPiecesOn, withTrackPieces } from "@/domain/language/side-pieces";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { type WordTrack, trackWords } from "@/domain/line/tracks";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText, syllablesText } from "@/domain/line/text";
+import { withRoleWords } from "@/domain/line/track-writes";
+import { trackRole, trackWords, type WordTrack } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -42,7 +43,7 @@ interface PiecedSplit {
 // -- Functions ----------------------------------------------------------------
 
 function sideSourceText(line: LyricLine, side: LanguageSide): string {
-  return side === "main" ? line.text : (line.backgroundText ?? "");
+  return side === "main" ? lineText(line) : (backgroundText(line) ?? "");
 }
 
 function trackWithText(
@@ -55,7 +56,7 @@ function trackWithText(
   const { stale: _stale, ...current } = track;
   const segments =
     side === "main"
-      ? wholeLineSegments(line.text, text)
+      ? wholeLineSegments(lineText(line), text)
       : [{ original: sideSourceText(line, side), transliteration: text }];
   return { ...current, origin: "manual", [side]: { ...current[side], text, segments, alignmentStatus: status } };
 }
@@ -86,9 +87,7 @@ function splitKeepingPieces(
   const effective = effectiveTrackWords(line, type);
   if (!effective?.length) return null;
   const side = languageSide(type);
-  const aligned = withAlignedWords(
-    reconcileLine(type === "word" ? { ...line, words: effective } : { ...line, backgroundWords: effective }),
-  );
+  const aligned = withAlignedWords(withRoleWords(line, trackRole(type), effective));
   const base = trackWords(aligned, type) ?? effective;
   const basePieces = trackPieces(aligned, side);
 
@@ -152,15 +151,15 @@ function splitWordIntoWordsKeepingTransliteration(
 
   const side = languageSide(type);
   const hasEditedSide = Boolean(track[side]?.text?.trim());
-  const wasCurrent = track.sourceFingerprint === languageSourceFingerprint(line.text, line.backgroundText);
+  const wasCurrent = track.sourceFingerprint === languageSourceFingerprint(lineText(line), backgroundText(line));
   // Only the other side has a transliteration: nothing to rewrite, but the
   // fingerprint still has to follow the new source text.
   const reconciled = split.transliteration ?? (hasEditedSide || !wasCurrent ? null : track);
   if (!reconciled) return { words: split.words, languages: splitLanguages(line, type, split, null) };
 
-  const splitText = reconstructLineText(split.words, splitChar);
-  const text = type === "word" ? splitText : line.text;
-  const backgroundText = type === "bg" ? splitText : line.backgroundText;
+  const splitText = syllablesText(split.words, splitChar);
+  const text = type === "word" ? splitText : lineText(line);
+  const background = type === "bg" ? splitText : backgroundText(line);
   const { stale: _stale, ...fresh } = reconciled;
   const sideTrack = fresh[side];
   const segments =
@@ -172,7 +171,7 @@ function splitWordIntoWordsKeepingTransliteration(
             segments:
               side === "main"
                 ? wholeLineSegments(text, sideTrack.text ?? "")
-                : [{ original: backgroundText ?? "", transliteration: sideTrack.text ?? "" }],
+                : [{ original: background ?? "", transliteration: sideTrack.text ?? "" }],
           },
         };
 
@@ -180,7 +179,7 @@ function splitWordIntoWordsKeepingTransliteration(
     ...fresh,
     ...segments,
     origin: track.origin,
-    sourceFingerprint: wasCurrent ? languageSourceFingerprint(text, backgroundText) : track.sourceFingerprint,
+    sourceFingerprint: wasCurrent ? languageSourceFingerprint(text, background) : track.sourceFingerprint,
   };
   return { words: split.words, languages: splitLanguages(line, type, split, written) };
 }

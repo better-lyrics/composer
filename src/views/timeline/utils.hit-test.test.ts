@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
-const line = (id: string, words?: LyricLine["words"]): LyricLine =>
-  ({ id, agentId: "a", text: id, words: words ?? [{ text: id, begin: 0, end: 1 }] }) as LyricLine;
+const line = (id: string, words?: WordTiming[] | undefined): LyricLine =>
+  lineFromFields({
+    id,
+    agentId: "a",
+    text: id,
+    words: words ?? [{ id: `${id}-w`, text: id, sep: "", joinsNext: false, begin: 0, end: 1 }],
+  });
 
 describe("getLineAndTrackAtY", () => {
   const layout = computeRowLayout({

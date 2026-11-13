@@ -11,8 +11,9 @@ import {
   v3WordPieces,
   withoutV3Piece,
 } from "@/domain/language/v3-languages";
-import { withTrailingJoinFromText } from "@/domain/line/line-from-fields";
-import { type LineFields, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { withSplitMarksFromWords } from "@/domain/line/reconstruct-text";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
@@ -32,7 +33,7 @@ import { getSplitCharacter } from "@/utils/split-character";
 type SavedWord = SpacedWord & V3Piece;
 
 // A line as saved in a version 3 record or link: words keep their separator inside `text` and their reading.
-type SavedLine = Omit<LineFields, "backgroundWords" | "languages"> &
+type SavedLine = Omit<LineFields, "words" | "backgroundWords" | "languages"> &
   V3LanguageFields & {
     words?: SavedWord[];
     backgroundWords?: SavedWord[];
@@ -111,30 +112,31 @@ function storeLine(line: SavedLine, splitChar: string): LyricLine {
     storeBackgroundWords?.length && fields.backgroundText !== undefined
       ? withSplitMarksFromWords(fields.backgroundText, storeBackgroundWords, splitChar)
       : fields.backgroundText;
-  const mainWords = storeWords && withTrailingJoinFromText(text, storeWords);
-  const bgWords = storeBackgroundWords && withTrailingJoinFromText(backgroundText ?? "", storeBackgroundWords);
+  const stored = lineFromFields(
+    {
+      ...fields,
+      text,
+      ...(backgroundText !== undefined && { backgroundText }),
+      ...(storeWords && { words: storeWords }),
+      ...(storeBackgroundWords && { backgroundWords: storeBackgroundWords }),
+    },
+    splitChar,
+  );
   const languages = languagesFromV3(
     { translations, transliteration },
     { main: v3PiecesOf(words), bg: v3PiecesOf(backgroundWords) },
-    { words: mainWords, backgroundWords: bgWords },
+    { words: timedSyllables(mainTrack(stored)), backgroundWords: timedSyllables(backgroundTrack(stored)) },
   );
-  return reconcileLine({
-    ...fields,
-    text,
-    ...(backgroundText !== undefined && { backgroundText }),
-    words: mainWords,
-    ...(bgWords && { backgroundWords: bgWords }),
-    ...(languages && { languages }),
-  });
+  return languages ? { ...stored, languages } : stored;
 }
 
 function savedLine(line: LyricLine): SavedLine {
-  const { languages, ...fields } = line;
+  const { languages, words, backgroundWords, ...fields } = fieldsOfLine(line);
   return {
     ...fields,
-    ...(line.words && { words: savedWords(line.words, v3WordPieces(line.words, languages, "main")) }),
-    ...(line.backgroundWords && {
-      backgroundWords: savedWords(line.backgroundWords, v3WordPieces(line.backgroundWords, languages, "bg")),
+    ...(words && { words: savedWords(words, v3WordPieces(words, languages, "main")) }),
+    ...(backgroundWords && {
+      backgroundWords: savedWords(backgroundWords, v3WordPieces(backgroundWords, languages, "bg")),
     }),
     ...v3Languages(languages),
   };

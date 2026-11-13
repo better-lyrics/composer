@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { roleWords } from "@/domain/line/track";
 import { createGroup, createLine } from "@/test/factories";
 import { instancePasteClipboard } from "@/views/timeline/instance-paste-template";
 
@@ -44,7 +45,7 @@ describe("instancePasteClipboard", () => {
       groupId: "g",
       instanceIdx: 0,
     });
-    const [sea] = source.words ?? [];
+    const [sea] = roleWords(source, "main") ?? [];
     const transliteration = {
       language: "ja-Latn",
       origin: "manual" as const,

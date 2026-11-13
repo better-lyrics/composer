@@ -1,3 +1,5 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { roleWords } from "@/domain/line/track";
 import { manualGrid } from "@/domain/tempo/grid-edits";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
@@ -23,12 +25,13 @@ const START_X = 200;
 
 function writeWordToStore(index: number, updates: Partial<WordTiming>): void {
   const line = useProjectStore.getState().lines[0];
-  const words = line.words && applyWordPatch(line.words, index, updates);
+  const main = roleWords(line, "main");
+  const words = main && applyWordPatch(main, index, updates);
   if (words)
     useProjectStore
       .getState()
       .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: line.id, updates: { words } }], {
+        lineEditCommand({ command: "edit lines", args: [] }, () => fieldUpdates([{ id: line.id, updates: { words } }]), {
           propagateToSiblings: false,
         }),
       );
@@ -75,6 +78,6 @@ describe("beat grid snapping", () => {
 
     dragEndEdgeBy((BEAT_AT - word.end) * ZOOM - MISS_PX);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].end).toBe(BEAT_AT);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0].end).toBe(BEAT_AT);
   });
 });

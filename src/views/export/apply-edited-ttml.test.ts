@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
@@ -36,8 +36,8 @@ describe("applyEditedTtml", () => {
     expect(applyEditedTtml(TWO_LINES, 0)).toMatchObject({ status: "applied", skipped: 0 });
     expect(lineTexts()).toEqual(["Brand new", "Second line"]);
     const [first] = useProjectStore.getState().lines;
-    expect(first?.begin).toBe(1);
-    expect(first?.end).toBe(2);
+    expect(first && mainTrack(first).begin).toBe(1);
+    expect(first && mainTrack(first).end).toBe(2);
   });
 
   it("keeps word timing from the TTML", () => {
@@ -141,7 +141,7 @@ describe("applyEditedTtml", () => {
       });
       const first = generateProjectTtml(useProjectStore.getState(), 0).replace(">ooh yeah<", ">ooh no<");
       expect(applyEditedTtml(first, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines[0]?.backgroundWords).toBeUndefined();
+      expect(roleWords(useProjectStore.getState().lines[0], "bg")).toBeUndefined();
       const second = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
       expect(applyEditedTtml(second, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello there"]);
@@ -154,7 +154,7 @@ describe("applyEditedTtml", () => {
         '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Added<span ttm:role="x-bg"><span begin="0:04.000" end="0:05.000">ooh</span></span></p></div>',
       );
       expect(applyEditedTtml(first, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines[1]?.backgroundWords).toBeUndefined();
+      expect(roleWords(useProjectStore.getState().lines[1], "bg")).toBeUndefined();
       const second = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
       expect(applyEditedTtml(second, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello there", "Added"]);

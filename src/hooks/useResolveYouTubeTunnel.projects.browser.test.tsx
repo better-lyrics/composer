@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
@@ -69,7 +70,9 @@ describe("useResolveYouTubeTunnel · projects", () => {
       const loading = result.current(VIDEO_ID);
       const newId = openProjectIdSnapshot() ?? "";
       expect(newId).not.toBe("a");
-      useProjectStore.getState().restoreLyrics({ lines: [{ id: "n1", text: "New words", agentId: "v1" }] });
+      useProjectStore
+        .getState()
+        .restoreLyrics({ lines: [lineFromFields({ id: "n1", text: "New words", agentId: "v1" })] });
       await expect(loading).rejects.toThrow();
       expect(useAudioStore.getState().source).toBeNull();
       await flushPendingSave();

@@ -1,15 +1,17 @@
 /**
  * @vitest-environment node
  */
+
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { createLine } from "@/test/factories";
+import { updatedLine } from "@/test/field-updates";
 import { applyWordMoveAcrossLines } from "./move-across-lines";
 
 // -- Helpers ------------------------------------------------------------------
@@ -20,7 +22,7 @@ const wholeSong = (): TimeRange => ({ min: 0, max: DURATION });
 function applyUpdates(lines: LyricLine[], updates: LineUpdate[]): LyricLine[] {
   return lines.map((line) => {
     const update = updates.find((u) => u.id === line.id);
-    return update ? reconcileLine({ ...line, ...update.updates }) : line;
+    return update ? { ...line, ...update.updates } : line;
   });
 }
 
@@ -549,7 +551,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    const inserted = b.words?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
+    const inserted = roleWords(b, "main")?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
     expect(inserted).toHaveLength(2);
     expect(inserted.map((w) => w.joinsNext)).toEqual([true, false]);
   });
@@ -644,9 +646,9 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
-    expect(a.words).toBeUndefined();
-    expect(a.begin).toBeUndefined();
-    expect(a.end).toBeUndefined();
+    expect(roleWords(a, "main")).toBeUndefined();
+    expect(mainTrack(a).begin).toBeUndefined();
+    expect(mainTrack(a).end).toBeUndefined();
   });
 });
 
@@ -844,7 +846,42 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
     );
     if (!result.ok) throw new Error("expected ok");
     const toB = result.updates.find((u) => u.id === "B")?.updates;
-    expect(toB?.words).toBeUndefined();
-    expect(toB?.backgroundWords?.map((w) => w.text)).toEqual(["lead"]);
+    expect(roleWords(updatedLine(toB), "main")).toBeUndefined();
+    expect(roleWords(updatedLine(toB), "bg")?.map((w) => w.text)).toEqual(["lead"]);
+  });
+});
+
+describe("applyWordMoveAcrossLines: partly synced lines", () => {
+  it("regression: a word moved into a partly synced line keeps its untimed rest", () => {
+    const lineA = createLine({ id: "A", words: [{ text: "lanterns", begin: 0, end: 0.5 }] });
+    const lineB = createLine({
+      id: "B",
+      text: "Paper boats drift away",
+      words: [{ text: "Paper", sep: " ", begin: 2, end: 2.5 }],
+    });
+    const moved: WordTiming = { id: "w99", text: "lanterns", sep: "", begin: 2.6, end: 3, joinsNext: false };
+    const result = applyWordMoveAcrossLines(
+      [lineA, lineB],
+      [
+        {
+          sourceLineId: "A",
+          sourceWordIndex: 0,
+          sourceTrack: "word",
+          targetLineId: "B",
+          targetTrack: "word",
+          word: moved,
+        },
+      ],
+      wholeSong,
+    );
+    if (!result.ok) throw new Error("expected ok");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
+    expect(mainTrack(b).syllables.map((syllable) => syllable.text)).toEqual([
+      "Paper",
+      "lanterns",
+      "boats",
+      "drift",
+      "away",
+    ]);
   });
 });

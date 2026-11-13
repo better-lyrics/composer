@@ -1,13 +1,13 @@
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import { textToLyricLines } from "@/utils/lyrics-text";
-import { editTextWithRewrittenRows } from "@/domain/edit-text/edit-text";
 import {
   diffEditTextChange,
   findStructurallyImpactedInstances,
   type ImpactedInstance,
   propagateContentUpdates,
 } from "@/domain/edit-text/diff-edit-text";
+import { editTextWithRewrittenRows } from "@/domain/edit-text/edit-text";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
+import { textToLyricLines } from "@/utils/lyrics-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -23,6 +23,8 @@ interface DecideOptions {
   lines: LyricLine[];
   groups: LinkGroup[];
   modalPending: boolean;
+  /** The split character the text was written with; the current one when left out. */
+  splitCharacter?: string;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -41,10 +43,17 @@ function uniqueImpactedLabels(impacted: ImpactedInstance[], groups: LinkGroup[])
   return out;
 }
 
-function decideEditTextAction({ text, defaultAgentId, lines, groups, modalPending }: DecideOptions): EditTextAction {
+function decideEditTextAction({
+  text,
+  defaultAgentId,
+  lines,
+  groups,
+  modalPending,
+  splitCharacter,
+}: DecideOptions): EditTextAction {
   if (modalPending) return { kind: "ignore-modal-pending" };
 
-  const lyricLines = textToLyricLines(text, defaultAgentId, lines);
+  const lyricLines = textToLyricLines(text, defaultAgentId, lines, splitCharacter);
   const diff = diffEditTextChange(lines, lyricLines);
 
   if (diff.hasStructuralChange) {

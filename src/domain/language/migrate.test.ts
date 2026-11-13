@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { type LegacyLine, legacyLine, legacyWords } from "@/test/legacy-languages";
 
 function oldLine(overrides: Partial<LegacyLine> = {}): LyricLine {
@@ -107,6 +107,6 @@ describe("legacy transliteration migration", () => {
       }),
     );
 
-    expect(legacyWords(migrated.backgroundWords, migrated.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
+    expect(legacyWords(roleWords(migrated, "bg"), migrated.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
   });
 });

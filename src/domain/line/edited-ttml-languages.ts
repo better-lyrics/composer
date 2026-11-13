@@ -9,6 +9,7 @@ import type {
 import { keyedPieces, pieceOf, trackPieces } from "@/domain/language/pieces";
 import { withoutPieces, withPiecesOn } from "@/domain/language/side-pieces";
 import type { LyricLine } from "@/domain/line/model";
+import { roleWords } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { hasAlternateText } from "@/utils/ttml-alternate-content";
 
@@ -57,7 +58,7 @@ function mergedTransliteration(stored: LyricLine, edited: LyricLine): LineLangua
 // -- Pieces -------------------------------------------------------------------
 
 function wordsOf(line: LyricLine, side: LanguageSide): WordTiming[] | undefined {
-  return side === "main" ? line.words : line.backgroundWords;
+  return roleWords(line, side);
 }
 
 // A merged syllable kept from the project keeps its piece; one taken from the edit takes the edit's piece at its place.

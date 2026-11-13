@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
@@ -21,16 +22,18 @@ function seedSingleLine(line: LyricLine) {
 
 describe("toggleWordExplicit · single line", () => {
   it("sets explicit: true on a previously unmarked word", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "I fuck you",
-      agentId: "v1",
-      words: [
-        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-        { id: "w2", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
-        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "I fuck you",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w2", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+          { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
     const updated = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(updated))[0].explicit).toBeUndefined();
@@ -39,28 +42,32 @@ describe("toggleWordExplicit · single line", () => {
   });
 
   it("removes the explicit key (does not store false) when toggling a marked word", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "fuck",
-      agentId: "v1",
-      words: [{ id: "w4", text: "fuck", sep: "", begin: 0, end: 1, explicit: true, joinsNext: false }],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "fuck",
+        agentId: "v1",
+        words: [{ id: "w4", text: "fuck", sep: "", begin: 0, end: 1, explicit: true, joinsNext: false }],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0]));
     const word = timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0];
     expect("explicit" in word).toBe(false);
   });
 
   it("marks all targeted words when at least one is unmarked", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "a b c",
-      agentId: "v1",
-      words: [
-        { id: "w5", text: "a", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-        { id: "w6", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
-        { id: "w7", text: "c", sep: "", begin: 0.6, end: 1, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "a b c",
+        agentId: "v1",
+        words: [
+          { id: "w5", text: "a", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w6", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
+          { id: "w7", text: "c", sep: "", begin: 0.6, end: 1, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0, 1, 2]));
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBe(true);
@@ -69,16 +76,18 @@ describe("toggleWordExplicit · single line", () => {
   });
 
   it("unmarks all targeted words when every one is already marked", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "a b c",
-      agentId: "v1",
-      words: [
-        { id: "w8", text: "a", sep: " ", begin: 0, end: 0.3, explicit: true, joinsNext: false },
-        { id: "w9", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
-        { id: "w10", text: "c", sep: "", begin: 0.6, end: 1, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "a b c",
+        agentId: "v1",
+        words: [
+          { id: "w8", text: "a", sep: " ", begin: 0, end: 0.3, explicit: true, joinsNext: false },
+          { id: "w9", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
+          { id: "w10", text: "c", sep: "", begin: 0.6, end: 1, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0, 1]));
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBeUndefined();
@@ -86,17 +95,19 @@ describe("toggleWordExplicit · single line", () => {
   });
 
   it("operates on backgroundWords when field='backgroundWords'", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "main",
-      agentId: "v1",
-      words: [{ id: "w11", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-      backgroundText: "oh shit",
-      backgroundWords: [
-        { id: "w12", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
-        { id: "w13", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "main",
+        agentId: "v1",
+        words: [{ id: "w11", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+        backgroundText: "oh shit",
+        backgroundWords: [
+          { id: "w12", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+          { id: "w13", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "backgroundWords", [1]));
     const line = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(line))[0].explicit).toBeUndefined();
@@ -111,7 +122,7 @@ describe("toggleWordExplicit · linked-line propagation", () => {
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I fuck you",
           agentId: "v1",
@@ -123,8 +134,8 @@ describe("toggleWordExplicit · linked-line propagation", () => {
             { id: "w15", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w16", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I fuck you",
           agentId: "v1",
@@ -136,7 +147,7 @@ describe("toggleWordExplicit · linked-line propagation", () => {
             { id: "w18", text: "fuck", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
             { id: "w19", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
   }
@@ -167,7 +178,7 @@ describe("toggleWordExplicit · linked-line propagation", () => {
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I fuck you",
           agentId: "v1",
@@ -179,8 +190,8 @@ describe("toggleWordExplicit · linked-line propagation", () => {
             { id: "w21", text: "fuck", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
             { id: "w22", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I fuck you",
           agentId: "v1",
@@ -192,7 +203,7 @@ describe("toggleWordExplicit · linked-line propagation", () => {
             { id: "w24", text: "fuck", sep: " ", begin: 30.4, end: 30.7, explicit: true, joinsNext: false },
             { id: "w25", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("A", "words", [1]));
@@ -255,12 +266,14 @@ describe("addInstance · template materialization carries explicit", () => {
 
 describe("toggleWordExplicit · history", () => {
   it("creates a history entry so undo restores the previous flag state", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "fuck",
-      agentId: "v1",
-      words: [{ id: "w26", text: "fuck", sep: "", begin: 0, end: 1, joinsNext: false }],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "fuck",
+        agentId: "v1",
+        words: [{ id: "w26", text: "fuck", sep: "", begin: 0, end: 1, joinsNext: false }],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0]));
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].explicit).toBe(true);
     useProjectStore.getState().undo();
@@ -270,18 +283,20 @@ describe("toggleWordExplicit · history", () => {
 
 describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
   it("marks every syllable of a multi-syllable word when one syllable is targeted", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "I fu|cking love it",
-      agentId: "v1",
-      words: [
-        { id: "w27", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-        { id: "w28", text: "fu", sep: "", begin: 0.3, end: 0.4, joinsNext: true },
-        { id: "w29", text: "cking", sep: " ", begin: 0.4, end: 0.6, joinsNext: false },
-        { id: "w30", text: "love", sep: " ", begin: 0.6, end: 0.8, joinsNext: false },
-        { id: "w31", text: "it", sep: "", begin: 0.8, end: 1, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "I fu|cking love it",
+        agentId: "v1",
+        words: [
+          { id: "w27", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w28", text: "fu", sep: "", begin: 0.3, end: 0.4, joinsNext: true },
+          { id: "w29", text: "cking", sep: " ", begin: 0.4, end: 0.6, joinsNext: false },
+          { id: "w30", text: "love", sep: " ", begin: 0.6, end: 0.8, joinsNext: false },
+          { id: "w31", text: "it", sep: "", begin: 0.8, end: 1, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[1].explicit).toBe(true);
@@ -291,15 +306,17 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
   });
 
   it("unmarks every syllable of a multi-syllable word when all are marked", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "fu|cking",
-      agentId: "v1",
-      words: [
-        { id: "w32", text: "fu", sep: "", begin: 0, end: 0.5, explicit: true, joinsNext: true },
-        { id: "w33", text: "cking", sep: "", begin: 0.5, end: 1, explicit: true, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "fu|cking",
+        agentId: "v1",
+        words: [
+          { id: "w32", text: "fu", sep: "", begin: 0, end: 0.5, explicit: true, joinsNext: true },
+          { id: "w33", text: "cking", sep: "", begin: 0.5, end: 1, explicit: true, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBeUndefined();
@@ -311,7 +328,7 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "fu|cking yeah",
           agentId: "v1",
@@ -323,8 +340,8 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
             { id: "w35", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
             { id: "w36", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "fu|cking yeah",
           agentId: "v1",
@@ -336,7 +353,7 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
             { id: "w38", text: "cking", sep: " ", begin: 30.2, end: 30.5, joinsNext: false },
             { id: "w39", text: "yeah", sep: "", begin: 30.5, end: 31, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("A", "words", [0]));
@@ -350,16 +367,18 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
 
 describe("markWordsExplicit · syllable + batch (issue #62)", () => {
   it("expands a single syllable target to the whole word", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "fu|cking yeah",
-      agentId: "v1",
-      words: [
-        { id: "w40", text: "fu", sep: "", begin: 0, end: 0.2, joinsNext: true },
-        { id: "w41", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
-        { id: "w42", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "fu|cking yeah",
+        agentId: "v1",
+        words: [
+          { id: "w40", text: "fu", sep: "", begin: 0, end: 0.2, joinsNext: true },
+          { id: "w41", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
+          { id: "w42", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true));
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBe(true);
@@ -372,7 +391,7 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "fuck this shit",
           agentId: "v1",
@@ -384,8 +403,8 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
             { id: "w44", text: "this", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w45", text: "shit", sep: "", begin: 0.6, end: 1, explicit: true, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "fuck this shit",
           agentId: "v1",
@@ -397,7 +416,7 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
             { id: "w47", text: "this", sep: " ", begin: 30.3, end: 30.6, joinsNext: false },
             { id: "w48", text: "shit", sep: "", begin: 30.6, end: 31, explicit: true, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     useProjectStore.getState().commit(
@@ -419,18 +438,20 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
 
 describe("toggleWordExplicit · background provenance", () => {
   function seedExtractionBgLine() {
-    seedSingleLine({
-      id: "L1",
-      text: "main",
-      agentId: "v1",
-      words: [{ id: "w49", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-      backgroundText: "oh shit",
-      backgroundTextSource: "extraction",
-      backgroundWords: [
-        { id: "w50", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
-        { id: "w51", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "main",
+        agentId: "v1",
+        words: [{ id: "w49", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+        backgroundText: "oh shit",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { id: "w50", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+          { id: "w51", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
+        ],
+      }),
+    );
   }
 
   it("flips backgroundTextSource to manual after a background-word edit", () => {
@@ -456,7 +477,7 @@ describe("toggleWordExplicit · background provenance", () => {
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "main",
           agentId: "v1",
@@ -470,8 +491,8 @@ describe("toggleWordExplicit · background provenance", () => {
             { id: "w53", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
             { id: "w54", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "main",
           agentId: "v1",
@@ -485,7 +506,7 @@ describe("toggleWordExplicit · background provenance", () => {
             { id: "w56", text: "oh", sep: " ", begin: 31, end: 31.25, joinsNext: false },
             { id: "w57", text: "shit", sep: "", begin: 31.25, end: 31.5, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("A", "backgroundWords", [1]));
@@ -508,18 +529,20 @@ describe("toggleWordExplicit · background provenance", () => {
 
 describe("markWordsExplicit · background provenance", () => {
   it("flips backgroundTextSource to manual after a background-word edit", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "main",
-      agentId: "v1",
-      words: [{ id: "w58", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-      backgroundText: "oh shit",
-      backgroundTextSource: "extraction",
-      backgroundWords: [
-        { id: "w59", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
-        { id: "w60", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "main",
+        agentId: "v1",
+        words: [{ id: "w58", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+        backgroundText: "oh shit",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { id: "w59", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+          { id: "w60", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore
       .getState()
       .commit(markWordsExplicit([{ lineId: "L1", field: "backgroundWords", wordIndex: 0 }], true));
@@ -530,18 +553,20 @@ describe("markWordsExplicit · background provenance", () => {
   });
 
   it("leaves backgroundTextSource untouched when marking the main words field", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "main",
-      agentId: "v1",
-      words: [{ id: "w61", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-      backgroundText: "oh shit",
-      backgroundTextSource: "extraction",
-      backgroundWords: [
-        { id: "w62", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
-        { id: "w63", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "main",
+        agentId: "v1",
+        words: [{ id: "w61", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+        backgroundText: "oh shit",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { id: "w62", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+          { id: "w63", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true));
     const line = useProjectStore.getState().lines[0];
     expect(backgroundTrack(line)?.source).toBe("extraction");
@@ -553,7 +578,7 @@ describe("markWordsExplicit · background provenance", () => {
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "main",
           agentId: "v1",
@@ -567,8 +592,8 @@ describe("markWordsExplicit · background provenance", () => {
             { id: "w65", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
             { id: "w66", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "main",
           agentId: "v1",
@@ -582,7 +607,7 @@ describe("markWordsExplicit · background provenance", () => {
             { id: "w68", text: "oh", sep: " ", begin: 31, end: 31.25, joinsNext: false },
             { id: "w69", text: "shit", sep: "", begin: 31.25, end: 31.5, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     useProjectStore
@@ -600,7 +625,7 @@ describe("markWordsExplicit · batch action", () => {
   it("applies multiple targets in a single history entry so one undo reverts them all", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "L1",
           text: "fuck this",
           agentId: "v1",
@@ -608,8 +633,8 @@ describe("markWordsExplicit · batch action", () => {
             { id: "w70", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
             { id: "w71", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "L2",
           text: "shit happens",
           agentId: "v1",
@@ -617,8 +642,8 @@ describe("markWordsExplicit · batch action", () => {
             { id: "w72", text: "shit", sep: " ", begin: 1, end: 1.5, joinsNext: false },
             { id: "w73", text: "happens", sep: "", begin: 1.5, end: 2, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "L3",
           text: "damn cool",
           agentId: "v1",
@@ -626,7 +651,7 @@ describe("markWordsExplicit · batch action", () => {
             { id: "w74", text: "damn", sep: " ", begin: 2, end: 2.5, joinsNext: false },
             { id: "w75", text: "cool", sep: "", begin: 2.5, end: 3, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
@@ -658,7 +683,7 @@ describe("markWordsExplicit · batch action", () => {
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I fuck you",
           agentId: "v1",
@@ -670,8 +695,8 @@ describe("markWordsExplicit · batch action", () => {
             { id: "w77", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w78", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I fuck you",
           agentId: "v1",
@@ -683,7 +708,7 @@ describe("markWordsExplicit · batch action", () => {
             { id: "w80", text: "fuck", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
             { id: "w81", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
@@ -694,27 +719,31 @@ describe("markWordsExplicit · batch action", () => {
   });
 
   it("is a no-op when targets is empty", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "fuck",
-      agentId: "v1",
-      words: [{ id: "w82", text: "fuck", sep: "", begin: 0, end: 1, joinsNext: false }],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "fuck",
+        agentId: "v1",
+        words: [{ id: "w82", text: "fuck", sep: "", begin: 0, end: 1, joinsNext: false }],
+      }),
+    );
     const before = useProjectStore.getState().lines;
     useProjectStore.getState().commit(markWordsExplicit([], true));
     expect(useProjectStore.getState().lines).toBe(before);
   });
 
   it("can clear flags when value=false", () => {
-    seedSingleLine({
-      id: "L1",
-      text: "fuck this",
-      agentId: "v1",
-      words: [
-        { id: "w83", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true, joinsNext: false },
-        { id: "w84", text: "this", sep: "", begin: 0.5, end: 1, explicit: true, joinsNext: false },
-      ],
-    });
+    seedSingleLine(
+      lineFromFields({
+        id: "L1",
+        text: "fuck this",
+        agentId: "v1",
+        words: [
+          { id: "w83", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true, joinsNext: false },
+          { id: "w84", text: "this", sep: "", begin: 0.5, end: 1, explicit: true, joinsNext: false },
+        ],
+      }),
+    );
     useProjectStore.getState().commit(
       markWordsExplicit(
         [

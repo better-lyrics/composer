@@ -22,7 +22,6 @@ function appliedPlan(root: LyricRoot, plan: GroupPlan): Outcome {
 function groupEdit(command: string, args: readonly (string | number)[], next: (root: LyricRoot) => LyricRoot) {
   return {
     note: { command, args },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root: LyricRoot) => {
       const edited = next(root);
@@ -65,7 +64,6 @@ function reported(plan: GroupPlan, report?: (sharing: SharingOutcome) => void): 
 function groupRepeatingSections(sections: RepeatingSections, report?: (sharing: SharingOutcome) => void): LyricCommand {
   return {
     note: { command: "group sections", args: [sections.length, ...sections.starts] },
-    derivesText: false,
     copiesSharedTiming: false,
     run: (root, ctx) =>
       appliedPlan(
@@ -78,7 +76,6 @@ function groupRepeatingSections(sections: RepeatingSections, report?: (sharing: 
 function shareGroupTiming(groupId: string, duration: number, report?: (sharing: SharingOutcome) => void): LyricCommand {
   return {
     note: { command: "share group timing", args: [groupId] },
-    derivesText: false,
     copiesSharedTiming: false,
     run: (root) => appliedPlan(root, reported(planGroupSharing(root, groupId, duration), report)),
   };

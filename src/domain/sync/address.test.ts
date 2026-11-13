@@ -1,3 +1,6 @@
+import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
@@ -11,12 +14,14 @@ const tideLine = (words: { id: string; text: string; sep?: string; begin: number
 
 describe("syncAddressPosition", () => {
   it("stays on the next untimed word when a timed word before it is split", () => {
-    const stored = syncAddressAt([tideLine([SLOW, TIDE, PULLS])], { lineIndex: 0, wordIndex: 3 });
-    const split = tideLine([
-      SLOW,
-      TIDE,
-      { ...PULLS, text: "pu", sep: "", end: 3.5 },
-      { ...PULLS, id: "y9", begin: 3.5, text: "lls " },
+    const line = tideLine([SLOW, TIDE, PULLS]);
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 3 });
+    const [slow, tide, pulls] = timedSyllables(mainTrack(line));
+    const split = withRoleWords(line, "main", [
+      slow,
+      tide,
+      { ...pulls, text: "pu", sep: "", joinsNext: true, end: 3.5 },
+      { ...pulls, id: "y9", begin: 3.5, text: "lls" },
     ]);
     expect(syncAddressPosition([split], stored)).toEqual({ lineIndex: 0, wordIndex: 4 });
   });
@@ -33,5 +38,19 @@ describe("syncAddressPosition", () => {
   it("falls back to where the cursor stood when its word is gone", () => {
     const stored = syncAddressAt([tideLine([SLOW, TIDE, PULLS])], { lineIndex: 0, wordIndex: 2 });
     expect(syncAddressPosition([tideLine([SLOW, TIDE])], stored)).toEqual({ lineIndex: 0, wordIndex: 2 });
+  });
+
+  it("stays on its untimed syllable when Edit inserts a word before it", () => {
+    const line = tideLine([SLOW, TIDE, PULLS]);
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 4 });
+    const action = decideEditTextAction({
+      text: "Slow tide pulls the old harbour lights",
+      defaultAgentId: "v1",
+      lines: [line],
+      groups: [],
+      modalPending: false,
+    });
+    if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
+    expect(syncAddressPosition(action.finalLines, stored)).toEqual({ lineIndex: 0, wordIndex: 5 });
   });
 });

@@ -1,7 +1,8 @@
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { mainTrack } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
@@ -56,7 +57,7 @@ describe("EditPanel smart paste", () => {
     const event = pasteText(textarea, TTML);
     expect(event.defaultPrevented).toBe(true);
     await expect.poll(lineTexts).toEqual(["Hello", "World"]);
-    expect(useProjectStore.getState().lines[0].begin).toBe(1);
+    expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBe(1);
     await expect.poll(() => textarea.value).toBe("Hello\nWorld");
     await expect.element(screen.getByText("Imported 2 lines from pasted text with 2 timed lines")).toBeInTheDocument();
   });
@@ -172,7 +173,7 @@ describe("EditPanel smart paste", () => {
       expect(event.defaultPrevented).toBe(false);
       Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(textarea, "Hi (ooh)");
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
-      await expect.poll(() => useProjectStore.getState().lines[0]?.backgroundText).toBe("(ooh)");
+      await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("(ooh)");
       expect(screen.container.textContent).not.toContain("Imported");
     });
   });

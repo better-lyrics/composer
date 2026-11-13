@@ -78,7 +78,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
     >
       <span
         className="line-cell text-center font-mono font-medium text-xs text-(--muted) tabular-nums select-none [box-shadow:inset_-2px_0_0_var(--rail)]"
-        style={{ "--agent": getAgentColor(line.agentId) }}
+        style={{ "--agent": getAgentColor(mainTrack(line).agentId) }}
       >
         <span className="flex h-12 items-center justify-center">{index + 1}</span>
       </span>

@@ -1,7 +1,10 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldUpdates } from "@/test/field-updates";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 /**
  * @vitest-environment node
  */
@@ -31,7 +34,7 @@ describe("project store · group types", () => {
   });
 
   it("LyricLine accepts optional group fields", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "l1",
       text: "I love you",
       agentId: "v1",
@@ -39,7 +42,7 @@ describe("project store · group types", () => {
       instanceIdx: 0,
       templateLineIdx: 0,
       detached: false,
-    };
+    });
     expect(line.groupId).toBe("g1");
     expect(line.instanceIdx).toBe(0);
     expect(line.templateLineIdx).toBe(0);
@@ -63,14 +66,18 @@ describe("project store · history captures groups", () => {
     useProjectStore
       .getState()
       .commit(
-        pasteLyrics(useProjectStore.getState().lines, [{ id: "l1", text: "test", agentId: "v1", groupId: "g1" }]),
+        pasteLyrics(useProjectStore.getState().lines, [
+          lineFromFields({ id: "l1", text: "test", agentId: "v1", groupId: "g1" }),
+        ]),
       );
 
     useProjectStore.setState({ groups: [] });
 
     useProjectStore
       .getState()
-      .commit(pasteLyrics(useProjectStore.getState().lines, [{ id: "l2", text: "test2", agentId: "v1" }]));
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [lineFromFields({ id: "l2", text: "test2", agentId: "v1" })]),
+      );
 
     useProjectStore.getState().undo();
 
@@ -82,13 +89,13 @@ describe("project store · history captures groups", () => {
 
     useProjectStore
       .getState()
-      .commit(pasteLyrics(useProjectStore.getState().lines, [{ id: "l1", text: "a", agentId: "v1" }]));
+      .commit(pasteLyrics(useProjectStore.getState().lines, [lineFromFields({ id: "l1", text: "a", agentId: "v1" })]));
 
     useProjectStore.setState({ groups: [seedGroup("g1"), seedGroup("g2", { label: "Verse" })] });
 
     useProjectStore
       .getState()
-      .commit(pasteLyrics(useProjectStore.getState().lines, [{ id: "l2", text: "b", agentId: "v1" }]));
+      .commit(pasteLyrics(useProjectStore.getState().lines, [lineFromFields({ id: "l2", text: "b", agentId: "v1" })]));
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().groups.map((g) => g.id)).toEqual(["g1"]);
@@ -102,17 +109,19 @@ describe("project store · group registry mutators", () => {
   it("addGroupWithLines undoes group + lines in a single step (no residue)", () => {
     useProjectStore.setState({
       lines: [
-        { id: "l1", text: "a", agentId: "v1" },
-        { id: "l2", text: "b", agentId: "v1" },
+        lineFromFields({ id: "l1", text: "a", agentId: "v1" }),
+        lineFromFields({ id: "l2", text: "b", agentId: "v1" }),
       ],
     });
 
-    useProjectStore.getState().commit(
-      addGroupWithLines(seedGroup("g1"), [
-        { id: "l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-        { id: "l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-      ]),
-    );
+    useProjectStore
+      .getState()
+      .commit(
+        addGroupWithLines(seedGroup("g1"), [
+          lineFromFields({ id: "l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+          lineFromFields({ id: "l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
+        ]),
+      );
 
     expect(useProjectStore.getState().groups).toHaveLength(1);
     expect(useProjectStore.getState().lines[0].groupId).toBe("g1");
@@ -149,19 +158,19 @@ describe("project store · group registry mutators", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "l1",
           text: "test",
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-        },
-        {
+        }),
+        lineFromFields({
           id: "l2",
           text: "untouched",
           agentId: "v1",
-        },
+        }),
       ],
     });
 
@@ -180,7 +189,7 @@ describe("project store · group registry mutators", () => {
       .getState()
       .commit(
         pasteLyrics(useProjectStore.getState().lines, [
-          { id: "l1", text: "test", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+          lineFromFields({ id: "l1", text: "test", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
         ]),
       );
 
@@ -229,7 +238,7 @@ describe("project store · instance mutators", () => {
     expect(created).toHaveLength(1);
     expect(created[0].instanceIdx).toBe(0);
     expect(created[0].templateLineIdx).toBe(0);
-    expect(created[0].begin).toBeUndefined();
+    expect(mainTrack(created[0]).begin).toBeUndefined();
     expect(timedSyllables(mainTrack(created[0]))[0].begin).toBeCloseTo(30);
     expect(timedSyllables(mainTrack(created[0]))[1].begin).toBeCloseTo(30.4);
     expect(timedSyllables(mainTrack(created[0]))[2].end).toBeCloseTo(31.2);
@@ -304,9 +313,9 @@ describe("project store · instance mutators", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        { id: "a0", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-        { id: "a1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
-        { id: "b0", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
+        lineFromFields({ id: "a0", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+        lineFromFields({ id: "a1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+        lineFromFields({ id: "b0", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
       ],
     });
 
@@ -323,7 +332,7 @@ describe("project store · instance mutators", () => {
   it("removeInstance dissolves the group when removing the last instance", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
-      lines: [{ id: "a", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }],
+      lines: [lineFromFields({ id: "a", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 })],
     });
 
     useProjectStore.getState().commit(removeInstance("g1", 0));
@@ -336,7 +345,7 @@ describe("project store · instance mutators", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "I love you",
           agentId: "v1",
@@ -348,7 +357,7 @@ describe("project store · instance mutators", () => {
             { id: "w4", text: "love", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
             { id: "w5", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
@@ -379,7 +388,7 @@ describe("project store · shiftInstance", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "hi",
           agentId: "v1",
@@ -390,8 +399,8 @@ describe("project store · shiftInstance", () => {
             { id: "w6", text: "hi", sep: " ", begin: 30, end: 31, joinsNext: false },
             { id: "w7", text: "there", sep: "", begin: 31, end: 32, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "hi",
           agentId: "v1",
@@ -402,7 +411,7 @@ describe("project store · shiftInstance", () => {
             { id: "w8", text: "hi", sep: " ", begin: 60, end: 61, joinsNext: false },
             { id: "w9", text: "there", sep: "", begin: 61, end: 62, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
@@ -423,7 +432,7 @@ describe("project store · shiftInstance", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "hi",
           agentId: "v1",
@@ -432,13 +441,13 @@ describe("project store · shiftInstance", () => {
           templateLineIdx: 0,
           backgroundText: "yeah",
           backgroundWords: [{ id: "w10", text: "yeah", sep: "", begin: 30, end: 31, joinsNext: false }],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(shiftInstance("g1", 0, 2, SONG_LENGTH));
 
-    const bg = useProjectStore.getState().lines[0].backgroundWords?.[0];
+    const bg = roleWords(useProjectStore.getState().lines[0], "bg")?.[0];
     expect(bg?.begin).toBeCloseTo(32);
     expect(bg?.end).toBeCloseTo(33);
   });
@@ -447,7 +456,7 @@ describe("project store · shiftInstance", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "hi",
           agentId: "v1",
@@ -458,13 +467,13 @@ describe("project store · shiftInstance", () => {
           end: 11,
           backgroundText: "yeah",
           backgroundWords: [{ id: "w11", text: "yeah", sep: "", begin: 10.25, end: 10.75, joinsNext: false }],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(shiftInstance("g1", 0, -10.5, SONG_LENGTH));
 
-    expect(useProjectStore.getState().lines[0]).toMatchObject({
+    expect(fieldsOfLine(useProjectStore.getState().lines[0])).toMatchObject({
       begin: 0,
       end: 1,
       backgroundWords: [{ text: "yeah", sep: "", begin: 0.25, end: 0.75, joinsNext: false }],
@@ -476,16 +485,16 @@ describe("project store · shiftInstance", () => {
     const member = { agentId: "v1", groupId: "g1", instanceIdx: 0 };
     useProjectStore.setState({
       lines: [
-        { ...member, id: "a", text: "one", templateLineIdx: 0, begin: 0.5, end: 2.5 },
-        { ...member, id: "b", text: "two", templateLineIdx: 1, begin: 3, end: 4 },
+        lineFromFields({ ...member, id: "a", text: "one", templateLineIdx: 0, begin: 0.5, end: 2.5 }),
+        lineFromFields({ ...member, id: "b", text: "two", templateLineIdx: 1, begin: 3, end: 4 }),
       ],
     });
 
     useProjectStore.getState().commit(shiftInstance("g1", 0, -2, SONG_LENGTH));
 
     const [a, b] = useProjectStore.getState().lines;
-    expect(a).toMatchObject({ begin: 0, end: 2 });
-    expect(b).toMatchObject({ begin: 2.5, end: 3.5 });
+    expect(fieldsOfLine(a)).toMatchObject({ begin: 0, end: 2 });
+    expect(fieldsOfLine(b)).toMatchObject({ begin: 2.5, end: 3.5 });
   });
 
   it("regression: an instance shifted past the song end stops there as a whole", () => {
@@ -493,23 +502,23 @@ describe("project store · shiftInstance", () => {
     const member = { agentId: "v1", groupId: "g1", instanceIdx: 0 };
     useProjectStore.setState({
       lines: [
-        { ...member, id: "a", text: "one", templateLineIdx: 0, begin: 100, end: 102 },
-        { ...member, id: "b", text: "two", templateLineIdx: 1, begin: 103, end: 105 },
+        lineFromFields({ ...member, id: "a", text: "one", templateLineIdx: 0, begin: 100, end: 102 }),
+        lineFromFields({ ...member, id: "b", text: "two", templateLineIdx: 1, begin: 103, end: 105 }),
       ],
     });
 
     useProjectStore.getState().commit(shiftInstance("g1", 0, 20, 110));
 
     const [a, b] = useProjectStore.getState().lines;
-    expect(a).toMatchObject({ begin: 105, end: 107 });
-    expect(b).toMatchObject({ begin: 108, end: 110 });
+    expect(fieldsOfLine(a)).toMatchObject({ begin: 105, end: 107 });
+    expect(fieldsOfLine(b)).toMatchObject({ begin: 108, end: 110 });
   });
 
   it("edge case: shifts without an end limit while the song length is unknown", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 0,
@@ -518,20 +527,20 @@ describe("project store · shiftInstance", () => {
           templateLineIdx: 0,
           begin: 100,
           end: 102,
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(shiftInstance("g1", 0, 20, 0));
 
-    expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 120, end: 122 });
+    expect(fieldsOfLine(useProjectStore.getState().lines[0])).toMatchObject({ begin: 120, end: 122 });
   });
 
   it("regression: adds no undo step when the song end leaves no room to move", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 0,
@@ -540,7 +549,7 @@ describe("project store · shiftInstance", () => {
           templateLineIdx: 0,
           begin: 100,
           end: 110,
-        },
+        }),
       ],
     });
     useProjectStore.getState().clearHistory();
@@ -555,7 +564,7 @@ describe("project store · shiftInstance", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "hi",
           agentId: "v1",
@@ -564,23 +573,23 @@ describe("project store · shiftInstance", () => {
           templateLineIdx: 0,
           begin: 10,
           end: 11,
-        },
+        }),
       ],
     });
     useProjectStore.getState().clearHistory();
 
     useProjectStore.getState().commit(shiftInstance("g1", 0, 5, SONG_LENGTH));
-    expect(useProjectStore.getState().lines[0].begin).toBeCloseTo(15);
+    expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBeCloseTo(15);
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].begin).toBeCloseTo(10);
+    expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBeCloseTo(10);
   });
 
   it("does not shift a line whose link metadata still matches but detached=true (defense-in-depth)", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "live",
           text: "x",
           agentId: "v1",
@@ -588,8 +597,8 @@ describe("project store · shiftInstance", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [{ id: "w12", text: "x", sep: "", begin: 10, end: 11, joinsNext: false }],
-        },
-        {
+        }),
+        lineFromFields({
           id: "stale-detached",
           text: "y",
           agentId: "v1",
@@ -598,7 +607,7 @@ describe("project store · shiftInstance", () => {
           templateLineIdx: 1,
           detached: true,
           words: [{ id: "w13", text: "y", sep: "", begin: 10, end: 11, joinsNext: false }],
-        },
+        }),
       ],
     });
     useProjectStore.getState().clearHistory();
@@ -615,7 +624,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -624,8 +633,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           templateLineIdx: 0,
           begin: 30,
           end: 32,
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -634,14 +643,14 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           templateLineIdx: 0,
           begin: 60,
           end: 62,
-        },
+        }),
       ],
     });
   }
 
   it("propagates text edits to linked siblings", () => {
     seedTwoInstancesWithTimings();
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "I really love you" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a0", updates: { text: "I really love you" } }])));
 
     const lines = useProjectStore.getState().lines;
     expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("I really love you");
@@ -650,22 +659,22 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
   it("propagates agentId edits", () => {
     seedTwoInstancesWithTimings();
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { agentId: "v1000" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a0", updates: { agentId: "v1000" } }])));
 
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((l) => l.id === "a0")?.agentId).toBe("v1000");
-    expect(lines.find((l) => l.id === "a1")?.agentId).toBe("v1000");
+    expect(mainTrack(lines.find((l) => l.id === "a0")!).agentId).toBe("v1000");
+    expect(mainTrack(lines.find((l) => l.id === "a1")!).agentId).toBe("v1000");
   });
 
   it("does NOT propagate per-instance fields like begin/end", () => {
     seedTwoInstancesWithTimings();
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { begin: 25, end: 27 } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a0", updates: { begin: 25, end: 27 } }])));
 
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((l) => l.id === "a0")?.begin).toBe(25);
-    expect(lines.find((l) => l.id === "a0")?.end).toBe(27);
-    expect(lines.find((l) => l.id === "a1")?.begin).toBe(60);
-    expect(lines.find((l) => l.id === "a1")?.end).toBe(62);
+    expect(mainTrack(lines.find((l) => l.id === "a0")!).begin).toBe(25);
+    expect(mainTrack(lines.find((l) => l.id === "a0")!).end).toBe(27);
+    expect(mainTrack(lines.find((l) => l.id === "a1")!).begin).toBe(60);
+    expect(mainTrack(lines.find((l) => l.id === "a1")!).end).toBe(62);
   });
 
   it("skips detached siblings", () => {
@@ -674,7 +683,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       lines: state.lines.map((l) => (l.id === "a1" ? { ...l, detached: true } : l)),
     }));
 
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "new text" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a0", updates: { text: "new text" } }])));
 
     const lines = useProjectStore.getState().lines;
     expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("new text");
@@ -686,21 +695,28 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.setState((state) => ({
       lines: [
         ...state.lines,
-        { id: "x", text: "other group", agentId: "v1", groupId: "g2", instanceIdx: 0, templateLineIdx: 0 },
+        lineFromFields({
+          id: "x",
+          text: "other group",
+          agentId: "v1",
+          groupId: "g2",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+        }),
       ],
     }));
 
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "changed" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a0", updates: { text: "changed" } }])));
 
     expect(lineText(useProjectStore.getState().lines.find((l) => l.id === "x")!)).toBe("other group");
   });
 
   it("standalone (non-grouped) edits work as before (regression)", () => {
     useProjectStore.setState({
-      lines: [{ id: "s", text: "standalone", agentId: "v1" }],
+      lines: [lineFromFields({ id: "s", text: "standalone", agentId: "v1" })],
     });
 
-    useProjectStore.getState().commit(pasteLines([{ id: "s", updates: { text: "edited" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "s", updates: { text: "edited" } }])));
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("edited");
   });
@@ -709,7 +725,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -721,8 +737,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w15", text: "love", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
             { id: "w16", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -734,23 +750,25 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w18", text: "love", sep: " ", begin: 60.5, end: 61.0, joinsNext: false },
             { id: "w19", text: "you", sep: "", begin: 61.0, end: 61.5, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            words: [
-              { id: "w20", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
-              { id: "w21", text: "really", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
-              { id: "w22", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              words: [
+                { id: "w20", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+                { id: "w21", text: "really", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
+                { id: "w22", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const lines = useProjectStore.getState().lines;
@@ -766,7 +784,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "main",
           agentId: "v1",
@@ -778,8 +796,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w23", text: "ohh", sep: " ", begin: 30, end: 30.5, joinsNext: false },
             { id: "w24", text: "ahh", sep: "", begin: 30.5, end: 31, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "main",
           agentId: "v1",
@@ -791,22 +809,24 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w25", text: "ohh", sep: " ", begin: 60, end: 60.7, joinsNext: false },
             { id: "w26", text: "ahh", sep: "", begin: 60.7, end: 61.4, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            backgroundWords: [
-              { id: "w27", text: "ooh", sep: " ", begin: 30, end: 30.5, joinsNext: false },
-              { id: "w28", text: "yeah", sep: "", begin: 30.5, end: 31, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              backgroundWords: [
+                { id: "w27", text: "ooh", sep: " ", begin: 30, end: 30.5, joinsNext: false },
+                { id: "w28", text: "yeah", sep: "", begin: 30.5, end: 31, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
@@ -820,7 +840,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "loving you",
           agentId: "v1",
@@ -831,8 +851,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w29", text: "loving", sep: " ", begin: 0, end: 1, joinsNext: false },
             { id: "w30", text: "you", sep: "", begin: 1, end: 2, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "loving you",
           agentId: "v1",
@@ -843,27 +863,29 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w31", text: "loving", sep: " ", begin: 10, end: 12, joinsNext: false },
             { id: "w32", text: "you", sep: "", begin: 12, end: 14, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            words: [
-              { id: "w33", text: "lov", sep: "", begin: 0, end: 0.5, joinsNext: true },
-              { id: "w34", text: "ing", sep: " ", begin: 0.5, end: 1, joinsNext: false },
-              { id: "w35", text: "you", sep: "", begin: 1, end: 2, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              words: [
+                { id: "w33", text: "lov", sep: "", begin: 0, end: 0.5, joinsNext: true },
+                { id: "w34", text: "ing", sep: " ", begin: 0.5, end: 1, joinsNext: false },
+                { id: "w35", text: "you", sep: "", begin: 1, end: 2, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.words?.length).toBe(3);
+    expect((a1 && roleWords(a1, "main"))?.length).toBe(3);
     expect(timedSyllables(mainTrack(a1!)).map((w) => w.text + w.sep)).toEqual(["lov", "ing ", "you"]);
     expect(timedSyllables(mainTrack(a1!))[0].begin).toBe(10);
     expect(timedSyllables(mainTrack(a1!))[0].end).toBe(11);
@@ -877,7 +899,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "lov ing you",
           agentId: "v1",
@@ -889,8 +911,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w37", text: "ing", sep: " ", begin: 0.5, end: 1, joinsNext: false },
             { id: "w38", text: "you", sep: "", begin: 1, end: 2, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "lov ing you",
           agentId: "v1",
@@ -902,26 +924,28 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w40", text: "ing", sep: " ", begin: 11, end: 12, joinsNext: false },
             { id: "w41", text: "you", sep: "", begin: 12, end: 14, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            words: [
-              { id: "w42", text: "loving", sep: " ", begin: 0, end: 1, joinsNext: false },
-              { id: "w43", text: "you", sep: "", begin: 1, end: 2, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              words: [
+                { id: "w42", text: "loving", sep: " ", begin: 0, end: 1, joinsNext: false },
+                { id: "w43", text: "you", sep: "", begin: 1, end: 2, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.words?.length).toBe(2);
+    expect((a1 && roleWords(a1, "main"))?.length).toBe(2);
     expect(timedSyllables(mainTrack(a1!)).map((w) => w.text + w.sep)).toEqual(["loving ", "you"]);
     expect(timedSyllables(mainTrack(a1!))[0].begin).toBe(10);
     expect(timedSyllables(mainTrack(a1!))[0].end).toBe(12);
@@ -933,7 +957,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "hi",
           agentId: "v1",
@@ -941,8 +965,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [{ id: "w44", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "hi",
           agentId: "v1",
@@ -951,26 +975,28 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           templateLineIdx: 0,
           detached: true,
           words: [{ id: "w45", text: "hi", sep: "", begin: 10, end: 11, joinsNext: false }],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            words: [
-              { id: "w46", text: "h", sep: "", begin: 0, end: 0.5, joinsNext: true },
-              { id: "w47", text: "i", sep: "", begin: 0.5, end: 1, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              words: [
+                { id: "w46", text: "h", sep: "", begin: 0, end: 0.5, joinsNext: true },
+                { id: "w47", text: "i", sep: "", begin: 0.5, end: 1, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.words?.length).toBe(1);
+    expect((a1 && roleWords(a1, "main"))?.length).toBe(1);
     expect(timedSyllables(mainTrack(a1!))[0].text).toBe("hi");
   });
 
@@ -978,7 +1004,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -990,8 +1016,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w49", text: "love", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
             { id: "w50", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -1003,42 +1029,44 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w52", text: "love", sep: " ", begin: 60.5, end: 61.0, joinsNext: false },
             { id: "w53", text: "you", sep: "", begin: 61.0, end: 61.5, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            text: "I luv you",
-            words: undefined,
-            begin: undefined,
-            end: undefined,
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              text: "I luv you",
+              words: undefined,
+              begin: undefined,
+              end: undefined,
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
     expect(lineText(a0!)).toBe("I luv you");
-    expect(a0?.words).toBeUndefined();
-    expect(a0?.begin).toBeUndefined();
-    expect(a0?.end).toBeUndefined();
+    expect(a0 && roleWords(a0, "main")).toBeUndefined();
+    expect(a0 && mainTrack(a0).begin).toBeUndefined();
+    expect(a0 && mainTrack(a0).end).toBeUndefined();
     expect(lineText(a1!)).toBe("I luv you");
-    expect(a1?.words).toBeUndefined();
-    expect(a1?.begin).toBeUndefined();
-    expect(a1?.end).toBeUndefined();
+    expect(a1 && roleWords(a1, "main")).toBeUndefined();
+    expect(a1 && mainTrack(a1).begin).toBeUndefined();
+    expect(a1 && mainTrack(a1).end).toBeUndefined();
   });
 
   it("clears sibling backgroundWords when source clears them with a text edit", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "main",
           agentId: "v1",
@@ -1050,8 +1078,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w54", text: "ohh", sep: " ", begin: 30, end: 30.5, joinsNext: false },
             { id: "w55", text: "ahh", sep: "", begin: 30.5, end: 31, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "main",
           agentId: "v1",
@@ -1063,25 +1091,27 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
             { id: "w56", text: "ohh", sep: " ", begin: 60, end: 60.5, joinsNext: false },
             { id: "w57", text: "ahh", sep: "", begin: 60.5, end: 61, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            backgroundText: "yeah",
-            backgroundWords: undefined,
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              backgroundText: "yeah",
+              backgroundWords: undefined,
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(backgroundText(a1!)).toBe("yeah");
-    expect(a1?.backgroundWords).toBeUndefined();
+    expect(a1 && roleWords(a1, "bg")).toBeUndefined();
   });
 });
 
@@ -1101,7 +1131,7 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
   it("split on source: sibling 'I' and 'you' keep their original begin/end (different rhythm than source)", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I love you",
           agentId: "v1",
@@ -1113,8 +1143,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w59", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w60", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I love you",
           agentId: "v1",
@@ -1127,25 +1157,27 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w62", text: "love", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
             { id: "w63", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "A",
-          updates: {
-            words: [
-              { id: "w64", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-              { id: "w65", text: "lo", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
-              { id: "w66", text: "ve", sep: " ", begin: 0.45, end: 0.6, joinsNext: false },
-              { id: "w67", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A",
+            updates: {
+              words: [
+                { id: "w64", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+                { id: "w65", text: "lo", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
+                { id: "w66", text: "ve", sep: " ", begin: 0.45, end: 0.6, joinsNext: false },
+                { id: "w67", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
@@ -1172,7 +1204,7 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
   it("merge on source: sibling unchanged words keep their original timings", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I love you",
           agentId: "v1",
@@ -1184,8 +1216,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w69", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w70", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I love you",
           agentId: "v1",
@@ -1197,23 +1229,25 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w72", text: "love", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
             { id: "w73", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "A",
-          updates: {
-            words: [
-              { id: "w74", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-              { id: "w75", text: "loveyou", sep: "", begin: 0.3, end: 1, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A",
+            updates: {
+              words: [
+                { id: "w74", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+                { id: "w75", text: "loveyou", sep: "", begin: 0.3, end: 1, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
@@ -1231,7 +1265,7 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
   it("identical-rhythm siblings: unchanged-word timing preserved (matches source rhythm)", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I love you",
           agentId: "v1",
@@ -1243,8 +1277,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w77", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w78", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I love you",
           agentId: "v1",
@@ -1256,25 +1290,27 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w80", text: "love", sep: " ", begin: 30.3, end: 30.6, joinsNext: false },
             { id: "w81", text: "you", sep: "", begin: 30.6, end: 31, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "A",
-          updates: {
-            words: [
-              { id: "w82", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-              { id: "w83", text: "lo", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
-              { id: "w84", text: "ve", sep: " ", begin: 0.45, end: 0.6, joinsNext: false },
-              { id: "w85", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A",
+            updates: {
+              words: [
+                { id: "w82", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+                { id: "w83", text: "lo", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
+                { id: "w84", text: "ve", sep: " ", begin: 0.45, end: 0.6, joinsNext: false },
+                { id: "w85", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
@@ -1286,7 +1322,7 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
   it("BG word split on source: sibling BG words preserve unchanged-word timings", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "main",
           agentId: "v1",
@@ -1298,8 +1334,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w86", text: "ah", sep: " ", begin: 0, end: 0.3, joinsNext: false },
             { id: "w87", text: "ah", sep: "", begin: 0.3, end: 0.6, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "main",
           agentId: "v1",
@@ -1311,24 +1347,26 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w88", text: "ah", sep: " ", begin: 30, end: 30.4, joinsNext: false },
             { id: "w89", text: "ah", sep: "", begin: 30.4, end: 30.8, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "A",
-          updates: {
-            backgroundWords: [
-              { id: "w90", text: "ah", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-              { id: "w91", text: "a", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
-              { id: "w92", text: "h", sep: "", begin: 0.45, end: 0.6, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A",
+            updates: {
+              backgroundWords: [
+                { id: "w90", text: "ah", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+                { id: "w91", text: "a", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
+                { id: "w92", text: "h", sep: "", begin: 0.45, end: 0.6, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
@@ -1353,7 +1391,7 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
   it("detached siblings are NOT touched by structural propagation", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I love you",
           agentId: "v1",
@@ -1365,8 +1403,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w94", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w95", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I love you",
           agentId: "v1",
@@ -1379,25 +1417,27 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
             { id: "w97", text: "love", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
             { id: "w98", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "A",
-          updates: {
-            words: [
-              { id: "w99", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-              { id: "w100", text: "lo", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
-              { id: "w101", text: "ve", sep: " ", begin: 0.45, end: 0.6, joinsNext: false },
-              { id: "w102", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A",
+            updates: {
+              words: [
+                { id: "w99", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+                { id: "w100", text: "lo", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
+                { id: "w101", text: "ve", sep: " ", begin: 0.45, end: 0.6, joinsNext: false },
+                { id: "w102", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
@@ -1419,7 +1459,7 @@ describe("applyWordCountChange · resolutions", () => {
   function setupChorus() {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "I love you",
           agentId: "v1",
@@ -1431,8 +1471,8 @@ describe("applyWordCountChange · resolutions", () => {
             { id: "w104", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
             { id: "w105", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "I love you",
           agentId: "v1",
@@ -1444,7 +1484,7 @@ describe("applyWordCountChange · resolutions", () => {
             { id: "w107", text: "love", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
             { id: "w108", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
@@ -1497,7 +1537,7 @@ describe("applyWordCountChange · resolutions", () => {
   it("'detach' clears stale begin/end when promoting a line-synced row to word-synced", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "L1",
           text: "verse",
           agentId: "v1",
@@ -1506,8 +1546,8 @@ describe("applyWordCountChange · resolutions", () => {
           templateLineIdx: 0,
           begin: 5,
           end: 7,
-        },
-        {
+        }),
+        lineFromFields({
           id: "L2",
           text: "verse",
           agentId: "v1",
@@ -1516,7 +1556,7 @@ describe("applyWordCountChange · resolutions", () => {
           templateLineIdx: 0,
           begin: 30,
           end: 32,
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Verse", color: "#aaa", templateVersion: 1 }],
     });
@@ -1524,8 +1564,8 @@ describe("applyWordCountChange · resolutions", () => {
     useProjectStore.getState().commit(applyWordCountChange("L1", newWords, "words", "detach"));
     const after = useProjectStore.getState().lines.find((l) => l.id === "L1");
     expect(timedSyllables(mainTrack(after!))).toEqual(newWords);
-    expect(after?.begin).toBeUndefined();
-    expect(after?.end).toBeUndefined();
+    expect(after && mainTrack(after).begin).toBeUndefined();
+    expect(after && mainTrack(after).end).toBeUndefined();
   });
 
   it("'cancel' is a no-op", () => {
@@ -1541,7 +1581,7 @@ describe("applyWordCountChange · resolutions", () => {
       { id: "w114", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
       { id: "w115", text: "loveyou", sep: "", begin: 0.3, end: 1, joinsNext: false },
     ];
-    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "apply", { text: "I loveyou" }));
+    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "apply"));
     const after = useProjectStore.getState().lines;
     expect(lineText(after.find((l) => l.id === "A")!)).toBe("I loveyou");
     expect(lineText(after.find((l) => l.id === "B")!)).toBe("I loveyou");
@@ -1553,7 +1593,7 @@ describe("applyWordCountChange · resolutions", () => {
       { id: "w116", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
       { id: "w117", text: "loveyou", sep: "", begin: 0.3, end: 1, joinsNext: false },
     ];
-    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "detach", { text: "I loveyou" }));
+    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "detach"));
     const after = useProjectStore.getState().lines;
     expect(lineText(after.find((l) => l.id === "A")!)).toBe("I loveyou");
     expect(lineText(after.find((l) => l.id === "B")!)).toBe("I love you"); // unchanged
@@ -1574,7 +1614,7 @@ describe("applyWordCountChange · resolutions", () => {
   it("non-linked source: apply just writes to source, no siblings touched", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "X",
           text: "I love",
           agentId: "v1",
@@ -1582,7 +1622,7 @@ describe("applyWordCountChange · resolutions", () => {
             { id: "w118", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
             { id: "w119", text: "love", sep: "", begin: 0.3, end: 1, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [],
     });
@@ -1605,7 +1645,7 @@ describe("applyWordCountChange · resolutions", () => {
   it("backgroundWords field: 'apply' propagates BG structural change with smart-sync", () => {
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "A",
           text: "main",
           agentId: "v1",
@@ -1617,8 +1657,8 @@ describe("applyWordCountChange · resolutions", () => {
             { id: "w123", text: "ah", sep: " ", begin: 0, end: 0.3, joinsNext: false },
             { id: "w124", text: "ah", sep: "", begin: 0.3, end: 0.6, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "main",
           agentId: "v1",
@@ -1630,7 +1670,7 @@ describe("applyWordCountChange · resolutions", () => {
             { id: "w125", text: "ah", sep: " ", begin: 30, end: 30.4, joinsNext: false },
             { id: "w126", text: "ah", sep: "", begin: 30.4, end: 30.8, joinsNext: false },
           ],
-        },
+        }),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });

@@ -1,16 +1,19 @@
 /**
  * @vitest-environment node
  */
+
 import { beforeEach, describe, expect, it } from "vitest";
 import { addGroup } from "@/domain/commands/group-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
 import type { LinkGroup } from "@/domain/group/template";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import { fieldUpdates } from "@/test/field-updates";
 
 // Regression coverage for issue #96: resyncing one instance of a group must not
 // retime the other instances. The shared root cause is that per-instance timing
@@ -44,7 +47,7 @@ function seedTwoWordSyncedInstances() {
   useProjectStore.setState({
     groups: [seedGroup("g1")],
     lines: [
-      {
+      lineFromFields({
         id: "a0",
         text: "I love you",
         agentId: "v1",
@@ -52,8 +55,8 @@ function seedTwoWordSyncedInstances() {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-      },
-      {
+      }),
+      lineFromFields({
         id: "a1",
         text: "I love you",
         agentId: "v1",
@@ -61,7 +64,7 @@ function seedTwoWordSyncedInstances() {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
-      },
+      }),
     ],
     isDirtySinceHistory: true,
   });
@@ -82,17 +85,19 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
   it("does not retime a sibling when the source word count shrinks", () => {
     seedTwoWordSyncedInstances();
 
-    useProjectStore
-      .getState()
-      .commit(
-        lineEditCommand(
-          { command: "edit lines", args: [] },
-          () => [
-            { id: "a0", updates: { words: [{ id: "w9", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] } },
-          ],
-          { propagateToSiblings: false },
-        ),
-      );
+    useProjectStore.getState().commit(
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () =>
+          fieldUpdates([
+            {
+              id: "a0",
+              updates: { words: [{ id: "w9", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+            },
+          ]),
+        { propagateToSiblings: false },
+      ),
+    );
 
     expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
@@ -105,9 +110,13 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       { id: "w10", text: "you", sep: "", begin: 1.2, end: 1.6, joinsNext: true },
     ];
     useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: grown } }], {
-        propagateToSiblings: false,
-      }),
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "a0", updates: { words: grown } }]),
+        {
+          propagateToSiblings: false,
+        },
+      ),
     );
 
     expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
@@ -122,9 +131,13 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       { id: "w13", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
     ];
     useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: reordered } }], {
-        propagateToSiblings: false,
-      }),
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "a0", updates: { words: reordered } }]),
+        {
+          propagateToSiblings: false,
+        },
+      ),
     );
 
     expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
@@ -136,7 +149,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
     const bgB: WordTiming[] = [{ id: "w15", text: "ah", sep: "", begin: 20, end: 20.5, joinsNext: false }];
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "lead",
           agentId: "v1",
@@ -145,8 +158,8 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
           templateLineIdx: 0,
           backgroundText: "ah",
           backgroundWords: bgA.map((w) => ({ ...w })),
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "lead",
           agentId: "v1",
@@ -155,24 +168,25 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
           templateLineIdx: 0,
           backgroundText: "ah",
           backgroundWords: bgB.map((w) => ({ ...w })),
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "a0",
-            updates: {
-              backgroundWords: [
-                { id: "w16", text: "ah", sep: "", begin: 1, end: 1.2, joinsNext: true },
-                { id: "w17", text: "ah", sep: "", begin: 1.2, end: 1.4, joinsNext: false },
-              ],
+        () =>
+          fieldUpdates([
+            {
+              id: "a0",
+              updates: {
+                backgroundWords: [
+                  { id: "w16", text: "ah", sep: "", begin: 1, end: 1.2, joinsNext: true },
+                  { id: "w17", text: "ah", sep: "", begin: 1.2, end: 1.4, joinsNext: false },
+                ],
+              },
             },
-          },
-        ],
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -185,9 +199,13 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
     const sourceWords: WordTiming[] = [{ id: "w18", text: "I", sep: " ", begin: 9, end: 9.5, joinsNext: false }];
 
     useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: sourceWords } }], {
-        propagateToSiblings: false,
-      }),
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "a0", updates: { words: sourceWords } }]),
+        {
+          propagateToSiblings: false,
+        },
+      ),
     );
 
     expect(timedSyllables(mainTrack(getLine("a0")))).toEqual(sourceWords);
@@ -196,23 +214,24 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
   it("still propagates structural word changes by default (option defaults to true)", () => {
     seedTwoWordSyncedInstances();
 
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { words: MERGED_WORDS } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a0", updates: { words: MERGED_WORDS } }])));
 
     expect(timedSyllables(mainTrack(getLine("a1")))).toHaveLength(2);
   });
 
   it("works for a non-grouped line (regression)", () => {
-    useProjectStore.setState({ lines: [{ id: "s", text: "standalone", agentId: "v1" }] });
+    useProjectStore.setState({ lines: [lineFromFields({ id: "s", text: "standalone", agentId: "v1" })] });
 
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "s",
-            updates: { words: [{ id: "w19", text: "standalone", sep: "", begin: 1, end: 2, joinsNext: false }] },
-          },
-        ],
+        () =>
+          fieldUpdates([
+            {
+              id: "s",
+              updates: { words: [{ id: "w19", text: "standalone", sep: "", begin: 1, end: 2, joinsNext: false }] },
+            },
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -228,12 +247,13 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "a0",
-            updates: { words: [{ id: "w20", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
-          },
-        ],
+        () =>
+          fieldUpdates([
+            {
+              id: "a0",
+              updates: { words: [{ id: "w20", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+            },
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -251,12 +271,13 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "a0",
-            updates: { words: [{ id: "w21", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
-          },
-        ],
+        () =>
+          fieldUpdates([
+            {
+              id: "a0",
+              updates: { words: [{ id: "w21", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+            },
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -267,7 +288,7 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
   it("still propagates structural word changes by default", () => {
     seedTwoWordSyncedInstances();
 
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { words: MERGED_WORDS } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a0", updates: { words: MERGED_WORDS } }])));
 
     expect(timedSyllables(mainTrack(getLine("a1")))).toHaveLength(2);
   });
@@ -287,7 +308,6 @@ describe("instance resync · issue #96 reproduction", () => {
     if (!commit) throw new Error("expected a commit");
     useProjectStore.getState().commit(
       lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-        derivesText: false,
         propagateToSiblings: false,
       }),
     );
@@ -326,7 +346,7 @@ describe("instance resync · issue #96 reproduction", () => {
     ];
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -334,8 +354,8 @@ describe("instance resync · issue #96 reproduction", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -343,8 +363,8 @@ describe("instance resync · issue #96 reproduction", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
-        },
-        {
+        }),
+        lineFromFields({
           id: "a2",
           text: "I love you",
           agentId: "v1",
@@ -352,7 +372,7 @@ describe("instance resync · issue #96 reproduction", () => {
           instanceIdx: 2,
           templateLineIdx: 0,
           words: cWords.map((w) => ({ ...w })),
-        },
+        }),
       ],
     });
 
@@ -387,9 +407,7 @@ describe("instance resync · issue #96 reproduction", () => {
       defaultWordDuration: 0.3,
     });
     if (!commit) throw new Error("expected a commit");
-    useProjectStore
-      .getState()
-      .commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, { derivesText: false }));
+    useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
 
     expect(timedSyllables(mainTrack(getLine("a1")))).toHaveLength(3);
     expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
@@ -406,12 +424,13 @@ describe("propagateToSiblings: false · edge cases", () => {
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "a0",
-            updates: { words: [{ id: "w25", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
-          },
-        ],
+        () =>
+          fieldUpdates([
+            {
+              id: "a0",
+              updates: { words: [{ id: "w25", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+            },
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -424,9 +443,18 @@ describe("propagateToSiblings: false · edge cases", () => {
 
     expect(() =>
       useProjectStore.getState().commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "nope", updates: { words: [] } }], {
-          propagateToSiblings: false,
-        }),
+        lineEditCommand(
+          { command: "edit lines", args: [] },
+          () => [
+            {
+              id: "nope",
+              updates: { tracks: lineFromFields({ id: "nope", text: "", agentId: "v1", words: [] }).tracks },
+            },
+          ],
+          {
+            propagateToSiblings: false,
+          },
+        ),
       ),
     ).not.toThrow();
     expect(timedSyllables(mainTrack(getLine("a0")))).toEqual(INSTANCE_A_WORDS);
@@ -437,7 +465,7 @@ describe("propagateToSiblings: false · edge cases", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "solo",
           text: "I love you",
           agentId: "v1",
@@ -445,7 +473,7 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        },
+        }),
       ],
     });
 
@@ -453,12 +481,13 @@ describe("propagateToSiblings: false · edge cases", () => {
       useProjectStore.getState().commit(
         lineEditCommand(
           { command: "edit lines", args: [] },
-          () => [
-            {
-              id: "solo",
-              updates: { words: [{ id: "w26", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
-            },
-          ],
+          () =>
+            fieldUpdates([
+              {
+                id: "solo",
+                updates: { words: [{ id: "w26", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+              },
+            ]),
           { propagateToSiblings: false },
         ),
       ),
@@ -474,7 +503,7 @@ describe("propagateToSiblings: false · edge cases", () => {
     useProjectStore.setState((s) => ({
       lines: [
         ...s.lines,
-        {
+        lineFromFields({
           id: "x",
           text: "other",
           agentId: "v1",
@@ -482,19 +511,20 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: otherWords.map((w) => ({ ...w })),
-        },
+        }),
       ],
     }));
 
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "a0",
-            updates: { words: [{ id: "w28", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
-          },
-        ],
+        () =>
+          fieldUpdates([
+            {
+              id: "a0",
+              updates: { words: [{ id: "w28", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+            },
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -510,7 +540,7 @@ describe("propagateToSiblings: false · edge cases", () => {
     ];
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -518,8 +548,8 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -527,19 +557,20 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: divergedB.map((w) => ({ ...w })),
-        },
+        }),
       ],
     });
 
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "a0",
-            updates: { words: [{ id: "w31", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
-          },
-        ],
+        () =>
+          fieldUpdates([
+            {
+              id: "a0",
+              updates: { words: [{ id: "w31", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+            },
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -549,15 +580,16 @@ describe("propagateToSiblings: false · edge cases", () => {
 
   it("updateLinesWithHistory opt-out spares the siblings of every batched line", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
-    const mk = (id: string, templateLineIdx: number, instanceIdx: number, words: WordTiming[]) => ({
-      id,
-      text: "I love you",
-      agentId: "v1",
-      groupId: "g1",
-      instanceIdx,
-      templateLineIdx,
-      words: words.map((w) => ({ ...w })),
-    });
+    const mk = (id: string, templateLineIdx: number, instanceIdx: number, words: WordTiming[]) =>
+      lineFromFields({
+        id,
+        text: "I love you",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx,
+        words: words.map((w) => ({ ...w })),
+      });
     useProjectStore.setState({
       lines: [
         mk("t0i0", 0, 0, INSTANCE_A_WORDS),
@@ -570,16 +602,17 @@ describe("propagateToSiblings: false · edge cases", () => {
     useProjectStore.getState().commit(
       lineEditCommand(
         { command: "edit lines", args: [] },
-        () => [
-          {
-            id: "t0i0",
-            updates: { words: [{ id: "w32", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
-          },
-          {
-            id: "t1i0",
-            updates: { words: [{ id: "w33", text: "I", sep: " ", begin: 6, end: 6.4, joinsNext: false }] },
-          },
-        ],
+        () =>
+          fieldUpdates([
+            {
+              id: "t0i0",
+              updates: { words: [{ id: "w32", text: "I", sep: " ", begin: 5, end: 5.4, joinsNext: false }] },
+            },
+            {
+              id: "t1i0",
+              updates: { words: [{ id: "w33", text: "I", sep: " ", begin: 6, end: 6.4, joinsNext: false }] },
+            },
+          ]),
         { propagateToSiblings: false },
       ),
     );
@@ -614,7 +647,7 @@ describe("timing nudges · do not propagate to siblings", () => {
     useProjectStore.setState({
       groups: [seedGroup("g1")],
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -622,8 +655,8 @@ describe("timing nudges · do not propagate to siblings", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -635,7 +668,7 @@ describe("timing nudges · do not propagate to siblings", () => {
             { id: "w35", text: "LOVE", sep: " ", begin: 10.5, end: 11.0, joinsNext: false },
             { id: "w36", text: "you", sep: "", begin: 11.0, end: 11.5, joinsNext: false },
           ],
-        },
+        }),
       ],
       isDirtySinceHistory: true,
     });
@@ -658,7 +691,7 @@ describe("timing nudges · do not propagate to siblings", () => {
     useProjectStore.setState({
       groups: [seedGroup("g1")],
       lines: [
-        {
+        lineFromFields({
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -667,8 +700,8 @@ describe("timing nudges · do not propagate to siblings", () => {
           templateLineIdx: 0,
           begin: 30,
           end: 32,
-        },
-        {
+        }),
+        lineFromFields({
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -677,7 +710,7 @@ describe("timing nudges · do not propagate to siblings", () => {
           templateLineIdx: 0,
           begin: 60,
           end: 62,
-        },
+        }),
       ],
       isDirtySinceHistory: true,
     });
@@ -686,7 +719,7 @@ describe("timing nudges · do not propagate to siblings", () => {
       .getState()
       .commit(shiftSyncLine(useProjectStore.getState().lines[0].id, { by: 0.5 }, Number.POSITIVE_INFINITY));
 
-    expect(getLine("a1").begin).toBe(60);
-    expect(getLine("a1").end).toBe(62);
+    expect(mainTrack(getLine("a1")).begin).toBe(60);
+    expect(mainTrack(getLine("a1")).end).toBe(62);
   });
 });

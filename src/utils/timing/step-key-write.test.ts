@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { pressStepKey } from "@/domain/commands/word-timing";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
-import type { WordTrack } from "@/domain/line/tracks";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "@/domain/line/track";
 import { type ResolvedAddress, resolvedAt, toAddress } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
@@ -51,7 +50,7 @@ const press = (cursor: ResolvedAddress, startNext: ResolvedAddress | null, time:
 describe("writeStepKey", () => {
   it("writes one step as one undo step", () => {
     useProjectStore.setState({ lines: [chorus("c0", 0, 28)], groups: [] });
-    const before = lineById("c0")?.words;
+    const before = roleWords(lineById("c0"), "main");
     expect(press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5)).toEqual({ kind: "written" });
     expect(timedSyllables(mainTrack(lineById("c0")!))[1].begin).toBe(28.5);
     store().undo();
@@ -77,7 +76,7 @@ describe("writeStepKey", () => {
       lines: [chorus("a0", 0, 28), verse("a1", 0, 30), chorus("b0", 1, 40), verse("b1", 1, 42)],
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
-    const before = lineById("a0")?.words;
+    const before = roleWords(lineById("a0"), "main");
     expect(press(slot("a1", 1, 2), slot("b0", 2, 0), 31.9)).toEqual({ kind: "written" });
     expect(timedSyllables(mainTrack(lineById("a1")!))[2].end).toBe(31.9);
     expect(timedSyllables(mainTrack(lineById("a0")!))).toEqual(before);
@@ -105,7 +104,7 @@ describe("writeStepKey", () => {
     expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBe(29.9);
     expect(timedSyllables(mainTrack(lineById("n")!))[0]).toMatchObject({ begin: 29.9, end: 33.4 });
     store().undo();
-    expect(store().lines.map((line) => line.words)).toEqual(before.map((line) => line.words));
+    expect(store().lines.map((line) => roleWords(line, "main"))).toEqual(before.map((line) => roleWords(line, "main")));
   });
 
   it("only ends the word when there is no word to chain into, and leaves the next line's start alone", () => {

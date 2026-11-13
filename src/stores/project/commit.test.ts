@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup } from "@/domain/commands/group-edits";
@@ -8,9 +9,10 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 
 const typed = (text: string) =>
-  lineEditCommand({ command: "edit lines", args: ["l1"] }, () => [{ id: "l1", updates: { text } }], {
+  lineEditCommand({ command: "edit lines", args: ["l1"] }, () => fieldUpdates([{ id: "l1", updates: { text } }]), {
     propagateToSiblings: false,
   });
 

@@ -1,14 +1,16 @@
+import { changedFields, updatedLine } from "@/test/field-updates";
+import { roleWords } from "@/domain/line/track";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
-import { createGroup, createLine } from "@/test/factories";
+import { type FactoryLineOptions, createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const sharing = [createGroup({ id: "g1", sharesTiming: true })];
 
-function chorusLine(id: string, instanceIdx: number, timing: Partial<LyricLine> = {}): LyricLine {
+function chorusLine(id: string, instanceIdx: number, timing: FactoryLineOptions = {}): LyricLine {
   return createLine({ id, text: "chorus", groupId: "g1", instanceIdx, templateLineIdx: 0, ...timing });
 }
 
@@ -40,7 +42,7 @@ describe("commitGesture with a shared time range", () => {
       chorusLine("c1", 1, { begin: 10, end: 12 }),
     ];
     const commit = run(lines, "tap-line", 2, 6.5);
-    expect(commit?.lineUpdates).toContainEqual({ id: "c1", updates: { begin: 7, end: 9 } });
+    expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "c1", updates: { begin: 7, end: 9 } });
     expect(commit?.clampedTo).toBe(7);
   });
 
@@ -50,7 +52,10 @@ describe("commitGesture with a shared time range", () => {
       createLine({ id: "x", text: "verse", begin: 6, end: 6 }),
       chorusLine("c1", 1, { begin: 10, end: 12 }),
     ];
-    expect(run(lines, "tap-line", 2, 6.5)?.lineUpdates).toContainEqual({ id: "x", updates: { end: 7 } });
+    expect(changedFields(run(lines, "tap-line", 2, 6.5)!.lineUpdates, lines)).toContainEqual({
+      id: "x",
+      updates: { end: 7 },
+    });
   });
 
   it("stops a word tap at the start of the range", () => {
@@ -59,7 +64,7 @@ describe("commitGesture with a shared time range", () => {
       createLine({ id: "x", text: "verse", begin: 6, end: 7 }),
       chorusLine("c1", 1, { words: [word("chorus", 10, 12)] }),
     ];
-    expect(updateOf(lines, "tap-word", 2, 6.5)?.words?.[0].begin).toBe(7);
+    expect(roleWords(updatedLine(updateOf(lines, "tap-word", 2, 6.5)), "main")?.[0].begin).toBe(7);
   });
 
   describe("regressions", () => {
@@ -81,7 +86,7 @@ describe("commitGesture with a shared time range", () => {
         chorusLine("c1", 1, { words: [word("chorus", 10, 12)] }),
         createLine({ id: "y", text: "every" }),
       ];
-      expect(run(lines, "tap-word", 3, 11)?.lineUpdates).toContainEqual({
+      expect(changedFields(run(lines, "tap-word", 3, 11)!.lineUpdates, lines)).toContainEqual({
         id: "c1",
         updates: { words: [word("chorus", 10, 11)] },
       });
@@ -93,7 +98,7 @@ describe("commitGesture with a shared time range", () => {
         createLine({ id: "y", text: "every" }),
         chorusLine("c1", 1),
       ];
-      expect(run(lines, "tap-word", 1, 6)?.lineUpdates).toContainEqual({
+      expect(changedFields(run(lines, "tap-word", 1, 6)!.lineUpdates, lines)).toContainEqual({
         id: "c0",
         updates: { words: [word("chorus", 3, 6)] },
       });
@@ -106,7 +111,7 @@ describe("commitGesture with a shared time range", () => {
         chorusLine("c1", 1, { begin: 10, end: 12 }),
       ];
       const commit = run(lines, "tap-line", 2, 6.5, [createGroup({ id: "g1" })]);
-      expect(commit?.lineUpdates).toContainEqual({ id: "c1", updates: { begin: 6.5, end: 8.5 } });
+      expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "c1", updates: { begin: 6.5, end: 8.5 } });
       expect(commit?.clampedTo).toBeNull();
     });
 
@@ -118,7 +123,7 @@ describe("commitGesture with a shared time range", () => {
         time: 6.5,
         defaultWordDuration: 0.3,
       });
-      expect(commit?.lineUpdates).toContainEqual({ id: "c1", updates: { begin: 6.5, end: 6.5 } });
+      expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "c1", updates: { begin: 6.5, end: 6.5 } });
     });
   });
 
@@ -130,7 +135,8 @@ describe("commitGesture with a shared time range", () => {
         createLine({ id: "x", text: "verse", begin: 6, end: 7 }),
         createLine({ id: "c1", text: "chorus", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 }),
       ];
-      expect(updateOf(lines, "tap-line", 3, 6.5)).toEqual({ begin: 6.5, end: 6.5 });
+      const update = run(lines, "tap-line", 3, 6.5)!.lineUpdates.filter((u) => u.id === "c1");
+      expect(changedFields(update, lines)[0].updates).toEqual({ begin: 6.5, end: 6.5 });
     });
   });
 });

@@ -6,6 +6,7 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
 
@@ -72,7 +73,7 @@ describe("regressions", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { backgroundText: "yeah" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { backgroundText: "yeah" } }])));
     await screen.getByRole("button", { name: "BG", exact: true }).click();
 
     await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toHaveValue("yeah");
@@ -82,7 +83,7 @@ describe("regressions", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { backgroundText: "yeah" } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { backgroundText: "yeah" } }])));
     await screen.getByRole("button", { name: "BG", exact: true }).click();
     await screen.getByRole("textbox", { name: "Background vocals text" }).click();
     await userEvent.keyboard("{Enter}");

@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import type { LyricLine } from "@/domain/line/model";
@@ -31,7 +32,11 @@ function seed(sharesTiming: boolean): void {
   });
 }
 
-const firstWordOf = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id)?.words?.[0];
+const firstWordOf = (id: string) =>
+  roleWords(
+    useProjectStore.getState().lines.find((line) => line.id === id),
+    "main",
+  )?.[0];
 
 // -- Tests --------------------------------------------------------------------
 

@@ -1,3 +1,4 @@
+import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
@@ -122,9 +123,10 @@ function collectSnapAnchors(
       }
     }
 
-    if (!wordTimed && isLineSynced(line) && !selfIds.has(selfKey(line.id, 0, "word"))) {
-      anchors.push({ t: line.begin, kind: "line-begin", label: lineText(line), lineId: line.id });
-      anchors.push({ t: line.end, kind: "line-end", label: lineText(line), lineId: line.id });
+    const span = !wordTimed && isLineSynced(line) ? mainBounds(line) : null;
+    if (span && !selfIds.has(selfKey(line.id, 0, "word"))) {
+      anchors.push({ t: span.begin, kind: "line-begin", label: lineText(line), lineId: line.id });
+      anchors.push({ t: span.end, kind: "line-end", label: lineText(line), lineId: line.id });
     }
   }
 

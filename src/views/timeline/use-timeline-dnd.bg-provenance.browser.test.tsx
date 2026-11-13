@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -19,7 +20,7 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "l1",
           text: "main",
           agentId: "v1",
@@ -30,7 +31,7 @@ describe("useTimelineDnd · background-word drag provenance", () => {
             { id: "w3", text: "aah", sep: "", begin: 1, end: 1.5, joinsNext: false },
           ],
           backgroundTextSource: "extraction",
-        },
+        }),
       ],
     });
     scrollHost = installScrollHost();
@@ -50,7 +51,7 @@ describe("useTimelineDnd · background-word drag provenance", () => {
 
     const after = useProjectStore.getState().lines[0];
     expect(backgroundTrack(after)?.source).toBe("manual");
-    expect(after.backgroundWords?.length).toBe(2);
+    expect(roleWords(after, "bg")?.length).toBe(2);
   });
 
   it("preserves the dragged background word texts and count", async () => {
