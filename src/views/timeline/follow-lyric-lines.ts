@@ -3,6 +3,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
+import { selectionPatch } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
@@ -10,8 +11,9 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 type TimelineState = ReturnType<typeof useTimelineStore.getState>;
 type AddressedState = Pick<
   TimelineState,
-  "selectedWords" | "stepQueue" | "editingWord" | "loupeTarget" | "contextMenu"
+  "stepTiming" | "selectedWords" | "stepQueue" | "editingWord" | "loupeTarget" | "contextMenu"
 >;
+type AddressedPatch = Partial<Pick<TimelineState, keyof AddressedState | "loopRegion">>;
 
 // -- State --------------------------------------------------------------------
 
@@ -60,14 +62,17 @@ function liveTimelinePatch(
   lines: readonly LyricLine[],
   previous: readonly LyricLine[],
   state: AddressedState,
-): Partial<AddressedState> | null {
+): AddressedPatch | null {
   if (!hasAddresses(state)) return null;
   const isLive = liveCheck(lines, previous);
-  const patch: Partial<AddressedState> = {};
+  const patch: AddressedPatch = {};
   const selectedWords = liveList(state.selectedWords, isLive);
   if (selectedWords !== state.selectedWords) patch.selectedWords = selectedWords;
   const stepQueue = state.stepQueue && liveList(state.stepQueue, isLive);
   if (stepQueue !== state.stepQueue) patch.stepQueue = stepQueue?.length ? stepQueue : null;
+  const cursorGone = state.selectedWords.length > 0 && selectedWords[0] !== state.selectedWords[0];
+  if (cursorGone && stepQueue?.length)
+    Object.assign(patch, selectionPatch({ ...state, selectedWords: [] }, stepQueue, true));
   if (state.editingWord && !isLive(state.editingWord)) patch.editingWord = null;
   if (state.loupeTarget && !isLive(state.loupeTarget)) patch.loupeTarget = null;
   const menuTarget = state.contextMenu?.target;

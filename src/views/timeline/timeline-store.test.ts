@@ -1,10 +1,10 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { wordAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 describe("markerMode", () => {
   beforeEach(() => {
@@ -225,5 +225,15 @@ describe("selection after a lines change", () => {
     const kept = useTimelineStore.getState().selectedWords;
     useProjectStore.getState().redo();
     expect(useTimelineStore.getState().selectedWords).toBe(kept);
+  });
+
+  it("regression: a Step cursor that undo removed moves to the first queued word left", () => {
+    splitFirstWord();
+    const piece = useProjectStore.getState().lines[0].words?.[1];
+    useTimelineStore.getState().setStepTiming(true);
+    useTimelineStore.getState().setSelectedWords([address(piece?.id ?? ""), address("w3"), address("w4")], true);
+    useProjectStore.getState().undo();
+    expect(selectedTexts()).toEqual(["to"]);
+    expect(useTimelineStore.getState().stepQueue).toEqual([address("w3"), address("w4")]);
   });
 });
