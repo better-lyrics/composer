@@ -30,8 +30,8 @@ ASSETS_DIR="${2:-./hubertfa-onnx-out}"
 : "${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID}"
 : "${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY}"
 
-if [[ ! -f "${ASSETS_DIR}/hubertfa_v007_fp32_webgpu.onnx" ]]; then
-  echo "ERROR: ${ASSETS_DIR}/hubertfa_v007_fp32_webgpu.onnx not found. Run ./scripts/build-hubertfa-onnx.sh first." >&2
+if [[ ! -f "${ASSETS_DIR}/hubertfa_v007_fp32_webgpu_v2.onnx" ]]; then
+  echo "ERROR: ${ASSETS_DIR}/hubertfa_v007_fp32_webgpu_v2.onnx not found. Run ./scripts/build-hubertfa-onnx.sh first." >&2
   exit 1
 fi
 
@@ -50,10 +50,10 @@ upload() {
     --no-progress
 }
 
-upload hubertfa_v007_fp32_webgpu.onnx application/octet-stream
+upload hubertfa_v007_fp32_webgpu_v2.onnx application/octet-stream
 upload hubertfa_v007_cmudict.txt 'text/plain; charset=utf-8'
 upload HUBERTFA_LICENSE.txt 'text/plain; charset=utf-8'
-upload HUBERTFA_NOTICE.txt 'text/plain; charset=utf-8'
+upload HUBERTFA_V2_NOTICE.txt 'text/plain; charset=utf-8'
 
 # kuromoji's IPADIC dictionary, loaded only to read kanji in Japanese lyrics.
 # Uploaded gzipped as-is (no Content-Encoding): the app decompresses it itself.
@@ -81,4 +81,4 @@ fi
 
 echo ""
 echo "Done. Verify, e.g.:"
-echo "  curl -I https://models.composer.dacubeking.com/hubertfa_v007_fp32_webgpu.onnx"
+echo "  curl -I https://models.composer.dacubeking.com/hubertfa_v007_fp32_webgpu_v2.onnx"
