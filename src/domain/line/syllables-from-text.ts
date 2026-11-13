@@ -49,12 +49,19 @@ function untimedKeepingIds(
   });
 }
 
-// The typed parts up to the last one that matches a timed syllable keep today's timing rule; the rest stay untimed.
+// The typed parts up to the last one that matches a timed syllable keep the fully timed rule. When a keystroke
+// inside a timed word broke its match, the typed parts up to the untimed rest take its timing too.
 function lastTimedPart(old: readonly Syllable[], oldIndexOf: readonly (number | undefined)[]): number {
-  const lastTimed = oldIndexOf.findLastIndex((oldIndex) => oldIndex !== undefined && isTimedSyllable(old[oldIndex]));
-  if (lastTimed !== -1) return lastTimed;
-  const firstUntimed = oldIndexOf.findIndex((oldIndex) => oldIndex !== undefined);
-  return (firstUntimed === -1 ? oldIndexOf.length : firstUntimed) - 1;
+  const matchesTimed = (oldIndex: number | undefined) => oldIndex !== undefined && isTimedSyllable(old[oldIndex]);
+  const lastTimed = oldIndexOf.findLastIndex(matchesTimed);
+  if (lastTimed === -1) {
+    const firstUntimed = oldIndexOf.findIndex((oldIndex) => oldIndex !== undefined);
+    return (firstUntimed === -1 ? oldIndexOf.length : firstUntimed) - 1;
+  }
+  const unmatchedTimed = old.filter(isTimedSyllable).length - oldIndexOf.filter(matchesTimed).length;
+  const untimedAfter = oldIndexOf.findIndex((oldIndex, index) => index > lastTimed && oldIndex !== undefined);
+  const limit = (untimedAfter === -1 ? oldIndexOf.length : untimedAfter) - 1;
+  return unmatchedTimed > 0 ? Math.max(lastTimed, limit) : lastTimed;
 }
 
 // -- Functions ----------------------------------------------------------------

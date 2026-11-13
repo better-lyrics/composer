@@ -298,4 +298,49 @@ describe("reconcileMatchedTiming · regressions", () => {
       { text: "could", sep: "", begin: 3, end: 4, joinsNext: false },
     ]);
   });
+
+  describe("typing into a partly synced line, one keystroke at a time", () => {
+    const partlySynced = () =>
+      lineFromFields({
+        id: "ru",
+        text: "Да, твои глаза как море",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "Да,", sep: " ", begin: 70.9, end: 71.3, joinsNext: false },
+          { id: "w2", text: "твои", sep: " ", begin: 71.386, end: 71.686, joinsNext: false },
+        ],
+      });
+    const typed = (line: LyricLine, keystrokes: string[]) =>
+      keystrokes.reduce((current, text) => reconcileMatchedTiming(current, text), line);
+
+    it("regression: a word typed inside the timed part keeps the timing of the timed words after it", () => {
+      const timed = timedSyllables(mainTrack(typed(partlySynced(), ["Да, my твои глаза как море"])));
+      expect(timed.map((word) => word.text)).toEqual(["Да,", "my", "твои"]);
+      expect(timed[2]).toMatchObject({ begin: 71.386, end: 71.686 });
+      expect(timed[1].begin).toBeGreaterThanOrEqual(71.3);
+      expect(timed[1].end).toBeLessThanOrEqual(71.386);
+    });
+
+    it("regression: keystrokes inside a timed word keep the words after it timed inside its time", () => {
+      const line = typed(partlySynced(), [
+        "Да, mтвои глаза как море",
+        "Да, myтвои глаза как море",
+        "Да, my твои глаза как море",
+      ]);
+      const timed = timedSyllables(mainTrack(line));
+      expect(timed.map((word) => word.text)).toEqual(["Да,", "my", "твои"]);
+      expect(timed[1].begin).toBeGreaterThanOrEqual(71.386);
+      expect(timed[2].end).toBe(71.686);
+    });
+
+    it("keeps a word typed in the untimed tail untimed", () => {
+      const line = typed(partlySynced(), [
+        "Да, твои глаза n как море",
+        "Да, твои глаза ne как море",
+        "Да, твои глаза new как море",
+      ]);
+      expect(timedSyllables(mainTrack(line)).map((word) => word.text)).toEqual(["Да,", "твои"]);
+      expect(lineText(line)).toBe("Да, твои глаза new как море");
+    });
+  });
 });
