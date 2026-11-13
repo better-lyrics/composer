@@ -28,4 +28,11 @@ describe("commit", () => {
     expect(lines[0].text).toBe("Lanterns over the river");
     expect(history[historyIndex].note).toEqual({ command: "edit lines", args: ["l1"] });
   });
+
+  it("a command that changes no line keeps the lines array", () => {
+    const before = useProjectStore.getState().lines;
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#ffffff", templateVersion: 1 });
+    expect(useProjectStore.getState().groups).toHaveLength(1);
+    expect(useProjectStore.getState().lines).toBe(before);
+  });
 });

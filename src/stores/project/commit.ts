@@ -30,6 +30,11 @@ function withChangedTextDerived(before: readonly RawLine[], after: RawLine[], sp
   );
 }
 
+// A command that touched no line keeps the lines array, so line subscribers and history sharing see no change.
+function sameLines(before: readonly RawLine[], after: readonly RawLine[]): boolean {
+  return before === after || (before.length === after.length && after.every((line, index) => line === before[index]));
+}
+
 function withSharedCopy(
   before: LyricRoot,
   ran: Applied,
@@ -50,7 +55,8 @@ function writeRoot(
   mode: CommitMode,
   ctx: CommandContext,
 ): Partial<ProjectState> {
-  const lines = command.derivesText ? withChangedTextDerived(state.lines, root.lines, ctx.splitChar) : root.lines;
+  const written = command.derivesText ? withChangedTextDerived(state.lines, root.lines, ctx.splitChar) : root.lines;
+  const lines = sameLines(state.lines, written) ? state.lines : written;
   if (mode === "amend") return amendCurrentStep(state, lines);
   if (mode === "pending") {
     return {
