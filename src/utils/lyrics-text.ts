@@ -1,12 +1,7 @@
 import { CLEARED_BACKGROUND } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
-import { lcsPairs } from "@/domain/word/alignment";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
-
-// -- Constants ----------------------------------------------------------------
-
-const MAX_ROW_DIFF_CELLS = 250_000;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -25,6 +20,33 @@ function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined):
   return sourceText !== line.text || !line.backgroundWords?.length;
 }
 
+// Each typed row takes the earliest existing row with its text after the last one taken: in order, linear time.
+function inOrderKeyPairs(
+  existingKeys: string[],
+  typedKeys: string[],
+  start: number,
+  existingEnd: number,
+  typedEnd: number,
+): Array<[number, number]> {
+  const rowsByKey = new Map<string, number[]>();
+  for (let index = existingEnd - 1; index >= start; index--) {
+    const rows = rowsByKey.get(existingKeys[index]);
+    if (rows) rows.push(index);
+    else rowsByKey.set(existingKeys[index], [index]);
+  }
+  const pairs: Array<[number, number]> = [];
+  let lastTaken = start - 1;
+  for (let typedIndex = start; typedIndex < typedEnd; typedIndex++) {
+    const rows = rowsByKey.get(typedKeys[typedIndex]);
+    while (rows?.length && rows[rows.length - 1] <= lastTaken) rows.pop();
+    const existingIndex = rows?.pop();
+    if (existingIndex === undefined) continue;
+    pairs.push([existingIndex, typedIndex]);
+    lastTaken = existingIndex;
+  }
+  return pairs;
+}
+
 function unchangedRowPairs(existingKeys: string[], typedKeys: string[]): Array<[number, number]> {
   let head = 0;
   while (head < existingKeys.length && head < typedKeys.length && existingKeys[head] === typedKeys[head]) head++;
@@ -36,13 +58,7 @@ function unchangedRowPairs(existingKeys: string[], typedKeys: string[]): Array<[
   ) {
     tail++;
   }
-  const existingMiddle = existingKeys.slice(head, existingKeys.length - tail);
-  const typedMiddle = typedKeys.slice(head, typedKeys.length - tail);
-  // Past the cap the middle rows fall back to matching by text, so a huge paste never costs quadratic work.
-  const withinCap = existingMiddle.length * typedMiddle.length <= MAX_ROW_DIFF_CELLS;
-  const middle = (withinCap ? lcsPairs(existingMiddle, typedMiddle) : []).map(
-    ([existingIndex, typedIndex]): [number, number] => [existingIndex + head, typedIndex + head],
-  );
+  const middle = inOrderKeyPairs(existingKeys, typedKeys, head, existingKeys.length - tail, typedKeys.length - tail);
   const prefix = Array.from({ length: head }, (_, index): [number, number] => [index, index]);
   const suffix = Array.from({ length: tail }, (_, offset): [number, number] => [
     existingKeys.length - tail + offset,
