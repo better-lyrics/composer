@@ -1,10 +1,12 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { SyncCursor } from "@/domain/sync/cursor";
+import { splitIntoWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
-// Untimed words exist only in the line text, so a cursor on one counts into the untimed tail instead of naming it.
-type SyncSlotAddress = { syllableId: string } | { untimed: number };
+// Untimed words exist only in the line text, so a cursor on one counts the text words left from it to the line end:
+// a split before it adds text words before it, and timing given to it by another action changes none.
+type SyncSlotAddress = { syllableId: string } | { textWordsLeft: number };
 
 interface SyncAddress {
   lineId: string | null;
@@ -14,16 +16,15 @@ interface SyncAddress {
 
 // -- Constants ----------------------------------------------------------------
 
-const SYNC_START: SyncAddress = { lineId: null, at: { untimed: 0 }, storedAt: { lineIndex: 0, wordIndex: 0 } };
+const SYNC_START: SyncAddress = { lineId: null, at: { textWordsLeft: 0 }, storedAt: { lineIndex: 0, wordIndex: 0 } };
 
 // -- Functions ----------------------------------------------------------------
 
 function syncAddressAt(lines: readonly LyricLine[], cursor: SyncCursor): SyncAddress {
   const line = lines[cursor.lineIndex];
-  if (!line) return { lineId: null, at: { untimed: 0 }, storedAt: cursor };
-  const words = line.words ?? [];
-  const word = words[cursor.wordIndex];
-  const at = word ? { syllableId: word.id } : { untimed: cursor.wordIndex - words.length };
+  if (!line) return { lineId: null, at: { textWordsLeft: 0 }, storedAt: cursor };
+  const word = line.words?.[cursor.wordIndex];
+  const at = word ? { syllableId: word.id } : { textWordsLeft: splitIntoWords(line.text).length - cursor.wordIndex };
   return { lineId: line.id, at, storedAt: cursor };
 }
 
@@ -32,10 +33,12 @@ function syncAddressPosition(lines: readonly LyricLine[], address: SyncAddress):
   if (address.lineId === null) return address.storedAt;
   const lineIndex = lines.findIndex((line) => line.id === address.lineId);
   if (lineIndex === -1) return address.storedAt;
-  const words = lines[lineIndex].words ?? [];
+  const line = lines[lineIndex];
   const { at } = address;
-  if ("untimed" in at) return { lineIndex, wordIndex: words.length + at.untimed };
-  const wordIndex = words.findIndex((word) => word.id === at.syllableId);
+  if ("textWordsLeft" in at) {
+    return { lineIndex, wordIndex: Math.max(0, splitIntoWords(line.text).length - at.textWordsLeft) };
+  }
+  const wordIndex = (line.words ?? []).findIndex((word) => word.id === at.syllableId);
   return wordIndex === -1 ? address.storedAt : { lineIndex, wordIndex };
 }
 
