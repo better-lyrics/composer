@@ -50,4 +50,4 @@ function writeXmlElement(element: XmlElement): string {
 // -- Exports ------------------------------------------------------------------
 
 export type { XmlAttr, XmlChild, XmlElement, XmlText };
-export { escapeXmlAttribute, escapeXmlText, writeXmlElement };
+export { escapeXmlAttribute, escapeXmlText, writeXmlAttrs, writeXmlChild, writeXmlElement };

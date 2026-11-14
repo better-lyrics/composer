@@ -1,3 +1,4 @@
+import { isEmptyDocPassthrough } from "insync/passthrough";
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
@@ -13,6 +14,8 @@ import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { partsFromDivs } from "@/utils/lyrics-parsers/ttml-parts-read";
+import { docPassthrough, withAgentCapture, withParagraphCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { getSplitCharacter } from "@/utils/split-character";
 import { parseXmlDocument } from "@/utils/xml-document";
 
@@ -42,6 +45,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const lineIndexByKey = new Map<string, number>();
   const lineKeys: (string | undefined)[] = [];
   const paragraphByKey = new Map<string, Element>();
+  const lineByParagraph = new Map<Element, LyricLine>();
 
   const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
   const parsed = parseXmlDocument(declareMissingNamespaces(unescapedContent));
@@ -92,7 +96,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const nameEl = el.getElementsByTagName("ttm:name")[0];
     const name = nameEl?.textContent || placeholderAgentName(agents.length);
     if (id) {
-      agents.push({ id, type, name });
+      agents.push(withAgentCapture({ id, type, name }, el, nameEl));
     }
   }
 
@@ -238,7 +242,11 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         );
       }
     }
-    if (lines.length > lineCountBefore) lineKeys.push(lineKey ?? undefined);
+    if (lines.length > lineCountBefore) {
+      lines[lines.length - 1] = withParagraphCapture(lines[lines.length - 1], p, bgContainer);
+      lineByParagraph.set(p, lines[lines.length - 1]);
+      lineKeys.push(lineKey ?? undefined);
+    }
     if (lineKey && lines.length > lineCountBefore && !lineIndexByKey.has(lineKey)) {
       lineIndexByKey.set(lineKey, lines.length - 1);
       paragraphByKey.set(lineKey, p);
@@ -246,6 +254,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   }
 
   parseTtmlAlternates(doc, lines, lineIndexByKey, paragraphByKey);
+  const parts = partsFromDivs(doc, lineByParagraph);
+  const passthrough = docPassthrough(doc);
 
   return {
     lines,
@@ -256,6 +266,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     lineKeys,
     madeInAmllTool: amllMetaEls.length > 0,
     issues: [],
+    ...(parts.length > 0 && { parts }),
+    ...(!isEmptyDocPassthrough(passthrough) && { passthrough }),
   };
 }
 

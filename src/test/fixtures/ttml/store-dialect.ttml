@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- invented lyrics in the store dialect -->
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" itunes:timing="Word" xml:lang="en">
+  <head>
+    <metadata>
+      <ttm:agent type="person" xml:id="v1"><ttm:name type="full">Mara Quill</ttm:name></ttm:agent>
+      <ttm:agent type="person" xml:id="v2"><ttm:name type="full">Ostin Vale</ttm:name></ttm:agent>
+      <iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal" leadingSilence="0.640">
+        <translations>
+          <translation type="subtitle" xml:lang="fr"><text for="L1">Les lanternes vont au nord</text></translation>
+        </translations>
+        <songwriters>
+          <songwriter>Mara Quill</songwriter>
+          <songwriter>Ostin Vale</songwriter>
+        </songwriters>
+      </iTunesMetadata>
+    </metadata>
+  </head>
+  <body dur="0:24.000">
+    <div begin="1.000" end="10.400" itunes:songPart="Verse">
+      <p begin="1.000" end="5.000" itunes:key="L1" ttm:agent="v1"><span begin="1.200" end="1.800">Lan</span><span begin="1.800" end="2.300">terns </span><span begin="2.300" end="3.100">drift </span><span begin="3.100" end="4.800">north</span></p>
+      <p begin="5.400" end="10.400" itunes:key="L2" ttm:agent="v2"><span begin="5.400" end="6.000">Over </span><span begin="6.000" end="6.700">the </span><span begin="6.700" end="8.000">water</span><span begin="8.200" end="10.400" ttm:role="x-bg"><span begin="8.200" end="9.000">(still </span><span begin="9.000" end="10.400">water)</span></span></p>
+    </div>
+    <div begin="11.000" end="20.000" itunes:songPart="Chorus">
+      <p begin="11.000" end="15.000" itunes:key="L3" ttm:agent="v1"><span begin="11.000" end="12.000">Hold </span><span begin="12.000" end="13.000">the </span><span begin="13.000" end="15.000">light</span></p>
+      <p begin="15.500" end="20.000" itunes:key="L4" ttm:agent="v2"><span begin="15.500" end="17.000">Hold </span><span begin="17.000" end="20.000">it</span></p>
+    </div>
+  </body>
+</tt>

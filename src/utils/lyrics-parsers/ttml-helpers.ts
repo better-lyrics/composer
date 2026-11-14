@@ -1,5 +1,6 @@
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
+import { syllableCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -95,9 +96,9 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
       if (el.tagName.toLowerCase() === "span" && el.hasAttribute("begin")) {
         const begin = parseTtmlTimestamp(el.getAttribute("begin") ?? "");
         const end = parseTtmlTimestamp(el.getAttribute("end") ?? "");
-        const text = el.textContent ?? "";
+        const { text, passthrough } = syllableCapture(el);
         if (text.trim()) {
-          const word: SpacedWord = { text, begin, end };
+          const word: SpacedWord = { text, begin, end, ...(passthrough && { passthrough }) };
           if (readExplicitFlag(el)) word.explicit = true;
           words.push(word);
         }

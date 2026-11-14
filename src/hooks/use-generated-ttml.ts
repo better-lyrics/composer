@@ -31,6 +31,8 @@ function sameInputs(a: GeneratedTtmlInputs, b: GeneratedTtmlInputs): boolean {
     a.agents === b.agents &&
     a.lines === b.lines &&
     a.groups === b.groups &&
+    a.parts === b.parts &&
+    a.passthrough === b.passthrough &&
     a.duration === b.duration &&
     a.timing === b.timing &&
     a.youtubeVideoId === b.youtubeVideoId &&
@@ -41,8 +43,13 @@ function sameInputs(a: GeneratedTtmlInputs, b: GeneratedTtmlInputs): boolean {
 // Every export consumer (Preview, Timeline preview, Export) asks for the same TTML, so it is built once per change.
 function sharedGeneratedTtml(inputs: GeneratedTtmlInputs): string {
   if (lastInputs === null || !sameInputs(lastInputs, inputs)) {
-    const { metadata, agents, lines, groups, duration, timing, youtubeVideoId } = inputs;
-    lastContent = generateProjectTtml({ metadata, agents, lines, groups }, duration, timing, youtubeVideoId);
+    const { metadata, agents, lines, groups, parts, passthrough, duration, timing, youtubeVideoId } = inputs;
+    lastContent = generateProjectTtml(
+      { metadata, agents, lines, groups, parts, passthrough },
+      duration,
+      timing,
+      youtubeVideoId,
+    );
     lastInputs = inputs;
   }
   return lastContent;
@@ -55,6 +62,8 @@ function useGeneratedTtml(timing: TimingGranularity) {
   const agents = useProjectStore((state) => state.agents);
   const lines = useProjectStore((state) => state.lines);
   const groups = useProjectStore((state) => state.groups);
+  const parts = useProjectStore((state) => state.parts);
+  const passthrough = useProjectStore((state) => state.passthrough);
   const duration = useAudioStore((state) => state.duration);
   const youtubeVideoId = useAudioStore((state) => {
     const audio = projectAudioSource(state);
@@ -68,6 +77,8 @@ function useGeneratedTtml(timing: TimingGranularity) {
     agents,
     lines,
     groups,
+    parts,
+    passthrough,
     duration,
     timing,
     youtubeVideoId,

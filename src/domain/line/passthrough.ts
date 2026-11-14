@@ -1,7 +1,7 @@
 import type { Passthrough } from "insync/passthrough";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack } from "@/domain/line/track";
-import { withBackgroundTrack } from "@/domain/line/track-writes";
+import type { LineTrack, LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack } from "@/domain/line/track";
+import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 
 // -- Types --------------------------------------------------------------------
 
@@ -28,7 +28,31 @@ function withLinePassthrough(line: LyricLine, kept: LinePassthrough | undefined)
   return kept.line ? { ...withBackground, passthrough: kept.line } : withBackground;
 }
 
+function trackWithoutKeptData<T extends LineTrack>(track: T): T {
+  if (!track.syllables.some((syllable) => syllable.passthrough)) return track;
+  return {
+    ...track,
+    syllables: track.syllables.map((syllable) =>
+      syllable.passthrough ? { ...syllable, passthrough: undefined } : syllable,
+    ),
+  };
+}
+
+// The line as Composer models it, without anything kept from TTML.
+function withoutKeptData(line: LyricLine): LyricLine {
+  const background = backgroundTrack(line);
+  const bare = withMainTrack(
+    withBackgroundTrack(
+      line,
+      background &&
+        trackWithoutKeptData(background.passthrough ? { ...background, passthrough: undefined } : background),
+    ),
+    trackWithoutKeptData(mainTrack(line)),
+  );
+  return bare.passthrough ? { ...bare, passthrough: undefined } : bare;
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { LinePassthrough };
-export { linePassthroughOf, withLinePassthrough };
+export { linePassthroughOf, withLinePassthrough, withoutKeptData };

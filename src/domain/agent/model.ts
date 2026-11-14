@@ -9,6 +9,8 @@ interface Agent {
   type: AgentType;
   name?: string;
   passthrough?: Passthrough;
+  // The unmodelled data of its `<ttm:name>`.
+  namePassthrough?: Passthrough;
 }
 
 // -- Exports ------------------------------------------------------------------
