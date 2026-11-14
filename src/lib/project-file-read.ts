@@ -7,7 +7,7 @@ import { SAVED_PROJECT_VERSION, type SavedProject, upgradeSavedProject } from "@
 
 type ProjectFileContents =
   | { kind: "project"; project: ProjectFile }
-  | { kind: "bundle"; projects: ProjectFile[]; unreadable: number };
+  | { kind: "bundle"; projects: ProjectFile[]; unreadable: number; previousVersions: ProjectFile[] };
 
 // -- Constants ----------------------------------------------------------------
 
@@ -32,24 +32,41 @@ function isProjectFilePayload(value: unknown): value is SavedProject & { project
   );
 }
 
-function isProjectBundlePayload(value: unknown): value is { projects: unknown[] } {
+function isProjectBundlePayload(value: unknown): value is { projects: unknown[]; previousVersions?: unknown } {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as { format?: unknown; projects?: unknown };
   return candidate.format === PROJECT_BUNDLE_FORMAT && Array.isArray(candidate.projects);
 }
 
-function parseProjectFile(parsed: unknown): ProjectFile {
+function readStoredProjectFile(parsed: unknown): ProjectFile {
   if (!isProjectFilePayload(parsed)) throw new Error("Not a Composer project file");
   const { projectId, ...project } = parsed;
   if (!SUPPORTED_VERSIONS.includes(project.version)) {
     throw new Error(`Unsupported project version: ${project.version}`);
   }
-  if (!project.syllableSplitDefaults) project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
-  upgradeSavedProject(project);
   return typeof projectId === "string" && projectId !== "" ? { ...project, projectId } : project;
 }
 
-function parseBundle(projects: readonly unknown[]): ProjectFileContents {
+function parseProjectFile(parsed: unknown): ProjectFile {
+  const project = readStoredProjectFile(parsed);
+  if (!project.syllableSplitDefaults) project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
+  upgradeSavedProject(project);
+  return project;
+}
+
+function parsePreviousVersions(previousVersions: unknown): ProjectFile[] {
+  if (!Array.isArray(previousVersions)) return [];
+  return previousVersions.flatMap((item: unknown) => {
+    try {
+      return [readStoredProjectFile(item)];
+    } catch (error) {
+      console.warn(LOG_PREFIX, "skipped an earlier version the backup could not read", error);
+      return [];
+    }
+  });
+}
+
+function parseBundle(projects: readonly unknown[], previousVersions: unknown): ProjectFileContents {
   const readable: ProjectFile[] = [];
   let unreadable = 0;
   for (const item of projects) {
@@ -60,14 +77,14 @@ function parseBundle(projects: readonly unknown[]): ProjectFileContents {
       console.warn(LOG_PREFIX, "skipped a project the backup could not read", error);
     }
   }
-  return { kind: "bundle", projects: readable, unreadable };
+  return { kind: "bundle", projects: readable, unreadable, previousVersions: parsePreviousVersions(previousVersions) };
 }
 
 // -- Reading ------------------------------------------------------------------
 
 function parseProjectFileContents(text: string): ProjectFileContents {
   const parsed: unknown = JSON.parse(text);
-  if (isProjectBundlePayload(parsed)) return parseBundle(parsed.projects);
+  if (isProjectBundlePayload(parsed)) return parseBundle(parsed.projects, parsed.previousVersions);
   return { kind: "project", project: parseProjectFile(parsed) };
 }
 

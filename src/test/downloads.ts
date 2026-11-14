@@ -1,8 +1,11 @@
+import { onTestFinished } from "vitest";
+
 // -- Types --------------------------------------------------------------------
 
 interface DownloadCapture {
   anchors: () => HTMLAnchorElement[];
   names: () => string[];
+  blobs: () => Blob[];
   stop: () => void;
 }
 
@@ -16,10 +19,23 @@ function captureDownloads(): DownloadCapture {
     }
   });
   observer.observe(document.body, { childList: true });
+  const blobs: Blob[] = [];
+  const originalCreate = URL.createObjectURL;
+  const recordBlob = (source: Blob | MediaSource) => {
+    if (source instanceof Blob) blobs.push(source);
+    return originalCreate(source);
+  };
+  URL.createObjectURL = recordBlob;
+  const stop = () => {
+    observer.disconnect();
+    if (URL.createObjectURL === recordBlob) URL.createObjectURL = originalCreate;
+  };
+  onTestFinished(stop);
   return {
     anchors: () => [...added],
     names: () => added.map((anchor) => anchor.download),
-    stop: () => observer.disconnect(),
+    blobs: () => [...blobs],
+    stop,
   };
 }
 
