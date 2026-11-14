@@ -1,6 +1,7 @@
 import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import { msFromSeconds, secondsFromMs } from "insync/time";
 import { languagesFromSaved, savedLanguages } from "@/domain/language/saved-languages";
+import { groupFieldsOf } from "@/domain/line/group-fields";
 import type {
   BackgroundTrack,
   LineTrack,
@@ -57,10 +58,7 @@ function savedLine(line: LyricLine, options: SavedLineOptions): SavedLine {
     id: line.id,
     tracks: line.tracks.map((track) => savedTrack(track, options)),
     ...(languages && { languages }),
-    ...(line.groupId !== undefined && { groupId: line.groupId }),
-    ...(line.instanceIdx !== undefined && { instanceIdx: line.instanceIdx }),
-    ...(line.templateLineIdx !== undefined && { templateLineIdx: line.templateLineIdx }),
-    ...(line.detached !== undefined && { detached: line.detached }),
+    ...groupFieldsOf(line),
   };
 }
 
@@ -122,14 +120,10 @@ function lineFromSaved(saved: SavedLine): LyricLine {
     id: saved.id,
     tracks: background ? [main, background] : [main],
     ...(languages && { languages }),
-    ...(saved.groupId !== undefined && { groupId: saved.groupId }),
-    ...(saved.instanceIdx !== undefined && { instanceIdx: saved.instanceIdx }),
-    ...(saved.templateLineIdx !== undefined && { templateLineIdx: saved.templateLineIdx }),
-    ...(saved.detached !== undefined && { detached: saved.detached }),
+    ...groupFieldsOf(saved),
   };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export type { SavedLineOptions };
 export { lineFromSaved, savedLine };

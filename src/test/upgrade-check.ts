@@ -86,5 +86,4 @@ function hasProblems(report: UpgradeReport): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { UpgradeReport };
 export { checkUpgrade, hasProblems };

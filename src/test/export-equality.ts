@@ -130,4 +130,4 @@ function exportDifferences(before: EditedTtmlProject, after: EditedTtmlProject):
 // -- Exports ------------------------------------------------------------------
 
 export type { ExportDifference };
-export { EXPORT_DURATION_SECONDS, exportDifferences };
+export { exportDifferences };
