@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
@@ -120,5 +120,19 @@ describe("mergeEditedTtmlLines · word timing", () => {
     const ids = mainTrack(merged).syllables.map((syllable) => syllable.id);
     expect(lineText(merged)).toBe("a b c d");
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("regression: a partly synced line keeps its untimed rest when another part of the line changes", () => {
+    const loaded = createLine({ id: "a", text: "a b c d", backgroundText: "ooh ah" });
+    const [first] = mainTrack(loaded).syllables;
+    const tapped = withRoleWords(loaded, "main", [{ ...first, begin: 1, end: 2 }]);
+    const [bgFirst] = backgroundTrack(tapped)?.syllables ?? [];
+    const partly = withRoleWords(tapped, "bg", [{ ...bgFirst!, begin: 1, end: 1.5 }]);
+
+    const merged = mergeEditedExport([partly], (ttml) => ttml.replace('ttm:agent="v1"', 'ttm:agent="v2"'))[0]!;
+
+    expect(mainTrack(merged).agentId).toBe("v2");
+    expect(lineText(merged)).toBe("a b c d");
+    expect(backgroundText(merged)).toBe("ooh ah");
   });
 });

@@ -3,8 +3,8 @@ import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
 import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { linePassthroughOf, withLinePassthrough, withoutKeptData } from "@/domain/line/passthrough";
-import { backgroundTrack } from "@/domain/line/track";
-import { trackText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack } from "@/domain/line/track";
+import { trackText, untimedRestText } from "@/domain/line/text";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { isSyncableLine } from "@/domain/line/sync-progress";
@@ -130,8 +130,16 @@ function mergedTiming(stored: LineFields, edited: LineFields): Pick<LineFields, 
   return keepsBounds ? { begin: stored.begin, end: stored.end } : { begin: edited.begin, end: edited.end };
 }
 
-function mergedText(stored: LineFields, edited: LineFields): string {
-  return !edited.words && edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
+// An export writes only timed syllables, so the untimed rest of a partly synced track is never part of an edit.
+function mergedText(storedLine: LyricLine, stored: LineFields, edited: LineFields): string {
+  if (edited.words) return edited.text + untimedRestText(mainTrack(storedLine));
+  return edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
+}
+
+function mergedBackgroundText(storedLine: LyricLine, edited: LineFields): string | undefined {
+  const background = backgroundTrack(storedLine);
+  if (edited.backgroundText === undefined || !edited.backgroundWords || !background) return edited.backgroundText;
+  return edited.backgroundText + untimedRestText(background);
 }
 
 function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLine {
@@ -146,7 +154,8 @@ function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLin
   });
   const merged = lineFromFields({
     ...editedFields,
-    text: mergedText(stored, edited),
+    text: mergedText(storedLine, stored, edited),
+    backgroundText: mergedBackgroundText(storedLine, edited),
     ...background,
     ...timing,
     id: stored.id,
