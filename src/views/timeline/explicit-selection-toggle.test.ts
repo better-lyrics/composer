@@ -10,6 +10,7 @@ import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, roleWords, timedSyllables, trackRole } from "@/domain/line/track";
+import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
@@ -264,5 +265,34 @@ describe("explicit marks on a line-synced background", () => {
       ["oh", 14, 14.5, true],
       ["no", 15, 16, true],
     ]);
+  });
+
+  it("regression: clearing a line-synced background clears a linked copy whose words are only partly marked", () => {
+    const linked = { groupId: "g1", templateLineIdx: 0 };
+    const seeded = withSeededBackground(
+      createLine({ id: "a0", text: "Low tide", begin: 2, end: 6, backgroundText: "oh no", ...linked, instanceIdx: 0 }),
+    );
+    const source = withBackgroundTrack(seeded, withTrackExplicit(backgroundTrack(seeded)!, true));
+    const copy = createLine({
+      id: "a1",
+      text: "Low tide",
+      begin: 12,
+      end: 16,
+      backgroundText: "oh no",
+      backgroundWords: [
+        { text: "oh", sep: " ", begin: 14, end: 14.5, explicit: true },
+        { text: "no", begin: 15, end: 16 },
+      ],
+      ...linked,
+      instanceIdx: 1,
+    });
+    useProjectStore.setState({ lines: [source, copy] });
+
+    const toggle = resolveExplicitSelectionToggle([source, copy], [sel([source, copy], "a0", 0, "bg")]);
+    expect(toggle.value).toBe(false);
+    useProjectStore.getState().commit(markWordsExplicit(toggle.targets, toggle.value));
+
+    const words = timedSyllables(backgroundTrack(useProjectStore.getState().lines[1]));
+    expect(words.map((word) => word.explicit)).toEqual([undefined, undefined]);
   });
 });
