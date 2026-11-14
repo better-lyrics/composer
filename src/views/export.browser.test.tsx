@@ -1,4 +1,4 @@
-import { savedLines } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { mainTrack } from "@/domain/line/track";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -163,7 +163,7 @@ describe("ExportPanel · project file customSnapPoints", () => {
     const previousId = openProjectIdSnapshot();
 
     const payload = {
-      version: 1 as const,
+      version: SAVED_PROJECT_VERSION,
       savedAt: Date.now(),
       metadata: { title: "Imported", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
@@ -308,7 +308,7 @@ describe("ExportPanel · project file keeps the hand-edited TTML with its projec
 
   function projectFile(extra: Record<string, unknown> = {}): File {
     const payload = {
-      version: 3 as const,
+      version: SAVED_PROJECT_VERSION,
       savedAt: Date.now(),
       metadata: { title: "Project B", artists: [], album: "Album B", duration: 0 },
       agents: DEFAULT_AGENTS,

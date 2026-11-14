@@ -10,7 +10,7 @@ import { applySavedProject } from "@/lib/apply-saved-project";
 import { buildSavedProject } from "@/lib/persistence";
 import { buildSaveInput, currentSaveInput } from "@/lib/project-snapshot";
 import type { SavedProject } from "@/lib/saved-project";
-import { savedLines } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
@@ -150,7 +150,7 @@ describe("applySavedProject", () => {
       await resetAllStores();
 
       applySavedProject(
-        JSON.parse(JSON.stringify({ version: 3, savedAt: 0, ...saved, lines: savedLines(saved.lines) })),
+        JSON.parse(JSON.stringify({ version: SAVED_PROJECT_VERSION, savedAt: 0, ...saved, lines: savedLines(saved.lines) })),
         "storage",
       );
 

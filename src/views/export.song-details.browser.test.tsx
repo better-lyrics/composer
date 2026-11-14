@@ -1,6 +1,6 @@
 import { describe, expect, it, onTestFinished } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { savedLines } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord } from "@/test/factories";
@@ -50,7 +50,7 @@ describe("ExportPanel · imported song details", () => {
     useProjectStore.setState({ lines: [] });
     await render(<ExportPanel />);
     const payload = {
-      version: 1 as const,
+      version: SAVED_PROJECT_VERSION,
       savedAt: Date.now(),
       metadata: { title: "Imported", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
