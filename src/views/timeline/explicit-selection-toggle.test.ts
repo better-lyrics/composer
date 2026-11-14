@@ -9,7 +9,7 @@ import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, roleWords, trackRole } from "@/domain/line/track";
+import { backgroundTrack, roleWords, timedSyllables, trackRole } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
@@ -234,5 +234,35 @@ describe("explicit marks on a line-synced background", () => {
     expect(generateLineTtml(marked)).toContain(
       '<span begin="0:04.000" end="0:06.000" composer:explicit="true">damn it</span>',
     );
+  });
+
+  it("regression: marking a line-synced background marks a linked copy's own background words, keeping their timing", () => {
+    const linked = { groupId: "g1", templateLineIdx: 0 };
+    const source = withSeededBackground(
+      createLine({ id: "a0", text: "Low tide", begin: 2, end: 6, backgroundText: "oh no", ...linked, instanceIdx: 0 }),
+    );
+    const copy = createLine({
+      id: "a1",
+      text: "Low tide",
+      begin: 12,
+      end: 16,
+      backgroundText: "oh no",
+      backgroundWords: [
+        { text: "oh", sep: " ", begin: 14, end: 14.5 },
+        { text: "no", begin: 15, end: 16 },
+      ],
+      ...linked,
+      instanceIdx: 1,
+    });
+    useProjectStore.setState({ lines: [source, copy] });
+
+    const toggle = resolveExplicitSelectionToggle([source, copy], [sel([source, copy], "a0", 0, "bg")]);
+    useProjectStore.getState().commit(markWordsExplicit(toggle.targets, toggle.value));
+
+    const words = timedSyllables(backgroundTrack(useProjectStore.getState().lines[1]));
+    expect(words.map((word) => [word.text, word.begin, word.end, word.explicit])).toEqual([
+      ["oh", 14, 14.5, true],
+      ["no", 15, 16, true],
+    ]);
   });
 });
