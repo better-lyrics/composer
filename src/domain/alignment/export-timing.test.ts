@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readExportTiming, withExportTiming } from "@/domain/alignment/export-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
@@ -34,6 +35,16 @@ const HAND = createLine({
 });
 
 const MS = 0.001 + 1e-9;
+
+// Vendor data on every word span and one untimed vendor span at the end of the line.
+function withVendorData(line: LyricLine): LyricLine {
+  const words = timedSyllables(mainTrack(line)).map((word) => ({
+    ...word,
+    passthrough: { attrs: [["x-vendor:cue", "1"]] as const },
+  }));
+  const note = { name: "span", attrs: [["x-vendor:note", ""]] as const, children: [] };
+  return { ...withRoleWords(line, "main", words), passthrough: { elements: [note] } };
+}
 
 function ttmlOf(lines: LyricLine[]): string {
   return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines });
@@ -72,5 +83,15 @@ describe("withExportTiming", () => {
     const settled = withExportTiming([ALIGNED, next], new Set(["a", "b"]));
     expect(settled.map((line) => roleWords(line, "main")?.[0].begin)).toEqual([12.34, 14.204]);
     expect(readExportTiming(ttmlOf(settled)).markedLines).toBe(2);
+  });
+
+  it("reads the same marks when spans carry kept attributes and lines end in untimed kept spans", () => {
+    const untouched = new Set(["a", "h"]);
+    const plain = ttmlOf(withExportTiming([ALIGNED, HAND], untouched));
+    const kept = ttmlOf(withExportTiming([withVendorData(ALIGNED), withVendorData(HAND)], untouched));
+
+    expect(kept).toContain('x-vendor:cue="1"');
+    expect(kept).toContain('x-vendor:note=""');
+    expect(readExportTiming(kept)).toEqual(readExportTiming(plain));
   });
 });
