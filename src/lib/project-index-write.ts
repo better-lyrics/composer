@@ -6,7 +6,7 @@ import type { ProjectTab } from "@/domain/project/tab";
 import { type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
 import { storedDataBytes } from "@/domain/storage/stored-data";
 import { PROJECT_AUDIO_STORE_NAME, PROJECT_INDEX_STORE_NAME, PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
-import type { SavedAudioFile, SavedProject } from "@/lib/saved-project";
+import type { SavedAudioFile, StoredProject } from "@/lib/saved-project";
 
 // -- Types --------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ interface IndexViewFields {
 
 interface IndexEntryWrite {
   id: string;
-  project: SavedProject;
+  project: StoredProject;
   view?: IndexViewFields;
   onFirstEntry?: () => void;
 }
@@ -34,7 +34,7 @@ interface IndexEntryWrite {
 type IndexPatch = Partial<IndexCarriedFields>;
 // -- Building -----------------------------------------------------------------
 
-function indexEntryForProject(id: string, project: SavedProject, carried: IndexCarriedFields): ProjectIndexEntry {
+function indexEntryForProject(id: string, project: StoredProject, carried: IndexCarriedFields): ProjectIndexEntry {
   return buildIndexEntry({
     id,
     metadata: project.metadata,

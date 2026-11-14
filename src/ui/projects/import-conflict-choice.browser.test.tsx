@@ -11,7 +11,7 @@ import { savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
-import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
+import { linesOfRecord, seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 
@@ -60,7 +60,7 @@ describe("import conflict dialog", () => {
     await screen.getByRole("button", { name: "Keep both" }).click();
     const id = await pending;
     expect(id).not.toBe("a");
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("Library line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0])).toBe("Library line");
     expect((await listProjectIndex()).length).toBe(2);
   });
 
@@ -71,7 +71,7 @@ describe("import conflict dialog", () => {
     await screen.getByRole("button", { name: "Replace project" }).click();
     await expect(pending).resolves.toBe("a");
     const record = await loadProjectRecord("a");
-    expect(record?.lines[0]?.text).toBe("File line");
+    expect(lineText(linesOfRecord(record)[0])).toBe("File line");
     expect(record?.audioSource).toEqual({ kind: "file", name: "alpha.wav" });
     expect((await loadProjectAudio("a"))?.name).toBe("alpha.wav");
   });

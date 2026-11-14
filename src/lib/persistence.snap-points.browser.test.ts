@@ -3,7 +3,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
-import type { SavedProject } from "@/lib/saved-project";
+import type { SavedProjectV3 } from "@/lib/saved-project";
 import { createProjectSaveInput, snapPoints } from "@/test/factories";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { describe, expect, it } from "vitest";
@@ -53,7 +53,7 @@ describe("persistence · customSnapPoints", () => {
   });
 
   it("a legacy record saved without customSnapPoints loads with the field undefined", async () => {
-    const legacyRecord: SavedProject = {
+    const legacyRecord: SavedProjectV3 = {
       version: 1,
       savedAt: Date.now(),
       metadata: { title: "legacy", artists: [], album: "", duration: 0 },

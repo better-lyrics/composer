@@ -42,7 +42,7 @@ interface LineTemplate {
 // timings and templates; an empty string is meaningful for both fields.
 function wordsToTemplate(words: WordTiming[], instanceStart: number, pieces?: LanguagePieces): WordTemplate[] {
   return words.map(({ id, begin, end, ...word }) => {
-    const piece = pieceOf(pieces, { id, begin, end, ...word });
+    const piece = pieceOf(pieces, { id });
     return {
       ...word,
       relativeBegin: begin - instanceStart,

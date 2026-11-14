@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
-import { linesFromSaved } from "@/lib/saved-project";
+import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
@@ -58,7 +58,7 @@ describe("tap-word", () => {
   });
 
   it("regression: a tap after a reload joins the syllable before it again", () => {
-    const lines = linesFromSaved([
+    const lines = linesFromSavedV3([
       { id: "l0", text: "hel|lo you", agentId: "v1", words: [{ text: "hel", begin: 1, end: 1.3 }] },
     ]);
     const words = roleWords(apply(lines, run(lines, "tap-word", [0, 1], 2))[0], "main");

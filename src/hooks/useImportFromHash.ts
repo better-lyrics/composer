@@ -4,7 +4,7 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { startSongInNewProject } from "@/lib/open-project";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
-import { type SavedLine, isFromNewerComposer, linesFromSaved } from "@/lib/saved-project";
+import { isFromNewerComposer, linesFromLink } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import { showNewProjectToast, showNewerLinkToast } from "@/utils/project-toast";
@@ -16,7 +16,8 @@ import { toast } from "sonner";
 interface ImportPayload {
   metadata: ProjectMetadata;
   agents: Agent[];
-  lines: SavedLine[];
+  version?: unknown;
+  lines: unknown[];
   granularity: "line" | "word";
 }
 
@@ -42,7 +43,7 @@ function applyImport(payload: ImportPayload, metadata: ProjectMetadata): void {
   useProjectStore.getState().reset();
   const state = useProjectStore.getState();
   state.setMetadata(metadata);
-  state.restoreLyrics({ lines: linesFromSaved(payload.lines) });
+  state.restoreLyrics({ lines: linesFromLink(payload) });
   state.setGranularity(payload.granularity);
   for (const agent of payload.agents) {
     if (!useProjectStore.getState().agents.some((existing) => existing.id === agent.id)) {

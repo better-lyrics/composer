@@ -4,7 +4,7 @@ import { PREVIOUS_VERSION_TITLE_SUFFIX } from "@/lib/recovery";
 import { RecoverProjectList } from "@/pages/recover-project-list";
 import { sleep } from "@/test/async";
 import { captureDownloads } from "@/test/downloads";
-import { songTitled, storedProject, v4StoredProject } from "@/test/projects";
+import { songTitled, storedProject, v3StoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -56,8 +56,8 @@ describe("RecoverProjectList", () => {
   });
 
   it("lists the copy kept before an update beside its only project and downloads it as a separate project", async () => {
-    await saveProjectRecord("a", storedProject(songTitled("Alpha")));
-    await saveProjectRecord("a", v4StoredProject(songTitled("Alpha Remix")));
+    await saveProjectRecord("a", v3StoredProject(songTitled("Alpha")));
+    await saveProjectRecord("a", storedProject(songTitled("Alpha Remix")));
     const screen = await render(<RecoverProjectList />);
     await expect.element(screen.getByText("1 project")).toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: "Download Alpha Remix" })).toBeInTheDocument();

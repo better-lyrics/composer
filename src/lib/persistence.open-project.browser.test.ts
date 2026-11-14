@@ -87,7 +87,7 @@ describe("persistence · open project", () => {
       expect(id).toBeDefined();
       const { project: loaded } = await loadProjectForRestore(id ?? "");
       expect(loaded?.version).toBe(SAVED_PROJECT_VERSION);
-      expect(loaded?.lines[0].transliteration?.alignmentStatus).toBe("inferred");
+      expect(loaded?.lines[0].languages?.transliteration?.main.alignmentStatus).toBe("inferred");
       expect((await loadProjectRecord(id ?? ""))?.version).toBe(SAVED_PROJECT_VERSION);
     });
   });

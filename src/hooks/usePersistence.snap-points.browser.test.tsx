@@ -3,7 +3,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
-import type { SavedProject } from "@/lib/saved-project";
+import type { SavedProjectV3 } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
@@ -68,7 +68,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
   it("a legacy saved project (no customSnapPoints) hydrates the store to []", async () => {
     useProjectStore.setState({ customSnapPoints: snapPoints([1, 2]) });
 
-    const legacyRecord: SavedProject = {
+    const legacyRecord: SavedProjectV3 = {
       version: 1,
       savedAt: Date.now(),
       metadata: { title: "legacy", artists: [], album: "", duration: 0 },

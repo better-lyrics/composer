@@ -42,14 +42,15 @@ let restoring = false;
 // -- Loading ------------------------------------------------------------------
 
 async function loadProjectForRestore(id: string): Promise<RestorePayload> {
-  const [project, audio, entry] = await Promise.all([
+  const [stored, audio, entry] = await Promise.all([
     loadProjectRecord(id),
     loadProjectAudio(id),
     loadProjectIndexEntry(id),
   ]);
-  if (isFromNewerComposer(project)) throw new NewerProjectError(id);
+  if (isFromNewerComposer(stored)) throw new NewerProjectError(id);
+  const project = stored && upgradeSavedProject(stored);
   if (project) {
-    const upgraded = upgradeSavedProject(project);
+    const upgraded = project !== stored;
     const migrated = await migratePrimingTimings(project, audio);
     await repairProjectStems(id, audio);
     if (upgraded || migrated) await saveProjectRecord(id, project);

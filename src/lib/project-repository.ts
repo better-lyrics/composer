@@ -21,13 +21,13 @@ import { keepPreV4Record, putPreV4RecordIfAbsent, removePreV4Record } from "@/li
 import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
 import { OPEN_PROJECT_KEY, PROJECT_DATA_STORES } from "@/lib/project-storage";
 import { clearTombstone, whenProjectWritable, writeTombstone } from "@/lib/project-tombstones";
-import { NewerProjectError, type SavedAudioFile, type SavedProject, isFromNewerComposer } from "@/lib/saved-project";
+import { NewerProjectError, type SavedAudioFile, type StoredProject, isFromNewerComposer } from "@/lib/saved-project";
 import { notifyStorageSignal } from "@/lib/storage-signals";
 import { nanoid } from "nanoid";
 
 // -- Types --------------------------------------------------------------------
 
-type ProjectUpdate = (project: SavedProject) => SavedProject;
+type ProjectUpdate = (project: StoredProject) => StoredProject;
 
 // -- Constants ----------------------------------------------------------------
 
@@ -63,13 +63,13 @@ function whenRecordWritable(
   tx: IDBTransaction,
   abort: AbortTransaction,
   id: string,
-  next: SavedProject,
+  next: StoredProject,
   write: () => void,
 ): void {
   whenProjectWritable(tx, abort, id, () => {
     const current = tx.objectStore(PROJECT_RECORD_STORE_NAME).get(id);
     current.onsuccess = () => {
-      const stored = current.result as SavedProject | undefined;
+      const stored = current.result as StoredProject | undefined;
       if (isFromNewerComposer(stored)) {
         abort(new NewerProjectError(id));
         return;
@@ -87,9 +87,9 @@ function whenRecordWritable(
 function writeProjectRecord(
   prepare: (tx: IDBTransaction, abort: AbortTransaction, write: () => void) => void,
   id: string,
-  project: SavedProject,
+  project: StoredProject,
   view?: IndexViewFields,
-  previousVersion?: SavedProject,
+  previousVersion?: StoredProject,
 ): Promise<void> {
   let createdFirstEntry = false;
   return runTransaction(RECORD_WRITE_STORES, "readwrite", (tx, abort) => {
@@ -111,11 +111,11 @@ function writeProjectRecord(
   });
 }
 
-function saveProjectRecord(id: string, project: SavedProject, view?: IndexViewFields): Promise<void> {
+function saveProjectRecord(id: string, project: StoredProject, view?: IndexViewFields): Promise<void> {
   return writeProjectRecord((tx, abort, write) => whenRecordWritable(tx, abort, id, project, write), id, project, view);
 }
 
-function restoreProjectRecord(id: string, project: SavedProject, previousVersion?: SavedProject): Promise<void> {
+function restoreProjectRecord(id: string, project: StoredProject, previousVersion?: StoredProject): Promise<void> {
   return writeProjectRecord(
     (tx, abort, write) => whenRecordWritable(tx, abort, id, project, write),
     id,
@@ -125,7 +125,7 @@ function restoreProjectRecord(id: string, project: SavedProject, previousVersion
   );
 }
 
-function restoreDeletedProjectRecord(id: string, project: SavedProject, previousVersion?: SavedProject): Promise<void> {
+function restoreDeletedProjectRecord(id: string, project: StoredProject, previousVersion?: StoredProject): Promise<void> {
   return writeProjectRecord(
     (tx, _abort, write) => {
       clearTombstone(tx, id);
@@ -138,7 +138,7 @@ function restoreDeletedProjectRecord(id: string, project: SavedProject, previous
   );
 }
 
-async function saveProjectRecordWithAudio(id: string, project: SavedProject, audio: File | undefined): Promise<void> {
+async function saveProjectRecordWithAudio(id: string, project: StoredProject, audio: File | undefined): Promise<void> {
   const saved: SavedAudioFile | undefined = audio ? { name: audio.name, type: audio.type, data: audio } : undefined;
   let createdFirstEntry = false;
   await runTransaction(RECORD_WRITE_STORES, "readwrite", (tx, abort) => {
@@ -165,7 +165,7 @@ function updateProjectRecord(id: string, update: ProjectUpdate): Promise<void> {
       const records = tx.objectStore(PROJECT_RECORD_STORE_NAME);
       const current = records.get(id);
       current.onsuccess = () => {
-        const project = current.result as SavedProject | undefined;
+        const project = current.result as StoredProject | undefined;
         if (!project) {
           abort(new Error(`Project ${id} is not stored in this browser`));
           return;
@@ -174,7 +174,7 @@ function updateProjectRecord(id: string, update: ProjectUpdate): Promise<void> {
           abort(new NewerProjectError(id));
           return;
         }
-        let next: SavedProject;
+        let next: StoredProject;
         try {
           next = update(project);
         } catch (error) {

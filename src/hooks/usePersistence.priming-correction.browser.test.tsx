@@ -1,17 +1,18 @@
+import { mainBounds } from "@/domain/line/bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { SavedProjectStems } from "@/domain/stems/saved-stems";
 import { storedDataBytes } from "@/domain/storage/stored-data";
-import type { SpacedWord } from "@/domain/word/spaced-words";
 import { saveAudioFile } from "@/lib/persistence";
+import { linesFromSaved } from "@/lib/saved-project";
 import { PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
 import { loadProjectStems, saveProjectStem } from "@/lib/project-stems";
 import { getOpenProjectId } from "@/lib/project-storage";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { croppedMp3StemWrite, saveStemFromOldBuild } from "@/test/legacy-stems";
-import { loadOpenProjectForRestore, seedSavedProject } from "@/test/priming-projects";
+import { loadOpenProjectForRestore, restoredWords, savedTime, seedSavedProject } from "@/test/priming-projects";
 import { describe, expect, it, vi } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -56,11 +57,10 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
 
     const migrated = await loadOpenProjectForRestore();
 
-    const first = migrated!.lines[0] as { words: SpacedWord[]; backgroundWords: SpacedWord[] };
-    const second = migrated!.lines[1] as { begin: number; end: number };
-    expect(first.words[0].begin).toBeCloseTo(1.0 + P, 9);
-    expect(first.backgroundWords[0].begin).toBeCloseTo(1.1 + P, 9);
-    expect(second.begin).toBeCloseTo(3 + P, 9);
+    const second = linesFromSaved(migrated!.lines)[1];
+    expect(restoredWords(migrated)[0].begin).toBe(savedTime(1.0 + P));
+    expect(restoredWords(migrated, 0, "bg")[0].begin).toBe(savedTime(1.1 + P));
+    expect(mainBounds(second)?.begin).toBe(savedTime(3 + P));
     expect((migrated!.customSnapPoints?.[0] as { time: number }).time).toBeCloseTo(5 + P, 9);
     expect((migrated!.beatGrid as { beats: number[] }).beats[0]).toBeCloseTo(1 + P, 9);
     expect(migrated).toMatchObject({ primingStripped: true, primingCorrected: true });
@@ -78,7 +78,7 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     await saveAudioFile(createAudioFile());
     await seedSavedProject({ primingStripped: true, primingCorrected: false });
     const loaded = await loadOpenProjectForRestore();
-    expect((loaded!.lines[0] as { words: SpacedWord[] }).words[0].begin).toBeCloseTo(1.0, 9);
+    expect(restoredWords(loaded)[0].begin).toBeCloseTo(1.0, 9);
     expect(loaded!.primingCorrected).toBe(true);
   });
 
@@ -172,7 +172,7 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
 
     expect((await loadProjectStems(id))?.slots.instrumental).toBeUndefined();
 
-    expect((first!.lines[0] as { words: SpacedWord[] }).words[0].begin).toBeCloseTo(1.0 + P, 9);
+    expect(restoredWords(first)[0].begin).toBe(savedTime(1.0 + P));
     expect(first!.primingCorrected).toBe(true);
     expect(second!.lines).toEqual(first!.lines);
   });
@@ -184,6 +184,6 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     await seedSavedProject({ primingStripped: true, primingCorrected: false });
     const loaded = await loadOpenProjectForRestore();
     expect(loaded!.primingCorrected).toBe(false);
-    expect((loaded!.lines[0] as { words: SpacedWord[] }).words[0].begin).toBeCloseTo(1.0, 9);
+    expect(restoredWords(loaded)[0].begin).toBeCloseTo(1.0, 9);
   });
 });

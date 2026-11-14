@@ -1,11 +1,21 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import type { LyricLine } from "@/domain/line/model";
 import { findOpenProjectId } from "@/lib/open-project-session";
 import type { ProjectSaveInput } from "@/lib/persistence";
 import { loadProjectAudio, saveProjectAudio } from "@/lib/project-audio";
 import { saveProjectRecord, setOpenProjectId } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/saved-project";
+import {
+  SAVED_PROJECT_VERSION,
+  type SavedProject,
+  type SavedProjectV3,
+  type StoredProject,
+  linesFromSaved,
+  savedLines,
+  upgradeSavedProject,
+} from "@/lib/saved-project";
 import { createLine, createProjectSaveInput } from "@/test/factories";
+import { savedLinesV3 } from "@/test/saved-v3";
 
 // -- Types --------------------------------------------------------------------
 
@@ -34,8 +44,10 @@ function storedProject(overrides: Partial<SavedProject> = {}): SavedProject {
   };
 }
 
-function v4StoredProject(overrides: Partial<SavedProject> = {}): SavedProject {
-  return Object.assign(storedProject(overrides), { version: 4 });
+// A record saved before format 4, with the same default lines.
+function v3StoredProject(overrides: Partial<SavedProjectV3> = {}): SavedProjectV3 {
+  const { version: _version, lines, ...fields } = storedProject();
+  return { ...fields, version: 3, lines: savedLinesV3(linesFromSaved(lines)), ...overrides };
 }
 
 function songTitled(title: string): Pick<SavedProject, "metadata"> {
@@ -64,9 +76,14 @@ async function seedStoredProject(id: string, options: SeedOptions = {}): Promise
 
 // -- Reading ------------------------------------------------------------------
 
-async function loadOpenProjectRecord(): Promise<SavedProject | undefined> {
+async function loadOpenProjectRecord(): Promise<StoredProject | undefined> {
   const id = await findOpenProjectId();
   return id ? loadProjectRecord(id) : undefined;
+}
+
+// The lines a stored record opens with, whichever format saved it.
+function linesOfRecord(project: StoredProject | undefined): LyricLine[] {
+  return project ? linesFromSaved(upgradeSavedProject(project).lines) : [];
 }
 
 async function loadOpenProjectAudio(): Promise<File | undefined> {
@@ -78,10 +95,11 @@ async function loadOpenProjectAudio(): Promise<File | undefined> {
 
 export {
   storedProject,
-  v4StoredProject,
+  v3StoredProject,
   songTitled,
   saveInputTitled,
   seedStoredProject,
+  linesOfRecord,
   loadOpenProjectRecord,
   loadOpenProjectAudio,
 };

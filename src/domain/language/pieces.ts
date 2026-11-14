@@ -21,15 +21,17 @@ function trackPieces(line: Pick<LyricLine, "languages">, side: LanguageSide): La
 
 // -- Reads --------------------------------------------------------------------
 
-function pieceOf(pieces: LanguagePieces | undefined, word: WordTiming): LanguagePiece | undefined {
+type Keyed = Pick<WordTiming, "id">;
+
+function pieceOf(pieces: LanguagePieces | undefined, word: Keyed): LanguagePiece | undefined {
   return pieces?.[word.id];
 }
 
-function positionalPieces(words: readonly WordTiming[], pieces: LanguagePieces | undefined): PositionalPieces {
+function positionalPieces(words: readonly Keyed[], pieces: LanguagePieces | undefined): PositionalPieces {
   return words.map((word) => pieceOf(pieces, word));
 }
 
-function keyedPieces(words: readonly WordTiming[], positional: PositionalPieces): LanguagePieces | undefined {
+function keyedPieces(words: readonly Keyed[], positional: PositionalPieces): LanguagePieces | undefined {
   const entries = words.flatMap((word, index) => {
     const piece = positional[index];
     return piece ? [[word.id, piece] as const] : [];

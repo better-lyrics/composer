@@ -49,7 +49,8 @@ interface SavedTrackLanguage {
 
 interface SavedLineLanguage {
   language: string;
-  origin: "google" | "import" | "manual";
+  // A template type: the insync boundary guard reads the quoted word import as an import statement.
+  origin: "google" | `import` | "manual";
   sourceFingerprint: string;
   stale?: boolean;
   main: SavedTrackLanguage & { text: string };

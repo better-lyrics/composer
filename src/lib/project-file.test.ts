@@ -1,6 +1,7 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { projectFileFrom, projectFileName } from "@/lib/project-file";
 import { readProjectFile, savedProjectFromFile } from "@/lib/project-file-read";
+import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
 import { describe, expect, it } from "vitest";
 
 describe("persistence: syllableSplitDefaults", () => {
@@ -21,7 +22,7 @@ describe("persistence: syllableSplitDefaults", () => {
     const parsed = await readProjectFile(file);
 
     expect(parsed.syllableSplitDefaults).toEqual({ applyToAll: true, caseInsensitive: true });
-    expect(parsed.version).toBe(3);
+    expect(parsed.version).toBe(SAVED_PROJECT_VERSION);
   });
 
   it("fills in defaults when older project file is missing syllableSplitDefaults", async () => {
@@ -243,7 +244,7 @@ describe("savedProjectFromFile", () => {
   it("drops the project id, stamps the save time and marks the import", () => {
     const saved = savedProjectFromFile(
       {
-        version: 1,
+        version: SAVED_PROJECT_VERSION,
         savedAt: 1,
         projectId: "p1",
         metadata: { title: "Song", artists: [], album: "", duration: 0 },
@@ -254,7 +255,7 @@ describe("savedProjectFromFile", () => {
       500,
     );
     expect("projectId" in saved).toBe(false);
-    expect(saved).toMatchObject({ savedAt: 500, version: 3, hasUnexportedImport: true });
+    expect(saved).toMatchObject({ savedAt: 500, version: SAVED_PROJECT_VERSION, hasUnexportedImport: true });
   });
 });
 

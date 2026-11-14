@@ -19,12 +19,12 @@ import {
   onProjectsCleared,
 } from "@/lib/project-storage";
 import { ProjectDeletedError, isProjectDeleted } from "@/lib/project-tombstones";
-import type { SavedProject } from "@/lib/saved-project";
+import type { SavedProjectV3 } from "@/lib/saved-project";
 import { allowConsole } from "@/test/console-guard";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { describe, expect, it } from "vitest";
 
-function project(): SavedProject {
+function project(): SavedProjectV3 {
   return {
     version: 1,
     savedAt: 1,

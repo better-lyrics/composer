@@ -1,4 +1,6 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { mainBounds } from "@/domain/line/bounds";
+import { lineText } from "@/domain/line/text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import type { ProjectFile } from "@/lib/project-file";
@@ -12,7 +14,8 @@ import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/save
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
-import { saveInputTitled, seedStoredProject, songTitled } from "@/test/projects";
+import { savedTime } from "@/test/priming-projects";
+import { linesOfRecord, saveInputTitled, seedStoredProject, songTitled } from "@/test/projects";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -42,9 +45,9 @@ describe("replaceProjectFromFile", () => {
 
     await replaceProjectFromFile("a", fileWithLine("File line"));
 
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0])).toBe("File line");
     await flushPendingSave();
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0])).toBe("File line");
   });
 
   describe("MP3 priming flags", () => {
@@ -61,7 +64,7 @@ describe("replaceProjectFromFile", () => {
         lines: savedLines([createLine({ text: "File line", begin: 1, end: 2 })]),
       });
       const reloaded = (await loadProjectForRestore("a")).project;
-      return reloaded?.lines[0]?.begin ?? Number.NaN;
+      return mainBounds(linesOfRecord(reloaded)[0])?.begin ?? Number.NaN;
     }
 
     it("regression: an older export into a corrected project still moves to the corrected decode", async () => {
@@ -69,7 +72,7 @@ describe("replaceProjectFromFile", () => {
         { primingStripped: true, primingCorrected: true },
         { primingStripped: true, primingCorrected: undefined },
       );
-      expect(begin).toBeCloseTo(1 + P, 9);
+      expect(begin).toBe(savedTime(1 + P));
     });
 
     it("regression: a corrected export into an old project is not moved again", async () => {

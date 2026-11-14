@@ -9,7 +9,7 @@ import { copyProjectStems, loadProjectStems } from "@/lib/project-stems";
 import { downloadProjectFile, projectFileFrom } from "@/lib/project-file";
 import { createProjectId, saveProjectRecordWithAudio, updateProjectRecord } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
-import type { SavedProject } from "@/lib/saved-project";
+import type { StoredProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { showDeletedProjectsToast } from "@/utils/project-toast";
 
@@ -19,7 +19,7 @@ type DeletableProject = Pick<ProjectIndexEntry, "id" | "title">;
 
 // -- Helpers ------------------------------------------------------------------
 
-async function latestRecord(id: string): Promise<SavedProject> {
+async function latestRecord(id: string): Promise<StoredProject> {
   if (id === openProjectIdSnapshot()) await flushPendingSave();
   const record = await loadProjectRecord(id);
   if (!record) throw new Error(`Project ${id} is not stored in this browser`);
