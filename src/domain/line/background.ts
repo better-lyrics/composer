@@ -2,7 +2,7 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import { syllablesFromFields } from "@/domain/line/line-from-fields";
 import type { BackgroundSource, BackgroundTrack, LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables, untimedSyllable } from "@/domain/line/track";
+import { backgroundTrack, isSpanTimed, timedSyllables, untimedSyllable } from "@/domain/line/track";
 import {
   newBackgroundTrack,
   withBackgroundTrack,
@@ -55,11 +55,11 @@ function secondHalf(line: LyricLine): { begin: number; end?: number } | null {
   return bounds && bounds.end > bounds.begin ? { begin: (bounds.begin + bounds.end) / 2, end: bounds.end } : null;
 }
 
-// The one seeding of untimed background lyrics: syllables keep their ids when the seeded words match them.
+// The one seeding of untimed background lyrics, never over a span: syllables keep their ids when the words match.
 function seededBackground(line: LyricLine, span: { begin: number; end?: number } | null): LyricLine {
   const background = backgroundTrack(line);
   const text = backgroundText(line);
-  if (!background || !text || !span || timedSyllables(background).length > 0) return line;
+  if (!background || !text || !span || isSpanTimed(background) || timedSyllables(background).length > 0) return line;
   const words = createInitialBgWords(text, span.begin, span.end);
   if (words.length === 0) return line;
   const untimed = background.syllables.map(untimedSyllable);
