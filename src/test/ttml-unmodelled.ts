@@ -144,5 +144,4 @@ function missingUnmodelledNodes(source: string, exported: string): UnmodelledNod
 
 // -- Exports ------------------------------------------------------------------
 
-export type { UnmodelledNode };
 export { missingUnmodelledNodes, readTtmlDocument, unmodelledNodes };

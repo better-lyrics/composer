@@ -49,7 +49,7 @@ function backgroundSpan(line: LyricLine, writesWords: boolean): string {
   const background = backgroundTrack(line);
   const bgWords = timedSyllables(background);
   const kept = background?.passthrough;
-  const open = `<span ttm:role="x-bg"${keptTimesAttributes(kept?.times, backgroundEnvelope(line))}${keptAttributes(kept)}>`;
+  const open = `<span ttm:role="x-bg"${keptTimesAttributes(kept?.times, () => backgroundEnvelope(line))}${keptAttributes(kept)}>`;
   if (writesWords && bgWords.length) return `${open}${spans(bgWords)}${keptInline(kept)}</span>`;
   const bgTiming = bgBounds(line) ?? effectiveBounds(line);
   if (!bgTiming) return "";
@@ -92,7 +92,7 @@ function sectionLines(section: Section, source: BodySource, ind: Indent, written
   const paragraphs = section.lines.map((line) => paragraph(line, source, ind));
   if (!part) return [`${ind(2)}<div>`, ...paragraphs, `${ind(2)}</div>`];
   const kept = part.passthrough;
-  const times = keptTimesAttributes(kept?.times, partEnvelope(section.lines));
+  const times = keptTimesAttributes(kept?.times, () => partEnvelope(section.lines));
   const songPart = part.kind !== undefined ? ` itunes:songPart="${escapeXmlAttribute(part.kind)}"` : "";
   const firstRun = !writtenParts.has(part);
   writtenParts.add(part);

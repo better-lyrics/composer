@@ -20,7 +20,8 @@ function keptElementLines(kept: Passthrough | undefined, indent: string): string
 }
 
 // Times for a node Composer writes without them: only those the source wrote, kept or derived again.
-function keptTimesAttributes(kept: KeptTimes | undefined, envelope: Envelope | null): string {
+function keptTimesAttributes(kept: KeptTimes | undefined, envelopeOf: () => Envelope | null): string {
+  const envelope = kept ? envelopeOf() : null;
   if (!kept || !envelope) return "";
   const [begin, end] = writtenTimes(kept, envelope);
   return ` begin="${escapeXmlAttribute(begin)}" end="${escapeXmlAttribute(end)}"`;
