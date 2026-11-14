@@ -6,7 +6,7 @@ import { TAB_PANEL_RENDER_WAIT_MS, elementOnTab } from "@/tour/tab-panel-step";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { formatShortcut } from "@/utils/format-key";
 import { MOD_KEY } from "@/utils/platform";
-import { escapeXml } from "@/utils/ttml-markup";
+import { escapeXmlText } from "insync/xml-node";
 import type { DriveStep } from "driver.js";
 
 // -- Types --------------------------------------------------------------------
@@ -56,7 +56,7 @@ const gateFirstLineSynced = () => useProjectStore.getState().lines.some(isLineTi
 // -- Tour Steps ---------------------------------------------------------------
 
 // Steps are built when the tour starts, so they name the keys the user has right now.
-const keysOf = (id: string) => escapeXml(formatShortcut(getEffectiveKeysArray(id)));
+const keysOf = (id: string) => escapeXmlText(formatShortcut(getEffectiveKeysArray(id)));
 
 function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
   const stepsById: Record<TourStepId, DriveStep> = {
