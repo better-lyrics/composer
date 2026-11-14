@@ -28,7 +28,7 @@ function withTrackWords<T extends LineTrack>(track: T, words: readonly WordTimin
 }
 
 // The block of a span is explicit when every syllable is; a mark on the block marks or clears them all.
-function withSpanExplicit<T extends LineTrack>(track: T, explicit: boolean): T {
+function withTrackExplicit<T extends LineTrack>(track: T, explicit: boolean): T {
   if (track.syllables.every((syllable) => syllable.explicit === true) === explicit) return track;
   const syllables = track.syllables.map(({ explicit: _explicit, ...syllable }) =>
     explicit ? { ...syllable, explicit: true as const } : syllable,
@@ -40,7 +40,7 @@ function withSpanExplicit<T extends LineTrack>(track: T, explicit: boolean): T {
 function trackTimingWrite<T extends LineTrack>(track: T, syllables: readonly WordTiming[]): T {
   if (isSpanTimed(track) && syllables.length === 1) {
     const [block] = syllables;
-    return withTrackSpan(withSpanExplicit(track, block.explicit === true), block.begin, block.end);
+    return withTrackSpan(withTrackExplicit(track, block.explicit === true), block.begin, block.end);
   }
   return withTrackWords(track, syllables);
 }
@@ -133,6 +133,7 @@ export {
   withoutTrackTiming,
   withRoleTrack,
   withRoleWords,
+  withTrackExplicit,
   withTrackSpan,
   withTrackSyllables,
   withTrackText,
