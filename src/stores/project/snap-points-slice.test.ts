@@ -319,7 +319,17 @@ describe("project snap points: drag = one undo step", () => {
     useProjectStore.setState({
       customSnapPoints: snapPoints([5]),
       history: [
-        { lines: [], groups: [], agents: [], customSnapPoints: topEntry, beatGrid: null, timestamp: 1, note: null },
+        {
+          lines: [],
+          groups: [],
+          agents: [],
+          parts: [],
+          passthrough: {},
+          customSnapPoints: topEntry,
+          beatGrid: null,
+          timestamp: 1,
+          note: null,
+        },
       ],
       historyIndex: 0,
       isDirty: true,

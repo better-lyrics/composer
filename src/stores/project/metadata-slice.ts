@@ -81,10 +81,10 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
 
   restoreSongIdentity: (identity) => set({ ...identity, isDirty: true, isDirtySinceHistory: true }),
 
-  replaceLyricsWithHistory: ({ lines, groups, agents, metadata }) =>
+  replaceLyricsWithHistory: ({ lines, groups, agents, parts, passthrough, metadata }) =>
     writingLyrics(get, "command", () =>
       set((state) => {
-        const { patch } = commitCommand(state, replaceLyrics(lines, groups, agents), "step");
+        const { patch } = commitCommand(state, replaceLyrics(lines, groups, agents, { parts, passthrough }), "step");
         if (!patch) return state;
         const next = metadataAfterImport(state.metadata, state.importedMetadataKeys, metadata);
         const importsSongDetails = next.importedKeys.length > 0 || (agents?.length ?? 0) > 0;

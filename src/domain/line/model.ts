@@ -1,3 +1,4 @@
+import type { Passthrough } from "insync/passthrough";
 import type { LineLanguages } from "@/domain/language/model";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -27,7 +28,12 @@ interface SpanTimedTrack {
 type TrackTiming = SyllableTimedTrack | SpanTimedTrack;
 
 type MainTrack = TrackTiming & { readonly role: "main"; readonly agentId: string };
-type BackgroundTrack = TrackTiming & { readonly role: "bg"; readonly source?: BackgroundSource };
+type BackgroundTrack = TrackTiming & {
+  readonly role: "bg";
+  readonly source?: BackgroundSource;
+  // The x-bg container's unmodelled TTML data.
+  readonly passthrough?: Passthrough;
+};
 type LineTrack = MainTrack | BackgroundTrack;
 
 type LineTracks = readonly [MainTrack] | readonly [MainTrack, BackgroundTrack];
@@ -40,6 +46,7 @@ interface LyricLine {
   instanceIdx?: number;
   templateLineIdx?: number;
   detached?: boolean;
+  passthrough?: Passthrough;
 }
 
 interface LineUpdate {

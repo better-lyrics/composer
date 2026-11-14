@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { LyricLine } from "@/domain/line/model";
 import { mainTrack } from "@/domain/line/track";
 import { withAgent } from "@/domain/line/track-writes";
@@ -9,16 +11,29 @@ import type { LinkGroup } from "@/domain/group/template";
 import { type EditedLyrics, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 
+// -- Types --------------------------------------------------------------------
+
+interface KeptFromSource {
+  parts?: readonly Part[];
+  passthrough?: DocPassthrough;
+}
+
 // -- Commands -----------------------------------------------------------------
 
-function replaceLyrics(lines: LyricLine[], groups: LinkGroup[], agents: Agent[] | undefined): LyricCommand {
+// The new lyrics bring their own parts and kept TTML data; lyrics without any clear the old ones.
+function replaceLyrics(
+  lines: LyricLine[],
+  groups: LinkGroup[],
+  agents: Agent[] | undefined,
+  { parts = [], passthrough = {} }: KeptFromSource = {},
+): LyricCommand {
   return {
     note: { command: "replace lyrics", args: [lines.length] },
     copiesSharedTiming: false,
     run: (root) => {
       const assignment = agentsAfterImport(root.agents, agents, lines);
       return applied(
-        { lines: assignment.lines, groups, agents: assignment.agents },
+        { lines: assignment.lines, groups, agents: assignment.agents, parts, passthrough },
         changedLineIds(root.lines, assignment.lines),
       );
     },
@@ -35,7 +50,7 @@ function applyEditedLyrics(edited: EditedLyrics, metadata: ProjectMetadata): Lyr
       const write = editedLyricsWrite(current, edited);
       if (!changesProject(current, write)) return applied(root, []);
       return applied(
-        { lines: write.lines, groups: write.groups, agents: write.agents },
+        { ...root, lines: write.lines, groups: write.groups, agents: write.agents },
         changedLineIds(root.lines, write.lines),
       );
     },
@@ -51,7 +66,7 @@ function removeSinger(id: string): LyricCommand {
       if (!fallback) return applied(root, []);
       const lines = root.lines.map((line) => (mainTrack(line).agentId === id ? withAgent(line, fallback.id) : line));
       return applied(
-        { lines, groups: root.groups, agents: root.agents.filter((agent) => agent.id !== id) },
+        { ...root, lines, agents: root.agents.filter((agent) => agent.id !== id) },
         changedLineIds(root.lines, lines),
       );
     },

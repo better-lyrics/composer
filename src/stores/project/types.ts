@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricRoot } from "@/domain/commands/outcome";
@@ -44,6 +46,8 @@ interface AgentsState {
 
 interface LinesState {
   lines: LyricLine[];
+  parts: readonly Part[];
+  passthrough: DocPassthrough;
 }
 
 interface GroupsState {
@@ -85,6 +89,8 @@ interface MetadataActions {
     lines: LyricLine[];
     groups: LinkGroup[];
     agents: Agent[] | undefined;
+    parts?: readonly Part[];
+    passthrough?: DocPassthrough;
     metadata: Partial<ProjectMetadata>;
   }) => void;
   applyEditedLyricsWithHistory: (edited: EditedLyrics) => void;
