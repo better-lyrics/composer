@@ -9,6 +9,7 @@ import {
   getFromStore,
   runTransaction,
 } from "@/lib/persistence-idb";
+import { removeAllPreV4Records } from "@/lib/pre-v4-records";
 import { announceProjectsDeleted } from "@/lib/project-channel";
 import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
 import { isProjectDeleted, writeTombstone } from "@/lib/project-tombstones";
@@ -78,6 +79,7 @@ async function clearAllProjects(): Promise<void> {
       for (const id of ids) writeTombstone(tx, id);
       for (const name of [PROJECT_STORE_NAME, STEM_STORE_NAME, ...PROJECT_DATA_STORES]) tx.objectStore(name).clear();
       appState.delete(OPEN_PROJECT_KEY);
+      removeAllPreV4Records(tx);
       clearedIds = [...ids];
     };
   });

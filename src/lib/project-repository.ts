@@ -17,6 +17,7 @@ import {
   runTransaction,
 } from "@/lib/persistence-idb";
 import { announceProjectsDeleted } from "@/lib/project-channel";
+import { keepPreV4Record, removePreV4Record } from "@/lib/pre-v4-records";
 import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
 import { OPEN_PROJECT_KEY, PROJECT_DATA_STORES } from "@/lib/project-storage";
 import { clearTombstone, whenProjectWritable, writeTombstone } from "@/lib/project-tombstones";
@@ -58,15 +59,23 @@ function clearOpenProjectId(): Promise<void> {
 
 // -- Records ------------------------------------------------------------------
 
-function whenRecordWritable(tx: IDBTransaction, abort: AbortTransaction, id: string, write: () => void): void {
+function whenRecordWritable(
+  tx: IDBTransaction,
+  abort: AbortTransaction,
+  id: string,
+  next: SavedProject,
+  write: () => void,
+): void {
   whenProjectWritable(tx, abort, id, () => {
     const current = tx.objectStore(PROJECT_RECORD_STORE_NAME).get(id);
     current.onsuccess = () => {
-      if (isFromNewerComposer(current.result as SavedProject | undefined)) {
+      const stored = current.result as SavedProject | undefined;
+      if (isFromNewerComposer(stored)) {
         abort(new NewerProjectError(id));
         return;
       }
       try {
+        keepPreV4Record(tx, id, stored, next);
         write();
       } catch (error) {
         abort(error);
@@ -101,7 +110,7 @@ function writeProjectRecord(
 }
 
 function saveProjectRecord(id: string, project: SavedProject, view?: IndexViewFields): Promise<void> {
-  return writeProjectRecord((tx, abort, write) => whenRecordWritable(tx, abort, id, write), id, project, view);
+  return writeProjectRecord((tx, abort, write) => whenRecordWritable(tx, abort, id, project, write), id, project, view);
 }
 
 function restoreDeletedProjectRecord(id: string, project: SavedProject): Promise<void> {
@@ -119,7 +128,7 @@ async function saveProjectRecordWithAudio(id: string, project: SavedProject, aud
   const saved: SavedAudioFile | undefined = audio ? { name: audio.name, type: audio.type, data: audio } : undefined;
   let createdFirstEntry = false;
   await runTransaction(RECORD_WRITE_STORES, "readwrite", (tx, abort) => {
-    whenRecordWritable(tx, abort, id, () => {
+    whenRecordWritable(tx, abort, id, project, () => {
       if (saved) tx.objectStore(PROJECT_AUDIO_STORE_NAME).put(saved, id);
       tx.objectStore(PROJECT_RECORD_STORE_NAME).put(project, id);
       writeIndexEntry(tx, {
@@ -158,6 +167,7 @@ function updateProjectRecord(id: string, update: ProjectUpdate): Promise<void> {
           abort(error);
           return;
         }
+        keepPreV4Record(tx, id, project, next);
         records.put(next, id);
         writeIndexEntry(tx, { id, project: next });
       };
@@ -213,6 +223,7 @@ function removeProjectData(id: string): Promise<void> {
   return runTransaction([...PROJECT_DATA_STORES, APP_STATE_STORE_NAME], "readwrite", (tx) => {
     writeTombstone(tx, id);
     for (const name of PROJECT_DATA_STORES) tx.objectStore(name).delete(id);
+    removePreV4Record(tx, id);
     const appState = tx.objectStore(APP_STATE_STORE_NAME);
     const pointer = appState.get(OPEN_PROJECT_KEY);
     pointer.onsuccess = () => {
