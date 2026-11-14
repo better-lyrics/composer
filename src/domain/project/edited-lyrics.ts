@@ -103,5 +103,5 @@ function changesProject(current: ProjectLyrics, write: EditedLyricsWrite): boole
 
 // -- Exports ------------------------------------------------------------------
 
-export type { EditedLyrics, KeptRoot, ProjectLyrics, ProjectPart };
+export type { EditedLyrics, ProjectLyrics, ProjectPart };
 export { changedParts, changesProject, editedLyricsWrite };
