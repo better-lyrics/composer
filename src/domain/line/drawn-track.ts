@@ -6,6 +6,7 @@ import { trackText } from "@/domain/line/text";
 import {
   backgroundTrack,
   fieldWords,
+  isExplicitBlock,
   isSpanTimed,
   mainTrack,
   type TrackField,
@@ -43,7 +44,7 @@ function spanBlock(lineId: string, track: LineTrack & SpanTimedTrack, splitChar:
   if (cached?.lineId === lineId && cached.splitChar === splitChar) return cached.syllables;
   const text = withoutSplitCharacter(trackText(track, splitChar), splitChar);
   const id = lineTimingWordId(lineId, track.role);
-  const explicit = track.syllables.length > 0 && track.syllables.every((syllable) => syllable.explicit);
+  const explicit = isExplicitBlock(track);
   const syllables = [wordFromSpaced({ id, text, begin: track.begin, end: track.end, ...(explicit && { explicit }) })];
   spanBlockByTrack.set(track, { lineId, splitChar, syllables });
   return syllables;
