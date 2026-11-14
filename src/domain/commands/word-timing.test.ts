@@ -4,6 +4,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { retimeWord, setWordBoundary, stretchSelection } from "@/domain/commands/word-timing";
+import { commitGesture } from "@/domain/sync/commit-gesture";
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineText } from "@/domain/line/text";
@@ -106,6 +107,31 @@ describe("timing a line-synced background", () => {
   it("regression: dragging an edge of its block moves the span and marks it manual", () => {
     useProjectStore.getState().commit(retimeWord({ address: blockAddress(), updates: { end: 13.5 } }));
     expect(backgroundTrack(lineById("s0")!)).toMatchObject({ begin: 12, end: 13.5, source: "manual" });
+  });
+
+  it("regression: a background Sync line mode spanned resizes from both edges", () => {
+    const fresh = [
+      createLine({ id: "f0", text: "Glass harbour", backgroundText: "far away" }),
+      createLine({ id: "f1", text: "Paper boats" }),
+    ];
+    const gesture = (lines: typeof fresh, lineIndex: number, time: number) => {
+      const commit = commitGesture(lines, "tap-line", {
+        cursor: { lineIndex, wordIndex: 0 },
+        jumped: false,
+        time,
+        defaultWordDuration: 0.3,
+      });
+      const updates = [...(commit?.lineUpdates ?? [])];
+      return lines.map((line) => ({ ...line, ...updates.find((update) => update.id === line.id)?.updates }));
+    };
+    useProjectStore.setState({ lines: gesture(gesture(fresh, 0, 10), 1, 14) });
+    const address = () => {
+      const line = lineById("f0")!;
+      return addressOf(line, "bg", drawnSyllables(line, "bg")[0]);
+    };
+    useProjectStore.getState().commit(retimeWord({ address: address(), updates: { begin: 10.5 } }));
+    useProjectStore.getState().commit(retimeWord({ address: address(), updates: { end: 11.5 } }));
+    expect(backgroundTrack(lineById("f0")!)).toMatchObject({ begin: 10.5, end: 11.5, source: "manual" });
   });
 
   it("regression: stretching its block scales the span", () => {
