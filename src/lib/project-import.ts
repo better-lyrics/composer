@@ -7,17 +7,19 @@ import { openProject, reloadOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { flushPendingSave } from "@/lib/persistence-debounce";
-import { restorePreV4Records } from "@/lib/pre-v4-records";
+import { previousVersionsById } from "@/lib/pre-v4-records";
 import type { ProjectFile } from "@/lib/project-file";
 import { type ProjectFileContents, parseProjectFileContents, savedProjectFromFile } from "@/lib/project-file-read";
 import {
   createProjectId,
   listProjectIndex,
   restoreDeletedProjectRecord,
+  restoreProjectRecord,
   saveProjectRecord,
   updateProjectRecord,
 } from "@/lib/project-repository";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
+import type { SavedProject } from "@/lib/saved-project";
 import { reportStorageWriteError } from "@/lib/storage-signals";
 import { askImportConflict } from "@/ui/projects/import-conflict-choice";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
@@ -103,20 +105,22 @@ async function liveEntries(): Promise<ProjectIndexEntry[]> {
 
 // -- Backups ------------------------------------------------------------------
 
-async function restoreBundledProject(file: ProjectFile, pendingIds: ReadonlySet<string>): Promise<string> {
+async function restoreBundledProject(
+  file: ProjectFile,
+  pendingIds: ReadonlySet<string>,
+  previousVersion: SavedProject | undefined,
+): Promise<void> {
   const record = savedProjectFromFile(file, Number.isFinite(file.savedAt) ? file.savedAt : Date.now());
   if (file.projectId && !pendingIds.has(file.projectId)) {
     try {
-      await saveProjectRecord(file.projectId, record);
+      await restoreProjectRecord(file.projectId, record, previousVersion);
     } catch (error) {
       if (!(error instanceof ProjectDeletedError)) throw error;
-      await restoreDeletedProjectRecord(file.projectId, record);
+      await restoreDeletedProjectRecord(file.projectId, record, previousVersion);
     }
-    return file.projectId;
+    return;
   }
-  const id = createProjectId();
-  await saveProjectRecord(id, record);
-  return id;
+  await restoreProjectRecord(createProjectId(), record, previousVersion);
 }
 
 function dedupeBundleProjects(projects: readonly ProjectFile[]): { unique: ProjectFile[]; duplicates: number } {
@@ -147,14 +151,12 @@ async function restoreProjectBundle(
     const id = project.projectId;
     return !(id && storedIds.has(id) && !hidden.has(id));
   });
-  const outcomes = await Promise.allSettled(toRestore.map((project) => restoreBundledProject(project, hidden)));
-  const restoredIds = new Map(
-    toRestore.flatMap(({ projectId }, index) => {
-      const outcome = outcomes[index];
-      return projectId && outcome?.status === "fulfilled" ? [[projectId, outcome.value] as const] : [];
-    }),
+  const previousById = previousVersionsById(previousVersions);
+  const outcomes = await Promise.allSettled(
+    toRestore.map((project) =>
+      restoreBundledProject(project, hidden, project.projectId ? previousById.get(project.projectId) : undefined),
+    ),
   );
-  await restorePreV4Records(previousVersions, restoredIds);
   const failures = outcomes.flatMap((outcome) => (outcome.status === "rejected" ? [outcome.reason] : []));
   for (const error of failures) {
     console.error(LOG_PREFIX, "could not restore a project from the backup", error);

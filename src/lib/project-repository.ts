@@ -17,7 +17,7 @@ import {
   runTransaction,
 } from "@/lib/persistence-idb";
 import { announceProjectsDeleted } from "@/lib/project-channel";
-import { keepPreV4Record, removePreV4Record } from "@/lib/pre-v4-records";
+import { keepPreV4Record, putPreV4RecordIfAbsent, removePreV4Record } from "@/lib/pre-v4-records";
 import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
 import { OPEN_PROJECT_KEY, PROJECT_DATA_STORES } from "@/lib/project-storage";
 import { clearTombstone, whenProjectWritable, writeTombstone } from "@/lib/project-tombstones";
@@ -89,11 +89,13 @@ function writeProjectRecord(
   id: string,
   project: SavedProject,
   view?: IndexViewFields,
+  previousVersion?: SavedProject,
 ): Promise<void> {
   let createdFirstEntry = false;
   return runTransaction(RECORD_WRITE_STORES, "readwrite", (tx, abort) => {
     prepare(tx, abort, () => {
       tx.objectStore(PROJECT_RECORD_STORE_NAME).put(project, id);
+      if (previousVersion) putPreV4RecordIfAbsent(tx, id, previousVersion);
       writeIndexEntry(tx, {
         id,
         project,
@@ -113,7 +115,17 @@ function saveProjectRecord(id: string, project: SavedProject, view?: IndexViewFi
   return writeProjectRecord((tx, abort, write) => whenRecordWritable(tx, abort, id, project, write), id, project, view);
 }
 
-function restoreDeletedProjectRecord(id: string, project: SavedProject): Promise<void> {
+function restoreProjectRecord(id: string, project: SavedProject, previousVersion?: SavedProject): Promise<void> {
+  return writeProjectRecord(
+    (tx, abort, write) => whenRecordWritable(tx, abort, id, project, write),
+    id,
+    project,
+    undefined,
+    previousVersion,
+  );
+}
+
+function restoreDeletedProjectRecord(id: string, project: SavedProject, previousVersion?: SavedProject): Promise<void> {
   return writeProjectRecord(
     (tx, _abort, write) => {
       clearTombstone(tx, id);
@@ -121,6 +133,8 @@ function restoreDeletedProjectRecord(id: string, project: SavedProject): Promise
     },
     id,
     project,
+    undefined,
+    previousVersion,
   );
 }
 
@@ -242,6 +256,7 @@ export {
   setOpenProjectId,
   clearOpenProjectId,
   saveProjectRecord,
+  restoreProjectRecord,
   restoreDeletedProjectRecord,
   saveProjectRecordWithAudio,
   updateProjectRecord,
