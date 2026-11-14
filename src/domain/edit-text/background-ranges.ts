@@ -46,8 +46,20 @@ function plainRegion(oldText: string, newText: string): ChangedRegion {
   return { start, oldEnd: oldText.length - suffix, newEnd: newText.length - suffix };
 }
 
+// A typed or deleted run at the caret, checked with whole-string compares so a keystroke never walks the text.
+function caretRegion(oldText: string, newText: string, caret: number): ChangedRegion | null {
+  const delta = newText.length - oldText.length;
+  const start = delta > 0 ? caret - delta : caret;
+  const oldEnd = delta > 0 ? start : caret - delta;
+  if (start < 0 || oldEnd > oldText.length) return null;
+  const same = oldText.slice(0, start) === newText.slice(0, start) && oldText.slice(oldEnd) === newText.slice(caret);
+  return same ? { start, oldEnd, newEnd: caret } : null;
+}
+
 // The one run of text a keystroke changed. Where repeated letters leave its place unclear, it ends at the caret.
 function changedRegion(oldText: string, newText: string, caret?: number): ChangedRegion {
+  const typed = caret === undefined ? null : caretRegion(oldText, newText, caret);
+  if (typed) return typed;
   const plain = plainRegion(oldText, newText);
   const shift = caret === undefined ? 0 : plain.newEnd - caret;
   if (shift <= 0 || shift > plain.start || !endsAlike(oldText, newText, newText.length - (caret ?? 0))) return plain;

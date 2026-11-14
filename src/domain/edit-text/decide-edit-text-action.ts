@@ -42,9 +42,9 @@ function typedLyricLines(
 ): LyricLine[] {
   if (!ranges) return textToLyricLines(text, defaultAgentId, lines, splitCharacter);
   const rows = editRows(text, ranges);
-  const mainText = rows.map((row) => row.text).join("\n");
+  const mainTexts = rows.map((row) => row.text);
   const backgrounds = rows.map((row) => row.background);
-  return textToLyricLines(mainText, defaultAgentId, lines, splitCharacter, backgrounds);
+  return textToLyricLines(mainTexts, defaultAgentId, lines, splitCharacter, backgrounds);
 }
 
 function uniqueImpactedLabels(impacted: ImpactedInstance[], groups: LinkGroup[]): string[] {
