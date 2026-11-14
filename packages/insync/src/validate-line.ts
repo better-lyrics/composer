@@ -21,7 +21,13 @@ interface LineReport {
 function trackSpanFindings(track: SavedTrack, index: number): LineFinding[] {
   if (!track.span) return [];
   const findings: LineFinding[] = [];
-  if (!track.span.every(Number.isFinite)) findings.push({ track: index, rule: "non-finite-time" });
+  const [begin, end] = track.span;
+  if (!track.span.every(Number.isFinite)) {
+    findings.push({ track: index, rule: "non-finite-time" });
+  } else {
+    if (begin < 0) findings.push({ track: index, rule: "negative-begin" });
+    if (begin > end) findings.push({ track: index, rule: "begin-after-end" });
+  }
   if (track.syllables.some((syllable) => syllable.span)) {
     findings.push({ track: index, rule: "span-and-syllable-times" });
   }
