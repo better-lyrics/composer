@@ -45,4 +45,19 @@ describe("commit", () => {
     expect(useProjectStore.getState().groups).toHaveLength(1);
     expect(useProjectStore.getState().lines).toBe(before);
   });
+
+  it("deleting a part's only line drops the part, and undo restores it", () => {
+    const store = useProjectStore.getState();
+    store.commit(pasteLyrics(store.lines, [createLine({ id: "l1", text: "Lanterns" }), createLine({ id: "l2" })]));
+    const parts = [{ id: "p1", kind: "Chorus", lineIds: ["l2"] }];
+    useProjectStore.getState().restoreLyrics({ parts });
+
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "Lanterns" })]));
+    expect(useProjectStore.getState().parts).toEqual([]);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().parts).toEqual(parts);
+  });
 });
