@@ -40,6 +40,8 @@ interface HistoryState {
 // The lyrics a typing burst started from, and whether an earlier write was still pending then.
 interface LyricBurst {
   lines: LyricLine[];
+  parts: readonly Part[];
+  passthrough: DocPassthrough;
   wasPending: boolean;
 }
 

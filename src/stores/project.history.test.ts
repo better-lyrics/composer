@@ -240,7 +240,7 @@ describe("closeLyricBurst", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "hello wor" })] });
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "hello world" })] });
 
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     useProjectStore.getState().undo();
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hello");
@@ -254,7 +254,9 @@ describe("closeLyricBurst", () => {
       .getState()
       .commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { text: "hello" })]));
     const indexBefore = useProjectStore.getState().historyIndex;
-    useProjectStore.getState().closeLyricBurst({ lines: useProjectStore.getState().lines, wasPending: false });
+    useProjectStore
+      .getState()
+      .closeLyricBurst({ lines: useProjectStore.getState().lines, parts: [], passthrough: {}, wasPending: false });
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
   });
 
@@ -271,7 +273,7 @@ describe("closeLyricBurst", () => {
 
     const baseline = useProjectStore.getState().lines;
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "one edited" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("one edited");
     expect(useProjectStore.getState().canRedo()).toBe(false);
@@ -288,7 +290,7 @@ describe("closeLyricBurst", () => {
     useProjectStore.getState().restoreLyrics({ lines: baseline });
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "start typed" })] });
 
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
     expect(lineText(useProjectStore.getState().lines[0])).toBe("start typed");
@@ -303,7 +305,7 @@ describe("closeLyricBurst", () => {
     const baselineSnapshot = structuredClone(baseline);
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "frozen edited" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     expect(baseline).toEqual(baselineSnapshot);
   });
@@ -313,7 +315,7 @@ describe("closeLyricBurst", () => {
     const baseline = useProjectStore.getState().lines;
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "clone me edited" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     const committedIndex = useProjectStore.getState().historyIndex;
     const live = useProjectStore.getState().lines[0];
@@ -328,7 +330,7 @@ describe("closeLyricBurst", () => {
     for (let i = 0; i < MAX_HISTORY_SIZE + 50; i++) {
       const baseline = useProjectStore.getState().lines;
       useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: `edit ${i}` })] });
-      useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+      useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
     }
     expect(useProjectStore.getState().history.length).toBeLessThanOrEqual(MAX_HISTORY_SIZE);
     expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
@@ -339,7 +341,7 @@ describe("closeLyricBurst", () => {
     const baseline = useProjectStore.getState().lines;
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "base typed" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
     expect(useProjectStore.getState().canRedo()).toBe(false);
@@ -352,7 +354,7 @@ describe("closeLyricBurst", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "dirty typed" })] });
     expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
 
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
     expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
   });
 
@@ -364,7 +366,9 @@ describe("closeLyricBurst", () => {
     const indexBefore = useProjectStore.getState().historyIndex;
     const dirtyBefore = useProjectStore.getState().isDirtySinceHistory;
 
-    useProjectStore.getState().closeLyricBurst({ lines: useProjectStore.getState().lines, wasPending: false });
+    useProjectStore
+      .getState()
+      .closeLyricBurst({ lines: useProjectStore.getState().lines, parts: [], passthrough: {}, wasPending: false });
 
     expect(useProjectStore.getState().history).toBe(historyBefore);
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
@@ -383,7 +387,9 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     expect(baselineWasDirty).toBe(true);
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "C" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: baselineWasDirty });
+    useProjectStore
+      .getState()
+      .closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: baselineWasDirty });
 
     useProjectStore.getState().undo();
     expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
@@ -399,7 +405,9 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     const lengthBefore = useProjectStore.getState().history.length;
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "C" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: baselineWasDirty });
+    useProjectStore
+      .getState()
+      .closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: baselineWasDirty });
 
     expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
     useProjectStore.getState().undo();
@@ -412,7 +420,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     const lengthBefore = useProjectStore.getState().history.length;
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "C" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
   });
@@ -423,7 +431,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     useProjectStore.getState().restoreLyrics({ lines: baseline });
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "C" })] });
 
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: true });
 
     expect(useProjectStore.getState().history).toHaveLength(2);
     useProjectStore.getState().undo();
@@ -443,7 +451,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "one cross-view" })] });
     const baseline = useProjectStore.getState().lines;
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "one typed" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: true });
 
     expect(useProjectStore.getState().canRedo()).toBe(false);
     expect(lineText(useProjectStore.getState().lines[0])).toBe("one typed");
@@ -460,7 +468,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     const baselineSnapshot = structuredClone(baseline);
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "C" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: true });
 
     expect(baseline).toEqual(baselineSnapshot);
   });
@@ -471,7 +479,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     const baseline = useProjectStore.getState().lines;
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "C" })] });
-    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: true });
 
     expect(() => {
       baseline[0].groupId = "live mutation";
@@ -484,7 +492,9 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { text: "A" })]));
     const indexBefore = useProjectStore.getState().historyIndex;
 
-    useProjectStore.getState().closeLyricBurst({ lines: useProjectStore.getState().lines, wasPending: true });
+    useProjectStore
+      .getState()
+      .closeLyricBurst({ lines: useProjectStore.getState().lines, parts: [], passthrough: {}, wasPending: true });
 
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
   });

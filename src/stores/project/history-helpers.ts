@@ -7,7 +7,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { deepFreeze } from "@/stores/project/deep-freeze";
-import type { HistoryEntry } from "@/stores/project/history-types";
+import type { HistoryEntry, LyricBurst } from "@/stores/project/history-types";
 import type { ProjectState } from "@/stores/project/types";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
@@ -123,12 +123,14 @@ function commitBeatGridOffset(state: ProjectState, grid: BeatGrid) {
   return { beatGrid: grid, isDirty: true, history: state.history.with(index, joined) };
 }
 
-function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineWasDirty = false) {
+function commitPendingEdit(state: ProjectState, burst: LyricBurst) {
   if (!state.isDirtySinceHistory) return {};
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   // Seed the pre-run baseline when a non-history mutation dirtied the store
   // before the run, otherwise undo would skip straight past it.
-  if (newHistory.length === 0 || baselineWasDirty) newHistory.push(snapshotEntry({ ...state, lines: baseline }, null));
+  const { lines, parts, passthrough } = burst;
+  if (newHistory.length === 0 || burst.wasPending)
+    newHistory.push(snapshotEntry({ ...state, lines, parts, passthrough }, null));
   newHistory.push(snapshotEntry(state, state.pendingNote));
   capHistory(newHistory);
   return {

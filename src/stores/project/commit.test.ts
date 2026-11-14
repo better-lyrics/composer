@@ -60,4 +60,22 @@ describe("commit", () => {
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().parts).toEqual(parts);
   });
+
+  it("regression: undoing a typing burst that deleted a part's only line brings the part back", () => {
+    const parts = [{ id: "p1", kind: "Chorus", lineIds: ["l2"] }];
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [createLine({ id: "l1", text: "Lanterns" }), createLine({ id: "l2" })], parts });
+    useProjectStore.getState().clearHistory();
+
+    const burst = useProjectStore.getState().beginLyricBurst();
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "Lanterns" })]), "pending");
+    useProjectStore.getState().closeLyricBurst(burst);
+    useProjectStore.getState().undo();
+
+    expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["l1", "l2"]);
+    expect(useProjectStore.getState().parts).toEqual(parts);
+  });
 });
