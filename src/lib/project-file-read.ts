@@ -38,22 +38,27 @@ function isProjectBundlePayload(value: unknown): value is { projects: unknown[];
   return candidate.format === PROJECT_BUNDLE_FORMAT && Array.isArray(candidate.projects);
 }
 
-function parseProjectFile(parsed: unknown): ProjectFile {
+function readStoredProjectFile(parsed: unknown): ProjectFile {
   if (!isProjectFilePayload(parsed)) throw new Error("Not a Composer project file");
   const { projectId, ...project } = parsed;
   if (!SUPPORTED_VERSIONS.includes(project.version)) {
     throw new Error(`Unsupported project version: ${project.version}`);
   }
+  return typeof projectId === "string" && projectId !== "" ? { ...project, projectId } : project;
+}
+
+function parseProjectFile(parsed: unknown): ProjectFile {
+  const project = readStoredProjectFile(parsed);
   if (!project.syllableSplitDefaults) project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
   upgradeSavedProject(project);
-  return typeof projectId === "string" && projectId !== "" ? { ...project, projectId } : project;
+  return project;
 }
 
 function parsePreviousVersions(previousVersions: unknown): ProjectFile[] {
   if (!Array.isArray(previousVersions)) return [];
   return previousVersions.flatMap((item: unknown) => {
     try {
-      return [parseProjectFile(item)];
+      return [readStoredProjectFile(item)];
     } catch (error) {
       console.warn(LOG_PREFIX, "skipped an earlier version the backup could not read", error);
       return [];

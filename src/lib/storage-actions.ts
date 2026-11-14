@@ -39,7 +39,8 @@ async function backUpAllProjects(): Promise<ProjectBundle | null> {
   const [allRecords, allPreviousVersions] = await Promise.all([listProjectRecords(), listPreV4Records()]);
   const records = allRecords.filter((record) => !hidden.has(record.id));
   if (records.length === 0) return null;
-  const previousVersions = allPreviousVersions.filter((record) => !hidden.has(record.id));
+  const backedUpIds = new Set(records.map((record) => record.id));
+  const previousVersions = allPreviousVersions.filter((record) => backedUpIds.has(record.id));
   const bundle = buildProjectBundle(records, Date.now(), previousVersions);
   downloadProjectBundle(bundle);
   noteGuideSignal("export.backup");
