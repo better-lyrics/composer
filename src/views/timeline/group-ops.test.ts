@@ -1,3 +1,4 @@
+import { withSeededBackground } from "@/domain/line/background";
 /**
  * @vitest-environment node
  */
@@ -102,6 +103,24 @@ describe("instanceToTemplate", () => {
     expect(tpl[0].words?.[2].relativeEnd).toBeCloseTo(2);
     expect(tpl[1].relativeBegin).toBeCloseTo(2);
     expect(tpl[1].words?.[0].relativeEnd).toBeCloseTo(3);
+  });
+
+  it("regression: keeps the timing of a line-synced background", () => {
+    const line = withSeededBackground(
+      lineFromFields({
+        id: "a",
+        text: "hi",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        begin: 10,
+        end: 14,
+        backgroundText: "ooh",
+      }),
+    );
+    const [template] = instanceToTemplate([line], "g1", 0);
+    expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[0, 2]]);
   });
 
   it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {

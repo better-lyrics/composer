@@ -2,6 +2,7 @@ import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { mainTrack } from "@/domain/line/track";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import type { LyricLine } from "@/domain/line/model";
+import { newBackgroundTrack, withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -36,6 +37,14 @@ describe("replacedInstances", () => {
   it("reports an instance whose timed words move", () => {
     const before = [wordLine("a", 0, [10, 10.5]), wordLine("b", 1, [40, 40.8])];
     const after = replace(before, "b", wordLine("b", 1, [40, 40.5]));
+    expect(replacedInstances(before, after)).toEqual([{ groupId: "g1", instanceIdx: 1 }]);
+  });
+
+  it("regression: reports an instance whose line-synced background moves", () => {
+    const withSpan = (begin: number) =>
+      withBackgroundTrack(lineSynced("b", 1, 40), withTrackSpan(newBackgroundTrack("b"), begin, begin + 0.5));
+    const before = [lineSynced("a", 0, 10), withSpan(40.2)];
+    const after = replace(before, "b", withSpan(40.4));
     expect(replacedInstances(before, after)).toEqual([{ groupId: "g1", instanceIdx: 1 }]);
   });
 

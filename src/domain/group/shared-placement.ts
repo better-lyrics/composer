@@ -1,4 +1,3 @@
-import { roleWords } from "@/domain/line/track";
 import { endsAfter, hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import {
@@ -12,6 +11,7 @@ import {
 import type { LinkGroup } from "@/domain/group/template";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { isSyncableLine } from "@/domain/line/sync-progress";
@@ -81,7 +81,7 @@ function dropsWordTiming(lines: readonly LyricLine[], updates: readonly LineUpda
     if (!target) return false;
     const after = { ...target, ...copied };
     const dropsMain = isWordSynced(target) && !isWordSynced(after);
-    return dropsMain || (!!roleWords(target, "bg")?.length && !roleWords(after, "bg")?.length);
+    return dropsMain || (drawnSyllables(target, "bg").length > 0 && drawnSyllables(after, "bg").length === 0);
   });
 }
 
