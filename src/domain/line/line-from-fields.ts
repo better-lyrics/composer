@@ -27,6 +27,9 @@ interface LineFields {
   backgroundText?: string;
   backgroundWords?: WordTiming[];
   backgroundTextSource?: BackgroundSource;
+  // The span of a line-synced background; never written by version 3, which seeded words instead.
+  backgroundBegin?: number;
+  backgroundEnd?: number;
   languages?: LineLanguages;
   groupId?: string;
   instanceIdx?: number;
@@ -128,7 +131,8 @@ function backgroundTrackFromFields(fields: LineFields, splitChar: string): Backg
   if (backgroundText === undefined && backgroundWords === undefined && backgroundTextSource === undefined) {
     return undefined;
   }
-  const timing = trackTiming(`${fields.id}:bg`, backgroundText ?? "", backgroundWords, {}, splitChar);
+  const span = { begin: fields.backgroundBegin, end: fields.backgroundEnd };
+  const timing = trackTiming(`${fields.id}:bg`, backgroundText ?? "", backgroundWords, span, splitChar);
   return { ...timing, role: "bg", ...(backgroundTextSource && { source: backgroundTextSource }) };
 }
 
@@ -162,6 +166,7 @@ function fieldsOfLine(line: LyricLine): LineFields {
       backgroundText: trackText(background),
       ...(backgroundWords.length > 0 && { backgroundWords }),
       ...(background.source && { backgroundTextSource: background.source }),
+      ...(isSpanTimed(background) && { backgroundBegin: background.begin, backgroundEnd: background.end }),
     }),
     ...(line.languages && { languages: line.languages }),
     ...groupFieldsOf(line),

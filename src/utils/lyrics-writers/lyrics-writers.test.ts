@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
+import { withSeededBackground } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
@@ -54,6 +55,11 @@ describe("writeLrc", () => {
 
   it("writes enhanced word tags for a word-synced line, closed by the last word's end", () => {
     expect(writeLrc(doc([wordLine("a")]))).toContain("[00:34.06]<00:34.06>Is <00:34.19>it <00:34.31>so<00:34.41>");
+  });
+
+  it("regression: times a line-synced background by its own span", () => {
+    const line = withSeededBackground(createLine({ text: "Low tide", begin: 10, end: 14, backgroundText: "ooh" }));
+    expect(writeQrc(doc([line]))).toContain("(ooh)(12000,2000)");
   });
 
   it("writes plain lines for line-synced lyrics", () => {

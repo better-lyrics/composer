@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { withSeededBackground } from "@/domain/line/background";
 import { drawnLanguages, drawnLine, drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
@@ -83,6 +84,27 @@ describe("drawnPieces", () => {
   it("reads the romanization aligned to the drawn syllables", () => {
     expect(drawnPieces(romanized, "main")?.w4?.text).toBe("privet");
     expect(drawnPieces(romanized, "main")).toBe(drawnPieces(romanized, "main"));
+  });
+
+  it("regression: reads the background romanization on the block of a line-synced background", () => {
+    const synced = withSeededBackground(
+      line({
+        text: "Привет",
+        begin: 4,
+        end: 8,
+        backgroundText: "да",
+        languages: {
+          transliteration: {
+            language: "ru-Latn",
+            main: { text: "privet", segments: [] },
+            bg: { text: "da", segments: [] },
+            origin: "manual",
+            sourceFingerprint: languageSourceFingerprint("Привет", "да"),
+          },
+        },
+      }),
+    );
+    expect(drawnPieces(synced, "bg")?.[lineTimingWordId("l1", "bg")]?.text).toBe("da");
   });
 
   it("invariant: an unchanged line gives the same drawn line and languages", () => {

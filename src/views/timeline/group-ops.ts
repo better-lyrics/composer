@@ -1,4 +1,5 @@
-import { backgroundTrack, mainTrack, roleWords } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { backgroundTrack, isSpanTimed, mainTrack, roleWords } from "@/domain/line/track";
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import { type LineTemplate, type LinkGroup, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
 import { trackPieces } from "@/domain/language/pieces";
@@ -124,7 +125,9 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
 
   for (const line of matched) {
     const mainWords = roleWords(line, "main");
-    const bgWords = roleWords(line, "bg");
+    const background = backgroundTrack(line);
+    const drawnBackground = drawnSyllables(line, "bg");
+    const bgWords = drawnBackground.length > 0 ? drawnBackground : undefined;
     const tplWords = mainWords && wordsToTemplate(mainWords, startTime, trackPieces(line, "main"));
     const tplBgWords = bgWords && wordsToTemplate(bgWords, startTime, trackPieces(line, "bg"));
 
@@ -138,7 +141,8 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       words: tplWords,
       backgroundText: backgroundText(line),
       backgroundWords: tplBgWords,
-      backgroundTextSource: backgroundTrack(line)?.source,
+      backgroundTextSource: background?.source,
+      ...(background && isSpanTimed(background) && { backgroundLineSynced: true }),
       languages: languagesToTemplate(line.languages),
       ...(passthrough && { passthrough }),
     });

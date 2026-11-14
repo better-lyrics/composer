@@ -8,6 +8,7 @@ import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word
 import type { LyricLine } from "@/domain/line/model";
 import { syllablesText } from "@/domain/line/text";
 import {
+  backgroundTrack,
   isSpanTimed,
   mainTrack,
   type TrackField,
@@ -15,7 +16,7 @@ import {
   untimedSyllablesOf,
   trackRole,
 } from "@/domain/line/track";
-import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withMainTrack, withTrackText } from "@/domain/line/track-writes";
 import { withFieldWords } from "@/domain/line/word-track-edits";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
@@ -36,11 +37,13 @@ function trackWrite(line: LyricLine, type: WordTrack, words: WordTiming[]): Part
   return type === "word" ? mainWordsEdit(line, words) : manualBackgroundWordEdit(line, words);
 }
 
-// A line-synced main track keeps its span and takes the drawn block's text.
-function mainWordTextEdit(line: LyricLine, words: WordTiming[]): Partial<LyricLine> {
-  const main = mainTrack(line);
-  if (!isSpanTimed(main)) return mainWordsEdit(line, words);
-  return { tracks: withMainTrack(line, withTrackText(main, syllablesText(words, getSplitCharacter()))).tracks };
+// A line-synced track keeps its span and takes the drawn block's text; a renamed background is the user's own.
+function wordTextEdit(line: LyricLine, type: WordTrack, words: WordTiming[]): Partial<LyricLine> {
+  const track = type === "word" ? mainTrack(line) : backgroundTrack(line);
+  if (!track || !isSpanTimed(track)) return trackWrite(line, type, words);
+  const text = withTrackText(track, syllablesText(words, getSplitCharacter()));
+  if (text.role === "main") return { tracks: withMainTrack(line, text).tracks };
+  return { tracks: withBackgroundTrack(line, { ...text, source: "manual" }).tracks };
 }
 
 function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefined {
@@ -69,9 +72,7 @@ function typeWordText(address: SyllableAddress, text: string): LyricCommand {
       const word = words[wordIndex];
       if (text === word.text) return [];
       const updated = words.with(wordIndex, { ...word, text, sep: word.sep.endsWith(" ") ? " " : "" });
-      const updates =
-        address.type === "word" ? mainWordTextEdit(line, updated) : manualBackgroundWordEdit(line, updated);
-      return [{ id: line.id, updates }];
+      return [{ id: line.id, updates: wordTextEdit(line, address.type, updated) }];
     },
   );
 }

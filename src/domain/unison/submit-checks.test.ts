@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { backgroundTrack } from "@/domain/line/track";
+import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { type SubmitCheckInput, submitChecks } from "@/domain/unison/submit-checks";
 import { createLine } from "@/test/factories";
 
@@ -138,6 +140,14 @@ describe("submitChecks", () => {
             { lineId: line.id, lineIndex: 0, track: "background", kind: "zero-length", count: 1, problemSlots: [1] },
           ],
         },
+      });
+    });
+
+    it("regression: a line-synced background with no length is listed", () => {
+      const synced = createLine({ text: "Low tide", begin: 1, end: 2, backgroundText: "ooh yeah" });
+      const line = withBackgroundTrack(synced, withTrackSpan(backgroundTrack(synced)!, 1.5, 1.5));
+      expect(checkOf(readyInput({ lines: [line], content: ZERO_LENGTH_TTML }), "ttml")).toMatchObject({
+        fix: { kind: "lines", issues: [{ lineId: line.id, track: "background", count: 1 }] },
       });
     });
 

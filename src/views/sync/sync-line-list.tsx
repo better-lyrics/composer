@@ -5,10 +5,11 @@ import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SkippedInstance } from "@/domain/sync/skipped-instances";
 import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
@@ -158,7 +159,7 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           backgroundText={backgroundText(line)}
           displayBackgroundText={displayLine.backgroundText}
           displayBackgroundWordTexts={displayLine.backgroundWordTexts}
-          backgroundWords={displayLine.backgroundWords ?? timedSyllables(backgroundTrack(line))}
+          backgroundWords={displayLine.backgroundWords ?? drawnSyllables(line, "bg")}
           words={displayLine.words ?? timedSyllables(mainTrack(line))}
           lineBegin={timing?.begin}
           lineEnd={timing?.end}
