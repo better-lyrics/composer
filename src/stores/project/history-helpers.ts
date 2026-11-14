@@ -128,7 +128,7 @@ function commitPendingEdit(state: ProjectState, burst: LyricBurst) {
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   // Seed the pre-run baseline when a non-history mutation dirtied the store
   // before the run, otherwise undo would skip straight past it.
-  const { lines, parts = state.parts, passthrough = state.passthrough } = burst;
+  const { lines, parts, passthrough } = burst;
   if (newHistory.length === 0 || burst.wasPending)
     newHistory.push(snapshotEntry({ ...state, lines, parts, passthrough }, null));
   newHistory.push(snapshotEntry(state, state.pendingNote));
