@@ -18,10 +18,14 @@ function spreadSpan<T extends LineTrack>(lineId: string, track: T): T {
   return withTrackSyllables(track, words);
 }
 
+function convertMainToWord(line: LyricLine): LyricLine {
+  return withMainTrack(line, spreadSpan(line.id, mainTrack(line)));
+}
+
+// Every line-synced track of the line becomes word synced; a background keeps its source.
 function convertLineToWord(line: LyricLine): LyricLine {
   const background = backgroundTrack(line);
-  const converted = withMainTrack(line, spreadSpan(line.id, mainTrack(line)));
-  return withBackgroundTrack(converted, background && spreadSpan(line.id, background));
+  return withBackgroundTrack(convertMainToWord(line), background && spreadSpan(line.id, background));
 }
 
 // Splitting a line-synced background into words is a user timing edit, so the track becomes manual.
@@ -33,4 +37,4 @@ function convertBackgroundToWord(line: LyricLine): LyricLine {
 
 // -- Exports ------------------------------------------------------------------
 
-export { convertBackgroundToWord, convertLineToWord };
+export { convertBackgroundToWord, convertLineToWord, convertMainToWord };
