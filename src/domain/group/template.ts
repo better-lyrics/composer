@@ -1,6 +1,7 @@
 import type { LanguagePiece, LanguagePieces, LineLanguages } from "@/domain/language/model";
 import { keyedPieces, pieceOf } from "@/domain/language/pieces";
 import { withPiecesOn } from "@/domain/language/side-pieces";
+import type { LinePassthrough } from "@/domain/line/passthrough";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -36,6 +37,7 @@ interface LineTemplate {
   backgroundTextSource?: "extraction" | "manual";
   /** Pieces stay on the template words, so they follow the words to their new ids. */
   languages?: LineLanguages;
+  passthrough?: LinePassthrough;
 }
 
 // Keep exact alternate fragments and separators when moving between absolute

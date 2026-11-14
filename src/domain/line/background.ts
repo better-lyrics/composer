@@ -26,17 +26,20 @@ interface BackgroundParams {
 // -- Funnel -------------------------------------------------------------------
 
 // The single chokepoint for writing a line's background track. Keeps its syllables and the source
-// provenance flag coherent so the flag can never drift: an empty write drops the track.
-function backgroundTrackFrom(lineId: string, params: BackgroundParams): BackgroundTrack | undefined {
+// provenance flag coherent so the flag can never drift: an empty write drops the track. A rewritten track keeps
+// what the old one carried from its TTML.
+function backgroundTrackFrom(line: LyricLine, params: BackgroundParams): BackgroundTrack | undefined {
   const text = params.text && params.text.trim().length > 0 ? params.text : undefined;
   const words = params.words && params.words.length > 0 ? [...params.words] : undefined;
   if (!text && !words) return undefined;
   const syllables = syllablesFromFields(text ?? "", words, getSplitCharacter());
-  return withTrackSyllables(newBackgroundTrack(lineId, params.source), syllables);
+  const passthrough = backgroundTrack(line)?.passthrough;
+  const track = newBackgroundTrack(line.id, params.source);
+  return withTrackSyllables(passthrough ? { ...track, passthrough } : track, syllables);
 }
 
 function withBackground(line: LyricLine, params: BackgroundParams): LyricLine {
-  return withBackgroundTrack(line, backgroundTrackFrom(line.id, params));
+  return withBackgroundTrack(line, backgroundTrackFrom(line, params));
 }
 
 function withoutBackground(line: LyricLine): LyricLine {

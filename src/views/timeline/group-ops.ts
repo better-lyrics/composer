@@ -6,6 +6,7 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { linePassthroughOf } from "@/domain/line/passthrough";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
@@ -128,6 +129,7 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
     const tplBgWords = bgWords && wordsToTemplate(bgWords, startTime, trackPieces(line, "bg"));
 
     const lineBounds = mainBounds(line);
+    const passthrough = linePassthroughOf(line);
     templates.push({
       text: lineText(line),
       agentId: mainTrack(line).agentId,
@@ -138,6 +140,7 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       backgroundWords: tplBgWords,
       backgroundTextSource: backgroundTrack(line)?.source,
       languages: languagesToTemplate(line.languages),
+      ...(passthrough && { passthrough }),
     });
   }
   return templates;
