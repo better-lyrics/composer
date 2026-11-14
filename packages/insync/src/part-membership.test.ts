@@ -36,4 +36,19 @@ describe("partsAfterLineChange", () => {
       ["b1", "b2"],
     ]);
   });
+
+  it("sections nested in a part follow its lines by the same rule", () => {
+    const verse: Part[] = [
+      {
+        id: "A",
+        kind: "Verse",
+        lineIds: ["a1", "a2", "a3"],
+        sections: [{ kind: "Hook", lineIds: ["a1", "a2"] }, { lineIds: ["a3"] }],
+      },
+    ];
+    const [inserted] = partsAfterLineChange(verse, ["a1", "a2", "a3"], ["a1", "n", "a2", "a3"]);
+    expect(inserted.sections?.map((section) => section.lineIds)).toEqual([["a1", "n", "a2"], ["a3"]]);
+    const [deleted] = partsAfterLineChange(verse, ["a1", "a2", "a3"], ["a1", "a2"]);
+    expect(deleted.sections).toEqual([{ kind: "Hook", lineIds: ["a1", "a2"] }]);
+  });
 });

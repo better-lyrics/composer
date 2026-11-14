@@ -1,6 +1,6 @@
-import type { Part } from "insync/part";
+import type { Part, PartSection } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
-import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
+import { escapeXmlAttribute } from "insync/xml-node";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
@@ -9,12 +9,12 @@ import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
-import { stripSplitCharacter } from "@/utils/split-character";
 import type { Indent } from "@/utils/ttml-head";
 import { backgroundEnvelope, lineEnvelope, partEnvelope, writtenTimes } from "@/utils/ttml-kept-times";
 import { isExportedLine } from "@/utils/ttml-line-keys";
-import { emitWordSpan, spanEndsInSpace } from "@/utils/ttml-markup";
+import { emitWordSpan, spanEndsInSpace, timedSpan } from "@/utils/ttml-markup";
 import { keptAttributes, keptElementLines, keptInline, keptTimesAttributes } from "@/utils/ttml-passthrough-write";
+import { untimedTrackContent } from "@/utils/ttml-untimed-write";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,8 +27,14 @@ interface BodySource {
   passthrough?: DocPassthrough;
 }
 
-interface Section {
-  part?: Part;
+interface Writer {
+  source: BodySource;
+  ind: Indent;
+  written: Set<PartSection>;
+}
+
+interface Run<T> {
+  section?: T;
   lines: LyricLine[];
 }
 
@@ -55,12 +61,13 @@ function backgroundSpan(line: LyricLine, writesWords: boolean): string {
   const bgTiming = bgBounds(line) ?? effectiveBounds(line);
   if (!bgTiming) return "";
   const explicit = drawnSyllables(line, "bg")[0]?.explicit;
-  return `${open}${emitWordSpan({ ...bgTiming, explicit }, stripSplitCharacter(bgText))}${keptInline(kept)}</span>`;
+  return `${open}${timedSpan({ ...bgTiming, explicit }, untimedTrackContent(background, bgText))}${keptInline(kept)}</span>`;
 }
 
-function paragraph(line: LyricLine, source: BodySource, ind: Indent): string {
+function paragraph(line: LyricLine, source: BodySource, indent: string): string {
   const envelope = lineEnvelope(line) ?? ["", ""];
-  const [begin, end] = line.passthrough?.times ? writtenTimes(line.passthrough.times, envelope) : envelope;
+  const [keptBegin, keptEnd] = line.passthrough?.times ? writtenTimes(line.passthrough.times, envelope) : [];
+  const [begin, end] = [keptBegin ?? envelope[0], keptEnd ?? envelope[1]];
   const agentAttr = mainTrack(line).agentId ? ` ttm:agent="${escapeXmlAttribute(mainTrack(line).agentId)}"` : "";
   const lineKey = source.keyById.get(line.id);
   const keyAttr = lineKey ? ` itunes:key="${lineKey}"` : "";
@@ -70,40 +77,53 @@ function paragraph(line: LyricLine, source: BodySource, ind: Indent): string {
   const content =
     source.writesWords && isWordSynced(line)
       ? spans(timedSyllables(mainTrack(line)))
-      : escapeXmlText(stripSplitCharacter(lineText(line)));
-  return `${ind(3)}<p begin="${escapeXmlAttribute(begin)}" end="${escapeXmlAttribute(end)}"${keyAttr}${agentAttr}${groupAttr}${keptAttributes(line.passthrough)}>${content}${backgroundSpan(line, source.writesWords)}${keptInline(line.passthrough)}</p>`;
+      : untimedTrackContent(mainTrack(line), lineText(line));
+  return `${indent}<p begin="${escapeXmlAttribute(begin)}" end="${escapeXmlAttribute(end)}"${keyAttr}${agentAttr}${groupAttr}${keptAttributes(line.passthrough)}>${content}${backgroundSpan(line, source.writesWords)}${keptInline(line.passthrough)}</p>`;
 }
 
 // -- Sections -----------------------------------------------------------------
 
-// Runs of written lines in the same song part, or in none.
-function sections(lines: readonly LyricLine[], parts: readonly Part[]): Section[] {
-  const partOf = new Map(parts.flatMap((part) => part.lineIds.map((id) => [id, part] as const)));
-  const result: Section[] = [];
+// Runs of written lines in the same section, or in none.
+function runs<T extends PartSection>(lines: readonly LyricLine[], sections: readonly T[]): Run<T>[] {
+  const sectionOf = new Map(sections.flatMap((section) => section.lineIds.map((id) => [id, section] as const)));
+  const result: Run<T>[] = [];
   for (const line of lines) {
-    const part = partOf.get(line.id);
+    const section = sectionOf.get(line.id);
     const last = result[result.length - 1];
-    if (last && last.part === part) last.lines.push(line);
-    else result.push({ ...(part && { part }), lines: [line] });
+    if (last && last.section === section) last.lines.push(line);
+    else result.push({ ...(section && { section }), lines: [line] });
   }
   return result;
 }
 
-function sectionLines(section: Section, source: BodySource, ind: Indent, writtenParts: Set<Part>): string[] {
-  const { part } = section;
-  const paragraphs = section.lines.map((line) => paragraph(line, source, ind));
-  if (!part) return [`${ind(2)}<div>`, ...paragraphs, `${ind(2)}</div>`];
-  const kept = part.passthrough;
-  const times = keptTimesAttributes(kept?.times, () => partEnvelope(section.lines));
-  const songPart = part.kind !== undefined ? ` itunes:songPart="${escapeXmlAttribute(part.kind)}"` : "";
-  const firstRun = !writtenParts.has(part);
-  writtenParts.add(part);
+// The lines of a stretch, each nested section in its own `<div>` at the next depth.
+function stretchLines(lines: readonly LyricLine[], sections: readonly PartSection[], depth: number, writer: Writer) {
+  return runs(lines, sections).flatMap(({ section, lines: runLines }) =>
+    section
+      ? sectionLines(section, runLines, depth, writer)
+      : runLines.map((line) => paragraph(line, writer.source, writer.ind(depth))),
+  );
+}
+
+// A song part or nested section; its kept elements are written once, after its first run.
+function sectionLines(section: PartSection, lines: LyricLine[], depth: number, writer: Writer): string[] {
+  const kept = section.passthrough;
+  const times = keptTimesAttributes(kept?.times, () => partEnvelope(lines));
+  const songPart = section.kind !== undefined ? ` itunes:songPart="${escapeXmlAttribute(section.kind)}"` : "";
+  const firstRun = !writer.written.has(section);
+  writer.written.add(section);
   return [
-    `${ind(2)}<div${times}${songPart}${keptAttributes(kept)}>`,
-    ...paragraphs,
-    ...(firstRun ? keptElementLines(kept, ind(3)) : []),
-    `${ind(2)}</div>`,
+    `${writer.ind(depth)}<div${times}${songPart}${keptAttributes(kept)}>`,
+    ...stretchLines(lines, section.sections ?? [], depth + 1, writer),
+    ...(firstRun ? keptElementLines(kept, writer.ind(depth + 1)) : []),
+    `${writer.ind(depth)}</div>`,
   ];
+}
+
+function divLines(run: Run<Part>, writer: Writer): string[] {
+  if (run.section) return sectionLines(run.section, run.lines, 2, writer);
+  const { ind, source } = writer;
+  return [`${ind(2)}<div>`, ...run.lines.map((line) => paragraph(line, source, ind(3))), `${ind(2)}</div>`];
 }
 
 // -- Body ---------------------------------------------------------------------
@@ -112,9 +132,8 @@ function sectionLines(section: Section, source: BodySource, ind: Indent, written
 function bodyLines(source: BodySource, ind: Indent): string[] {
   const durAttr = source.duration ? ` dur="${formatTime(source.duration)}"` : "";
   const written = source.lines.filter((line) => effectiveBounds(line) && isExportedLine(line));
-  const runs = sections(written, source.parts ?? []);
-  const writtenParts = new Set<Part>();
-  const divs = runs.length > 0 ? runs.flatMap((run) => sectionLines(run, source, ind, writtenParts)) : [];
+  const writer: Writer = { source, ind, written: new Set() };
+  const divs = runs(written, source.parts ?? []).flatMap((run) => divLines(run, writer));
   return [
     `${ind(1)}<body${durAttr}${keptAttributes(source.passthrough?.body)}>`,
     ...(divs.length > 0 ? divs : [`${ind(2)}<div>`, `${ind(2)}</div>`]),

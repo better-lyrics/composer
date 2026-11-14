@@ -116,9 +116,8 @@ function isModelledChildOf(node: TtmlNode, child: Element, parentHasTimedWords: 
     case "agent":
       return child.tagName === "ttm:name";
     case "body":
-      return isLyricSection(child) || child.tagName === "p";
     case "div":
-      return child.tagName === "div" || child.tagName === "p";
+      return isLyricSection(child) || child.tagName === "p";
     case "p":
     case "background":
       return (
@@ -146,6 +145,7 @@ export {
   isLyricTextElement,
   isModelledAttribute,
   isTimedWordSpan,
+  LYRIC_ROLES,
   modelledChildTest,
   UNBOUND_NAMESPACE_PREFIX,
 };

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import { lineText } from "@/domain/line/text";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
@@ -59,7 +61,7 @@ describe("ttml kept data edges", () => {
   });
 
   it("an element inside a line-synced line that is not lyric text stays out of the lyric and is kept", () => {
-    expect(lineText(parseTtml(edgeCasesTtml).lines[2])).toBe("Quiet harbour");
+    expect(lineText(parseTtml(edgeCasesTtml).lines[2])).toBe("Quiet harbour bright");
     expect(exported()).toContain("<x-vendor:note>aside</x-vendor:note>");
   });
 
@@ -86,5 +88,32 @@ describe("ttml kept data edges", () => {
       passthrough: parsed.passthrough,
     });
     expect(twice).toBe(once);
+  });
+
+  it("a file naming the default singer keeps that singer's kept data on import", () => {
+    const parsed = parseTtml(edgeCasesTtml);
+    const { agents } = agentsAfterImport(DEFAULT_AGENTS, parsed.agents, parsed.lines);
+    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents, lines: parsed.lines });
+    expect(ttml).toContain('<ttm:agent xml:id="v1" type="person" x-vendor:voice="alto">');
+    expect(ttml).toContain("<x-vendor:alias><ttm:name>Shade Wren</ttm:name></x-vendor:alias>");
+  });
+
+  it("sections nested in a song part keep their own label, times, attributes and elements", () => {
+    const ttml = exported();
+    expect(ttml).toContain('<div begin="0:00.900" itunes:songPart="Hook" x-vendor:sub="a">');
+    expect(ttml).toContain('<x-vendor:cue at="start"/>');
+    expect(ttml).toContain('<div end="0:06.500">');
+  });
+
+  it("untimed spans of a line-synced line and background keep their attributes", () => {
+    const ttml = exported();
+    expect(ttml).toContain('Quiet harbour <span tts:color="red">bright</span>');
+    expect(ttml).toContain('<span x-vendor:echo="2">(far)</span>');
+  });
+
+  it("a singer name holding an element writes its text once", () => {
+    const ttml = exported();
+    expect(ttml).toContain("<ttm:name>Juno <x-vendor:nick>JP</x-vendor:nick></ttm:name>");
+    expect(occurrences(ttml, "JP")).toBe(1);
   });
 });

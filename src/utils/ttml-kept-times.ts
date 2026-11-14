@@ -42,18 +42,23 @@ function partEnvelope(lines: readonly LyricLine[]): Envelope | null {
 
 // -- Times --------------------------------------------------------------------
 
-// A node's own times, kept when the source wrote them; `onlyIfDifferent` skips times the writer derives anyway.
+type WrittenTimes = readonly [begin: string | undefined, end: string | undefined];
+
+// A node's own times, either or both, kept when the source wrote them; `onlyIfDifferent` skips times the writer
+// derives anyway.
 function capturedTimes(element: Element, envelope: Envelope | null, onlyIfDifferent: boolean): KeptTimes | undefined {
   const begin = element.getAttribute("begin");
   const end = element.getAttribute("end");
-  if (begin === null || end === null || !envelope) return undefined;
-  if (onlyIfDifferent && begin === envelope[0] && end === envelope[1]) return undefined;
-  return { begin, end, envelope };
+  if ((begin === null && end === null) || !envelope) return undefined;
+  if (onlyIfDifferent && (begin ?? envelope[0]) === envelope[0] && (end ?? envelope[1]) === envelope[1])
+    return undefined;
+  return { ...(begin !== null && { begin }), ...(end !== null && { end }), envelope };
 }
 
-// Kept times while the content still spans the same envelope, else the derived envelope.
-function writtenTimes(kept: KeptTimes, envelope: Envelope): Envelope {
-  return keptTimes(kept, envelope) ?? envelope;
+// The bounds the source wrote: kept while the content still spans the same envelope, else derived again.
+function writtenTimes(kept: KeptTimes, envelope: Envelope): WrittenTimes {
+  const [begin, end] = keptTimes(kept, envelope) ?? envelope;
+  return [kept.begin === undefined ? undefined : begin, kept.end === undefined ? undefined : end];
 }
 
 // -- Exports ------------------------------------------------------------------
