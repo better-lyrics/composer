@@ -47,6 +47,16 @@ describe("inline backgrounds in the Edit text", () => {
     expect(editRows(bracketGone, touched)[1]).toEqual({ text: "Say (it) again", background: "(again)" });
   });
 
+  it("regression: moves each token by the runs before it when one input changes several runs", () => {
+    const tokens = [
+      { start: 2, end: 6, bracketed: false },
+      { start: 9, end: 13, bracketed: false },
+    ];
+    const typed = "AA (go) BB (ah)";
+    const ranges = remapBackgroundRanges("A (go) B (ah)", typed, tokens, typed.length);
+    expect(editRows(typed, ranges)).toEqual([{ text: "AA BB", background: "go ah" }]);
+  });
+
   it("reads a row that is only a token as main text, for extraction to decide", () => {
     expect(editRows("(ooh)", [{ start: 0, end: 5, bracketed: false }])).toEqual([{ text: "(ooh)", background: null }]);
   });

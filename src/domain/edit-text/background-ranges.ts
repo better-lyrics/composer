@@ -16,6 +16,7 @@ interface EditRow {
   background: string | null;
 }
 
+// Old-text positions; `newEnd` is where the run ends once its new text replaces the old.
 interface ChangedRegion {
   start: number;
   oldEnd: number;
@@ -58,7 +59,6 @@ function changedRuns(oldText: string, newText: string, region: ChangedRegion): C
   const changes = diffChars(oldText.slice(region.start, region.oldEnd), newText.slice(region.start, region.newEnd));
   const runs: ChangedRegion[] = [];
   let oldAt = region.start;
-  let newAt = region.start;
   let open: ChangedRegion | null = null;
   for (const change of changes) {
     const length = change.value.length;
@@ -66,13 +66,13 @@ function changedRuns(oldText: string, newText: string, region: ChangedRegion): C
       if (open) runs.push(open);
       open = null;
       oldAt += length;
-      newAt += length;
       continue;
     }
-    open ??= { start: oldAt, oldEnd: oldAt, newEnd: newAt };
+    // A run's ends are kept in old-text positions, so its new end minus its old end is its own length change.
+    open ??= { start: oldAt, oldEnd: oldAt, newEnd: oldAt };
+    if (change.removed) open = { ...open, oldEnd: open.oldEnd + length };
+    else open = { ...open, newEnd: open.newEnd + length };
     if (change.removed) oldAt += length;
-    else newAt += length;
-    open = { ...open, oldEnd: oldAt, newEnd: newAt };
   }
   if (open) runs.push(open);
   return runs;
@@ -167,18 +167,17 @@ function shownWithRewrittenRows(
 ): ShownEditText {
   const rows: string[] = [];
   const ranges: BackgroundRange[] = [];
+  const sorted = typed.ranges.toSorted((a, b) => a.start - b.start);
+  let next = 0;
   let oldStart = 0;
   let newStart = 0;
   typed.text.split("\n").forEach((row, index) => {
     const rewritten = finalLines[index] !== typedLines[index] ? shownRow(finalLines[index]) : null;
     const shown = rewritten?.text ?? row;
     if (rewritten?.background) ranges.push(shiftedRange(rewritten.background, newStart));
-    if (!rewritten) {
-      for (const range of typed.ranges) {
-        if (range.start >= oldStart && range.end <= oldStart + row.length) {
-          ranges.push(shiftedRange(range, newStart - oldStart));
-        }
-      }
+    const rowEnd = oldStart + row.length;
+    for (; next < sorted.length && sorted[next].end <= rowEnd; next++) {
+      if (!rewritten && sorted[next].start >= oldStart) ranges.push(shiftedRange(sorted[next], newStart - oldStart));
     }
     rows.push(shown);
     oldStart += row.length + 1;
