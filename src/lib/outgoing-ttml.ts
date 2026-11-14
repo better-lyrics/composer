@@ -25,13 +25,13 @@ function outgoingTtml({
   exportTiming,
   youtubeVideoId,
 }: OutgoingSource): string {
-  const { metadata, agents, lines, groups, alignedTimings } = useProjectStore.getState();
+  const { metadata, agents, lines, groups, parts, passthrough, alignedTimings } = useProjectStore.getState();
   const { counts, untouchedIds } = alignmentBreakdown(lines, alignedTimings, playedRanges());
   if (editedContent !== null && editedContent !== generatedContent)
     return withBuildTag(editedContent, { ...counts, handEdited: true });
   const settled = exportTiming === "line" ? lines : withExportTiming(lines, untouchedIds);
   const ttml = generateProjectTtml(
-    { metadata, agents, lines: settled, groups },
+    { metadata, agents, lines: settled, groups, parts, passthrough },
     duration,
     exportTiming,
     youtubeVideoId,
