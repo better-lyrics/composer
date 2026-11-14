@@ -14,7 +14,9 @@ beforeEach(() => useProjectStore.getState().reset());
 
 describe("editBackgroundText", () => {
   it("regression: a line-synced background keeps its moved span when its text is retyped", () => {
-    const seeded = withSeededBackground(createLine({ id: "l1", text: "Low tide", begin: 2, end: 6, backgroundText: "ooh" }));
+    const seeded = withSeededBackground(
+      createLine({ id: "l1", text: "Low tide", begin: 2, end: 6, backgroundText: "ooh" }),
+    );
     const moved = withBackgroundTrack(seeded, withTrackSpan(backgroundTrack(seeded)!, 4.5, 5.5));
     useProjectStore.setState({ lines: [moved] });
 

@@ -93,7 +93,9 @@ describe("word timing commands", () => {
 
 describe("timing a line-synced background", () => {
   const spanLine = () =>
-    withSeededBackground(createLine({ id: "s0", text: "Glass harbour", begin: 10, end: 14, backgroundText: "far away" }));
+    withSeededBackground(
+      createLine({ id: "s0", text: "Glass harbour", begin: 10, end: 14, backgroundText: "far away" }),
+    );
   const blockAddress = () => {
     const line = lineById("s0")!;
     return addressOf(line, "bg", drawnSyllables(line, "bg")[0]);

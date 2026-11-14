@@ -65,12 +65,24 @@ describe("word structure commands", () => {
   });
 
   it("regression: renaming the block of a line-synced background updates its text and keeps the span", () => {
-    const line = withSeededBackground(createLine({ id: "l3", text: "Low", begin: 2, end: 6, backgroundText: "far away" }));
+    const line = withSeededBackground(
+      createLine({ id: "l3", text: "Low", begin: 2, end: 6, backgroundText: "far away" }),
+    );
     useProjectStore.setState({ lines: [line] });
     const [block] = drawnSyllables(line, "bg");
     useProjectStore.getState().commit(typeWordText(addressOf(line, "bg", block), "so near"));
     const [renamed] = useProjectStore.getState().lines;
     expect(backgroundText(renamed)).toBe("so near");
     expect(backgroundTrack(renamed)).toMatchObject({ begin: 4, end: 6, source: "manual" });
+  });
+
+  it("regression: deleting the block of a line-synced background deletes it, as deleting all its words does", () => {
+    const line = withSeededBackground(
+      createLine({ id: "l4", text: "Low", begin: 2, end: 6, backgroundText: "far away" }),
+    );
+    useProjectStore.setState({ lines: [line] });
+    const [block] = drawnSyllables(line, "bg");
+    useProjectStore.getState().commit(deleteWords([addressOf(line, "bg", block)]));
+    expect(backgroundTrack(useProjectStore.getState().lines[0])).toBeUndefined();
   });
 });
