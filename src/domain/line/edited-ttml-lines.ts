@@ -1,8 +1,11 @@
+import type { Part } from "insync/part";
+import { partsAfterLineChange } from "insync/part-membership";
 import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
 import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { linePassthroughOf, withLinePassthrough, withoutKeptData } from "@/domain/line/passthrough";
+import { hasKeptData, withKeptDataOf } from "@/domain/line/edited-ttml-passthrough";
+import { withoutKeptData } from "@/domain/line/passthrough";
 import { backgroundTrack, mainTrack } from "@/domain/line/track";
 import { trackText, untimedRestText } from "@/domain/line/text";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
@@ -20,6 +23,7 @@ import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
 interface EditedTtmlLines {
   lines: readonly LyricLine[];
   lineKeys?: readonly (string | undefined)[];
+  parts?: readonly Part[];
 }
 
 // -- Comparison ---------------------------------------------------------------
@@ -161,13 +165,15 @@ function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLin
     id: stored.id,
     ...(languages ? { languages } : {}),
   });
-  return withUntimedIdsOf(withLinePassthrough(merged, linePassthroughOf(storedLine)), storedLine);
+  return withKeptDataOf(withUntimedIdsOf(merged, storedLine), editedLine);
 }
 
-// Kept TTML data never decides whether a line merges.
+// A line whose only change is its kept TTML data keeps everything else as stored.
 function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
+  if (generateLineTtml(stored) === generateLineTtml(edited)) return stored;
+  if (!hasKeptData(stored) && !hasKeptData(edited)) return fieldMergedLine(stored, edited);
   return generateLineTtml(withoutKeptData(stored)) === generateLineTtml(withoutKeptData(edited))
-    ? stored
+    ? withKeptDataOf(stored, edited)
     : fieldMergedLine(stored, edited);
 }
 
@@ -220,17 +226,39 @@ function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines)
   return ids;
 }
 
+// The edited file's song parts, on the merged line ids; lines the export skips join a part they sit inside.
+function mergedEditedParts(
+  stored: readonly LyricLine[],
+  edit: EditedTtmlLines,
+  merged: readonly LyricLine[],
+): readonly Part[] {
+  const parts = edit.parts ?? [];
+  if (parts.length === 0) return parts;
+  const { partners } = pairedWithStored(stored, edit);
+  const idOf = new Map(edit.lines.map((line, index) => [line.id, partners[index]?.id ?? line.id] as const));
+  const onMergedIds = parts.map((part) => ({ ...part, lineIds: part.lineIds.map((id) => idOf.get(id) ?? id) }));
+  const editedIds = edit.lines.map((line) => idOf.get(line.id) ?? line.id);
+  return partsAfterLineChange(
+    onMergedIds,
+    editedIds,
+    merged.map((line) => line.id),
+  );
+}
+
+// Kept times go stale once a line moves and the export writes derived ones instead, so kept data never decides.
 function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricLine[]): boolean {
   const exported = stored.filter(isSyncableLine);
   return (
     exported.length === ownExport.length &&
     exported.every((line, index) => {
       const form = ownExport[index];
-      return form !== undefined && isStructurallyEqual(fieldMergedLine(line, form), line);
+      return (
+        form !== undefined && isStructurallyEqual(withoutKeptData(fieldMergedLine(line, form)), withoutKeptData(line))
+      );
     })
   );
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { holdsEveryLine, mergeEditedTtmlLines, mergedLineIdsByKey };
+export { holdsEveryLine, mergedEditedParts, mergeEditedTtmlLines, mergedLineIdsByKey };

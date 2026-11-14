@@ -50,7 +50,7 @@ function applyEditedLyrics(edited: EditedLyrics, metadata: ProjectMetadata): Lyr
       const write = editedLyricsWrite(current, edited);
       if (!changesProject(current, write)) return applied(root, []);
       return applied(
-        { ...root, lines: write.lines, groups: write.groups, agents: write.agents },
+        { ...root, lines: write.lines, groups: write.groups, agents: write.agents, ...write.kept },
         changedLineIds(root.lines, write.lines),
       );
     },

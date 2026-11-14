@@ -35,6 +35,8 @@ describe("applyEditedTtml · invariants", () => {
           groups: project.groups,
           agents: project.agents,
           metadata: project.metadata,
+          parts: [],
+          passthrough: {},
         });
         const editCase = operation.edit(atEditStart, generateProjectTtml(useProjectStore.getState(), 0));
         if (editCase.projectChangeBeforeKeepingEdits) {

@@ -135,4 +135,16 @@ describe("mergeEditedTtmlLines · word timing", () => {
     expect(lineText(merged)).toBe("a b c d");
     expect(backgroundText(merged)).toBe("ooh ah");
   });
+
+  it("takes a span's kept data from the edited file and keeps every word as stored", () => {
+    const stored = [syllableLine()];
+    const merged = mergeEditedExport(stored, (ttml) =>
+      ttml.replace('<span begin="0:01.500"', '<span begin="0:01.500" x-cue="b"'),
+    );
+    const words = timedSyllables(mainTrack(merged[0]!));
+    const { passthrough, ...word } = words[1]!;
+    expect(passthrough).toEqual({ attrs: [["x-cue", "b"]] });
+    expect(word).toEqual(timedSyllables(mainTrack(stored[0]))[1]);
+    expect(words[0]).toBe(timedSyllables(mainTrack(stored[0]))[0]);
+  });
 });
