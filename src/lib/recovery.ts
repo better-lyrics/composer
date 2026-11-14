@@ -117,8 +117,12 @@ function previousVersionTitle(title: string): string {
   return `${title}${PREVIOUS_VERSION_TITLE_SUFFIX}`;
 }
 
+function recoveredTitle(project: RecoveredProject): string {
+  return displayTitle(project.metadata?.title?.trim() ?? "");
+}
+
 function buildRecoveryResult(project: RecoveredProject, isPreviousVersion = false): RecoveryResult {
-  const shownTitle = displayTitle(project.metadata?.title?.trim() ?? "");
+  const shownTitle = recoveredTitle(project);
   const title = isPreviousVersion ? previousVersionTitle(shownTitle) : shownTitle;
   return {
     found: true,
@@ -140,11 +144,12 @@ function toRecoverableProject(entry: ProjectIndexEntry): RecoverableProject {
 }
 
 function toRecoverablePreviousVersion({ id, project }: PreV4Record): RecoverableProject {
+  const stored: RecoveredProject = project;
   return {
     key: preV4Key(id),
-    title: previousVersionTitle(displayTitle(project.metadata.title)),
-    lineCount: project.lines.length,
-    savedAt: project.savedAt,
+    title: previousVersionTitle(recoveredTitle(stored)),
+    lineCount: stored.lines?.length ?? 0,
+    savedAt: stored.savedAt,
     isPreviousVersion: true,
   };
 }

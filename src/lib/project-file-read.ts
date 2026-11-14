@@ -54,11 +54,22 @@ function parseProjectFile(parsed: unknown): ProjectFile {
   return project;
 }
 
+function hasProjectContent(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const { metadata, lines } = value as { metadata?: unknown; lines?: unknown };
+  return typeof metadata === "object" && metadata !== null && Array.isArray(lines);
+}
+
+function readPreviousVersion(item: unknown): ProjectFile {
+  if (!hasProjectContent(item)) throw new Error("Not a Composer project file");
+  return readStoredProjectFile(item);
+}
+
 function parsePreviousVersions(previousVersions: unknown): ProjectFile[] {
   if (!Array.isArray(previousVersions)) return [];
   return previousVersions.flatMap((item: unknown) => {
     try {
-      return [readStoredProjectFile(item)];
+      return [readPreviousVersion(item)];
     } catch (error) {
       console.warn(LOG_PREFIX, "skipped an earlier version the backup could not read", error);
       return [];
