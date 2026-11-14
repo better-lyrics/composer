@@ -150,7 +150,9 @@ describe("applySavedProject", () => {
       await resetAllStores();
 
       applySavedProject(
-        JSON.parse(JSON.stringify({ version: SAVED_PROJECT_VERSION, savedAt: 0, ...saved, lines: savedLines(saved.lines) })),
+        JSON.parse(
+          JSON.stringify({ version: SAVED_PROJECT_VERSION, savedAt: 0, ...saved, lines: savedLines(saved.lines) }),
+        ),
         "storage",
       );
 
