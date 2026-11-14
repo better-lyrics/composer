@@ -98,7 +98,7 @@ async function loadStoredRecovery(
   const previousVersionOf = preV4IdOf(key);
   if (previousVersionOf !== undefined) {
     const copy = await loadPreV4Record(previousVersionOf);
-    return copy ? { projectId: previousVersionOf, project: copy, isPreviousVersion: true } : undefined;
+    return copy ? { projectId: undefined, project: copy, isPreviousVersion: true } : undefined;
   }
   const project = await loadProjectRecord(key);
   return project ? { projectId: key, project } : undefined;

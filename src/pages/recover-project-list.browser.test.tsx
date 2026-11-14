@@ -55,21 +55,19 @@ describe("RecoverProjectList", () => {
     expect(downloads.names()).toHaveLength(1);
   });
 
-  it("lists the copy kept before an update as its own row and downloads it as a project file", async () => {
-    await saveProjectRecord("a", storedProject(songTitled("Alpha")));
+  it("lists the copy kept before an update as its own row and downloads it as a separate project", async () => {
+    await seedTwo();
     await saveProjectRecord("a", v4StoredProject(songTitled("Alpha Remix")));
     const screen = await render(<RecoverProjectList />);
-    await expect.element(screen.getByText("1 project")).toBeInTheDocument();
+    await expect.element(screen.getByText("2 projects")).toBeInTheDocument();
     const label = `Alpha${PREVIOUS_VERSION_TITLE_SUFFIX}`;
     const downloads = captureDownloads();
     await screen.getByRole("button", { name: `Download ${label}` }).click();
     await expect.poll(() => downloads.blobs().length).toBe(1);
-    downloads.stop();
     const contents = parseProjectFileContents(await downloads.blobs()[0].text());
-    expect(contents.kind === "project" && contents.project).toMatchObject({
-      projectId: "a",
-      metadata: { title: "Alpha" },
-    });
+    const project = contents.kind === "project" ? contents.project : undefined;
+    expect(project?.metadata.title).toBe("Alpha");
+    expect(project).not.toHaveProperty("projectId");
   });
 
   describe("edge cases", () => {
