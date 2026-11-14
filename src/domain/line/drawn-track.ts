@@ -3,8 +3,8 @@ import type { LanguagePieces, LineLanguages } from "@/domain/language/model";
 import { trackPieces } from "@/domain/language/pieces";
 import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "@/domain/line/model";
 import { trackText } from "@/domain/line/text";
-import { isSpanTimed, mainTrack, timedSyllables, trackOf } from "@/domain/line/track";
-import { withMainTrack } from "@/domain/line/track-writes";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, trackOf } from "@/domain/line/track";
+import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -50,19 +50,24 @@ function drawnSyllables(line: LyricLine, role: TrackRole): WordTiming[] {
 
 // -- Lines --------------------------------------------------------------------
 
-function withDrawnMain(line: LyricLine): LyricLine {
+function withDrawnTracks(line: LyricLine): LyricLine {
+  const splitChar = getSplitCharacter();
   const main = mainTrack(line);
-  if (!isSpanTimed(main)) return line;
-  const { begin: _begin, end: _end, ...syllableTimed } = main;
-  return withMainTrack(line, { ...syllableTimed, syllables: drawnSyllables(line, "main") });
+  const background = backgroundTrack(line);
+  const drawnMain = isSpanTimed(main) ? withTrackSyllables(main, spanBlock(line.id, main, splitChar)) : main;
+  const drawnBackground =
+    background && isSpanTimed(background)
+      ? withTrackSyllables(background, spanBlock(line.id, background, splitChar))
+      : background;
+  return withBackgroundTrack(withMainTrack(line, drawnMain), drawnBackground);
 }
 
-// The line as the Timeline draws it, for reads only: a span as one block, readings aligned to the drawn syllables.
+// The line as the Timeline draws it, for reads only: each span as one block, readings aligned to the drawn syllables.
 function drawnLine(line: LyricLine): LyricLine {
   const splitChar = getSplitCharacter();
   const cached = drawnLineByLine.get(line);
   if (cached?.splitChar === splitChar) return cached.line;
-  const drawn = withAlignedTransliteration(withDrawnMain(line));
+  const drawn = withAlignedTransliteration(withDrawnTracks(line));
   drawnLineByLine.set(line, { splitChar, line: drawn });
   return drawn;
 }
