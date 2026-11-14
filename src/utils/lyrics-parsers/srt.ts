@@ -3,11 +3,15 @@ import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 
+// -- Constants ----------------------------------------------------------------
+
+// HH:MM:SS,mmm or HH:MM:SS.mmm
+const SRT_CLOCK_REGEX = /(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/;
+
 // -- Helpers ------------------------------------------------------------------
 
 function parseSrtTimestamp(timestamp: string): number {
-  // Format: HH:MM:SS,mmm or HH:MM:SS.mmm
-  const match = timestamp.match(/(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/);
+  const match = timestamp.match(SRT_CLOCK_REGEX);
   if (!match) return 0;
   const hours = Number.parseInt(match[1], 10);
   const minutes = Number.parseInt(match[2], 10);
@@ -61,4 +65,4 @@ function parseSrt(content: string, _fallbackDuration?: number): ParseResult {
 
 // -- Exports ------------------------------------------------------------------
 
-export { parseSrt };
+export { SRT_CLOCK_REGEX, parseSrt };

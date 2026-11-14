@@ -9,7 +9,9 @@ import type { LyricLine } from "@/domain/line/model";
 import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import type { SavedProjectV3 } from "@/lib/saved-project";
 import { REAL_PROJECT_FILES, realStoredRecords } from "@/test/real-records";
+import { checkUpgrade, hasProblems } from "@/test/upgrade-check";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import { savedLinesV3 } from "@/test/saved-v3";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
@@ -170,6 +172,10 @@ function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: Sav
   return { repaired, leadingSpaceDropped };
 }
 
+function v3Record({ metadata, agents, groups }: EditedTtmlProject): SavedProjectV3 {
+  return { version: 3, savedAt: 0, metadata, agents, groups, granularity: "word", lines: [] };
+}
+
 function exportOf(project: EditedTtmlProject): string {
   return generateProjectTtml(project, EXPORT_DURATION_SECONDS);
 }
@@ -204,5 +210,25 @@ describe("insync export equality", () => {
     const projects = realProjects();
     expect(projects.length).toBeGreaterThan(0);
     expectRoundTripKeepsExport(projects);
+  });
+
+  it("a v3 record upgraded to v4 opens and exports the same", () => {
+    const reports = fixtureProjects().map((project) =>
+      checkUpgrade(project.name, { ...v3Record(project), lines: savedLinesV3(project.lines) }),
+    );
+    expect(reports.filter(hasProblems)).toEqual([]);
+  });
+
+  it.runIf(REAL_PROJECT_FILES.length > 0)("real v3 records upgraded to v4 open and export the same", () => {
+    const records = realStoredRecords().flatMap(({ name, record }) => (record.version < 4 ? [{ name, record }] : []));
+    expect(records.length).toBeGreaterThan(0);
+    const reports = records.map(({ name, record }) => checkUpgrade(name, record as SavedProjectV3));
+    const lines = reports.reduce((sum, report) => sum + report.lines, 0);
+    const lineSynced = reports.reduce((sum, report) => sum + report.lineSyncedBackgroundsInWordProjects, 0);
+    console.info(`[insync] v3 to v4: ${reports.length} projects, ${lines} lines`);
+    console.info(`[insync] line-synced backgrounds with no timed words in word-synced projects: ${lineSynced}`);
+    const problems = reports.filter(hasProblems);
+    if (problems.length > 0) console.info("[insync] v3 to v4 problems", JSON.stringify(problems, null, 2));
+    expect(problems).toEqual([]);
   });
 });

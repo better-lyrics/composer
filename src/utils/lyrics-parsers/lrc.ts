@@ -10,10 +10,10 @@ import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
 
 // -- Constants ----------------------------------------------------------------
 
-const CLOCK = String.raw`(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?`;
-const LINE_TIMESTAMP_REGEX = new RegExp(String.raw`\[${CLOCK}\]`, "g");
-const INLINE_WORD_TAG_REGEX = new RegExp(`<${CLOCK}>`, "g");
-const LENGTH_REGEX = new RegExp(`^${CLOCK}$`);
+const LRC_CLOCK = String.raw`(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?`;
+const LINE_TIMESTAMP_REGEX = new RegExp(String.raw`\[${LRC_CLOCK}\]`, "g");
+const INLINE_WORD_TAG_REGEX = new RegExp(`<${LRC_CLOCK}>`, "g");
+const LENGTH_REGEX = new RegExp(`^${LRC_CLOCK}$`);
 const LRC_METADATA_TAG_REGEX = /^\[([a-z]+):(.*)\]$/i;
 const SINGER_OR_BACKGROUND_TAG_REGEX = /^(?:\[[\d:.]+\]\s*)*v\d+:|\[[bB][gG]:/;
 const PENDING_WORD_END = -1;
@@ -215,4 +215,4 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
 
 // -- Exports ------------------------------------------------------------------
 
-export { LRC_METADATA_TAG_REGEX, parseLrc, parseLrcClock };
+export { LRC_CLOCK, LRC_METADATA_TAG_REGEX, parseLrc, parseLrcClock };
