@@ -26,6 +26,20 @@ interface DocPassthrough {
   readonly body?: Passthrough;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const DOC_NODES = ["tt", "head", "metadata", "iTunesMetadata", "body"] as const;
+
+// -- Emptiness ----------------------------------------------------------------
+
+function isEmptyPassthrough(kept: Passthrough | undefined): boolean {
+  return !kept || (!kept.attrs?.length && !kept.elements?.length && !kept.markup?.length && !kept.times);
+}
+
+function isEmptyDocPassthrough(kept: DocPassthrough | undefined): boolean {
+  return !kept || DOC_NODES.every((node) => isEmptyPassthrough(kept[node]));
+}
+
 // -- Times --------------------------------------------------------------------
 
 function keptTimes(kept: KeptTimes, envelope: readonly [string, string]): readonly [string, string] | null {
@@ -35,4 +49,4 @@ function keptTimes(kept: KeptTimes, envelope: readonly [string, string]): readon
 // -- Exports ------------------------------------------------------------------
 
 export type { DocPassthrough, KeptTimes, Passthrough };
-export { keptTimes };
+export { isEmptyDocPassthrough, isEmptyPassthrough, keptTimes };

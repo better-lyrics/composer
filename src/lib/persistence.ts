@@ -1,5 +1,5 @@
 import type { Part } from "insync/part";
-import type { DocPassthrough } from "insync/passthrough";
+import { type DocPassthrough, isEmptyDocPassthrough } from "insync/passthrough";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
@@ -63,7 +63,7 @@ function buildSavedProject(input: ProjectSaveInput): SavedProject {
     lines: savedLines(input.lines),
     audioFileName,
     ...(parts?.length && { parts }),
-    ...(passthrough && Object.keys(passthrough).length > 0 && { passthrough }),
+    ...(!isEmptyDocPassthrough(passthrough) && { passthrough }),
     ...(unisonLyricId ? { unisonLyricId } : {}),
   };
 }

@@ -1,4 +1,5 @@
 import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
+import { isEmptyPassthrough } from "insync/passthrough";
 import { msFromSeconds, secondsFromMs } from "insync/time";
 import { languagesFromSaved, savedLanguages } from "@/domain/language/saved-languages";
 import { groupFieldsOf } from "@/domain/line/group-fields";
@@ -35,7 +36,7 @@ function savedSyllable(syllable: Syllable, { withIds }: SavedLineOptions): Saved
     ...(syllable.joinsNext && { joinsNext: true }),
     ...(isTimedSyllable(syllable) && { span: savedSpan(syllable.begin, syllable.end) }),
     ...(syllable.explicit && { explicit: true }),
-    ...(syllable.passthrough && { passthrough: syllable.passthrough }),
+    ...(!isEmptyPassthrough(syllable.passthrough) && { passthrough: syllable.passthrough }),
   };
 }
 
@@ -47,7 +48,7 @@ function savedTrack(track: LineTrack, options: SavedLineOptions): SavedTrack {
     ...(track.role === "bg" && track.source && { source: track.source }),
     ...(isSpanTimed(track) && { span: savedSpan(track.begin, track.end) }),
     syllables: track.syllables.map((syllable) => savedSyllable(syllable, options)),
-    ...(track.role === "bg" && track.passthrough && { passthrough: track.passthrough }),
+    ...(track.role === "bg" && !isEmptyPassthrough(track.passthrough) && { passthrough: track.passthrough }),
   };
 }
 
@@ -61,7 +62,7 @@ function savedLine(line: LyricLine, options: SavedLineOptions): SavedLine {
     tracks: line.tracks.map((track) => savedTrack(track, options)),
     ...(languages && { languages }),
     ...groupFieldsOf(line),
-    ...(line.passthrough && { passthrough: line.passthrough }),
+    ...(!isEmptyPassthrough(line.passthrough) && { passthrough: line.passthrough }),
   };
 }
 
