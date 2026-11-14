@@ -1,4 +1,4 @@
-import type { Part } from "insync/part";
+import type { Part, PartSection } from "insync/part";
 import { partsAfterLineChange } from "insync/part-membership";
 import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
@@ -243,6 +243,14 @@ function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines)
   return ids;
 }
 
+function onLineIds<T extends PartSection>(section: T, idOf: ReadonlyMap<string, string>): T {
+  return {
+    ...section,
+    lineIds: section.lineIds.map((id) => idOf.get(id) ?? id),
+    ...(section.sections && { sections: section.sections.map((nested) => onLineIds(nested, idOf)) }),
+  };
+}
+
 // The edited file's song parts, on the merged line ids; lines the export skips join a part they sit inside.
 function mergedEditedParts(
   stored: readonly LyricLine[],
@@ -253,7 +261,7 @@ function mergedEditedParts(
   if (parts.length === 0) return parts;
   const { partners } = pairedWithStored(stored, edit);
   const idOf = new Map(edit.lines.map((line, index) => [line.id, partners[index]?.id ?? line.id] as const));
-  const onMergedIds = parts.map((part) => ({ ...part, lineIds: part.lineIds.map((id) => idOf.get(id) ?? id) }));
+  const onMergedIds = parts.map((part) => onLineIds(part, idOf));
   const editedIds = edit.lines.map((line) => idOf.get(line.id) ?? line.id);
   return partsAfterLineChange(
     onMergedIds,
