@@ -22,6 +22,21 @@ function splitWithReading({ word, reading, splitPoints, transliterationSplitPoin
 }
 
 describe("splitWordIntoSyllables", () => {
+  it("a split keeps the kept span attributes on the left part only", () => {
+    const word: WordTiming = {
+      id: "w1",
+      text: "lantern",
+      sep: " ",
+      begin: 4,
+      end: 5,
+      joinsNext: false,
+      passthrough: { attrs: [["x-vendor:cue", "3"]] },
+    };
+    const [left, right] = splitWordIntoSyllables({ word, splitPoints: [3] });
+    expect(left.passthrough).toEqual(word.passthrough);
+    expect(right.passthrough).toBeUndefined();
+  });
+
   it("splits paired transliteration text into the same canonical timing slots", () => {
     const result = splitWithReading({
       word: { id: "w1", text: "今日", sep: "", begin: 0, end: 1, joinsNext: true },
