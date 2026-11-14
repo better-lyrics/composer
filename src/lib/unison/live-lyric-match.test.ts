@@ -69,6 +69,17 @@ describe("matchesLiveLyric", () => {
     expect(matchesLiveLyric({ ...project, metadata: { ...project.metadata, artists } }, live)).toBe(true);
   });
 
+  it("never lets kept TTML data decide a match", () => {
+    const project = savedFrom(liveLyric(harborLines()));
+    const plain = liveLyric(harborLines());
+    const kept = plain.lyrics
+      .replace("<p ", '<p x-cue="intro" ')
+      .replace('<ttm:agent xml:id="v1"', '<ttm:agent x-range="low" xml:id="v1"')
+      .replace("</head>", '<songInfo id="7"/></head>');
+
+    expect(matchesLiveLyric(project, { ...plain, lyrics: kept })).toBe(true);
+  });
+
   describe("error paths", () => {
     it("never treats a project with a song detail the live lyric lacks as identical", () => {
       const project = savedFrom(liveLyric(harborLines()));
