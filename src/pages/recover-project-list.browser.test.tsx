@@ -55,11 +55,12 @@ describe("RecoverProjectList", () => {
     expect(downloads.names()).toHaveLength(1);
   });
 
-  it("lists the copy kept before an update as its own row and downloads it as a separate project", async () => {
-    await seedTwo();
+  it("lists the copy kept before an update beside its only project and downloads it as a separate project", async () => {
+    await saveProjectRecord("a", storedProject(songTitled("Alpha")));
     await saveProjectRecord("a", v4StoredProject(songTitled("Alpha Remix")));
     const screen = await render(<RecoverProjectList />);
-    await expect.element(screen.getByText("2 projects")).toBeInTheDocument();
+    await expect.element(screen.getByText("1 project")).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Download Alpha Remix" })).toBeInTheDocument();
     const label = `Alpha${PREVIOUS_VERSION_TITLE_SUFFIX}`;
     const downloads = captureDownloads();
     await screen.getByRole("button", { name: `Download ${label}` }).click();

@@ -36,7 +36,8 @@ const RecoverProjectList: React.FC = () => {
   }, []);
 
   const projectCount = projects.filter((project) => !project.isPreviousVersion).length;
-  if (projectCount < MIN_PROJECTS_FOR_LIST) return null;
+  const hasPreviousVersion = projects.some((project) => project.isPreviousVersion);
+  if (projectCount < MIN_PROJECTS_FOR_LIST && !hasPreviousVersion) return null;
 
   const downloadAll = async () => {
     try {
