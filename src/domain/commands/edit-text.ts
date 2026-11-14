@@ -4,6 +4,7 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/domain/edit-text/diff-edit-text";
+import type { ShownEditText } from "@/domain/edit-text/shown-row";
 import type { LinkGroup } from "@/domain/group/template";
 import { isLinked } from "@/domain/instance/predicates";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
@@ -67,7 +68,11 @@ function pasteLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): Lyric
 }
 
 // Decided again after the detach prompt, so lyrics that changed while it was open are not overwritten.
-function applyEditTextDetaching(text: string, defaultAgentId: string, splitCharacter?: string): LyricCommand {
+function applyEditTextDetaching(
+  { text, ranges }: ShownEditText,
+  defaultAgentId: string,
+  splitCharacter?: string,
+): LyricCommand {
   return wholeLinesEdit({ command: "detach and apply text", args: [] }, (root) => {
     const action = decideEditTextAction({
       text,
@@ -76,6 +81,7 @@ function applyEditTextDetaching(text: string, defaultAgentId: string, splitChara
       groups: root.groups,
       modalPending: false,
       splitCharacter,
+      ranges,
     });
     if (action.kind === "apply") return { lines: action.finalLines };
     if (action.kind !== "needs-confirm") return null;

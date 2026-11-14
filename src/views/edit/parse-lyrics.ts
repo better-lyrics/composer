@@ -1,3 +1,4 @@
+import { shownRow } from "@/domain/edit-text/shown-row";
 import { mainTrack } from "@/domain/line/track";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
@@ -19,7 +20,7 @@ interface ParsedLine {
 
 function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): ParsedLine[] {
   const textLines = text.split("\n");
-  const nonEmptyStored = lines.filter((l) => lineText(l) !== "");
+  const nonEmptyStored = lines.filter((l) => shownRow(l).text !== "");
   let nonEmptyIndex = 0;
 
   return textLines.map((line, index) => {

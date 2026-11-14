@@ -1,0 +1,158 @@
+import {
+  type BackgroundRange,
+  NO_RANGES,
+  type ShownEditText,
+  shiftedRange,
+  shownRow,
+} from "@/domain/edit-text/shown-row";
+import type { LyricLine } from "@/domain/line/model";
+
+// -- Types --------------------------------------------------------------------
+
+// A typed row read back into its tracks: the main text, and the background it shows (null when it shows none).
+interface EditRow {
+  text: string;
+  background: string | null;
+}
+
+interface ChangedRegion {
+  start: number;
+  oldEnd: number;
+  newEnd: number;
+}
+
+// -- Change -------------------------------------------------------------------
+
+function commonPrefix(oldText: string, newText: string, limit: number): number {
+  let length = 0;
+  while (length < limit && oldText[length] === newText[length]) length++;
+  return length;
+}
+
+function endsAlike(oldText: string, newText: string, length: number): boolean {
+  for (let index = 1; index <= length; index++) {
+    if (oldText[oldText.length - index] !== newText[newText.length - index]) return false;
+  }
+  return true;
+}
+
+function plainRegion(oldText: string, newText: string): ChangedRegion {
+  const start = commonPrefix(oldText, newText, Math.min(oldText.length, newText.length));
+  let suffix = 0;
+  const room = Math.min(oldText.length, newText.length) - start;
+  while (suffix < room && oldText[oldText.length - 1 - suffix] === newText[newText.length - 1 - suffix]) suffix++;
+  return { start, oldEnd: oldText.length - suffix, newEnd: newText.length - suffix };
+}
+
+// The one run of text a keystroke changed. Where repeated letters leave its place unclear, it ends at the caret.
+function changedRegion(oldText: string, newText: string, caret?: number): ChangedRegion {
+  const plain = plainRegion(oldText, newText);
+  const shift = caret === undefined ? 0 : plain.newEnd - caret;
+  if (shift <= 0 || shift > plain.start || !endsAlike(oldText, newText, newText.length - (caret ?? 0))) return plain;
+  return { start: plain.start - shift, oldEnd: plain.oldEnd - shift, newEnd: plain.newEnd - shift };
+}
+
+// -- Ranges -------------------------------------------------------------------
+
+// A change before a background token moves it, one inside its brackets grows or shrinks it, and one that touches a
+// bracket turns the token into plain text.
+function remappedRange(range: BackgroundRange, change: ChangedRegion, newText: string): BackgroundRange | null {
+  const delta = change.newEnd - change.oldEnd;
+  if (change.oldEnd <= range.start) return shiftedRange(range, delta);
+  if (change.start >= range.end) return range;
+  if (change.start <= range.start || change.oldEnd >= range.end) return null;
+  const grown = { ...range, end: range.end + delta };
+  return newText.slice(grown.start, grown.end).includes("\n") ? null : grown;
+}
+
+function remapBackgroundRanges(
+  oldText: string,
+  newText: string,
+  ranges: readonly BackgroundRange[],
+  caret?: number,
+): readonly BackgroundRange[] {
+  if (ranges.length === 0 || oldText === newText) return ranges;
+  const change = changedRegion(oldText, newText, caret);
+  const remapped = ranges.flatMap((range) => remappedRange(range, change, newText) ?? []);
+  return remapped.length === 0 ? NO_RANGES : remapped;
+}
+
+// -- Rows ---------------------------------------------------------------------
+
+// Main text either side of a token joins with one space, as the row showed it.
+function joinedAtSeam(before: string, after: string): string {
+  const left = before.trimEnd();
+  const right = after.trimStart();
+  return left && right ? `${left} ${right}` : left + right;
+}
+
+function tokenText(text: string, range: BackgroundRange): string {
+  return (range.bracketed ? text.slice(range.start, range.end) : text.slice(range.start + 1, range.end - 1)).trim();
+}
+
+function editRow(row: string, rowStart: number, ranges: readonly BackgroundRange[]): EditRow {
+  if (ranges.length === 0) return { text: row, background: null };
+  const own = ranges.map((range) => shiftedRange(range, -rowStart));
+  const segments: string[] = [];
+  let at = 0;
+  for (const range of own) {
+    segments.push(row.slice(at, range.start));
+    at = range.end;
+  }
+  segments.push(row.slice(at));
+  const background = own
+    .map((range) => tokenText(row, range))
+    .filter(Boolean)
+    .join(" ");
+  return { text: segments.reduce(joinedAtSeam), background: background || null };
+}
+
+// Each row of the Edit text, split into the main text and the background its tokens show.
+function editRows(text: string, ranges: readonly BackgroundRange[]): EditRow[] {
+  const sorted = ranges.toSorted((a, b) => a.start - b.start);
+  let next = 0;
+  let rowStart = 0;
+  return text.split("\n").map((row) => {
+    const rowEnd = rowStart + row.length;
+    const own: BackgroundRange[] = [];
+    while (next < sorted.length && sorted[next].end <= rowEnd) {
+      if (sorted[next].start >= rowStart) own.push(sorted[next]);
+      next++;
+    }
+    const parsed = editRow(row, rowStart, own);
+    rowStart = rowEnd + 1;
+    return parsed;
+  });
+}
+
+// Rows the user typed stay verbatim with their tokens; only rows a linked edit rewrote show the committed line.
+function shownWithRewrittenRows(
+  typed: ShownEditText,
+  typedLines: readonly LyricLine[],
+  finalLines: readonly LyricLine[],
+): ShownEditText {
+  const rows: string[] = [];
+  const ranges: BackgroundRange[] = [];
+  let oldStart = 0;
+  let newStart = 0;
+  typed.text.split("\n").forEach((row, index) => {
+    const rewritten = finalLines[index] !== typedLines[index] ? shownRow(finalLines[index]) : null;
+    const shown = rewritten?.text ?? row;
+    if (rewritten?.background) ranges.push(shiftedRange(rewritten.background, newStart));
+    if (!rewritten) {
+      for (const range of typed.ranges) {
+        if (range.start >= oldStart && range.end <= oldStart + row.length) {
+          ranges.push(shiftedRange(range, newStart - oldStart));
+        }
+      }
+    }
+    rows.push(shown);
+    oldStart += row.length + 1;
+    newStart += shown.length + 1;
+  });
+  return { text: rows.join("\n"), ranges: ranges.length === 0 ? NO_RANGES : ranges };
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { editRows, remapBackgroundRanges, shownWithRewrittenRows };
