@@ -13,7 +13,8 @@ import {
   renderTransliterationContent,
 } from "@/utils/ttml-alternate-content";
 import type { KeyedLine } from "@/utils/ttml-line-keys";
-import { keptAttributes, keptElementLines, keptInline } from "@/utils/ttml-passthrough-write";
+import { keptContent } from "@/utils/ttml-markup";
+import { keptAttributes, keptElementLines } from "@/utils/ttml-passthrough-write";
 
 // -- Types --------------------------------------------------------------------
 
@@ -38,7 +39,7 @@ function agentLines(agent: Agent, position: number, ind: Indent): string[] {
   const name =
     named || agent.namePassthrough
       ? [
-          `${ind(4)}<ttm:name${keptAttributes(agent.namePassthrough)}>${named ? escapeXmlText(agent.name ?? "") : ""}${keptInline(agent.namePassthrough)}</ttm:name>`,
+          `${ind(4)}<ttm:name${keptAttributes(agent.namePassthrough)}>${named ? keptContent(agent.name ?? "", agent.namePassthrough?.markup) : ""}</ttm:name>`,
         ]
       : [];
   const children = [...name, ...keptElementLines(agent.passthrough, ind(4))];

@@ -99,19 +99,21 @@ function walk(doc: Document, withTimes: boolean): Found {
   );
   const anchorOf = (p: Element) => `p[${paragraphIndex.get(p)}]`;
   const root = doc.documentElement;
+  // A section is addressed by its first line and its depth, so a nested one keeps its own address.
+  const sectionOf = (div: Element, depth = 0): void => {
+    const first = div.getElementsByTagName("p")[0];
+    const anchor = `div${depth}@${first ? anchorOf(first) : "none"}`;
+    if (withTimes) timesOf(div, anchor, found);
+    nodeOf("div", div, anchor, found, (child) => {
+      if (child.tagName === "p") paragraphOf(child, anchorOf(child), found, withTimes);
+      else sectionOf(child, depth + 1);
+    });
+  };
   nodeOf("tt", root, "tt", found, (child) => {
     if (child.tagName === "head") headOf(child, found);
     if (child.tagName !== "body") return;
     nodeOf("body", child, "body", found, (section) => {
       if (section.tagName === "p") return paragraphOf(section, anchorOf(section), found, withTimes);
-      const first = section.getElementsByTagName("p")[0];
-      const anchor = `div@${first ? anchorOf(first) : "none"}`;
-      if (withTimes) timesOf(section, anchor, found);
-      const sectionOf = (div: Element) =>
-        nodeOf("div", div, anchor, found, (child) => {
-          if (child.tagName === "p") paragraphOf(child, anchorOf(child), found, withTimes);
-          else for (const p of child.getElementsByTagName("p")) paragraphOf(p, anchorOf(p), found, withTimes);
-        });
       sectionOf(section);
     });
   });

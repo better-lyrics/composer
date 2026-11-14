@@ -103,6 +103,7 @@ function keptBackgroundSpan(stored: LineFields, edited: LineFields): Partial<Lin
     backgroundWords: undefined,
     backgroundBegin: same ? stored.backgroundBegin : span.begin,
     backgroundEnd: same ? stored.backgroundEnd : span.end,
+    backgroundExplicit: span.explicit,
   };
 }
 

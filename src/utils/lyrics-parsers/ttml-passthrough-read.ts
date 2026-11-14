@@ -57,9 +57,17 @@ function docPassthrough(doc: Document): DocPassthrough {
 
 // -- Agents -------------------------------------------------------------------
 
+// A node whose text Composer reads, such as a singer name: its attributes, and its children whole when they hold
+// elements.
+function mixedContentPassthrough(node: TtmlNode, element: Element): Passthrough | undefined {
+  const attrs = xmlAttrsFromDom(element, (attr) => !isModelledAttribute(node, attr));
+  const markup = element.children.length > 0 ? xmlChildrenFromDom(element) : undefined;
+  return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...(markup && { markup }) });
+}
+
 function withAgentCapture(agent: Agent, element: Element, nameElement: Element | undefined): Agent {
   const passthrough = nodePassthrough("agent", element);
-  const namePassthrough = nameElement && nodePassthrough("agentName", nameElement);
+  const namePassthrough = nameElement && mixedContentPassthrough("agentName", nameElement);
   return { ...agent, ...(passthrough && { passthrough }), ...(namePassthrough && { namePassthrough }) };
 }
 
@@ -92,4 +100,11 @@ function syllableCapture(span: Element): { text: string; passthrough?: Passthrou
 
 // -- Exports ------------------------------------------------------------------
 
-export { docPassthrough, nodePassthrough, syllableCapture, withAgentCapture, withParagraphCapture };
+export {
+  docPassthrough,
+  mixedContentPassthrough,
+  nodePassthrough,
+  syllableCapture,
+  withAgentCapture,
+  withParagraphCapture,
+};

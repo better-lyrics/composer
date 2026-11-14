@@ -1,4 +1,4 @@
-import type { Part } from "insync/part";
+import type { Part, PartSection } from "insync/part";
 import type { DocPassthrough, Passthrough } from "insync/passthrough";
 import { escapeXmlAttribute, type XmlAttr, type XmlChild } from "insync/xml-node";
 import type { Agent } from "@/domain/agent/model";
@@ -58,6 +58,14 @@ function collectKept(kept: Passthrough | undefined, scope: ReadonlySet<string>, 
   collectNames(kept.attrs ?? [], [...(kept.elements ?? []), ...(kept.markup ?? [])], scope, used);
 }
 
+// A part and every section nested in it, at any depth.
+function collectSections(sections: readonly PartSection[], scope: ReadonlySet<string>, used: Set<string>): void {
+  for (const section of sections) {
+    collectKept(section.passthrough, scope, used);
+    collectSections(section.sections ?? [], scope, used);
+  }
+}
+
 function collectLines(lines: readonly LyricLine[], scope: ReadonlySet<string>, used: Set<string>): void {
   for (const line of lines) {
     collectKept(line.passthrough, scope, used);
@@ -75,12 +83,12 @@ function collectLines(lines: readonly LyricLine[], scope: ReadonlySet<string>, u
 function keptPrefixDeclarations({ passthrough, parts, agents, lines }: KeptSources): string {
   const scope = new Set([...DECLARED_PREFIXES, ...declaredBy(passthrough?.tt?.attrs ?? [])]);
   const used = new Set<string>();
-  const kept = [
-    ...Object.values(passthrough ?? {}),
-    ...parts.map((part) => part.passthrough),
-    ...agents.flatMap((agent) => [agent.passthrough, agent.namePassthrough]),
-  ];
-  for (const each of kept) collectKept(each, scope, used);
+  for (const each of Object.values(passthrough ?? {})) collectKept(each, scope, used);
+  collectSections(parts, scope, used);
+  for (const agent of agents) {
+    collectKept(agent.passthrough, scope, used);
+    collectKept(agent.namePassthrough, scope, used);
+  }
   collectLines(lines, scope, used);
   const prefixes = [...used];
   const known = prefixes.filter((prefix) => prefix in KNOWN_NAMESPACES);
