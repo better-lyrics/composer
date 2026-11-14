@@ -7,7 +7,7 @@
   <body>
     <div itunes:songPart="Intro" x-vendor:mood="hush"/>
     <div itunes:songPart="Verse" x-vendor:section="outer">
-      <div itunes:songPart="Hook" begin="0:00.900" x-vendor:sub="a"><x-vendor:cue at="start"/><p begin="0:01.000" end="0:03.000" itunes:key="L1" ttm:agent="v1"><span begin="0:01.000" end="0:02.000" y-tool:mark="a b:c= d">Set </span><span begin="0:02.000" end="0:03.000">turn mode:loud=up</span></p></div>
+      <div itunes:songPart="Hook" begin="0:00.900" x-vendor:sub="a" z-tool:depth="2"><x-vendor:cue at="start"/><p begin="0:01.000" end="0:03.000" itunes:key="L1" ttm:agent="v1"><span begin="0:01.000" end="0:02.000" y-tool:mark="a b:c= d">Set </span><span begin="0:02.000" end="0:03.000">turn mode:loud=up</span></p></div>
       <div end="0:06.500"><p begin="0:04.000" end="0:06.000" itunes:key="L2" ttm:agent="v1"><span begin="0:04.000" end="0:05.000"><ruby>灯<rt>ひ</rt></ruby> </span><span begin="0:05.000" end="0:06.000" amll:empty-beat="1">glow</span></p></div>
     </div>
     <div>

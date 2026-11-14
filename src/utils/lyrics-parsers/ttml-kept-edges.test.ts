@@ -100,7 +100,7 @@ describe("ttml kept data edges", () => {
 
   it("sections nested in a song part keep their own label, times, attributes and elements", () => {
     const ttml = exported();
-    expect(ttml).toContain('<div begin="0:00.900" itunes:songPart="Hook" x-vendor:sub="a">');
+    expect(ttml).toContain('<div begin="0:00.900" itunes:songPart="Hook" x-vendor:sub="a" z-tool:depth="2">');
     expect(ttml).toContain('<x-vendor:cue at="start"/>');
     expect(ttml).toContain('<div end="0:06.500">');
   });
@@ -115,5 +115,21 @@ describe("ttml kept data edges", () => {
     const ttml = exported();
     expect(ttml).toContain("<ttm:name>Juno <x-vendor:nick>JP</x-vendor:nick></ttm:name>");
     expect(occurrences(ttml, "JP")).toBe(1);
+  });
+
+  it("a prefix used only inside a nested section is declared", () => {
+    const ttml = exported();
+    expect(ttml).toContain('z-tool:depth="2"');
+    expect(ttml).toContain('xmlns:z-tool="urn:composer:unbound:z-tool"');
+  });
+
+  it("a line-synced line and its background write their untimed span back with its attribute", () => {
+    const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling"><head><metadata/></head><body><div><p begin="0:01.000" end="0:03.000"><span tts:color="red">Hello</span> world<span ttm:role="x-bg"><span tts:color="red">Hello</span> world</span></p></div></body></tt>`;
+    const parsed = parseTtml(source);
+    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents: [], lines: parsed.lines });
+    expect(ttml).toContain('ttm:agent="v1"><span tts:color="red">Hello</span> world<span ttm:role="x-bg">');
+    expect(ttml).toContain(
+      '<span ttm:role="x-bg"><span begin="0:01.000" end="0:03.000"><span tts:color="red">Hello</span> world</span></span>',
+    );
   });
 });
