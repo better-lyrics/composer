@@ -19,6 +19,10 @@ function preV4Key(id: string): string {
   return `${PRE_V4_KEY_PREFIX}${id}`;
 }
 
+function preV4IdOf(key: string): string | undefined {
+  return key.startsWith(PRE_V4_KEY_PREFIX) ? key.slice(PRE_V4_KEY_PREFIX.length) : undefined;
+}
+
 function preV4KeyRange(): IDBKeyRange {
   return IDBKeyRange.bound(PRE_V4_KEY_PREFIX, `${PRE_V4_KEY_PREFIX}\uffff`);
 }
@@ -55,7 +59,8 @@ async function listPreV4Records(): Promise<PreV4Record[]> {
     request.onsuccess = () => {
       const cursor = request.result;
       if (!cursor) return;
-      records.push({ id: String(cursor.key).slice(PRE_V4_KEY_PREFIX.length), project: cursor.value as SavedProject });
+      const id = preV4IdOf(String(cursor.key));
+      if (id !== undefined) records.push({ id, project: cursor.value as SavedProject });
       cursor.continue();
     };
   });
@@ -70,6 +75,7 @@ function loadPreV4Record(id: string): Promise<SavedProject | undefined> {
 
 export {
   preV4Key,
+  preV4IdOf,
   keepPreV4Record,
   putPreV4RecordIfAbsent,
   removePreV4Record,

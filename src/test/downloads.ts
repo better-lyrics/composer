@@ -3,6 +3,7 @@
 interface DownloadCapture {
   anchors: () => HTMLAnchorElement[];
   names: () => string[];
+  blobs: () => Blob[];
   stop: () => void;
 }
 
@@ -16,10 +17,20 @@ function captureDownloads(): DownloadCapture {
     }
   });
   observer.observe(document.body, { childList: true });
+  const blobs: Blob[] = [];
+  const originalCreate = URL.createObjectURL;
+  URL.createObjectURL = (source: Blob | MediaSource) => {
+    if (source instanceof Blob) blobs.push(source);
+    return originalCreate(source);
+  };
   return {
     anchors: () => [...added],
     names: () => added.map((anchor) => anchor.download),
-    stop: () => observer.disconnect(),
+    blobs: () => [...blobs],
+    stop: () => {
+      observer.disconnect();
+      URL.createObjectURL = originalCreate;
+    },
   };
 }
 

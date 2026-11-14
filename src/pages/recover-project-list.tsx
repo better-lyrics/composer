@@ -36,6 +36,7 @@ const RecoverProjectList: React.FC = () => {
   }, []);
 
   if (projects.length < MIN_PROJECTS_FOR_LIST) return null;
+  const projectCount = projects.filter((project) => !project.isPreviousVersion).length;
 
   const downloadAll = async () => {
     try {
@@ -64,7 +65,7 @@ const RecoverProjectList: React.FC = () => {
           <h2 id={headingId} className="text-sm font-medium text-composer-text">
             Every project on this device
           </h2>
-          <p className="text-xs text-(--muted)">{formatProjectCount(projects.length)}</p>
+          <p className="text-xs text-(--muted)">{formatProjectCount(projectCount)}</p>
         </div>
         <Button variant="secondary" size="sm" hasIcon onClick={downloadAll}>
           <IconDownload size={14} aria-hidden="true" />

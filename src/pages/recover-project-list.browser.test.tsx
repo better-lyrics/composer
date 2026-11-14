@@ -1,8 +1,10 @@
+import { parseProjectFileContents } from "@/lib/project-file-read";
 import { removeProjectData, saveProjectRecord } from "@/lib/project-repository";
+import { PREVIOUS_VERSION_TITLE_SUFFIX } from "@/lib/recovery";
 import { RecoverProjectList } from "@/pages/recover-project-list";
 import { sleep } from "@/test/async";
 import { captureDownloads } from "@/test/downloads";
-import { songTitled, storedProject } from "@/test/projects";
+import { songTitled, storedProject, v4StoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -51,6 +53,23 @@ describe("RecoverProjectList", () => {
     await expect.element(screen.getByText("Downloaded 2 projects as one file.")).toBeInTheDocument();
     downloads.stop();
     expect(downloads.names()).toHaveLength(1);
+  });
+
+  it("lists the copy kept before an update as its own row and downloads it as a project file", async () => {
+    await saveProjectRecord("a", storedProject(songTitled("Alpha")));
+    await saveProjectRecord("a", v4StoredProject(songTitled("Alpha Remix")));
+    const screen = await render(<RecoverProjectList />);
+    await expect.element(screen.getByText("1 project")).toBeInTheDocument();
+    const label = `Alpha${PREVIOUS_VERSION_TITLE_SUFFIX}`;
+    const downloads = captureDownloads();
+    await screen.getByRole("button", { name: `Download ${label}` }).click();
+    await expect.poll(() => downloads.blobs().length).toBe(1);
+    downloads.stop();
+    const contents = parseProjectFileContents(await downloads.blobs()[0].text());
+    expect(contents.kind === "project" && contents.project).toMatchObject({
+      projectId: "a",
+      metadata: { title: "Alpha" },
+    });
   });
 
   describe("edge cases", () => {
