@@ -48,11 +48,13 @@ function isRepeatedInlineTag(tags: readonly LrcTag[], index: number): boolean {
   return inline && (tags[index - 1]?.ms === ms || tags[index + 1]?.ms === ms);
 }
 
+// At most one extra tag per line, and only an inline one repeating its neighbour's time.
 function compareLine(before: LrcTag[], after: LrcTag[], line: number, result: LrcComparison): void {
   let i = 0;
   let j = 0;
+  const repeated: LrcTag[] = [];
   const extra = (tags: LrcTag[], index: number) => {
-    if (isRepeatedInlineTag(tags, index)) result.extraTags++;
+    if (isRepeatedInlineTag(tags, index)) repeated.push(tags[index]);
     else result.unmatchedTags.push({ line, tag: tags[index] });
   };
   while (i < before.length || j < after.length) {
@@ -70,6 +72,8 @@ function compareLine(before: LrcTag[], after: LrcTag[], line: number, result: Lr
       extra(after, j++);
     }
   }
+  result.extraTags += repeated.length;
+  if (repeated.length > 1) result.unmatchedTags.push(...repeated.map((tag) => ({ line, tag })));
 }
 
 // Same text on every line; tags paired by place within their line, each within one centisecond.
