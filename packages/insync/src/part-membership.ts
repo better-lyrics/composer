@@ -10,11 +10,14 @@ function sameMembers(part: Part, lineIds: readonly string[]): boolean {
   return sameIds(part.lineIds, lineIds);
 }
 
-// Lines that kept their order: a longest run, by position before, of the lines still there. Every other line in
-// `after` is new or moved.
+// Lines that kept their order: all lines still there when none moved, else a longest run by position before. Every
+// other line in `after` is new or moved.
 function linesInOrder(before: readonly string[], after: readonly string[]): Set<string> {
   const position = new Map(before.map((id, index) => [id, index]));
   const kept = after.filter((id) => position.has(id));
+  if (kept.every((id, index) => index === 0 || (position.get(kept[index - 1]) ?? 0) < (position.get(id) ?? 0))) {
+    return new Set(kept);
+  }
   const tails: number[] = [];
   const tailAt: number[] = [];
   const previousOf: number[] = new Array(kept.length);
