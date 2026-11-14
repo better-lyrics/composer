@@ -1,6 +1,6 @@
 import { matchAllLineHeaders, matchAllWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
-import { LRC_CLOCK, parseLrcClock } from "@/utils/lyrics-parsers/lrc";
+import { compareLrc, type LrcComparison } from "@/test/lrc-export-equality";
 import { SRT_CLOCK_REGEX } from "@/utils/lyrics-parsers/srt";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 import { writeLrc } from "@/utils/lyrics-writers/lrc";
@@ -27,7 +27,12 @@ interface ExportDifference {
   format: string;
   skeletonDiffers: boolean;
   timeCountDiffers: boolean;
-  overOneMs: { before: number; after: number; context: string }[];
+  overTolerance: { before: number; after: number; context: string }[];
+}
+
+interface ExportComparison {
+  differences: ExportDifference[];
+  lrc: Pick<LrcComparison, "tolerated" | "extraTags">;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -84,12 +89,6 @@ const EXPORT_FORMATS: readonly ExportFormat[] = [
     times: (output) => timesBy(output, TTML_CLOCK_REGEX, (match) => [msOf(parseTtmlTimestamp(match[0]))]),
   },
   {
-    name: "LRC",
-    write: (project) => writeLrc(writerInput(project)),
-    times: (output) =>
-      timesBy(output, new RegExp(LRC_CLOCK), (match) => [msOf(parseLrcClock(match[1], match[2], match[3]) ?? 0)]),
-  },
-  {
     name: "SRT",
     write: (project) => writeSrt(writerInput(project)),
     times: (output) =>
@@ -111,23 +110,53 @@ function contextAt(skeleton: string, index: number): string {
 }
 
 // Everything outside time values is byte equal, and each time value moves by at most one millisecond.
-function exportDifferences(before: EditedTtmlProject, after: EditedTtmlProject): ExportDifference[] {
-  return EXPORT_FORMATS.flatMap((format) => {
-    const was = format.times(format.write(before));
-    const now = format.times(format.write(after));
-    const overOneMs = was.ms.flatMap((ms, index) =>
-      Math.abs(ms - (now.ms[index] ?? Number.NaN)) <= 1
-        ? []
-        : [{ before: ms, after: now.ms[index], context: contextAt(was.skeleton, index) }],
-    );
-    const skeletonDiffers = was.skeleton !== now.skeleton;
-    const timeCountDiffers = was.ms.length !== now.ms.length;
-    if (!skeletonDiffers && !timeCountDiffers && overOneMs.length === 0) return [];
-    return [{ format: format.name, skeletonDiffers, timeCountDiffers, overOneMs }];
-  });
+function strictDifference(format: ExportFormat, before: EditedTtmlProject, after: EditedTtmlProject) {
+  const was = format.times(format.write(before));
+  const now = format.times(format.write(after));
+  const overTolerance = was.ms.flatMap((ms, index) =>
+    Math.abs(ms - (now.ms[index] ?? Number.NaN)) <= 1
+      ? []
+      : [{ before: ms, after: now.ms[index], context: contextAt(was.skeleton, index) }],
+  );
+  const skeletonDiffers = was.skeleton !== now.skeleton;
+  const timeCountDiffers = was.ms.length !== now.ms.length;
+  if (!skeletonDiffers && !timeCountDiffers && overTolerance.length === 0) return [];
+  return [{ format: format.name, skeletonDiffers, timeCountDiffers, overTolerance }];
+}
+
+function lrcDifference(lrc: LrcComparison): ExportDifference[] {
+  const { textDiffers, unmatchedTags, overTolerance } = lrc;
+  if (!textDiffers && unmatchedTags.length === 0 && overTolerance.length === 0) return [];
+  return [
+    {
+      format: "LRC",
+      skeletonDiffers: textDiffers,
+      timeCountDiffers: unmatchedTags.length > 0,
+      overTolerance: [
+        ...overTolerance.map(({ line, before, after }) => ({ before, after, context: `line ${line}` })),
+        ...unmatchedTags.map(({ line, tag }) => ({
+          before: tag.ms,
+          after: Number.NaN,
+          context: `unmatched line ${line}`,
+        })),
+      ],
+    },
+  ];
+}
+
+// TTML, SRT and QRC are strict. LRC allows one centisecond and an inline tag that repeats its neighbour's time.
+function compareExports(before: EditedTtmlProject, after: EditedTtmlProject): ExportComparison {
+  const lrc = compareLrc(writeLrc(writerInput(before)), writeLrc(writerInput(after)));
+  return {
+    differences: [
+      ...EXPORT_FORMATS.flatMap((format) => strictDifference(format, before, after)),
+      ...lrcDifference(lrc),
+    ],
+    lrc: { tolerated: lrc.tolerated, extraTags: lrc.extraTags },
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export type { ExportDifference };
-export { exportDifferences };
+export { compareExports };

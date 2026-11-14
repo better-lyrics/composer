@@ -227,6 +227,11 @@ describe("insync export equality", () => {
     const lineSynced = reports.reduce((sum, report) => sum + report.lineSyncedBackgroundsInWordProjects, 0);
     console.info(`[insync] v3 to v4: ${reports.length} projects, ${lines} lines`);
     console.info(`[insync] line-synced backgrounds with no timed words in word-synced projects: ${lineSynced}`);
+    const lrcTolerated = reports.reduce((sum, report) => sum + report.lrcTolerated, 0);
+    const lrcExtraTags = reports.reduce((sum, report) => sum + report.lrcExtraTags, 0);
+    console.info(
+      `[insync] LRC values moved by one centisecond: ${lrcTolerated}, inline tags repeating a time: ${lrcExtraTags}`,
+    );
     const problems = reports.filter(hasProblems);
     if (problems.length > 0) console.info("[insync] v3 to v4 problems", JSON.stringify(problems, null, 2));
     expect(problems).toEqual([]);

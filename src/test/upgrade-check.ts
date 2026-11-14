@@ -8,7 +8,7 @@ import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import { linesFromSaved, type SavedProjectV3, upgradeSavedProject } from "@/lib/saved-project";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
-import { type ExportDifference, exportDifferences } from "@/test/export-equality";
+import { compareExports, type ExportDifference } from "@/test/export-equality";
 import { withPositionIds, withTimesInWholeMs } from "@/test/saved-format-equality";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
@@ -21,6 +21,8 @@ interface UpgradeReport {
   changedLines: string[];
   invalidLines: string[];
   exports: ExportDifference[];
+  lrcTolerated: number;
+  lrcExtraTags: number;
   // Lines marked aligned before the upgrade that read as unaligned after it.
   unaligned: string[];
   lineSyncedBackgroundsInWordProjects: number;
@@ -59,6 +61,10 @@ function checkUpgrade(name: string, record: SavedProjectV3): UpgradeReport {
   const expected = withPositionIds(withTimesInWholeMs(before));
   const actual = withPositionIds(after);
   const project = { name, groups: record.groups ?? [], agents: record.agents, metadata: record.metadata };
+  const exports = compareExports(
+    { ...project, lines: before.map(withSeededBackground) },
+    { ...project, lines: after.map(withSeededBackground) },
+  );
   return {
     name,
     lines: before.length,
@@ -66,10 +72,9 @@ function checkUpgrade(name: string, record: SavedProjectV3): UpgradeReport {
       isStructurallyEqual(expected[index], actual[index]) ? [] : [line.id],
     ),
     invalidLines: upgraded.lines.flatMap((line) => (validateLine(line).errors.length > 0 ? [line.id] : [])),
-    exports: exportDifferences(
-      { ...project, lines: before.map(withSeededBackground) },
-      { ...project, lines: after.map(withSeededBackground) },
-    ),
+    exports: exports.differences,
+    lrcTolerated: exports.lrc.tolerated,
+    lrcExtraTags: exports.lrc.extraTags,
     unaligned: unalignedAfterUpgrade(record, before, after, upgraded.alignedTimings),
     lineSyncedBackgroundsInWordProjects: lineSyncedBackgrounds(before),
   };
