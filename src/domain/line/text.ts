@@ -1,5 +1,5 @@
 import type { LineTrack, LyricLine, Syllable } from "@/domain/line/model";
-import { backgroundTrack, isTimedSyllable, mainTrack } from "@/domain/line/track";
+import { backgroundTrack, mainTrack } from "@/domain/line/track";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
@@ -29,14 +29,6 @@ function trackText(track: LineTrack, splitChar = getSplitCharacter()): string {
   return text;
 }
 
-// The text after a track's timed syllables, with the joint that leads into it; empty when every syllable is timed.
-function untimedRestText(track: LineTrack, splitChar = getSplitCharacter()): string {
-  const { syllables } = track;
-  const timed = syllables.findIndex((syllable) => !isTimedSyllable(syllable));
-  if (timed <= 0) return "";
-  return syllableJoint(syllables, timed - 1, splitChar) + syllablesText(syllables.slice(timed), splitChar);
-}
-
 function lineText(line: LyricLine): string {
   return trackText(mainTrack(line));
 }
@@ -48,4 +40,4 @@ function backgroundText(line: LyricLine | undefined): string | undefined {
 
 // -- Exports ------------------------------------------------------------------
 
-export { backgroundText, lineText, syllableJoint, syllablesText, trackText, untimedRestText };
+export { backgroundText, lineText, syllableJoint, syllablesText, trackText };

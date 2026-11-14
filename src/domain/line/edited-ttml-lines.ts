@@ -2,18 +2,18 @@ import type { Part } from "insync/part";
 import { partsAfterLineChange } from "insync/part-membership";
 import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
-import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, fieldsOfLine, lineFromFields, untimedRest } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { hasKeptData, withKeptDataOf } from "@/domain/line/edited-ttml-passthrough";
 import { withoutKeptData } from "@/domain/line/passthrough";
-import { backgroundTrack, mainTrack } from "@/domain/line/track";
-import { trackText, untimedRestText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
+import { trackText } from "@/domain/line/text";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
 import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
@@ -134,16 +134,32 @@ function mergedTiming(stored: LineFields, edited: LineFields): Pick<LineFields, 
   return keepsBounds ? { begin: stored.begin, end: stored.end } : { begin: edited.begin, end: edited.end };
 }
 
-// An export writes only timed syllables, so the untimed rest of a partly synced track is never part of an edit.
-function mergedText(storedLine: LyricLine, stored: LineFields, edited: LineFields): string {
-  if (edited.words) return edited.text + untimedRestText(mainTrack(storedLine));
+// An export writes only timed syllables, so the stored untimed rest is never part of an edit: it follows whatever the
+// edited words spell. A file that spells the rest itself, timed or not, keeps its own, and a timed word the file
+// dropped stays dropped.
+function withStoredRest(
+  edited: string,
+  words: readonly WordTiming[],
+  stored: string,
+  storedWords: WordTiming[] = [],
+): string {
+  const splitChar = getSplitCharacter();
+  if (untimedRest(edited, words, splitChar) !== "") return edited;
+  const afterEdited = untimedRest(stored, words, splitChar);
+  const untimed = untimedRest(stored, storedWords, splitChar);
+  const rest = afterEdited.length <= untimed.length ? afterEdited : untimed;
+  return rest === "" ? edited : edited.trimEnd() + rest;
+}
+
+function mergedText(stored: LineFields, edited: LineFields): string {
+  if (edited.words) return withStoredRest(edited.text, edited.words, stored.text, stored.words);
   return edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
 }
 
-function mergedBackgroundText(storedLine: LyricLine, edited: LineFields): string | undefined {
-  const background = backgroundTrack(storedLine);
-  if (edited.backgroundText === undefined || !edited.backgroundWords || !background) return edited.backgroundText;
-  return edited.backgroundText + untimedRestText(background);
+function mergedBackgroundText(stored: LineFields, edited: LineFields): string | undefined {
+  const { backgroundText, backgroundWords } = edited;
+  if (backgroundText === undefined || !backgroundWords || stored.backgroundText === undefined) return backgroundText;
+  return withStoredRest(backgroundText, backgroundWords, stored.backgroundText, stored.backgroundWords);
 }
 
 function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLine {
@@ -158,8 +174,8 @@ function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLin
   });
   const merged = lineFromFields({
     ...editedFields,
-    text: mergedText(storedLine, stored, edited),
-    backgroundText: mergedBackgroundText(storedLine, edited),
+    text: mergedText(stored, edited),
+    backgroundText: mergedBackgroundText(stored, edited),
     ...background,
     ...timing,
     id: stored.id,
