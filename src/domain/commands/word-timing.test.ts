@@ -3,9 +3,11 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
-import { setWordBoundary } from "@/domain/commands/word-timing";
+import { retimeWord, setWordBoundary, stretchSelection } from "@/domain/commands/word-timing";
+import { withSeededBackground } from "@/domain/line/background";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
@@ -86,5 +88,33 @@ describe("word timing commands", () => {
 
     expect(timedSyllables(mainTrack(lineById("c0")!))[0].end).toBe(1.5);
     expect(lineById("c1")).toBe(copyBefore);
+  });
+});
+
+describe("timing a line-synced background", () => {
+  const spanLine = () =>
+    withSeededBackground(createLine({ id: "s0", text: "Glass harbour", begin: 10, end: 14, backgroundText: "far away" }));
+  const blockAddress = () => {
+    const line = lineById("s0")!;
+    return addressOf(line, "bg", drawnSyllables(line, "bg")[0]);
+  };
+
+  beforeEach(() => useProjectStore.setState({ lines: [spanLine()] }));
+
+  it("regression: dragging an edge of its block moves the span and marks it manual", () => {
+    useProjectStore.getState().commit(retimeWord({ address: blockAddress(), updates: { end: 13.5 } }));
+    expect(backgroundTrack(lineById("s0")!)).toMatchObject({ begin: 12, end: 13.5, source: "manual" });
+  });
+
+  it("regression: stretching its block scales the span", () => {
+    const stretch = stretchSelection({
+      addresses: [blockAddress()],
+      factor: 0.5,
+      anchor: "start",
+      minWordDuration: 0.05,
+      duration: 60,
+    });
+    useProjectStore.getState().commit(stretch);
+    expect(backgroundTrack(lineById("s0")!)).toMatchObject({ begin: 12, end: 13, source: "manual" });
   });
 });

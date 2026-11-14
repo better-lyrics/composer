@@ -1,5 +1,6 @@
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { mainTrack, trackWords } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { mainTrack, trackRole } from "@/domain/line/track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
 import type { LyricLine } from "@/domain/line/model";
 import {
@@ -39,8 +40,8 @@ function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: numbe
   };
 
   for (const track of targets.tracks.values()) {
-    const words = trackWords(track.line, track.type);
-    if (!words) continue;
+    const words = drawnSyllables(track.line, trackRole(track.type));
+    if (words.length === 0) continue;
     const updatedWords = words.map((word, i) =>
       track.indices.has(i) ? { ...word, begin: mapTime(word.begin), end: mapTime(word.end) } : word,
     );
