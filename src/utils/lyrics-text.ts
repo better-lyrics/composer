@@ -98,9 +98,7 @@ function textToLyricLines(
   });
 
   if (shownBackgrounds) {
-    return mapped.map((line, index) =>
-      withShownBackground(line, shownBackgrounds[index] ?? null, cleanedTexts[index], splitChar),
-    );
+    return mapped.map((line, index) => withShownBackground(line, shownBackgrounds[index] ?? null, splitChar));
   }
   // Parentheses in a row stand for its background vocals, so a carried-over background would double on
   // re-extraction. Timed background words on a row the edit left unchanged are kept.

@@ -46,4 +46,19 @@ describe("inline backgrounds in the Edit text", () => {
     expect(editRows(bracketGone, touched)[0]).toEqual({ text: "Run (go to the sea", background: null });
     expect(editRows(bracketGone, touched)[1]).toEqual({ text: "Say (it) again", background: "(again)" });
   });
+
+  it("reads a row that is only a token as main text, for extraction to decide", () => {
+    expect(editRows("(ooh)", [{ start: 0, end: 5, bracketed: false }])).toEqual([{ text: "(ooh)", background: null }]);
+  });
+
+  it("keeps a token one input left alone while it edits text far apart on both sides", () => {
+    const shown = shownEditText(lines);
+    const corrected = shown.text.replace("Run", "Ran").replace("Quiet", "Quite");
+    const ranges = remapBackgroundRanges(shown.text, corrected, shown.ranges, corrected.indexOf("Quite") + 5);
+    expect(editRows(corrected, ranges)).toEqual([
+      { text: "Ran to the sea", background: "go" },
+      { text: "Say (it) again", background: "(again)" },
+      { text: "Quite now", background: null },
+    ]);
+  });
 });

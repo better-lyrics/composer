@@ -1,3 +1,4 @@
+import { diffChars } from "diff";
 import {
   type BackgroundRange,
   NO_RANGES,
@@ -52,17 +53,45 @@ function changedRegion(oldText: string, newText: string, caret?: number): Change
   return { start: plain.start - shift, oldEnd: plain.oldEnd - shift, newEnd: plain.newEnd - shift };
 }
 
-// -- Ranges -------------------------------------------------------------------
+// One input may change several runs apart (autocorrect, replace): read them out of the one region it spans.
+function changedRuns(oldText: string, newText: string, region: ChangedRegion): ChangedRegion[] {
+  const changes = diffChars(oldText.slice(region.start, region.oldEnd), newText.slice(region.start, region.newEnd));
+  const runs: ChangedRegion[] = [];
+  let oldAt = region.start;
+  let newAt = region.start;
+  let open: ChangedRegion | null = null;
+  for (const change of changes) {
+    const length = change.value.length;
+    if (!change.added && !change.removed) {
+      if (open) runs.push(open);
+      open = null;
+      oldAt += length;
+      newAt += length;
+      continue;
+    }
+    open ??= { start: oldAt, oldEnd: oldAt, newEnd: newAt };
+    if (change.removed) oldAt += length;
+    else newAt += length;
+    open = { ...open, oldEnd: oldAt, newEnd: newAt };
+  }
+  if (open) runs.push(open);
+  return runs;
+}
 
 // A change before a background token moves it, one inside its brackets grows or shrinks it, and one that touches a
 // bracket turns the token into plain text.
-function remappedRange(range: BackgroundRange, change: ChangedRegion, newText: string): BackgroundRange | null {
-  const delta = change.newEnd - change.oldEnd;
-  if (change.oldEnd <= range.start) return shiftedRange(range, delta);
-  if (change.start >= range.end) return range;
-  if (change.start <= range.start || change.oldEnd >= range.end) return null;
-  const grown = { ...range, end: range.end + delta };
-  return newText.slice(grown.start, grown.end).includes("\n") ? null : grown;
+function remappedRange(range: BackgroundRange, runs: readonly ChangedRegion[], newText: string) {
+  let shift = 0;
+  let growth = 0;
+  for (const run of runs) {
+    const delta = run.newEnd - run.oldEnd;
+    if (run.oldEnd <= range.start) shift += delta;
+    else if (run.start >= range.end) break;
+    else if (run.start <= range.start || run.oldEnd >= range.end) return null;
+    else growth += delta;
+  }
+  const moved = { ...range, start: range.start + shift, end: range.end + shift + growth };
+  return newText.slice(moved.start, moved.end).includes("\n") ? null : moved;
 }
 
 function remapBackgroundRanges(
@@ -72,9 +101,12 @@ function remapBackgroundRanges(
   caret?: number,
 ): readonly BackgroundRange[] {
   if (ranges.length === 0 || oldText === newText) return ranges;
-  const change = changedRegion(oldText, newText, caret);
-  const remapped = ranges.flatMap((range) => remappedRange(range, change, newText) ?? []);
-  return remapped.length === 0 ? NO_RANGES : remapped;
+  const region = changedRegion(oldText, newText, caret);
+  const remapAll = (runs: readonly ChangedRegion[]) => ranges.map((range) => remappedRange(range, runs, newText));
+  let remapped = remapAll([region]);
+  if (remapped.includes(null)) remapped = remapAll(changedRuns(oldText, newText, region));
+  const kept = remapped.filter((range) => range !== null);
+  return kept.length === 0 ? NO_RANGES : kept;
 }
 
 // -- Rows ---------------------------------------------------------------------
@@ -104,7 +136,9 @@ function editRow(row: string, rowStart: number, ranges: readonly BackgroundRange
     .map((range) => tokenText(row, range))
     .filter(Boolean)
     .join(" ");
-  return { text: segments.reduce(joinedAtSeam), background: background || null };
+  const main = segments.reduce(joinedAtSeam);
+  // A row of tokens only stays text, as a typed row of brackets always has.
+  return main ? { text: main, background: background || null } : { text: row, background: null };
 }
 
 // Each row of the Edit text, split into the main text and the background its tokens show.
