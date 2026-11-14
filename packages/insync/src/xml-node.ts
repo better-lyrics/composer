@@ -21,8 +21,13 @@ function escapeXmlText(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 }
 
+// Tabs and line breaks become character references: a parser would otherwise read them back as spaces.
 function escapeXmlAttribute(value: string): string {
-  return escapeXmlText(value).replace(/"/g, "&quot;");
+  return escapeXmlText(value)
+    .replace(/"/g, "&quot;")
+    .replace(/\t/g, "&#9;")
+    .replace(/\n/g, "&#10;")
+    .replace(/\r/g, "&#13;");
 }
 
 // -- Writing ------------------------------------------------------------------
