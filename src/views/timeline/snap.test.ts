@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { withSeededBackground } from "@/domain/line/background";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
@@ -57,6 +58,14 @@ function lineSyncedLine(): LyricLine {
 // -- collectSnapAnchors --------------------------------------------------------
 
 describe("collectSnapAnchors", () => {
+  it("regression: snaps to the edges of a line-synced background", () => {
+    const line = withSeededBackground(
+      lineFromFields({ id: "s", text: "a", agentId: "v1", begin: 2, end: 6, backgroundText: "ooh" }),
+    );
+    const background = collectSnapAnchors([line], new Set(), null).filter((anchor) => anchor.track === "bg");
+    expect(background.map((anchor) => anchor.t)).toEqual([4, 6]);
+  });
+
   it("includes begin and end for every word in a word-timed line", () => {
     const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null);
     const wordAnchors = anchors.filter((a) => a.kind === "word-begin" || a.kind === "word-end");

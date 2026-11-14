@@ -1,8 +1,9 @@
 import { mainBounds } from "@/domain/line/bounds";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { type GridPoint, gridPointLabel } from "@/domain/tempo/grid-points";
 import { SNAP_SWITCH_SETTING, type SnapSettings, type SnapSource, type SnapSwitchKey } from "@/stores/settings-snap";
 
@@ -97,7 +98,7 @@ function collectSnapAnchors(
       }
     }
 
-    const bgWords = timedSyllables(backgroundTrack(line));
+    const bgWords = drawnSyllables(line, "bg");
     const bgCount = bgWords.length;
     if (bgCount > 0) {
       for (let i = 0; i < bgCount; i++) {
