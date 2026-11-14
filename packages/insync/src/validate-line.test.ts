@@ -45,6 +45,16 @@ describe("validateLine", () => {
     expect(report.errors).toEqual([{ track: 0, rule: "non-finite-time" }]);
   });
 
+  it("refuses a track span that starts below zero or ends before it begins", () => {
+    const report = validateLine(
+      line([track("main", [syllable("a", "Paper")], [-5, 2000]), track("bg", [syllable("b", "glow")], [3000, 2000])]),
+    );
+    expect(report.errors).toEqual([
+      { track: 0, rule: "negative-begin" },
+      { track: 1, rule: "begin-after-end" },
+    ]);
+  });
+
   it("reports syllable spans out of order as a warning, never an error", () => {
     const report = validateLine(
       line([track("main", [syllable("a", "Paper", 1000, 1600), syllable("b", "lanterns", 1200, 1800)])]),

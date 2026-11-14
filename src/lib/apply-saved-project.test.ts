@@ -1,3 +1,4 @@
+import { msFromSeconds } from "insync/time";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import { pasteLyrics } from "@/domain/commands/edit-text";
@@ -9,7 +10,7 @@ import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
 import { buildSavedProject } from "@/lib/persistence";
 import { buildSaveInput, currentSaveInput } from "@/lib/project-snapshot";
-import type { SavedProject } from "@/lib/saved-project";
+import type { SavedLine, SavedProject } from "@/lib/saved-project";
 import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
@@ -82,6 +83,27 @@ describe("applySavedProject", () => {
         expect(bgBounds(state.lines[0])).toEqual({ begin: 12, end: 14 });
         expect(state.isDirty).toBe(false);
       }
+    });
+
+    it("regression: a line-synced background keeps its own span when a format 4 record opens", () => {
+      const lines: SavedLine[] = [
+        {
+          id: "l1",
+          tracks: [
+            {
+              role: "main",
+              agent: "v1",
+              span: [msFromSeconds(10), msFromSeconds(20)],
+              syllables: [{ text: "hello", sep: "" }],
+            },
+            { role: "bg", span: [msFromSeconds(12), msFromSeconds(14)], syllables: [{ text: "ooh", sep: "" }] },
+          ],
+        },
+      ];
+
+      applySavedProject(projectFile({ lines }), "storage");
+
+      expect(bgBounds(useProjectStore.getState().lines[0])).toEqual({ begin: 12, end: 14 });
     });
 
     it("regression: drops imported metadata keys a hand-edited file does not know", () => {
