@@ -1,6 +1,7 @@
 import type { LanguagePiece, LanguagePieces, LineLanguages } from "@/domain/language/model";
 import { keyedPieces, pieceOf } from "@/domain/language/pieces";
 import { withPiecesOn } from "@/domain/language/side-pieces";
+import type { LineFields } from "@/domain/line/line-from-fields";
 import type { LinePassthrough } from "@/domain/line/passthrough";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
@@ -35,6 +36,8 @@ interface LineTemplate {
   backgroundText?: string;
   backgroundWords?: WordTemplate[];
   backgroundTextSource?: "extraction" | "manual";
+  /** A line-synced background travels as its one block in `backgroundWords` and lands as a span again. */
+  backgroundLineSynced?: true;
   /** Pieces stay on the template words, so they follow the words to their new ids. */
   languages?: LineLanguages;
   passthrough?: LinePassthrough;
@@ -85,7 +88,18 @@ function offsetTemplateWords(words: WordTemplate[], instanceStart: number): Word
   }));
 }
 
+// The background fields of a line made from a template, its words already placed at the instance start.
+function templateBackgroundFields(template: LineTemplate, words: WordTiming[] | undefined): Partial<LineFields> {
+  const [block, ...rest] = words ?? [];
+  const span = template.backgroundLineSynced && block && rest.length === 0;
+  return {
+    ...(template.backgroundText !== undefined && { backgroundText: template.backgroundText }),
+    ...(template.backgroundTextSource !== undefined && { backgroundTextSource: template.backgroundTextSource }),
+    ...(span ? { backgroundBegin: block.begin, backgroundEnd: block.end } : words && { backgroundWords: words }),
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { languagesToTemplate, offsetTemplateWords, templateLanguages, wordsToTemplate };
+export { languagesToTemplate, offsetTemplateWords, templateBackgroundFields, templateLanguages, wordsToTemplate };
 export type { LinkGroup, WordTemplate, LineTemplate };

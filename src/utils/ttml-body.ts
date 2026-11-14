@@ -2,6 +2,7 @@ import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
@@ -53,7 +54,8 @@ function backgroundSpan(line: LyricLine, writesWords: boolean): string {
   if (writesWords && bgWords.length) return `${open}${spans(bgWords)}${keptInline(kept)}</span>`;
   const bgTiming = bgBounds(line) ?? effectiveBounds(line);
   if (!bgTiming) return "";
-  return `${open}<span begin="${formatTime(bgTiming.begin)}" end="${formatTime(bgTiming.end)}">${escapeXmlText(stripSplitCharacter(bgText))}</span>${keptInline(kept)}</span>`;
+  const explicit = drawnSyllables(line, "bg")[0]?.explicit;
+  return `${open}${emitWordSpan({ ...bgTiming, explicit }, stripSplitCharacter(bgText))}${keptInline(kept)}</span>`;
 }
 
 function paragraph(line: LyricLine, source: BodySource, ind: Indent): string {

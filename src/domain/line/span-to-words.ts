@@ -37,4 +37,4 @@ function convertBackgroundToWord(line: LyricLine): LyricLine {
 
 // -- Exports ------------------------------------------------------------------
 
-export { convertBackgroundToWord, convertLineToWord, convertMainToWord };
+export { convertBackgroundToWord, convertLineToWord, convertMainToWord, spreadSpan };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { shiftSyncLine } from "@/domain/commands/sync";
+import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
+import { withSeededBackground } from "@/domain/line/background";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
@@ -249,5 +250,16 @@ describe("song end", () => {
       expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 8, end: 10 });
       expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 10, end: 12 });
     });
+  });
+});
+
+describe("retimeSyncWord", () => {
+  it("regression: retimes the end of a line-synced background span", () => {
+    useProjectStore.setState({
+      lines: [withSeededBackground(createLine({ id: "l1", text: "main", begin: 10, end: 14, backgroundText: "ooh" }))],
+    });
+    const target = { lineId: "l1", track: "bg" as const, wordIndex: 0 };
+    useProjectStore.getState().commit(retimeSyncWord(target, "end", { by: -0.5 }, Number.POSITIVE_INFINITY));
+    expect(backgroundTrack(lineAt(0))).toMatchObject({ begin: 12, end: 13.5 });
   });
 });

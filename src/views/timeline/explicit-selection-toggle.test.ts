@@ -5,14 +5,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { markWordsExplicit } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
+import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { roleWords, trackRole } from "@/domain/line/track";
+import { backgroundTrack, roleWords, trackRole } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
-import { createWords } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
+import { generateLineTtml } from "@/utils/ttml";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 
 function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
@@ -210,5 +212,27 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
     runToggle();
     const lines = useProjectStore.getState().lines;
     expect(lines.every((l) => roleWords(l, "main")?.[0].explicit === undefined)).toBe(true);
+  });
+});
+
+describe("explicit marks on a line-synced background", () => {
+  beforeEach(() => useProjectStore.getState().reset());
+
+  it("regression: marks the block of a line-synced background explicit and exports it marked", () => {
+    const line = withSeededBackground(
+      createLine({ id: "l1", text: "Low tide", begin: 2, end: 6, backgroundText: "damn it" }),
+    );
+    useProjectStore.setState({ lines: [line] });
+
+    const toggle = resolveExplicitSelectionToggle([line], [sel([line], "l1", 0, "bg")]);
+    expect(toggle).toEqual({ targets: [{ lineId: "l1", field: "backgroundWords", wordIndex: 0 }], value: true });
+    useProjectStore.getState().commit(markWordsExplicit(toggle.targets, toggle.value));
+
+    const [marked] = useProjectStore.getState().lines;
+    expect(backgroundTrack(marked)).toMatchObject({ begin: 4, end: 6 });
+    expect(drawnSyllables(marked, "bg")[0].explicit).toBe(true);
+    expect(generateLineTtml(marked)).toContain(
+      '<span begin="0:04.000" end="0:06.000" composer:explicit="true">damn it</span>',
+    );
   });
 });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { withSeededBackground } from "@/domain/line/background";
 import { createLine, createWord } from "@/test/factories";
 import { BG_DROP_ZONE_HEIGHT, bgTrackHeight, emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 
@@ -7,6 +8,11 @@ const withBg = () => createLine({ backgroundWords: [createWord({ text: "ooh", be
 describe("bgTrackHeight", () => {
   it("uses the drop zone height for a line without background words", () => {
     expect(bgTrackHeight(createLine(), 44)).toBe(BG_DROP_ZONE_HEIGHT);
+  });
+
+  it("regression: matches the main track height for a line-synced background", () => {
+    const line = withSeededBackground(createLine({ begin: 2, end: 6, backgroundText: "ooh" }));
+    expect(bgTrackHeight(line, 44)).toBe(44);
   });
 
   it("matches the main track height for a line with background words", () => {

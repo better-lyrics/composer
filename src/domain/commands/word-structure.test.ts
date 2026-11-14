@@ -1,11 +1,12 @@
 /**
  * @vitest-environment node
  */
+import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, roleWords } from "@/domain/line/track";
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { trackPieces } from "@/domain/language/pieces";
@@ -61,5 +62,27 @@ describe("word structure commands", () => {
     expect(lineText(line)).toBe("New words");
     expect(isLineSynced(line)).toBe(true);
     expect(mainBounds(line)).toEqual({ begin: 3, end: 5 });
+  });
+
+  it("regression: renaming the block of a line-synced background updates its text and keeps the span", () => {
+    const line = withSeededBackground(
+      createLine({ id: "l3", text: "Low", begin: 2, end: 6, backgroundText: "far away" }),
+    );
+    useProjectStore.setState({ lines: [line] });
+    const [block] = drawnSyllables(line, "bg");
+    useProjectStore.getState().commit(typeWordText(addressOf(line, "bg", block), "so near"));
+    const [renamed] = useProjectStore.getState().lines;
+    expect(backgroundText(renamed)).toBe("so near");
+    expect(backgroundTrack(renamed)).toMatchObject({ begin: 4, end: 6, source: "manual" });
+  });
+
+  it("regression: deleting the block of a line-synced background deletes it, as deleting all its words does", () => {
+    const line = withSeededBackground(
+      createLine({ id: "l4", text: "Low", begin: 2, end: 6, backgroundText: "far away" }),
+    );
+    useProjectStore.setState({ lines: [line] });
+    const [block] = drawnSyllables(line, "bg");
+    useProjectStore.getState().commit(deleteWords([addressOf(line, "bg", block)]));
+    expect(backgroundTrack(useProjectStore.getState().lines[0])).toBeUndefined();
   });
 });

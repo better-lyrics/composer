@@ -9,7 +9,8 @@ import type { LinkGroup } from "@/domain/group/template";
 import { isLinked } from "@/domain/instance/predicates";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, isSpanTimed, timedSyllables } from "@/domain/line/track";
+import { withBackgroundTrack, withTrackText } from "@/domain/line/track-writes";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import {
@@ -111,15 +112,18 @@ function extractLineBackground(lineId: string, preserveBrackets: boolean): Lyric
   );
 }
 
-// Retyped background words keep their timing; a new background is seeded.
+// Retyped background words keep their timing, a line-synced background keeps its span; a new background is seeded.
 function editBackgroundText(lineId: string, text: string): LyricCommand {
   return lineEditCommand({ command: "edit background text", args: [lineId, text] }, (root) => {
     const target = root.lines.find((line) => line.id === lineId);
     if (!target) return refused({ reason: "line-gone", lineId });
-    const timed = timedSyllables(backgroundTrack(target));
+    const background = backgroundTrack(target);
+    const timed = timedSyllables(background);
     const edited = !text
       ? withoutBackground(target)
-      : timed.length > 0
+      : background && isSpanTimed(background)
+        ? withBackgroundTrack(target, { ...withTrackText(background, text), source: "manual" })
+        : timed.length > 0
         ? withBackground(target, { text, words: remapWordTextsPreservingTiming(timed, text), source: "manual" })
         : withSeededBackground(withBackground(target, { text, source: "manual" }));
     return [{ id: lineId, updates: { tracks: edited.tracks } }];

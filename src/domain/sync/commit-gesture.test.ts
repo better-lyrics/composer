@@ -1,4 +1,5 @@
 import { withSeededBackground } from "@/domain/line/background";
+import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { mainBounds } from "@/domain/line/bounds";
 import { changedFields, updatedLine } from "@/test/field-updates";
@@ -258,6 +259,13 @@ describe("tap-line", () => {
     const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
     expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundText: "oh" });
     expect(backgroundTrack(after[0])).toMatchObject({ begin: 5, end: 6 });
+  });
+
+  it("regression: a word-mode tap never moves a background span before zero", () => {
+    const seeded = withSeededBackground(createLine({ id: "l0", text: "a", begin: 10, end: 14, backgroundText: "oh" }));
+    const lines = [withBackgroundTrack(seeded, withTrackSpan(backgroundTrack(seeded)!, 6, 8))];
+    const after = apply(lines, run(lines, "tap-word", [0, 0], 1));
+    expect(backgroundTrack(after[0])).toMatchObject({ begin: 0, end: 2 });
   });
 
   it("a word-mode tap moves a line-synced background span with its line", () => {

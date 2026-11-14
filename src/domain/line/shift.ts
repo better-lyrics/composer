@@ -10,7 +10,10 @@ function shiftWords(words: readonly WordTiming[], delta: number): WordTiming[] {
 }
 
 function shiftTrack<T extends LineTrack>(track: T, delta: number): T {
-  if (isSpanTimed(track)) return withTrackSpan(track, track.begin + delta, track.end + delta);
+  if (isSpanTimed(track)) {
+    const clamped = Math.max(delta, -Math.max(0, track.begin));
+    return withTrackSpan(track, track.begin + clamped, track.end + clamped);
+  }
   const timed = timedSyllables(track);
   return timed.length > 0 ? withTrackWords(track, shiftWords(timed, delta)) : track;
 }
