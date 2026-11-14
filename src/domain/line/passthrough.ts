@@ -1,30 +1,77 @@
 import type { Passthrough } from "insync/passthrough";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack } from "@/domain/line/track";
-import { withBackgroundTrack } from "@/domain/line/track-writes";
+import type { LineTrack, LyricLine, Syllable } from "@/domain/line/model";
+import { backgroundTrack, isTimedSyllable, mainTrack } from "@/domain/line/track";
+import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 
 // -- Types --------------------------------------------------------------------
 
-// What a line's `<p>` and its x-bg container carried from TTML.
+interface KeptSyllable {
+  readonly text: string;
+  readonly passthrough: Passthrough;
+}
+
+// By position among a track's untimed syllables, which a rebuild makes again from text.
+type UntimedPassthrough = readonly (KeptSyllable | null)[];
+
+// What a line's `<p>`, its x-bg container and its untimed spans carried from TTML.
 interface LinePassthrough {
   readonly line?: Passthrough;
   readonly background?: Passthrough;
+  readonly mainUntimed?: UntimedPassthrough;
+  readonly backgroundUntimed?: UntimedPassthrough;
+}
+
+// -- Helpers ------------------------------------------------------------------
+
+function untimedPassthroughOf(track: LineTrack | undefined): UntimedPassthrough | undefined {
+  const untimed = track?.syllables.filter((syllable) => !isTimedSyllable(syllable)) ?? [];
+  if (!untimed.some((syllable) => syllable.passthrough)) return undefined;
+  return untimed.map(({ text, passthrough }) => (passthrough ? { text, passthrough } : null));
+}
+
+// A rebuilt untimed syllable takes back the passthrough of the one in its place when their text is the same.
+function withUntimedPassthrough<T extends LineTrack>(track: T, kept: UntimedPassthrough | undefined): T {
+  if (!kept) return track;
+  let untimedIndex = 0;
+  const restore = <S extends Syllable>(syllable: S): S => {
+    if (isTimedSyllable(syllable)) return syllable;
+    const keptSyllable = kept[untimedIndex++];
+    return keptSyllable && keptSyllable.text === syllable.text
+      ? { ...syllable, passthrough: keptSyllable.passthrough }
+      : syllable;
+  };
+  return { ...track, syllables: track.syllables.map(restore) };
 }
 
 // -- Functions ----------------------------------------------------------------
 
 function linePassthroughOf(line: LyricLine): LinePassthrough | undefined {
   const background = backgroundTrack(line)?.passthrough;
-  if (!line.passthrough && !background) return undefined;
-  return { ...(line.passthrough && { line: line.passthrough }), ...(background && { background }) };
+  const mainUntimed = untimedPassthroughOf(mainTrack(line));
+  const backgroundUntimed = untimedPassthroughOf(backgroundTrack(line));
+  if (!line.passthrough && !background && !mainUntimed && !backgroundUntimed) return undefined;
+  return {
+    ...(line.passthrough && { line: line.passthrough }),
+    ...(background && { background }),
+    ...(mainUntimed && { mainUntimed }),
+    ...(backgroundUntimed && { backgroundUntimed }),
+  };
 }
 
 // A line rebuilt from fields takes back what its source line carried; a background it no longer has takes nothing.
 function withLinePassthrough(line: LyricLine, kept: LinePassthrough | undefined): LyricLine {
   if (!kept) return line;
-  const background = backgroundTrack(line);
-  const withBackground =
-    kept.background && background ? withBackgroundTrack(line, { ...background, passthrough: kept.background }) : line;
+  const withMain = kept.mainUntimed
+    ? withMainTrack(line, withUntimedPassthrough(mainTrack(line), kept.mainUntimed))
+    : line;
+  const background = backgroundTrack(withMain);
+  const keptBackground =
+    background &&
+    withUntimedPassthrough(
+      kept.background ? { ...background, passthrough: kept.background } : background,
+      kept.backgroundUntimed,
+    );
+  const withBackground = keptBackground ? withBackgroundTrack(withMain, keptBackground) : withMain;
   return kept.line ? { ...withBackground, passthrough: kept.line } : withBackground;
 }
 
