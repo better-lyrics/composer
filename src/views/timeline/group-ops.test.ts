@@ -1,3 +1,7 @@
+import { addInstance } from "@/domain/commands/instance-edits";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { useProjectStore } from "@/stores/project";
+import { createGroup } from "@/test/factories";
 import { withSeededBackground } from "@/domain/line/background";
 /**
  * @vitest-environment node
@@ -121,6 +125,17 @@ describe("instanceToTemplate", () => {
     );
     const [template] = instanceToTemplate([line], "g1", 0);
     expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[0, 2]]);
+  });
+
+  it("regression: an instance added from a line-synced background keeps a background span", () => {
+    const line = withSeededBackground(
+      lineFromFields({ id: "a", text: "hi", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, begin: 10, end: 14, backgroundText: "ooh" }),
+    );
+    useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
+    const added = useProjectStore.getState().lines[1];
+    expect(backgroundTrack(added)).toMatchObject({ begin: 40, end: 42 });
+    expect(timedSyllables(backgroundTrack(added))).toEqual([]);
   });
 
   it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {

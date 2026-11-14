@@ -4,7 +4,12 @@ import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming } from "@/domain/group/own-timing";
 import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
 import { wholeSongRange } from "@/domain/group/shared-timing";
-import { type LineTemplate, offsetTemplateWords, templateLanguages } from "@/domain/group/template";
+import {
+  type LineTemplate,
+  offsetTemplateWords,
+  templateBackgroundFields,
+  templateLanguages,
+} from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
@@ -40,9 +45,7 @@ function instanceLine(
     ...(template.relativeBegin !== undefined ? { begin: template.relativeBegin + instanceStart } : {}),
     ...(template.relativeEnd !== undefined ? { end: template.relativeEnd + instanceStart } : {}),
     ...(words ? { words } : {}),
-    ...(template.backgroundText !== undefined ? { backgroundText: template.backgroundText } : {}),
-    ...(backgroundWords ? { backgroundWords } : {}),
-    ...(template.backgroundTextSource !== undefined ? { backgroundTextSource: template.backgroundTextSource } : {}),
+    ...templateBackgroundFields(template, backgroundWords),
     ...(languages ? { languages } : {}),
   });
 }
