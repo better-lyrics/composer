@@ -35,6 +35,8 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   state.restoreLyrics({
     lines: linesFromSaved(project.lines ?? []).map(withSeededBackground),
     groups: project.groups ?? [],
+    parts: project.parts ?? [],
+    passthrough: project.passthrough ?? {},
     agents: project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS,
   });
   state.setGranularity(project.granularity ?? useSettingsStore.getState().defaultGranularity);

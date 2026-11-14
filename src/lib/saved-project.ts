@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { SavedLine } from "insync/saved-line";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
@@ -25,6 +27,8 @@ interface SavedProjectFields {
   metadata: ProjectMetadata;
   agents: Agent[];
   groups?: LinkGroup[];
+  parts?: readonly Part[];
+  passthrough?: DocPassthrough;
   granularity: GranularityMode;
   exportTiming?: TimingGranularity;
   syllableSplitDefaults?: SyllableSplitDefaults;

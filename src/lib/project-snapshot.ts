@@ -35,6 +35,8 @@ function currentSaveInput(): ProjectSaveInput {
     agents: projectState.agents,
     lines: projectState.lines,
     groups: projectState.groups,
+    parts: projectState.parts,
+    passthrough: projectState.passthrough,
     granularity: projectState.granularity,
     exportTiming: projectState.exportTiming,
     syllableSplitDefaults: projectState.syllableSplitDefaults,

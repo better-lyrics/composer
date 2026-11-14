@@ -1,3 +1,4 @@
+import type { Passthrough } from "./passthrough";
 import type { Ms } from "./time";
 
 // -- Types --------------------------------------------------------------------
@@ -13,6 +14,7 @@ interface SavedSyllable {
   joinsNext?: true;
   span?: SavedSpan;
   explicit?: true;
+  passthrough?: Passthrough;
 }
 
 interface SavedTrack {
@@ -22,6 +24,7 @@ interface SavedTrack {
   source?: "extraction" | "manual";
   span?: SavedSpan;
   syllables: SavedSyllable[];
+  passthrough?: Passthrough;
 }
 
 interface SavedPiece {
@@ -72,6 +75,7 @@ interface SavedLine {
   instanceIdx?: number;
   templateLineIdx?: number;
   detached?: boolean;
+  passthrough?: Passthrough;
 }
 
 // -- Exports ------------------------------------------------------------------

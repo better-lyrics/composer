@@ -183,6 +183,8 @@ function importProjectLyrics(project: ProjectFile, filename: string, ctx: Import
     issues: [],
     agents: project.agents,
     groups: project.groups ?? [],
+    parts: project.parts,
+    passthrough: project.passthrough,
   });
   ctx.onResult?.(reported, { label: ctx.sourceLabel, filename });
   return true;
