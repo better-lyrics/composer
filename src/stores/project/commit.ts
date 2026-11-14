@@ -36,9 +36,16 @@ function withChangedLinesSettled(before: readonly LyricLine[], after: LyricLine[
   return settled.every((line, index) => line === after[index]) ? after : settled;
 }
 
+function sameLineIds(before: readonly LyricLine[], after: readonly LyricLine[]): boolean {
+  if (before === after) return true;
+  if (before.length !== after.length) return false;
+  for (let index = 0; index < after.length; index++) if (after[index].id !== before[index].id) return false;
+  return true;
+}
+
 // Parts a command left alone follow its lines: a line that went leaves its part, a line inserted inside one joins it.
 function withPartsSettled(before: LyricRoot, after: LyricRoot): LyricRoot {
-  if (after.parts !== before.parts || after.parts.length === 0 || after.lines === before.lines) return after;
+  if (after.parts !== before.parts || after.parts.length === 0 || sameLineIds(before.lines, after.lines)) return after;
   const lineId = (line: LyricLine) => line.id;
   const parts = partsAfterLineChange(after.parts, before.lines.map(lineId), after.lines.map(lineId));
   return parts === after.parts ? after : { ...after, parts };
