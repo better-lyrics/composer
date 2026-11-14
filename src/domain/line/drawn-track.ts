@@ -1,9 +1,9 @@
 import { withAlignedTransliteration } from "@/domain/language/align";
 import type { LanguagePieces, LineLanguages } from "@/domain/language/model";
 import { trackPieces } from "@/domain/language/pieces";
-import type { LyricLine, MainTrack, TrackRole } from "@/domain/line/model";
+import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "@/domain/line/model";
 import { trackText } from "@/domain/line/text";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { isSpanTimed, mainTrack, timedSyllables, trackOf } from "@/domain/line/track";
 import { withMainTrack } from "@/domain/line/track-writes";
 import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
@@ -25,26 +25,27 @@ interface CachedLine {
 
 // -- Caches -------------------------------------------------------------------
 
-const spanBlockByTrack = new WeakMap<MainTrack, CachedSpanBlock>();
+const spanBlockByTrack = new WeakMap<LineTrack, CachedSpanBlock>();
 const drawnLineByLine = new WeakMap<LyricLine, CachedLine>();
 
 // -- Syllables ----------------------------------------------------------------
 
-function spanBlock(lineId: string, main: MainTrack & { begin: number; end: number }, splitChar: string): WordTiming[] {
-  const cached = spanBlockByTrack.get(main);
+function spanBlock(lineId: string, track: LineTrack & SpanTimedTrack, splitChar: string): WordTiming[] {
+  const cached = spanBlockByTrack.get(track);
   if (cached?.lineId === lineId && cached.splitChar === splitChar) return cached.syllables;
-  const text = withoutSplitCharacter(trackText(main, splitChar), splitChar);
-  const syllables = [wordFromSpaced({ id: lineTimingWordId(lineId), text, begin: main.begin, end: main.end })];
-  spanBlockByTrack.set(main, { lineId, splitChar, syllables });
+  const text = withoutSplitCharacter(trackText(track, splitChar), splitChar);
+  const id = lineTimingWordId(lineId, track.role);
+  const syllables = [wordFromSpaced({ id, text, begin: track.begin, end: track.end })];
+  spanBlockByTrack.set(track, { lineId, splitChar, syllables });
   return syllables;
 }
 
-// The syllables the Timeline draws for a track: its timed syllables, or one block over a line-synced main track.
+// The syllables the Timeline draws for a track: its timed syllables, or one block over a line-synced track.
 // The same track and split character always give the same array.
 function drawnSyllables(line: LyricLine, role: TrackRole): WordTiming[] {
-  if (role === "bg") return timedSyllables(backgroundTrack(line));
-  const main = mainTrack(line);
-  return isSpanTimed(main) ? spanBlock(line.id, main, getSplitCharacter()) : timedSyllables(main);
+  const track = trackOf(line, role);
+  if (!track) return timedSyllables(track);
+  return isSpanTimed(track) ? spanBlock(line.id, track, getSplitCharacter()) : timedSyllables(track);
 }
 
 // -- Lines --------------------------------------------------------------------

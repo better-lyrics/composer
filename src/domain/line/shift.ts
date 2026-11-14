@@ -40,4 +40,4 @@ function shiftLineTiming(line: LyricLine, delta: number, range?: TimeRange): Par
   return { tracks: shiftedBackground ? [main, shiftedBackground] : [main] };
 }
 
-export { clampShiftDelta, shiftLineTiming, shiftWords };
+export { clampShiftDelta, shiftLineTiming, shiftTrack, shiftWords };

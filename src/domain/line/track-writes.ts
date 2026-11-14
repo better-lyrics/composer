@@ -102,12 +102,18 @@ function withRoleWords(line: LyricLine, role: TrackRole, words: readonly WordTim
   return withRoleTrack(line, role, (track) => withTrackWords(track, words));
 }
 
+function backgroundTimingWrite(line: LyricLine, syllables: readonly WordTiming[]): Partial<LyricLine> {
+  return { tracks: withRoleTrack(line, "bg", (track) => trackTimingWrite(track, syllables)).tracks };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
+  backgroundTimingWrite,
   mainTimingEdit,
   mainTimingWrite,
   newBackgroundTrack,
+  trackTimingWrite,
   withAgent,
   withBackgroundTrack,
   withMainTrack,

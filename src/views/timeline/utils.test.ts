@@ -1,3 +1,4 @@
+import { withSeededBackground } from "@/domain/line/background";
 import { mainBounds } from "@/domain/line/bounds";
 /**
  * @vitest-environment node
@@ -1032,6 +1033,17 @@ describe("shiftSelectionsTogether", () => {
     const bUpdate = result.updates.find((u) => u.id === "B");
     expect((roleWords(updatedLine(aUpdate?.updates), "main") as { begin: number }[])?.[0].begin).toBeCloseTo(0);
     expect(mainBounds(updatedLine(bUpdate?.updates)!)!.begin).toBeCloseTo(9.95);
+  });
+
+  it("nudging a line-synced background moves its span and marks it manual", () => {
+    const line = withSeededBackground(
+      lineFromFields({ id: "A", text: "x", agentId: "v1", begin: 4, end: 8, backgroundText: "ooh yeah" }),
+    );
+    const partitioned = partitionNudgeSelections([line], [{ lineId: "A", type: "bg", wordIndex: 0 }]);
+    const result = shiftSelectionsTogether([line], partitioned, 0.5, wholeSong(60));
+    const nudged = backgroundTrack(updatedLine(result.updates[0].updates)!);
+    expect(nudged).toMatchObject({ begin: 6.5, end: 8.5, source: "manual" });
+    expect(timedSyllables(nudged)).toEqual([]);
   });
 
   it("works when only the line-synced partition has selections", () => {

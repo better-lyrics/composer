@@ -107,6 +107,7 @@ export {
   roleWords,
   timedSyllables,
   trackField,
+  trackOf,
   trackRole,
   trackWords,
   untimedSyllable,

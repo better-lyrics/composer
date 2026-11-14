@@ -1,9 +1,10 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { isSpanTimed, mainTrack, trackWords } from "@/domain/line/track";
+import { isSpanTimed, mainTrack, trackRole } from "@/domain/line/track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
 import type { Bounds } from "@/domain/word/bounds";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -45,8 +46,8 @@ function partitionNudgeSelections(
   const seenLineSyncedIds = new Set<string>();
 
   const pushWordSynced = (sel: NudgeSelection, line: LyricLine) => {
-    const wordsArray = trackWords(line, sel.type);
-    if (!wordsArray) return;
+    const wordsArray = drawnSyllables(line, trackRole(sel.type));
+    if (wordsArray.length === 0) return;
     const expanded = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
     for (const idx of expanded) {
       const key = `${sel.lineId}:${sel.type}:${idx}`;
@@ -165,7 +166,7 @@ function nudgeSelectedWords(
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
-    if (trackWords(line, sel.type)?.[sel.wordIndex] === undefined) continue;
+    if (drawnSyllables(line, trackRole(sel.type))[sel.wordIndex] === undefined) continue;
     const key = `${sel.lineId}:${sel.type}`;
     let group = groups.get(key);
     if (!group) {
@@ -181,7 +182,7 @@ function nudgeSelectedWords(
   let allowedMagnitude = Math.abs(requestedDelta);
 
   for (const group of groups.values()) {
-    const wordsArray = trackWords(group.line, group.type) ?? [];
+    const wordsArray = drawnSyllables(group.line, trackRole(group.type));
     const range = rangeOf(group.line);
     for (const idx of group.indices) {
       const word = wordsArray[idx];
@@ -213,8 +214,8 @@ function nudgeSelectedWords(
   const appliedDelta = direction * allowedMagnitude;
   const editsByLine = new Map<string, Partial<LyricLine>>();
   for (const group of groups.values()) {
-    const wordsArray = trackWords(group.line, group.type);
-    if (!wordsArray) continue;
+    const wordsArray = drawnSyllables(group.line, trackRole(group.type));
+    if (wordsArray.length === 0) continue;
     const updatedWords = wordsArray.map((w, i) =>
       group.indices.has(i) ? { ...w, begin: w.begin + appliedDelta, end: w.end + appliedDelta } : w,
     );

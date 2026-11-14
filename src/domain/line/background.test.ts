@@ -225,11 +225,23 @@ describe("withSeededBackground", () => {
     backgroundText: "ooh ah",
   });
 
-  it("seeds background words over the second half of a timed line", () => {
-    const seeded = withSeededBackground(timed);
+  it("seeds background words over the second half of a word-synced line", () => {
+    const wordSynced = withFields(timed, {
+      begin: undefined,
+      end: undefined,
+      words: [{ id: "h", text: "hello", sep: "", begin: 10, end: 14, joinsNext: false }],
+    });
+    const seeded = withSeededBackground(wordSynced);
     expect(timedSyllables(backgroundTrack(seeded)).map((word) => word.text.trim())).toEqual(["ooh", "ah"]);
     expect(timedSyllables(backgroundTrack(seeded))[0].begin).toBe(12);
     expect(timedSyllables(backgroundTrack(seeded)).at(-1)?.end).toBe(14);
+  });
+
+  it("regression: a line-synced main gets a line-synced background", () => {
+    const bg = backgroundTrack(withSeededBackground(timed));
+    expect(bg).toMatchObject({ begin: 12, end: 14 });
+    expect(timedSyllables(bg)).toEqual([]);
+    expect(backgroundText(withSeededBackground(timed))).toBe("ooh ah");
   });
 
   it("returns the same line when there is nothing to seed", () => {

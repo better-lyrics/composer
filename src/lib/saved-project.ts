@@ -4,7 +4,7 @@ import type { Agent } from "@/domain/agent/model";
 import { readAlignedTimings, timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
 import type { LinkGroup } from "@/domain/group/template";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground, withSeededBackgroundWords } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { lineFromSaved, savedLine } from "@/domain/line/saved-line";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
@@ -115,7 +115,7 @@ function rekeyedAlignedTimings(value: unknown, before: readonly LyricLine[], aft
   if (Object.keys(aligned).length === 0) return value;
   const rekeyed = { ...aligned };
   before.forEach((line, index) => {
-    const opened = withSeededBackground(line);
+    const opened = withSeededBackgroundWords(line);
     if (aligned[line.id] === v3TimingFingerprint(opened)) {
       rekeyed[line.id] = timingFingerprint(withSeededBackground(after[index]));
     }

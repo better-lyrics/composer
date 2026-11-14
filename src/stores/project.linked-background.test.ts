@@ -4,6 +4,7 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { applyWordCountChange } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
 import { withBackground, withSeededBackground } from "@/domain/line/background";
+import { bgBounds } from "@/domain/line/bounds";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
@@ -14,7 +15,6 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
-import { withFields } from "@/test/field-updates";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -60,32 +60,19 @@ function lineById(id: string): LyricLine {
 }
 
 describe("project store · background vocals across linked instances", () => {
-  it("regression: a new background vocal gets seeded words in every linked instance", () => {
+  it("regression: a new background vocal gets a seeded span in every linked line-synced instance", () => {
     seedTwoInstancesWithTimings();
     const source = useProjectStore.getState().lines.find((l) => l.id === "a0");
     if (!source) throw new Error("a0 not found");
-    const seededWords = roleWords(withSeededBackground(withFields(source, { backgroundText: "ooh yeah" })), "bg");
+    const seeded = withSeededBackground(withBackground(source, { text: "ooh yeah", source: "manual" }));
 
-    useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            tracks: withBackground(source, { text: "ooh yeah", words: seededWords, source: "manual" }).tracks,
-          },
-        },
-      ]),
-    );
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { tracks: seeded.tracks } }]));
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(backgroundText(sibling!)).toBe("ooh yeah");
-    expect(
-      timedSyllables(backgroundTrack(sibling!))
-        .map((w) => w.text + w.sep)
-        .join(""),
-    ).toBe("ooh yeah");
-    expect(timedSyllables(backgroundTrack(sibling!))[0].begin).toBeGreaterThanOrEqual(60);
-    expect(timedSyllables(backgroundTrack(sibling!)).at(-1)?.end).toBeLessThanOrEqual(62);
+    expect(timedSyllables(backgroundTrack(sibling!))).toEqual([]);
+    expect(bgBounds(sibling!)?.begin).toBeGreaterThanOrEqual(60);
+    expect(bgBounds(sibling!)?.end).toBeLessThanOrEqual(62);
   });
 
   it("regression: a background edit reaches an instance with a diverged split, and later splits stay in step", () => {

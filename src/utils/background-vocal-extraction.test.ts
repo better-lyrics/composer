@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { bgBounds } from "@/domain/line/bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
@@ -1948,14 +1949,14 @@ describe("regressions", () => {
     const line = createLine({ id: "a", text: "hello (ooh)", begin: 10, end: 14 });
     const [extracted] = extractBackgroundVocals([line], options);
     expect(backgroundText(extracted)).toBe("ooh");
-    expect(timedSyllables(backgroundTrack(extracted))[0].begin).toBe(12);
+    expect(bgBounds(extracted)).toEqual({ begin: 12, end: 14 });
   });
 
   it("regression: an untimed standalone line merged into a synced line is stored timed", () => {
     const lines = [createLine({ id: "a", text: "hello", begin: 10, end: 14 }), createLine({ id: "b", text: "(ooh)" })];
     const [merged] = extractBackgroundVocals(lines, options);
     expect(backgroundText(merged)).toBe("ooh");
-    expect(timedSyllables(backgroundTrack(merged))[0].begin).toBe(12);
+    expect(bgBounds(merged)).toEqual({ begin: 12, end: 14 });
   });
 
   it("regression: several untimed standalone lines all merge into one synced line", () => {
@@ -1966,7 +1967,8 @@ describe("regressions", () => {
     ];
     const extracted = extractBackgroundVocals(lines, options);
     expect(extracted).toHaveLength(1);
-    expect(timedSyllables(backgroundTrack(extracted[0])).map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
+    expect(backgroundText(extracted[0])).toBe("ooh yeah");
+    expect(bgBounds(extracted[0])).toEqual({ begin: 12, end: 14 });
   });
 
   it("regression: empty parentheses do not change the timing pulled from a word-synced line", () => {
