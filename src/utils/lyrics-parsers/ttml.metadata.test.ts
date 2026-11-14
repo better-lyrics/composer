@@ -1,5 +1,6 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineText } from "@/domain/line/text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
@@ -69,5 +70,41 @@ describe("parseTtml line timing", () => {
       '<?xml version="1.0" encoding="UTF-8"?><tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0" end="2.5">Hello there</p></div></body></tt>';
     const [line] = parseTtml(ttml).lines;
     expect(fieldsOfLine(line)).toMatchObject({ text: "Hello there", begin: 0, end: 2.5 });
+  });
+});
+
+describe("parseTtml inline translations", () => {
+  const doc = (head: string, paragraph: string) =>
+    '<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal">' +
+    `<head><metadata>${head}</metadata></head><body><div>${paragraph}</div></body></tt>`;
+
+  it("regression: an inline translation is not read as lyric text", () => {
+    const [line] = parseTtml(
+      doc(
+        "",
+        '<p begin="1" end="3" itunes:key="L1">Salt on the window<span ttm:role="x-translation" xml:lang="fr">Sel sur la fenetre</span><span ttm:role="x-roman" xml:lang="en-Latn">salt on da window</span></p>',
+      ),
+    ).lines;
+    expect(lineText(line)).toBe("Salt on the window");
+    expect(line.languages?.translations?.fr).toMatchObject({ main: { text: "Sel sur la fenetre" }, origin: "import" });
+    expect(line.languages?.transliteration).toMatchObject({ language: "en-Latn", main: { text: "salt on da window" } });
+  });
+
+  it("reads a background's inline translation, and a head entry for the same line and language wins", () => {
+    const head =
+      '<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal"><translations><translation xml:lang="de">' +
+      '<text for="L1">Salz am Fenster</text></translation></translations></iTunesMetadata>';
+    const [line] = parseTtml(
+      doc(
+        head,
+        '<p begin="1" end="3" itunes:key="L1"><span begin="1" end="2">Salt </span><span begin="2" end="3">air</span>' +
+          '<span ttm:role="x-translation" xml:lang="de">Inline Salz</span><span ttm:role="x-translation" xml:lang="fr">Air salin</span>' +
+          '<span ttm:role="x-bg"><span begin="2" end="3">(air)</span><span ttm:role="x-translation" xml:lang="fr">(air)</span></span></p>',
+      ),
+    ).lines;
+    expect(lineText(line)).toBe("Salt air");
+    expect(line.languages?.translations?.de).toMatchObject({ main: { text: "Salz am Fenster" } });
+    expect(line.languages?.translations?.de?.bg).toBeUndefined();
+    expect(line.languages?.translations?.fr).toMatchObject({ main: { text: "Air salin" }, bg: { text: "(air)" } });
   });
 });
