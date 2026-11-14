@@ -1,5 +1,5 @@
 import type { KeptTimes, Passthrough } from "insync/passthrough";
-import { escapeXmlAttribute, writeXmlAttrs, writeXmlElement } from "insync/xml-node";
+import { escapeXmlAttribute, writeXmlAttrs, writeXmlElement, type XmlElement } from "insync/xml-node";
 import { type Envelope, writtenTimes } from "@/utils/ttml-kept-times";
 
 // -- Functions ----------------------------------------------------------------
@@ -9,14 +9,40 @@ function keptAttributes(kept: Passthrough | undefined): string {
   return kept?.attrs ? writeXmlAttrs(kept.attrs) : "";
 }
 
-// Kept children written with nothing between them, as inside a `<p>`.
-function keptInline(kept: Passthrough | undefined): string {
-  return kept?.elements ? kept.elements.map(writeXmlElement).join("") : "";
-}
-
 // Kept children each on their own line, as in the head and between sections.
 function keptElementLines(kept: Passthrough | undefined, indent: string): string[] {
   return kept?.elements ? kept.elements.map((element) => `${indent}${writeXmlElement(element)}`) : [];
+}
+
+// Modelled children with each kept element put back before the child it came before; the rest go after them all.
+function withKeptElements<T>(
+  children: readonly T[],
+  kept: Passthrough | undefined,
+  write: (element: XmlElement) => T,
+): readonly T[] {
+  const elements = kept?.elements;
+  if (!elements?.length) return children;
+  const elementsAt = kept?.elementsAt;
+  const result: T[] = [];
+  let next = 0;
+  children.forEach((child, index) => {
+    while (next < elements.length && (elementsAt?.[next] ?? children.length) <= index) {
+      result.push(write(elements[next++]));
+    }
+    result.push(child);
+  });
+  for (; next < elements.length; next++) result.push(write(elements[next]));
+  return result;
+}
+
+// Kept children among written ones with nothing between them, as inside a `<p>`.
+function keptAmongInline(pieces: readonly string[], kept: Passthrough | undefined): string {
+  return withKeptElements(pieces, kept, writeXmlElement).join("");
+}
+
+// Kept children among written ones, each on its own line, as between sections.
+function keptAmongLines(groups: readonly string[][], kept: Passthrough | undefined, indent: string): string[] {
+  return withKeptElements(groups, kept, (element) => [`${indent}${writeXmlElement(element)}`]).flat();
 }
 
 const timeAttribute = (name: string, value: string | undefined) =>
@@ -32,4 +58,4 @@ function keptTimesAttributes(kept: KeptTimes | undefined, envelopeOf: () => Enve
 
 // -- Exports ------------------------------------------------------------------
 
-export { keptAttributes, keptElementLines, keptInline, keptTimesAttributes };
+export { keptAmongInline, keptAmongLines, keptAttributes, keptElementLines, keptTimesAttributes };

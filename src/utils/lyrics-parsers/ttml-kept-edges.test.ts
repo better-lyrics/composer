@@ -105,6 +105,13 @@ describe("ttml kept data edges", () => {
     expect(ttml).toContain('<div end="0:06.500">');
   });
 
+  it("kept elements keep their place before the head, a section and a line", () => {
+    const ttml = exported();
+    expect(ttml).toMatch(/<x-vendor:preamble version="2"\/>\s*<head>/);
+    expect(ttml).toMatch(/<div itunes:songPart="Intro" x-vendor:mood="hush"\/>\s*<div itunes:songPart="Verse"/);
+    expect(ttml).toMatch(/<x-vendor:cue at="start"\/>\s*<p begin="0:01.000"/);
+  });
+
   it("untimed spans of a line-synced line and background keep their attributes", () => {
     const ttml = exported();
     expect(ttml).toContain('Quiet harbour <span tts:color="red">bright</span>');

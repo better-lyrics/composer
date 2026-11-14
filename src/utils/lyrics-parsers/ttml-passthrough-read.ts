@@ -1,9 +1,15 @@
 import { type DocPassthrough, isEmptyPassthrough, type Passthrough } from "insync/passthrough";
-import type { XmlAttr } from "insync/xml-node";
+import type { XmlAttr, XmlElement } from "insync/xml-node";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { withLinePassthrough } from "@/domain/line/passthrough";
-import { ITUNES_NS, isModelledAttribute, modelledChildTest, type TtmlNode } from "@/utils/lyrics-parsers/ttml-modelled";
+import {
+  anchorChildTest,
+  ITUNES_NS,
+  isModelledAttribute,
+  modelledChildTest,
+  type TtmlNode,
+} from "@/utils/lyrics-parsers/ttml-modelled";
 import { xmlAttrsFromDom, xmlChildrenFromDom, xmlElementFromDom } from "@/utils/lyrics-parsers/xml-node-from-dom";
 import { backgroundEnvelope, capturedTimes, lineEnvelope } from "@/utils/ttml-kept-times";
 import { markupBaseText } from "@/utils/ttml-markup";
@@ -14,14 +20,27 @@ function withoutEmpty(kept: Passthrough): Passthrough | undefined {
   return isEmptyPassthrough(kept) ? undefined : kept;
 }
 
+// The unmodelled children of one node, and where each stood among the modelled ones when any came before one.
+function keptChildren(node: TtmlNode, element: Element): Pick<Passthrough, "elements" | "elementsAt"> {
+  const isModelled = modelledChildTest(node, element);
+  const isAnchor = anchorChildTest(node, element);
+  const elements: XmlElement[] = [];
+  const elementsAt: number[] = [];
+  let anchors = 0;
+  for (const child of element.children) {
+    if (!isModelled(child)) {
+      elements.push(xmlElementFromDom(child));
+      elementsAt.push(anchors);
+    } else if (isAnchor(child)) anchors++;
+  }
+  if (elements.length === 0) return {};
+  return { elements, ...(elementsAt[0] < anchors && { elementsAt }) };
+}
+
 // The unmodelled attributes and children of one node, plus anything the caller adds.
 function nodePassthrough(node: TtmlNode, element: Element, extra: Passthrough = {}): Passthrough | undefined {
   const attrs = xmlAttrsFromDom(element, (attr) => !isModelledAttribute(node, attr));
-  const isModelled = modelledChildTest(node, element);
-  const elements = Array.from(element.children)
-    .filter((child) => !isModelled(child))
-    .map(xmlElementFromDom);
-  return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...(elements.length > 0 && { elements }), ...extra });
+  return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...keptChildren(node, element), ...extra });
 }
 
 // Several elements written as one, such as every `<metadata>` of a head; the first value of an attribute wins.

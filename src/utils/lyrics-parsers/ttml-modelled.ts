@@ -135,10 +135,31 @@ function modelledChildTest(node: TtmlNode, parent: Element): (child: Element) =>
   return (child) => isModelledChildOf(node, child, parentHasTimedWords);
 }
 
+// The modelled children a kept element is placed among: the ones the writer writes one for one, in source order.
+function anchorChildTest(node: TtmlNode, parent: Element): (child: Element) => boolean {
+  switch (node) {
+    case "tt":
+      return (child) => child.tagName === "head" || child.tagName === "body";
+    case "body":
+    case "div":
+      return (child) =>
+        child.tagName === "p" || (child.tagName === "div" && child.getElementsByTagName("p").length > 0);
+    case "p":
+    case "background": {
+      const timedWordsAreAnchors = hasTimedWordSpans(parent);
+      return (child) =>
+        (node === "p" && elementRole(child) === "x-bg") || (timedWordsAreAnchors && isTimedWordSpan(child));
+    }
+    default:
+      return () => false;
+  }
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { TtmlNode };
 export {
+  anchorChildTest,
   COMPOSER_WRITTEN_PREFIXES,
   elementRole,
   ITUNES_NS,

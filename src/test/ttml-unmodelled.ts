@@ -4,6 +4,7 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { readableTtml } from "@/utils/lyrics-parsers/ttml-helpers";
 import {
+  anchorChildTest,
   elementRole,
   isModelledAttribute,
   isTimedWordSpan,
@@ -34,7 +35,8 @@ function attributesOf(node: TtmlNode, element: Element, anchor: string, found: F
   }
 }
 
-// Unmodelled children are listed whole; modelled ones are walked by `visit`.
+// Unmodelled children are listed whole, with the number of modelled children written before them; modelled ones
+// are walked by `visit`.
 function childrenOf(
   node: TtmlNode,
   element: Element,
@@ -43,10 +45,16 @@ function childrenOf(
   visit: (child: Element) => void = () => {},
 ): void {
   const isModelled = modelledChildTest(node, element);
+  const isAnchor = anchorChildTest(node, element);
+  let before = 0;
   for (const child of element.children) {
     if (!isModelled(child)) {
-      found.push({ anchor, kind: "element", name: child.tagName, value: writeXmlElement(xmlElementFromDom(child)) });
-    } else visit(child);
+      const value = writeXmlElement(xmlElementFromDom(child));
+      found.push({ anchor, kind: "element", name: `${child.tagName}@${before}`, value });
+    } else {
+      if (isAnchor(child)) before++;
+      visit(child);
+    }
   }
 }
 
