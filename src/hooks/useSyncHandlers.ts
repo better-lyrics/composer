@@ -5,11 +5,12 @@ import { isRefused } from "@/domain/commands/outcome";
 import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "@/domain/commands/sync";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { PositionalPieces } from "@/domain/language/pieces";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables, type WordTrack } from "@/domain/line/track";
+import { mainTrack, timedSyllables, type WordTrack } from "@/domain/line/track";
 import { SYNC_START, syncAddressAt } from "@/domain/sync/address";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
 import type { GestureCommit, SyncGesture } from "@/domain/sync/commit-gesture";
@@ -288,7 +289,7 @@ function useSyncHandlers({
   const handleJumpToBgWord = useCallback(
     (lineIdx: number, wordIdx: number) => {
       const line = lines[lineIdx];
-      const word = line && timedSyllables(backgroundTrack(line))[wordIdx];
+      const word = line && drawnSyllables(line, "bg")[wordIdx];
       if (!word) return;
       seekForRedo(word.begin);
     },
