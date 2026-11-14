@@ -39,7 +39,7 @@ function putPreV4RecordIfAbsent(tx: IDBTransaction, id: string, project: StoredP
 }
 
 function keepPreV4Record(tx: IDBTransaction, id: string, stored: StoredProject | undefined, next: StoredProject): void {
-  if (stored?.version !== PRE_V4_VERSION || next.version <= PRE_V4_VERSION) return;
+  if (!stored || stored.version > PRE_V4_VERSION || next.version <= PRE_V4_VERSION) return;
   putPreV4RecordIfAbsent(tx, id, stored);
 }
 

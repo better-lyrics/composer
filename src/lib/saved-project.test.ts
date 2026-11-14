@@ -1,7 +1,7 @@
 import { msFromSeconds } from "insync/time";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { timingFingerprint } from "@/domain/alignment/fingerprint";
+import { timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
 import { roleWords } from "@/domain/line/track";
 import {
   linesFromLink,
@@ -68,7 +68,7 @@ describe("upgradeSavedProject", () => {
 
   it("re-keys an aligned line's fingerprint to its v4 timing and leaves an edited one as it was", () => {
     const loadedV3 = linesFromSavedV3(V3_LINES);
-    const record = { ...v3Record(), alignedTimings: { L1: timingFingerprint(loadedV3[0]), L2: "edited" } };
+    const record = { ...v3Record(), alignedTimings: { L1: v3TimingFingerprint(loadedV3[0]), L2: "edited" } };
     const upgraded = upgradeSavedProject(record);
     const loaded = linesFromSaved(upgraded.lines);
     expect(upgraded.alignedTimings).toEqual({ L1: timingFingerprint(loaded[0]), L2: "edited" });
@@ -104,9 +104,21 @@ describe("upgradeSavedProject", () => {
     expect(upgradeSavedProject(current)).toBe(current);
   });
 
-  it("tolerates a malformed record whose lines are not an array", () => {
+  it("leaves a malformed record whose lines are not an array as it was stored", () => {
     const project = { ...v3Record(), lines: undefined } as unknown as SavedProjectV3;
-    expect(upgradeSavedProject(project).version).toBe(SAVED_PROJECT_VERSION);
+    expect(upgradeSavedProject(project)).toBe(project);
+    expect(project.version).toBe(3);
+  });
+
+  it("refuses a record from a newer Composer", () => {
+    const newer = { ...upgradeSavedProject(v3Record()), version: SAVED_PROJECT_VERSION + 1 } as unknown as SavedProject;
+    expect(() => upgradeSavedProject(newer)).toThrow(/Unsupported project version: 5/);
+  });
+
+  it("keeps every line id of the v3 record, so each open of an unsaved upgrade names the same lines", () => {
+    const ids = V3_LINES.map((line) => line.id);
+    expect(linesFromSaved(upgradeSavedProject(v3Record()).lines).map((line) => line.id)).toEqual(ids);
+    expect(linesFromSaved(upgradeSavedProject(v3Record()).lines).map((line) => line.id)).toEqual(ids);
   });
 });
 
@@ -114,6 +126,14 @@ describe("format 4 lines", () => {
   it("a v4 save and load keeps every line", () => {
     const lines = linesFromSaved(savedLines(linesFromSavedV3(V3_LINES)));
     expect(linesFromSaved(savedLines(lines))).toEqual(lines);
+  });
+
+  it("regression: a line aligned at a half-millisecond time stays aligned after a save and load", () => {
+    const [line] = linesFromSavedV3([
+      { id: "L1", text: "Paper", agentId: "v1", words: [{ text: "Paper", begin: 1.2345, end: 1.6 }] },
+    ]);
+    const [reloaded] = linesFromSaved(savedLines([line]));
+    expect(timingFingerprint(reloaded)).toBe(timingFingerprint(line));
   });
 
   it("records keep syllable ids and a link leaves them out", () => {

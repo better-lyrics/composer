@@ -1,5 +1,5 @@
 import { validateLine } from "insync/validate-line";
-import { readAlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
+import { readAlignedTimings, timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import { withSeededBackground } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
@@ -47,9 +47,11 @@ function lineSyncedBackgrounds(lines: readonly LyricLine[]): number {
 function unalignedAfterUpgrade(record: SavedProjectV3, before: LyricLine[], after: LyricLine[], rekeyed: unknown) {
   const aligned = readAlignedTimings(record.alignedTimings);
   const now = readAlignedTimings(rekeyed);
-  const opened = (line: LyricLine) => timingFingerprint(withSeededBackground(line));
   return before.flatMap((line, index) =>
-    aligned[line.id] === opened(line) && now[line.id] !== opened(after[index]) ? [line.id] : [],
+    aligned[line.id] === v3TimingFingerprint(withSeededBackground(line)) &&
+    now[line.id] !== timingFingerprint(withSeededBackground(after[index]))
+      ? [line.id]
+      : [],
   );
 }
 

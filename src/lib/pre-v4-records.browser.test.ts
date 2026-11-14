@@ -24,6 +24,13 @@ describe("pre-v4 records", () => {
     expect(await getFromStore(APP_STATE_STORE_NAME, preV4Key("p1"))).toEqual(first);
   });
 
+  it("keeps a record saved before version 3 too", async () => {
+    const old = v3StoredProject({ ...songTitled("Second"), version: 2 });
+    await saveProjectRecord("p1", old);
+    await saveProjectRecord("p1", storedProject(songTitled("Second (updated)")));
+    expect(await getFromStore(APP_STATE_STORE_NAME, preV4Key("p1"))).toEqual(old);
+  });
+
   it("goes with its project and with Delete all", async () => {
     await updateToV4("p1", "First");
     const second = await updateToV4("p2", "Second");
