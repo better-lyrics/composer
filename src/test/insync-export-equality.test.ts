@@ -227,6 +227,9 @@ describe("insync export equality", () => {
     const excluded = reports.reduce((sum, report) => sum + report.excludedFromExports, 0);
     console.info(`[insync] v3 to v4: ${reports.length} projects, ${lines} lines`);
     console.info(`[insync] line-synced lines with an untimed background, left out of the export check: ${excluded}`);
+    const drifted = reports.reduce((sum, report) => sum + report.instanceDrift.offTemplate, 0);
+    const instances = reports.reduce((sum, report) => sum + report.instanceDrift.compared, 0);
+    console.info(`[insync] shared instances 1 to 10 ms off their template: ${drifted} of ${instances}`);
     const lrcTolerated = reports.reduce((sum, report) => sum + report.lrcTolerated, 0);
     const lrcExtraTags = reports.reduce((sum, report) => sum + report.lrcExtraTags, 0);
     console.info(

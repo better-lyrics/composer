@@ -10,6 +10,7 @@ import { linesFromSaved, type SavedProjectV3, upgradeSavedProject } from "@/lib/
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { compareExports, type ExportDifference } from "@/test/export-equality";
 import { withPositionIds, withTimesInWholeMs } from "@/test/saved-format-equality";
+import { type InstanceDrift, sharedInstanceDrift } from "@/test/shared-instance-drift";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
@@ -27,6 +28,7 @@ interface UpgradeReport {
   unaligned: string[];
   // Line-synced lines with an untimed background: 3.x seeded and exported background words, now one span.
   excludedFromExports: number;
+  instanceDrift: InstanceDrift;
 }
 
 // -- Checks -------------------------------------------------------------------
@@ -78,6 +80,7 @@ function checkUpgrade(name: string, record: SavedProjectV3): UpgradeReport {
     lrcExtraTags: exports.lrc.extraTags,
     unaligned: unalignedAfterUpgrade(record, before, after, upgraded.alignedTimings),
     excludedFromExports: excluded.size,
+    instanceDrift: sharedInstanceDrift(before, record.groups ?? []),
   };
 }
 
