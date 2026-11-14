@@ -41,6 +41,11 @@ function declareMissingNamespaces(content: string): string {
   return content.replace(rootTag, patchedRootTag);
 }
 
+// The text the reader parses: a document pasted with JSON escapes unescaped, and undeclared prefixes declared.
+function readableTtml(content: string): string {
+  return declareMissingNamespaces(content.replace(/\\"/g, '"').replace(/\\n/g, "\n"));
+}
+
 function parseTtmlTimestamp(timestamp: string): number {
   // Format: HH:MM:SS.mmm or MM:SS.mmm or SS.mmm
   if (!timestamp) return 0;
@@ -121,4 +126,4 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
 
 // -- Exports ------------------------------------------------------------------
 
-export { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp, ROOT_TT_TAG_REGEX };
+export { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp, ROOT_TT_TAG_REGEX, readableTtml };

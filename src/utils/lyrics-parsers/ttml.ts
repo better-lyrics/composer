@@ -13,7 +13,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates, withInlineAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
-import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { extractTimedWords, parseTtmlTimestamp, readableTtml } from "@/utils/lyrics-parsers/ttml-helpers";
 import { partsFromDivs } from "@/utils/lyrics-parsers/ttml-parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { type UntimedLyric, untimedLyric, withUntimedSpans } from "@/utils/lyrics-parsers/ttml-untimed-read";
@@ -43,8 +43,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const lineKeys: (string | undefined)[] = [];
   const lineByParagraph = new Map<Element, LyricLine>();
 
-  const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
-  const parsed = parseXmlDocument(declareMissingNamespaces(unescapedContent));
+  const parsed = parseXmlDocument(readableTtml(content));
   if (!parsed.ok) {
     return { lines: [], metadata: {}, hasTimingData: false, issues: [{ line: 1, text: "", reason: "empty-document" }] };
   }
