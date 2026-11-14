@@ -1,5 +1,5 @@
 import type { Part } from "insync/part";
-import type { DocPassthrough } from "insync/passthrough";
+import { type DocPassthrough, isEmptyDocPassthrough } from "insync/passthrough";
 import type { SavedLine } from "insync/saved-line";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
@@ -100,6 +100,14 @@ function savedLinesForLink(lines: readonly LyricLine[]): SavedLine[] {
   return lines.map((line) => savedLine(line, { withIds: false }));
 }
 
+// Song parts and kept TTML data are written only when a file brought some, so Composer's own projects gain no keys.
+function savedKeptRoot({
+  parts,
+  passthrough,
+}: Pick<SavedProjectFields, "parts" | "passthrough">): Pick<SavedProjectFields, "parts" | "passthrough"> {
+  return { ...(parts?.length && { parts }), ...(!isEmptyDocPassthrough(passthrough) && { passthrough }) };
+}
+
 // Links made before format 4 carry no version or an older one.
 function linesFromLink(link: { version?: unknown; lines: readonly unknown[] }): LyricLine[] {
   return link.version === SAVED_PROJECT_VERSION
@@ -153,6 +161,7 @@ export {
   isFromNewerComposer,
   linesFromLink,
   linesFromSaved,
+  savedKeptRoot,
   savedLines,
   savedLinesForLink,
   upgradeSavedProject,

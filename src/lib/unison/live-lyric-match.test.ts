@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { linesFromSaved } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { matchesLiveLyric } from "@/lib/unison/live-lyric-match";
 import { unisonLyricProject } from "@/lib/unison/save-unison-projects";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
+import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
 import { generateTTML } from "@/utils/ttml";
 
 // -- Helpers ------------------------------------------------------------------
@@ -87,5 +90,16 @@ describe("matchesLiveLyric", () => {
 
       expect(matchesLiveLyric(withSongwriter, liveLyric(harborLines()))).toBe(false);
     });
+  });
+});
+
+describe("unisonLyricProject", () => {
+  it("keeps a lyric's unknown ttml data and song parts in the saved project", () => {
+    for (const [, source] of FOREIGN_TTML_FIXTURES) {
+      const project = savedFrom({ ...liveLyric(harborLines()), lyrics: source });
+      const opened = generateTTML({ ...project, lines: linesFromSaved(project.lines) });
+
+      expect(missingUnmodelledNodes(source, opened)).toEqual([]);
+    }
   });
 });

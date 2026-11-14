@@ -1,5 +1,5 @@
 import type { Part } from "insync/part";
-import { type DocPassthrough, isEmptyDocPassthrough } from "insync/passthrough";
+import type { DocPassthrough } from "insync/passthrough";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
@@ -17,7 +17,7 @@ import { ensureOpenProjectId, findOpenProjectId } from "@/lib/open-project-sessi
 import { deleteProjectAudio, saveProjectAudio } from "@/lib/project-audio";
 import type { IndexViewFields } from "@/lib/project-index-write";
 import { saveProjectRecord } from "@/lib/project-repository";
-import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject, savedKeptRoot, savedLines } from "@/lib/saved-project";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
 
@@ -62,8 +62,7 @@ function buildSavedProject(input: ProjectSaveInput): SavedProject {
     ...fields,
     lines: savedLines(input.lines),
     audioFileName,
-    ...(parts?.length && { parts }),
-    ...(!isEmptyDocPassthrough(passthrough) && { passthrough }),
+    ...savedKeptRoot({ parts, passthrough }),
     ...(unisonLyricId ? { unisonLyricId } : {}),
   };
 }

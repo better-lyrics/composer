@@ -1,10 +1,15 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import type { SavedLine } from "@/lib/saved-project";
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
+import { type SavedLine, linesFromLink } from "@/lib/saved-project";
 import { type ConversionResult, type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
 import { LRC_OUTPUT, TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
+import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
+import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
+import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -28,9 +33,12 @@ const QRC_CONVERSION: ParserConversion = {
 const ELRC_INPUT = "[00:00.50]<00:00.50>Hello <00:01.00>world<00:01.50>";
 
 interface ConvertedProject {
+  version: number;
   metadata: ProjectMetadata;
   agents: Agent[];
   lines: SavedLine[];
+  parts?: Part[];
+  passthrough?: DocPassthrough;
   granularity: "line" | "word";
 }
 
@@ -292,5 +300,15 @@ describe("convertViaParser", () => {
 
       expect(result).toMatchObject({ skippedLines: 0 });
     });
+  });
+
+  it("carries a ttml file's unknown data and song parts through its link", () => {
+    for (const [, source] of FOREIGN_TTML_FIXTURES) {
+      const conversion = { ...LRC_CONVERSION, extension: "ttml" as const };
+      const link = projectOf(convertViaParser(conversion, { input: source, filename: "in.ttml", format: LRC_OUTPUT }));
+      const opened = generateTTML({ ...link, lines: linesFromLink(link) });
+
+      expect(missingUnmodelledNodes(source, opened)).toEqual([]);
+    }
   });
 });

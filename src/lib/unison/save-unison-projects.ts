@@ -3,7 +3,7 @@ import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import { metadataAfterImport } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createProjectId, saveProjectRecord } from "@/lib/project-repository";
-import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject, savedKeptRoot, savedLines } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { fetchArtworkDataUrl } from "@/lib/unison/endpoints";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
@@ -42,6 +42,7 @@ function unisonLyricProject(lyric: UnisonLyric, thumbnail: string | null, savedA
     agents: assignment.agents,
     lines: savedLines(assignment.lines),
     groups: parsed.groups ?? [],
+    ...savedKeptRoot(parsed),
     granularity: useSettingsStore.getState().defaultGranularity,
     audioSource: { kind: "youtube", videoId: lyric.videoId },
     importedMetadataKeys: details.importedKeys,

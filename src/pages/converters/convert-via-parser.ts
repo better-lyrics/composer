@@ -4,7 +4,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
-import { SAVED_PROJECT_VERSION, savedLinesForLink } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedKeptRoot, savedLinesForLink } from "@/lib/saved-project";
 import type { ConvertArgs } from "@/pages/converters/converter-view";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
@@ -44,6 +44,7 @@ function convertViaParser(conversion: ParserConversion, { input, filename, forma
         metadata,
         agents,
         lines: savedLinesForLink(result.lines),
+        ...savedKeptRoot(result),
         granularity,
       }),
       skippedLines: skippedLineCount(result.issues),
