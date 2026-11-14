@@ -3,6 +3,7 @@ import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
 import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { syncProgress } from "@/domain/line/sync-progress";
@@ -199,7 +200,8 @@ function generateTTML({
       content += `<span ttm:role="x-bg">${bgContent}</span>`;
     } else if (bgText) {
       const bgTiming = bgBounds(line) ?? lineTiming;
-      content += `<span ttm:role="x-bg"><span begin="${formatTime(bgTiming.begin)}" end="${formatTime(bgTiming.end)}">${escapeXml(stripSplitCharacter(bgText))}</span></span>`;
+      const explicit = drawnSyllables(line, "bg")[0]?.explicit;
+      content += `<span ttm:role="x-bg">${emitWordSpan({ ...bgTiming, explicit }, stripSplitCharacter(bgText))}</span>`;
     }
 
     parts.push(

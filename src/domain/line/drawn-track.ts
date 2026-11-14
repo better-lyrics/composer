@@ -3,7 +3,15 @@ import type { LanguagePieces, LineLanguages } from "@/domain/language/model";
 import { trackPieces } from "@/domain/language/pieces";
 import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "@/domain/line/model";
 import { trackText } from "@/domain/line/text";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, trackOf } from "@/domain/line/track";
+import {
+  backgroundTrack,
+  fieldWords,
+  isSpanTimed,
+  mainTrack,
+  type TrackField,
+  timedSyllables,
+  trackOf,
+} from "@/domain/line/track";
 import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
@@ -35,7 +43,8 @@ function spanBlock(lineId: string, track: LineTrack & SpanTimedTrack, splitChar:
   if (cached?.lineId === lineId && cached.splitChar === splitChar) return cached.syllables;
   const text = withoutSplitCharacter(trackText(track, splitChar), splitChar);
   const id = lineTimingWordId(lineId, track.role);
-  const syllables = [wordFromSpaced({ id, text, begin: track.begin, end: track.end })];
+  const explicit = track.syllables.length > 0 && track.syllables.every((syllable) => syllable.explicit);
+  const syllables = [wordFromSpaced({ id, text, begin: track.begin, end: track.end, ...(explicit && { explicit }) })];
   spanBlockByTrack.set(track, { lineId, splitChar, syllables });
   return syllables;
 }
@@ -46,6 +55,13 @@ function drawnSyllables(line: LyricLine, role: TrackRole): WordTiming[] {
   const track = trackOf(line, role);
   if (!track) return timedSyllables(track);
   return isSpanTimed(track) ? spanBlock(line.id, track, getSplitCharacter()) : timedSyllables(track);
+}
+
+// The words an explicit mark acts on: a main track's timed syllables, or the background as the Timeline draws it.
+function explicitFieldWords(line: LyricLine, field: TrackField): WordTiming[] | undefined {
+  if (field === "words") return fieldWords(line, field);
+  const drawn = drawnSyllables(line, "bg");
+  return drawn.length > 0 ? drawn : undefined;
 }
 
 // -- Lines --------------------------------------------------------------------
@@ -85,4 +101,4 @@ function drawnPieces(line: LyricLine, role: TrackRole): LanguagePieces | undefin
 
 // -- Exports ------------------------------------------------------------------
 
-export { drawnLanguages, drawnLine, drawnPieces, drawnSyllables };
+export { drawnLanguages, drawnLine, drawnPieces, drawnSyllables, explicitFieldWords };
