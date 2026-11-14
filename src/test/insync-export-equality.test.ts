@@ -224,9 +224,9 @@ describe("insync export equality", () => {
     expect(records.length).toBeGreaterThan(0);
     const reports = records.map(({ name, record }) => checkUpgrade(name, record as SavedProjectV3));
     const lines = reports.reduce((sum, report) => sum + report.lines, 0);
-    const lineSynced = reports.reduce((sum, report) => sum + report.lineSyncedBackgroundsInWordProjects, 0);
+    const excluded = reports.reduce((sum, report) => sum + report.excludedFromExports, 0);
     console.info(`[insync] v3 to v4: ${reports.length} projects, ${lines} lines`);
-    console.info(`[insync] line-synced backgrounds with no timed words in word-synced projects: ${lineSynced}`);
+    console.info(`[insync] line-synced lines with an untimed background, left out of the export check: ${excluded}`);
     const lrcTolerated = reports.reduce((sum, report) => sum + report.lrcTolerated, 0);
     const lrcExtraTags = reports.reduce((sum, report) => sum + report.lrcExtraTags, 0);
     console.info(
