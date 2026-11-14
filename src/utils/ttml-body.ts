@@ -2,7 +2,7 @@ import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine, Syllable } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
@@ -12,7 +12,7 @@ import { stripSplitCharacter } from "@/utils/split-character";
 import type { Indent } from "@/utils/ttml-head";
 import { backgroundEnvelope, lineEnvelope, partEnvelope, writtenTimes } from "@/utils/ttml-kept-times";
 import { isExportedLine } from "@/utils/ttml-line-keys";
-import { emitWordSpan } from "@/utils/ttml-markup";
+import { emitWordSpan, spanEndsInSpace } from "@/utils/ttml-markup";
 import { keptAttributes, keptElementLines, keptInline, keptTimesAttributes } from "@/utils/ttml-passthrough-write";
 
 // -- Types --------------------------------------------------------------------
@@ -37,7 +37,7 @@ function spans(words: readonly WordTiming[]): string {
   let content = "";
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
-    const needsSpace = i < words.length - 1 && word.sep.endsWith(" ");
+    const needsSpace = i < words.length - 1 && word.sep.endsWith(" ") && !spanEndsInSpace(word.text, word.passthrough);
     content += `${emitWordSpan(word, word.text, word.passthrough)}${needsSpace ? " " : ""}`;
   }
   return content;
@@ -121,18 +121,6 @@ function bodyLines(source: BodySource, ind: Indent): string[] {
   ];
 }
 
-// Whether a line or any of its syllables carries kept TTML data.
-function lineKeepsData(line: LyricLine): boolean {
-  const hasKept = (syllable: Syllable) => syllable.passthrough !== undefined;
-  const background = backgroundTrack(line);
-  return (
-    line.passthrough !== undefined ||
-    background?.passthrough !== undefined ||
-    mainTrack(line).syllables.some(hasKept) ||
-    (background?.syllables.some(hasKept) ?? false)
-  );
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { bodyLines, lineKeepsData };
+export { bodyLines };

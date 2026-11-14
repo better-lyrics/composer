@@ -1,5 +1,5 @@
 import type { Part } from "insync/part";
-import { type DocPassthrough, isEmptyDocPassthrough } from "insync/passthrough";
+import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute } from "insync/xml-node";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
@@ -11,12 +11,12 @@ import { YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { type TimingGranularity, timingGranularityOf } from "@/domain/project/timing-granularity";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
-import { declareMissingNamespaces } from "@/utils/lyrics-parsers/ttml-helpers";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
-import { bodyLines, lineKeepsData } from "@/utils/ttml-body";
+import { bodyLines } from "@/utils/ttml-body";
 import { headLines } from "@/utils/ttml-head";
+import { keptPrefixDeclarations } from "@/utils/ttml-kept-prefixes";
 import { keyedExportLines } from "@/utils/ttml-line-keys";
-import { keptAttributes } from "@/utils/ttml-passthrough-write";
+import { keptAttributes, keptElementLines } from "@/utils/ttml-passthrough-write";
 
 // -- Generator ----------------------------------------------------------------
 
@@ -61,23 +61,16 @@ function generateTTML({
   // Apple Music lyric dialect, not strict W3C TTML1. Absolute span times and the
   // Apple timestamp shape are intentional; don't "fix" them to generic TTML.
   parts.push(
-    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${ITUNES_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media"${langAttr} itunes:timing="${timingValue}" composer:timing="${timingValue}"${keptAttributes(passthrough?.tt)}>`,
+    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${ITUNES_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media"${langAttr} itunes:timing="${timingValue}" composer:timing="${timingValue}"${keptAttributes(passthrough?.tt)}${keptPrefixDeclarations({ passthrough, parts: songParts, agents, lines })}>`,
   );
 
   parts.push(
     ...headLines({ metadata, agents, groups, keyedLines, writesWords, youtubeVideoId, passthrough }, ind),
     ...bodyLines({ lines, keyById, writesWords, duration, parts: songParts, passthrough }, ind),
   );
-  parts.push("</tt>");
+  parts.push(...keptElementLines(passthrough?.tt, ind(1)), "</tt>");
 
-  const ttml = parts.join(nl);
-  const keepsData =
-    songParts.length > 0 ||
-    !isEmptyDocPassthrough(passthrough) ||
-    agents.some((agent) => agent.passthrough || agent.namePassthrough) ||
-    lines.some(lineKeepsData);
-  // Kept data may use prefixes the source never declared; they are declared the way the reader declares them.
-  return keepsData ? declareMissingNamespaces(ttml) : ttml;
+  return parts.join(nl);
 }
 
 type ProjectTtmlSource = Pick<TTMLOptions, "metadata" | "agents" | "lines" | "groups" | "parts" | "passthrough">;

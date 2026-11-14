@@ -25,9 +25,19 @@ function markupBaseText(markup: readonly XmlChild[]): string {
 }
 
 // Kept markup is written back while the syllable still spells it; an edited syllable writes its own text.
+function writesMarkup(text: string, markup: readonly XmlChild[] | undefined): markup is readonly XmlChild[] {
+  return markup !== undefined && markupBaseText(markup).trim() === text;
+}
+
 function spanContent(text: string, markup: readonly XmlChild[] | undefined): string {
-  if (markup && markupBaseText(markup).trim() === text) return markup.map(writeXmlChild).join("");
-  return escapeXmlText(text);
+  return writesMarkup(text, markup) ? markup.map(writeXmlChild).join("") : escapeXmlText(text);
+}
+
+// Kept markup that already ends in a space carries the separator itself.
+function spanEndsInSpace(text: string, kept: Passthrough | undefined): boolean {
+  if (!writesMarkup(text, kept?.markup)) return false;
+  const base = markupBaseText(kept.markup);
+  return base !== base.trimEnd();
 }
 
 // -- Spans --------------------------------------------------------------------
@@ -41,4 +51,4 @@ function emitWordSpan(word: { begin: number; end: number; explicit?: true }, tex
 
 // -- Exports ------------------------------------------------------------------
 
-export { emitWordSpan, markupBaseText };
+export { emitWordSpan, markupBaseText, spanEndsInSpace };

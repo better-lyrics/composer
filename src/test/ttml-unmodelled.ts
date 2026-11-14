@@ -107,12 +107,26 @@ function walk(doc: Document, withTimes: boolean): Found {
       const first = section.getElementsByTagName("p")[0];
       const anchor = `div@${first ? anchorOf(first) : "none"}`;
       if (withTimes) timesOf(section, anchor, found);
-      nodeOf("div", section, anchor, found, (p) => {
-        if (p.tagName === "p") paragraphOf(p, anchorOf(p), found, withTimes);
-      });
+      const sectionOf = (div: Element) =>
+        nodeOf("div", div, anchor, found, (child) => {
+          if (child.tagName === "p") paragraphOf(child, anchorOf(child), found, withTimes);
+          else for (const p of child.getElementsByTagName("p")) paragraphOf(p, anchorOf(p), found, withTimes);
+        });
+      sectionOf(section);
     });
   });
-  return found;
+  return withoutRepeatedMetadataAttributes(found);
+}
+
+// A head's `<metadata>` blocks are written as one, keeping the first value of each attribute.
+function withoutRepeatedMetadataAttributes(found: Found): Found {
+  const seen = new Set<string>();
+  return found.filter(({ anchor, kind, name }) => {
+    if (anchor !== "metadata" || kind !== "attribute") return true;
+    if (seen.has(name)) return false;
+    seen.add(name);
+    return true;
+  });
 }
 
 // -- Functions ----------------------------------------------------------------

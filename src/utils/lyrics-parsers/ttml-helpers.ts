@@ -1,5 +1,6 @@
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
+import { UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
 import { syllableCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 
 // -- Constants ----------------------------------------------------------------
@@ -35,7 +36,7 @@ function declareMissingNamespaces(content: string): string {
   }
   if (missing.length === 0) return content;
 
-  const additions = missing.map((prefix) => ` xmlns:${prefix}="urn:composer:unbound:${prefix}"`).join("");
+  const additions = missing.map((prefix) => ` xmlns:${prefix}="${UNBOUND_NAMESPACE_PREFIX}${prefix}"`).join("");
   const patchedRootTag = rootTag.replace(/>$/, `${additions}>`);
   return content.replace(rootTag, patchedRootTag);
 }

@@ -73,7 +73,19 @@ function isTimedWordSpan(element: Element): boolean {
   );
 }
 
-// A paragraph or background container with timed syllables; without them, every child is lyric text.
+// An element whose text a line without timed syllables reads as lyric text.
+function isLyricTextElement(element: Element): boolean {
+  return element.tagName.toLowerCase() === "span";
+}
+
+// A section the reader takes lines from, or one with nothing to keep.
+function isLyricSection(element: Element): boolean {
+  if (element.tagName !== "div") return false;
+  if (element.getElementsByTagName("p").length > 0) return true;
+  return element.attributes.length === 0 && element.children.length === 0;
+}
+
+// A paragraph or background container with timed syllables; without them, its spans are lyric text.
 function hasTimedWordSpans(container: Element): boolean {
   return Array.from(container.children).some(isTimedWordSpan);
 }
@@ -104,11 +116,15 @@ function isModelledChildOf(node: TtmlNode, child: Element, parentHasTimedWords: 
     case "agent":
       return child.tagName === "ttm:name";
     case "body":
+      return isLyricSection(child) || child.tagName === "p";
     case "div":
       return child.tagName === "div" || child.tagName === "p";
     case "p":
     case "background":
-      return LYRIC_ROLES.has(elementRole(child) ?? "") || isTimedWordSpan(child) || !parentHasTimedWords;
+      return (
+        LYRIC_ROLES.has(elementRole(child) ?? "") ||
+        (parentHasTimedWords ? isTimedWordSpan(child) : isLyricTextElement(child))
+      );
     default:
       return false;
   }
@@ -123,4 +139,13 @@ function modelledChildTest(node: TtmlNode, parent: Element): (child: Element) =>
 // -- Exports ------------------------------------------------------------------
 
 export type { TtmlNode };
-export { elementRole, ITUNES_NS, isModelledAttribute, isTimedWordSpan, modelledChildTest };
+export {
+  COMPOSER_WRITTEN_PREFIXES,
+  elementRole,
+  ITUNES_NS,
+  isLyricTextElement,
+  isModelledAttribute,
+  isTimedWordSpan,
+  modelledChildTest,
+  UNBOUND_NAMESPACE_PREFIX,
+};

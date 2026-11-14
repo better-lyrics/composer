@@ -1,4 +1,5 @@
 import { type DocPassthrough, isEmptyPassthrough, type Passthrough } from "insync/passthrough";
+import type { XmlAttr } from "insync/xml-node";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { withLinePassthrough } from "@/domain/line/passthrough";
@@ -23,10 +24,12 @@ function nodePassthrough(node: TtmlNode, element: Element, extra: Passthrough = 
   return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...(elements.length > 0 && { elements }), ...extra });
 }
 
-// Several elements written as one, such as every `<metadata>` of a head.
+// Several elements written as one, such as every `<metadata>` of a head; the first value of an attribute wins.
 function mergedPassthrough(node: TtmlNode, elements: readonly Element[]): Passthrough | undefined {
   const captured = elements.flatMap((element) => nodePassthrough(node, element) ?? []);
-  const attrs = captured.flatMap((kept) => kept.attrs ?? []);
+  const named = new Map<string, XmlAttr>();
+  for (const attr of captured.flatMap((kept) => kept.attrs ?? [])) if (!named.has(attr[0])) named.set(attr[0], attr);
+  const attrs = [...named.values()];
   const children = captured.flatMap((kept) => kept.elements ?? []);
   return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...(children.length > 0 && { elements: children }) });
 }

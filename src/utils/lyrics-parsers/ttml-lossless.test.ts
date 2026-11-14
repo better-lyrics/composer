@@ -6,6 +6,7 @@ import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
+import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -27,6 +28,10 @@ describe("ttml lossless", () => {
   for (const [name, source] of FOREIGN_TTML_FIXTURES) {
     it(`${name}: every unmodelled node survives an import and export`, () => {
       expect(missingUnmodelledNodes(source, exportOf(parseTtml(source)))).toEqual([]);
+    });
+
+    it(`${name}: the export is well formed as written`, () => {
+      expect(parseXmlDocument(exportOf(parseTtml(source))).ok).toBe(true);
     });
 
     it(`${name}: a second round trip changes nothing`, () => {

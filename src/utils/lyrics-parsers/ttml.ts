@@ -14,6 +14,7 @@ import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { isLyricTextElement } from "@/utils/lyrics-parsers/ttml-modelled";
 import { partsFromDivs } from "@/utils/lyrics-parsers/ttml-parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -93,7 +94,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   for (const el of agentEls) {
     const id = el.getAttribute("xml:id");
     const type = (el.getAttribute("type") as AgentType) || "person";
-    const nameEl = el.getElementsByTagName("ttm:name")[0];
+    const nameEl = Array.from(el.children).find((child) => child.tagName === "ttm:name");
     const name = nameEl?.textContent || placeholderAgentName(agents.length);
     if (id) {
       agents.push(withAgentCapture({ id, type, name }, el, nameEl));
@@ -180,7 +181,11 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         let baseBackground = "";
         for (const node of bgContainer.childNodes) {
           if (node.nodeType === Node.TEXT_NODE) baseBackground += node.textContent ?? "";
-          else if (node.nodeType === Node.ELEMENT_NODE && elementRole(node as Element) !== "x-translation") {
+          else if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            elementRole(node as Element) !== "x-translation" &&
+            isLyricTextElement(node as Element)
+          ) {
             baseBackground += node.textContent ?? "";
           }
         }
@@ -219,7 +224,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         } else if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node as Element;
           const role = el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
-          if (role !== "x-bg") {
+          if (role !== "x-bg" && isLyricTextElement(el)) {
             text += el.textContent ?? "";
           }
         }
