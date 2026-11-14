@@ -193,7 +193,7 @@ async function downloadAllRecoverableProjects(): Promise<number> {
   );
   if (stored.length === 0) return 0;
   const sources = stored.map(({ projectId, project }) => ({ id: projectId, project }));
-  downloadProjectBundle(buildProjectBundle(sources, Date.now()));
+  downloadProjectBundle(buildProjectBundle(sources, Date.now(), await listPreV4Records()));
   return stored.length;
 }
 

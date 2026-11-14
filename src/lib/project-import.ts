@@ -7,6 +7,7 @@ import { openProject, reloadOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { flushPendingSave } from "@/lib/persistence-debounce";
+import { restorePreV4Records } from "@/lib/pre-v4-records";
 import type { ProjectFile } from "@/lib/project-file";
 import { type ProjectFileContents, parseProjectFileContents, savedProjectFromFile } from "@/lib/project-file-read";
 import {
@@ -102,7 +103,7 @@ async function liveEntries(): Promise<ProjectIndexEntry[]> {
 
 // -- Backups ------------------------------------------------------------------
 
-async function restoreBundledProject(file: ProjectFile, pendingIds: ReadonlySet<string>): Promise<void> {
+async function restoreBundledProject(file: ProjectFile, pendingIds: ReadonlySet<string>): Promise<string> {
   const record = savedProjectFromFile(file, Number.isFinite(file.savedAt) ? file.savedAt : Date.now());
   if (file.projectId && !pendingIds.has(file.projectId)) {
     try {
@@ -111,9 +112,11 @@ async function restoreBundledProject(file: ProjectFile, pendingIds: ReadonlySet<
       if (!(error instanceof ProjectDeletedError)) throw error;
       await restoreDeletedProjectRecord(file.projectId, record);
     }
-    return;
+    return file.projectId;
   }
-  await saveProjectRecord(createProjectId(), record);
+  const id = createProjectId();
+  await saveProjectRecord(id, record);
+  return id;
 }
 
 function dedupeBundleProjects(projects: readonly ProjectFile[]): { unique: ProjectFile[]; duplicates: number } {
@@ -132,7 +135,11 @@ function dedupeBundleProjects(projects: readonly ProjectFile[]): { unique: Proje
   return { unique, duplicates };
 }
 
-async function restoreProjectBundle(projects: readonly ProjectFile[], unreadable: number): Promise<BundleRestore> {
+async function restoreProjectBundle(
+  projects: readonly ProjectFile[],
+  unreadable: number,
+  previousVersions: readonly ProjectFile[],
+): Promise<BundleRestore> {
   const { unique, duplicates } = dedupeBundleProjects(projects);
   const hidden = hiddenProjectIdsSnapshot();
   const storedIds = new Set((await listProjectIndex()).map((entry) => entry.id));
@@ -141,6 +148,13 @@ async function restoreProjectBundle(projects: readonly ProjectFile[], unreadable
     return !(id && storedIds.has(id) && !hidden.has(id));
   });
   const outcomes = await Promise.allSettled(toRestore.map((project) => restoreBundledProject(project, hidden)));
+  const restoredIds = new Map(
+    toRestore.flatMap(({ projectId }, index) => {
+      const outcome = outcomes[index];
+      return projectId && outcome?.status === "fulfilled" ? [[projectId, outcome.value] as const] : [];
+    }),
+  );
+  await restorePreV4Records(previousVersions, restoredIds);
   const failures = outcomes.flatMap((outcome) => (outcome.status === "rejected" ? [outcome.reason] : []));
   for (const error of failures) {
     console.error(LOG_PREFIX, "could not restore a project from the backup", error);
@@ -206,9 +220,13 @@ async function importProjectFile(file: File): Promise<string | null> {
   return importProjectContents(contents);
 }
 
-async function restoreBundleContents(projects: readonly ProjectFile[], unreadable: number): Promise<boolean> {
+async function restoreBundleContents(
+  projects: readonly ProjectFile[],
+  unreadable: number,
+  previousVersions: readonly ProjectFile[],
+): Promise<boolean> {
   try {
-    const result = await restoreProjectBundle(projects, unreadable);
+    const result = await restoreProjectBundle(projects, unreadable, previousVersions);
     showBundleRestoreToast(result);
     return result.restored > 0;
   } catch (error) {
@@ -220,7 +238,7 @@ async function restoreBundleContents(projects: readonly ProjectFile[], unreadabl
 
 async function importProjectContents(contents: ProjectFileContents): Promise<string | null> {
   if (contents.kind === "bundle") {
-    await restoreBundleContents(contents.projects, contents.unreadable);
+    await restoreBundleContents(contents.projects, contents.unreadable, contents.previousVersions);
     return null;
   }
   const projectFile = contents.project;

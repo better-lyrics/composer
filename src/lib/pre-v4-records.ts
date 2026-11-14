@@ -1,5 +1,7 @@
 import { APP_STATE_STORE_NAME, getFromStore, runTransaction } from "@/lib/persistence-idb";
+import type { ProjectFile } from "@/lib/project-file";
 import type { SavedProject } from "@/lib/saved-project";
+import { reportStorageWriteError } from "@/lib/storage-signals";
 
 // -- Types --------------------------------------------------------------------
 
@@ -10,6 +12,7 @@ interface PreV4Record {
 
 // -- Constants ----------------------------------------------------------------
 
+const LOG_PREFIX = "[PreV4Records]";
 const PRE_V4_KEY_PREFIX = "pre-v4:";
 const PRE_V4_VERSION = 3;
 
@@ -50,6 +53,25 @@ function removeAllPreV4Records(tx: IDBTransaction): void {
   tx.objectStore(APP_STATE_STORE_NAME).delete(preV4KeyRange());
 }
 
+async function restorePreV4Records(
+  files: readonly ProjectFile[],
+  restoredIds: ReadonlyMap<string, string>,
+): Promise<void> {
+  const copies = files.flatMap(({ projectId, ...project }) => {
+    const id = projectId ? restoredIds.get(projectId) : undefined;
+    return id ? [{ id, project }] : [];
+  });
+  if (copies.length === 0) return;
+  try {
+    await runTransaction([APP_STATE_STORE_NAME], "readwrite", (tx) => {
+      for (const { id, project } of copies) putPreV4RecordIfAbsent(tx, id, project);
+    });
+  } catch (error) {
+    console.error(LOG_PREFIX, "could not restore the earlier versions from the backup", error);
+    reportStorageWriteError(error);
+  }
+}
+
 // -- Reads --------------------------------------------------------------------
 
 async function listPreV4Records(): Promise<PreV4Record[]> {
@@ -77,7 +99,7 @@ export {
   preV4Key,
   preV4IdOf,
   keepPreV4Record,
-  putPreV4RecordIfAbsent,
+  restorePreV4Records,
   removePreV4Record,
   removeAllPreV4Records,
   listPreV4Records,
