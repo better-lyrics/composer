@@ -19,4 +19,21 @@ describe("partsAfterLineChange", () => {
     expect(partsAfterLineChange(parts, ["a", "b"], ["a", "b"])).toBe(parts);
     expect(partsAfterLineChange(parts, ["a", "b", "x"], ["a", "b", "y"])).toBe(parts);
   });
+
+  it("parts stay one stretch each when lines move", () => {
+    const verseAndChorus: Part[] = [
+      { id: "A", lineIds: ["a1", "a2", "a3"] },
+      { id: "B", lineIds: ["b1", "b2"] },
+    ];
+    const before = ["x", "a1", "a2", "a3", "b1", "b2", "y"];
+    const lineIds = (parts: readonly Part[]) => parts.map((part) => part.lineIds);
+    expect(lineIds(partsAfterLineChange(verseAndChorus, before, ["x", "a1", "b1", "a2", "a3", "b2", "y"]))).toEqual([
+      ["a1", "b1", "a2", "a3"],
+      ["b2"],
+    ]);
+    expect(lineIds(partsAfterLineChange(verseAndChorus, before, ["x", "b1", "b2", "a1", "a2", "a3", "y"]))).toEqual([
+      ["a1", "a2", "a3"],
+      ["b1", "b2"],
+    ]);
+  });
 });
