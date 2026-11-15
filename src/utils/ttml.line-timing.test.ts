@@ -242,6 +242,33 @@ describe("generateTTML line timing", () => {
         ["It's been too long", undefined, 6.833, 8.893],
       ]);
     });
+
+    it("regression: a line-synced line reads back its own span when its background runs past it", () => {
+      const withLongerBackground = lineFromFields(
+        {
+          id: "b",
+          text: "wan|der",
+          agentId: "v1",
+          begin: 6.67,
+          end: 7.514,
+          backgroundText: "la|la yeah",
+          backgroundWords: [
+            { id: "b1", text: "la", sep: "", begin: 6.72, end: 7.079, joinsNext: true },
+            { id: "b2", text: "la", sep: " ", begin: 7.099, end: 7.369, joinsNext: false },
+            { id: "b3", text: "yeah", sep: "", begin: 7.369, end: 7.717, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const ttml = generateTTML({
+        metadata,
+        agents,
+        lines: [withLongerBackground],
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      const [line] = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).lines;
+      expect([roleWords(line, "main"), mainTrack(line).begin, mainTrack(line).end]).toEqual([undefined, 6.67, 7.514]);
+    });
   });
 
   describe("project export", () => {

@@ -1,10 +1,10 @@
 import type { Part, PartSection } from "../part";
 import type { DocPassthrough } from "../passthrough";
 import { escapeXmlAttribute } from "../xml-node";
-import { bgBounds, effectiveBounds } from "../line-bounds";
+import { bgBounds, effectiveBounds, mainBounds } from "../line-bounds";
 import { drawnSyllables } from "../line-drawn-track";
 import type { LineTrack, LyricLine } from "../line";
-import { isWordSynced } from "../line-predicates";
+import { isLineSynced, isWordSynced } from "../line-predicates";
 import { backgroundText, lineText } from "../line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
 import type { WordTiming } from "../word-timing";
@@ -13,6 +13,7 @@ import { BACKGROUND_ANCHOR, TEXT_ANCHOR } from "./anchors";
 import type { Indent } from "./head";
 import { backgroundEnvelope, lineEnvelope, partEnvelope, writtenTimes } from "./kept-times";
 import { isExportedLine } from "./line-keys";
+import { MAIN_BEGIN_ATTRIBUTE, MAIN_END_ATTRIBUTE } from "./main-span";
 import { emitWordSpan, spanEndsInSpace } from "./markup";
 import {
   anchorResolver,
@@ -80,6 +81,17 @@ function backgroundSpan(line: LyricLine, writesWords: boolean, splitChar: string
   return `${open}${keptAmongInline([wholeTrack(whole, background)], kept, order)}</span>`;
 }
 
+// A line-synced main track spans the whole `<p>` when reread; when its own span is shorter, as with a longer
+// background, the span is written apart so a reread keeps it.
+function mainSpanAttributes(line: LyricLine, begin: string, end: string): string {
+  const bounds = mainBounds(line);
+  if (!bounds) return "";
+  const [mainBegin, mainEnd] = [formatTime(bounds.begin), formatTime(bounds.end)];
+  return mainBegin === begin && mainEnd === end
+    ? ""
+    : ` composer:${MAIN_BEGIN_ATTRIBUTE}="${mainBegin}" composer:${MAIN_END_ATTRIBUTE}="${mainEnd}"`;
+}
+
 function paragraph(line: LyricLine, source: BodySource, indent: string, splitChar: string): string {
   const envelope = lineEnvelope(line) ?? ["", ""];
   const [keptBegin, keptEnd] = line.passthrough?.times ? writtenTimes(line.passthrough.times, envelope) : [];
@@ -97,10 +109,11 @@ function paragraph(line: LyricLine, source: BodySource, indent: string, splitCha
       : untimedTrackPieces(main, lineText(line, splitChar), splitChar).map((piece, index, pieces) =>
           index === pieces.length - 1 ? { ...piece, anchors: [...piece.anchors, TEXT_ANCHOR] } : piece,
         );
+  const mainSpanAttr = isLineSynced(line) ? mainSpanAttributes(line, begin, end) : "";
   const background = backgroundSpan(line, source.writesWords, splitChar);
   const units = background ? [...content, { out: background, anchors: [BACKGROUND_ANCHOR] }] : content;
   const written = keptAmongInline(units, line.passthrough, [...trackOrder(main), BACKGROUND_ANCHOR]);
-  return `${indent}<p begin="${escapeXmlAttribute(begin)}" end="${escapeXmlAttribute(end)}"${keyAttr}${agentAttr}${groupAttr}${keptAttributes(line.passthrough)}>${written}</p>`;
+  return `${indent}<p begin="${escapeXmlAttribute(begin)}" end="${escapeXmlAttribute(end)}"${keyAttr}${agentAttr}${groupAttr}${mainSpanAttr}${keptAttributes(line.passthrough)}>${written}</p>`;
 }
 
 // -- Sections -----------------------------------------------------------------

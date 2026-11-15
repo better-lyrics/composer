@@ -16,6 +16,7 @@ import { COMPOSER_NAMESPACES } from "./composer-namespace";
 import { type ParseResult, generateLineId } from "../parse-result";
 import { parseTtmlAlternates, withInlineAlternates } from "./alternates-read";
 import { extractTimedWords, parseTtmlDocument } from "./read-helpers";
+import { MAIN_BEGIN_ATTRIBUTE, MAIN_END_ATTRIBUTE } from "./main-span";
 import { parseTtmlTimestamp } from "./timestamp";
 import { partsFromDivs } from "./parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "./passthrough-read";
@@ -31,6 +32,19 @@ function getComposerAttribute(el: XmlReadElement, name: string): string | null {
     if (value !== null) return value;
   }
   return null;
+}
+
+// The span of a main track read as text: the one Composer wrote apart, else the `<p>` times.
+function untimedMainSpan(p: XmlReadElement, begin: number, end: number): { begin?: number; end?: number } {
+  const mainBegin = getComposerAttribute(p, MAIN_BEGIN_ATTRIBUTE);
+  const mainEnd = getComposerAttribute(p, MAIN_END_ATTRIBUTE);
+  if (mainBegin !== null && mainEnd !== null) {
+    return { begin: parseTtmlTimestamp(mainBegin), end: parseTtmlTimestamp(mainEnd) };
+  }
+  return {
+    begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
+    end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
+  };
 }
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
@@ -216,8 +230,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
               id: generateLineId(),
               text,
               agentId,
-              begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
-              end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
+              ...untimedMainSpan(p, begin, end),
               backgroundText,
               backgroundWords,
               backgroundTextSource,
