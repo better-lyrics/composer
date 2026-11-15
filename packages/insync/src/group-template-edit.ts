@@ -38,6 +38,10 @@ interface Edit {
   after: SlotLine;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const DETACHED_SLOT = -1;
+
 // -- Helpers ------------------------------------------------------------------
 
 function isSlotLine(line: LyricLine | undefined): line is SlotLine {
@@ -126,25 +130,41 @@ function counterpartOf(source: Map<number, SlotLine>, target: Map<number, SlotLi
   return (id) => pairs.get(id);
 }
 
-// Template lines a command moved syllables between, by the slots of each: an instance takes such a move only whole.
-function slotsMovedTogether(edits: readonly Edit[]): Map<string, number[]> {
+// Template lines a command moved syllables between, by the slots of each: an instance takes such a move only whole. A
+// detached line of the group stands for a slot no instance holds, so a move to or from one reaches no other instance.
+function slotsMovedTogether(
+  before: readonly LyricLine[],
+  after: readonly LyricLine[],
+  edits: readonly Edit[],
+): Map<string, number[]> {
+  const groupIds = new Set(edits.map((edit) => edit.after.groupId));
+  const beforeById = new Map(before.map((line) => [line.id, line]));
+  const detachedEdits = after.flatMap((line) => {
+    const previous = beforeById.get(line.id);
+    if (!previous || previous === line || isSlotLine(line) || !groupIds.has(line.groupId ?? "")) return [];
+    return [{ groupId: line.groupId ?? "", slot: DETACHED_SLOT, before: previous, after: line }];
+  });
+  const moved = [
+    ...edits.map((edit) => ({ groupId: edit.after.groupId, slot: edit.after.templateLineIdx, ...edit })),
+    ...detachedEdits,
+  ];
+  const syllableKey = (groupId: string, id: string) => `${groupId}\u0000${id}`;
   const slotOfSyllable = new Map<string, number>();
-  for (const { before } of edits)
-    for (const track of before.tracks)
-      for (const syllable of track.syllables)
-        slotOfSyllable.set(`${before.groupId}\u0000${syllable.id}`, before.templateLineIdx);
+  for (const { groupId, slot, before: line } of moved)
+    for (const track of line.tracks)
+      for (const syllable of track.syllables) slotOfSyllable.set(syllableKey(groupId, syllable.id), slot);
   const together = new Map<string, number[]>();
   const link = (groupId: string, from: number, to: number) => {
     const key = slotKey(groupId, from);
     together.set(key, [...new Set([...(together.get(key) ?? [from]), to])]);
   };
-  for (const { after } of edits)
-    for (const track of after.tracks)
+  for (const { groupId, slot, after: line } of moved)
+    for (const track of line.tracks)
       for (const syllable of track.syllables) {
-        const from = slotOfSyllable.get(`${after.groupId}\u0000${syllable.id}`);
-        if (from === undefined || from === after.templateLineIdx) continue;
-        link(after.groupId, from, after.templateLineIdx);
-        link(after.groupId, after.templateLineIdx, from);
+        const from = slotOfSyllable.get(syllableKey(groupId, syllable.id));
+        if (from === undefined || from === slot) continue;
+        link(groupId, from, slot);
+        link(groupId, slot, from);
       }
   return together;
 }
@@ -191,7 +211,7 @@ function carryTemplateEdits({ before, after, groups, anchors, splitChar }: Templ
     return counterpart;
   };
   const bySlot = new Map(edits.map((edit) => [slotKey(edit.after.groupId, edit.after.templateLineIdx), edit]));
-  const movedTogether = slotsMovedTogether(edits);
+  const movedTogether = slotsMovedTogether(before, after, edits);
   const takesWholeMove = (line: SlotLine) =>
     (movedTogether.get(slotKey(line.groupId, line.templateLineIdx)) ?? []).every((slot) => {
       const other = byInstance.get(instanceKey(line.groupId, line.instanceIdx))?.get(slot);

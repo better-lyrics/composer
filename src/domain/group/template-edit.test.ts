@@ -152,14 +152,23 @@ describe("carryTemplateEdits", () => {
 });
 
 describe("carryTemplateEdits · a word moved to another line", () => {
+  const slotLine = (id: string, instanceIdx: number, slot: number, texts: string[], fields = {}) =>
+    groupLine(id, instanceIdx, {
+      text: texts.join(" "),
+      templateLineIdx: slot,
+      words: words(instanceIdx * 20 + slot * 2, texts),
+      ...fields,
+    });
+  const moveGlow = (before: LyricLine[], from: number, to: number) => {
+    const [glow, rain] = timedSyllables(mainTrack(before[from]));
+    const [fire] = timedSyllables(mainTrack(before[to]));
+    const moved = { ...glow, sep: " ", begin: fire.begin - 0.4, end: fire.begin };
+    return before
+      .with(from, withFields(before[from], { text: "rain", words: [rain] }))
+      .with(to, withFields(before[to], { text: "glow fire", words: [moved, fire] }));
+  };
+
   it("regression: an instance that lacks one of the two lines keeps its own words", () => {
-    const slotLine = (id: string, instanceIdx: number, slot: number, texts: string[], fields = {}) =>
-      groupLine(id, instanceIdx, {
-        text: texts.join(" "),
-        templateLineIdx: slot,
-        words: words(instanceIdx * 20 + slot * 2, texts),
-        ...fields,
-      });
     const before = [
       slotLine("L1", 0, 0, ["glow", "rain"]),
       slotLine("L2", 0, 1, ["fire"]),
@@ -168,15 +177,19 @@ describe("carryTemplateEdits · a word moved to another line", () => {
       slotLine("L5", 2, 0, ["glow", "rain"]),
       slotLine("L6", 2, 1, ["fire"]),
     ];
-    const [glow, rain] = timedSyllables(mainTrack(before[0]));
-    const [fire] = timedSyllables(mainTrack(before[1]));
-    const moved = { ...glow, sep: " ", begin: 1.4, end: 1.8 };
-    const after = before
-      .with(0, withFields(before[0], { text: "rain", words: [rain] }))
-      .with(1, withFields(before[1], { text: "glow fire", words: [moved, fire] }));
-    const out = carried(before, after);
+    const out = carried(before, moveGlow(before, 0, 1));
     expect(out.slice(2, 4)).toEqual(before.slice(2, 4));
     expect(out.slice(4).map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["rain", "glow fire"]);
+  });
+
+  it("regression: a word moved onto a detached line leaves the other instances alone", () => {
+    const before = [
+      slotLine("L1", 0, 0, ["glow", "rain"]),
+      slotLine("L2", 0, 1, ["fire"], { detached: true }),
+      slotLine("L3", 1, 0, ["glow", "rain"]),
+      slotLine("L4", 1, 1, ["fire"]),
+    ];
+    expect(carried(before, moveGlow(before, 0, 1)).slice(2)).toEqual(before.slice(2));
   });
 });
 
