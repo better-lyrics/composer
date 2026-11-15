@@ -13,9 +13,7 @@ import { createGroup, createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
 
 const typed = (text: string) =>
-  lineEditCommand({ command: "edit lines", args: ["l1"] }, () => fieldUpdates([{ id: "l1", updates: { text } }]), {
-    propagateToSiblings: false,
-  });
+  lineEditCommand({ command: "edit lines", args: ["l1"] }, () => fieldUpdates([{ id: "l1", updates: { text } }]));
 
 beforeEach(() => {
   useProjectStore.getState().reset();

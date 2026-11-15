@@ -64,7 +64,7 @@ describe("useTimelineDnd · alt-drag duplicate in a shared group", () => {
       result.current.handleDragEnd(makeAltDuplicateEvent(0, -350));
 
       expect(firstWordOf("l1")).toMatchObject({ begin: 6.5, end: 7.5 });
-      expect(firstWordOf("c0")).toMatchObject({ begin: 3, end: 4 });
+      expect(firstWordOf("c0")).toMatchObject({ text: "go", begin: 0, end: 0.5 });
     });
   });
 });

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { splitWord } from "@/domain/commands/word-structure";
 import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { mountSyncHandlers } from "@/test/sync-handlers-harness";
-import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 
 beforeEach(() => {
   useSettingsStore.setState({ syncCountIn: 0 });
@@ -21,13 +21,22 @@ describe("useSyncHandlers cursor address", () => {
     const river = roleWords(useProjectStore.getState().lines[0], "main")?.[0];
     if (!river) throw new Error("expected a timed first word");
 
-    await act(() =>
-      handleWordChangeWithDivergenceCheck("l0", [
-        { ...river, text: "Riv", sep: "", end: 0.25 },
-        { ...river, id: "riv-second", text: "ers", begin: 0.25 },
-        ...timedSyllables(mainTrack(useProjectStore.getState().lines[0])).slice(1),
-      ]),
-    );
+    await act(() => {
+      useProjectStore
+        .getState()
+        .commit(
+          splitWord(
+            "l0",
+            "words",
+            [
+              { ...river, text: "Riv", sep: "", end: 0.25 },
+              { ...river, id: "riv-second", text: "ers", begin: 0.25 },
+              ...timedSyllables(mainTrack(useProjectStore.getState().lines[0])).slice(1),
+            ],
+            {},
+          ),
+        );
+    });
     await rerender({ syncState: getSyncState(), currentTime: 1 });
     await act(() => result.current.handleTap());
 
