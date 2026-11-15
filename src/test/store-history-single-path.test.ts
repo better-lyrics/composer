@@ -23,6 +23,16 @@ const LYRIC_PATH_OWNERS = ["stores/project/", "domain/commands/"];
 // Test fixtures seed the store directly; they never ship.
 const TEST_FIXTURE = /^test\/|\.test-helpers\.tsx?$|-harness\.tsx?$/;
 const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);
+// A `lines:` value written into store state or a history entry, beside the doc it flattens from.
+const LINES_VALUE = /(?<![.\w])lines\s*:(?!\s*(?:LyricLine|readonly)\b)/;
+const LINES_ONLY_SET = /\bset\(\{\s*lines\s*\}\)/;
+const LINES_WITH_DOC_WRITERS = new Map<string, string>([
+  ["stores/project/history-helpers.ts", "history entries and their restores carry the doc beside its lines"],
+  ["stores/project/commit.ts", "the command input root and the doc's own lines after the fold"],
+  ["stores/project/with-body.ts", "withBody, the one write of lines with their doc"],
+]);
+// previewLines and restorePreviewLines, in that order.
+const PREVIEW_SLICE = "stores/project/lines-slice.ts";
 const NON_LYRIC_HISTORY_WRITERS = new Map<string, string>([
   ["stores/project/beat-grid-slice.ts", "writes the beat grid only"],
   ["stores/project/snap-points-slice.ts", "writes snap points only"],
@@ -88,6 +98,29 @@ describe("outside the project store, lyrics change only through commit and resto
           .map((line) => `${relPath}:${line}`),
       );
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("lines are written only with their doc", () => {
+  it("writes a lines value only where the doc is written beside it", () => {
+    const offenders = productionSources("stores/project")
+      .filter(({ relPath }) => !LINES_WITH_DOC_WRITERS.has(relPath))
+      .flatMap(({ relPath, code }) => matchLines(code, LINES_VALUE).map((line) => `${relPath}:${line}`));
+    expect(offenders).toEqual([]);
+  });
+
+  it("sets lines alone only in gesture previews, which the gesture restores or commits", () => {
+    const writes = productionSources("stores/project").flatMap(({ relPath, code }) =>
+      matchLines(code, LINES_ONLY_SET).map(() => relPath),
+    );
+    expect(writes).toEqual([PREVIEW_SLICE, PREVIEW_SLICE]);
+    const previews = sourceOf(PREVIEW_SLICE)
+      .split(/^ {2}(?=\w+:)/m)
+      .filter((action) => LINES_ONLY_SET.test(action));
+    expect(previews.map((action) => action.slice(0, action.indexOf(":")))).toEqual([
+      "previewLines",
+      "restorePreviewLines",
+    ]);
   });
 });
 

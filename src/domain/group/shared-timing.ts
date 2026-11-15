@@ -256,6 +256,7 @@ export {
   sharedTimingFanOut,
   sharesTiming,
   timeRangeResolver,
+  timingChanged,
   UNBOUNDED_TIME_RANGE,
   wholeSongRange,
 };

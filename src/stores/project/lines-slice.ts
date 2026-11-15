@@ -1,13 +1,15 @@
+import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
 import { writingLyrics } from "@/stores/project/lyric-change-listeners";
 import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
+import { emptyBody, withBody } from "@/stores/project/with-body";
 import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------
 
 function createLinesInitialState(): LinesState {
   return {
-    lines: [],
+    ...emptyBody(),
     parts: [],
     passthrough: {},
   };
@@ -21,7 +23,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
   restoreLyrics: (root) =>
     writingLyrics(get, "restore", () =>
       set({
-        ...(root.lines && { lines: root.lines }),
+        ...(root.lines && withBody(docFromFlatLines(root.lines))),
         ...("groups" in root && { groups: Array.isArray(root.groups) ? root.groups : [] }),
         ...(root.agents && { agents: root.agents }),
         ...(root.parts && { parts: root.parts }),

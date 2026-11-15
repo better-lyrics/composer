@@ -3,12 +3,12 @@ import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "@/domain/agent/model";
 import type { HistoryNote } from "@/domain/commands/command";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { deepFreeze } from "@/stores/project/deep-freeze";
 import type { HistoryEntry, LyricBurst } from "@/stores/project/history-types";
 import type { ProjectState } from "@/stores/project/types";
+import { type DocLines, docOfLines } from "@/stores/project/with-body";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Constants ----------------------------------------------------------------
@@ -19,11 +19,12 @@ const MAX_HISTORY_SIZE = 100;
 
 type SnapshotFields = Pick<
   HistoryEntry,
-  "lines" | "groups" | "agents" | "parts" | "passthrough" | "customSnapPoints" | "beatGrid"
+  "doc" | "lines" | "groups" | "agents" | "parts" | "passthrough" | "customSnapPoints" | "beatGrid"
 >;
 
 function snapshotEntry(fields: SnapshotFields, note: HistoryNote | null): HistoryEntry {
   return deepFreeze({
+    doc: fields.doc,
     lines: fields.lines,
     groups: fields.groups,
     agents: fields.agents,
@@ -38,6 +39,7 @@ function snapshotEntry(fields: SnapshotFields, note: HistoryNote | null): Histor
 
 function restoreEntry(entry: HistoryEntry): SnapshotFields {
   return {
+    doc: entry.doc,
     lines: entry.lines,
     groups: entry.groups,
     agents: entry.agents,
@@ -58,7 +60,7 @@ function capHistory(history: HistoryEntry[]): HistoryEntry[] {
 function commitHistory(
   state: ProjectState,
   changes: {
-    lines?: LyricLine[];
+    body?: DocLines;
     groups?: LinkGroup[];
     agents?: Agent[];
     parts?: readonly Part[];
@@ -69,7 +71,8 @@ function commitHistory(
   options: { note?: HistoryNote } = {},
 ) {
   const next: SnapshotFields = {
-    lines: changes.lines ?? state.lines,
+    doc: changes.body?.doc ?? state.doc,
+    lines: changes.body?.lines ?? state.lines,
     groups: changes.groups ?? state.groups,
     agents: changes.agents ?? state.agents,
     parts: changes.parts ?? state.parts,
@@ -130,7 +133,7 @@ function commitPendingEdit(state: ProjectState, burst: LyricBurst) {
   // before the run, otherwise undo would skip straight past it.
   const { lines, parts, passthrough } = burst;
   if (newHistory.length === 0 || burst.wasPending)
-    newHistory.push(snapshotEntry({ ...state, lines, parts, passthrough }, null));
+    newHistory.push(snapshotEntry({ ...state, doc: docOfLines(lines), lines, parts, passthrough }, null));
   newHistory.push(snapshotEntry(state, state.pendingNote));
   capHistory(newHistory);
   return {
@@ -195,13 +198,13 @@ function redoState(state: ProjectState) {
 }
 
 // Data that follows the lyrics joins the step that changed them, so undo never stops between the two.
-function amendCurrentStep(state: ProjectState, lines: LyricLine[]) {
-  if (state.isDirtySinceHistory || state.historyIndex < 0) return { lines, isDirty: true, isDirtySinceHistory: true };
+function amendCurrentStep(state: ProjectState, body: DocLines) {
+  if (state.isDirtySinceHistory || state.historyIndex < 0) return { ...body, isDirty: true, isDirtySinceHistory: true };
   const current = state.history[state.historyIndex];
   return {
-    lines,
+    ...body,
     isDirty: true,
-    history: state.history.with(state.historyIndex, snapshotEntry({ ...state, lines }, current.note)),
+    history: state.history.with(state.historyIndex, snapshotEntry({ ...state, ...body }, current.note)),
   };
 }
 

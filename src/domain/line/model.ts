@@ -60,6 +60,7 @@ export type {
   BackgroundSource,
   BackgroundTrack,
   LineTrack,
+  LineTracks,
   LineUpdate,
   LyricLine,
   MainTrack,
