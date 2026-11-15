@@ -1,6 +1,8 @@
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { newWordId } from "@/domain/word/id";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { applyMoveFromBg, applyMoveToBg } from "@/domain/line/word-track-edits";
+import { newWordId } from "@/domain/word/id";
 /**
  * @vitest-environment node
  */
@@ -29,9 +31,9 @@ function mainLine(overrides: Partial<LooseLine> = {}): LyricLine {
 describe("applyMoveToBg", () => {
   it("stamps a manual provenance when creating a fresh background", () => {
     const result = applyMoveToBg(mainLine(), [2], 0, DURATION);
-    expect(result?.backgroundTextSource).toBe("manual");
-    expect(result?.backgroundWords?.map((w) => w.text)).toEqual(["goodbye"]);
-    expect(result?.backgroundText).toBe("goodbye");
+    expect(backgroundTrack(result!)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(result!)).map((w) => w.text)).toEqual(["goodbye"]);
+    expect(backgroundText(result!)).toBe("goodbye");
   });
 
   it("flips an extraction-sourced background to manual when merging words in", () => {
@@ -41,7 +43,7 @@ describe("applyMoveToBg", () => {
       backgroundTextSource: "extraction",
     });
     const result = applyMoveToBg(line, [2], 0, DURATION);
-    expect(result?.backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(result!)?.source).toBe("manual");
   });
 
   it("moves words into an existing background, keeping main timing intact", () => {
@@ -51,7 +53,7 @@ describe("applyMoveToBg", () => {
       backgroundTextSource: "manual",
     });
     const result = applyMoveToBg(line, [2], 0, DURATION);
-    expect(result?.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(mainTrack(result!)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(result?.backgroundWords?.length).toBe(2);
   });
 
@@ -103,9 +105,9 @@ describe("applyMoveFromBg", () => {
       backgroundTextSource: "extraction",
     });
     const result = applyMoveFromBg(line, [1], 0, DURATION);
-    expect(result?.backgroundWords?.map((w) => w.text)).toEqual(["ah"]);
-    expect(result?.backgroundText).toBe("ah");
-    expect(result?.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(result!)).map((w) => w.text)).toEqual(["ah"]);
+    expect(backgroundText(result!)).toBe("ah");
+    expect(backgroundTrack(result!)?.source).toBe("manual");
   });
 
   it("returns null when no indices match", () => {

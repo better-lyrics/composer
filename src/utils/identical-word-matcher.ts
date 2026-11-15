@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -38,7 +39,7 @@ function findSourceWord(lines: LyricLine[], source: IdenticalMatchSource): WordT
 function collectTrackMatches(
   line: LyricLine,
   lineIndex: number,
-  track: WordTiming[] | undefined,
+  track: WordTiming[],
   type: "word" | "bg",
   source: IdenticalMatchSource,
   options: MatchOptions,
@@ -46,7 +47,6 @@ function collectTrackMatches(
   minLength: number,
   out: IdenticalMatch[],
 ): void {
-  if (!track) return;
   for (let wordIndex = 0; wordIndex < track.length; wordIndex++) {
     const word = track[wordIndex];
     if (!word) continue;
@@ -73,8 +73,10 @@ function findIdenticalWords(lines: LyricLine[], source: IdenticalMatchSource, op
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!line) continue;
-    collectTrackMatches(line, lineIndex, line.words, "word", source, options, targetText, minLength, matches);
-    collectTrackMatches(line, lineIndex, line.backgroundWords, "bg", source, options, targetText, minLength, matches);
+    const mainWords = timedSyllables(mainTrack(line));
+    const backgroundWords = timedSyllables(backgroundTrack(line));
+    collectTrackMatches(line, lineIndex, mainWords, "word", source, options, targetText, minLength, matches);
+    collectTrackMatches(line, lineIndex, backgroundWords, "bg", source, options, targetText, minLength, matches);
   }
   return matches;
 }

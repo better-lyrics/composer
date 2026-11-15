@@ -1,4 +1,9 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { mainBounds } from "@/domain/line/bounds";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { useAudioStore } from "@/stores/audio";
@@ -14,9 +19,6 @@ import {
 } from "@/utils/lyrics-search/registry";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Fixture provider plumbing ------------------------------------------------
 
@@ -192,7 +194,7 @@ describe("LyricsImportModal paste section commit", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     const [line] = useProjectStore.getState().lines;
     expect(line && mainBounds(line)).toEqual({ begin: 2, end: 3 });
-    expect(line?.words?.map((word) => word.text + word.sep)).toEqual(["Hel", "lo"]);
+    expect(timedSyllables(mainTrack(line!)).map((word) => word.text + word.sep)).toEqual(["Hel", "lo"]);
   });
 
   it("disables Import when paste is whitespace only", async () => {
@@ -248,7 +250,7 @@ describe("LyricsImportModal search section commit", () => {
     await expect.element(screen.getByText(/Replace existing lyrics/i)).toBeInTheDocument();
     await screen.getByRole("button", { name: /Cancel/i }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Old line");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Old line");
   });
 });
 
@@ -374,7 +376,7 @@ describe("LyricsImportModal settings integration", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
     const lines = useProjectStore.getState().lines;
     expect(lines[0].words).toBeDefined();
-    expect(lines[0].words?.length ?? 0).toBeGreaterThan(0);
+    expect(timedSyllables(mainTrack(lines[0])).length).toBeGreaterThan(0);
   });
 
   it("extracts inline parenthetical background when the setting is on", async () => {
@@ -387,7 +389,7 @@ describe("LyricsImportModal settings integration", () => {
     await screen.getByRole("button", { name: /^Import$/ }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     const line = useProjectStore.getState().lines[0];
-    expect(line.text).toBe("Hello");
-    expect(line.backgroundText).toBe("(world)");
+    expect(lineText(line)).toBe("Hello");
+    expect(backgroundText(line)).toBe("(world)");
   });
 });

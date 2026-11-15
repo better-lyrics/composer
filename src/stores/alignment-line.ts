@@ -5,6 +5,7 @@ import type { HanReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { type AlignmentWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
 import { type WordInterval, retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
+import { lineText } from "@/domain/line/text";
 import type { WordTiming } from "@/domain/word/timing";
 import { type PlannedLine, guideTaps, hasTappedEnd, plainWindow, segmentIn } from "@/stores/alignment-plan";
 
@@ -46,7 +47,9 @@ function isAbortError(err: unknown): boolean {
 }
 
 function canAnchor(plan: PlannedLine, word: AnchorWord | null | undefined): word is AnchorWord {
-  return !!word && !hasCjk(plan.line.text) && !hasCjk(word.parts.join("")) && sungTransliteration(plan.line) === null;
+  return (
+    !!word && !hasCjk(lineText(plan.line)) && !hasCjk(word.parts.join("")) && sungTransliteration(plan.line) === null
+  );
 }
 
 function finish(plan: PlannedLine, result: SegmentAlignment, window: AlignmentWindow, cooling: boolean): AlignedLine {

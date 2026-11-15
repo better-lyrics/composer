@@ -1,19 +1,20 @@
+import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
+import { m } from "motion/react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceKey } from "@/domain/instance/key";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
-import { BannerTag } from "@/views/timeline/banner-tag";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
+import { BannerTag } from "@/views/timeline/banner-tag";
 import { StepSkipChip } from "@/views/timeline/step-timing/step-skip-chip";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useBannerDrag } from "@/views/timeline/use-banner-drag";
-import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
-import { m } from "motion/react";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -120,8 +121,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     const ticks: Array<{ idx: number; leftPct: number; widthPct: number }> = [];
     for (const line of allLines) {
       if (line.groupId !== group.id || line.instanceIdx !== instanceIdx) continue;
-      if (!line.words?.length) continue;
-      for (const w of line.words) {
+      for (const w of timedSyllables(mainTrack(line))) {
         const startPct = ((w.begin - instanceStart) / span) * 100;
         const endPct = ((w.end - instanceStart) / span) * 100;
         const widthPct = Math.max(0.4, endPct - startPct);

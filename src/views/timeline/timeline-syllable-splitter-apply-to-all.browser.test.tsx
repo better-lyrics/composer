@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
-import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
+import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -180,7 +181,7 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
-    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
+    const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(wordsAfter[0].end).toBeCloseTo(0.42, 5);
     expect(wordsAfter[1].begin).toBeCloseTo(0.42, 5);
     expect(wordsAfter[0].syllableGroupId).toBeDefined();

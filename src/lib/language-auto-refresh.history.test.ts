@@ -1,10 +1,11 @@
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
-import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
-import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { useProjectStore } from "@/stores/project";
+import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
+import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -52,11 +53,11 @@ describe("createLanguageAutoRefresh history", () => {
       expect(lineById("a").transliteration?.text).toBe("Dobryy  vecher");
 
       useProjectStore.getState().undo();
-      expect(lineById("a").text).toBe("Доброе утро");
+      expect(lineText(lineById("a"))).toBe("Доброе утро");
       expect(lineById("a").transliteration?.text).toBe("Dobroye  utro");
 
       useProjectStore.getState().redo();
-      expect(lineById("a").text).toBe("Добрый вечер");
+      expect(lineText(lineById("a"))).toBe("Добрый вечер");
       expect(lineById("a").transliteration?.text).toBe("Dobryy  vecher");
     });
   });
@@ -81,7 +82,7 @@ describe("createLanguageAutoRefresh history", () => {
       expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
 
       useProjectStore.getState().undo();
-      expect(lineById("a").text).toBe("Быстрая река");
+      expect(lineText(lineById("a"))).toBe("Быстрая река");
       expect(lineById("a").transliteration?.text).toBe("Bystraya  reka");
     });
   });

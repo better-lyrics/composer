@@ -6,6 +6,8 @@ import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInte
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
@@ -49,7 +51,7 @@ function planLine(
   if (isLineSynced(line)) {
     const end = line.end === line.begin ? nextBegin : line.end;
     if (end <= line.begin) return null;
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
+    const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
     if (parts.length === 0) return null;
     return {
       taps: { begin: line.begin, end: line.end },
@@ -61,7 +63,8 @@ function planLine(
   if (realign && isWordSynced(line)) {
     const taps = mainBounds(line);
     if (!taps || taps.end <= taps.begin) return null;
-    return { taps, words: groupTimedWords(line.words!), existing: line.words!, guide: taps };
+    const words = timedSyllables(mainTrack(line));
+    return { taps, words: groupTimedWords(words), existing: words, guide: taps };
   }
   return null;
 }
@@ -95,8 +98,8 @@ function countAlignableLines(lines: readonly LyricLine[], lineIds?: readonly str
 // A line the user retimed or retyped mid-run keeps their edit. The store
 // replaces a line's object (and its words array) on every change.
 function isUnchanged(current: LyricLine | undefined, planned: PlannedLine): boolean {
-  if (!current || current.text !== planned.line.text) return false;
-  if (planned.existing) return current.words === planned.existing;
+  if (!current || lineText(current) !== lineText(planned.line)) return false;
+  if (planned.existing) return timedSyllables(mainTrack(current)) === planned.existing;
   return isLineSynced(current) && current.begin === planned.taps.begin && current.end === planned.taps.end;
 }
 

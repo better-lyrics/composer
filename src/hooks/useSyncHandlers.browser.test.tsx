@@ -1,4 +1,7 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
@@ -7,7 +10,6 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { at, mountSyncHandlers, positionOf } from "@/test/sync-handlers-harness";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -27,20 +29,18 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await act(() => {
         result.current.handleTap();
       });
-      expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
+      expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
     expect(useProjectStore.getState().lines[0].words?.length).toBe(5);
-    expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
   });
 
   it("preserves both lines' text across a cross-line tap transition", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: [createLine({ id: "l0", text: "Hello world" }), createLine({ id: "l1", text: "Foo bar" })],
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "l0", text: "Hello world" }), createLine({ id: "l1", text: "Foo bar" })],
+    });
 
     const { result, rerender, act, getSyncState } = await mountSyncHandlers();
 
@@ -49,15 +49,15 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await act(() => {
         result.current.handleTap();
       });
-      expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
-      expect(useProjectStore.getState().lines[1].text).toBe("Foo bar");
+      expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
+      expect(lineText(useProjectStore.getState().lines[1])).toBe("Foo bar");
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
     expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
     expect(useProjectStore.getState().lines[1].words?.length).toBe(2);
-    expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
-    expect(useProjectStore.getState().lines[1].text).toBe("Foo bar");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
+    expect(lineText(useProjectStore.getState().lines[1])).toBe("Foo bar");
   });
 
   it("re-syncing mid-line overwrites in place and preserves the line's later words", async () => {
@@ -87,7 +87,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     });
 
     const words = useProjectStore.getState().lines[0].words;
-    expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
     expect(words?.length).toBe(5);
     expect(words?.[1].begin).toBe(5.0);
     expect(words?.[0].end).toBe(5.0);
@@ -126,21 +126,19 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       result.current.handleTap();
     });
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words).toHaveLength(5);
     expect(words[0].begin).toBeLessThanOrEqual(words[words.length - 1].end);
   });
 
   it("regression: skips an empty line and still patches the word before it (issue #114)", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: [
-          createLine({ id: "l0", text: "Hello world" }),
-          createLine({ id: "lblank", text: "" }),
-          createLine({ id: "l2", text: "Foo bar" }),
-        ],
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        createLine({ id: "l0", text: "Hello world" }),
+        createLine({ id: "lblank", text: "" }),
+        createLine({ id: "l2", text: "Foo bar" }),
+      ],
+    });
 
     const { result, rerender, act, getSyncState } = await mountSyncHandlers();
 
@@ -154,12 +152,12 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     await act(() => result.current.handleTap());
 
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toHaveLength(2);
-    expect(lines[0].words?.[1].end).toBe(1.25);
-    expect(lines[1].text).toBe("");
+    expect(timedSyllables(mainTrack(lines[0]))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(lines[0]))[1].end).toBe(1.25);
+    expect(lineText(lines[1])).toBe("");
     expect(lines[1].words).toBeUndefined();
-    expect(lines[2].text).toBe("Foo bar");
-    expect(lines[2].words).toHaveLength(1);
+    expect(lineText(lines[2])).toBe("Foo bar");
+    expect(timedSyllables(mainTrack(lines[2]))).toHaveLength(1);
   });
 });
 
@@ -209,8 +207,12 @@ describe("useSyncHandlers.handleSplitWord", () => {
 
     const saved = useProjectStore.getState().lines[0];
     expect(saved.transliteration?.text).toBe("ildan eun");
-    expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
-    expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
+    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
+    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliterationJoinerAfter)).toEqual([
+      "",
+      " ",
+      undefined,
+    ]);
   });
 
   it("regression: keeps the chosen roman split when stored words lost their pieces (#283)", async () => {
@@ -251,7 +253,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
     });
 
     const saved = useProjectStore.getState().lines[0];
-    expect(saved.words?.map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
+    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
     expect(saved.transliteration?.text).toBe("Uh  ildan eun  na");
     expect(saved.transliteration?.alignmentStatus).toBe("inferred");
   });
@@ -297,7 +299,7 @@ describe("useSyncHandlers live audio time (issue #203)", () => {
 
     await act(() => result.current.handleHoldStart());
 
-    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(audioElement.currentTime);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].begin).toBe(audioElement.currentTime);
   });
 
   it("falls back to the prop time when no audio element is registered", async () => {
@@ -307,7 +309,7 @@ describe("useSyncHandlers live audio time (issue #203)", () => {
 
     await act(() => result.current.handleTap());
 
-    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(4.2);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].begin).toBe(4.2);
   });
 });
 
@@ -336,35 +338,33 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
     });
 
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].text).toBe(ORIGINAL_TEXT);
-    expect(lines[0].words).toHaveLength(1);
-    expect(lines[0].words?.[0].end).toBe(TAP_TIME);
-    expect(lines[1].text).toBe("Next line");
-    expect(lines[1].words).toHaveLength(1);
+    expect(lineText(lines[0])).toBe(ORIGINAL_TEXT);
+    expect(timedSyllables(mainTrack(lines[0]))).toHaveLength(1);
+    expect(timedSyllables(mainTrack(lines[0]))[0].end).toBe(TAP_TIME);
+    expect(lineText(lines[1])).toBe("Next line");
+    expect(timedSyllables(mainTrack(lines[1]))).toHaveLength(1);
   });
 
   it("preserves text on both lines across line-granularity taps", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: [createLine({ id: "l0", text: "Verse start" }), createLine({ id: "l1", text: "Verse two" })],
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "l0", text: "Verse start" }), createLine({ id: "l1", text: "Verse two" })],
+    });
 
     const { result, rerender, act, getSyncState } = await mountSyncHandlers({ granularity: "line" });
 
     await act(() => {
       result.current.handleTap();
     });
-    expect(useProjectStore.getState().lines[0].text).toBe("Verse start");
-    expect(useProjectStore.getState().lines[1].text).toBe("Verse two");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
+    expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
     expect(useProjectStore.getState().lines[0].begin).toBe(0);
     await rerender({ syncState: getSyncState(), currentTime: 1.0 });
 
     await act(() => {
       result.current.handleTap();
     });
-    expect(useProjectStore.getState().lines[0].text).toBe("Verse start");
-    expect(useProjectStore.getState().lines[1].text).toBe("Verse two");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
+    expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
     expect(useProjectStore.getState().lines[1].begin).toBe(1.0);
   });
 });
@@ -379,13 +379,13 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     await act(() => {
       result.current.handleHoldStart();
     });
-    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.5 });
 
     await act(() => {
       result.current.handleHoldEnd();
     });
-    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TEXT);
     expect(useProjectStore.getState().lines[0].words?.length).toBe(1);
   });
 
@@ -398,19 +398,19 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     await act(() => {
       result.current.handleHoldStart();
     });
-    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TAP_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.4 });
 
     await act(() => {
       result.current.handleHoldTap();
     });
-    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TAP_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.8 });
 
     await act(() => {
       result.current.handleHoldTap();
     });
-    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TAP_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
   });
 
   it("preserves text when handleHoldStart re-enters a line that already has words", async () => {
@@ -435,8 +435,8 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.text).toBe(TEXT);
-    expect(line.words).toHaveLength(2);
+    expect(lineText(line)).toBe(TEXT);
+    expect(timedSyllables(mainTrack(line))).toHaveLength(2);
   });
 
   it("preserves text when handleHoldEnd closes an open trailing word", async () => {
@@ -465,8 +465,8 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.text).toBe(TEXT);
-    expect(line.words?.[1].end).toBe(END_TIME);
+    expect(lineText(line)).toBe(TEXT);
+    expect(timedSyllables(mainTrack(line))[1].end).toBe(END_TIME);
   });
 });
 
@@ -507,7 +507,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
       result.current.handleHoldEnd();
     });
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[1]).toMatchObject({ begin: 5, end: 6 });
     expect(words).toHaveLength(3);
     expect(words[2].begin).toBeGreaterThanOrEqual(words[1].end);
@@ -541,7 +541,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
       result.current.handleHoldEnd();
     });
 
-    for (const word of useProjectStore.getState().lines[0].words ?? []) {
+    for (const word of timedSyllables(mainTrack(useProjectStore.getState().lines[0]))) {
       expect(word.end).toBeGreaterThanOrEqual(word.begin);
     }
   });
@@ -563,9 +563,9 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.text).toBe(REDO_TEXT);
-    expect(line.words).toHaveLength(3);
-    expect(line.words?.filter((word) => word.text.trim() === "three")).toHaveLength(1);
+    expect(lineText(line)).toBe(REDO_TEXT);
+    expect(timedSyllables(mainTrack(line))).toHaveLength(3);
+    expect(timedSyllables(mainTrack(line)).filter((word) => word.text.trim() === "three")).toHaveLength(1);
   });
 
   it("handleHoldTap opens the next word in place and moves the cursor onto it", async () => {
@@ -584,7 +584,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
       result.current.handleHoldTap();
     });
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[1]).toMatchObject({ begin: 5, end: 6 });
     expect(words[2]).toMatchObject({ text: "three", sep: "", begin: 6, end: 6 });
     expect(positionOf(getSyncState()).wordIndex).toBe(2);
@@ -614,7 +614,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
       result.current.handleHoldStart();
     });
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[1].explicit).toBe(true);
     expect(words[1].syllableGroupId).toBe("g1");
   });
@@ -696,14 +696,12 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
   });
 
   it("only moves the cursor for an unsynced line, without seeking or resuming playback", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: [
-          createLine({ id: "l0", text: "Synced", words: [createWord({ text: "Synced", begin: 0, end: 1 })] }),
-          createLine({ id: "l1", text: "Not synced yet" }),
-        ],
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        createLine({ id: "l0", text: "Synced", words: [createWord({ text: "Synced", begin: 0, end: 1 })] }),
+        createLine({ id: "l1", text: "Not synced yet" }),
+      ],
+    });
     useAudioStore.getState().seekTo(2.5);
     const { result, act, getSyncState, playingCalls } = await mountSyncHandlers();
 
@@ -734,8 +732,8 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
     await act(() => result.current.handleTap());
 
     const line = useProjectStore.getState().lines[1];
-    expect(line.text).toBe("Second line");
-    expect(line.words?.[0].begin).toBe(5.0);
+    expect(lineText(line)).toBe("Second line");
+    expect(timedSyllables(mainTrack(line))[0].begin).toBe(5.0);
   });
 });
 
@@ -783,14 +781,12 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
   });
 
   it("regression: ignores a word with no timing so the cursor cannot desync from the line's text", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: [
-          createLine({ id: "l0", text: "Synced", words: [createWord({ text: "Synced", begin: 0, end: 1 })] }),
-          createLine({ id: "l1", text: "Not synced yet" }),
-        ],
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        createLine({ id: "l0", text: "Synced", words: [createWord({ text: "Synced", begin: 0, end: 1 })] }),
+        createLine({ id: "l1", text: "Not synced yet" }),
+      ],
+    });
     useAudioStore.getState().seekTo(2.5);
     const { result, act, getSyncState } = await mountSyncHandlers();
     const before = getSyncState().position;
@@ -823,7 +819,7 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     await rerender({ syncState: { position: at(0, 2), isActive: true }, currentTime: 4 });
     await act(() => result.current.handleTap());
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words).toHaveLength(3);
     expect(words.map((w) => w.text + w.sep)).toEqual(["one ", "two ", "three"]);
     expect(words[2].begin).toBe(4);
@@ -877,8 +873,8 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     await act(() => result.current.handleTap());
 
     const lines = useProjectStore.getState().lines;
-    expect(lines[1].words?.[0].begin).toBe(7);
-    expect(lines[0].words?.[1].end).toBe(1);
+    expect(timedSyllables(mainTrack(lines[1]))[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lines[0]))[1].end).toBe(1);
   });
 
   it("regression: pressing play after a jump still suppresses the previous-line close (issue #132)", async () => {
@@ -910,18 +906,16 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     await rerender({ syncState: getSyncState(), currentTime: 7 });
     await act(() => result.current.handleTap());
 
-    expect(useProjectStore.getState().lines[0].words?.[1].end).toBe(1);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].end).toBe(1);
   });
 
   it("regression: a jumped-to line re-record does not stretch the previous line at line granularity", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: [
-          createLine({ id: "l0", text: "first line", begin: 0, end: 1 }),
-          createLine({ id: "l1", text: "second line", begin: 8, end: 9 }),
-        ],
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        createLine({ id: "l0", text: "first line", begin: 0, end: 1 }),
+        createLine({ id: "l1", text: "second line", begin: 8, end: 9 }),
+      ],
+    });
     const { result, act, rerender, getSyncState } = await mountSyncHandlers({
       granularity: "line",
       initialCurrentTime: 7,
@@ -952,7 +946,7 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     await rerender({ syncState: getSyncState(), currentTime: 3 });
     await act(() => result.current.handleTap());
 
-    expect(useProjectStore.getState().lines[0].words?.[0].end).toBe(3);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].end).toBe(3);
   });
 
   it("leaves playback alone in edit mode, where a click is a scrub", async () => {
@@ -1021,11 +1015,9 @@ describe("useSyncHandlers.handleJumpToBgWord", () => {
   });
 
   it("ignores a background word that has no timing", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: [createLine({ id: "l0", text: "Main", words: [createWord({ text: "Main", begin: 0, end: 1 })] })],
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "l0", text: "Main", words: [createWord({ text: "Main", begin: 0, end: 1 })] })],
+    });
     useAudioStore.getState().seekTo(2.5);
     const { result, act } = await mountSyncHandlers();
 
@@ -1125,8 +1117,8 @@ describe("sync-panel bg-init contract", () => {
 
     expect(screen.container.querySelector('button[title="Jump to this word"]')).toBeNull();
 
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe(BG_TEXT);
-    expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_LINE_TEXT);
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe(BG_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_LINE_TEXT);
     expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
   });
 });
@@ -1186,8 +1178,8 @@ describe("useSyncHandlers with shared timing", () => {
       result.current.handleNudgeWord(1, 0, -5);
     });
 
-    expect(lineById("c1")?.words?.[0].begin).toBe(7);
-    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
   it("stops a word end nudge where the latest instance reaches the song end", async () => {
@@ -1219,8 +1211,8 @@ describe("useSyncHandlers with shared timing", () => {
       result.current.handleNudgeWordEnd(0, 0, 5);
     });
 
-    expect(lineById("c1")?.words?.[0].end).toBe(12);
-    expect(lineById("c0")?.words?.[0].end).toBe(5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0].end).toBe(12);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].end).toBe(5);
   });
 
   it("regression: nudges a line of an old group by the whole delta", async () => {

@@ -6,6 +6,8 @@ import {
   timedTransliterationSlice,
 } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
+import { isWordSynced } from "@/domain/line/predicates";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { emitWordSpan, escapeXml } from "@/utils/ttml-markup";
 
@@ -42,7 +44,11 @@ function renderTranslationContent(line: LyricLine, text: string, backgroundText?
   if (!backgroundText?.trim()) return escapeXml(text);
   const placement = alternateBackgroundPlacement(line);
   const chunks = translationChunks(text);
-  const insertionIndex = backgroundInsertionIndex(placement, chunks.length, line.words?.length);
+  const insertionIndex = backgroundInsertionIndex(
+    placement,
+    chunks.length,
+    isWordSynced(line) ? timedSyllables(mainTrack(line)).length : undefined,
+  );
   return mergeBackgroundMarkup(chunks, escapeXml(backgroundText.trim()), insertionIndex);
 }
 
@@ -65,13 +71,13 @@ function emitUntimedTransliteration(text: string): string {
 }
 
 function transliterationChunks(line: LyricLine, timed: boolean, background = false): string[] {
-  const words = background ? line.backgroundWords : line.words;
+  const words = timedSyllables(background ? backgroundTrack(line) : mainTrack(line));
   const text = background ? line.transliteration?.backgroundText : line.transliteration?.text;
   const alignmentStatus = background
     ? line.transliteration?.backgroundAlignmentStatus
     : line.transliteration?.alignmentStatus;
   if (!text?.trim()) return [];
-  if (timed && alignmentStatus !== "unresolved" && words?.some((word) => word.transliteration)) {
+  if (timed && alignmentStatus !== "unresolved" && words.some((word) => word.transliteration)) {
     return alignedTransliterationChunks(words);
   }
   return text ? [escapeXml(emitUntimedTransliteration(text))] : [];

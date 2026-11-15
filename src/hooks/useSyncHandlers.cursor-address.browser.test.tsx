@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { mountSyncHandlers } from "@/test/sync-handlers-harness";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
-import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
   useSettingsStore.setState({ syncCountIn: 0 });
@@ -24,13 +25,13 @@ describe("useSyncHandlers cursor address", () => {
       handleWordChangeWithDivergenceCheck("l0", [
         { ...river, text: "Riv", sep: "", end: 0.25 },
         { ...river, id: "riv-second", text: "ers", begin: 0.25 },
-        ...(useProjectStore.getState().lines[0].words ?? []).slice(1),
+        ...timedSyllables(mainTrack(useProjectStore.getState().lines[0])).slice(1),
       ]),
     );
     await rerender({ syncState: getSyncState(), currentTime: 1 });
     await act(() => result.current.handleTap());
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.map((word) => word.text)).toEqual(["Riv", "ers", "carry", "lanterns"]);
     expect(words.map((word) => word.begin)).toEqual([0, 0.25, 0.5, 1]);
   });

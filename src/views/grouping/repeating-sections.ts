@@ -1,6 +1,8 @@
 import { repeatKey, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
 import type { LyricLine } from "@/domain/line/model";
 import { hasMainLyrics } from "@/domain/line/predicates";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 
 interface RepeatingSection {
   starts: number[];
@@ -132,8 +134,8 @@ function claimSections(
       results.push({
         starts,
         length: k,
-        preview: lines[i].text,
-        previewLines: lines.slice(i, i + k).map((l) => l.text),
+        preview: lineText(lines[i]),
+        previewLines: lines.slice(i, i + k).map((l) => lineText(l)),
         fingerprint: fingerprintBlock(lines, i, k),
         evenedSplitLines: changedLineCount(lines, evened, starts, k),
       });
@@ -196,9 +198,13 @@ function fingerprintBlock(lines: LyricLine[], start: number, length: number): st
   const parts: string[] = [];
   for (let p = start; p < start + length; p++) {
     const l = lines[p];
-    const wordsKey = (l.words ?? []).map((w) => w.text + w.sep).join(FS);
-    const bgKey = (l.backgroundWords ?? []).map((w) => w.text + w.sep).join(FS);
-    parts.push([l.text, l.agentId, l.backgroundText ?? "", wordsKey, bgKey].join(RS));
+    const wordsKey = timedSyllables(mainTrack(l))
+      .map((w) => w.text + w.sep)
+      .join(FS);
+    const bgKey = timedSyllables(backgroundTrack(l))
+      .map((w) => w.text + w.sep)
+      .join(FS);
+    parts.push([lineText(l), l.agentId, backgroundText(l) ?? "", wordsKey, bgKey].join(RS));
   }
   return parts.join("\n");
 }

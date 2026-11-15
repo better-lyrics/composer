@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import {
   CLEARED_BACKGROUND,
   applyBackground,
@@ -6,8 +7,9 @@ import {
   withSeededBackground,
 } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
-import { describe, expect, it } from "vitest";
 
 const line: LyricLine = { id: "a", text: "hello", agentId: "v1" };
 
@@ -90,13 +92,13 @@ describe("CLEARED_BACKGROUND", () => {
 describe("applyBackground", () => {
   it("sets then clears a line's background coherently", () => {
     const withBg = applyBackground(line, { text: "ooh", source: "manual" });
-    expect(withBg.backgroundText).toBe("ooh");
-    expect(withBg.backgroundTextSource).toBe("manual");
+    expect(backgroundText(withBg)).toBe("ooh");
+    expect(backgroundTrack(withBg)?.source).toBe("manual");
 
     const cleared = applyBackground(withBg, { text: "", source: "manual" });
-    expect(cleared.backgroundText).toBeUndefined();
+    expect(backgroundText(cleared)).toBeUndefined();
     expect(cleared.backgroundWords).toBeUndefined();
-    expect(cleared.backgroundTextSource).toBeUndefined();
+    expect(backgroundTrack(cleared)?.source).toBeUndefined();
   });
 });
 
@@ -141,7 +143,7 @@ describe("applyBackground immutability and field preservation", () => {
       ],
     };
     const result = applyBackground(wordSynced, { text: "ooh", source: "manual" });
-    expect(result.words).toEqual(wordSynced.words);
+    expect(timedSyllables(mainTrack(result))).toEqual(timedSyllables(mainTrack(wordSynced)));
     expect(result.begin).toBeUndefined();
     expect(result.end).toBeUndefined();
   });
@@ -165,24 +167,24 @@ describe("applyBackground overwriting", () => {
   it("flips an existing manual provenance to extraction", () => {
     const manual = applyBackground(line, { text: "ooh", source: "manual" });
     const overwritten = applyBackground(manual, { text: "aah", source: "extraction" });
-    expect(overwritten.backgroundText).toBe("aah");
-    expect(overwritten.backgroundTextSource).toBe("extraction");
+    expect(backgroundText(overwritten)).toBe("aah");
+    expect(backgroundTrack(overwritten)?.source).toBe("extraction");
   });
 
   it("flips an existing extraction provenance to manual", () => {
     const extracted = applyBackground(line, { text: "ooh", source: "extraction" });
     const overwritten = applyBackground(extracted, { text: "aah", source: "manual" });
-    expect(overwritten.backgroundText).toBe("aah");
-    expect(overwritten.backgroundTextSource).toBe("manual");
+    expect(backgroundText(overwritten)).toBe("aah");
+    expect(backgroundTrack(overwritten)?.source).toBe("manual");
   });
 
   it("clears backgroundWords when clearing a line that had words-based background", () => {
     const withWords = applyBackground(line, { words: [bgWord], source: "extraction" });
-    expect(withWords.backgroundWords).toEqual([bgWord]);
+    expect(timedSyllables(backgroundTrack(withWords))).toEqual([bgWord]);
     const cleared = applyBackground(withWords, { text: "", source: "manual" });
     expect(cleared.backgroundWords).toBeUndefined();
-    expect(cleared.backgroundText).toBeUndefined();
-    expect(cleared.backgroundTextSource).toBeUndefined();
+    expect(backgroundText(cleared)).toBeUndefined();
+    expect(backgroundTrack(cleared)?.source).toBeUndefined();
   });
 });
 
@@ -219,9 +221,9 @@ describe("withSeededBackground", () => {
 
   it("seeds background words over the second half of a timed line", () => {
     const seeded = withSeededBackground(timed);
-    expect(seeded.backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "ah"]);
-    expect(seeded.backgroundWords?.[0].begin).toBe(12);
-    expect(seeded.backgroundWords?.at(-1)?.end).toBe(14);
+    expect(timedSyllables(backgroundTrack(seeded)).map((word) => word.text.trim())).toEqual(["ooh", "ah"]);
+    expect(timedSyllables(backgroundTrack(seeded))[0].begin).toBe(12);
+    expect(timedSyllables(backgroundTrack(seeded)).at(-1)?.end).toBe(14);
   });
 
   it("returns the same line when there is nothing to seed", () => {

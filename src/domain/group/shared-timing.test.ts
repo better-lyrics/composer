@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import {
   firstFullyTimedInstance,
   instancesInLineOrder,
@@ -11,8 +12,8 @@ import {
 } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { createGroup, createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -225,7 +226,7 @@ describe("sharedTimingFanOut", () => {
     const after = edit(before, "c0-0", (line) => ({ ...nudgeWord(1, 0.1)(line), agentId: "v2" }));
     const copied = byId(sharedTimingFanOut(before, after, sharing, ["c0-0"]).lines, "c1-0");
     expect(copied?.agentId).toBe(before[1].agentId);
-    expect(copied?.text).toBe("I want");
+    expect(lineText(copied!)).toBe("I want");
   });
 
   describe("edge cases", () => {

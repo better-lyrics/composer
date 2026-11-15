@@ -1,5 +1,7 @@
-import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { isLineSynced } from "@/domain/line/predicates";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { type GridPoint, gridPointLabel } from "@/domain/tempo/grid-points";
 import { SNAP_SWITCH_SETTING, type SnapSettings, type SnapSource, type SnapSwitchKey } from "@/stores/settings-snap";
 
@@ -66,11 +68,11 @@ function collectSnapAnchors(
   const anchors: SnapAnchor[] = [];
 
   for (const line of lines) {
-    const words = line.words;
-    const wordCount = words?.length ?? 0;
+    const words = timedSyllables(mainTrack(line));
+    const wordCount = words.length;
     const wordTimed = wordCount > 0;
 
-    if (words && wordCount > 0) {
+    if (wordTimed) {
       for (let i = 0; i < wordCount; i++) {
         const word = words[i];
         if (!selfIds.has(selfKey(line.id, i, "word"))) {
@@ -94,9 +96,9 @@ function collectSnapAnchors(
       }
     }
 
-    const bgWords = line.backgroundWords;
-    const bgCount = bgWords?.length ?? 0;
-    if (bgWords && bgCount > 0) {
+    const bgWords = timedSyllables(backgroundTrack(line));
+    const bgCount = bgWords.length;
+    if (bgCount > 0) {
       for (let i = 0; i < bgCount; i++) {
         const word = bgWords[i];
         if (!selfIds.has(selfKey(line.id, i, "bg"))) {
@@ -121,8 +123,8 @@ function collectSnapAnchors(
     }
 
     if (!wordTimed && isLineSynced(line) && !selfIds.has(selfKey(line.id, 0, "word"))) {
-      anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
-      anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
+      anchors.push({ t: line.begin, kind: "line-begin", label: lineText(line), lineId: line.id });
+      anchors.push({ t: line.end, kind: "line-end", label: lineText(line), lineId: line.id });
     }
   }
 

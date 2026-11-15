@@ -1,4 +1,7 @@
+import { Toaster } from "sonner";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { lineText } from "@/domain/line/text";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -9,8 +12,6 @@ import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
 import { resolvedColor } from "@/test/resolved-color";
 import { ExportPanel } from "@/views/export";
-import { Toaster } from "sonner";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -419,7 +420,7 @@ describe("ExportPanel · Done applies TTML edits to the project", () => {
     await textarea.fill(generated.replace(">Hello<", ">Hello there<"));
     await screen.getByRole("button", { name: "Done" }).click();
     await expect
-      .poll(() => useProjectStore.getState().lines.map((line) => line.text))
+      .poll(() => useProjectStore.getState().lines.map((line) => lineText(line)))
       .toEqual(["Hello there", "World"]);
     expect(useProjectStore.getState().ttmlEditState).toBeNull();
     await expect.element(screen.getByText("Updated the lyrics from the TTML")).toBeInTheDocument();
@@ -431,7 +432,7 @@ describe("ExportPanel · Done applies TTML edits to the project", () => {
       '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:05.000" end="00:06.000">Pasted in</p></div></body></tt>',
     );
     await screen.getByRole("button", { name: "Done" }).click();
-    await expect.poll(() => useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Pasted in"]);
+    await expect.poll(() => useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Pasted in"]);
     expect(useProjectStore.getState().lines[0]?.begin).toBe(5);
   });
 
@@ -441,7 +442,7 @@ describe("ExportPanel · Done applies TTML edits to the project", () => {
       await textarea.fill("CUSTOM EDITED CONTENT");
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByText(/only change the exported file/)).toBeInTheDocument();
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello", "World"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello", "World"]);
       expect(useProjectStore.getState().ttmlEditState?.content).toBe("CUSTOM EDITED CONTENT");
     });
   });

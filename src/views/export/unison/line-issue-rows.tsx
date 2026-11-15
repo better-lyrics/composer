@@ -1,10 +1,11 @@
+import { useMemo, useState } from "react";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
 import type { LineIssue } from "@/domain/unison/submit-checks";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { revealLineInTimeline } from "@/views/timeline/line-reveal-request";
-import { useMemo, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -42,7 +43,7 @@ function issueLabel(issue: LineIssue): string {
 
 function issueText(line: LyricLine | undefined, issue: LineIssue): string {
   if (!line) return "";
-  return issue.track === "main" ? line.text : (line.backgroundText ?? "");
+  return issue.track === "main" ? lineText(line) : (backgroundText(line) ?? "");
 }
 
 // Neighbouring problem words share one mark, so the underline runs across the space between them.

@@ -1,9 +1,10 @@
+import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
-import { describe, expect, it } from "vitest";
 
 // -- Tests --------------------------------------------------------------------
 
@@ -51,7 +52,7 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
       const again = kept?.content.replace(">Charlie<", ">Charlie!<") ?? "";
       useProjectStore.getState().setTtmlEditState({ source: kept?.source ?? "", content: again });
       expect(applyEditedTtml(again, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => [line.id, line.text])).toEqual([
+      expect(useProjectStore.getState().lines.map((line) => [line.id, lineText(line)])).toEqual([
         ["a", "Alpha"],
         ["c", "Charlie!"],
       ]);
@@ -71,12 +72,12 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
           '\n      <p begin="0:05.000" end="0:06.000" itunes:key="X" ttm:agent="v1">Extra</p>\n    </div>',
         );
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied", keptInExport: true });
-      const created = useProjectStore.getState().lines.find((line) => line.text === "Extra");
+      const created = useProjectStore.getState().lines.find((line) => lineText(line) === "Extra");
       const kept = useProjectStore.getState().ttmlEditState;
       const again = kept?.content.replace(">Charlie<", ">Charlie!<") ?? "";
       useProjectStore.getState().setTtmlEditState({ source: kept?.source ?? "", content: again });
       expect(applyEditedTtml(again, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.find((line) => line.text === "Extra")).toEqual(created);
+      expect(useProjectStore.getState().lines.find((line) => lineText(line) === "Extra")).toEqual(created);
     });
   });
 
@@ -87,7 +88,7 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
       const edited = generated.replace(">Hello<", ">Hello there<");
       useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
       expect(applyEditedTtml(edited, 200)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello there"]);
     });
 
     it("regression: an edit written with audio still applies after the audio goes missing", () => {
@@ -96,7 +97,7 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
       const edited = generated.replace(">Hello<", ">Hello there<");
       useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello there"]);
     });
 
     it("regression: an edit typed on after a relink changed the duration still applies", () => {
@@ -109,7 +110,7 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
       useProjectStore.setState({ ttmlEditState: typed });
       expect(typed.lyricsChanged).toBeUndefined();
       expect(applyEditedTtml(edited, 180)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello again"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello again"]);
     });
 
     it("regression: a fully applied edit to a YouTube export is not kept in the export", () => {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { shiftAllTimings } from "@/lib/priming-migration";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import type { WordTiming } from "@/domain/word/timing";
+import { shiftAllTimings } from "@/lib/priming-migration";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -131,7 +132,7 @@ describe("shiftAllTimings", () => {
     expect(out[0].groupId).toBe("g1");
     expect(out[0].instanceIdx).toBe(2);
     expect(out[0].templateLineIdx).toBe(0);
-    expect(out[0].text).toBe("hi");
+    expect(lineText(out[0])).toBe("hi");
     expect(out[1].agentId).toBe("v2");
     expect(out[1].groupId).toBe("g2");
     expect(out[1].instanceIdx).toBe(1);

@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -9,7 +11,6 @@ import { useProjectStore } from "@/stores/project";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
-import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -71,7 +72,7 @@ describe("openUnisonLyric", () => {
 
     const project = useProjectStore.getState();
     expect(openProjectIdSnapshot()).not.toBe("a");
-    expect(project.lines.map((line) => line.text)).toEqual([
+    expect(project.lines.map((line) => lineText(line))).toEqual([
       "Paper lanterns over the bay",
       "Quiet bells along the pier",
     ]);

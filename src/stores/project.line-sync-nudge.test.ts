@@ -1,3 +1,4 @@
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
@@ -132,8 +133,8 @@ describe("instance shift = nudging every selected word at once", () => {
       ]),
     );
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "A")?.words?.[0].begin).toBeCloseTo(10.5);
-    expect(after.find((l) => l.id === "B")?.words?.[1].end).toBeCloseTo(12.5);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "A")!))[0].begin).toBeCloseTo(10.5);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "B")!))[1].end).toBeCloseTo(12.5);
     // group structure preserved
     expect(after.find((l) => l.id === "A")?.groupId).toBe("g1");
     expect(after.find((l) => l.id === "B")?.instanceIdx).toBe(0);
@@ -168,8 +169,8 @@ describe("instance shift = nudging every selected word at once", () => {
       pasteLines([{ id: "A1", updates: { words: [{ id: "w12", text: "x", sep: "", begin: 10.5, end: 11.5 }] } }]),
     );
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "A1")?.words?.[0].begin).toBeCloseTo(10.5);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "A1")!))[0].begin).toBeCloseTo(10.5);
     // Instance 1 unchanged, proving shift is per-selection, not group-wide
-    expect(after.find((l) => l.id === "A2")?.words?.[0].begin).toBe(30);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "A2")!))[0].begin).toBe(30);
   });
 });

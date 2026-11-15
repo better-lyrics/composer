@@ -1,7 +1,9 @@
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -26,10 +28,10 @@ function paragraphs(ttml: string): string[] {
 }
 
 function expectBravoKeptItsData(merged: LyricLine[]): void {
-  const line = merged.find((candidate) => candidate.text === "Bravo!");
+  const line = merged.find((candidate) => lineText(candidate) === "Bravo!");
   expect(line?.id).toBe("b");
   expect(line?.translations?.es).toEqual(BRAVO_SPANISH);
-  expect(line?.backgroundTextSource).toBe("extraction");
+  expect(backgroundTrack(line!)?.source).toBe("extraction");
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -64,7 +66,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
           .replace(paragraphs(ttml)[0] ?? "", `${paragraphs(ttml)[0]}<p begin="0:02.000" end="0:03.000">New</p>`)
           .replace(">Bravo<", ">Bravo!<"),
       );
-      expect(merged.map((line) => line.text)).toEqual(["Alpha", "New", "Bravo!", "Zulu"]);
+      expect(merged.map((line) => lineText(line))).toEqual(["Alpha", "New", "Bravo!", "Zulu"]);
       expect(["a", "b", "z"]).not.toContain(merged[1]?.id);
       expectBravoKeptItsData(merged);
     });
@@ -90,7 +92,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
           .replace("\u0000", second)
           .replace(">Hello<", ">Hello!<");
       });
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
         ["w", "Wor|ld"],
         ["h", "Hello!"],
         ["e", "End"],
@@ -110,7 +112,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace(paragraphs(ttml)[1] ?? "", "").replace(">Quebec<", ">Totally different<"),
       );
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
         ["a", "Alpha"],
         ["q", "Totally different"],
         ["z", "Zulu"],

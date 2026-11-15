@@ -1,4 +1,6 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -7,7 +9,6 @@ import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -95,7 +96,7 @@ describe("SyncPanel granularity switch", () => {
         .poll(() => useProjectStore.getState().lines[0].words?.map((word) => word.text + word.sep))
         .toEqual(["Hello "]);
       const [tapped, next] = useProjectStore.getState().lines;
-      expect(tapped.words?.[0].begin).toBe(1.5);
+      expect(timedSyllables(mainTrack(tapped))[0].begin).toBe(1.5);
       expect(isLineSynced(tapped)).toBe(false);
       expect(next).toBe(untimed);
 
@@ -132,7 +133,7 @@ describe("SyncPanel granularity switch", () => {
 
       const [, word, plain] = useProjectStore.getState().lines;
       expect(isWordSynced(word)).toBe(true);
-      expect(word.words).toEqual(wordSynced.words);
+      expect(timedSyllables(mainTrack(word))).toEqual(timedSyllables(mainTrack(wordSynced)));
       expect(plain.words).toBeUndefined();
       expect(plain.begin).toBeUndefined();
     });

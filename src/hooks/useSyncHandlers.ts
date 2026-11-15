@@ -1,18 +1,21 @@
+import { useCallback, useMemo, useRef } from "react";
+import { toast } from "sonner";
 import { placeInstance } from "@/domain/commands/instance-edits";
 import { isRefused } from "@/domain/commands/outcome";
 import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "@/domain/commands/sync";
-import type { WordTrack } from "@/domain/line/tracks";
-import type { BoundaryEdge } from "@/domain/word/boundary";
-import type { RetimeChange } from "@/utils/timing/word-timing-ops";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { isSyncableLine } from "@/domain/line/sync-progress";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import type { WordTrack } from "@/domain/line/tracks";
 import { SYNC_START, syncAddressAt } from "@/domain/sync/address";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
-import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
 import type { GestureCommit, SyncGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
+import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
+import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -23,8 +26,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showPlacementBlockedToast } from "@/utils/group-toast";
 import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
-import { useCallback, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import type { RetimeChange } from "@/utils/timing/word-timing-ops";
 
 // -- Types --------------------------------------------------------------------
 
@@ -265,7 +267,8 @@ function useSyncHandlers({
   // silently drop every word before it.
   const handleJumpToWord = useCallback(
     (lineIdx: number, wordIdx: number) => {
-      const word = lines[lineIdx]?.words?.[wordIdx];
+      const line = lines[lineIdx];
+      const word = line && timedSyllables(mainTrack(line))[wordIdx];
       if (!word) return;
       setSyncState((prev) => ({
         ...prev,
@@ -284,7 +287,8 @@ function useSyncHandlers({
   // next tap overwrite the main word at the same index.
   const handleJumpToBgWord = useCallback(
     (lineIdx: number, wordIdx: number) => {
-      const word = lines[lineIdx]?.backgroundWords?.[wordIdx];
+      const line = lines[lineIdx];
+      const word = line && timedSyllables(backgroundTrack(line))[wordIdx];
       if (!word) return;
       seekForRedo(word.begin);
     },
@@ -351,7 +355,7 @@ function useSyncHandlers({
     isComplete,
     currentLine,
     skippedInstances,
-    currentWord: currentLine?.text ? splitIntoWords(currentLine.text)[wordIndex] : undefined,
+    currentWord: currentLine ? splitIntoWords(lineText(currentLine))[wordIndex] : undefined,
   };
 }
 

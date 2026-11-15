@@ -1,20 +1,21 @@
 /**
  * @vitest-environment node
  */
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import type { TimeRange } from "@/domain/group/shared-timing";
-import { spacedText } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { type GroupHeaderRow, getEffectiveRows } from "@/views/timeline/effective-rows";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import {
   nudgeSelectedWords,
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 } from "@/domain/selection/nudge";
+import { spacedText } from "@/domain/word/spaced-words";
+import type { WordTiming } from "@/domain/word/timing";
+import { type GroupHeaderRow, getEffectiveRows } from "@/views/timeline/effective-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
@@ -580,8 +581,8 @@ describe("nudgeSelectedWords", () => {
     const updatedWords = result.updates[0].updates.words!;
     expect(updatedWords[1].begin).toBeCloseTo(1.05);
     expect(updatedWords[1].end).toBeCloseTo(2.05);
-    expect(updatedWords[0]).toEqual(lines[0].words![0]);
-    expect(updatedWords[2]).toEqual(lines[0].words![2]);
+    expect(updatedWords[0]).toEqual(timedSyllables(mainTrack(lines[0]))[0]);
+    expect(updatedWords[2]).toEqual(timedSyllables(mainTrack(lines[0]))[2]);
   });
 
   it("shifts a single word left preserving duration", () => {
@@ -669,12 +670,12 @@ describe("nudgeSelectedWords", () => {
     );
     expect(result.appliedDelta).toBeCloseTo(0.05);
     const updated = result.updates[0].updates.words!;
-    expect(updated[0]).toEqual(lines[0].words![0]);
+    expect(updated[0]).toEqual(timedSyllables(mainTrack(lines[0]))[0]);
     expect(updated[1].begin).toBeCloseTo(1.05);
     expect(updated[1].end).toBeCloseTo(2.05);
     expect(updated[2].begin).toBeCloseTo(2.05);
     expect(updated[2].end).toBeCloseTo(3.05);
-    expect(updated[3]).toEqual(lines[0].words![3]);
+    expect(updated[3]).toEqual(timedSyllables(mainTrack(lines[0]))[3]);
   });
 
   it("clamps a block to the most-restrictive non-selected neighbor", () => {

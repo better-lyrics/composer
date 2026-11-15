@@ -1,11 +1,13 @@
-import { useProjectStore } from "@/stores/project";
-import { createLine } from "@/test/factories";
-import { render } from "@/test/render";
-import { EditPanel } from "@/views/edit";
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
+import { render } from "@/test/render";
+import { EditPanel } from "@/views/edit";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -41,10 +43,10 @@ describe("background vocals popover", () => {
     await input.fill("yeah");
     await userEvent.keyboard("{Enter}");
     await expect.element(input).not.toBeInTheDocument();
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("yeah");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("yeah");
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("yea");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("yea");
   });
 
   it("opens from the keyboard and returns focus to its trigger on close", async () => {
@@ -85,7 +87,7 @@ describe("regressions", () => {
     await screen.getByRole("textbox", { name: "Background vocals text" }).click();
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("yeah");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("yeah");
   });
 
   it("regression: blurring without an edit leaves the line and history untouched", async () => {
@@ -110,6 +112,6 @@ describe("regressions", () => {
     await expect.element(input).not.toBeInTheDocument();
 
     expect(useProjectStore.getState().lines).toBe(linesBefore);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });

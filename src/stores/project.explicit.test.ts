@@ -1,5 +1,7 @@
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 /**
  * @vitest-environment node
  */
@@ -31,9 +33,9 @@ describe("toggleWordExplicit · single line", () => {
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.words![0].explicit).toBeUndefined();
-    expect(updated.words![1].explicit).toBe(true);
-    expect(updated.words![2].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(updated))[0].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(updated))[1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(updated))[2].explicit).toBeUndefined();
   });
 
   it("removes the explicit key (does not store false) when toggling a marked word", () => {
@@ -44,7 +46,7 @@ describe("toggleWordExplicit · single line", () => {
       words: [{ id: "w4", text: "fuck", sep: "", begin: 0, end: 1, explicit: true }],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0]));
-    const word = useProjectStore.getState().lines[0].words![0];
+    const word = timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0];
     expect("explicit" in word).toBe(false);
   });
 
@@ -60,7 +62,7 @@ describe("toggleWordExplicit · single line", () => {
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0, 1, 2]));
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBe(true);
     expect(words[1].explicit).toBe(true);
     expect(words[2].explicit).toBe(true);
@@ -78,7 +80,7 @@ describe("toggleWordExplicit · single line", () => {
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0, 1]));
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBeUndefined();
   });
@@ -97,9 +99,9 @@ describe("toggleWordExplicit · single line", () => {
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "backgroundWords", [1]));
     const line = useProjectStore.getState().lines[0];
-    expect(line.words![0].explicit).toBeUndefined();
-    expect(line.backgroundWords![0].explicit).toBeUndefined();
-    expect(line.backgroundWords![1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(line))[0].explicit).toBeUndefined();
+    expect(timedSyllables(backgroundTrack(line))[0].explicit).toBeUndefined();
+    expect(timedSyllables(backgroundTrack(line))[1].explicit).toBe(true);
   });
 });
 
@@ -143,23 +145,21 @@ describe("toggleWordExplicit · linked-line propagation", () => {
     seedLinkedGroup();
     useProjectStore.getState().commit(toggleWordExplicit("A", "words", [1]));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].begin).toBeCloseTo(30.4);
-    expect(lines[1].words![1].end).toBeCloseTo(30.7);
+    expect(timedSyllables(mainTrack(lines[0]))[1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[1].begin).toBeCloseTo(30.4);
+    expect(timedSyllables(mainTrack(lines[1]))[1].end).toBeCloseTo(30.7);
   });
 
   it("does not propagate to detached siblings", () => {
     seedLinkedGroup();
-    useProjectStore
-      .getState()
-      .restoreLyrics({
-        lines: useProjectStore.getState().lines.map((l) => (l.id === "B" ? { ...l, detached: true } : l)),
-      });
+    useProjectStore.getState().restoreLyrics({
+      lines: useProjectStore.getState().lines.map((l) => (l.id === "B" ? { ...l, detached: true } : l)),
+    });
     useProjectStore.getState().commit(toggleWordExplicit("A", "words", [1]));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(lines[0]))[1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[1].explicit).toBeUndefined();
   });
 
   it("clears the flag on siblings when source unmarks", () => {
@@ -197,8 +197,8 @@ describe("toggleWordExplicit · linked-line propagation", () => {
     });
     useProjectStore.getState().commit(toggleWordExplicit("A", "words", [1]));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBeUndefined();
-    expect(lines[1].words![1].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(lines[0]))[1].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(lines[1]))[1].explicit).toBeUndefined();
   });
 });
 
@@ -222,10 +222,10 @@ describe("addInstance · template materialization carries explicit", () => {
     useProjectStore.getState().commit(addInstance("g1", structure, 30));
     const line = useProjectStore.getState().lines.find((l) => l.groupId === "g1");
     expect(line).toBeDefined();
-    expect(line!.words![0].explicit).toBeUndefined();
-    expect(line!.words![1].explicit).toBe(true);
-    expect(line!.words![1].begin).toBeCloseTo(30.3);
-    expect(line!.words![2].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(line!))[0].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(line!))[1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(line!))[1].begin).toBeCloseTo(30.3);
+    expect(timedSyllables(mainTrack(line!))[2].explicit).toBeUndefined();
   });
 
   it("carries explicit from WordTemplate onto backgroundWords", () => {
@@ -247,9 +247,9 @@ describe("addInstance · template materialization carries explicit", () => {
     ];
     useProjectStore.getState().commit(addInstance("g1", structure, 10));
     const line = useProjectStore.getState().lines.find((l) => l.groupId === "g1");
-    expect(line!.backgroundWords![0].explicit).toBeUndefined();
-    expect(line!.backgroundWords![1].explicit).toBe(true);
-    expect(line!.backgroundWords![1].begin).toBeCloseTo(10.5);
+    expect(timedSyllables(backgroundTrack(line!))[0].explicit).toBeUndefined();
+    expect(timedSyllables(backgroundTrack(line!))[1].explicit).toBe(true);
+    expect(timedSyllables(backgroundTrack(line!))[1].begin).toBeCloseTo(10.5);
   });
 });
 
@@ -262,9 +262,9 @@ describe("toggleWordExplicit · history", () => {
       words: [{ id: "w26", text: "fuck", sep: "", begin: 0, end: 1 }],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0]));
-    expect(useProjectStore.getState().lines[0].words![0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].explicit).toBe(true);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].words![0].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].explicit).toBeUndefined();
   });
 });
 
@@ -283,7 +283,7 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[1].explicit).toBe(true);
     expect(words[2].explicit).toBe(true);
     expect(words[0].explicit).toBeUndefined();
@@ -301,7 +301,7 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBeUndefined();
   });
@@ -341,10 +341,10 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
     });
     useProjectStore.getState().commit(toggleWordExplicit("A", "words", [0]));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![0].explicit).toBe(true);
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![0].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[0]))[0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[0]))[1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[1].explicit).toBe(true);
   });
 });
 
@@ -361,7 +361,7 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
       ],
     });
     useProjectStore.getState().commit(markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true));
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBe(true);
     expect(words[1].explicit).toBe(true);
     expect(words[2].explicit).toBeUndefined();
@@ -410,10 +410,10 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
       ),
     );
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![0].explicit).toBe(true);
-    expect(lines[0].words![2].explicit).toBe(true);
-    expect(lines[1].words![0].explicit).toBe(true);
-    expect(lines[1].words![2].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[0]))[0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[0]))[2].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[2].explicit).toBe(true);
   });
 });
 
@@ -437,18 +437,18 @@ describe("toggleWordExplicit · background provenance", () => {
     seedExtractionBgLine();
     useProjectStore.getState().commit(toggleWordExplicit("L1", "backgroundWords", [1]));
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
-    expect(line.backgroundWords![1].explicit).toBe(true);
-    expect(line.backgroundWords![0].explicit).toBeUndefined();
-    expect(line.backgroundText).toBe("oh shit");
+    expect(backgroundTrack(line)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(line))[1].explicit).toBe(true);
+    expect(timedSyllables(backgroundTrack(line))[0].explicit).toBeUndefined();
+    expect(backgroundText(line)).toBe("oh shit");
   });
 
   it("leaves backgroundTextSource untouched when editing the main words field", () => {
     seedExtractionBgLine();
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0]));
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("extraction");
-    expect(line.words![0].explicit).toBe(true);
+    expect(backgroundTrack(line)?.source).toBe("extraction");
+    expect(timedSyllables(mainTrack(line))[0].explicit).toBe(true);
   });
 
   it("flips linked siblings to manual when a background-word edit propagates", () => {
@@ -490,19 +490,19 @@ describe("toggleWordExplicit · background provenance", () => {
     });
     useProjectStore.getState().commit(toggleWordExplicit("A", "backgroundWords", [1]));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].backgroundTextSource).toBe("manual");
-    expect(lines[1].backgroundTextSource).toBe("manual");
-    expect(lines[0].backgroundWords![1].explicit).toBe(true);
-    expect(lines[1].backgroundWords![1].explicit).toBe(true);
-    expect(lines[1].backgroundWords![1].begin).toBeCloseTo(31.25);
+    expect(backgroundTrack(lines[0])?.source).toBe("manual");
+    expect(backgroundTrack(lines[1])?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(lines[0]))[1].explicit).toBe(true);
+    expect(timedSyllables(backgroundTrack(lines[1]))[1].explicit).toBe(true);
+    expect(timedSyllables(backgroundTrack(lines[1]))[1].begin).toBeCloseTo(31.25);
   });
 
   it("undo restores the prior extraction provenance", () => {
     seedExtractionBgLine();
     useProjectStore.getState().commit(toggleWordExplicit("L1", "backgroundWords", [1]));
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
 
@@ -524,9 +524,9 @@ describe("markWordsExplicit · background provenance", () => {
       .getState()
       .commit(markWordsExplicit([{ lineId: "L1", field: "backgroundWords", wordIndex: 0 }], true));
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
-    expect(line.backgroundWords![0].explicit).toBe(true);
-    expect(line.backgroundText).toBe("oh shit");
+    expect(backgroundTrack(line)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(line))[0].explicit).toBe(true);
+    expect(backgroundText(line)).toBe("oh shit");
   });
 
   it("leaves backgroundTextSource untouched when marking the main words field", () => {
@@ -544,8 +544,8 @@ describe("markWordsExplicit · background provenance", () => {
     });
     useProjectStore.getState().commit(markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true));
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("extraction");
-    expect(line.words![0].explicit).toBe(true);
+    expect(backgroundTrack(line)?.source).toBe("extraction");
+    expect(timedSyllables(mainTrack(line))[0].explicit).toBe(true);
   });
 
   it("flips linked siblings to manual when a background-word edit propagates", () => {
@@ -589,10 +589,10 @@ describe("markWordsExplicit · background provenance", () => {
       .getState()
       .commit(markWordsExplicit([{ lineId: "A", field: "backgroundWords", wordIndex: 0 }], true));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].backgroundTextSource).toBe("manual");
-    expect(lines[1].backgroundTextSource).toBe("manual");
-    expect(lines[0].backgroundWords![0].explicit).toBe(true);
-    expect(lines[1].backgroundWords![0].explicit).toBe(true);
+    expect(backgroundTrack(lines[0])?.source).toBe("manual");
+    expect(backgroundTrack(lines[1])?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(lines[0]))[0].explicit).toBe(true);
+    expect(timedSyllables(backgroundTrack(lines[1]))[0].explicit).toBe(true);
   });
 });
 
@@ -642,15 +642,15 @@ describe("markWordsExplicit · batch action", () => {
     );
 
     const after = useProjectStore.getState().lines;
-    expect(after[0].words![0].explicit).toBe(true);
-    expect(after[1].words![0].explicit).toBe(true);
-    expect(after[2].words![0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(after[0]))[0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(after[1]))[0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(after[2]))[0].explicit).toBe(true);
 
     useProjectStore.getState().undo();
     const undone = useProjectStore.getState().lines;
-    expect(undone[0].words![0].explicit).toBeUndefined();
-    expect(undone[1].words![0].explicit).toBeUndefined();
-    expect(undone[2].words![0].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(undone[0]))[0].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(undone[1]))[0].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(undone[2]))[0].explicit).toBeUndefined();
   });
 
   it("propagates to linked siblings for each target", () => {
@@ -689,8 +689,8 @@ describe("markWordsExplicit · batch action", () => {
 
     useProjectStore.getState().commit(markWordsExplicit([{ lineId: "A", field: "words", wordIndex: 1 }], true));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[0]))[1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(lines[1]))[1].explicit).toBe(true);
   });
 
   it("is a no-op when targets is empty", () => {
@@ -724,7 +724,7 @@ describe("markWordsExplicit · batch action", () => {
         false,
       ),
     );
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBeUndefined();
   });

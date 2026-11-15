@@ -1,15 +1,16 @@
+import { toast } from "sonner";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import {
   installScrollHost,
   makeCursorTargetingEvent,
   makeCursorTargetingStartEvent,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
-import { toast } from "sonner";
 
 interface FlowOptions {
   lineId: string;
@@ -78,7 +79,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     const after = useProjectStore.getState().lines[0];
     expect(after.words?.length).toBe(1);
     expect(after.backgroundWords?.length).toBe(1);
-    expect(after.backgroundWords?.[0].text.trim()).toBe("world");
+    expect(timedSyllables(backgroundTrack(after))[0].text.trim()).toBe("world");
   });
 
   it("drops a bg word back into the same line's main zone reliably", async () => {
@@ -417,7 +418,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     });
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.length ?? 0).toBe(0);
+    expect(timedSyllables(mainTrack(after)).length).toBe(0);
     expect(after.backgroundWords?.length).toBe(2);
   });
 

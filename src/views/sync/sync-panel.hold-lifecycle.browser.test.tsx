@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SyncPanel } from "@/views/sync/sync-panel";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
+import { SyncPanel } from "@/views/sync/sync-panel";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -82,7 +83,7 @@ describe("SyncPanel · hold pointer ownership", () => {
     firePointer(holdCircle.element(), "pointerup", 2);
 
     await expect.poll(() => holdCircle.element().getAttribute("aria-pressed")).toBe("true");
-    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0]?.end).toBe(5);
 
     setCurrentTime(8);
     firePointer(holdCircle.element(), "pointerup", 1);
@@ -101,7 +102,7 @@ describe("SyncPanel · hold pointer ownership", () => {
     firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown", 2);
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.begin).toBe(7);
-    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0]?.end).toBe(7);
   });
 
   it("releases a hold started after an earlier hold was drained by an unmount", async () => {
@@ -197,7 +198,7 @@ describe("SyncPanel · keyboard hold release", () => {
     pressHoldKey("keyup");
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0]?.end).toBe(7);
   });
 
   it("regression: keeps the gap after gapless syllables when the next hold starts", async () => {

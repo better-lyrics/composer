@@ -1,3 +1,7 @@
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
@@ -7,9 +11,6 @@ import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { EditPanel } from "@/views/edit";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -44,7 +45,7 @@ function pasteText(textarea: HTMLTextAreaElement, text: string): ClipboardEvent 
 }
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => line.text);
+  return useProjectStore.getState().lines.map((line) => lineText(line));
 }
 
 // -- Tests --------------------------------------------------------------------

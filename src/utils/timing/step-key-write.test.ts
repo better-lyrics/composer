@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { pressStepKey } from "@/domain/commands/word-timing";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTrack } from "@/domain/line/tracks";
-import { pressStepKey } from "@/domain/commands/word-timing";
 import { type ResolvedAddress, resolvedAt, toAddress } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
@@ -52,9 +53,9 @@ describe("writeStepKey", () => {
     useProjectStore.setState({ lines: [chorus("c0", 0, 28)], groups: [] });
     const before = lineById("c0")?.words;
     expect(press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5)).toEqual({ kind: "written" });
-    expect(lineById("c0")?.words?.[1].begin).toBe(28.5);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[1].begin).toBe(28.5);
     store().undo();
-    expect(lineById("c0")?.words).toEqual(before);
+    expect(timedSyllables(mainTrack(lineById("c0")!))).toEqual(before);
   });
 
   it("keeps a shared instance in step with the written instance", () => {
@@ -63,8 +64,8 @@ describe("writeStepKey", () => {
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
     press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5);
-    expect(lineById("c1")?.words?.[0].end).toBeCloseTo(40.5);
-    expect(lineById("c1")?.words?.[1].begin).toBeCloseTo(40.5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0].end).toBeCloseTo(40.5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1].begin).toBeCloseTo(40.5);
   });
 
   it("regression: never chains into another instance of the same shared group", () => {
@@ -78,9 +79,9 @@ describe("writeStepKey", () => {
     });
     const before = lineById("a0")?.words;
     expect(press(slot("a1", 1, 2), slot("b0", 2, 0), 31.9)).toEqual({ kind: "written" });
-    expect(lineById("a1")?.words?.[2].end).toBe(31.9);
-    expect(lineById("a0")?.words).toEqual(before);
-    expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(40);
+    expect(timedSyllables(mainTrack(lineById("a1")!))[2].end).toBe(31.9);
+    expect(timedSyllables(mainTrack(lineById("a0")!))).toEqual(before);
+    expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBeCloseTo(40);
   });
 
   it("still chains into a detached line, which keeps its own timing", () => {
@@ -89,7 +90,7 @@ describe("writeStepKey", () => {
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
     expect(press(slot("a0", 0, 2), slot("b0", 1, 0), 29.9)).toEqual({ kind: "written" });
-    expect(lineById("b0")?.words?.[0].begin).toBe(29.9);
+    expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBe(29.9);
   });
 
   it("ends a line's last word and starts the next line at the same time, as one undo step", () => {
@@ -101,8 +102,8 @@ describe("writeStepKey", () => {
     useProjectStore.setState({ lines: [chorus("c0", 0, 28), next], groups: [] });
     const before = store().lines;
     expect(press(slot("c0", 0, 2), slot("n", 1, 0), 29.9)).toEqual({ kind: "written" });
-    expect(lineById("c0")?.words?.[2].end).toBe(29.9);
-    expect(lineById("n")?.words?.[0]).toMatchObject({ begin: 29.9, end: 33.4 });
+    expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBe(29.9);
+    expect(timedSyllables(mainTrack(lineById("n")!))[0]).toMatchObject({ begin: 29.9, end: 33.4 });
     store().undo();
     expect(store().lines.map((line) => line.words)).toEqual(before.map((line) => line.words));
   });
@@ -122,7 +123,7 @@ describe("writeStepKey", () => {
     });
     useProjectStore.setState({ lines: [echo, next], groups: [] });
     press(slot("e", 0, 0, "bg"), null, 30.7);
-    expect(lineById("e")?.backgroundWords?.[0].end).toBe(30.7);
-    expect(lineById("n")?.words?.[0].begin).toBe(33);
+    expect(timedSyllables(backgroundTrack(lineById("e")!))[0].end).toBe(30.7);
+    expect(timedSyllables(mainTrack(lineById("n")!))[0].begin).toBe(33);
   });
 });

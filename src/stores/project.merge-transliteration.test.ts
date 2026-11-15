@@ -1,12 +1,13 @@
 /**
  * @vitest-environment node
  */
-import type { TransliterationTrack } from "@/domain/language/model";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { newWordId } from "@/domain/word/id";
-import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
+import type { TransliterationTrack } from "@/domain/language/model";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { newWordId } from "@/domain/word/id";
+import { useProjectStore } from "@/stores/project";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -55,8 +56,8 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
       const merged = lineById("line-1");
-      expect(merged?.words?.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단은 ", "나"]);
-      expect(merged?.words?.[1].transliteration).toBe("ildan eun");
+      expect(timedSyllables(mainTrack(merged!)).map((word) => word.text + word.sep)).toEqual(["Uh ", "일단은 ", "나"]);
+      expect(timedSyllables(mainTrack(merged!))[1].transliteration).toBe("ildan eun");
       expect(merged?.transliteration).toEqual(track);
     });
 
@@ -121,8 +122,8 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0]));
 
       const merged = lineById("line-1");
-      expect(merged?.backgroundWords?.map((word) => word.text + word.sep)).toEqual(["그래 ", "yeah"]);
-      expect(merged?.backgroundWords?.map((word) => word.transliteration)).toEqual(["geurae", "yeah"]);
+      expect(timedSyllables(backgroundTrack(merged!)).map((word) => word.text + word.sep)).toEqual(["그래 ", "yeah"]);
+      expect(timedSyllables(backgroundTrack(merged!)).map((word) => word.transliteration)).toEqual(["geurae", "yeah"]);
       expect(merged?.transliteration).toEqual(track);
     });
   });
@@ -151,9 +152,13 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
 
       useProjectStore.getState().commit(mergeSyllableGroup("a0", "words", [1]));
 
-      expect(lineById("a0")?.words?.[1].transliteration).toBe("ildan eun");
-      expect(lineById("a1")?.words?.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단은 ", "나"]);
-      expect(lineById("a1")?.words?.[1].transliteration).toBe("ilttan eun");
+      expect(timedSyllables(mainTrack(lineById("a0")!))[1].transliteration).toBe("ildan eun");
+      expect(timedSyllables(mainTrack(lineById("a1")!)).map((word) => word.text + word.sep)).toEqual([
+        "Uh ",
+        "일단은 ",
+        "나",
+      ]);
+      expect(timedSyllables(mainTrack(lineById("a1")!))[1].transliteration).toBe("ilttan eun");
     });
   });
 
@@ -164,7 +169,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
 
       useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
-      expect(lineById("line-1")?.words).toEqual([
+      expect(timedSyllables(mainTrack(lineById("line-1")!))).toEqual([
         { text: "Uh", sep: " ", begin: 0, end: 0.5 },
         { text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
         { text: "나", sep: "", begin: 1.5, end: 2 },

@@ -1,8 +1,10 @@
 /**
  * @vitest-environment node
  */
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import {
   detachInstancesFromLines,
   diffEditTextChange,
@@ -170,7 +172,7 @@ describe("propagateContentUpdates", () => {
       { id: "L2", text: "other", agentId: "v1" },
     ];
     const out = propagateContentUpdates(lines, lines, [{ id: "L1", updates: { text: "edited" } }]);
-    expect(out[1].text).toBe("other");
+    expect(lineText(out[1])).toBe("other");
   });
 
   it("propagates text to linked siblings (same groupId + templateLineIdx)", () => {
@@ -179,8 +181,8 @@ describe("propagateContentUpdates", () => {
       { id: "L2", text: "stale", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
     ];
     const out = propagateContentUpdates(lines, lines, [{ id: "L1", updates: { text: "edited" } }]);
-    expect(out[0].text).toBe("edited");
-    expect(out[1].text).toBe("edited");
+    expect(lineText(out[0])).toBe("edited");
+    expect(lineText(out[1])).toBe("edited");
   });
 
   it("clears sibling words/begin/end when source clears them via text edit", () => {
@@ -199,7 +201,7 @@ describe("propagateContentUpdates", () => {
     const out = propagateContentUpdates(lines, lines, [
       { id: "L1", updates: { text: "I luv", words: undefined, begin: undefined, end: undefined } },
     ]);
-    expect(out[1].text).toBe("I luv");
+    expect(lineText(out[1])).toBe("I luv");
     expect(out[1].words).toBeUndefined();
     expect(out[1].begin).toBeUndefined();
     expect(out[1].end).toBeUndefined();
@@ -234,8 +236,8 @@ describe("propagateContentUpdates", () => {
     ];
     const { contentUpdates } = diffEditTextChange(old, next);
     const out = propagateContentUpdates(old, next, contentUpdates);
-    expect(out[1].backgroundText).toBeUndefined();
-    expect(out[1].backgroundTextSource).toBeUndefined();
+    expect(backgroundText(out[1])).toBeUndefined();
+    expect(backgroundTrack(out[1])?.source).toBeUndefined();
   });
 
   it("propagates per-word text changes to siblings while preserving sibling word timings", () => {
@@ -290,12 +292,12 @@ describe("propagateContentUpdates", () => {
       },
     ]);
 
-    expect(out[1].text).toBe("I luv you");
-    expect(out[1].words?.[1]).toMatchObject({ text: "luv", sep: " " });
-    expect(out[1].words?.[1].begin).toBe(30.5);
-    expect(out[1].words?.[1].end).toBe(31.0);
-    expect(out[1].words?.[0]).toMatchObject({ text: "I", sep: " " });
-    expect(out[1].words?.[0].begin).toBe(30);
+    expect(lineText(out[1])).toBe("I luv you");
+    expect(timedSyllables(mainTrack(out[1]))[1]).toMatchObject({ text: "luv", sep: " " });
+    expect(timedSyllables(mainTrack(out[1]))[1].begin).toBe(30.5);
+    expect(timedSyllables(mainTrack(out[1]))[1].end).toBe(31.0);
+    expect(timedSyllables(mainTrack(out[1]))[0]).toMatchObject({ text: "I", sep: " " });
+    expect(timedSyllables(mainTrack(out[1]))[0].begin).toBe(30);
   });
 
   it("skips detached siblings", () => {
@@ -304,7 +306,7 @@ describe("propagateContentUpdates", () => {
       { id: "L2", text: "stale", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0, detached: true },
     ];
     const out = propagateContentUpdates(lines, lines, [{ id: "L1", updates: { text: "edited" } }]);
-    expect(out[1].text).toBe("stale");
+    expect(lineText(out[1])).toBe("stale");
   });
 
   it("skips lines from other groups", () => {
@@ -313,7 +315,7 @@ describe("propagateContentUpdates", () => {
       { id: "L2", text: "stale", agentId: "v1", groupId: "g2", instanceIdx: 0, templateLineIdx: 0 },
     ];
     const out = propagateContentUpdates(lines, lines, [{ id: "L1", updates: { text: "edited" } }]);
-    expect(out[1].text).toBe("stale");
+    expect(lineText(out[1])).toBe("stale");
   });
 
   it("skips siblings with a different templateLineIdx", () => {
@@ -322,7 +324,7 @@ describe("propagateContentUpdates", () => {
       { id: "L2", text: "stale", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 },
     ];
     const out = propagateContentUpdates(lines, lines, [{ id: "L1", updates: { text: "edited" } }]);
-    expect(out[1].text).toBe("stale");
+    expect(lineText(out[1])).toBe("stale");
   });
 
   it("does not touch the target line itself", () => {

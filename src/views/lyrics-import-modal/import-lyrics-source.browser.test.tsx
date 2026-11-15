@@ -1,3 +1,7 @@
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { lineText } from "@/domain/line/text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { listProjectIndex } from "@/lib/project-repository";
@@ -16,9 +20,6 @@ import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE } from "@/views/lyrics-import-modal/accepted-files";
 import type { ImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -48,7 +49,7 @@ async function renderHosts() {
 }
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => line.text);
+  return useProjectStore.getState().lines.map((line) => lineText(line));
 }
 
 async function openAlpha(): Promise<void> {
