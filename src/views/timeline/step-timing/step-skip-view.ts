@@ -1,5 +1,5 @@
 import { firstFullyTimedInstance, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceKey } from "insync/instance-key";
 import { instanceName } from "@/domain/instance/name";
 import { drawnLine } from "@/domain/line/drawn-track";

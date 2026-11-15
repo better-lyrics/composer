@@ -1,7 +1,7 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "insync/agent";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { alignTrackToLine } from "@/domain/language/align";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { LineLanguage } from "insync/language";

@@ -1,5 +1,5 @@
 import { instanceStart, keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceIndicesOf } from "insync/instance-enumerate";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "insync/line";

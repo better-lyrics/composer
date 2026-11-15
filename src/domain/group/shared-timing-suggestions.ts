@@ -5,7 +5,7 @@ import {
   instanceStart,
   instancesInLineOrder,
 } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "insync/line";
 

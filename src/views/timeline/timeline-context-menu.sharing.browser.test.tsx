@@ -1,5 +1,5 @@
 import { mainTrack, roleWords } from "insync/line-track";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";

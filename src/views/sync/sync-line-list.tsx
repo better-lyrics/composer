@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instancePositionsByLineId } from "insync/instance-enumerate";
 import { isLinked } from "insync/instance-predicates";
 import type { LanguageDisplayLine } from "@/domain/language/display";

@@ -1,5 +1,5 @@
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { WordTiming } from "insync/word-timing";
 import { backgroundText, lineText } from "@/domain/line/text";

@@ -1,4 +1,4 @@
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { useProjectStore } from "@/stores/project";
 import {
   type GroupFocus,

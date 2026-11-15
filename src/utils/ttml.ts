@@ -2,7 +2,7 @@ import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute } from "insync/xml-node";
 import type { Agent } from "insync/agent";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { syncProgress } from "@/domain/line/sync-progress";
 import { normalizeLanguageTag } from "@/domain/project/language";

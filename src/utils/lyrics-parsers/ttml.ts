@@ -1,7 +1,7 @@
 import { isEmptyDocPassthrough } from "insync/passthrough";
 import type { Agent, AgentType } from "insync/agent";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";

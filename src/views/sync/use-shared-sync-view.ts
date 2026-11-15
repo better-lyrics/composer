@@ -1,4 +1,4 @@
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { SyncCursor } from "@/domain/sync/cursor";
 import { foldedLineIds } from "@/domain/sync/folded-lines";

@@ -1,5 +1,5 @@
 import { instanceStart, sharesTiming } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceIndicesOf, linesOfInstance } from "insync/instance-enumerate";
 import { belongsToInstance } from "insync/instance-predicates";

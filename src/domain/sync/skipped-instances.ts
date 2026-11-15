@@ -1,5 +1,5 @@
 import { instanceStart, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { attachedLineIndices } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
 import { isSyncableLine } from "@/domain/line/sync-progress";

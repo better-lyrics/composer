@@ -1,4 +1,4 @@
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 
 // -- Types --------------------------------------------------------------------
 

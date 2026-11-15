@@ -1,5 +1,5 @@
 import { isSharedLine, type TimeRange } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { combinedTrackEdits } from "@/domain/line/combined-track-edits";
 import type { LineUpdate, LyricLine } from "insync/line";
 import type { ResolvedAddress } from "@/domain/selection/resolve";

@@ -7,7 +7,7 @@ import { applyAlignedTimings } from "@/domain/commands/alignment";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { isRefused } from "@/domain/commands/outcome";
 import { snapSyllablesFlush } from "@/domain/commands/word-edits";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";

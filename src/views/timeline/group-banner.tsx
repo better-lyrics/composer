@@ -2,7 +2,7 @@ import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
 import { m } from "motion/react";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceKey } from "insync/instance-key";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { noteGuideSignal } from "@/lib/guide-signals";

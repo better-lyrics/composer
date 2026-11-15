@@ -1,4 +1,4 @@
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";

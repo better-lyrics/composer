@@ -7,7 +7,7 @@ import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "insync/agent";
 import type { LyricCommand } from "@/domain/commands/command";
 import { applied, changedLineIds } from "@/domain/commands/outcome";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { type EditedLyrics, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import type { ProjectMetadata } from "insync/metadata";
 

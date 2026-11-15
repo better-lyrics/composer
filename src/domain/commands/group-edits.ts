@@ -9,7 +9,7 @@ import {
 } from "@/domain/group/group-plans";
 import { unlinkLines } from "@/domain/group/linking";
 import type { SharingOutcome } from "@/domain/group/shared-placement";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 
 // -- Helpers ------------------------------------------------------------------
 

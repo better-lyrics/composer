@@ -2,7 +2,7 @@ import { setInstanceOwnTiming } from "@/domain/commands/instance-edits";
 import { isRefused } from "@/domain/commands/outcome";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import { sharesTiming } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceName } from "@/domain/instance/name";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

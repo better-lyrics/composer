@@ -4,7 +4,7 @@ import type { SavedLine } from "insync/saved-line";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "insync/agent";
 import { readAlignedTimings, timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import { withSeededBackground, withSeededBackgroundWords } from "@/domain/line/background";
 import type { LyricLine } from "insync/line";

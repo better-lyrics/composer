@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { addInstance } from "@/domain/commands/instance-edits";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";

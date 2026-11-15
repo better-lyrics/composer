@@ -4,7 +4,7 @@ import {
   instanceOffset,
   sharedInstancesInLineOrder,
 } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine, TrackRole } from "insync/line";
 

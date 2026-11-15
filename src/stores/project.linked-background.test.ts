@@ -3,7 +3,7 @@ import { addGroup } from "@/domain/commands/group-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { withBackground, withSeededBackground } from "@/domain/line/background";
 import { bgBounds } from "insync/line-bounds";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";

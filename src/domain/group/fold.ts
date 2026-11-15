@@ -1,7 +1,6 @@
 import { docAfterLines, type GroupHint } from "@/domain/group/doc-from-flat-lines";
 import { flattenBody } from "@/domain/group/flatten";
-import type { LyricDoc } from "insync/group";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup, LyricDoc } from "insync/group";
 import {
   copyThroughTemplate,
   type InstanceAnchors,

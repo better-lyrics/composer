@@ -1,4 +1,4 @@
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "insync/instance-key";
 import { isAttachedToInstance, isLinked } from "insync/instance-predicates";

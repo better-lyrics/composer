@@ -1,5 +1,6 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LineTemplate, LinkGroup } from "@/domain/group/template";
+import type { LineTemplate } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";

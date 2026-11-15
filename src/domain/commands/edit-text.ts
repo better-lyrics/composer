@@ -2,7 +2,7 @@ import type { LyricLine } from "insync/line";
 import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { isLinked } from "insync/instance-predicates";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
 import { lineText } from "@/domain/line/text";

@@ -4,7 +4,7 @@ import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "insync/agent";
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
 import type { PlayedRange } from "@/domain/alignment/played-ranges";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";

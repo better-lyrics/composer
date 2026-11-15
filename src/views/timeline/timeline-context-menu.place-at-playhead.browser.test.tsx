@@ -1,5 +1,5 @@
 import { roleWords } from "insync/line-track";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

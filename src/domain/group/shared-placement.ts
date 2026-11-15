@@ -8,7 +8,7 @@ import {
   sharedInstancesInLineOrder,
   sharesTiming,
 } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";

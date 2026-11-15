@@ -8,15 +8,6 @@ import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 
-interface LinkGroup {
-  id: string;
-  label: string;
-  color: string;
-  templateVersion: number;
-  sharesTiming?: true;
-  ownTimingInstances?: number[];
-}
-
 interface WordTemplate {
   text: string;
   sep: string;
@@ -104,4 +95,4 @@ function templateBackgroundFields(template: LineTemplate, words: WordTiming[] | 
 // -- Exports ------------------------------------------------------------------
 
 export { languagesToTemplate, offsetTemplateWords, templateBackgroundFields, templateLanguages, wordsToTemplate };
-export type { LinkGroup, WordTemplate, LineTemplate };
+export type { WordTemplate, LineTemplate };
