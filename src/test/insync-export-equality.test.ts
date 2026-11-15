@@ -11,6 +11,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import type { SavedProjectV3 } from "@/lib/saved-project";
 import { REAL_PROJECT_FILES, realStoredRecords } from "@/test/real-records";
+import { checkTemplateMigration, migrationStops, migrationTotals } from "@/test/template-migration-check";
 import { checkUpgrade, hasProblems } from "@/test/upgrade-check";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import { savedLinesV3 } from "@/test/saved-v3";
@@ -238,5 +239,24 @@ describe("insync export equality", () => {
     const problems = reports.filter(hasProblems);
     if (problems.length > 0) console.info("[insync] v3 to v4 problems", JSON.stringify(problems, null, 2));
     expect(problems).toEqual([]);
+  });
+
+  it.runIf(REAL_PROJECT_FILES.length > 0)("real projects read as templates give back their lines and exports", () => {
+    const reports = realStoredRecords().map(({ name, record }) => checkTemplateMigration(name, record));
+    expect(reports.length).toBeGreaterThan(0);
+    const totals = migrationTotals(reports);
+    console.info(
+      `[insync] templates: ${totals.projects} projects, ${totals.groups} groups, ${totals.instances} instances, ${totals.lines} lines (${totals.exactLines} exact)`,
+    );
+    console.info(`[insync] template fallbacks: ${JSON.stringify(totals.fallbacks)}`);
+    console.info(
+      `[insync] shared instances 1 to 10 ms off their template: ${totals.offTemplate} of ${totals.comparedInstances}`,
+    );
+    for (const { name, fallbacks } of reports.filter((report) => Object.values(report.fallbacks).some(Boolean))) {
+      console.info(`[insync] template fallbacks in ${name}: ${JSON.stringify(fallbacks)}`);
+    }
+    const stops = reports.filter(migrationStops);
+    if (stops.length > 0) console.info("[insync] template problems", JSON.stringify(stops, null, 2));
+    expect(stops).toEqual([]);
   });
 });

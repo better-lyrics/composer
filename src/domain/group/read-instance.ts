@@ -108,4 +108,4 @@ function readInstance(
 
 // -- Exports ------------------------------------------------------------------
 
-export { readInstance };
+export { readInstance, sameToTheMs };
