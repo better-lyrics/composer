@@ -71,5 +71,4 @@ function templateSlotSources(lines: readonly LyricLine[], groupId: string, picke
 
 // -- Exports ------------------------------------------------------------------
 
-export type { SlotSource };
 export { pickedTemplateSource, templateSlotSources, templateSourceInstance };
