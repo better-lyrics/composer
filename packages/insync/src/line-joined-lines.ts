@@ -29,17 +29,23 @@ function seamedSyllables(tracks: readonly MainTrack[], seams: readonly string[])
   });
 }
 
+const inTimeOrder = (begins: readonly number[]) =>
+  begins.every((begin, index) => index === 0 || begin >= begins[index - 1]);
+
 function joinedTrack(tracks: readonly MainTrack[], seams: readonly string[]): MainTrack | null {
   const [first] = tracks;
   const syllables = seamedSyllables(tracks, seams);
   if (tracks.every(isSpanTimed)) {
+    if (!inTimeOrder(tracks.map((track) => track.begin))) return null;
     const last = tracks[tracks.length - 1];
     return withTrackSpan(withTrackSyllables(first, syllables), first.begin ?? 0, last.end ?? 0);
   }
   if (tracks.some(isSpanTimed)) return null;
   const firstUntimed = syllables.findIndex((syllable) => !isTimedSyllable(syllable));
   const timedAfterUntimed = firstUntimed >= 0 && syllables.slice(firstUntimed).some(isTimedSyllable);
-  return timedAfterUntimed ? null : withTrackSyllables(first, syllables);
+  if (timedAfterUntimed || !inTimeOrder(syllables.filter(isTimedSyllable).map((syllable) => syllable.begin)))
+    return null;
+  return withTrackSyllables(first, syllables);
 }
 
 // Generated only when every part was: a refresh would overwrite any hand text, which is reviewed instead.
