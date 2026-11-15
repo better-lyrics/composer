@@ -3,7 +3,12 @@ import { useImportFromUnisonLyric } from "@/hooks/useImportFromUnisonLyric";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { usePersistence } from "@/hooks/usePersistence";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
-import { type LinkProjectOutcome, getLinkProjectSettled, getPersistenceSettled } from "@/lib/persistence-settled";
+import {
+  type LinkProjectOutcome,
+  getLinkProjectSettled,
+  getPersistenceSettled,
+  getQueryImportSettled,
+} from "@/lib/persistence-settled";
 import { loadProjectRecord } from "@/lib/project-storage";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { UNISON_BASE_URL } from "@/lib/unison/client";
@@ -14,7 +19,7 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
-import { isYouTubeSourceFor } from "@/utils/youtube-source";
+import { hasLoadedYouTubeSourceFor, isYouTubeSourceFor } from "@/utils/youtube-source";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -143,6 +148,22 @@ describe("useImportFromUnisonLyric", () => {
     const alpha = await loadProjectRecord("a");
     expect(alpha?.metadata.title).toBe("Alpha");
     expect(alpha?.unisonLyricId).toBeUndefined();
+  });
+
+  it("settles the link as created before the video loads, so the link's song details land in the new project", async () => {
+    await seedOpenAlpha();
+    stubUnisonLyric(ownLyric());
+    const { outcome } = await bootWithLink(`?unisonLyric=${LYRIC_ID}&title=Harbour%20Lights%20(Acoustic)`);
+    await expect.poll(() => isYouTubeSourceFor(useAudioStore.getState().source, VIDEO_ID)).toBe(true);
+    const newId = openProjectIdSnapshot();
+
+    await expect.poll(outcome).toBe("created");
+    await getQueryImportSettled();
+    expect(hasLoadedYouTubeSourceFor(useAudioStore.getState().source, VIDEO_ID)).toBe(false);
+    expect(openProjectIdSnapshot()).toBe(newId);
+    expect(useProjectStore.getState().metadata.title).toBe("Harbour Lights (Acoustic)");
+    expect((await loadProjectRecord("a"))?.metadata.title).toBe("Alpha");
+    await finishVideoLoad();
   });
 
   it("opens your own lyric unlinked when a project already carries its link", async () => {

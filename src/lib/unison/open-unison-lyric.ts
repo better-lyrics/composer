@@ -3,11 +3,11 @@ import { artistCredit } from "@/domain/project/display-title";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { linksOnOpen } from "@/domain/unison/linked-projects";
-import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import type { NewSongProject } from "@/lib/open-project";
 import { listProjectIndex } from "@/lib/project-repository";
 import type { UnisonLyric, UnisonLyricsFormat } from "@/lib/unison/api-types";
 import { readUnisonSession } from "@/lib/unison/session";
-import { startVideoProject } from "@/lib/unison/video-project";
+import { createVideoProject, loadVideoProject } from "@/lib/unison/video-project";
 import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
 import type { ParseResult } from "@/utils/lyrics-parsers";
@@ -60,13 +60,16 @@ function readUnisonLyric(lyric: Pick<UnisonLyric, "song" | "format" | "lyrics">)
 
 // -- Opening -------------------------------------------------------------------
 
-async function openUnisonLyric(lyric: UnisonLyric, { link, navigate }: OpenUnisonLyricOptions): Promise<void> {
+async function createUnisonLyricProject(
+  lyric: UnisonLyric,
+  { link, navigate }: OpenUnisonLyricOptions,
+): Promise<NewSongProject | null> {
   const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") {
     toast.error(read.message);
-    return;
+    return null;
   }
-  await startVideoProject({
+  return createVideoProject({
     videoId: lyric.videoId,
     title: lyric.song || lyric.videoId,
     prepare: () => {
@@ -80,11 +83,18 @@ async function openUnisonLyric(lyric: UnisonLyric, { link, navigate }: OpenUniso
   });
 }
 
+async function openUnisonLyric(lyric: UnisonLyric, options: OpenUnisonLyricOptions): Promise<void> {
+  const started = await createUnisonLyricProject(lyric, options);
+  if (started) await loadVideoProject(lyric.videoId, started);
+}
+
+// Resolves before the video loads, as ?v= does, so link details never reach a project opened mid-download.
 async function openUnisonLyricFromLink(lyric: UnisonLyric, navigate: (path: string) => void): Promise<boolean> {
   const link = linksOnOpen(lyric, readUnisonSession()?.keyId ?? null, await listProjectIndex());
-  const before = openProjectIdSnapshot();
-  await openUnisonLyric(lyric, { link, navigate });
-  return openProjectIdSnapshot() !== before;
+  const started = await createUnisonLyricProject(lyric, { link, navigate });
+  if (!started) return false;
+  void loadVideoProject(lyric.videoId, started);
+  return true;
 }
 
 // -- Exports -------------------------------------------------------------------

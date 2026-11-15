@@ -234,3 +234,4 @@ export {
   closeAndClearAllProjects,
   forkOpenProject,
 };
+export type { NewSongProject };
