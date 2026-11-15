@@ -1,5 +1,7 @@
 import type { Syllable } from "@/domain/line/model";
 import { isTimedSyllable, untimedSyllable } from "@/domain/line/track";
+import { lcsPairs, wordKey } from "@/domain/word/alignment";
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -13,6 +15,11 @@ interface LineagePair {
 type LineageCounterpart = (sourceId: string) => LineagePair | undefined;
 
 // -- Helpers ------------------------------------------------------------------
+
+// The other instance's id for a syllable it already had; a syllable the edit added gets an id of its own there.
+function targetId(counterpart: LineageCounterpart, sourceId: string): string {
+  return counterpart(sourceId)?.target.id ?? newWordId();
+}
 
 // Mapped times are kept to the nanosecond so a ratio taken in seconds lands on the time it names.
 const tidy = (time: number) => Math.round(time * 1e9) / 1e9;
@@ -67,9 +74,47 @@ function carriedTimes(syllable: Syllable, before: readonly Syllable[], counterpa
 
 // -- Functions ----------------------------------------------------------------
 
+// The syllables under the other instance's ids and times; once one is untimed, every one after it is too.
+function withTimes(
+  after: readonly Syllable[],
+  times: readonly CarriedTimes[],
+  idOf: (syllable: Syllable, index: number) => string,
+): Syllable[] {
+  let timedRun = true;
+  return after.map((syllable, index) => {
+    const id = idOf(syllable, index);
+    const span = timedRun ? times[index] : "untimed";
+    if (!Array.isArray(span)) {
+      timedRun = false;
+      return { ...untimedSyllable(syllable), id };
+    }
+    return { ...untimedSyllable(syllable), id, begin: span[0], end: span[1] };
+  });
+}
+
+// How much longer the instance's times run than the edit's, over the syllables both have.
+function timeScale(after: readonly Syllable[], times: readonly CarriedTimes[]): number {
+  const source = { begin: Number.POSITIVE_INFINITY, end: Number.NEGATIVE_INFINITY };
+  const target = { begin: Number.POSITIVE_INFINITY, end: Number.NEGATIVE_INFINITY };
+  for (const [index, syllable] of after.entries()) {
+    const span = times[index];
+    if (!isTimedSyllable(syllable) || !Array.isArray(span)) continue;
+    source.begin = Math.min(source.begin, syllable.begin);
+    source.end = Math.max(source.end, syllable.end);
+    target.begin = Math.min(target.begin, span[0]);
+    target.end = Math.max(target.end, span[1]);
+  }
+  const sourceLength = source.end - source.begin;
+  const targetLength = target.end - target.begin;
+  return sourceLength > 0 && targetLength > 0 ? targetLength / sourceLength : 1;
+}
+
 // Timed syllables the edit added with no source under them fill the gap the instance has where they sit, split evenly.
-function withGapsFilled(times: readonly CarriedTimes[]): CarriedTimes[] {
+// Added after the last syllable the instance has, they keep the edit's gaps and lengths at the instance's scale, up to
+// `limit`.
+function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes[], limit: number): CarriedTimes[] {
   const filled = [...times];
+  const scale = timeScale(after, times);
   const spanAt = (index: number) => {
     const span = filled[index];
     return Array.isArray(span) ? span : undefined;
@@ -78,8 +123,22 @@ function withGapsFilled(times: readonly CarriedTimes[]): CarriedTimes[] {
     if (filled[start] !== null) continue;
     let end = start;
     while (end + 1 < filled.length && filled[end + 1] === null) end++;
-    const from = spanAt(start - 1)?.[1] ?? 0;
-    const to = Math.max(from, spanAt(end + 1)?.[0] ?? from);
+    const previous = spanAt(start - 1);
+    const next = spanAt(end + 1);
+    if (previous && !next) {
+      for (let index = start; index <= end; index++) {
+        const syllable = after[index];
+        const earlier = after[index - 1];
+        const reached = spanAt(index - 1);
+        if (!isTimedSyllable(syllable) || !isTimedSyllable(earlier) || !reached) break;
+        const begin = Math.min(limit, reached[1] + (syllable.begin - earlier.end) * scale);
+        filled[index] = [tidy(begin), tidy(Math.min(limit, begin + (syllable.end - syllable.begin) * scale))];
+      }
+      start = end;
+      continue;
+    }
+    const from = previous?.[1] ?? 0;
+    const to = Math.max(from, next?.[0] ?? from);
     const step = (to - from) / (end - start + 1);
     for (let index = start; index <= end; index++) {
       filled[index] = [tidy(from + (index - start) * step), tidy(from + (index - start + 1) * step)];
@@ -91,23 +150,43 @@ function withGapsFilled(times: readonly CarriedTimes[]): CarriedTimes[] {
 
 // The edited track as another instance has it, on that instance's own timing: kept syllables keep its times, a split
 // divides its span at the edit's ratio, a merge takes the envelope of its parts, and a syllable added timed fills the
-// gap it sits in. Kept syllables keep that instance's ids. Timed syllables stay ahead of untimed ones.
+// gap it sits in, or follows the last one at the edit's spacing, up to `limit`. Kept syllables keep that instance's
+// ids. Timed syllables stay ahead of untimed ones.
 function syllableLineage(
   before: readonly Syllable[],
   after: readonly Syllable[],
   counterpart: LineageCounterpart,
+  limit = Number.POSITIVE_INFINITY,
 ): Syllable[] {
-  const times = withGapsFilled(after.map((syllable) => carriedTimes(syllable, before, counterpart)));
-  let timedRun = true;
-  return after.map((syllable, index) => {
-    const id = counterpart(syllable.id)?.target.id ?? syllable.id;
-    const span = timedRun ? times[index] : "untimed";
-    if (!Array.isArray(span)) {
-      timedRun = false;
-      return { ...untimedSyllable(syllable), id };
-    }
-    return { ...syllable, id, begin: span[0], end: span[1] };
-  });
+  const carried = after.map((syllable) => carriedTimes(syllable, before, counterpart));
+  const times = withGapsFilled(after, carried, limit);
+  return withTimes(after, times, (syllable) => targetId(counterpart, syllable.id));
+}
+
+// The edited track, which holds no syllable timing of its own, on an instance whose syllables are timed: syllables with
+// the same text keep that instance's times, and new ones fill the gaps between them, so a line-synced edit never
+// takes word timing away from an instance that has it.
+function lineageByText(
+  after: readonly Syllable[],
+  own: readonly Syllable[],
+  counterpart: LineageCounterpart,
+): Syllable[] {
+  const matched = new Map(
+    lcsPairs(
+      own.map((syllable) => wordKey(syllable.text)),
+      after.map((syllable) => wordKey(syllable.text)),
+    ).map(([ownIndex, afterIndex]) => [afterIndex, own[ownIndex]]),
+  );
+  const times = withGapsFilled(
+    after,
+    after.map((_, index): CarriedTimes => {
+      const same = matched.get(index);
+      if (!same) return null;
+      return isTimedSyllable(same) ? [same.begin, same.end] : "untimed";
+    }),
+    Number.POSITIVE_INFINITY,
+  );
+  return withTimes(after, times, (syllable, index) => matched.get(index)?.id ?? targetId(counterpart, syllable.id));
 }
 
 // Letters only, so a merge that drops the space between two words still lines up with the words it joined.
@@ -116,7 +195,11 @@ const letterCount = (text: string) => [...text].filter((character) => character.
 // The edited track on another instance whose syllables are split differently but spell the same letters: each
 // syllable's edges land where those letters sit in that instance's own syllables. Null when the letters differ or an
 // edge falls on an untimed syllable.
-function lineageByLetters(after: readonly Syllable[], own: readonly Syllable[]): Syllable[] | null {
+function lineageByLetters(
+  after: readonly Syllable[],
+  own: readonly Syllable[],
+  counterpart: LineageCounterpart,
+): Syllable[] | null {
   const ownSpans: { start: number; length: number; syllable: WordTiming }[] = [];
   let letters = 0;
   for (const syllable of own) {
@@ -139,15 +222,16 @@ function lineageByLetters(after: readonly Syllable[], own: readonly Syllable[]):
     const begin = timeAt(start, "begin");
     const end = timeAt(start + length, "end");
     start += length;
+    const id = targetId(counterpart, syllable.id);
     if (!timedRun || begin === undefined || end === undefined || length === 0) {
       timedRun = false;
-      return untimedSyllable(syllable);
+      return { ...untimedSyllable(syllable), id };
     }
-    return { ...syllable, begin, end };
+    return { ...syllable, id, begin, end };
   });
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export type { LineageCounterpart, LineagePair };
-export { lineageByLetters, syllableLineage };
+export { lineageByLetters, lineageByText, syllableLineage, targetId };

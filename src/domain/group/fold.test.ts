@@ -121,6 +121,25 @@ describe("foldLines", () => {
     tonight.forEach((begin, index) => expect(begin).toBeCloseTo([10.1, 40.1, 70.1][index], 9));
   });
 
+  it("regression: two shared instances edited differently in one command each keep their own edit", () => {
+    const lines = [glowLine(0, 10), glowLine(1, 40), glowLine(2, 70)];
+    const renamed = (line: LyricLine, text: string) => {
+      const words = timedSyllables(mainTrack(line)).map((word, index) => (index === 1 ? { ...word, text } : word));
+      return withMainTrack(line, withTrackWords(mainTrack(line), words));
+    };
+    const after = lines.with(0, renamed(lines[0], "shine")).with(2, renamed(lines[2], "burn"));
+    const folded = foldLines({
+      doc: docFromFlatLines(lines),
+      after,
+      touched: ["glow-0", "glow-2"],
+      groups: [chorus],
+      copiesSharedTiming: true,
+      ...FOLD_DEFAULTS,
+    });
+    expect(folded.lines.map((line) => timedSyllables(mainTrack(line))[1].text)).toEqual(["shine", "shine", "burn"]);
+    expect(flattenBody(structuredClone(folded.doc))).toEqual(folded.lines);
+  });
+
   it("regression: a line inserted inside an instance keeps its later lines in the group copy", () => {
     const member = (instanceIdx: number, slot: number, begin: number) =>
       createLine({

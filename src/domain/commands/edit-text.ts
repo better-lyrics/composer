@@ -29,10 +29,12 @@ function sameLines(before: readonly LyricLine[], after: readonly LyricLine[]): b
 function wholeLinesEdit(
   note: HistoryNote,
   next: (root: LyricRoot) => WholeLines | { refused: Refusal } | null,
+  writesEveryLine = false,
 ): LyricCommand {
   return {
     note,
     copiesSharedTiming: false,
+    ...(writesEveryLine && { writesEveryLine }),
     run: (root) => {
       const edited = next(root);
       if (!edited) return applied(root, []);
@@ -52,13 +54,13 @@ function planOn(baseLines: readonly LyricLine[], lines: LyricLine[]) {
 
 // -- Commands -----------------------------------------------------------------
 
-// One keystroke of a typing burst.
+// One keystroke of a typing burst. Edit plans its lines with the template edit already carried to every instance.
 function typeLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): LyricCommand {
-  return wholeLinesEdit({ command: "type lyrics", args: [lines.length] }, planOn(baseLines, lines));
+  return wholeLinesEdit({ command: "type lyrics", args: [lines.length] }, planOn(baseLines, lines), true);
 }
 
 function pasteLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): LyricCommand {
-  return wholeLinesEdit({ command: "paste lyrics", args: [lines.length] }, planOn(baseLines, lines));
+  return wholeLinesEdit({ command: "paste lyrics", args: [lines.length] }, planOn(baseLines, lines), true);
 }
 
 function extractBackground(options: ExtractOptions): LyricCommand {

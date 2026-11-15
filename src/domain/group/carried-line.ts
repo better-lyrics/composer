@@ -1,4 +1,10 @@
-import { type LineageCounterpart, lineageByLetters, syllableLineage } from "@/domain/group/syllable-lineage";
+import {
+  type LineageCounterpart,
+  lineageByLetters,
+  lineageByText,
+  syllableLineage,
+  targetId,
+} from "@/domain/group/syllable-lineage";
 import { withAlignedWords } from "@/domain/language/align";
 import { regroupedLanguages, withOwnPieces } from "@/domain/language/pieces";
 import { withSeededBackground } from "@/domain/line/background";
@@ -12,6 +18,7 @@ import {
   untimedSyllable,
 } from "@/domain/line/track";
 import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
+import { newWordId } from "@/domain/word/id";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Content ------------------------------------------------------------------
@@ -43,7 +50,7 @@ const sameIds = (a: readonly Syllable[], b: readonly Syllable[]) =>
 
 function shifted(syllables: readonly Syllable[], offset: number, counterpart: LineageCounterpart): Syllable[] {
   return syllables.map((syllable) => {
-    const id = counterpart(syllable.id)?.target.id ?? syllable.id;
+    const id = targetId(counterpart, syllable.id);
     return isTimedSyllable(syllable)
       ? { ...syllable, id, begin: syllable.begin + offset, end: syllable.end + offset }
       : { ...syllable, id };
@@ -55,7 +62,7 @@ function inPlace(syllables: readonly Syllable[], counterpart: LineageCounterpart
   let timedRun = true;
   return syllables.map((syllable) => {
     const target = counterpart(syllable.id)?.target;
-    const id = target?.id ?? syllable.id;
+    const id = target?.id ?? newWordId();
     if (timedRun && target && isTimedSyllable(target)) return { ...syllable, id, begin: target.begin, end: target.end };
     timedRun = false;
     return { ...untimedSyllable(syllable), id };
@@ -74,7 +81,7 @@ function proportional(
   const scale = (to[1] - to[0]) / (from[1] - from[0]);
   const at = (time: number) => Math.round((to[0] + (time - from[0]) * scale) * 1e9) / 1e9;
   return syllables.map((syllable) => {
-    const id = counterpart(syllable.id)?.target.id ?? syllable.id;
+    const id = targetId(counterpart, syllable.id);
     return isTimedSyllable(syllable)
       ? { ...syllable, id, begin: at(syllable.begin), end: at(syllable.end) }
       : { ...syllable, id };
@@ -94,28 +101,36 @@ interface TrackCarry {
   own: LineTrack | undefined;
   offset: number | null;
   counterpart: LineageCounterpart;
+  // Where the line after it starts: syllables the edit added at the end stop there.
+  limit: number;
 }
 
 // The edited track's content on the other instance's track: on the shared timing when the two share it, else on that
 // instance's own timing through the syllables' lineage. A line-synced track keeps its span.
-function carriedTrackTiming({ before, after, own, offset, counterpart }: TrackCarry) {
+function carriedTrackTiming({ before, after, own, offset, counterpart, limit }: TrackCarry) {
   if (offset !== null) {
     const span = isSpanTimed(after) ? ([after.begin + offset, after.end + offset] as const) : undefined;
     return { syllables: shifted(after.syllables, offset, counterpart), span };
   }
   const span = own && isSpanTimed(own) ? boundsOf(own) : undefined;
   if (span) return { syllables: inPlace(after.syllables, counterpart).map(untimedSyllable), span };
-  if (isSpanTimed(after)) return { syllables: inPlace(after.syllables, counterpart), span: undefined };
+  if (isSpanTimed(after)) {
+    const timed = own && timedSyllables(own).length > 0;
+    const syllables = timed
+      ? lineageByText(after.syllables, own.syllables, counterpart)
+      : inPlace(after.syllables, counterpart);
+    return { syllables, span: undefined };
+  }
   if (before && own && !sameSyllableContent(before.syllables, own.syllables)) {
     const syllables =
-      lineageByLetters(after.syllables, own.syllables) ??
+      lineageByLetters(after.syllables, own.syllables, counterpart) ??
       proportional(after.syllables, boundsOf(after), boundsOf(own), counterpart);
     return { syllables, span: undefined };
   }
   const kept = before && sameIds(before.syllables, after.syllables);
   const syllables = kept
     ? inPlace(after.syllables, counterpart)
-    : syllableLineage(before?.syllables ?? [], after.syllables, counterpart);
+    : syllableLineage(before?.syllables ?? [], after.syllables, counterpart, limit);
   return { syllables, span: undefined };
 }
 
@@ -150,16 +165,17 @@ interface LineCarry {
   own: LyricLine;
   offset: number | null;
   counterpart: LineageCounterpart;
+  limit: number;
 }
 
 // Another instance's line after an edit to its template line: the edit's content, that instance's own timing and
 // ids, and its readings unless the edit rewrote them.
-function carriedLine({ before, after, own, offset, counterpart }: LineCarry): LyricLine {
+function carriedLine({ before, after, own, offset, counterpart, limit }: LineCarry): LyricLine {
   const ownMain = mainTrack(own);
   const afterMain = mainTrack(after);
   const main: MainTrack = withTiming(
     { ...ownMain, agentId: afterMain.agentId },
-    carriedTrackTiming({ before: mainTrack(before), after: afterMain, own: ownMain, offset, counterpart }),
+    carriedTrackTiming({ before: mainTrack(before), after: afterMain, own: ownMain, offset, counterpart, limit }),
   );
   const afterBackground = backgroundTrack(after);
   const ownBackground = backgroundTrack(own);
@@ -174,6 +190,7 @@ function carriedLine({ before, after, own, offset, counterpart }: LineCarry): Ly
         own: ownBackground,
         offset,
         counterpart,
+        limit,
       }),
     );
   const tracks: LineTracks = background ? [main, background] : [main];

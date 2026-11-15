@@ -100,3 +100,63 @@ describe("carryTemplateEdits", () => {
     expect(carried(before, after).slice(1)).toEqual(before.slice(1));
   });
 });
+
+describe("carryTemplateEdits · two instances edited at once", () => {
+  it("regression: each edited instance keeps its own edit and the others take the first one", () => {
+    const before = [
+      groupLine("L0", 0, { text: "stale" }),
+      groupLine("L1", 1, { text: "stale" }),
+      groupLine("L2", 2, { text: "stale" }),
+    ];
+    const after = before
+      .with(0, withFields(before[0], { text: "first" }))
+      .with(2, withFields(before[2], { text: "second" }));
+    expect(carried(before, after).map(lineText)).toEqual(["first", "first", "second"]);
+  });
+});
+
+describe("carryTemplateEdits · syllable ids", () => {
+  const ids = (line: LyricLine) => line.tracks.flatMap((track) => track.syllables.map((syllable) => syllable.id));
+
+  it("regression: a copy split differently never takes the edited instance's syllable ids", () => {
+    const before = [
+      groupLine("L1", 0, { text: "beautiful", words: words(10, ["beau", "ti", "ful"], 0.3) }),
+      groupLine("L2", 1, { text: "beautiful", words: words(40, ["be", "aut", "iful"], 0.3) }),
+    ];
+    const [beau, ti, ful] = timedSyllables(mainTrack(before[0]));
+    const merged = [{ ...beau, text: "beauti", end: ti.end }, ful];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "beauti|ful", words: merged })));
+    expect(ids(out[1]).filter((id) => ids(out[0]).includes(id))).toEqual([]);
+  });
+
+  it("regression: a split never gives two instances the same new syllable id", () => {
+    const before = [
+      groupLine("L1", 0, { text: "lantern", words: words(10, ["lantern"], 1) }),
+      groupLine("L2", 1, { text: "lantern", words: words(40, ["lantern"], 1) }),
+    ];
+    const [lantern] = timedSyllables(mainTrack(before[0]));
+    const split = [
+      { ...lantern, text: "lan", end: 10.25, joinsNext: true },
+      { ...lantern, id: "tern", text: "tern", begin: 10.25 },
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "lan|tern", words: split })));
+    expect(ids(out[1]).filter((id) => ids(out[0]).includes(id))).toEqual([]);
+  });
+});
+
+describe("carryTemplateEdits · a line-synced edit on a word-synced instance", () => {
+  it("regression: retyping a line-synced line keeps another instance's own word timing", () => {
+    const before = [
+      groupLine("L1", 0, { text: "We glow tonight", begin: 10, end: 12 }),
+      groupLine("L2", 1, { text: "We glow tonight", words: words(40, ["We", "glow", "tonight"]) }),
+    ];
+    for (const text of ["We glow tonight now", "So we glow tonight"]) {
+      const out = carried(before, before.with(0, withFields(before[0], { text })))[1];
+      expect(lineText(out)).toBe(text);
+      expect(spans(out).filter(([word]) => word === "glow" || word === "tonight")).toEqual([
+        ["glow", 40.5, 41],
+        ["tonight", 41, 41.5],
+      ]);
+    }
+  });
+});

@@ -28,7 +28,8 @@ describe("syllableLineage", () => {
       ["lan", 10, 10.4],
       ["tern", 10.4, 11],
     ]);
-    expect(carried.map((s) => s.id)).toEqual(["x", "y", "n"]);
+    expect(carried.map((s) => s.id).slice(0, 2)).toEqual(["x", "y"]);
+    expect(["x", "y", "n"]).not.toContain(carried[2].id);
   });
 
   it("a merge gives each instance the envelope of its parts", () => {
@@ -47,5 +48,20 @@ describe("syllableLineage", () => {
       ["and", undefined, undefined],
       ["on", undefined, undefined],
     ]);
+  });
+});
+
+describe("syllableLineage · syllables added at the end", () => {
+  const before = [syllable("a", "glow", 1, 2), syllable("b", "on", 2, 3)];
+  const after = [...before, syllable("n", "now", 3.25, 3.75)];
+
+  it("regression: a timed syllable added at the end keeps its length, scaled to the instance", () => {
+    const own = [syllable("x", "glow", 5, 7), syllable("y", "on", 7, 9)];
+    expect(spans(syllableLineage(before, after, counterpartIn(before, own)))[2]).toEqual(["now", 9.5, 10.5]);
+  });
+
+  it("stops at the end the instance has room for", () => {
+    const own = [syllable("x", "glow", 5, 7), syllable("y", "on", 7, 9)];
+    expect(spans(syllableLineage(before, after, counterpartIn(before, own), 10))[2]).toEqual(["now", 9.5, 10]);
   });
 });

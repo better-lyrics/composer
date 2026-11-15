@@ -4,6 +4,7 @@ import type { LineageCounterpart, LineagePair } from "@/domain/group/syllable-li
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceKey } from "@/domain/instance/key";
 import { isLinked, type LinkedLine } from "@/domain/instance/predicates";
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
@@ -41,7 +42,10 @@ function isSlotLine(line: LyricLine | undefined): line is SlotLine {
 const slotKey = (groupId: string, slot: number) => `${groupId}\u0000${slot}`;
 
 // Group lines whose shared content changed, first of each template line in song order.
-function templateLineEdits(before: readonly LyricLine[], after: readonly LyricLine[]): Edit[] {
+function templateLineEdits(
+  before: readonly LyricLine[],
+  after: readonly LyricLine[],
+): { edits: Edit[]; edited: Set<string> } {
   let beforeById: Map<string, LyricLine> | undefined;
   const previousOf = (line: LyricLine, index: number) => {
     if (before[index]?.id === line.id) return before[index];
@@ -49,6 +53,7 @@ function templateLineEdits(before: readonly LyricLine[], after: readonly LyricLi
     return beforeById.get(line.id);
   };
   const claimed = new Set<string>();
+  const edited = new Set<string>();
   const edits: Edit[] = [];
   for (let index = 0; index < after.length; index++) {
     const line = after[index];
@@ -58,12 +63,13 @@ function templateLineEdits(before: readonly LyricLine[], after: readonly LyricLi
     if (!isSlotLine(previous) || previous === line) continue;
     if (previous.groupId !== line.groupId || previous.templateLineIdx !== line.templateLineIdx) continue;
     if (sameSharedContent(previous, line)) continue;
+    edited.add(line.id);
     const key = slotKey(line.groupId, line.templateLineIdx);
     if (claimed.has(key)) continue;
     claimed.add(key);
     edits.push({ before: previous, after: line });
   }
-  return edits;
+  return { edits, edited };
 }
 
 function instanceLines(lines: readonly LyricLine[], groupId: string, instanceIdx: number): Map<number, SlotLine> {
@@ -95,6 +101,14 @@ function counterpartOf(source: Map<number, SlotLine>, target: Map<number, SlotLi
   return (id) => pairs.get(id);
 }
 
+function nextLineStart(lines: readonly LyricLine[], index: number): number {
+  for (let next = index + 1; next < lines.length; next++) {
+    const bounds = effectiveBounds(lines[next]);
+    if (bounds) return bounds.begin;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
 function isSplit(edit: Edit): boolean {
   return edit.after.tracks.some((track, index) => {
     const previous = edit.before.tracks[index];
@@ -107,10 +121,11 @@ function isSplit(edit: Edit): boolean {
 // -- Functions ----------------------------------------------------------------
 
 // An edit to a group line's content is an edit to its template line, so every other instance that follows the
-// template gets it: on the shared timing where both instances share it, else on its own timing. Detached lines keep
-// their own content. Work grows with the lines and the edited template lines.
+// template and was not edited itself gets it: on the shared timing where both instances share it, else on its own
+// timing. Detached lines, and instances the same command edited differently, keep their own content. Work grows with
+// the lines and the edited template lines.
 function carryTemplateEdits({ before, after, groups }: TemplateEditInput): TemplateEdits {
-  const edits = templateLineEdits(before, after);
+  const { edits, edited } = templateLineEdits(before, after);
   if (edits.length === 0) return { lines: after, splits: [] };
   const groupsById = new Map(groups.map((group) => [group.id, group]));
   const counterparts = new Map<string, LineageCounterpart>();
@@ -129,7 +144,7 @@ function carryTemplateEdits({ before, after, groups }: TemplateEditInput): Templ
   after.forEach((line, index) => {
     if (!isSlotLine(line)) return;
     const edit = bySlot.get(slotKey(line.groupId, line.templateLineIdx));
-    if (!edit || line.instanceIdx === edit.after.instanceIdx || sameSharedContent(line, edit.after)) return;
+    if (!edit || edited.has(line.id) || sameSharedContent(line, edit.after)) return;
     const { groupId, instanceIdx: from } = edit.after;
     const group = groupsById.get(groupId);
     const shared = sharesTiming(group, from) && sharesTiming(group, line.instanceIdx);
@@ -140,6 +155,7 @@ function carryTemplateEdits({ before, after, groups }: TemplateEditInput): Templ
       own: line,
       offset,
       counterpart: counterpartFor(groupId, from, line.instanceIdx),
+      limit: nextLineStart(after, index),
     });
     if (lines === after) lines = [...after];
     lines[index] = carried;

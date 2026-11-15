@@ -1,3 +1,4 @@
+import { sameSharedContent } from "@/domain/group/carried-line";
 import { clampedToRoom } from "@/domain/group/clamped-edit";
 import { instanceSlotLine, templateBySlot } from "@/domain/group/flatten";
 import { invertedIds, withLineIds } from "@/domain/group/line-ids";
@@ -144,6 +145,8 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
   const copied = new Set<string>();
   let lines = after;
   const beforeById = new Map(input.before.map((line) => [line.id, line]));
+  // An instance the command edited to other content than the source keeps its own edit.
+  const touched = new Set(input.touched);
   for (const edited of sources) {
     const { groupId, instanceIdx, templateLineIdx: slot } = edited;
     const claim = `${groupId}\u0000${slot}`;
@@ -177,6 +180,7 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
       const index = indexBySlot.get(slotKey(groupId, idx, slot));
       if (idx === instanceIdx || index === undefined || !sharesTiming(groups.get(groupId), idx)) continue;
       const target = lines[index];
+      if (touched.has(target.id) && !sameSharedContent(target, source)) continue;
       const updates = offsetTimingFields(source, at - sourceAt, target);
       const line = { ...target, ...updates };
       if (!timingChanged(target, line) && line.languages === target.languages) continue;
