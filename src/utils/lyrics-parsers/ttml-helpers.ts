@@ -2,6 +2,7 @@ import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
 import { syllableCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
+import { parseXmlDocument, type XmlParseResult } from "@/utils/xml-document";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -41,9 +42,11 @@ function declareMissingNamespaces(content: string): string {
   return content.replace(rootTag, patchedRootTag);
 }
 
-// The text the reader parses: a document pasted with JSON escapes unescaped, and undeclared prefixes declared.
-function readableTtml(content: string): string {
-  return declareMissingNamespaces(content.replace(/\\"/g, '"').replace(/\\n/g, "\n"));
+// The document the reader reads; one pasted with JSON escapes is unescaped only when it does not parse as written.
+function parseTtmlDocument(content: string): XmlParseResult {
+  const asWritten = parseXmlDocument(declareMissingNamespaces(content));
+  if (asWritten.ok) return asWritten;
+  return parseXmlDocument(declareMissingNamespaces(content.replace(/\\"/g, '"').replace(/\\n/g, "\n")));
 }
 
 function parseTtmlTimestamp(timestamp: string): number {
@@ -126,4 +129,4 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
 
 // -- Exports ------------------------------------------------------------------
 
-export { extractTimedWords, parseTtmlTimestamp, ROOT_TT_TAG_REGEX, readableTtml };
+export { extractTimedWords, parseTtmlDocument, parseTtmlTimestamp, ROOT_TT_TAG_REGEX };

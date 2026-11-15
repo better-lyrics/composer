@@ -2,7 +2,7 @@ import { writeXmlChild, writeXmlElement } from "insync/xml-node";
 import { importableMetadata } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
-import { readableTtml } from "@/utils/lyrics-parsers/ttml-helpers";
+import { parseTtmlDocument } from "@/utils/lyrics-parsers/ttml-helpers";
 import {
   anchorChildTest,
   elementRole,
@@ -13,7 +13,6 @@ import {
 } from "@/utils/lyrics-parsers/ttml-modelled";
 import { xmlChildrenFromDom, xmlElementFromDom } from "@/utils/lyrics-parsers/xml-node-from-dom";
 import { generateTTML } from "@/utils/ttml";
-import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Types --------------------------------------------------------------------
 
@@ -146,7 +145,7 @@ function withoutRepeatedMetadataAttributes(found: Found): Found {
 // -- Functions ----------------------------------------------------------------
 
 function readTtmlDocument(ttml: string): Document {
-  const parsed = parseXmlDocument(readableTtml(ttml));
+  const parsed = parseTtmlDocument(ttml);
   if (!parsed.ok) throw new Error("TTML is not well formed");
   return parsed.doc;
 }

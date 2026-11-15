@@ -13,12 +13,11 @@ import type { WordTiming } from "@/domain/word/timing";
 import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates, withInlineAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
-import { extractTimedWords, parseTtmlTimestamp, readableTtml } from "@/utils/lyrics-parsers/ttml-helpers";
+import { extractTimedWords, parseTtmlDocument, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 import { partsFromDivs } from "@/utils/lyrics-parsers/ttml-parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { type UntimedLyric, untimedLyric, withUntimedSpans } from "@/utils/lyrics-parsers/ttml-untimed-read";
 import { getSplitCharacter } from "@/utils/split-character";
-import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -43,7 +42,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const lineKeys: (string | undefined)[] = [];
   const lineByParagraph = new Map<Element, LyricLine>();
 
-  const parsed = parseXmlDocument(readableTtml(content));
+  const parsed = parseTtmlDocument(content);
   if (!parsed.ok) {
     return { lines: [], metadata: {}, hasTimingData: false, issues: [{ line: 1, text: "", reason: "empty-document" }] };
   }

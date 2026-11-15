@@ -73,6 +73,20 @@ describe("parseTtml line timing", () => {
   });
 });
 
+describe("parseTtml escapes", () => {
+  it("regression: backslashes in a well-formed file stay lyric text", () => {
+    const ttml =
+      '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="1" end="2">Saved in C:\\new folder</p><p begin="2" end="3">He said \\"hi\\"</p></div></body></tt>';
+    expect(parseTtml(ttml).lines.map(lineText)).toEqual(["Saved in C:\\new folder", 'He said \\"hi\\"']);
+  });
+
+  it("a document pasted with JSON escapes still reads", () => {
+    const ttml =
+      '<tt xmlns=\\"http://www.w3.org/ns/ttml\\"><body><div><p begin=\\"1\\" end=\\"2\\">Low tide</p></div></body></tt>';
+    expect(parseTtml(ttml).lines.map(lineText)).toEqual(["Low tide"]);
+  });
+});
+
 describe("parseTtml inline translations", () => {
   const doc = (head: string, paragraph: string) =>
     '<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal">' +
