@@ -1,13 +1,13 @@
-import type { Part } from "insync/part";
-import { type DocPassthrough, isEmptyDocPassthrough } from "insync/passthrough";
-import { agentsAfterImport } from "insync/agent-imported-agents";
-import type { Agent } from "insync/agent";
-import { placeholderAgentName } from "insync/agent-placeholder-name";
-import type { LinkGroup } from "insync/group";
-import type { LyricLine } from "insync/line";
-import { changedMetadata } from "insync/project-imported-metadata";
-import type { ProjectMetadata } from "insync/metadata";
-import { isStructurallyEqual } from "insync/structural-equal";
+import type { Part } from "./part";
+import { type DocPassthrough, isEmptyDocPassthrough } from "./passthrough";
+import { agentsAfterImport } from "./agent-imported-agents";
+import type { Agent } from "./agent";
+import { placeholderAgentName } from "./agent-placeholder-name";
+import type { LinkGroup } from "./group";
+import type { LyricLine } from "./line";
+import { changedMetadata } from "./project-imported-metadata";
+import type { ProjectMetadata } from "./metadata";
+import { isStructurallyEqual } from "./structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

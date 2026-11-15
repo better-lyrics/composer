@@ -5,7 +5,7 @@ import type { Agent } from "insync/agent";
 import type { LyricRoot } from "@/domain/commands/outcome";
 import type { LinkGroup, LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";
-import type { EditedLyrics } from "@/domain/project/edited-lyrics";
+import type { EditedLyrics } from "insync/project-edited-lyrics";
 import type { MetadataKey } from "insync/project-imported-metadata";
 import type { ProjectMetadata } from "insync/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";

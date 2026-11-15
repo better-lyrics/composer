@@ -1,7 +1,7 @@
 import { agentWithoutKeptData } from "insync/agent-kept-data";
 import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import { withoutKeptData } from "insync/line-passthrough";
-import { changedParts, editedLyricsWrite, type ProjectLyrics } from "@/domain/project/edited-lyrics";
+import { changedParts, editedLyricsWrite, type ProjectLyrics } from "insync/project-edited-lyrics";
 import { changedMetadata, importableMetadata } from "insync/project-imported-metadata";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";

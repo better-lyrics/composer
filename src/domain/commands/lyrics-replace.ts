@@ -8,7 +8,7 @@ import type { Agent } from "insync/agent";
 import type { LyricCommand } from "@/domain/commands/command";
 import { applied, changedLineIds } from "@/domain/commands/outcome";
 import type { LinkGroup } from "insync/group";
-import { type EditedLyrics, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
+import { type EditedLyrics, changesProject, editedLyricsWrite } from "insync/project-edited-lyrics";
 import type { ProjectMetadata } from "insync/metadata";
 
 // -- Types --------------------------------------------------------------------
