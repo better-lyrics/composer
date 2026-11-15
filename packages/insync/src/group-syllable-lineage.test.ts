@@ -100,3 +100,31 @@ describe("syllableLineage · syllables added at the end", () => {
     ]);
   });
 });
+
+describe("syllableLineage · a word moved back from a later line", () => {
+  const fire = syllable("f", "fire", 4.5, 5.5);
+  const ownFire = syllable("z", "fire", 14.5, 15.5);
+
+  it("regression: a word moved to the front leaves the instance's own syllables on their times", () => {
+    const before = [syllable("a", "glow", 1, 2), syllable("b", "rain", 2, 3)];
+    const own = [syllable("x", "glow", 11, 12), syllable("y", "rain", 12, 13)];
+    const after = [{ ...fire, begin: 0.2, end: 0.8 }, ...before];
+    const carried = spans(syllableLineage(before, after, counterpartIn([...before, fire], [...own, ownFire])));
+    expect(carried.slice(1)).toEqual([
+      ["glow", 11, 12],
+      ["rain", 12, 13],
+    ]);
+    expect(carried[0][2]).toBeLessThanOrEqual(11);
+  });
+
+  it("regression: a word moved into the middle fills the gap between the instance's own syllables", () => {
+    const before = [syllable("a", "glow", 1, 2), syllable("b", "rain", 3, 4)];
+    const own = [syllable("x", "glow", 11, 12), syllable("y", "rain", 13, 14)];
+    const after = [before[0], { ...fire, begin: 2.2, end: 2.8 }, before[1]];
+    expect(spans(syllableLineage(before, after, counterpartIn([...before, fire], [...own, ownFire])))).toEqual([
+      ["glow", 11, 12],
+      ["fire", 12, 13],
+      ["rain", 13, 14],
+    ]);
+  });
+});

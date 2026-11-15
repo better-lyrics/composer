@@ -82,13 +82,30 @@ function carriedTimes(syllable: Syllable, before: readonly Syllable[], counterpa
   return [mappedTime(syllable.begin, first.source, first.target), mappedTime(syllable.end, last.source, last.target)];
 }
 
-// A syllable carried to before the one ahead of it, as a moved one can be, takes the gap it sits in instead.
-function inSongOrder(times: readonly CarriedTimes[]): CarriedTimes[] {
-  let latestBegin = Number.NEGATIVE_INFINITY;
-  return times.map((span) => {
+// Syllables of the line the edit left on their times keep the instance's times. A syllable carried in from elsewhere, as
+// a moved one is, takes the gap it sits in when its times would overlap the one before it or pass the kept one after it.
+function inSongOrder(
+  before: readonly Syllable[],
+  after: readonly Syllable[],
+  times: readonly CarriedTimes[],
+): CarriedTimes[] {
+  const untouched = new Map(before.flatMap((syllable) => (isTimedSyllable(syllable) ? [[syllable.id, syllable]] : [])));
+  const kept = after.map((syllable) => {
+    const previous = untouched.get(syllable.id);
+    return isTimedSyllable(syllable) && previous?.begin === syllable.begin && previous.end === syllable.end;
+  });
+  const nextKeptBegin: number[] = [];
+  let upcoming = Number.POSITIVE_INFINITY;
+  for (let index = times.length - 1; index >= 0; index--) {
+    nextKeptBegin[index] = upcoming;
+    const span = times[index];
+    if (kept[index] && Array.isArray(span)) upcoming = span[0];
+  }
+  let latestEnd = Number.NEGATIVE_INFINITY;
+  return times.map((span, index) => {
     if (!Array.isArray(span)) return span;
-    if (span[0] < latestBegin) return null;
-    latestBegin = span[0];
+    if (!kept[index] && (span[0] < latestEnd || span[1] > nextKeptBegin[index])) return null;
+    latestEnd = Math.max(latestEnd, span[1]);
     return span;
   });
 }
@@ -214,7 +231,11 @@ function syllableLineage(
 ): Syllable[] {
   const times = withGapsFilled(
     after,
-    inSongOrder(after.map((syllable) => carriedTimes(syllable, before, counterpart))),
+    inSongOrder(
+      before,
+      after,
+      after.map((syllable) => carriedTimes(syllable, before, counterpart)),
+    ),
     room,
   );
   return withTimes(after, times, (syllable) => targetId(counterpart, syllable.id));
