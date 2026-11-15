@@ -233,7 +233,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
   parseTtmlAlternates(doc, lines, lineIndexByKey);
   const parts = partsFromDivs(doc, lineByParagraph);
-  const passthrough = docPassthrough(doc);
+  const passthrough = docPassthrough(doc, lineByParagraph);
 
   return {
     lines,

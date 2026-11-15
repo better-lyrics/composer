@@ -11,6 +11,7 @@ import { YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { type TimingGranularity, timingGranularityOf } from "@/domain/project/timing-granularity";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
+import { BODY_ANCHOR, HEAD_ANCHOR } from "@/utils/lyrics-parsers/ttml-anchors";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
 import { bodyLines } from "@/utils/ttml-body";
 import { headLines } from "@/utils/ttml-head";
@@ -66,7 +67,11 @@ function generateTTML({
 
   const head = headLines({ metadata, agents, groups, keyedLines, writesWords, youtubeVideoId, passthrough }, ind);
   const body = bodyLines({ lines, keyById, writesWords, duration, parts: songParts, passthrough }, ind);
-  parts.push(...keptAmongLines([head, body], passthrough?.tt, ind(1)), "</tt>");
+  const units = [
+    { out: head, anchors: [HEAD_ANCHOR] },
+    { out: body, anchors: [BODY_ANCHOR] },
+  ];
+  parts.push(...keptAmongLines(units, passthrough?.tt, ind(1), [HEAD_ANCHOR, BODY_ANCHOR]), "</tt>");
 
   return parts.join(nl);
 }

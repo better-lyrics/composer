@@ -3,17 +3,25 @@ import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute } from "insync/xml-node";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
+import type { LineTrack, LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
+import { BACKGROUND_ANCHOR, TEXT_ANCHOR } from "@/utils/lyrics-parsers/ttml-anchors";
 import type { Indent } from "@/utils/ttml-head";
 import { backgroundEnvelope, lineEnvelope, partEnvelope, writtenTimes } from "@/utils/ttml-kept-times";
 import { isExportedLine } from "@/utils/ttml-line-keys";
 import { emitWordSpan, spanEndsInSpace, timedSpan } from "@/utils/ttml-markup";
-import { keptAmongInline, keptAmongLines, keptAttributes, keptTimesAttributes } from "@/utils/ttml-passthrough-write";
+import {
+  anchorResolver,
+  keptAmongInline,
+  keptAmongLines,
+  keptAttributes,
+  keptTimesAttributes,
+  type Placed,
+} from "@/utils/ttml-passthrough-write";
 import { untimedTrackContent } from "@/utils/ttml-untimed-write";
 
 // -- Types --------------------------------------------------------------------
@@ -31,6 +39,7 @@ interface Writer {
   source: BodySource;
   ind: Indent;
   written: Set<PartSection>;
+  lineOrder: readonly string[];
 }
 
 interface Run<T> {
@@ -40,78 +49,92 @@ interface Run<T> {
 
 // -- Paragraphs ---------------------------------------------------------------
 
-function spanPieces(words: readonly WordTiming[]): string[] {
+function spanPieces(words: readonly WordTiming[]): Placed<string>[] {
   return words.map((word, i) => {
     const needsSpace = i < words.length - 1 && word.sep.endsWith(" ") && !spanEndsInSpace(word.text, word.passthrough);
-    return `${emitWordSpan(word, word.text, word.passthrough)}${needsSpace ? " " : ""}`;
+    return { out: `${emitWordSpan(word, word.text, word.passthrough)}${needsSpace ? " " : ""}`, anchors: [word.id] };
   });
 }
 
-// Content written whole in place of `count` timed syllables: kept data from before the first goes before it.
-function wholePieces(content: string, count: number): { lead: string; pieces: string[] } {
-  return count === 0 ? { lead: content, pieces: [] } : { lead: "", pieces: [content, ...Array(count - 1).fill("")] };
-}
+// A track written whole stands for its text and every syllable in it.
+const wholeTrack = (out: string, track: LineTrack): Placed<string> => ({
+  out,
+  anchors: [TEXT_ANCHOR, ...track.syllables.map((syllable) => syllable.id)],
+});
+
+const trackOrder = (track: LineTrack) => [...track.syllables.map((syllable) => syllable.id), TEXT_ANCHOR];
 
 function backgroundSpan(line: LyricLine, writesWords: boolean): string {
   const bgText = backgroundText(line);
-  if (!bgText) return "";
   const background = backgroundTrack(line);
+  if (!bgText || !background) return "";
   const bgWords = timedSyllables(background);
-  const kept = background?.passthrough;
+  const kept = background.passthrough;
   const open = `<span ttm:role="x-bg"${keptTimesAttributes(kept?.times, () => backgroundEnvelope(line))}${keptAttributes(kept)}>`;
-  if (writesWords && bgWords.length) return `${open}${keptAmongInline(spanPieces(bgWords), kept)}</span>`;
+  const order = trackOrder(background);
+  if (writesWords && bgWords.length) return `${open}${keptAmongInline(spanPieces(bgWords), kept, order)}</span>`;
   const bgTiming = bgBounds(line) ?? effectiveBounds(line);
   if (!bgTiming) return "";
   const explicit = drawnSyllables(line, "bg")[0]?.explicit;
-  const { lead, pieces } = wholePieces(
-    timedSpan({ ...bgTiming, explicit }, untimedTrackContent(background, bgText)),
-    bgWords.length,
-  );
-  return `${open}${lead}${keptAmongInline(pieces, kept)}</span>`;
+  const whole = timedSpan({ ...bgTiming, explicit }, untimedTrackContent(background, bgText));
+  return `${open}${keptAmongInline([wholeTrack(whole, background)], kept, order)}</span>`;
 }
 
 function paragraph(line: LyricLine, source: BodySource, indent: string): string {
   const envelope = lineEnvelope(line) ?? ["", ""];
   const [keptBegin, keptEnd] = line.passthrough?.times ? writtenTimes(line.passthrough.times, envelope) : [];
   const [begin, end] = [keptBegin ?? envelope[0], keptEnd ?? envelope[1]];
-  const agentAttr = mainTrack(line).agentId ? ` ttm:agent="${escapeXmlAttribute(mainTrack(line).agentId)}"` : "";
+  const main = mainTrack(line);
+  const agentAttr = main.agentId ? ` ttm:agent="${escapeXmlAttribute(main.agentId)}"` : "";
   const lineKey = source.keyById.get(line.id);
   const keyAttr = lineKey ? ` itunes:key="${lineKey}"` : "";
   const groupAttr = line.groupId
     ? ` composer:groupId="${escapeXmlAttribute(line.groupId)}" composer:instanceIdx="${line.instanceIdx ?? 0}" composer:templateLineIdx="${line.templateLineIdx ?? 0}"${line.detached ? ' composer:detached="true"' : ""}`
     : "";
-  const words = timedSyllables(mainTrack(line));
-  const { lead, pieces } =
+  const content =
     source.writesWords && isWordSynced(line)
-      ? { lead: "", pieces: spanPieces(words) }
-      : wholePieces(untimedTrackContent(mainTrack(line), lineText(line)), words.length);
+      ? spanPieces(timedSyllables(main))
+      : [wholeTrack(untimedTrackContent(main, lineText(line)), main)];
   const background = backgroundSpan(line, source.writesWords);
-  const content = `${lead}${keptAmongInline(background ? [...pieces, background] : pieces, line.passthrough)}`;
-  return `${indent}<p begin="${escapeXmlAttribute(begin)}" end="${escapeXmlAttribute(end)}"${keyAttr}${agentAttr}${groupAttr}${keptAttributes(line.passthrough)}>${content}</p>`;
+  const units = background ? [...content, { out: background, anchors: [BACKGROUND_ANCHOR] }] : content;
+  const written = keptAmongInline(units, line.passthrough, [...trackOrder(main), BACKGROUND_ANCHOR]);
+  return `${indent}<p begin="${escapeXmlAttribute(begin)}" end="${escapeXmlAttribute(end)}"${keyAttr}${agentAttr}${groupAttr}${keptAttributes(line.passthrough)}>${written}</p>`;
 }
 
 // -- Sections -----------------------------------------------------------------
 
-// Runs of written lines in the same section, or in none.
-function runs<T extends PartSection>(lines: readonly LyricLine[], sections: readonly T[]): Run<T>[] {
+// Runs of written lines in the same section, or in none; a run outside every section also ends after `breakAfter`.
+function runs<T extends PartSection>(
+  lines: readonly LyricLine[],
+  sections: readonly T[],
+  breakAfter: ReadonlySet<string> = new Set(),
+): Run<T>[] {
   const sectionOf = new Map(sections.flatMap((section) => section.lineIds.map((id) => [id, section] as const)));
   const result: Run<T>[] = [];
   for (const line of lines) {
     const section = sectionOf.get(line.id);
     const last = result[result.length - 1];
-    if (last && last.section === section) last.lines.push(line);
+    const ends = last && !section && breakAfter.has(last.lines[last.lines.length - 1].id);
+    if (last && last.section === section && !ends) last.lines.push(line);
     else result.push({ ...(section && { section }), lines: [line] });
   }
   return result;
 }
 
-// The lines of a stretch, one group per line or nested section, each nested section in its own `<div>` at the next
+const runAnchors = (lines: readonly LyricLine[]) => lines.map((line) => line.id);
+
+// The lines of a stretch, one unit per line or nested section, each nested section in its own `<div>` at the next
 // depth.
-function stretchGroups(lines: readonly LyricLine[], sections: readonly PartSection[], depth: number, writer: Writer) {
+function stretchUnits(
+  lines: readonly LyricLine[],
+  sections: readonly PartSection[],
+  depth: number,
+  writer: Writer,
+): Placed<string[]>[] {
   return runs(lines, sections).flatMap(({ section, lines: runLines }) =>
     section
-      ? [sectionLines(section, runLines, depth, writer)]
-      : runLines.map((line) => [paragraph(line, writer.source, writer.ind(depth))]),
+      ? [{ out: sectionLines(section, runLines, depth, writer), anchors: runAnchors(runLines) }]
+      : runLines.map((line) => ({ out: [paragraph(line, writer.source, writer.ind(depth))], anchors: [line.id] })),
   );
 }
 
@@ -122,10 +145,12 @@ function sectionLines(section: PartSection, lines: LyricLine[], depth: number, w
   const songPart = section.kind !== undefined ? ` itunes:songPart="${escapeXmlAttribute(section.kind)}"` : "";
   const firstRun = !writer.written.has(section);
   writer.written.add(section);
-  const groups = stretchGroups(lines, section.sections ?? [], depth + 1, writer);
+  const units = stretchUnits(lines, section.sections ?? [], depth + 1, writer);
   return [
     `${writer.ind(depth)}<div${times}${songPart}${keptAttributes(kept)}>`,
-    ...(firstRun ? keptAmongLines(groups, kept, writer.ind(depth + 1)) : groups.flat()),
+    ...(firstRun
+      ? keptAmongLines(units, kept, writer.ind(depth + 1), writer.lineOrder)
+      : units.flatMap((unit) => unit.out)),
     `${writer.ind(depth)}</div>`,
   ];
 }
@@ -138,18 +163,32 @@ function divLines(run: Run<Part>, writer: Writer): string[] {
 
 // -- Body ---------------------------------------------------------------------
 
+// The written lines that body elements follow: a plain `<div>` ends after each, so the element stays after its line.
+function bodyBreaks(source: BodySource, written: readonly LyricLine[], lineOrder: readonly string[]): Set<string> {
+  const after = source.passthrough?.body?.elementsAfter;
+  if (!after) return new Set();
+  const writtenIds = new Set(runAnchors(written));
+  const resolve = anchorResolver(lineOrder, (id) => writtenIds.has(id));
+  return new Set(after.flatMap((anchor) => (anchor === null ? [] : (resolve(anchor) ?? []))));
+}
+
 // A project without song parts writes every line in one `<div>`.
 function bodyLines(source: BodySource, ind: Indent): string[] {
   const durAttr = source.duration ? ` dur="${formatTime(source.duration)}"` : "";
   const written = source.lines.filter((line) => effectiveBounds(line) && isExportedLine(line));
-  const writer: Writer = { source, ind, written: new Set() };
-  const divs = runs(written, source.parts ?? []).map((run) => divLines(run, writer));
+  const lineOrder = runAnchors(source.lines);
+  const writer: Writer = { source, ind, written: new Set(), lineOrder };
+  const divs = runs(written, source.parts ?? [], bodyBreaks(source, written, lineOrder)).map((run) => ({
+    out: divLines(run, writer),
+    anchors: runAnchors(run.lines),
+  }));
   return [
     `${ind(1)}<body${durAttr}${keptAttributes(source.passthrough?.body)}>`,
     ...keptAmongLines(
-      divs.length > 0 ? divs : [[`${ind(2)}<div>`, `${ind(2)}</div>`]],
+      divs.length > 0 ? divs : [{ out: [`${ind(2)}<div>`, `${ind(2)}</div>`], anchors: [] }],
       source.passthrough?.body,
       ind(2),
+      lineOrder,
     ),
     `${ind(1)}</body>`,
   ];

@@ -1,6 +1,7 @@
 import type { Part, PartSection } from "insync/part";
 import type { Passthrough } from "insync/passthrough";
 import type { LyricLine } from "@/domain/line/model";
+import { sectionAnchors } from "@/utils/lyrics-parsers/ttml-anchors";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
 import { nodePassthrough } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { capturedTimes, partEnvelope } from "@/utils/ttml-kept-times";
@@ -12,9 +13,13 @@ function songPartOf(div: Element): string | null {
   return div.getAttribute("itunes:songPart") ?? div.getAttributeNS(ITUNES_NS, "songPart");
 }
 
-function divPassthrough(div: Element, lines: readonly LyricLine[]): Passthrough | undefined {
+function divPassthrough(
+  div: Element,
+  lines: readonly LyricLine[],
+  lineByParagraph: ReadonlyMap<Element, LyricLine>,
+): Passthrough | undefined {
   const times = capturedTimes(div, partEnvelope(lines.filter(isExportedLine)), false);
-  return nodePassthrough("div", div, times ? { times } : {});
+  return nodePassthrough("div", div, times ? { times } : {}, sectionAnchors(lineByParagraph));
 }
 
 const childSections = (div: Element) => Array.from(div.children).filter((child) => child.tagName === "div");
@@ -24,7 +29,7 @@ function sectionFrom(div: Element, lineByParagraph: ReadonlyMap<Element, LyricLi
   const lines = Array.from(div.getElementsByTagName("p")).flatMap((p) => lineByParagraph.get(p) ?? []);
   if (lines.length === 0) return undefined;
   const kind = songPartOf(div);
-  const passthrough = divPassthrough(div, lines);
+  const passthrough = divPassthrough(div, lines, lineByParagraph);
   const sections = childSections(div).flatMap((child) => sectionFrom(child, lineByParagraph) ?? []);
   return {
     ...(kind !== null && { kind }),

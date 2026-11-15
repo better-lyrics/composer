@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTimingWrite } from "@/domain/line/track-writes";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
@@ -138,5 +140,26 @@ describe("ttml kept data edges", () => {
     expect(ttml).toContain(
       '<span ttm:role="x-bg"><span begin="0:01.000" end="0:03.000"><span tts:color="red">Hello</span> world</span></span>',
     );
+  });
+
+  it("regression: a kept element stays after the syllable it followed when an earlier one is deleted", () => {
+    const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:k="https://vendor.example/k"><body><div><p begin="0:01.000" end="0:04.000"><span begin="0:01.000" end="0:02.000">Tide </span><span begin="0:02.000" end="0:03.000">comes </span><k:mark/><span begin="0:03.000" end="0:04.000">in</span></p></div></body></tt>`;
+    const parsed = parseTtml(source);
+    const [line] = parsed.lines;
+    const edited = { ...line, ...mainTimingWrite(line, timedSyllables(mainTrack(line)).slice(1)) };
+    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents: [], lines: [edited] });
+    expect(ttml).toMatch(/>comes<\/span> <k:mark\/><span [^>]*>in<\/span><\/p>/);
+  });
+
+  it("regression: a body element between two plain sections stays between their lines", () => {
+    const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:k="https://vendor.example/k"><body><div><p begin="0:01.000" end="0:02.000">Low tide</p></div><k:break/><div><p begin="0:03.000" end="0:04.000">High tide</p></div></body></tt>`;
+    const parsed = parseTtml(source);
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: [],
+      lines: parsed.lines,
+      passthrough: parsed.passthrough,
+    });
+    expect(ttml).toMatch(/Low tide<\/p>\s*<\/div>\s*<k:break\/>\s*<div>\s*<p [^>]*>High tide/);
   });
 });

@@ -13,8 +13,9 @@ interface KeptTimes {
 interface Passthrough {
   readonly attrs?: readonly XmlAttr[];
   readonly elements?: readonly XmlElement[];
-  // Per kept element, how many modelled children came before it; absent when every one came after the last.
-  readonly elementsAt?: readonly number[];
+  // Per kept element, the anchor it followed (a line, syllable or track part), null when it came first; absent when
+  // every one followed the last anchor.
+  readonly elementsAfter?: readonly (string | null)[];
   readonly times?: KeptTimes;
   // Syllables and singer names only: the children of a node that holds elements, such as ruby.
   readonly markup?: readonly XmlChild[];
