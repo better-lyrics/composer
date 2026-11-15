@@ -64,7 +64,16 @@ describe("anchorGesture", () => {
   });
 
   it("keeps the closing update of the previous slot and drops the anchor line's own write", () => {
-    const { anchor } = gestureAt(song(), "tap-word", { lineIndex: 3, wordIndex: 0 }, 40);
+    const tappedVerse = createLine({
+      id: "v1",
+      text: "Walking home",
+      words: [
+        { text: "Walking ", begin: 20, end: 20.6 },
+        { text: "home", begin: 20.6, end: 21.1 },
+      ],
+    });
+    const lines = song().map((line) => (line.id === "v1" ? tappedVerse : line));
+    const { anchor } = gestureAt(lines, "tap-word", { lineIndex: 3, wordIndex: 0 }, 40);
     expect(anchor?.precedingUpdates.map((update) => update.id)).toEqual(["v1"]);
   });
 
@@ -121,10 +130,10 @@ describe("anchorGesture", () => {
       expect(gestureAt(lines, "tap-word", { lineIndex: 0, wordIndex: 0 }, 10).anchor).toBeNull();
     });
 
-    it("takes the floored begin of an early tap", () => {
+    it("places an early tap before the previous line where it lands", () => {
       const { anchor } = gestureAt(song(), "tap-word", { lineIndex: 3, wordIndex: 0 }, 5);
-      expect(anchor?.clampedTo).toBe(20.6);
-      expect(anchor?.start).toBe(20.6);
+      expect(anchor?.clampedTo).toBeNull();
+      expect(anchor?.start).toBe(5);
     });
   });
 

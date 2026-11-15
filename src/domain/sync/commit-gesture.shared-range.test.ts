@@ -73,17 +73,14 @@ describe("commitGesture with a shared time range", () => {
       expect(commit?.lineUpdates.map((update) => update.id)).toEqual(["y"]);
     });
 
-    it("regression: a tap before the end of a placed shared instance only trims the overlap", () => {
+    it("a tap before the end of a placed shared instance overlaps it and leaves the shared timing alone", () => {
       const lines = [
         chorusLine("c0", 0, { words: [word("chorus", 3, 5)] }),
         createLine({ id: "x", text: "verse", words: [word("verse", 6, 7)] }),
         chorusLine("c1", 1, { words: [word("chorus", 10, 12)] }),
         createLine({ id: "y", text: "every" }),
       ];
-      expect(run(lines, "tap-word", 3, 11)?.lineUpdates).toContainEqual({
-        id: "c1",
-        updates: { words: [word("chorus", 10, 11)] },
-      });
+      expect(run(lines, "tap-word", 3, 11)?.lineUpdates.map((update) => update.id)).toEqual(["y"]);
     });
 
     it("still closes the last word of the first shared instance at the tap", () => {
