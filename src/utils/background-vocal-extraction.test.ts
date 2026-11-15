@@ -635,6 +635,32 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     expect(timedSyllables(mainTrack(result))).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false }]);
   });
 
+  it("regression: a syllable joined to the extracted group ends the line as a whole word", () => {
+    const line: LyricLine = lineFromFields(
+      {
+        id: "1",
+        text: "for|ev|(ah ah)",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "for", sep: "", begin: 0, end: 1, joinsNext: true },
+          { id: "w2", text: "ev", sep: "", begin: 1, end: 2, joinsNext: true },
+          { id: "w3", text: "(ah", sep: " ", begin: 2, end: 3, joinsNext: false },
+          { id: "w4", text: "ah)", sep: "", begin: 3, end: 4, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = extractInlineFromLine(
+      line,
+      { mergeStandaloneLines: false, preserveBrackets: false },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(timedSyllables(mainTrack(result)).map((word) => [word.text, word.joinsNext])).toEqual([
+      ["for", true],
+      ["ev", false],
+    ]);
+  });
+
   it("extracts a multi-token group spanning several words", () => {
     const line: LyricLine = lineFromFields(
       {
