@@ -1,8 +1,8 @@
 import type { LanguagePiece, LanguagePieces, LanguageSide, LineLanguages } from "./language";
 import { sidePieces, withPiecesOn } from "./language-side-pieces";
 import { hasLexicalBoundaryAfter, type TransliterationSlice } from "./language-transliteration-format";
-import type { LyricLine } from "./line";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "./line-track";
+import type { LyricLine, Syllable } from "./line";
+import { backgroundTrack, mainTrack, roleWords, type WordTrack } from "./line-track";
 import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
@@ -43,11 +43,11 @@ function hasReadings(pieces: LanguagePieces | undefined): boolean {
   return pieces !== undefined && Object.values(pieces).some((piece) => piece.text !== undefined);
 }
 
-function legacyJoiner(words: readonly WordTiming[], pieces: LanguagePieces | undefined, index: number): string {
-  return pieceOf(pieces, words[index])?.joinerAfter ?? (hasLexicalBoundaryAfter([...words], index) ? "  " : " ");
+function legacyJoiner(words: readonly Syllable[], pieces: LanguagePieces | undefined, index: number): string {
+  return pieceOf(pieces, words[index])?.joinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
 }
 
-function mappedTransliteration(words: readonly WordTiming[], pieces: LanguagePieces | undefined): string | null {
+function mappedTransliteration(words: readonly Syllable[], pieces: LanguagePieces | undefined): string | null {
   if (!words.length || words.some((word) => pieceOf(pieces, word)?.text === undefined)) return null;
   return words
     .map(
@@ -168,7 +168,7 @@ function withReadingsOf(line: LyricLine, source: LyricLine): LineLanguages | und
 
 function ownedPieces(
   pieces: LanguagePieces | undefined,
-  words: readonly WordTiming[] | undefined,
+  words: readonly Syllable[] | undefined,
 ): LanguagePieces | undefined {
   if (!pieces) return undefined;
   const ids = new Set(words?.map((word) => word.id));
@@ -178,12 +178,12 @@ function ownedPieces(
   return kept.length ? Object.fromEntries(kept.map((id) => [id, pieces[id]])) : undefined;
 }
 
-// A piece is kept only while its syllable is on that side of the line.
+// A piece is kept only while its syllable is on that side of the line, timed or not, so a resync maps it again.
 function withoutOrphanPieces<T extends LyricLine>(line: T): T {
   const main = trackPieces(line, "main");
   const bg = trackPieces(line, "bg");
-  const ownedMain = ownedPieces(main, timedSyllables(mainTrack(line)));
-  const ownedBg = ownedPieces(bg, timedSyllables(backgroundTrack(line)));
+  const ownedMain = ownedPieces(main, mainTrack(line).syllables);
+  const ownedBg = ownedPieces(bg, backgroundTrack(line)?.syllables);
   if (ownedMain === main && ownedBg === bg) return line;
   return { ...line, languages: withPiecesOn(withPiecesOn(line.languages, "main", ownedMain), "bg", ownedBg) };
 }

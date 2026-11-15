@@ -2,8 +2,8 @@ import type { BackgroundLanguage, LanguageSide, LineLanguage } from "./language"
 import { languagesWith, lineTransliteration } from "./language-line-languages";
 import { hasReadings, mappedTransliteration, trackPieces, withoutOrphanPieces } from "./language-pieces";
 import { normalizeTransliterationForEditing } from "./language-transliteration-format";
-import type { LyricLine } from "./line";
-import { backgroundTrack, mainTrack, timedSyllables, untimedSyllablesOf } from "./line-track";
+import type { LyricLine, Syllable } from "./line";
+import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables, untimedSyllablesOf } from "./line-track";
 import type { WordTiming } from "./word-timing";
 
 // -- Helpers ------------------------------------------------------------------
@@ -17,9 +17,22 @@ function sameSyllableIds(before: readonly WordTiming[], after: readonly WordTimi
   return before.length === after.length && before.every((word, index) => word.id === after[index].id);
 }
 
-// The untimed rest holds no readings, so its part of the old text stays after the rebuilt readings.
-function untimedReadingTail(text: string, before: LyricLine | undefined, side: LanguageSide): string | null {
-  const spelled = before ? mappedTransliteration(sideSyllables(before, side), trackPieces(before, side)) : null;
+function trackSyllables(line: LyricLine | undefined, side: LanguageSide): readonly Syllable[] {
+  if (!line) return [];
+  return (side === "main" ? mainTrack(line) : backgroundTrack(line))?.syllables ?? [];
+}
+
+// The old text spells the old syllables up to the untimed rest; the rest keeps its part of the old text after the
+// rebuilt readings, so a syllable that lost its timing keeps its text and one that gained it leaves the rest.
+function untimedReadingTail(text: string, before: LyricLine | undefined, line: LyricLine, side: LanguageSide) {
+  const untimed = new Set(untimedSyllablesOf(line, side).map((syllable) => syllable.id));
+  const timed = new Set(sideSyllables(line, side).map((syllable) => syllable.id));
+  const beforeSyllables = trackSyllables(before, side);
+  const spelledSyllables = beforeSyllables.filter((syllable) =>
+    isTimedSyllable(syllable) ? !untimed.has(syllable.id) : timed.has(syllable.id),
+  );
+  if (spelledSyllables.some((syllable, index) => syllable !== beforeSyllables[index])) return null;
+  const spelled = mappedTransliteration(spelledSyllables, before && trackPieces(before, side));
   if (spelled === null) return null;
   const old = normalizeTransliterationForEditing(text);
   const prefix = normalizeTransliterationForEditing(spelled);
@@ -49,7 +62,7 @@ function settledTrack(track: LineLanguage, before: LyricLine | undefined, line: 
     if (!sideTrack?.text?.trim() || words.length === 0) continue;
     if (sameSyllableIds(sideSyllables(before, side), words)) continue;
     if (!hasReadings(trackPieces(before ?? line, side))) continue;
-    const tail = untimedSyllablesOf(line, side).length ? untimedReadingTail(sideTrack.text, before, side) : "";
+    const tail = untimedSyllablesOf(line, side).length ? untimedReadingTail(sideTrack.text, before, line, side) : "";
     const next = settledSide(sideTrack, words, tail);
     if (next !== sideTrack) settled = { ...settled, [side]: next };
   }

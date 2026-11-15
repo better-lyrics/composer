@@ -6,9 +6,10 @@ import { drawnSyllables } from "insync/line-drawn-track";
 import { mainBounds } from "insync/line-bounds";
 import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";
-import { backgroundTrack, roleWords } from "insync/line-track";
+import { backgroundTrack, mainTrack, roleWords, untimedSyllable } from "insync/line-track";
+import { withMainTrack, withTrackSyllables } from "insync/line-track-writes";
 import { deleteWords, insertWord, typeWordText } from "insync/commands/word-structure";
-import { syncGesture } from "insync/commands/sync";
+import { syncClosingTap, syncGesture } from "insync/commands/sync";
 import { withAlignedTransliteration } from "insync/language-align";
 import { pasteLyrics } from "insync/commands/edit-text";
 import { trackPieces } from "insync/language-pieces";
@@ -134,20 +135,39 @@ describe("romanization through Sync", () => {
   });
 
   it("regression: a partly synced line keeps the reading of its untimed rest when a timed word goes", () => {
-    const timed = [
-      createWord({ text: "ほし ", begin: 1, end: 2 }),
-      createWord({ text: "の ", begin: 2, end: 3 }),
-      createWord({ text: "こえ ", begin: 3, end: 4 }),
-    ];
-    const readings = ["hoshi", "no", "koe"];
-    const pieces = Object.fromEntries(
-      timed.map((word, index) => [word.id, { text: readings[index], joinerAfter: " " }]),
-    );
-    const main = { text: "hoshi no koe yo", pieces };
-    const transliteration = { language: "ja-Latn", origin: "manual" as const, sourceFingerprint: "", main };
-    const line = { ...createLine({ id: "l6", text: "ほし の こえ よ", words: timed }), languages: { transliteration } };
-    useProjectStore.setState({ lines: [line] });
+    const { line, timed } = partlySyncedStar("l6");
     useProjectStore.getState().commit(deleteWords([addressOf(line, "word", timed[1])]));
     expect(useProjectStore.getState().lines[0].languages?.transliteration?.main.text).toBe("hoshi koe yo");
   });
+
+  it("regression: a word that loses its timing keeps its reading, and syncing it again keeps the text settled", () => {
+    const { line, timed } = partlySyncedStar("l7");
+    const steppedBack = mainTrack(line).syllables.map((syllable) =>
+      syllable.id === timed[2].id ? untimedSyllable(syllable) : syllable,
+    );
+    const tracks = withMainTrack(line, withTrackSyllables(mainTrack(line), steppedBack)).tracks;
+    useProjectStore.getState().commit(syncClosingTap([{ id: line.id, updates: { tracks } }]));
+    expect(useProjectStore.getState().lines[0].languages?.transliteration?.main.text).toBe("hoshi no koe yo");
+
+    const ctx = { cursor: { lineIndex: 0, wordIndex: 2 }, jumped: false, time: 3, defaultWordDuration: 0.5 };
+    useProjectStore.getState().commit(syncGesture("tap-word", ctx, () => {}));
+    const resynced = useProjectStore.getState().lines[0].languages?.transliteration?.main;
+    expect(resynced).toMatchObject({ text: "hoshi no koe yo" });
+    expect(resynced?.alignmentStatus).not.toBe("needs-review");
+  });
 });
+
+function partlySyncedStar(id: string) {
+  const timed = [
+    createWord({ text: "ほし ", begin: 1, end: 2 }),
+    createWord({ text: "の ", begin: 2, end: 3 }),
+    createWord({ text: "こえ ", begin: 3, end: 4 }),
+  ];
+  const readings = ["hoshi", "no", "koe"];
+  const pieces = Object.fromEntries(timed.map((word, index) => [word.id, { text: readings[index], joinerAfter: " " }]));
+  const main = { text: "hoshi no koe yo", pieces };
+  const transliteration = { language: "ja-Latn", origin: "manual" as const, sourceFingerprint: "", main };
+  const line = { ...createLine({ id, text: "ほし の こえ よ", words: timed }), languages: { transliteration } };
+  useProjectStore.setState({ lines: [line] });
+  return { line, timed };
+}

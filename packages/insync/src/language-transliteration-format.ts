@@ -126,7 +126,7 @@ function splitTransliterationAtBoundaries(
   });
 }
 
-function hasLexicalBoundaryAfter(words: WordTiming[], index: number): boolean {
+function hasLexicalBoundaryAfter(words: readonly Pick<WordTiming, "sep">[], index: number): boolean {
   return index < words.length - 1 && words[index].sep.endsWith(" ");
 }
 
