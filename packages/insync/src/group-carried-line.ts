@@ -143,13 +143,10 @@ function carriedTrackTiming({ before, after, own, offset, counterpart, room, spl
       : inPlace(after.syllables, counterpart);
     return { syllables, span: undefined };
   }
-  if (!own || timedSyllables(own).length === 0) {
-    return { syllables: inPlace(after.syllables, counterpart).map(untimedSyllable), span: undefined };
-  }
-  if (before && timedSyllables(before).length === 0) {
+  if (before && own && timedSyllables(own).length > 0 && timedSyllables(before).length === 0) {
     return { syllables: onOwnTiming(after.syllables, own.syllables, counterpart, room, splitChar), span: undefined };
   }
-  if (before && !sameSyllableContent(before.syllables, own.syllables)) {
+  if (before && own && !sameSyllableContent(before.syllables, own.syllables)) {
     const syllables =
       lineageByLetters(after.syllables, own.syllables, counterpart) ??
       proportional(after.syllables, boundsOf(after), boundsOf(own), counterpart);
