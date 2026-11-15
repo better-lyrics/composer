@@ -19,6 +19,8 @@ interface WordTemplate {
 }
 
 interface LineTemplate {
+  /** The group slot the line fills; the template's array index when absent. */
+  slot?: number;
   text: string;
   agentId: string;
   relativeBegin?: number;

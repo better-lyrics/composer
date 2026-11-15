@@ -253,3 +253,31 @@ describe("carryTemplateEdits · a word added at the front", () => {
     expect(spans(out)[0]).toEqual(["So", 39.5, 40]);
   });
 });
+
+describe("carryTemplateEdits · untimed instances", () => {
+  it("regression: a timed word added at the front stays untimed on an untimed instance, never at zero", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Paper wings", words: words(11, ["Paper", "wings"]) }),
+      groupLine("L2", 1, { text: "Paper wings" }),
+    ];
+    const [paper, wings] = timedSyllables(mainTrack(before[0]));
+    const added = [{ ...paper, id: "red", text: "Red", begin: 9, end: 10 }, paper, wings];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "Red Paper wings", words: added })), [
+      shared,
+    ])[1];
+    expect(lineText(out, DEFAULT_SPLIT_CHARACTER)).toBe("Red Paper wings");
+    expect(spans(out)).toEqual([]);
+  });
+
+  it("regression: a letter deleted in an untimed instance keeps the timed instance's times", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Paper wings" }),
+      groupLine("L2", 1, { text: "Paper wings", words: words(11, ["Paper", "wings"]) }),
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "Paper wing" })), [shared])[1];
+    expect(spans(out)).toEqual([
+      ["Paper", 11, 11.5],
+      ["wing", 11.5, 12],
+    ]);
+  });
+});

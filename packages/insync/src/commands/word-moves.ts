@@ -15,6 +15,7 @@ import { mergeWordsIntoTrack } from "../word-merge-track";
 import { type WordMove, applyWordMoveAcrossLines } from "../word-move-across-lines";
 import { boundsOverlap } from "../word-overlap";
 import { reorderWordTrack } from "../word-reorder-track";
+import { withReorderDetaches } from "../word-reorder-detach";
 import type { WordTiming } from "../word-timing";
 import { cloneWord } from "../word-clone";
 
@@ -216,19 +217,23 @@ function planDuplicate(
 
 // -- Commands -----------------------------------------------------------------
 
-function moveWords(args: MoveArgs): LyricCommand {
+// `report` receives the group lines the reorder made their instance's own.
+function moveWords(args: MoveArgs, report?: (detachedIds: readonly string[]) => void): LyricCommand {
   return lineEditCommand(
     { command: "move words", args: [args.timeDelta, ...args.addresses.map((address) => address.syllableId)] },
     (root, ctx) => {
       const { lines } = root;
       const rangeOf = timeRangeResolver(root.lines, root.groups, args.duration);
-      return reorderUpdates(
+      const reordered = reorderUpdates(
         lines,
         resolveAddresses(lines, args.addresses, ctx.splitChar),
         args.timeDelta,
         rangeOf,
         ctx.splitChar,
       );
+      const { updates, detachedIds } = withReorderDetaches(lines, root.groups, reordered, ctx.splitChar);
+      report?.(detachedIds);
+      return updates;
     },
   );
 }

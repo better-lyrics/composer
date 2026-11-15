@@ -59,7 +59,7 @@ function applyInstanceTemplate({
         agentId: tplLine.agentId,
         groupId,
         instanceIdx,
-        templateLineIdx: idx - startIndex,
+        templateLineIdx: tplLine.slot ?? idx - startIndex,
         ...(tplLine.relativeBegin !== undefined && { begin: tplLine.relativeBegin + instanceStart }),
         ...(tplLine.relativeEnd !== undefined && { end: tplLine.relativeEnd + instanceStart }),
         ...(words && { words }),

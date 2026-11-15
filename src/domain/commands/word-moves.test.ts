@@ -173,6 +173,40 @@ describe("word moves inside a group instance", () => {
       expect(roleWords(topLine, "main")?.map((word) => word.text)).toEqual(["We", "glow"]);
     }
   });
+
+  const wordTimes = (lineId: string) =>
+    roleWords(
+      useProjectStore.getState().lines.find((line) => line.id === lineId),
+      "main",
+    )?.map((word) => [word.text, word.begin, word.end]);
+
+  const dragFirstWordPastSecond = (lineId: string, report?: (detachedIds: readonly string[]) => void) => {
+    const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
+    const first = line && roleWords(line, "main")?.[0];
+    if (!first) throw new Error(`expected a first word in ${lineId}`);
+    useProjectStore
+      .getState()
+      .commit(
+        moveWords({ addresses: [addressOf({ id: lineId }, "word", first)], timeDelta: 0.5, duration: 120 }, report),
+      );
+  };
+
+  it("regression: a reorder in a group that does not share timing leaves the other instances alone", () => {
+    useProjectStore.getState().restoreLyrics({
+      lines: [...chorusLines(0, 10), ...chorusLines(1, 40)],
+      groups: [chorusGroup],
+    });
+    const before = wordTimes("top-0");
+    let detachedIds: readonly string[] = [];
+    dragFirstWordPastSecond("top-1", (ids) => {
+      detachedIds = ids;
+    });
+
+    expect(wordTimes("top-0")).toEqual(before);
+    expect(wordTimes("top-1")?.map(([text]) => text)).toEqual(["glow", "We", "tonight"]);
+    expect(detachedIds).toEqual(["top-1"]);
+    expect(useProjectStore.getState().lines.find((line) => line.id === "top-1")?.detached).toBe(true);
+  });
 });
 
 describe("word moves in partly timed lines", () => {

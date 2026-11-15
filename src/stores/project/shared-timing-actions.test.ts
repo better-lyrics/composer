@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { LyricCommand } from "insync/commands/command";
 import { groupRepeatingSections, shareGroupTiming } from "insync/commands/group-edits";
 import { addInstance, placeInstance, setInstanceOwnTiming } from "insync/commands/instance-edits";
+import { pasteLines } from "insync/commands/instance-rows";
 import { isRefused } from "insync/commands/outcome";
 import { NOTHING_SHARED } from "insync/group-plans";
 import type { RealignRefusal, SharingOutcome } from "insync/group-shared-placement";
@@ -15,6 +16,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine } from "@/test/factories";
@@ -65,6 +67,7 @@ function ownTimingRefusal(...args: Parameters<typeof setInstanceOwnTiming>): Rea
 }
 
 beforeEach(() => {
+  useAudioStore.setState({ duration: 0 });
   store().reset();
   store().clearHistory();
   useSettingsStore.setState({ shareTimingInNewGroups: true });
@@ -515,6 +518,34 @@ describe("placeInstance", () => {
       } finally {
         unsubscribe();
       }
+    });
+
+    it("regression: writes nothing and reports false when the instance would start before the line above it ends", () => {
+      const verse = createLine({ id: "v", text: "Walking", words: [{ text: "Walking", begin: 20, end: 21 }] });
+      seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
+      const before = store().lines;
+      expect(placed("g1", 1, 20.5, SONG_LENGTH)).toBe(false);
+      expect(store().lines).toBe(before);
+    });
+
+    it("regression: refuses a shared timing edit whose copy would have to move onto another instance", () => {
+      const songLength = 30;
+      seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 0), chorus(1, 24), chorus(2, 27.5)]);
+      const before = store().lines;
+      const laterStart = fieldUpdates([
+        {
+          id: "c0",
+          updates: {
+            words: [
+              { id: "w7", text: "I", sep: " ", begin: 7, end: 7.4, joinsNext: false },
+              { id: "w8", text: "want", sep: "", begin: 7.5, end: 8, joinsNext: false },
+            ],
+          },
+        },
+      ]);
+      useAudioStore.setState({ duration: songLength });
+      expect(isRefused(store().commit(pasteLines(laterStart)))).toBe(true);
+      expect(store().lines).toBe(before);
     });
 
     it("writes nothing and reports false when there is no timed reference", () => {
