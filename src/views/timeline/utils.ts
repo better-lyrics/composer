@@ -6,7 +6,7 @@ import { mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { formatTime as formatTimeBase } from "insync/format-time";
-import { distributeWordsInLine } from "@/utils/lyric-words";
+import { distributeWordsInLine } from "insync/lyric-words";
 import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 import { lineRowHeight } from "@/views/timeline/row-geometry";
 import { getSplitCharacter } from "@/utils/split-character";

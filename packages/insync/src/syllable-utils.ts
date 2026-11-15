@@ -1,4 +1,4 @@
-import type { SubPartition } from "@/utils/word-timing";
+import type { SubPartition } from "./word-clone";
 
 // -- Helpers ------------------------------------------------------------------
 

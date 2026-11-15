@@ -16,7 +16,7 @@ import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-acro
 import { boundsOverlap } from "insync/word-overlap";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
 import type { WordTiming } from "insync/word-timing";
-import { cloneWord } from "@/utils/word-timing";
+import { cloneWord } from "insync/word-clone";
 
 // -- Types --------------------------------------------------------------------
 

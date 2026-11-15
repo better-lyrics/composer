@@ -12,7 +12,7 @@ import {
 } from "@/domain/line/track-writes";
 import { firstBegin, lastEnd } from "insync/word-bounds";
 import type { WordTiming } from "insync/word-timing";
-import { createInitialBgWords } from "@/utils/lyric-words";
+import { createInitialBgWords } from "insync/lyric-words";
 
 // -- Types --------------------------------------------------------------------
 

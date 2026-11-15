@@ -8,7 +8,7 @@ import { withRoleWords } from "@/domain/line/track-writes";
 import { wordKey } from "insync/word-alignment";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------

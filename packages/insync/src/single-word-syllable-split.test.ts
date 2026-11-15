@@ -1,6 +1,6 @@
-import type { LanguagePiece } from "insync/language";
-import type { WordTiming } from "insync/word-timing";
-import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import type { LanguagePiece } from "./language";
+import type { WordTiming } from "./word-timing";
+import { splitSyllablePieces, splitWordIntoSyllables } from "./single-word-syllable-split";
 import { describe, expect, it } from "vitest";
 
 interface SplitWithReading {

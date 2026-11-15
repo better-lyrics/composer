@@ -14,7 +14,7 @@ import { withRoleWords } from "@/domain/line/track-writes";
 import { spacedText, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { withoutSplitCharacter } from "insync/split-character-text";
-import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 
 type LanguageTextVariant = "original" | "transliteration";
 

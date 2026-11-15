@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLine } from "@/test/factories";
-import { findIdenticalWords } from "@/utils/identical-word-matcher";
+import { findIdenticalWords } from "insync/identical-word-matcher";
 
 describe("findIdenticalWords", () => {
   it("returns exact-text matches across lines, main track", () => {

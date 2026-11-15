@@ -1,8 +1,8 @@
 import { splitTrailingWhitespace } from "insync/from-words";
 import { lcsPairs, wordKey } from "insync/word-alignment";
 import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
-import { synthesizeBracketedWord } from "@/utils/word-timing";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
+import { synthesizeBracketedWord } from "insync/word-clone";
 
 // -- Helpers ------------------------------------------------------------------
 

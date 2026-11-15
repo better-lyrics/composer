@@ -16,11 +16,11 @@ import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
-import { findIdenticalWords } from "@/utils/identical-word-matcher";
-import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { findIdenticalWords } from "insync/identical-word-matcher";
+import { splitSyllablePieces, splitWordIntoSyllables } from "insync/single-word-syllable-split";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitWordIntoWords } from "@/utils/word-split";
-import { splitSourceWord } from "@/utils/word-timing";
+import { splitSourceWord } from "insync/word-clone";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isRefused } from "@/domain/commands/outcome";
 

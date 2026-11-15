@@ -8,7 +8,7 @@ import type { ReRecording } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "insync/format-time";
-import { DEFAULT_BG_WORD_DURATION, distributeWordsInLine, splitIntoWords } from "@/utils/lyric-words";
+import { DEFAULT_BG_WORD_DURATION, distributeWordsInLine, splitIntoWords } from "insync/lyric-words";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

@@ -4,8 +4,8 @@ import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { roleWords, trackWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { type IdenticalMatchSource, findIdenticalWords } from "@/utils/identical-word-matcher";
-import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { type IdenticalMatchSource, findIdenticalWords } from "insync/identical-word-matcher";
+import { splitWordIntoSyllables } from "insync/single-word-syllable-split";
 
 // -- Types --------------------------------------------------------------------
 

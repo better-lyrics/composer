@@ -1,6 +1,6 @@
-import type { WordTiming } from "insync/word-timing";
-import { wordsFromSpaced } from "insync/word-spaced-words";
-import { textParts } from "insync/word-text-parts";
+import type { WordTiming } from "./word-timing";
+import { wordsFromSpaced } from "./word-spaced-words";
+import { textParts } from "./word-text-parts";
 
 // -- Constants ----------------------------------------------------------------
 

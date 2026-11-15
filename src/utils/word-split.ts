@@ -1,6 +1,6 @@
 import { withSplitIds } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
-import { distributeTiming } from "@/utils/syllable-utils";
+import { distributeTiming } from "insync/syllable-utils";
 
 // -- Functions -----------------------------------------------------------------
 

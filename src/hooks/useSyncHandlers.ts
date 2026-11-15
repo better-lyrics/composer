@@ -27,7 +27,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showPlacementBlockedToast } from "@/utils/group-toast";
 import { type SyncState, formatTimeMs } from "@/utils/sync-helpers";
-import { splitIntoWords } from "@/utils/lyric-words";
+import { splitIntoWords } from "insync/lyric-words";
 import type { RetimeChange } from "@/utils/timing/word-timing-ops";
 import { getSplitCharacter } from "@/utils/split-character";
 

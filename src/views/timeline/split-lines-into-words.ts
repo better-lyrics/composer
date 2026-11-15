@@ -8,7 +8,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { SyllableAddress } from "insync/selection-model";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
-import { evenlyTimedWords } from "@/utils/lyric-words";
+import { evenlyTimedWords } from "insync/lyric-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getSplitCharacter } from "@/utils/split-character";
 

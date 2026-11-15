@@ -9,7 +9,7 @@ import { lastEnd } from "insync/word-bounds";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "insync/word-timing";
 import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "@/utils/background-vocal-brackets";
-import { createInitialBgWords } from "@/utils/lyric-words";
+import { createInitialBgWords } from "insync/lyric-words";
 
 // -- Types --------------------------------------------------------------------
 

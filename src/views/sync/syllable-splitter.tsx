@@ -5,7 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
-import { findIdenticalWords } from "@/utils/identical-word-matcher";
+import { findIdenticalWords } from "insync/identical-word-matcher";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
 import {
   type SyllableSplitHandler,

@@ -7,7 +7,7 @@ import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
-import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { splitSyllablePieces, splitWordIntoSyllables } from "insync/single-word-syllable-split";
 import {
   type PairedSplitPoints,
   togglePrimarySplitPoint,

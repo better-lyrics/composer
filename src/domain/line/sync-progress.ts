@@ -4,7 +4,7 @@ import { hasMainLyrics, isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 
 // -- Types --------------------------------------------------------------------
 

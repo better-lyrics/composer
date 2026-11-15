@@ -3,7 +3,7 @@ import { computeSyllableGroups } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
 import { withoutSplitCharacter } from "insync/split-character-text";
-import { splitIntoWords } from "@/utils/lyric-words";
+import { splitIntoWords } from "insync/lyric-words";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import type { SyllableSplitHandler } from "@/views/sync/use-syllable-splitter-state";

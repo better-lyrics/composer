@@ -1,13 +1,13 @@
-import type { LanguagePiece } from "insync/language";
-import type { PositionalPieces } from "insync/language-pieces";
+import type { LanguagePiece } from "./language";
+import type { PositionalPieces } from "./language-pieces";
 import {
   leadingUntimedSeparator,
   trailingUntimedSeparator,
   withoutEdgeUntimedSeparators,
-} from "insync/language-transliteration-format";
-import type { WordTiming } from "insync/word-timing";
-import { distributeTiming } from "@/utils/syllable-utils";
-import { splitSourceWord } from "@/utils/word-timing";
+} from "./language-transliteration-format";
+import type { WordTiming } from "./word-timing";
+import { distributeTiming } from "./syllable-utils";
+import { splitSourceWord } from "./word-clone";
 
 // -- Types --------------------------------------------------------------------
 

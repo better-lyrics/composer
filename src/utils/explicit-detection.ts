@@ -5,7 +5,7 @@ import type { WordTiming } from "insync/word-timing";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 
 // -- Types ---------------------------------------------------------------------
 

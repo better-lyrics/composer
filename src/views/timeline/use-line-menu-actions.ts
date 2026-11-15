@@ -16,7 +16,7 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
-import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

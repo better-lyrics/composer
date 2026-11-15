@@ -1,9 +1,9 @@
 /**
  * @vitest-environment node
  */
-import type { WordTiming } from "insync/word-timing";
+import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
-import { cloneWord, splitSourceWord, synthesizeBracketedWord } from "./word-timing";
+import { cloneWord, splitSourceWord, synthesizeBracketedWord } from "./word-clone";
 
 describe("cloneWord", () => {
   it("carries every input field through, overrides apply", () => {

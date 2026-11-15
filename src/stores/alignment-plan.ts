@@ -10,7 +10,7 @@ import { lineText } from "insync/line-text";
 import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
 import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // Which lines a run aligns, and what each one is aligned against.

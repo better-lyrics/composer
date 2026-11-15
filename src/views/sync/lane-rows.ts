@@ -6,7 +6,7 @@ import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/langu
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { getSplitCharacter } from "@/utils/split-character";
-import { splitIntoWords, splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { splitIntoWords, splitIntoWordsWithMeta } from "insync/lyric-words";
 import type { LaneGroupTag } from "@/views/sync/shared-sync-tags";
 
 // -- Interfaces ---------------------------------------------------------------
