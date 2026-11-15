@@ -659,4 +659,33 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     const result = textToLyricLines("New\nX\nX\nY", "v1", [x1, x2, y]);
     expect(result.slice(1).map((l) => l.id)).toEqual(["x1", "x2", "y"]);
   });
+
+  const timedLine = (id: string, words: string[], begin: number): LyricLine =>
+    lineFromFields(
+      {
+        id,
+        text: words.join(" "),
+        agentId: "v1",
+        words: words.map((text, index) => ({
+          id: `${id}-w${index}`,
+          text,
+          sep: index < words.length - 1 ? " " : "",
+          begin: begin + index,
+          end: begin + index + 1,
+          joinsNext: false,
+        })),
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+
+  it("regression: a repeated row keeps the timing of the line nearest its place, not the first one", () => {
+    const lines = [
+      timedLine("lanterns", ["Lanterns", "drift", "away"], 1),
+      timedLine("paper-1", ["Paper", "wings", "tonight"], 5),
+      timedLine("quiet", ["Quiet", "harbor", "lights"], 9),
+      timedLine("paper-2", ["Paper", "wings", "tonight"], 13),
+    ];
+    const result = textToLyricLines("Lanterns drift away\nQuiet harbor lights\nPaper wings tonight", "v1", lines);
+    expect(result.map((l) => l.id)).toEqual(["lanterns", "quiet", "paper-2"]);
+  });
 });

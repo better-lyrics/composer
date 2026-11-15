@@ -97,10 +97,38 @@ function textToLyricLines(
     });
   }
 
-  cleanedKeys.forEach((_, index) => {
+  // A row whose text one line alone holds anchors the rows around it; a repeated row then takes the free line
+  // nearest where the anchors place it.
+  const rowsPerKey = new Map<string, number>();
+  for (const key of cleanedKeys) rowsPerKey.set(key, (rowsPerKey.get(key) ?? 0) + 1);
+  cleanedKeys.forEach((key, index) => {
+    const candidates = textToCandidates.get(key);
+    if (claimed[index] || candidates?.length !== 1 || rowsPerKey.get(key) !== 1) return;
+    if (!usedExistingIds.has(candidates[0].id)) claim(index, candidates[0]);
+  });
+
+  const existingIndex = new Map(existingLines.map((line, index) => [line.id, index]));
+  const expectedIndex = (row: number): number => {
+    for (let before = row - 1; before >= 0; before--) {
+      const line = claimed[before];
+      if (line) return (existingIndex.get(line.id) ?? before) + row - before;
+    }
+    for (let after = row + 1; after < claimed.length; after++) {
+      const line = claimed[after];
+      if (line) return (existingIndex.get(line.id) ?? after) - (after - row);
+    }
+    return row;
+  };
+  cleanedKeys.forEach((key, index) => {
     if (claimed[index]) return;
-    const exactMatch = textToCandidates.get(cleanedKeys[index])?.find((line) => !usedExistingIds.has(line.id));
-    if (exactMatch) claim(index, exactMatch);
+    const candidates = textToCandidates.get(key)?.filter((line) => !usedExistingIds.has(line.id));
+    if (!candidates?.length) return;
+    const expected = expectedIndex(index);
+    const distance = (line: LyricLine) => Math.abs((existingIndex.get(line.id) ?? 0) - expected);
+    claim(
+      index,
+      candidates.reduce((nearest, line) => (distance(line) < distance(nearest) ? line : nearest)),
+    );
   });
 
   const sources: Array<LyricLine | undefined> = new Array(newLines.length);
