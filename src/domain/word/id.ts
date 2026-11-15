@@ -1,3 +1,4 @@
+import type { TrackRole } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Functions ----------------------------------------------------------------
@@ -6,9 +7,9 @@ function newWordId(): string {
   return crypto.randomUUID();
 }
 
-// A line-synced line shows one word; its id follows the line so timing edits keep it.
-function lineTimingWordId(lineId: string): string {
-  return `${lineId}:line`;
+// A line-synced track shows one word; its id follows the line and track so timing edits keep it.
+function lineTimingWordId(lineId: string, role: TrackRole = "main"): string {
+  return role === "main" ? `${lineId}:line` : `${lineId}:bg-line`;
 }
 
 function withNewId(word: WordTiming): WordTiming {

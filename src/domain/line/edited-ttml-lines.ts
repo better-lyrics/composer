@@ -87,7 +87,24 @@ function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined
   );
 }
 
+// A line-synced background exports as one span; the edit's one span moves it and keeps it line synced.
+function keptBackgroundSpan(stored: LineFields, edited: LineFields): Partial<LineFields> | null {
+  const [span, ...rest] = edited.backgroundWords ?? [];
+  if (stored.backgroundBegin === undefined || !span || rest.length > 0) return null;
+  const same = sameExportedTime(span.begin, stored.backgroundBegin) && sameExportedTime(span.end, stored.backgroundEnd);
+  const source = stored.backgroundText === edited.backgroundText ? stored.backgroundTextSource : undefined;
+  return {
+    backgroundTextSource: source,
+    backgroundWords: undefined,
+    backgroundBegin: same ? stored.backgroundBegin : span.begin,
+    backgroundEnd: same ? stored.backgroundEnd : span.end,
+    backgroundExplicit: span.explicit,
+  };
+}
+
 function mergedBackground(stored: LineFields, edited: LineFields): Partial<LineFields> {
+  const span = keptBackgroundSpan(stored, edited);
+  if (span) return span;
   const storedWords = stored.backgroundWords;
   const seeded = hasSeededBackgroundWords(storedWords, edited);
   if (stored.backgroundText !== edited.backgroundText) {

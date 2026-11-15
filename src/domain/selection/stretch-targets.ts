@@ -1,7 +1,8 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { mainBounds } from "@/domain/line/bounds";
-import { trackWords } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -72,8 +73,8 @@ function resolveStretchTargets(
   const seenLineSynced = new Set<string>();
 
   const pushWord = (sel: StretchSelectionRef, line: LyricLine) => {
-    const words = trackWords(line, sel.type);
-    if (!words || words[sel.wordIndex] === undefined) return;
+    const words = drawnSyllables(line, trackRole(sel.type));
+    if (words[sel.wordIndex] === undefined) return;
     const key = `${sel.lineId}:${sel.type}:${sel.wordIndex}`;
     if (seenWord.has(key)) return;
     seenWord.add(key);
@@ -115,7 +116,7 @@ function* selectedFiniteWords(
   targets: StretchTargets,
 ): Generator<{ track: StretchTrack; words: WordTiming[]; idx: number; word: WordTiming }> {
   for (const track of targets.tracks.values()) {
-    const words = trackWords(track.line, track.type) ?? [];
+    const words = drawnSyllables(track.line, trackRole(track.type));
     for (const idx of track.indices) {
       const word = words[idx];
       if (!isFiniteWord(word)) continue;

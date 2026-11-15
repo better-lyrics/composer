@@ -2,6 +2,7 @@ import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { isLinked } from "@/domain/instance/predicates";
 import { withBackground, withSeededBackground } from "@/domain/line/background";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { bgBounds } from "@/domain/line/bounds";
 import { isWordSynced } from "@/domain/line/predicates";
 import { wordContentSpans } from "@/domain/line/reconstruct-text";
 import { backgroundText, lineText, syllablesText } from "@/domain/line/text";
@@ -101,7 +102,7 @@ function hasSungContent(text: string, splitChar: string): boolean {
 function extractInlineWordSynced(line: LyricLine, classified: LineClassification, options: ExtractOptions): LyricLine {
   const words = roleWords(line, "main");
   if (!words || words.length === 0) return line;
-  if (roleWords(line, "bg")) return line;
+  if (bgBounds(line)) return line;
   const splitChar = getSplitCharacter();
   if (syllablesText(words, splitChar) !== lineText(line)) return line;
   const spans = wordContentSpans(words, splitChar);
@@ -139,7 +140,7 @@ function extractInline(line: LyricLine, options: ExtractOptions): LyricLine {
   const classified = classifyLine(lineText(line));
   if (classified.kind !== "inline") return line;
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options);
-  if (roleWords(line, "bg")) return line;
+  if (bgBounds(line)) return line;
   const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line);
   return withBackground(withMainTrack(line, withTrackText(mainTrack(line), classified.mainText)), {
     text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),

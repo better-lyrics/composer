@@ -1,6 +1,7 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { lineInstanceKey } from "@/domain/instance/key";
 import { withManualBackgroundWords } from "@/domain/line/background";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming, isLineSynced } from "@/domain/line/predicates";
 import { mainTrack, roleWords } from "@/domain/line/track";
@@ -20,7 +21,7 @@ function isLineFullyEmpty(line: LyricLine): boolean {
 }
 
 function trackLength(line: LyricLine, type: "word" | "bg"): number {
-  if (type === "bg") return roleWords(line, "bg")?.length ?? 0;
+  if (type === "bg") return drawnSyllables(line, "bg").length;
   return isLineSynced(line) ? 1 : (roleWords(line, "main")?.length ?? 0);
 }
 
@@ -59,7 +60,7 @@ function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionS
       );
     }
 
-    const bgWords = roleWords(line, "bg") ?? [];
+    const bgWords = drawnSyllables(line, "bg");
     if (bgWords.length > 0 && bgIdxs.size > 0) {
       const absorbed = absorbDeletedSyllablesIntoNeighbors(bgWords, bgIdxs);
       const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));

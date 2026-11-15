@@ -2,6 +2,8 @@ import { isSpanTimed, mainTrack } from "@/domain/line/track";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { backgroundTrack } from "@/domain/line/track";
+import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -85,6 +87,11 @@ describe("isWordSynced", () => {
 describe("hasAnyTiming", () => {
   it("returns false when no timing at all", () => {
     expect(hasAnyTiming(line())).toBe(false);
+  });
+
+  it("regression: returns true when only the background holds a span", () => {
+    const untimed = line({ backgroundText: "ooh" });
+    expect(hasAnyTiming(withBackgroundTrack(untimed, withTrackSpan(backgroundTrack(untimed)!, 1, 2)))).toBe(true);
   });
 
   it("returns true when only line-synced", () => {

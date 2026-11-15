@@ -1,5 +1,5 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ const WORD_INSET_PX: Record<WordTrackType, number> = { word: 5, bg: 5 };
 // -- Functions -----------------------------------------------------------------
 
 function bgTrackHeight(line: LyricLine, mainHeight: number): number {
-  return timedSyllables(backgroundTrack(line)).length ? mainHeight : BG_DROP_ZONE_HEIGHT;
+  return drawnSyllables(line, "bg").length ? mainHeight : BG_DROP_ZONE_HEIGHT;
 }
 
 function lineRowHeight(line: LyricLine, mainHeight: number): number {

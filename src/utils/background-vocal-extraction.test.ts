@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { withSeededBackground } from "@/domain/line/background";
+import { bgBounds } from "@/domain/line/bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
 import { createLine } from "@/test/factories";
 import {
   classifyLine,
@@ -1948,14 +1951,14 @@ describe("regressions", () => {
     const line = createLine({ id: "a", text: "hello (ooh)", begin: 10, end: 14 });
     const [extracted] = extractBackgroundVocals([line], options);
     expect(backgroundText(extracted)).toBe("ooh");
-    expect(timedSyllables(backgroundTrack(extracted))[0].begin).toBe(12);
+    expect(bgBounds(extracted)).toEqual({ begin: 12, end: 14 });
   });
 
   it("regression: an untimed standalone line merged into a synced line is stored timed", () => {
     const lines = [createLine({ id: "a", text: "hello", begin: 10, end: 14 }), createLine({ id: "b", text: "(ooh)" })];
     const [merged] = extractBackgroundVocals(lines, options);
     expect(backgroundText(merged)).toBe("ooh");
-    expect(timedSyllables(backgroundTrack(merged))[0].begin).toBe(12);
+    expect(bgBounds(merged)).toEqual({ begin: 12, end: 14 });
   });
 
   it("regression: several untimed standalone lines all merge into one synced line", () => {
@@ -1966,7 +1969,8 @@ describe("regressions", () => {
     ];
     const extracted = extractBackgroundVocals(lines, options);
     expect(extracted).toHaveLength(1);
-    expect(timedSyllables(backgroundTrack(extracted[0])).map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
+    expect(backgroundText(extracted[0])).toBe("ooh yeah");
+    expect(bgBounds(extracted[0])).toEqual({ begin: 12, end: 14 });
   });
 
   it("regression: empty parentheses do not change the timing pulled from a word-synced line", () => {
@@ -1983,6 +1987,36 @@ describe("regressions", () => {
     expect(timedSyllables(backgroundTrack(extracted))).toEqual([
       { text: "ooh", sep: "", begin: 5, end: 6, joinsNext: false },
     ]);
+  });
+
+  it("regression: a timed standalone merged into a line-synced background keeps both timings", () => {
+    const synced = withSeededBackground(
+      createLine({ id: "a", text: "hello", begin: 10, end: 14, backgroundText: "ooh", backgroundTextSource: "manual" }),
+    );
+    const lines = [synced, createLine({ id: "b", text: "(yeah)", begin: 15, end: 16 })];
+    const [merged] = extractBackgroundVocals(lines, options);
+    expect(backgroundText(merged)).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(merged)).map((word) => [word.begin, word.end])).toEqual([
+      [12, 14],
+      [15, 16],
+    ]);
+  });
+
+  it("regression: inline brackets are not extracted into a line-synced background", () => {
+    const synced = withSeededBackground(
+      createLine({ id: "a", text: "hello", begin: 10, end: 14, backgroundText: "ooh", backgroundTextSource: "manual" }),
+    );
+    const typed = withMainTrack(synced, withTrackText(mainTrack(synced), "hello (yeah)"));
+    expect(extractBackgroundVocals([typed], options)[0]).toBe(typed);
+  });
+
+  it("regression: an untimed standalone is not merged into a line-synced background", () => {
+    const synced = withSeededBackground(
+      createLine({ id: "a", text: "hello", begin: 10, end: 14, backgroundText: "ooh", backgroundTextSource: "manual" }),
+    );
+    const extracted = extractBackgroundVocals([synced, createLine({ id: "b", text: "(yeah)" })], options);
+    expect(extracted.map((line) => line.id)).toEqual(["a", "b"]);
+    expect(extracted[0]).toBe(synced);
   });
 
   it("regression: a timed standalone after an untimed one keeps its own timing", () => {

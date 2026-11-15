@@ -1,3 +1,4 @@
+import { withShownBackground } from "@/domain/edit-text/shown-background";
 import { withoutBackground } from "@/domain/line/background";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
@@ -25,12 +26,15 @@ function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined, 
   return sourceText !== trackText(mainTrack(line), splitChar) || !timedSyllables(backgroundTrack(line)).length;
 }
 
-// `splitChar` is the character the typed text was written with, which reads the existing lines the same way.
+// `text` is the typed text or its rows. `splitChar` is the character it was written with, which reads the existing
+// lines the same way.
+// `shownBackgrounds` holds each row's inline background when the text shows backgrounds inline.
 function textToLyricLines(
-  text: string,
+  text: string | readonly string[],
   defaultAgentId: string,
   existingLines: LyricLine[] = [],
   splitChar = getSplitCharacter(),
+  shownBackgrounds?: readonly (string | null)[],
 ): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
   const existingKeys = existingLines.map((line) => matchKey(trackText(mainTrack(line), splitChar), splitChar));
@@ -45,7 +49,7 @@ function textToLyricLines(
   });
 
   const usedExistingIds = new Set<string>();
-  const newLines = text.split("\n");
+  const newLines = typeof text === "string" ? text.split("\n") : text;
   // Position-based fallback only makes sense when the user is editing-in-place
   // (same number of typed lines as existing lines). If the count changed, the
   // user inserted or deleted rows: position-match would silently overwrite the
@@ -94,6 +98,9 @@ function textToLyricLines(
     return lineFromFields({ id: crypto.randomUUID(), text: cleanedText, agentId: defaultAgentId }, splitChar);
   });
 
+  if (shownBackgrounds) {
+    return mapped.map((line, index) => withShownBackground(line, shownBackgrounds[index] ?? null, splitChar));
+  }
   // Parentheses in a row stand for its background vocals, so a carried-over background would double on
   // re-extraction. Timed background words on a row the edit left unchanged are kept.
   return mapped.map((line, index) =>

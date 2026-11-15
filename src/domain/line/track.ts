@@ -58,6 +58,11 @@ function timedSyllables(track: LineTrack | undefined): WordTiming[] {
   return result;
 }
 
+// A track drawn as one block is explicit when every syllable is.
+function isExplicitBlock(track: LineTrack): boolean {
+  return track.syllables.length > 0 && track.syllables.every((syllable) => syllable.explicit === true);
+}
+
 function untimedSyllable({ begin: _begin, end: _end, ...syllable }: Syllable): UntimedSyllable {
   return syllable;
 }
@@ -101,12 +106,14 @@ export {
   backgroundTrack,
   fieldRole,
   fieldWords,
+  isExplicitBlock,
   isSpanTimed,
   isTimedSyllable,
   mainTrack,
   roleWords,
   timedSyllables,
   trackField,
+  trackOf,
   trackRole,
   trackWords,
   untimedSyllable,
