@@ -1,24 +1,21 @@
-import { fieldUpdates } from "@/test/field-updates";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { lineEditCommand } from "@/domain/commands/line-edits";
+import { mergeSyllableGroup, snapSyllablesFlush, toggleWordExplicit } from "@/domain/commands/word-edits";
+import { splitWord } from "@/domain/commands/word-structure";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { newWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
+
 /**
  * @vitest-environment node
  */
 import { useProjectStore } from "@/stores/project";
-import {
-  applyWordCountChange,
-  mergeSyllableGroup,
-  snapSyllablesFlush,
-  toggleWordExplicit,
-} from "@/domain/commands/word-edits";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { fieldUpdates } from "@/test/field-updates";
 
 // text/words single source of truth. Whenever a store mutation writes
 // a words/backgroundWords array, the paired text/backgroundText is re-derived
@@ -254,7 +251,7 @@ describe("updateLine derives text from words", () => {
               },
             },
           ]),
-        { propagateToSiblings: false, copiesSharedTiming: false },
+        { copiesSharedTiming: false },
       ),
       "pending",
     );
@@ -263,17 +260,15 @@ describe("updateLine derives text from words", () => {
   });
 });
 
-// -- applyWordCountChange -----------------------------------------------------
+// -- splitWord -----------------------------------------------------------------
 
-describe("applyWordCountChange derives text from words", () => {
+describe("splitWord derives text from words", () => {
   it("re-derives text after an applied split", () => {
     useProjectStore.getState().restoreLyrics({ lines: [wordSyncedLine()] });
 
     useProjectStore
       .getState()
-      .commit(
-        applyWordCountChange("l1", [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"),
-      );
+      .commit(splitWord("l1", "words", [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)], {}));
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });

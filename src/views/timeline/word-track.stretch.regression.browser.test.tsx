@@ -31,9 +31,9 @@ describe("WordTrack selection stretch regressions", () => {
     useProjectStore
       .getState()
       .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => fieldUpdates([{ id: lineId, updates: { words: sB } }]), {
-          propagateToSiblings: false,
-        }),
+        lineEditCommand({ command: "edit lines", args: [] }, () =>
+          fieldUpdates([{ id: lineId, updates: { words: sB } }]),
+        ),
       );
 
     pressEdge(blocks[1], "right");

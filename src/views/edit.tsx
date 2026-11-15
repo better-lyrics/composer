@@ -2,7 +2,6 @@ import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LyricCommand } from "@/domain/commands/command";
 import {
-  applyEditTextDetaching,
   editBackgroundText,
   extractBackground,
   extractLineBackground,
@@ -18,7 +17,6 @@ import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
-import { useConfirm } from "@/stores/confirm-store";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -26,11 +24,11 @@ import type { LyricBurst } from "@/stores/project/history-types";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
+import { showLineDiffersToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { pluralWord } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
-import { detachEditPrompt } from "@/views/edit/detach-edit-prompt";
 import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
@@ -63,7 +61,6 @@ const EditPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const isActive = useIsActiveTab("edit");
-  const confirm = useConfirm();
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
   const dropImportContext = useImportContext("Drop");
@@ -75,7 +72,6 @@ const EditPanel: React.FC = () => {
   const { textareaRef, showEditText } = useEditTextCaret(rawText, showShownText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
-  const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
   const runBurstRef = useRef<LyricBurst | null>(null);
   const debounceRef = useRef<number | null>(null);
@@ -284,37 +280,9 @@ const EditPanel: React.FC = () => {
         defaultAgentId,
         lines,
         groups,
-        modalPending: modalPendingRef.current,
         splitCharacter,
         ranges,
       });
-
-      // Snap the controlled DOM input back to the source-of-truth rawText whenever
-      // we choose not to setRawText. Without this, React skips reconciling the
-      // textarea on a state-less return path and the user's keystrokes persist
-      // visually even though the store rejected them.
-      const snapBack = () => {
-        if (textarea.value !== shownText.text) {
-          textarea.value = shownText.text;
-        }
-      };
-
-      if (action.kind === "ignore-modal-pending") {
-        snapBack();
-        return;
-      }
-
-      if (action.kind === "needs-confirm") {
-        snapBack();
-        modalPendingRef.current = true;
-        confirm(detachEditPrompt(action.labels, action.impacted.length)).then((ok) => {
-          modalPendingRef.current = false;
-          if (!ok) return;
-          finalizeRun();
-          commitAndShow(applyEditTextDetaching({ text, ranges }, defaultAgentId, splitCharacter));
-        });
-        return;
-      }
 
       useImportModalStore.getState().clearImportResult();
 
@@ -335,6 +303,7 @@ const EditPanel: React.FC = () => {
         }
         finalizeRun();
         commitAndShow(pasteLyrics(lines, finalLines));
+        showLineDiffersToast(action.detachedIds);
         noteTypedLyrics(finalLines);
         if (finalLines.length !== pastedLines.length || finalLines.some((line, i) => line !== pastedLines[i])) {
           noteGuideSignal("edit.background");
@@ -347,9 +316,10 @@ const EditPanel: React.FC = () => {
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;
       useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");
+      showLineDiffersToast(action.detachedIds);
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
+    [defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });

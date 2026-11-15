@@ -9,6 +9,7 @@ import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "@/
 import type { MoveRejectReason } from "@/domain/word/move-across-lines";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { useProjectStore } from "@/stores/project";
+import { showLineDiffersToast } from "@/utils/group-toast";
 import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
@@ -108,7 +109,6 @@ interface CrossLineMoveArgs {
 }
 
 const MOVE_REJECT_MESSAGE: Record<MoveRejectReason, string> = {
-  "cross-instance": "Detach the line first to move it out of the group",
   "line-synced-target": LINE_SYNCED_REJECT_MESSAGE,
   "line-synced-source": LINE_SYNCED_REJECT_MESSAGE,
   overlap: OVERLAP_REJECT_MESSAGE,
@@ -116,17 +116,27 @@ const MOVE_REJECT_MESSAGE: Record<MoveRejectReason, string> = {
 
 // Drives every cross-track drag: across different lines, AND across tracks on the same line (main<->bg toggles).
 function applyCrossLineMove(args: CrossLineMoveArgs) {
+  let detachedIds: readonly string[] = [];
   const outcome = useProjectStore.getState().commit(
-    moveWordsAcrossLines({
-      addresses: addressesOf(args.lines, args.wordsToMove),
-      fromLineId: args.activeData.lineId,
-      targetLineId: args.targetLine.id,
-      targetTrack: args.targetTrack,
-      timeDelta: args.timeDelta,
-      duration: args.duration,
-    }),
+    moveWordsAcrossLines(
+      {
+        addresses: addressesOf(args.lines, args.wordsToMove),
+        fromLineId: args.activeData.lineId,
+        targetLineId: args.targetLine.id,
+        targetTrack: args.targetTrack,
+        timeDelta: args.timeDelta,
+        duration: args.duration,
+      },
+      (detached) => {
+        detachedIds = detached;
+      },
+    ),
   );
-  if (isRefused(outcome) && outcome.refused.reason === "move") toast.error(MOVE_REJECT_MESSAGE[outcome.refused.reject]);
+  if (isRefused(outcome)) {
+    if (outcome.refused.reason === "move") toast.error(MOVE_REJECT_MESSAGE[outcome.refused.reject]);
+    return;
+  }
+  showLineDiffersToast(detachedIds);
 }
 
 // -- Exports -------------------------------------------------------------------

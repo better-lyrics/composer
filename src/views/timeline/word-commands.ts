@@ -65,12 +65,12 @@ function explicitToggleTarget(selection: SyllableAddress[], lines: LyricLine[]):
 // -- Runs ----------------------------------------------------------------------
 
 function runWordMerge(target: WordMerge): void {
-  void mergeSelectedWords(target.run.lineId, target.run.type, target.run.indices);
+  mergeSelectedWords(target.run.lineId, target.run.type, target.run.indices);
 }
 
 function runSyllableMerge(target: SyllableMerge): void {
   if (target.kind === "run") {
-    void mergeSelectedWords(target.run.lineId, target.run.type, target.run.indices);
+    mergeSelectedWords(target.run.lineId, target.run.type, target.run.indices);
     return;
   }
   useProjectStore.getState().commit(mergeSyllableGroup(target.lineId, target.field, target.indices));

@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { duplicateWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
@@ -112,5 +113,62 @@ describe("word move commands", () => {
     const [movedFrom, movedTo] = useProjectStore.getState().lines;
     expect(pieceOf(trackPieces(movedTo, "main"), drift)).toEqual({ text: "dorifuto" });
     expect(movedFrom.languages).toBeUndefined();
+  });
+});
+
+describe("word moves inside a group instance", () => {
+  const chorusGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
+  const chorusLines = (instanceIdx: number, begin: number) => [
+    createLine({
+      id: `top-${instanceIdx}`,
+      text: "We glow tonight",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words: [
+        { text: "We", sep: " ", begin, end: begin + 0.4 },
+        { text: "glow", sep: " ", begin: begin + 0.4, end: begin + 0.9 },
+        { text: "tonight", begin: begin + 0.9, end: begin + 1.5 },
+      ],
+    }),
+    createLine({
+      id: `bottom-${instanceIdx}`,
+      text: "and burn",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 1,
+      words: [
+        { text: "and", sep: " ", begin: begin + 2, end: begin + 2.4 },
+        { text: "burn", begin: begin + 2.4, end: begin + 3 },
+      ],
+    }),
+  ];
+
+  it("regression: a word moved between lines of one instance moves in every instance", () => {
+    useProjectStore.getState().restoreLyrics({
+      lines: [...chorusLines(0, 10), ...chorusLines(1, 40), ...chorusLines(2, 70)],
+      groups: [chorusGroup],
+    });
+    const top = useProjectStore.getState().lines.find((line) => line.id === "top-1");
+    const tonight = top && roleWords(top, "main")?.[2];
+    if (!tonight) throw new Error("expected tonight in instance 2");
+
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf({ id: "top-1" }, "word", tonight)],
+        fromLineId: "top-1",
+        targetLineId: "bottom-1",
+        targetTrack: "word",
+        timeDelta: 0.5,
+        duration: 120,
+      }),
+    );
+
+    for (const instanceIdx of [0, 1, 2]) {
+      const bottom = useProjectStore.getState().lines.find((line) => line.id === `bottom-${instanceIdx}`);
+      expect(roleWords(bottom, "main")?.[0].text).toBe("tonight");
+      const topLine = useProjectStore.getState().lines.find((line) => line.id === `top-${instanceIdx}`);
+      expect(roleWords(topLine, "main")?.map((word) => word.text)).toEqual(["We", "glow"]);
+    }
   });
 });

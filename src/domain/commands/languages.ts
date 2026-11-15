@@ -10,15 +10,13 @@ import type { LineUpdate, LyricLine } from "@/domain/line/model";
 // -- Constants ----------------------------------------------------------------
 
 const ALIGN_TRANSLITERATION = "align transliteration";
-// Language data never changes the text and stays on its own line.
-const LANGUAGE_ONLY = { propagateToSiblings: false } as const;
-// Typed and confirmed language fields never reach the shared timing copy either.
-const LANGUAGE_FIELD_EDIT = { ...LANGUAGE_ONLY, copiesSharedTiming: false } as const;
+// Typed and confirmed language fields never reach the shared timing copy.
+const LANGUAGE_FIELD_EDIT = { copiesSharedTiming: false } as const;
 
 // -- Helpers ------------------------------------------------------------------
 
 function languageUpdates(command: string, updates: readonly LineUpdate[]): LyricCommand {
-  return lineEditCommand({ command, args: updates.map((update) => update.id) }, () => updates, LANGUAGE_ONLY);
+  return lineEditCommand({ command, args: updates.map((update) => update.id) }, () => updates);
 }
 
 // -- Commands -----------------------------------------------------------------
@@ -62,17 +60,14 @@ function pasteLanguageLines(updates: readonly LineUpdate[]): LyricCommand {
 }
 
 function removeTranslation(language: string): LyricCommand {
-  return lineEditCommand(
-    { command: "remove translation", args: [language] },
-    (root) =>
-      root.lines.flatMap((line) => {
-        const current = lineTranslations(line);
-        if (!current?.[language]) return [];
-        const translations = { ...current };
-        delete translations[language];
-        return [{ id: line.id, updates: withLanguages(line, { translations }) }];
-      }),
-    LANGUAGE_ONLY,
+  return lineEditCommand({ command: "remove translation", args: [language] }, (root) =>
+    root.lines.flatMap((line) => {
+      const current = lineTranslations(line);
+      if (!current?.[language]) return [];
+      const translations = { ...current };
+      delete translations[language];
+      return [{ id: line.id, updates: withLanguages(line, { translations }) }];
+    }),
   );
 }
 

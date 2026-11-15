@@ -2,9 +2,6 @@ import type { LyricLine } from "@/domain/line/model";
 import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
-import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
-import { detachInstancesFromLines } from "@/domain/edit-text/diff-edit-text";
-import type { ShownEditText } from "@/domain/edit-text/shown-row";
 import type { LinkGroup } from "@/domain/group/template";
 import { isLinked } from "@/domain/instance/predicates";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
@@ -13,11 +10,7 @@ import { backgroundTrack, isSpanTimed, timedSyllables } from "@/domain/line/trac
 import { withBackgroundTrack, withTrackText } from "@/domain/line/track-writes";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import {
-  type ExtractOptions,
-  extractBackgroundVocals,
-  extractInlineAcrossLinkedLines,
-} from "@/utils/background-vocal-extraction";
+import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "@/utils/background-vocal-extraction";
 
 // -- Types --------------------------------------------------------------------
 
@@ -68,30 +61,6 @@ function pasteLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): Lyric
   return wholeLinesEdit({ command: "paste lyrics", args: [lines.length] }, planOn(baseLines, lines));
 }
 
-// Decided again after the detach prompt, so lyrics that changed while it was open are not overwritten.
-function applyEditTextDetaching(
-  { text, ranges }: ShownEditText,
-  defaultAgentId: string,
-  splitCharacter?: string,
-): LyricCommand {
-  return wholeLinesEdit({ command: "detach and apply text", args: [] }, (root) => {
-    const action = decideEditTextAction({
-      text,
-      defaultAgentId,
-      lines: root.lines,
-      groups: root.groups,
-      modalPending: false,
-      splitCharacter,
-      ranges,
-    });
-    if (action.kind === "apply") return { lines: action.finalLines };
-    if (action.kind !== "needs-confirm") return null;
-    const lines = detachInstancesFromLines(action.lyricLines, action.impacted);
-    const remainingGroupIds = new Set(lines.flatMap((line) => (line.groupId ? [line.groupId] : [])));
-    return { lines, groups: root.groups.filter((group) => remainingGroupIds.has(group.id)) };
-  });
-}
-
 function extractBackground(options: ExtractOptions): LyricCommand {
   return wholeLinesEdit({ command: "extract background", args: [] }, (root) => ({
     lines: extractBackgroundVocals(root.lines, options),
@@ -105,10 +74,8 @@ function removeSectionTagLines(lineIds: ReadonlySet<string>): LyricCommand {
 }
 
 function extractLineBackground(lineId: string, preserveBrackets: boolean): LyricCommand {
-  return lineEditCommand(
-    { command: "extract line background", args: [lineId] },
-    (root) => extractInlineAcrossLinkedLines(root.lines, lineId, { mergeStandaloneLines: false, preserveBrackets }),
-    { propagateToSiblings: false },
+  return lineEditCommand({ command: "extract line background", args: [lineId] }, (root) =>
+    extractInlineOnLine(root.lines, lineId, { mergeStandaloneLines: false, preserveBrackets }),
   );
 }
 
@@ -124,20 +91,12 @@ function editBackgroundText(lineId: string, text: string): LyricCommand {
       : background && isSpanTimed(background)
         ? withBackgroundTrack(target, { ...withTrackText(background, text), source: "manual" })
         : timed.length > 0
-        ? withBackground(target, { text, words: remapWordTextsPreservingTiming(timed, text), source: "manual" })
-        : withSeededBackground(withBackground(target, { text, source: "manual" }));
+          ? withBackground(target, { text, words: remapWordTextsPreservingTiming(timed, text), source: "manual" })
+          : withSeededBackground(withBackground(target, { text, source: "manual" }));
     return [{ id: lineId, updates: { tracks: edited.tracks } }];
   });
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  applyEditTextDetaching,
-  editBackgroundText,
-  extractBackground,
-  extractLineBackground,
-  pasteLyrics,
-  removeSectionTagLines,
-  typeLyrics,
-};
+export { editBackgroundText, extractBackground, extractLineBackground, pasteLyrics, removeSectionTagLines, typeLyrics };

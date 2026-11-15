@@ -48,7 +48,6 @@ describe("syncAddressPosition", () => {
       defaultAgentId: "v1",
       lines: [line],
       groups: [],
-      modalPending: false,
     });
     if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
     expect(syncAddressPosition(action.finalLines, stored)).toEqual({ lineIndex: 0, wordIndex: 5 });

@@ -22,11 +22,9 @@ type Refusal =
   | { reason: "line-gone"; lineId: string }
   | { reason: "lyrics-changed" }
   | { reason: "word-gone"; address: SyllableAddress }
-  | { reason: "copy-below-zero" }
   | { reason: "placement-out-of-range" }
   | { reason: "realign"; refusal: RealignRefusal }
   | { reason: "uneven-syllable-splits" }
-  | { reason: "needs-detach-confirm"; impacted: string[] }
   | { reason: "needs-one-word"; selected: number }
   | { reason: "needs-one-run"; across: "lines" | "tracks" }
   | { reason: "step"; refusal: StepRefusal }

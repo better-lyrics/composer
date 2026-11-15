@@ -15,7 +15,7 @@ import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup, addGroupWithLines, removeGroup, updateGroup } from "@/domain/commands/group-edits";
 import { addInstance, detachLine, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { applyWordCountChange } from "@/domain/commands/word-edits";
+import { splitWord } from "@/domain/commands/word-structure";
 
 const SONG_LENGTH = 300;
 
@@ -1448,9 +1448,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
   });
 });
 
-// -- applyWordCountChange mutator (modal resolutions) -------------------------
+// -- Word count changes ----------------------------------------------------------
 
-describe("applyWordCountChange · resolutions", () => {
+describe("splitWord · a word count change reaches every instance", () => {
   beforeEach(() => {
     useProjectStore.getState().reset();
     useProjectStore.getState().clearHistory();
@@ -1497,9 +1497,9 @@ describe("applyWordCountChange · resolutions", () => {
     { id: "w112", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
   ];
 
-  it("'apply' propagates the structural change with smart-sync to all linked siblings", () => {
+  it("a split reaches every instance, which keeps its own timing for unchanged words", () => {
     setupChorus();
-    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
+    useProjectStore.getState().commit(splitWord("A", "words", splitWords, {}));
     const after = useProjectStore.getState().lines;
     const a = after.find((l) => l.id === "A");
     const b = after.find((l) => l.id === "B");
@@ -1519,99 +1519,31 @@ describe("applyWordCountChange · resolutions", () => {
     expect(b?.detached).toBeUndefined();
   });
 
-  it("'detach' fully unlinks source (clears groupId/instanceIdx/templateLineIdx) and leaves siblings untouched", () => {
-    setupChorus();
-    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "detach"));
-    const after = useProjectStore.getState().lines;
-    const a = after.find((l) => l.id === "A");
-    const b = after.find((l) => l.id === "B");
-    expect(a?.groupId).toBeUndefined();
-    expect(a?.instanceIdx).toBeUndefined();
-    expect(a?.templateLineIdx).toBeUndefined();
-    expect(a?.detached).toBeUndefined();
-    expect(timedSyllables(mainTrack(a!))).toHaveLength(4);
-    expect(timedSyllables(mainTrack(b!))).toHaveLength(3);
-    expect(timedSyllables(mainTrack(b!))[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false });
-  });
-
-  it("'detach' clears stale begin/end when promoting a line-synced row to word-synced", () => {
-    useProjectStore.setState({
-      lines: [
-        lineFromFields({
-          id: "L1",
-          text: "verse",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          begin: 5,
-          end: 7,
-        }),
-        lineFromFields({
-          id: "L2",
-          text: "verse",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          begin: 30,
-          end: 32,
-        }),
-      ],
-      groups: [{ id: "g1", label: "Verse", color: "#aaa", templateVersion: 1 }],
-    });
-    const newWords = [{ id: "w113", text: "verse", sep: "", begin: 5, end: 7, joinsNext: false }];
-    useProjectStore.getState().commit(applyWordCountChange("L1", newWords, "words", "detach"));
-    const after = useProjectStore.getState().lines.find((l) => l.id === "L1");
-    expect(timedSyllables(mainTrack(after!))).toEqual(newWords);
-    expect(after && mainTrack(after).begin).toBeUndefined();
-    expect(after && mainTrack(after).end).toBeUndefined();
-  });
-
-  it("'cancel' is a no-op", () => {
-    setupChorus();
-    const before = useProjectStore.getState().lines;
-    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "cancel"));
-    expect(useProjectStore.getState().lines).toEqual(before);
-  });
-
-  it("apply with extraUpdates: text propagates as a linked field to siblings", () => {
+  it("a merge gives every instance the new text", () => {
     setupChorus();
     const mergedWords = [
       { id: "w114", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
       { id: "w115", text: "loveyou", sep: "", begin: 0.3, end: 1, joinsNext: false },
     ];
-    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "apply"));
+    useProjectStore.getState().commit(splitWord("A", "words", mergedWords, {}));
     const after = useProjectStore.getState().lines;
     expect(lineText(after.find((l) => l.id === "A")!)).toBe("I loveyou");
     expect(lineText(after.find((l) => l.id === "B")!)).toBe("I loveyou");
   });
 
-  it("detach with extraUpdates: text only changes on source, not siblings", () => {
-    setupChorus();
-    const mergedWords = [
-      { id: "w116", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-      { id: "w117", text: "loveyou", sep: "", begin: 0.3, end: 1, joinsNext: false },
-    ];
-    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "detach"));
-    const after = useProjectStore.getState().lines;
-    expect(lineText(after.find((l) => l.id === "A")!)).toBe("I loveyou");
-    expect(lineText(after.find((l) => l.id === "B")!)).toBe("I love you"); // unchanged
-  });
-
-  it("detached siblings are skipped on apply", () => {
+  it("detached siblings keep their own words", () => {
     setupChorus();
     // Mark B detached upfront
     useProjectStore.setState((s) => ({
       lines: s.lines.map((l) => (l.id === "B" ? { ...l, detached: true } : l)),
     }));
-    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
+    useProjectStore.getState().commit(splitWord("A", "words", splitWords, {}));
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     expect(timedSyllables(mainTrack(b!))).toHaveLength(3); // untouched, still 3 words
     expect(b?.detached).toBe(true);
   });
 
-  it("non-linked source: apply just writes to source, no siblings touched", () => {
+  it("a line outside any group just takes the split", () => {
     useProjectStore.setState({
       lines: [
         lineFromFields({
@@ -1627,22 +1559,22 @@ describe("applyWordCountChange · resolutions", () => {
       groups: [],
     });
     useProjectStore.getState().commit(
-      applyWordCountChange(
+      splitWord(
         "X",
+        "words",
         [
           { id: "w120", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
           { id: "w121", text: "lo", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
           { id: "w122", text: "ve", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ],
-        "words",
-        "apply",
+        {},
       ),
     );
     const x = useProjectStore.getState().lines.find((l) => l.id === "X");
     expect(timedSyllables(mainTrack(x!))).toHaveLength(3);
   });
 
-  it("backgroundWords field: 'apply' propagates BG structural change with smart-sync", () => {
+  it("a background split reaches every instance on its own timing", () => {
     useProjectStore.setState({
       lines: [
         lineFromFields({
@@ -1675,15 +1607,15 @@ describe("applyWordCountChange · resolutions", () => {
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
     useProjectStore.getState().commit(
-      applyWordCountChange(
+      splitWord(
         "A",
+        "backgroundWords",
         [
           { id: "w127", text: "ah", sep: " ", begin: 0, end: 0.3, joinsNext: false },
           { id: "w128", text: "a", sep: "", begin: 0.3, end: 0.45, joinsNext: true },
           { id: "w129", text: "h", sep: "", begin: 0.45, end: 0.6, joinsNext: false },
         ],
-        "backgroundWords",
-        "apply",
+        {},
       ),
     );
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
@@ -1697,9 +1629,9 @@ describe("applyWordCountChange · resolutions", () => {
     });
   });
 
-  it("apply produces a single history entry covering source + all siblings (single undo restores)", () => {
+  it("one undo restores every instance", () => {
     setupChorus();
-    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
+    useProjectStore.getState().commit(splitWord("A", "words", splitWords, {}));
     const before = useProjectStore.getState().lines;
     expect(timedSyllables(mainTrack(before.find((l) => l.id === "A")!))).toHaveLength(4);
     expect(timedSyllables(mainTrack(before.find((l) => l.id === "B")!))).toHaveLength(4);

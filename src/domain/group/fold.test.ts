@@ -26,6 +26,8 @@ const glowLine = (instanceIdx: number, begin: number, words = ["We", "glow", "to
     })),
   });
 
+const FOLD_DEFAULTS = { carriesTemplateEdits: true, songEnd: Number.POSITIVE_INFINITY } as const;
+
 const instances = (doc: LyricDoc) => Object.values(doc.instances);
 
 function nudged(line: LyricLine, wordIndex: number, delta: number): LyricLine {
@@ -54,7 +56,14 @@ describe("foldLines", () => {
     const lines = [glowLine(0, 10), glowLine(1, 40), glowLine(2, 70)];
     const doc = docFromFlatLines(lines);
     const after = lines.with(1, nudged(lines[1], 1, 0.125));
-    const folded = foldLines({ doc, after, touched: ["glow-1"], groups: [chorus], copiesSharedTiming: true });
+    const folded = foldLines({
+      doc,
+      after,
+      touched: ["glow-1"],
+      groups: [chorus],
+      copiesSharedTiming: true,
+      ...FOLD_DEFAULTS,
+    });
     expect(folded.lines.map(glowBegin)).toEqual([10.625, 40.625, 70.625]);
     expect(folded.copiedGroupIds).toEqual(["chorus"]);
     expect(instances(folded.doc).map((instance) => instance.at)).toEqual([10, 40, 70]);
@@ -71,6 +80,7 @@ describe("foldLines", () => {
       touched: ["glow-0"],
       groups: [group],
       copiesSharedTiming: true,
+      ...FOLD_DEFAULTS,
     });
     expect(folded.lines[1]).toBe(lines[1]);
   });
@@ -81,7 +91,7 @@ describe("foldLines", () => {
     expect(second.replaced?.[0]).toBe(lines[1]);
   });
 
-  it("a copy that would go below zero refuses the whole edit", () => {
+  it("a shared edit that would take an instance below zero moves every instance by the room there is", () => {
     const lines = [glowLine(0, 10), glowLine(1, 0.25)];
     const after = lines.with(0, nudged(lines[0], 0, -0.5));
     const folded = foldLines({
@@ -90,8 +100,25 @@ describe("foldLines", () => {
       touched: ["glow-0"],
       groups: [chorus],
       copiesSharedTiming: true,
+      ...FOLD_DEFAULTS,
     });
-    expect(folded.rejected).toBe(true);
+    expect(folded.lines.map((line) => timedSyllables(mainTrack(line))[0].begin)).toEqual([9.75, 0]);
+  });
+
+  it("a nudge that would put an instance past the song end moves every instance by the clamped amount", () => {
+    const lines = [glowLine(0, 10), glowLine(1, 40), glowLine(2, 70)];
+    const after = lines.with(0, nudged(lines[0], 2, 0.25));
+    const folded = foldLines({
+      doc: docFromFlatLines(lines),
+      after,
+      touched: ["glow-0"],
+      groups: [chorus],
+      copiesSharedTiming: true,
+      carriesTemplateEdits: true,
+      songEnd: 71.6,
+    });
+    const tonight = folded.lines.map((line) => timedSyllables(mainTrack(line))[2].begin - 1);
+    tonight.forEach((begin, index) => expect(begin).toBeCloseTo([10.1, 40.1, 70.1][index], 9));
   });
 
   it("regression: a line inserted inside an instance keeps its later lines in the group copy", () => {
@@ -121,6 +148,7 @@ describe("foldLines", () => {
       touched: ["between"],
       groups: [chorus],
       copiesSharedTiming: false,
+      ...FOLD_DEFAULTS,
     });
     const nudgedLines = afterInsert.lines.with(1, nudged(afterInsert.lines[1], 1, 0.25));
     const folded = foldLines({
@@ -129,6 +157,7 @@ describe("foldLines", () => {
       touched: ["a0-1"],
       groups: [chorus],
       copiesSharedTiming: true,
+      ...FOLD_DEFAULTS,
     });
     expect(glowBegin(folded.lines[5])).toBe(42.75);
     expect(flattenBody(structuredClone(folded.doc))).toEqual(folded.lines);
@@ -162,7 +191,14 @@ describe("foldLines", () => {
       });
     const after = [split(lines[0], 10), split(lines[1], 40)];
     const ownIds = mainTrack(after[1]).syllables.map((syllable) => syllable.id);
-    const folded = foldLines({ doc, after, touched: ["glow-0", "glow-1"], groups: [chorus], copiesSharedTiming: true });
+    const folded = foldLines({
+      doc,
+      after,
+      touched: ["glow-0", "glow-1"],
+      groups: [chorus],
+      copiesSharedTiming: true,
+      ...FOLD_DEFAULTS,
+    });
     expect(mainTrack(folded.lines[1]).syllables.map((syllable) => syllable.id)).toEqual(ownIds);
   });
 
@@ -171,7 +207,14 @@ describe("foldLines", () => {
     const doc = docFromFlatLines(lines);
     const edited = createLine({ id: "verse", text: "Lanterns over the water" });
     for (const after of [lines.with(1, edited), lines.toSpliced(1, 0, createLine({ id: "new", text: "Ash" }))]) {
-      const folded = foldLines({ doc, after, touched: [], groups: [chorus], copiesSharedTiming: false });
+      const folded = foldLines({
+        doc,
+        after,
+        touched: [],
+        groups: [chorus],
+        copiesSharedTiming: false,
+        ...FOLD_DEFAULTS,
+      });
       expect(folded.doc.templates.chorus).toBe(doc.templates.chorus);
       expect(instances(folded.doc)).toEqual(instances(doc));
       instances(folded.doc).forEach((instance, index) => expect(instance).toBe(instances(doc)[index]));

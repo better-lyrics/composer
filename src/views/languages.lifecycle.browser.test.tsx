@@ -186,7 +186,6 @@ describe("language generation lifecycle", () => {
         { command: "edit lines", args: [] },
         () => fieldUpdates([{ id: "line", updates: { text: "別の歌詞" } }]),
         {
-          propagateToSiblings: false,
           copiesSharedTiming: false,
         },
       ),

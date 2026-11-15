@@ -1,15 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { extractLineBackground } from "@/domain/commands/edit-text";
 import { bgBounds } from "@/domain/line/bounds";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { roleWords } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
-import { updatedLine } from "@/test/field-updates";
-import { extractInlineAcrossLinkedLines } from "@/utils/background-vocal-extraction";
-
-const OPTIONS = { mergeStandaloneLines: false, preserveBrackets: false };
+import { useProjectStore } from "@/stores/project";
 
 function wordsAt(texts: string[], begin: number, end: number): WordTiming[] {
   const step = (end - begin) / texts.length;
@@ -39,7 +37,11 @@ function linkedLine(
   });
 }
 
-describe("extractInlineAcrossLinkedLines", () => {
+describe("extracting a background on one instance", () => {
+  beforeEach(() => {
+    useProjectStore.getState().reset();
+  });
+
   it("regression: each linked copy keeps the timing of its own bracketed words", () => {
     const lines = [
       linkedLine("a0", 0, { words: wordsAt(["hold", "me", "(ooh", "yeah)"], 10, 14) }),
@@ -47,34 +49,23 @@ describe("extractInlineAcrossLinkedLines", () => {
       linkedLine("a2", 2, { words: wordsAt(["hold", "me", "(ooh", "yeah)"], 110, 112) }),
       linkedLine("a3", 3, { begin: 150, end: 153, detached: true }),
     ];
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines, groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }] });
 
-    const updates = extractInlineAcrossLinkedLines(lines, "a0", OPTIONS);
-    const byId = new Map(updates.map((update) => [update.id, update.updates]));
+    useProjectStore.getState().commit(extractLineBackground("a0", false));
 
-    expect([...byId.keys()]).toEqual(["a0", "a1", "a2"]);
-    for (const update of byId.values()) {
-      expect(lineText(updatedLine(update)!)).toBe("hold me");
-      expect(backgroundText(updatedLine(update))).toBe("ooh yeah");
+    const [a0, a1, a2, a3] = useProjectStore.getState().lines;
+    for (const line of [a0, a1, a2]) {
+      expect(lineText(line)).toBe("hold me");
+      expect(backgroundText(line)).toBe("ooh yeah");
     }
-    expect(roleWords(updatedLine(byId.get("a2")), "bg")?.map((w) => [w.begin, w.end])).toEqual([
+    expect(roleWords(a2, "bg")?.map((w) => [w.begin, w.end])).toEqual([
       [111, 111.5],
       [111.5, 112],
     ]);
-    const lineSynced = updatedLine(byId.get("a1"))!;
-    expect(roleWords(lineSynced, "bg")).toBeUndefined();
-    expect(bgBounds(lineSynced)?.begin).toBeGreaterThanOrEqual(60);
-    expect(bgBounds(lineSynced)?.end).toBeLessThanOrEqual(63);
-  });
-
-  it("regression: refuses the whole linked edit when one copy cannot extract its own words", () => {
-    const lines: LyricLine[] = [
-      lineFromFields({ ...fieldsOfLine(linkedLine("a0", 0, { begin: 10, end: 12 })), text: "Hello(ooh) world" }),
-      lineFromFields({
-        ...fieldsOfLine(linkedLine("a1", 1, { words: wordsAt(["Hello(ooh)", "world"], 60, 62) })),
-        text: "Hello(ooh) world",
-      }),
-    ];
-
-    expect(extractInlineAcrossLinkedLines(lines, "a0", OPTIONS)).toEqual([]);
+    expect(bgBounds(a1)?.begin).toBeGreaterThanOrEqual(60);
+    expect(bgBounds(a1)?.end).toBeLessThanOrEqual(63);
+    expect(a3).toBe(lines[3]);
   });
 });

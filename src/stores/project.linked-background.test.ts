@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { addGroup } from "@/domain/commands/group-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { applyWordCountChange } from "@/domain/commands/word-edits";
+import { mergeSyllableGroup } from "@/domain/commands/word-edits";
+import { splitWord } from "@/domain/commands/word-structure";
 import type { LinkGroup } from "@/domain/group/template";
 import { withBackground, withSeededBackground } from "@/domain/line/background";
 import { bgBounds } from "@/domain/line/bounds";
@@ -9,6 +10,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
+
 /**
  * @vitest-environment node
  */
@@ -133,8 +135,50 @@ describe("project store · background vocals across linked instances", () => {
       { id: "w9", text: "ye", sep: "", begin: 10.5, end: 10.75, joinsNext: true },
       { id: "w10", text: "ah", sep: "", begin: 10.75, end: 11, joinsNext: false },
     ];
-    useProjectStore.getState().commit(applyWordCountChange("a0", split, "backgroundWords", "apply"));
+    useProjectStore.getState().commit(splitWord("a0", "backgroundWords", split, {}));
 
     expect(bgTexts("a1")).toEqual(["ahh ", "ye", "ah"]);
+  });
+
+  it("regression: a background merge reaches an instance whose word count differed", () => {
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
+    const instance = (id: string, instanceIdx: number, backgroundWords: WordTiming[]): LyricLine =>
+      lineFromFields({
+        id,
+        text: "hold me",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+        begin: backgroundWords[0].begin - 1,
+        end: backgroundWords.at(-1)?.end ?? 0,
+        backgroundText: backgroundWords.map((w) => w.text + w.sep).join(""),
+        backgroundWords,
+        backgroundTextSource: "manual",
+      });
+    useProjectStore.setState({
+      lines: [
+        instance("a0", 0, [
+          { id: "w11", text: "o", sep: "", begin: 10, end: 10.3, joinsNext: true },
+          { id: "w12", text: "oh", sep: " ", begin: 10.3, end: 10.6, joinsNext: false },
+          { id: "w13", text: "yeah", sep: "", begin: 10.6, end: 11, joinsNext: false },
+        ]),
+        instance("a1", 1, [
+          { id: "w14", text: "o", sep: "", begin: 60, end: 60.2, joinsNext: true },
+          { id: "w15", text: "oh", sep: " ", begin: 60.2, end: 60.5, joinsNext: false },
+          { id: "w16", text: "ye", sep: "", begin: 60.5, end: 60.7, joinsNext: true },
+          { id: "w17", text: "ah", sep: "", begin: 60.7, end: 61, joinsNext: false },
+        ]),
+      ],
+    });
+
+    useProjectStore.getState().commit(mergeSyllableGroup("a0", "backgroundWords", [0]));
+
+    const merged = timedSyllables(backgroundTrack(lineById("a1")));
+    expect(merged.map((word) => [word.text, word.begin, word.end])).toEqual([
+      ["ooh", 60, 60.5],
+      ["yeah", 60.5, 61],
+    ]);
+    expect(timedSyllables(backgroundTrack(lineById("a0"))).map((word) => word.text)).toEqual(["ooh", "yeah"]);
   });
 });

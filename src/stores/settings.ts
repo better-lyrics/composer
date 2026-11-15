@@ -20,7 +20,6 @@ import { persist } from "zustand/middleware";
 // -- Types --------------------------------------------------------------------
 
 type GranularityDefault = "word" | "line";
-type LinkedDivergenceAction = "ask" | "apply" | "detach";
 type PreviewRenderer = "braccato" | "am-lyrics";
 type VocalModelVariant = "fp16" | "fp32" | "roformer";
 type BooleanSettingKey = {
@@ -95,7 +94,6 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
   confirmApplyToAllSyllableSplit: boolean;
   confirmConformToGroup: boolean;
   confirmClearImportedSongDetails: boolean;
-  linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
 
@@ -190,7 +188,6 @@ const DEFAULTS: SettingsState = {
   confirmApplyToAllSyllableSplit: true,
   confirmConformToGroup: true,
   confirmClearImportedSongDetails: true,
-  linkedDivergenceAction: "ask",
 
   previewRenderer: "braccato",
 
@@ -234,7 +231,6 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
           confirmConformToGroup: state.confirmConformToGroup,
           confirmClearImportedSongDetails: state.confirmClearImportedSongDetails,
-          linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,
           cobaltInstanceStatus: state.cobaltInstanceStatus,
@@ -287,12 +283,12 @@ function isUsingDefaultCobaltInstance(): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { BooleanSettingKey, CobaltInstanceStatus, SettingsState, VocalModelVariant };
 export {
-  useSettingsStore,
-  DEFAULTS,
   BUILTIN_COBALT_INSTANCE,
   DEFAULT_COBALT_INSTANCE_ID,
+  DEFAULTS,
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
+  useSettingsStore,
 };
-export type { BooleanSettingKey, SettingsState, CobaltInstanceStatus, VocalModelVariant };

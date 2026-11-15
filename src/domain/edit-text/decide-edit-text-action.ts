@@ -1,30 +1,30 @@
 import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
-import {
-  diffEditTextChange,
-  findStructurallyImpactedInstances,
-  type ImpactedInstance,
-  propagateContentUpdates,
-} from "@/domain/edit-text/diff-edit-text";
+import { diffEditTextChange, withMovedTextDetached } from "@/domain/edit-text/diff-edit-text";
 import { editTextWithRewrittenRows } from "@/domain/edit-text/edit-text";
 import { type BackgroundRange, NO_RANGES } from "@/domain/edit-text/shown-row";
 import type { LinkGroup } from "@/domain/group/template";
+import { carryTemplateEdits } from "@/domain/group/template-edit";
 import type { LyricLine } from "@/domain/line/model";
 import { textToLyricLines } from "@/utils/lyrics-text";
 
 // -- Types --------------------------------------------------------------------
 
 type EditTextAction =
-  | { kind: "ignore-modal-pending" }
   | { kind: "noop" }
-  | { kind: "apply"; finalLines: LyricLine[]; editText: string; editRanges: readonly BackgroundRange[] }
-  | { kind: "needs-confirm"; lyricLines: LyricLine[]; impacted: ImpactedInstance[]; labels: string[] };
+  | {
+      kind: "apply";
+      finalLines: LyricLine[];
+      editText: string;
+      editRanges: readonly BackgroundRange[];
+      // Group lines the edit made their instance's own.
+      detachedIds: readonly string[];
+    };
 
 interface DecideOptions {
   text: string;
   defaultAgentId: string;
   lines: LyricLine[];
   groups: LinkGroup[];
-  modalPending: boolean;
   /** The split character the text was written with; the current one when left out. */
   splitCharacter?: string;
   /** Where the text shows background tracks inline; the text shows none when left out. */
@@ -47,55 +47,37 @@ function typedLyricLines(
   return textToLyricLines(mainTexts, defaultAgentId, lines, splitCharacter, backgrounds);
 }
 
-function uniqueImpactedLabels(impacted: ImpactedInstance[], groups: LinkGroup[]): string[] {
-  const groupsById = new Map<string, LinkGroup>();
-  for (const g of groups) groupsById.set(g.id, g);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const i of impacted) {
-    const label = groupsById.get(i.groupId)?.label;
-    if (!label || seen.has(label)) continue;
-    seen.add(label);
-    out.push(label);
-  }
-  return out;
-}
-
 function decideEditTextAction({
   text,
   defaultAgentId,
   lines,
   groups,
-  modalPending,
   splitCharacter,
   ranges,
 }: DecideOptions): EditTextAction {
-  if (modalPending) return { kind: "ignore-modal-pending" };
-
   const lyricLines = typedLyricLines(text, ranges, defaultAgentId, lines, splitCharacter);
   const diff = diffEditTextChange(lines, lyricLines);
 
   if (diff.hasStructuralChange) {
-    const impacted = findStructurallyImpactedInstances(lines, lyricLines);
-    if (impacted.length > 0) {
-      return {
-        kind: "needs-confirm",
-        lyricLines,
-        impacted,
-        labels: uniqueImpactedLabels(impacted, groups),
-      };
-    }
-    return { kind: "apply", finalLines: lyricLines, editText: text, editRanges: ranges ?? NO_RANGES };
+    const moved = withMovedTextDetached(lines, lyricLines);
+    return {
+      kind: "apply",
+      finalLines: moved.lines,
+      editText: text,
+      editRanges: ranges ?? NO_RANGES,
+      detachedIds: moved.detachedIds,
+    };
   }
 
   if (diff.contentUpdates.length === 0) return { kind: "noop" };
-  const finalLines = propagateContentUpdates(lines, lyricLines, diff.contentUpdates);
+  // The rows of other instances show the edit as the commit will write it.
+  const finalLines = carryTemplateEdits({ before: lines, after: lyricLines, groups }).lines;
   if (!ranges) {
     const editText = editTextWithRewrittenRows(text, lyricLines, finalLines);
-    return { kind: "apply", finalLines, editText, editRanges: NO_RANGES };
+    return { kind: "apply", finalLines, editText, editRanges: NO_RANGES, detachedIds: [] };
   }
   const shown = shownWithRewrittenRows({ text, ranges }, lyricLines, finalLines);
-  return { kind: "apply", finalLines, editText: shown.text, editRanges: shown.ranges };
+  return { kind: "apply", finalLines, editText: shown.text, editRanges: shown.ranges, detachedIds: [] };
 }
 
 // -- Exports ------------------------------------------------------------------

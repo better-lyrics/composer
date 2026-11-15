@@ -1,7 +1,8 @@
+import { clampedToRoom } from "@/domain/group/clamped-edit";
 import { instanceSlotLine, templateBySlot } from "@/domain/group/flatten";
 import { invertedIds, withLineIds } from "@/domain/group/line-ids";
 import { type Instance, instanceSlots, isInstanceSpan, type LyricDoc, type TemplateLine } from "@/domain/group/model";
-import { hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
+import { offsetTimingFields } from "@/domain/group/offset-timing";
 import { sharesTiming, timingChanged } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { fittedAnchor, lineContent, toTemplateLine } from "@/domain/group/template-line";
@@ -22,11 +23,11 @@ interface CopyInput {
   groups: readonly LinkGroup[];
   touched: readonly string[];
   anchors: InstanceAnchors;
+  songEnd: number;
 }
 
 interface TemplateCopy {
   lines: LyricLine[];
-  rejected: boolean;
   copiedGroupIds: string[];
   // Per group: the template the copies came from and the instance that wrote it.
   templates: Map<string, readonly TemplateLine[]>;
@@ -118,12 +119,11 @@ function sourceTemplateLine(doc: LyricDoc, source: SlotLine, at: number): Templa
 
 // A timing edit in one shared instance is its group's template timing: it is written to the template, and every other
 // shared instance takes the same timing and readings at its own anchor, on its own syllables. The first edited line of
-// each template line wins, in song order.
+// each template line wins, in song order. An edit that would take any instance out of the song is clamped, never refused.
 function copyThroughTemplate(input: CopyInput): TemplateCopy {
   const { doc, after, anchors } = input;
   const result: TemplateCopy = {
     lines: after,
-    rejected: false,
     copiedGroupIds: [],
     templates: new Map(),
     sources: new Map(),
@@ -143,14 +143,27 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
   const claimed = new Set<string>();
   const copied = new Set<string>();
   let lines = after;
-  for (const source of sources) {
-    const { groupId, instanceIdx, templateLineIdx: slot } = source;
+  const beforeById = new Map(input.before.map((line) => [line.id, line]));
+  for (const edited of sources) {
+    const { groupId, instanceIdx, templateLineIdx: slot } = edited;
     const claim = `${groupId}\u0000${slot}`;
     if (claimed.has(claim)) continue;
     claimed.add(claim);
     const groupAnchors = anchors(groupId);
     const sourceAt = groupAnchors?.get(instanceIdx);
     if (sourceAt === undefined || !groupAnchors) continue;
+    const offsets = [...groupAnchors].flatMap(([idx, at]) =>
+      idx !== instanceIdx && sharesTiming(groups.get(groupId), idx) && indexBySlot.has(slotKey(groupId, idx, slot))
+        ? [at - sourceAt]
+        : [],
+    );
+    const clamped = clampedToRoom(beforeById.get(edited.id), edited, offsets, input.songEnd);
+    const source: SlotLine = clamped === edited ? edited : { ...edited, tracks: clamped.tracks };
+    const sourceIndex = indexBySlot.get(slotKey(groupId, instanceIdx, slot));
+    if (source !== edited && sourceIndex !== undefined) {
+      if (lines === after) lines = [...after];
+      lines[sourceIndex] = source;
+    }
     const templateLine = sourceTemplateLine(doc, source, sourceAt);
     if (templateLine) {
       const template = result.templates.get(groupId) ?? doc.templates[groupId] ?? [];
@@ -165,7 +178,6 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
       if (idx === instanceIdx || index === undefined || !sharesTiming(groups.get(groupId), idx)) continue;
       const target = lines[index];
       const updates = offsetTimingFields(source, at - sourceAt, target);
-      if (hasNegativeTime(updates)) return { ...result, lines: after, rejected: true };
       const line = { ...target, ...updates };
       if (!timingChanged(target, line) && line.languages === target.languages) continue;
       if (lines === after) lines = [...after];

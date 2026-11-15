@@ -37,10 +37,6 @@ interface DuplicatePlan {
   rejectedLineSynced: boolean;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const OWN_LINE_ONLY = { propagateToSiblings: false } as const;
-
 // -- Helpers ------------------------------------------------------------------
 
 function byLine(selections: readonly ResolvedAddress[]): Map<string, ResolvedAddress[]> {
@@ -218,12 +214,14 @@ function moveWords(args: MoveArgs): LyricCommand {
       const rangeOf = timeRangeResolver(root.lines, root.groups, args.duration);
       return reorderUpdates(lines, resolveAddresses(lines, args.addresses), args.timeDelta, rangeOf);
     },
-    OWN_LINE_ONLY,
   );
 }
 
-// Across lines, and across tracks of one line: neither propagates to linked copies.
-function moveWordsAcrossLines(args: CrossLineMoveArgs): LyricCommand {
+// Across lines, and across tracks of one line. `report` receives the group lines the move made their instance's own.
+function moveWordsAcrossLines(
+  args: CrossLineMoveArgs,
+  report?: (detachedIds: readonly string[]) => void,
+): LyricCommand {
   return lineEditCommand(
     {
       command: "move words across lines",
@@ -236,9 +234,9 @@ function moveWordsAcrossLines(args: CrossLineMoveArgs): LyricCommand {
       if (moves.length === 0) return [];
       const result = applyWordMoveAcrossLines(lines, moves, rangeOf);
       if (!result.ok) return refused({ reason: "move", reject: result.reject });
+      report?.(result.detachedIds);
       return withMovedPieces(lines, moves, result.updates);
     },
-    OWN_LINE_ONLY,
   );
 }
 
@@ -253,7 +251,6 @@ function duplicateWords(args: MoveArgs, report?: (plan: DuplicatePlan) => void):
       report?.(plan);
       return plan.updates;
     },
-    OWN_LINE_ONLY,
   );
 }
 

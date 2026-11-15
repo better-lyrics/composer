@@ -30,6 +30,7 @@ function replaceLyrics(
   return {
     note: { command: "replace lyrics", args: [lines.length] },
     copiesSharedTiming: false,
+    writesEveryLine: true,
     run: (root) => {
       const assignment = agentsAfterImport(root.agents, agents, lines);
       return applied(
@@ -45,6 +46,7 @@ function applyEditedLyrics(edited: EditedLyrics, metadata: ProjectMetadata): Lyr
   return {
     note: { command: "apply edited lyrics", args: [edited.lines.length] },
     copiesSharedTiming: false,
+    writesEveryLine: true,
     run: (root) => {
       const current = { ...root, metadata };
       const write = editedLyricsWrite(current, edited);

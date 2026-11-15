@@ -125,7 +125,6 @@ describe("createLanguageAutoRefresh", () => {
           { command: "edit lines", args: [] },
           () => fieldUpdates([{ id: "a", updates: { text: "Летний ливень" } }]),
           {
-            propagateToSiblings: false,
             copiesSharedTiming: false,
           },
         ),
@@ -266,7 +265,7 @@ describe("createLanguageAutoRefresh", () => {
         lineEditCommand(
           { command: "edit lines", args: [] },
           () => [{ id: "a", updates: { tracks: edited.tracks, languages: edited.languages } }],
-          { propagateToSiblings: false, copiesSharedTiming: false },
+          { copiesSharedTiming: false },
         ),
         "pending",
       );

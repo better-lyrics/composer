@@ -70,11 +70,7 @@ const lineById = (id: string): LyricLine => {
 const rangeOf = () => timeRangeResolver(store().lines, store().groups, DURATION);
 
 function commit(updates: LineUpdate[]): void {
-  store().commit(
-    lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
-      propagateToSiblings: false,
-    }),
-  );
+  store().commit(lineEditCommand({ command: "edit lines", args: [] }, () => updates));
 }
 
 function selectWords(lineId: string, count: number) {

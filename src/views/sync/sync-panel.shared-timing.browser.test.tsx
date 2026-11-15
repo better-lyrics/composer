@@ -84,18 +84,15 @@ describe("SyncPanel · shared instance anchor", () => {
     await undo(() => firstBegin("c1-0"));
     const verse = lineById("v1");
     useProjectStore.getState().commit(
-      lineEditCommand(
-        { command: "edit lines", args: [] },
-        () =>
-          fieldUpdates([
-            {
-              id: "v1",
-              updates: {
-                words: (verse && roleWords(verse, "main"))?.map((word) => ({ ...word, end: word.end + 0.05 })),
-              },
+      lineEditCommand({ command: "edit lines", args: [] }, () =>
+        fieldUpdates([
+          {
+            id: "v1",
+            updates: {
+              words: (verse && roleWords(verse, "main"))?.map((word) => ({ ...word, end: word.end + 0.05 })),
             },
-          ]),
-        { propagateToSiblings: false },
+          },
+        ]),
       ),
     );
     await tapAt(45, () => firstBegin("c1-0"));

@@ -211,8 +211,9 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     expect((b && roleWords(b, "bg"))?.some((w) => w.text.trim() === "alpha")).toBe(true);
   });
 
-  it("rejects with a toast on cross-instance attempts and leaves both lines untouched", async () => {
+  it("a move to another instance makes both lines their instance's own and says so", async () => {
     useProjectStore.setState({
+      groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
       lines: [
         lineFromFields({
           id: "lA",
@@ -220,6 +221,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 0,
+          templateLineIdx: 0,
           words: [
             { id: "w16", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
             { id: "w17", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
@@ -231,16 +233,12 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 1,
+          templateLineIdx: 0,
           words: [{ id: "w18", text: "delta", sep: "", begin: 5.0, end: 5.4, joinsNext: false }],
         }),
       ],
     });
     const lines = useProjectStore.getState().lines;
-    const before = lines.map((l) =>
-      roleWords(l, "main")
-        ?.map((w) => w.text + w.sep)
-        .join("|"),
-    );
     const baseline = toast.getHistory().length;
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
@@ -258,14 +256,11 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
       deltaY: 0,
     });
 
-    const after = useProjectStore.getState().lines.map((l) =>
-      roleWords(l, "main")
-        ?.map((w) => w.text + w.sep)
-        .join("|"),
-    );
-    expect(after).toEqual(before);
+    const after = useProjectStore.getState().lines;
+    expect(after.map((l) => roleWords(l, "main")?.map((w) => w.text))).toEqual([["beta"], ["delta", "alpha"]]);
+    expect(after.map((l) => l.detached)).toEqual([true, true]);
     const fired = toast.getHistory().slice(baseline);
-    expect(fired.some((t) => "title" in t && /Detach the line first/.test(String(t.title)))).toBe(true);
+    expect(fired.some((t) => "title" in t && String(t.title) === '"beta" now differs in Chorus 1')).toBe(true);
   });
 
   it("rejects with a toast when target line is line-synced and leaves data untouched", async () => {

@@ -210,12 +210,8 @@ describe("history snapshot integrity", () => {
 
     const nudged = timedSyllables(mainTrack(store().lines[0])).map((word) => ({ ...word, begin: word.begin + 0.2 }));
     store().commit(
-      lineEditCommand(
-        { command: "edit lines", args: [] },
-        () => fieldUpdates([{ id: "c0", updates: { words: nudged } }]),
-        {
-          propagateToSiblings: false,
-        },
+      lineEditCommand({ command: "edit lines", args: [] }, () =>
+        fieldUpdates([{ id: "c0", updates: { words: nudged } }]),
       ),
     );
     expect(timedSyllables(mainTrack(store().lines[1]))[0].begin).toBeCloseTo(40.2, 6);
