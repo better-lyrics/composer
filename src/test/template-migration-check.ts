@@ -1,4 +1,4 @@
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import { flattenBody } from "insync/group-flatten";
 import { isInstanceSpan, type LyricDoc } from "insync/group";
 import { sameToTheMs } from "insync/group-read-instance";

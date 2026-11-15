@@ -1,7 +1,7 @@
 import type { LyricRoot, Refusal } from "@/domain/commands/outcome";
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import type { SharingOutcome } from "@/domain/group/shared-placement";
-import { withEvenSyllableSplits } from "@/domain/group/syllable-splits";
+import { initialGroupSharing } from "insync/group-initial-sharing";
+import type { SharingOutcome } from "insync/group-shared-placement";
+import { withEvenSyllableSplits } from "insync/group-syllable-splits";
 import { GROUP_COLORS, pickNextGroupColor } from "insync/group-colors";
 import { isStructurallyEqual } from "insync/structural-equal";
 import { songEndOrUnbounded } from "insync/song-end";

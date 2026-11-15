@@ -1,4 +1,4 @@
-import { repeatKey, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
+import { repeatKey, withEvenSyllableSplits } from "insync/group-syllable-splits";
 import type { LyricLine } from "insync/line";
 import { hasMainLyrics } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";

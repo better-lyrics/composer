@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";

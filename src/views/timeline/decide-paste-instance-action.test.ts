@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { lineFromFields } from "insync/line-from-fields";
-import type { LineTemplate } from "@/domain/group/template";
+import type { LineTemplate } from "insync/group-template";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 import { decidePasteInstanceAction } from "./decide-paste-instance-action";

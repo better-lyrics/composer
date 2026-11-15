@@ -1,7 +1,7 @@
 import { shareGroupTiming } from "@/domain/commands/group-edits";
 import { NOTHING_SHARED } from "@/domain/group/group-plans";
-import type { SharingOutcome } from "@/domain/group/shared-placement";
-import { type SharedTimingSuggestion, sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
+import type { SharingOutcome } from "insync/group-shared-placement";
+import { type SharedTimingSuggestion, sharedTimingSuggestions } from "insync/group-shared-timing-suggestions";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";

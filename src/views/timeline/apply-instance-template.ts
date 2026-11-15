@@ -3,7 +3,7 @@ import {
   offsetTemplateWords,
   templateBackgroundFields,
   templateLanguages,
-} from "@/domain/group/template";
+} from "insync/group-template";
 import { nextInstanceIdx } from "insync/instance-enumerate";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";

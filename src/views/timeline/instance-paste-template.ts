@@ -1,6 +1,6 @@
-import { type LineTemplate, offsetTemplateWords, type WordTemplate } from "@/domain/group/template";
+import { type LineTemplate, offsetTemplateWords, type WordTemplate } from "insync/group-template";
 import type { LinkGroup } from "insync/group";
-import { pickedTemplateSource } from "@/domain/group/template-source";
+import { pickedTemplateSource } from "insync/group-template-source";
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
 import { wordFromSpaced } from "insync/word-spaced-words";

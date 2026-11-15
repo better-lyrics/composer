@@ -1,5 +1,5 @@
-import { endsAfter, hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
-import { replacedInstances } from "@/domain/group/replaced-instances";
+import { endsAfter, hasNegativeTime, offsetTimingFields } from "./group-offset-timing";
+import { replacedInstances } from "./group-replaced-instances";
 import {
   attachedLinesOfInstance,
   firstFullyTimedInstance,
@@ -7,14 +7,14 @@ import {
   instanceStart,
   sharedInstancesInLineOrder,
   sharesTiming,
-} from "@/domain/group/shared-timing";
-import type { LinkGroup } from "insync/group";
-import { applyLineUpdates } from "insync/line-apply-line-updates";
-import { mainBounds } from "insync/line-bounds";
-import { drawnSyllables } from "insync/line-drawn-track";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { isWordSynced } from "insync/line-predicates";
-import { isSyncableLine } from "insync/line-sync-progress";
+} from "./group-shared-timing";
+import type { LinkGroup } from "./group";
+import { applyLineUpdates } from "./line-apply-line-updates";
+import { mainBounds } from "./line-bounds";
+import { drawnSyllables } from "./line-drawn-track";
+import type { LineUpdate, LyricLine } from "./line";
+import { isWordSynced } from "./line-predicates";
+import { isSyncableLine } from "./line-sync-progress";
 
 // -- Types --------------------------------------------------------------------
 

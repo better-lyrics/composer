@@ -4,8 +4,8 @@ import {
   isInstanceFullyTimed,
   isSharedLine,
   sharedInstancesInLineOrder,
-} from "@/domain/group/shared-timing";
-import { templateSourceInstance } from "@/domain/group/template-source";
+} from "insync/group-shared-timing";
+import { templateSourceInstance } from "insync/group-template-source";
 import { instanceIndicesOf } from "insync/instance-enumerate";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";

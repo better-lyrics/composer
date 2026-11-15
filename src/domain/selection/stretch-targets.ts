@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "insync/line-drawn-track";

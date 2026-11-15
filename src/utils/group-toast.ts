@@ -1,4 +1,4 @@
-import type { KeptOwnTiming, RealignRefusal } from "@/domain/group/shared-placement";
+import type { KeptOwnTiming, RealignRefusal } from "insync/group-shared-placement";
 import type { LinkGroup } from "insync/group";
 import { instanceName } from "insync/instance-name";
 import { lineText } from "insync/line-text";

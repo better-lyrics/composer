@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import { wouldDropCrossInstance } from "insync/cross-instance";
 import { isLinked } from "insync/instance-predicates";
 import { withoutBackground } from "insync/line-background";

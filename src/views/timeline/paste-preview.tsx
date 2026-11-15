@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useMemo, useReducer, useState } from "react";
-import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import { type TimeRange, timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";

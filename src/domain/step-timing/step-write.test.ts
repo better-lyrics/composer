@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
+import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import { applyStepKey } from "@/domain/step-timing/step-write";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

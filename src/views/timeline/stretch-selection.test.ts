@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

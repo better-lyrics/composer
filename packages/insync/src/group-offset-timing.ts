@@ -1,17 +1,11 @@
-import { withReadingsOf } from "insync/language-pieces";
-import type { LineTrack, LineUpdate, LyricLine } from "insync/line";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import {
-  withMainTrack,
-  withoutTrackTiming,
-  withRoleTrack,
-  withTrackSpan,
-  withTrackWords,
-} from "insync/line-track-writes";
-import type { Bounds } from "insync/word-bounds";
-import { withIdsOf } from "insync/word-id";
-import type { WordTiming } from "insync/word-timing";
-import { isStructurallyEqual } from "insync/structural-equal";
+import { withReadingsOf } from "./language-pieces";
+import type { LineTrack, LineUpdate, LyricLine } from "./line";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "./line-track";
+import { withMainTrack, withoutTrackTiming, withRoleTrack, withTrackSpan, withTrackWords } from "./line-track-writes";
+import type { Bounds } from "./word-bounds";
+import { withIdsOf } from "./word-id";
+import type { WordTiming } from "./word-timing";
+import { isStructurallyEqual } from "./structural-equal";
 
 // -- Timing fields ------------------------------------------------------------
 

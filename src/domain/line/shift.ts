@@ -1,4 +1,4 @@
-import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
+import { type TimeRange, UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import { bgBounds, effectiveBounds } from "insync/line-bounds";
 import type { LineTrack, LyricLine } from "insync/line";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";

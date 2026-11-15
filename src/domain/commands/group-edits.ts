@@ -8,7 +8,7 @@ import {
   planRepeatingSections,
 } from "@/domain/group/group-plans";
 import { unlinkLines } from "insync/group-linking";
-import type { SharingOutcome } from "@/domain/group/shared-placement";
+import type { SharingOutcome } from "insync/group-shared-placement";
 import type { LinkGroup } from "insync/group";
 
 // -- Helpers ------------------------------------------------------------------

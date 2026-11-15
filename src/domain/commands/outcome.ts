@@ -1,7 +1,7 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "insync/agent";
-import type { RealignRefusal } from "@/domain/group/shared-placement";
+import type { RealignRefusal } from "insync/group-shared-placement";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "insync/selection-model";

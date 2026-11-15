@@ -1,18 +1,18 @@
-import { drawnSyllables } from "insync/line-drawn-track";
-import { mainTrack, roleWords } from "insync/line-track";
-import { withSharing } from "insync/group-own-timing";
-import { sameTime } from "insync/group-same-timing";
-import { type SharingOutcome, realignSharedInstances } from "@/domain/group/shared-placement";
+import { drawnSyllables } from "./line-drawn-track";
+import { mainTrack, roleWords } from "./line-track";
+import { withSharing } from "./group-own-timing";
+import { sameTime } from "./group-same-timing";
+import { type SharingOutcome, realignSharedInstances } from "./group-shared-placement";
 import {
   attachedLinesOfInstance,
   firstFullyTimedInstance,
   instanceOffset,
   instanceStart,
   instancesInLineOrder,
-} from "@/domain/group/shared-timing";
-import type { LinkGroup } from "insync/group";
-import type { LyricLine } from "insync/line";
-import type { WordTiming } from "insync/word-timing";
+} from "./group-shared-timing";
+import type { LinkGroup } from "./group";
+import type { LyricLine } from "./line";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

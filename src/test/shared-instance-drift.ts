@@ -3,7 +3,7 @@ import {
   firstFullyTimedInstance,
   instanceOffset,
   sharedInstancesInLineOrder,
-} from "@/domain/group/shared-timing";
+} from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
 import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine, TrackRole } from "insync/line";

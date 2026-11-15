@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import { flattenBody } from "insync/group-flatten";
-import { foldLines } from "@/domain/group/fold";
+import { foldLines } from "insync/group-fold";
 import type { Instance, LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";

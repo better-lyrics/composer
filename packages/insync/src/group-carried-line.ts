@@ -5,11 +5,11 @@ import {
   lineageByText,
   syllableLineage,
   targetId,
-} from "insync/group-syllable-lineage";
-import { withAlignedWords } from "insync/language-align";
-import { regroupedLanguages, withOwnPieces } from "insync/language-pieces";
-import { withSeededBackground } from "insync/line-background";
-import type { BackgroundTrack, LineTrack, LineTracks, LyricLine, MainTrack, Syllable } from "insync/line";
+} from "./group-syllable-lineage";
+import { withAlignedWords } from "./language-align";
+import { regroupedLanguages, withOwnPieces } from "./language-pieces";
+import { withSeededBackground } from "./line-background";
+import type { BackgroundTrack, LineTrack, LineTracks, LyricLine, MainTrack, Syllable } from "./line";
 import {
   backgroundTrack,
   isSpanTimed,
@@ -17,9 +17,9 @@ import {
   mainTrack,
   timedSyllables,
   untimedSyllable,
-} from "insync/line-track";
-import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "insync/line-track-writes";
-import { isStructurallyEqual } from "insync/structural-equal";
+} from "./line-track";
+import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "./line-track-writes";
+import { isStructurallyEqual } from "./structural-equal";
 
 // -- Content ------------------------------------------------------------------
 

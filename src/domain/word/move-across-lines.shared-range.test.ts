@@ -1,6 +1,6 @@
 import { updatedLine, withFields } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";

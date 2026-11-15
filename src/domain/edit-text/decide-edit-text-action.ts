@@ -3,8 +3,8 @@ import { diffEditTextChange, withMovedTextDetached } from "@/domain/edit-text/di
 import { editTextWithRewrittenRows } from "insync/edit-text";
 import { type BackgroundRange, NO_RANGES } from "insync/edit-text-shown-row";
 import type { LinkGroup } from "insync/group";
-import type { InstanceAnchors } from "@/domain/group/template-copy";
-import { type CarriedSplit, carryTemplateEdits } from "@/domain/group/template-edit";
+import type { InstanceAnchors } from "insync/group-template-copy";
+import { type CarriedSplit, carryTemplateEdits } from "insync/group-template-edit";
 import type { LyricLine } from "insync/line";
 import { textToLyricLines } from "@/utils/lyrics-text";
 

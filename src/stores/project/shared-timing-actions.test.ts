@@ -8,7 +8,7 @@ import { groupRepeatingSections, shareGroupTiming } from "@/domain/commands/grou
 import { addInstance, placeInstance, setInstanceOwnTiming } from "@/domain/commands/instance-edits";
 import { isRefused } from "@/domain/commands/outcome";
 import { NOTHING_SHARED } from "@/domain/group/group-plans";
-import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
+import type { RealignRefusal, SharingOutcome } from "insync/group-shared-placement";
 import type { LinkGroup } from "insync/group";
 import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";

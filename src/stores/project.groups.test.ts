@@ -2,7 +2,7 @@ import { fieldsOfLine } from "insync/line-from-fields";
 import { fieldUpdates } from "@/test/field-updates";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { lineFromFields } from "insync/line-from-fields";
-import type { LineTemplate } from "@/domain/group/template";
+import type { LineTemplate } from "insync/group-template";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";

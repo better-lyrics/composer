@@ -1,6 +1,6 @@
 import { groupRepeatingSections } from "@/domain/commands/group-edits";
 import { NOTHING_SHARED } from "@/domain/group/group-plans";
-import type { SharingOutcome } from "@/domain/group/shared-placement";
+import type { SharingOutcome } from "insync/group-shared-placement";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

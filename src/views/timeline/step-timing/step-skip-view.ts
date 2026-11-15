@@ -1,4 +1,4 @@
-import { firstFullyTimedInstance, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
+import { firstFullyTimedInstance, sharedInstancesInLineOrder } from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
 import { instanceKey } from "insync/instance-key";
 import { instanceName } from "insync/instance-name";

@@ -1,13 +1,13 @@
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
+import { initialGroupSharing } from "./group-initial-sharing";
 import {
   attachedLinesOfInstance,
   firstFullyTimedInstance,
   instanceStart,
   instancesInLineOrder,
-} from "@/domain/group/shared-timing";
-import type { LinkGroup } from "insync/group";
-import { instanceName } from "insync/instance-name";
-import type { LyricLine } from "insync/line";
+} from "./group-shared-timing";
+import type { LinkGroup } from "./group";
+import { instanceName } from "./instance-name";
+import type { LyricLine } from "./line";
 
 // -- Types --------------------------------------------------------------------
 

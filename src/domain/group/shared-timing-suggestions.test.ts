@@ -1,4 +1,4 @@
-import { sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
+import { sharedTimingSuggestions } from "insync/group-shared-timing-suggestions";
 import type { LyricLine } from "insync/line";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

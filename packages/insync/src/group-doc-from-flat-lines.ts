@@ -1,4 +1,4 @@
-import { withFlatLines } from "insync/group-flatten";
+import { withFlatLines } from "./group-flatten";
 import {
   type BodyItem,
   type Instance,
@@ -6,14 +6,14 @@ import {
   instanceSlots,
   type LyricDoc,
   type TemplateLine,
-} from "insync/group";
-import { readInstance } from "insync/group-read-instance";
-import { toTemplateLine } from "insync/group-template-line";
-import { instanceBounds } from "insync/instance-bounds";
-import { instanceKey } from "insync/instance-key";
-import type { LyricLine } from "insync/line";
-import { isWordSynced } from "insync/line-predicates";
-import { isLineFullyTimed, isSyncableLine } from "insync/line-sync-progress";
+} from "./group";
+import { readInstance } from "./group-read-instance";
+import { toTemplateLine } from "./group-template-line";
+import { instanceBounds } from "./instance-bounds";
+import { instanceKey } from "./instance-key";
+import type { LyricLine } from "./line";
+import { isWordSynced } from "./line-predicates";
+import { isLineFullyTimed, isSyncableLine } from "./line-sync-progress";
 
 // -- Types --------------------------------------------------------------------
 

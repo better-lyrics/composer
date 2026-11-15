@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withEvenSyllableSplits } from "@/domain/group/syllable-splits";
+import { withEvenSyllableSplits } from "insync/group-syllable-splits";
 /**
  * @vitest-environment node
  */

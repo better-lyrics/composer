@@ -1,4 +1,4 @@
-import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
+import { type TimeRange, UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import type { SyllablePosition } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 

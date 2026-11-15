@@ -3,7 +3,7 @@ import {
   instanceStart,
   isSharedLine,
   sharedInstancesInLineOrder,
-} from "@/domain/group/shared-timing";
+} from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
 import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";

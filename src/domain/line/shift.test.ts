@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { changedFields } from "@/test/field-updates";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";

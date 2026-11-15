@@ -1,4 +1,4 @@
-import { instanceOffset } from "@/domain/group/shared-timing";
+import { instanceOffset } from "insync/group-shared-timing";
 import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

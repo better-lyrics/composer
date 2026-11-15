@@ -1,4 +1,4 @@
-import { instanceStart, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
+import { instanceStart, sharedInstancesInLineOrder } from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
 import { attachedLineIndices } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";

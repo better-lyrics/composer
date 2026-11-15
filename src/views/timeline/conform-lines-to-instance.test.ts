@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { LineTemplate } from "@/domain/group/template";
+import type { LineTemplate } from "insync/group-template";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";

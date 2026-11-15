@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "insync/line-lane-word-edits";

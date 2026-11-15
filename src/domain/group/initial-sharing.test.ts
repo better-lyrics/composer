@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
+import { initialGroupSharing } from "insync/group-initial-sharing";
 import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";

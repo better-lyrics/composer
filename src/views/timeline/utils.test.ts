@@ -7,7 +7,7 @@ import { patchOf, updatedLine } from "@/test/field-updates";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { describe, expect, it } from "vitest";
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import { instanceBounds } from "insync/instance-bounds";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";

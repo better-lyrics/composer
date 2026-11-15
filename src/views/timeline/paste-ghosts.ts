@@ -1,4 +1,4 @@
-import { type TimeRange, wholeSongRange } from "@/domain/group/shared-timing";
+import { type TimeRange, wholeSongRange } from "insync/group-shared-timing";
 import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole } from "insync/line-track";

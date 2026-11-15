@@ -4,7 +4,7 @@ import { deleteLine } from "@/domain/commands/instance-rows";
 import { placeLineAt } from "@/domain/commands/line-timing";
 import { isRefused } from "@/domain/commands/outcome";
 import { assignSinger } from "@/domain/commands/singer";
-import { isSharedLine } from "@/domain/group/shared-timing";
+import { isSharedLine } from "insync/group-shared-timing";
 import { instanceName } from "insync/instance-name";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";

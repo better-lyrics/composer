@@ -1,4 +1,4 @@
-import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import { type TimeRange, timeRangeResolver } from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { bgBounds, mainBounds } from "insync/line-bounds";

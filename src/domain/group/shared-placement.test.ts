@@ -2,7 +2,7 @@ import { fieldsOfLine } from "insync/line-from-fields";
 import { mainBounds } from "insync/line-bounds";
 import { updatedLine, withFields } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";
-import { placeSharedInstance, realignSharedInstance, realignSharedInstances } from "@/domain/group/shared-placement";
+import { placeSharedInstance, realignSharedInstance, realignSharedInstances } from "insync/group-shared-placement";
 import type { LyricLine } from "insync/line";
 import { newWordId } from "insync/word-id";
 import { createGroup, createLine } from "@/test/factories";

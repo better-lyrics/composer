@@ -1,15 +1,15 @@
-import type { LinkGroup } from "insync/group";
-import { instanceBounds } from "insync/instance-bounds";
-import { instanceKey } from "insync/instance-key";
-import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
-import { bgBounds, mainBounds } from "insync/line-bounds";
-import type { LyricLine } from "insync/line";
-import { isWordSynced } from "insync/line-predicates";
-import { roleWords } from "insync/line-track";
-import { isLineFullyTimed, isSyncableLine } from "insync/line-sync-progress";
-import { withoutWordIds } from "insync/word-id";
-import { isStructurallyEqual } from "insync/structural-equal";
-import { songEndOrUnbounded } from "insync/song-end";
+import type { LinkGroup } from "./group";
+import { instanceBounds } from "./instance-bounds";
+import { instanceKey } from "./instance-key";
+import { isAttachedToInstance, isLinked } from "./instance-predicates";
+import { bgBounds, mainBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
+import { isWordSynced } from "./line-predicates";
+import { roleWords } from "./line-track";
+import { isLineFullyTimed, isSyncableLine } from "./line-sync-progress";
+import { withoutWordIds } from "./word-id";
+import { isStructurallyEqual } from "./structural-equal";
+import { songEndOrUnbounded } from "./song-end";
 
 // -- Types --------------------------------------------------------------------
 

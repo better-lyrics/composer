@@ -1,7 +1,7 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
-import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
+import { timeRangeResolver, wholeSongRange } from "insync/group-shared-timing";
 import { mainWordsEdit, manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import { isSpanTimed, mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSpan } from "insync/line-track-writes";

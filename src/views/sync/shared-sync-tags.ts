@@ -1,4 +1,4 @@
-import { instanceStart, instancesInLineOrder, keepsOwnTiming } from "@/domain/group/shared-timing";
+import { instanceStart, instancesInLineOrder, keepsOwnTiming } from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
 import { attachedLineIndices } from "insync/instance-enumerate";
 import { instanceName } from "insync/instance-name";

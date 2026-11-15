@@ -1,4 +1,4 @@
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import { writingLyrics } from "@/stores/project/lyric-change-listeners";
 import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";

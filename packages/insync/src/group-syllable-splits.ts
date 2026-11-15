@@ -1,19 +1,12 @@
-import { splitWordsKeepingTransliteration } from "insync/language-reconcile-syllable-split";
-import type { LineTrack, LyricLine, TrackRole } from "insync/line";
-import { syllablesFromText } from "insync/line-syllables-from-text";
-import { trackText } from "insync/line-text";
-import {
-  backgroundTrack,
-  isTimedSyllable,
-  mainTrack,
-  roleWords,
-  untimedSyllable,
-  type WordTrack,
-} from "insync/line-track";
-import { withRoleTrack, withTrackSyllables, withTrackText } from "insync/line-track-writes";
-import type { WordTiming } from "insync/word-timing";
-import { splitWordIntoSyllables } from "insync/single-word-syllable-split";
-import { withoutSplitCharacter } from "insync/split-character-text";
+import { splitWordsKeepingTransliteration } from "./language-reconcile-syllable-split";
+import type { LineTrack, LyricLine, TrackRole } from "./line";
+import { syllablesFromText } from "./line-syllables-from-text";
+import { trackText } from "./line-text";
+import { backgroundTrack, isTimedSyllable, mainTrack, roleWords, untimedSyllable, type WordTrack } from "./line-track";
+import { withRoleTrack, withTrackSyllables, withTrackText } from "./line-track-writes";
+import type { WordTiming } from "./word-timing";
+import { splitWordIntoSyllables } from "./single-word-syllable-split";
+import { withoutSplitCharacter } from "./split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

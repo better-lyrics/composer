@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import { pieceOf } from "insync/language-pieces";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";

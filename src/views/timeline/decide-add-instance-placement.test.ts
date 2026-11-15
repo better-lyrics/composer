@@ -4,7 +4,7 @@ import { mainTrack, timedSyllables } from "insync/line-track";
 /**
  * @vitest-environment node
  */
-import type { LineTemplate } from "@/domain/group/template";
+import type { LineTemplate } from "insync/group-template";
 import type { LyricLine } from "insync/line";
 import { newWordId } from "insync/word-id";
 import { describe, expect, it } from "vitest";

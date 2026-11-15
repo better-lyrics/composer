@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import { flattenBody } from "insync/group-flatten";
 import type { Instance, LyricDoc } from "insync/group";
 import { instanceKey } from "insync/instance-key";

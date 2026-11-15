@@ -1,12 +1,12 @@
-import { sameTime } from "insync/group-same-timing";
-import { instanceKey } from "insync/instance-key";
-import { isLinked } from "insync/instance-predicates";
-import { mainBounds } from "insync/line-bounds";
-import { drawnSyllables } from "insync/line-drawn-track";
-import type { LyricLine } from "insync/line";
-import { isLineSynced, isWordSynced } from "insync/line-predicates";
-import { mainTrack, roleWords } from "insync/line-track";
-import type { WordTiming } from "insync/word-timing";
+import { sameTime } from "./group-same-timing";
+import { instanceKey } from "./instance-key";
+import { isLinked } from "./instance-predicates";
+import { mainBounds } from "./line-bounds";
+import { drawnSyllables } from "./line-drawn-track";
+import type { LyricLine } from "./line";
+import { isLineSynced, isWordSynced } from "./line-predicates";
+import { mainTrack, roleWords } from "./line-track";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

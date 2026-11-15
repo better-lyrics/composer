@@ -1,6 +1,6 @@
 import { stretchSelection } from "@/domain/commands/word-timing";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import { copyThroughTemplate, instanceAnchors } from "@/domain/group/template-copy";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import { copyThroughTemplate, instanceAnchors } from "insync/group-template-copy";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
 import type { LyricLine } from "insync/line";
 import { resolveAddresses } from "insync/selection-resolve";

@@ -1,9 +1,9 @@
 import { addInstance } from "@/domain/commands/instance-edits";
 import { toast } from "sonner";
 import { fillInstanceRows, pasteLines } from "@/domain/commands/instance-rows";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LineTemplate } from "@/domain/group/template";
-import { templateSourceInstance } from "@/domain/group/template-source";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import type { LineTemplate } from "insync/group-template";
+import { templateSourceInstance } from "insync/group-template-source";
 import { instanceCount } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";

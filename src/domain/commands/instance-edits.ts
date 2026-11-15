@@ -2,14 +2,14 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { applied, changedLineIds, refused, withLines } from "@/domain/commands/outcome";
 import { unlinkLines } from "insync/group-linking";
 import { withNewInstance, withOwnTiming } from "insync/group-own-timing";
-import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
-import { wholeSongRange } from "@/domain/group/shared-timing";
+import { placeSharedInstance, realignSharedInstance } from "insync/group-shared-placement";
+import { wholeSongRange } from "insync/group-shared-timing";
 import {
   type LineTemplate,
   offsetTemplateWords,
   templateBackgroundFields,
   templateLanguages,
-} from "@/domain/group/template";
+} from "insync/group-template";
 import { nextInstanceIdx } from "insync/instance-enumerate";
 import { belongsToInstance, isAttachedToInstance } from "insync/instance-predicates";
 import { applyLineUpdates } from "insync/line-apply-line-updates";

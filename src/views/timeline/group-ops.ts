@@ -1,7 +1,7 @@
 import { drawnSyllables } from "insync/line-drawn-track";
 import { backgroundTrack, isSpanTimed, mainTrack, roleWords } from "insync/line-track";
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import { type LineTemplate, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
+import { initialGroupSharing } from "insync/group-initial-sharing";
+import { type LineTemplate, languagesToTemplate, wordsToTemplate } from "insync/group-template";
 import type { LinkGroup } from "insync/group";
 import { trackPieces } from "insync/language-pieces";
 import { instanceBounds } from "insync/instance-bounds";

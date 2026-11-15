@@ -1,6 +1,6 @@
 import { fieldsOfLine } from "insync/line-from-fields";
 import { mainTrack } from "insync/line-track";
-import { replacedInstances } from "@/domain/group/replaced-instances";
+import { replacedInstances } from "insync/group-replaced-instances";
 import type { LyricLine } from "insync/line";
 import { newBackgroundTrack, withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
 import { createLine } from "@/test/factories";

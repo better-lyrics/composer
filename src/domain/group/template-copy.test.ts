@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import type { LinkGroup } from "insync/group";
-import { copyThroughTemplate, instanceAnchors } from "@/domain/group/template-copy";
+import { copyThroughTemplate, instanceAnchors } from "insync/group-template-copy";
 import { instanceBounds } from "insync/instance-bounds";
 import { withManualBackgroundWords, withSeededBackground } from "insync/line-background";
 import { bgBounds, mainBounds } from "insync/line-bounds";

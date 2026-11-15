@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import type { LanguagePiece } from "insync/language";
 import { withAddedPieces } from "insync/language-pieces";
 import { drawnSyllables } from "insync/line-drawn-track";

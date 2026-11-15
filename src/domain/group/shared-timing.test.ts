@@ -8,7 +8,7 @@ import {
   sharesTiming,
   timeRangeResolver,
   wholeSongRange,
-} from "@/domain/group/shared-timing";
+} from "insync/group-shared-timing";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
