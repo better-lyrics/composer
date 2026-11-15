@@ -145,8 +145,8 @@ describe("applyWordDeletion · linked instances", () => {
       const result = applyWordDeletion(lines, [del("c1-0", 0), del("c1-0", 1), del("c1-0", 2), del("c0-0", 2)]);
 
       expect(byId(result, "c1-0")?.groupId).toBeUndefined();
-      expect(texts(byId(result, "c0-0"))).toEqual(["hold ", "me "]);
-      expect(texts(byId(result, "c2-0"))).toEqual(["hold ", "me "]);
+      expect(texts(byId(result, "c0-0"))).toEqual(["hold ", "me"]);
+      expect(texts(byId(result, "c2-0"))).toEqual(["hold ", "me"]);
     });
 
     it("spreads a delete on one line of a multi-line instance when the instance keeps other words", () => {
@@ -218,7 +218,7 @@ describe("applyWordDeletion · linked instances", () => {
 
       const result = applyWordDeletion(lines, [del("c0-0", 0), del("c1-0", 2)]);
 
-      for (const id of ["c0-0", "c1-0", "c2-0"]) expect(texts(byId(result, id))).toEqual(["me "]);
+      for (const id of ["c0-0", "c1-0", "c2-0"]) expect(texts(byId(result, id))).toEqual(["me"]);
     });
 
     it("clears a linked line-synced line in every instance", () => {
