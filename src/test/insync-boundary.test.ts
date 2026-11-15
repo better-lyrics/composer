@@ -7,9 +7,12 @@ import { SRC_ROOT, walkSourceFiles } from "@/test/source-files";
 
 const PACKAGE_ROOT = join(SRC_ROOT, "../packages/insync/src");
 
-// Static (`from "x"`), side-effect (`import "x"`) and dynamic (`import("x")`) imports.
+// Static (`from "x"`), side-effect (`import "x"` at a line start) and dynamic (`import("x")`) imports. The word
+// "import" inside a string, as in a test title, is not one.
+const IMPORT_SPECIFIER = /\bfrom\s*["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']|^\s*import\s*["']([^"']+)["']/gm;
+
 function importSpecifiers(source: string): string[] {
-  return [...source.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*["']([^"']+)["']/g)].map((match) => match[1]);
+  return [...source.matchAll(IMPORT_SPECIFIER)].map((match) => match[1] ?? match[2] ?? match[3]);
 }
 
 function isPackageInternal(file: string, specifier: string): boolean {
