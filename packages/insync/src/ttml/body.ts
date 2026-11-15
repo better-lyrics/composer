@@ -1,17 +1,17 @@
-import type { Part, PartSection } from "../part";
-import type { DocPassthrough } from "../passthrough";
-import { escapeXmlAttribute } from "../xml-node";
+import { formatTime } from "../format-time";
+import type { LineTrack, LyricLine } from "../line";
 import { bgBounds, effectiveBounds, mainBounds } from "../line-bounds";
 import { drawnSyllables } from "../line-drawn-track";
-import type { LineTrack, LyricLine } from "../line";
 import { isLineSynced, isWordSynced } from "../line-predicates";
 import { backgroundText, lineText } from "../line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
+import type { Part, PartSection } from "../part";
+import type { DocPassthrough } from "../passthrough";
 import type { WordTiming } from "../word-timing";
-import { formatTime } from "../format-time";
+import { escapeXmlAttribute } from "../xml-node";
 import { BACKGROUND_ANCHOR, TEXT_ANCHOR } from "./anchors";
 import type { Indent } from "./head";
-import { backgroundEnvelope, lineEnvelope, partEnvelope, writtenTimes } from "./kept-times";
+import { backgroundEnvelope, lineEnvelope, milliseconds, partEnvelope, writtenTimes } from "./kept-times";
 import { isExportedLine } from "./line-keys";
 import { MAIN_BEGIN_ATTRIBUTE, MAIN_END_ATTRIBUTE } from "./main-span";
 import { emitWordSpan, spanEndsInSpace } from "./markup";
@@ -87,7 +87,7 @@ function mainSpanAttributes(line: LyricLine, begin: string, end: string): string
   const bounds = mainBounds(line);
   if (!bounds) return "";
   const [mainBegin, mainEnd] = [formatTime(bounds.begin), formatTime(bounds.end)];
-  return mainBegin === begin && mainEnd === end
+  return milliseconds(mainBegin) === milliseconds(begin) && milliseconds(mainEnd) === milliseconds(end)
     ? ""
     : ` composer:${MAIN_BEGIN_ATTRIBUTE}="${mainBegin}" composer:${MAIN_END_ATTRIBUTE}="${mainEnd}"`;
 }

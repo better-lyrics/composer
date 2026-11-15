@@ -1,15 +1,15 @@
-import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { agentsAfterImport } from "insync/agent-imported-agents";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingWrite } from "insync/line-track-writes";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
-import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { parseTtml } from "insync/ttml/read";
 import { generateTTML } from "insync/ttml/write";
+import { describe, expect, it } from "vitest";
+import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
 import { parseXmlDocument } from "@/utils/xml-document";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -129,6 +129,21 @@ describe("ttml kept data edges", () => {
     expect(backgroundAfterItsSpan).toContain(
       '<span ttm:role="x-bg" begin="0:01.000"><span begin="0:01.000" end="0:03.000">(low)</span></span>',
     );
+  });
+
+  it("regression: a line-synced line's main span is written apart only when it differs in time, not in spelling", () => {
+    const parsed = parseTtml(
+      `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:12.340" end="00:14.000">Low tide</p></div></body></tt>`,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: [],
+      lines: parsed.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
+    expect(ttml).toContain('<p begin="00:12.340" end="00:14.000"');
+    expect(ttml).not.toContain("composer:main");
   });
 
   it("a second round trip changes nothing", () => {

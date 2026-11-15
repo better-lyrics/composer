@@ -1,9 +1,9 @@
-import type { XmlReadElement } from "./xml-read-tree";
-import { type KeptTimes, keptTimes } from "../passthrough";
-import { bgBounds, effectiveBounds } from "../line-bounds";
-import type { LyricLine } from "../line";
 import { formatTime } from "../format-time";
+import type { LyricLine } from "../line";
+import { bgBounds, effectiveBounds } from "../line-bounds";
+import { type KeptTimes, keptTimes } from "../passthrough";
 import { parseTtmlTimestamp } from "./timestamp";
+import type { XmlReadElement } from "./xml-read-tree";
 
 // -- Types --------------------------------------------------------------------
 
@@ -76,4 +76,4 @@ function writtenTimes(kept: KeptTimes, envelope: Envelope): WrittenTimes {
 // -- Exports ------------------------------------------------------------------
 
 export type { Envelope };
-export { backgroundEnvelope, capturedTimes, lineEnvelope, partEnvelope, writtenTimes };
+export { backgroundEnvelope, capturedTimes, lineEnvelope, milliseconds, partEnvelope, writtenTimes };
