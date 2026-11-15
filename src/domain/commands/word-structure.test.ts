@@ -7,7 +7,7 @@ import { mainBounds } from "insync/line-bounds";
 import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, roleWords } from "insync/line-track";
-import { deleteWords, typeWordText } from "insync/commands/word-structure";
+import { deleteWords, insertWord, typeWordText } from "insync/commands/word-structure";
 import { pasteLyrics } from "insync/commands/edit-text";
 import { trackPieces } from "insync/language-pieces";
 import { addressOf } from "insync/selection-resolve";
@@ -51,6 +51,31 @@ describe("word structure commands", () => {
     });
     useProjectStore.getState().commit(deleteWords([tideAddress]));
     expect(Object.keys(trackPieces(useProjectStore.getState().lines[0], "main") ?? {})).toEqual([turns.id]);
+  });
+
+  it("regression: the romanization text drops the reading of a deleted word", () => {
+    const [line] = useProjectStore.getState().lines;
+    const [, turns] = roleWords(line, "main") ?? [];
+    const pieces = { [tide.id]: { text: "taido" }, [turns.id]: { text: "taanzu" } };
+    const main = { text: "taido taanzu", pieces };
+    const transliteration = { language: "ja-Latn", origin: "manual" as const, sourceFingerprint: "", main };
+    useProjectStore.setState({ lines: [{ ...line, languages: { transliteration } }] });
+    useProjectStore.getState().commit(deleteWords([tideAddress]));
+    expect(useProjectStore.getState().lines[0].languages?.transliteration?.main.text).toBe("taanzu");
+  });
+
+  it("regression: a romanization missing a reading for a new word keeps its text and needs review", () => {
+    const [line] = useProjectStore.getState().lines;
+    const [, turns] = roleWords(line, "main") ?? [];
+    const pieces = { [tide.id]: { text: "taido" }, [turns.id]: { text: "taanzu" } };
+    const main = { text: "taido taanzu", pieces, alignmentStatus: "confirmed" as const };
+    const transliteration = { language: "ja-Latn", origin: "manual" as const, sourceFingerprint: "", main };
+    useProjectStore.setState({ lines: [{ ...line, languages: { transliteration } }] });
+    useProjectStore.getState().commit(insertWord("l1", "word", createWord({ text: "high", begin: 6, end: 7 })));
+    expect(useProjectStore.getState().lines[0].languages?.transliteration?.main).toMatchObject({
+      text: "taido taanzu",
+      alignmentStatus: "needs-review",
+    });
   });
 
   it("regression: renaming the block of a line-synced row updates text and keeps it line-synced", () => {

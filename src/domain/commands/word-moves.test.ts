@@ -7,6 +7,7 @@ import { duplicateWords, moveWords, moveWordsAcrossLines } from "insync/commands
 import type { LinkGroup } from "insync/group";
 import { pieceOf, trackPieces } from "insync/language-pieces";
 import type { LineLanguages } from "insync/language";
+import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, type WordTrack } from "insync/line-track";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
@@ -116,6 +117,43 @@ describe("word move commands", () => {
     const [movedFrom, movedTo] = useProjectStore.getState().lines;
     expect(pieceOf(trackPieces(movedTo, "main"), drift)).toEqual({ text: "dorifuto" });
     expect(movedFrom.languages).toBeUndefined();
+  });
+
+  it("regression: the romanization of both lines follows a word moved between them", () => {
+    const romanized = (line: LyricLine, readings: string[]): LyricLine => {
+      const words = roleWords(line, "main") ?? [];
+      const pieces = Object.fromEntries(words.map((word, index) => [word.id, { text: readings[index] }]));
+      const main = { text: readings.join(" "), segments: [{ original: "", transliteration: "" }], pieces };
+      return {
+        ...line,
+        languages: { transliteration: { language: "ja-Latn", origin: "manual", sourceFingerprint: "", main } },
+      };
+    };
+    const from = createLine({
+      id: "a",
+      text: "drift away",
+      words: [
+        { text: "drift", sep: " ", begin: 2, end: 2.5 },
+        { text: "away", begin: 2.5, end: 3 },
+      ],
+    });
+    const to = createLine({ id: "b", text: "harbour", words: [{ text: "harbour", begin: 4, end: 5 }] });
+    useProjectStore.setState({ lines: [romanized(from, ["dorifuto", "auei"]), romanized(to, ["haabaa"])] });
+    const [moved] = roleWords(from, "main") ?? [];
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf(from, "word", moved)],
+        fromLineId: "a",
+        targetLineId: "b",
+        targetTrack: "word",
+        timeDelta: 3.5,
+        duration: 60,
+      }),
+    );
+    const [movedFrom, movedTo] = useProjectStore.getState().lines;
+    expect(movedFrom.languages?.transliteration?.main).toMatchObject({ text: "auei" });
+    expect(movedTo.languages?.transliteration?.main).toMatchObject({ text: "haabaa  dorifuto" });
+    expect(movedTo.languages?.transliteration?.main.segments).toBeUndefined();
   });
 });
 

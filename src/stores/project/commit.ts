@@ -5,7 +5,7 @@ import { type Applied, applied, isRefused, type LyricRoot, type Outcome, refused
 import { foldLines } from "insync/group-fold";
 import type { LyricDoc } from "insync/group";
 import type { CarriedSplit } from "insync/group-template-edit";
-import { withoutOrphanPieces } from "insync/language-pieces";
+import { withSettledReadings } from "insync/language-settled-readings";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
 import type { CommitMode } from "@/stores/project/history-types";
@@ -38,13 +38,15 @@ function rootOf(state: ProjectState): LyricRoot {
 function withChangedLinesSettled(before: readonly LyricLine[], after: LyricLine[]): LyricLine[] {
   if (before === after) return after;
   let unchangedLines: Set<LyricLine> | undefined;
+  let beforeById: Map<string, LyricLine> | undefined;
   let settled: LyricLine[] | undefined;
   for (let index = 0; index < after.length; index++) {
     const line = after[index];
     if (line === before[index]) continue;
     unchangedLines ??= new Set(before);
     if (unchangedLines.has(line)) continue;
-    const settledLine = withoutOrphanPieces(line);
+    beforeById ??= new Map(before.map((beforeLine) => [beforeLine.id, beforeLine]));
+    const settledLine = withSettledReadings(beforeById.get(line.id), line);
     if (settledLine === line) continue;
     settled ??= after.slice();
     settled[index] = settledLine;
