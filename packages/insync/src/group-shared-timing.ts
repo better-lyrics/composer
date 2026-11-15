@@ -99,12 +99,17 @@ function firstFullyTimedInstance(
 // Offset between two instances, measured only over template lines timed in both, so a line missing from one
 // instance never shifts the anchor.
 function instanceOffset(lines: readonly LyricLine[], groupId: string, from: number, to: number): number | null {
-  const toByTemplateLine = new Map(
-    attachedLinesOfInstance(lines, groupId, to).map((line) => [line.templateLineIdx, line]),
+  return offsetBetweenInstanceLines(
+    attachedLinesOfInstance(lines, groupId, from),
+    attachedLinesOfInstance(lines, groupId, to),
   );
+}
+
+function offsetBetweenInstanceLines(fromLines: readonly LyricLine[], toLines: readonly LyricLine[]): number | null {
+  const toByTemplateLine = new Map(toLines.map((line) => [line.templateLineIdx, line]));
   const fromCommon: LyricLine[] = [];
   const toCommon: LyricLine[] = [];
-  for (const line of attachedLinesOfInstance(lines, groupId, from)) {
+  for (const line of fromLines) {
     const match = toByTemplateLine.get(line.templateLineIdx);
     if (!match || !instanceBounds([line]) || !instanceBounds([match])) continue;
     fromCommon.push(line);
@@ -181,6 +186,7 @@ export {
   isInstanceFullyTimed,
   isSharedLine,
   keepsOwnTiming,
+  offsetBetweenInstanceLines,
   sharedInstancesInLineOrder,
   sharesTiming,
   timeRangeResolver,
