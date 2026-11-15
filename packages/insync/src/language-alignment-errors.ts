@@ -19,7 +19,7 @@ interface LanguageAlignmentErrorItem {
   errors: LanguageAlignmentError[];
 }
 
-function computeLanguageAlignmentErrors(line: LyricLine, splitChar: string): LanguageAlignmentError[] {
+function getLanguageAlignmentErrors(line: LyricLine, splitChar: string): LanguageAlignmentError[] {
   const errors: LanguageAlignmentError[] = [];
   const track = lineTransliteration(line);
   const transliteration = validateTransliterationAlignment(
@@ -43,11 +43,11 @@ function computeLanguageAlignmentErrors(line: LyricLine, splitChar: string): Lan
   return errors;
 }
 
-const getLanguageAlignmentErrors = memoBySplitCharacter(computeLanguageAlignmentErrors);
+const cachedLanguageAlignmentErrors = memoBySplitCharacter(getLanguageAlignmentErrors);
 
 function getLanguageAlignmentErrorItems(lines: LyricLine[], splitChar: string): LanguageAlignmentErrorItem[] {
   return lines.flatMap((line, lineIndex) => {
-    const errors = getLanguageAlignmentErrors(line, splitChar);
+    const errors = cachedLanguageAlignmentErrors(line, splitChar);
     return errors.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line, splitChar), errors }] : [];
   });
 }

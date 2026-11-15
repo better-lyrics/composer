@@ -63,7 +63,7 @@ function alignmentNeedsReview(track: LineLanguage | undefined, part: "main" | "b
   return status === "needs-review";
 }
 
-function computeLanguageReviewTracks(line: LyricLine, splitChar: string): LanguageReviewTrack[] {
+function getLanguageReviewTracks(line: LyricLine, splitChar: string): LanguageReviewTrack[] {
   const fingerprint = languageSourceFingerprint(splitChar, lineText(line, splitChar), backgroundText(line, splitChar));
   const tracks: LanguageReviewTrack[] = [];
 
@@ -90,11 +90,11 @@ function computeLanguageReviewTracks(line: LyricLine, splitChar: string): Langua
   return tracks;
 }
 
-const getLanguageReviewTracks = memoBySplitCharacter(computeLanguageReviewTracks);
+const cachedLanguageReviewTracks = memoBySplitCharacter(getLanguageReviewTracks);
 
 function getLanguageReviewItems(lines: LyricLine[], splitChar: string): LanguageReviewItem[] {
   return lines.flatMap((line, lineIndex) => {
-    const tracks = getLanguageReviewTracks(line, splitChar);
+    const tracks = cachedLanguageReviewTracks(line, splitChar);
     return tracks.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line, splitChar), tracks }] : [];
   });
 }
