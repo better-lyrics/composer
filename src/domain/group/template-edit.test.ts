@@ -1,16 +1,15 @@
 /**
  * @vitest-environment node
  */
-
+import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "insync/group";
 import { carryTemplateEdits } from "insync/group-template-edit";
-import type { LyricLine } from "insync/line";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
-import { describe, expect, it } from "vitest";
 import { withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const ownTiming: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
 const shared: LinkGroup = { ...ownTiming, sharesTiming: true };

@@ -1,7 +1,7 @@
-import type { LinkGroup } from "./group";
 import { carriedLine, sameSharedContent } from "./group-carried-line";
 import { sharesTiming } from "./group-shared-timing";
 import type { LineageCounterpart, LineagePair } from "./group-syllable-lineage";
+import type { LinkGroup } from "./group";
 import type { InstanceAnchors } from "./group-template-copy";
 import { instanceBounds } from "./instance-bounds";
 import { instanceKey } from "./instance-key";

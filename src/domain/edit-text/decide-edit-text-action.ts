@@ -1,11 +1,11 @@
-import { editTextWithRewrittenRows } from "insync/edit-text";
+import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
 import { diffEditTextChange, withMovedTextDetached } from "insync/edit-text-diff-edit-text";
+import { editTextWithRewrittenRows } from "insync/edit-text";
 import { type BackgroundRange, NO_RANGES, type ShownEditText } from "insync/edit-text-shown-row";
 import type { LinkGroup } from "insync/group";
 import type { InstanceAnchors } from "insync/group-template-copy";
 import { type CarriedSplit, carryTemplateEdits } from "insync/group-template-edit";
 import type { LyricLine } from "insync/line";
-import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
 import { textToLyricLines } from "@/utils/lyrics-text";
 
 // -- Types --------------------------------------------------------------------
@@ -103,11 +103,7 @@ function decideEditTextAction({
 
   if (diff.contentUpdates.length === 0) return { kind: "noop" };
   // The rows of other instances show the edit as the commit will write it.
-  const {
-    lines: finalLines,
-    splits,
-    detachedIds,
-  } = carryTemplateEdits({
+  const { lines: finalLines, splits, detachedIds } = carryTemplateEdits({
     before: lines,
     after: lyricLines,
     groups,

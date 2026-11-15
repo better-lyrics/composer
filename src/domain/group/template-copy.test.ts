@@ -1,20 +1,20 @@
-import type { LinkGroup } from "insync/group";
+import { describe, expect, it } from "vitest";
 import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
+import type { LinkGroup } from "insync/group";
 import { copyThroughTemplate, instanceAnchors } from "insync/group-template-copy";
 import { instanceBounds } from "insync/instance-bounds";
-import type { LyricLine } from "insync/line";
 import { withManualBackgroundWords, withSeededBackground } from "insync/line-background";
 import { bgBounds, mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "insync/line-drawn-track";
+import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
 import { withAgent } from "insync/line-track-writes";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
-import { describe, expect, it } from "vitest";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { type FieldPatch, withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // The copy as a commit runs it: the doc read from the lines before the edit, each instance at its anchor.
 function copiedThroughTemplate(before: LyricLine[], after: LyricLine[], groups: LinkGroup[], touched: string[]) {

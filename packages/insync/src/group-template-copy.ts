@@ -1,3 +1,7 @@
+import { sameSharedContent } from "./group-carried-line";
+import { withCopiesInSong } from "./group-copies-in-song";
+import { instanceSlotLine, templateBySlot } from "./group-flatten";
+import { invertedIds, withLineIds } from "./group-line-ids";
 import {
   type Instance,
   instanceSlots,
@@ -6,10 +10,6 @@ import {
   type LyricDoc,
   type TemplateLine,
 } from "./group";
-import { sameSharedContent } from "./group-carried-line";
-import { withCopiesInSong } from "./group-copies-in-song";
-import { instanceSlotLine, templateBySlot } from "./group-flatten";
-import { invertedIds, withLineIds } from "./group-line-ids";
 import { offsetTimingFields } from "./group-offset-timing";
 import { sharesTiming, timingChanged } from "./group-shared-timing";
 import { fittedAnchor, lineContent, toTemplateLine } from "./group-template-line";
