@@ -104,7 +104,7 @@ describe("shared timing in history writes", () => {
       expect(secondWordBegin("c1")).toBeCloseTo(40.5, 6);
     });
 
-    it("clamps a batch that would move a copy below zero instead of refusing it", () => {
+    it("keeps a batch that would move a copy below zero and moves that copy alone", () => {
       seed(createGroup({ id: "g1", sharesTiming: true }), [chorus(0, 10), chorus(1, 0.05)]);
       const before = useProjectStore.getState();
       const words = timedSyllables(mainTrack(before.lines[0])).map((word, i) =>
@@ -112,7 +112,7 @@ describe("shared timing in history writes", () => {
       );
       before.commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
       const [source, copy] = useProjectStore.getState().lines;
-      expect(timedSyllables(mainTrack(source))[0].begin).toBeCloseTo(9.95, 9);
+      expect(timedSyllables(mainTrack(source))[0].begin).toBeCloseTo(9.8, 9);
       expect(timedSyllables(mainTrack(copy))[0].begin).toBeCloseTo(0, 9);
       expect(useProjectStore.getState().history).not.toBe(before.history);
     });
