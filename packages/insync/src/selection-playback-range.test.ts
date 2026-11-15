@@ -1,4 +1,4 @@
-import { playbackRange } from "@/domain/selection/playback-range";
+import { playbackRange } from "./selection-playback-range";
 import { describe, expect, it } from "vitest";
 
 const selection = { begin: 10, end: 11 };

@@ -4,7 +4,7 @@ import { pieceOf } from "insync/language-pieces";
 import { timedTransliterationSlice } from "insync/language-transliteration-format";
 import { insertWord } from "@/domain/commands/word-structure";
 import { isAddressed } from "insync/selection-identity";
-import { overlapsLoopRegion } from "@/domain/selection/loop-region";
+import { overlapsLoopRegion } from "insync/selection-loop-region";
 import { addressOf } from "insync/selection-resolve";
 import { shouldRollNeighbour } from "insync/word-boundary";
 import { newWordId } from "insync/word-id";

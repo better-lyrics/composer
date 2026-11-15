@@ -1,4 +1,4 @@
-import { MIN_LOOP_REGION_SECONDS, loopRegionBetween, overlapsLoopRegion } from "@/domain/selection/loop-region";
+import { MIN_LOOP_REGION_SECONDS, loopRegionBetween, overlapsLoopRegion } from "./selection-loop-region";
 import { describe, expect, it } from "vitest";
 
 describe("loopRegionBetween", () => {

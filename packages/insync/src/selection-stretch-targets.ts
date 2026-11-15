@@ -1,10 +1,10 @@
-import type { TimeRange } from "insync/group-shared-timing";
-import type { LyricLine } from "insync/line";
-import { mainBounds } from "insync/line-bounds";
-import { drawnSyllables } from "insync/line-drawn-track";
-import { trackRole } from "insync/line-track";
-import { isLineSynced, isWordSynced } from "insync/line-predicates";
-import type { WordTiming } from "insync/word-timing";
+import type { TimeRange } from "./group-shared-timing";
+import type { LyricLine } from "./line";
+import { mainBounds } from "./line-bounds";
+import { drawnSyllables } from "./line-drawn-track";
+import { trackRole } from "./line-track";
+import { isLineSynced, isWordSynced } from "./line-predicates";
+import type { WordTiming } from "./word-timing";
 
 // -- Types ---------------------------------------------------------------------
 

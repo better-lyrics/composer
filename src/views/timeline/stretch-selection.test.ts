@@ -7,7 +7,7 @@ import type { TimeRange } from "insync/group-shared-timing";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { stretchSelections } from "@/domain/selection/stretch";
+import { stretchSelections } from "insync/selection-stretch";
 import { newWordId } from "insync/word-id";
 import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

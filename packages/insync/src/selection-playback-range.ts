@@ -1,5 +1,5 @@
-import { wholeSongRange } from "insync/group-shared-timing";
-import type { Bounds } from "insync/word-bounds";
+import { wholeSongRange } from "./group-shared-timing";
+import type { Bounds } from "./word-bounds";
 
 // -- Types --------------------------------------------------------------------
 

@@ -1,8 +1,8 @@
-import { mainWordsEdit, manualBackgroundWordEdit } from "insync/line-lane-word-edits";
-import { drawnSyllables } from "insync/line-drawn-track";
-import { mainTrack, trackRole } from "insync/line-track";
-import { withMainTrack, withTrackSpan } from "insync/line-track-writes";
-import type { LyricLine } from "insync/line";
+import { mainWordsEdit, manualBackgroundWordEdit } from "./line-lane-word-edits";
+import { drawnSyllables } from "./line-drawn-track";
+import { mainTrack, trackRole } from "./line-track";
+import { withMainTrack, withTrackSpan } from "./line-track-writes";
+import type { LyricLine } from "./line";
 import {
   STRETCH_EPS,
   type StretchClampOptions,
@@ -10,7 +10,7 @@ import {
   type StretchTargets,
   deriveBounds,
   resolveStretchTargets,
-} from "@/domain/selection/stretch-targets";
+} from "./selection-stretch-targets";
 
 // -- Types ---------------------------------------------------------------------
 

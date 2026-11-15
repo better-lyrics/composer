@@ -16,7 +16,7 @@ import {
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
-} from "@/domain/selection/nudge";
+} from "insync/selection-nudge";
 import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";

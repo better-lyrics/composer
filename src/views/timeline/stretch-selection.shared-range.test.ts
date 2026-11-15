@@ -3,7 +3,7 @@ import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
-import { stretchSelections } from "@/domain/selection/stretch";
+import { stretchSelections } from "insync/selection-stretch";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------

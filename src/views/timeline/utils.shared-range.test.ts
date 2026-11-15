@@ -7,7 +7,7 @@ import {
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
-} from "@/domain/selection/nudge";
+} from "insync/selection-nudge";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------

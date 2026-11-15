@@ -1,4 +1,4 @@
-import { loopRegionBetween } from "@/domain/selection/loop-region";
+import { loopRegionBetween } from "insync/selection-loop-region";
 import { snapPointTimes } from "@/domain/snap-point/model";
 import { gridPointAt, gridPointLabel } from "@/domain/tempo/grid-points";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";

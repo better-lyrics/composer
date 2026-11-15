@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import type { LoopRegion } from "@/domain/selection/loop-region";
+import type { LoopRegion } from "insync/selection-loop-region";
 import { sameAddress } from "insync/selection-identity";
 import type { SyllableAddress } from "insync/selection-model";
 import { liveAddresses, resolveAddress, type ResolvedAddress, toAddress } from "insync/selection-resolve";

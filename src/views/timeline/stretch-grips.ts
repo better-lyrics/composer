@@ -5,7 +5,7 @@ import {
   resolveStretchTargets,
   selectedFiniteWords,
   selectionExtremes,
-} from "@/domain/selection/stretch-targets";
+} from "insync/selection-stretch-targets";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------

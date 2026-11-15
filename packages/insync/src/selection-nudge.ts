@@ -1,13 +1,13 @@
-import type { TimeRange } from "insync/group-shared-timing";
-import { applyLineUpdates } from "insync/line-apply-line-updates";
-import { drawnSyllables } from "insync/line-drawn-track";
-import { mainWordsEdit, manualBackgroundWordEdit } from "insync/line-lane-word-edits";
-import type { LyricLine } from "insync/line";
-import { isLineSynced, isWordSynced } from "insync/line-predicates";
-import { isSpanTimed, mainTrack, trackRole } from "insync/line-track";
-import { withMainTrack, withTrackSpan } from "insync/line-track-writes";
-import type { Bounds } from "insync/word-bounds";
-import { expandSelectionToGroupmates } from "insync/word-syllable-groups";
+import type { TimeRange } from "./group-shared-timing";
+import { applyLineUpdates } from "./line-apply-line-updates";
+import { drawnSyllables } from "./line-drawn-track";
+import { mainWordsEdit, manualBackgroundWordEdit } from "./line-lane-word-edits";
+import type { LyricLine } from "./line";
+import { isLineSynced, isWordSynced } from "./line-predicates";
+import { isSpanTimed, mainTrack, trackRole } from "./line-track";
+import { withMainTrack, withTrackSpan } from "./line-track-writes";
+import type { Bounds } from "./word-bounds";
+import { expandSelectionToGroupmates } from "./word-syllable-groups";
 
 // -- Types --------------------------------------------------------------------
 

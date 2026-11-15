@@ -10,7 +10,7 @@ import {
   deriveBounds,
   isFiniteWord,
   resolveStretchTargets,
-} from "@/domain/selection/stretch-targets";
+} from "insync/selection-stretch-targets";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { getSplitCharacter } from "@/utils/split-character";
 
