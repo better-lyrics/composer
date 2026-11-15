@@ -2,7 +2,7 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { lineTranslations, withLanguages } from "@/domain/language/line-languages";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
-import type { LanguagePieces, LineLanguage } from "@/domain/language/model";
+import type { LanguagePieces, LineLanguage, LineTranslations } from "@/domain/language/model";
 import { keyedPieces } from "@/domain/language/pieces";
 import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
@@ -10,16 +10,15 @@ import { backgroundText, lineText } from "@/domain/line/text";
 import { roleWords } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { ownLanguage, readInlineAlternates } from "@/utils/lyrics-parsers/ttml-modelled";
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
-const XML_NS = "http://www.w3.org/XML/1998/namespace";
 const TTM_NS = "http://www.w3.org/ns/ttml#metadata";
 
 const directChildren = (element: Element, name: string) =>
   Array.from(element.children).filter((child) => child.localName === name);
 const role = (element: Element) => element.getAttribute("ttm:role") || element.getAttributeNS(TTM_NS, "role");
-const languageOf = (element: Element, fallback: string) =>
-  element.getAttribute("xml:lang") || element.getAttributeNS(XML_NS, "lang") || fallback;
+const languageOf = (element: Element, fallback: string) => ownLanguage(element) || fallback;
 
 function textWithoutBackground(element: Element): string {
   let text = "";
@@ -71,12 +70,7 @@ function mappedPiecesFromSpans(words: WordTiming[] | undefined, text: string, sp
   );
 }
 
-function parseTranslations(
-  root: Element,
-  lines: LyricLine[],
-  lineIndexByKey: Map<string, number>,
-  paragraphByKey: Map<string, Element>,
-) {
+function parseTranslations(root: Element, lines: LyricLine[], lineIndexByKey: Map<string, number>) {
   const translations = directChildren(root, "translations")[0];
   if (!translations) return;
   for (const container of directChildren(translations, "translation")) {
@@ -89,15 +83,7 @@ function parseTranslations(
       const sidecarBackground = Array.from(textElement.getElementsByTagName("span")).find(
         (span) => role(span) === "x-bg",
       );
-      let translatedBackground: string | undefined = sidecarBackground?.textContent?.trim() || undefined;
-      const paragraph = key ? paragraphByKey.get(key) : undefined;
-      if (!translatedBackground) {
-        for (const span of Array.from(paragraph?.getElementsByTagName("span") ?? [])) {
-          if (role(span) === "x-translation" && languageOf(span, "") === language) {
-            translatedBackground = span.textContent?.trim() || undefined;
-          }
-        }
-      }
+      const translatedBackground = sidecarBackground?.textContent?.trim() || undefined;
       const translation: LineLanguage = {
         language,
         main: { text: textWithoutBackground(textElement) },
@@ -113,6 +99,39 @@ function parseTranslations(
   }
 }
 
+// A romanization read from a file, its readings mapped onto syllables when timed spans spell them.
+function withTransliteration(
+  line: LyricLine,
+  language: string,
+  text: string,
+  romanBackground: string | undefined,
+  spans: { main: Element[]; bg: Element[] },
+): LyricLine {
+  const sourceBackground = backgroundText(line);
+  const mainPieces = mappedPiecesFromSpans(roleWords(line, "main"), text, spans.main);
+  const backgroundPieces = romanBackground
+    ? mappedPiecesFromSpans(roleWords(line, "bg"), romanBackground, spans.bg)
+    : null;
+  const backgroundSegments =
+    romanBackground && sourceBackground ? wholeLineSegments(sourceBackground, romanBackground) : undefined;
+  const track: LineLanguage = {
+    language,
+    main: { text, segments: wholeLineSegments(lineText(line), text) },
+    ...(romanBackground !== undefined && {
+      bg: { text: romanBackground, ...(backgroundSegments && { segments: backgroundSegments }) },
+    }),
+    origin: "import",
+    sourceFingerprint: languageSourceFingerprint(lineText(line), sourceBackground),
+  };
+  const mapped: LineLanguage = {
+    ...track,
+    main: { ...track.main, ...(mainPieces && { pieces: mainPieces }) },
+    ...(track.bg && { bg: { ...track.bg, ...(backgroundPieces && { pieces: backgroundPieces }) } }),
+  };
+  const mappedLine = { ...line, ...withLanguages(line, { transliteration: mapped }) };
+  return { ...mappedLine, ...alignTrackToLine(mappedLine, track) };
+}
+
 function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey: Map<string, number>) {
   const transliterations = directChildren(root, "transliterations")[0];
   if (!transliterations) return;
@@ -122,51 +141,65 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
       const key = textElement.getAttribute("for");
       const index = key ? lineIndexByKey.get(key) : undefined;
       if (index === undefined) continue;
-      const line = lines[index];
       const background =
         Array.from(textElement.getElementsByTagName("span")).find((span) => role(span) === "x-bg") ?? null;
       const text = decodeTransliterationText(textWithoutBackground(textElement));
       const romanBackground = background
         ? decodeTransliterationText(background.textContent ?? "") || undefined
         : undefined;
-      const sourceBackground = backgroundText(line);
-      const mainPieces = mappedPiecesFromSpans(roleWords(line, "main"), text, directTimedSpans(textElement));
-      const backgroundPieces = romanBackground
-        ? mappedPiecesFromSpans(roleWords(line, "bg"), romanBackground, background ? directTimedSpans(background) : [])
-        : null;
-      const backgroundSegments =
-        romanBackground && sourceBackground ? wholeLineSegments(sourceBackground, romanBackground) : undefined;
-      const track: LineLanguage = {
-        language,
-        main: { text, segments: wholeLineSegments(lineText(line), text) },
-        ...(romanBackground !== undefined && {
-          bg: { text: romanBackground, ...(backgroundSegments && { segments: backgroundSegments }) },
-        }),
-        origin: "import",
-        sourceFingerprint: languageSourceFingerprint(lineText(line), sourceBackground),
-      };
-      const mapped: LineLanguage = {
-        ...track,
-        main: { ...track.main, ...(mainPieces && { pieces: mainPieces }) },
-        ...(track.bg && { bg: { ...track.bg, ...(backgroundPieces && { pieces: backgroundPieces }) } }),
-      };
-      const mappedLine = { ...line, ...withLanguages(line, { transliteration: mapped }) };
-      lines[index] = { ...mappedLine, ...alignTrackToLine(mappedLine, track) };
+      lines[index] = withTransliteration(lines[index], language, text, romanBackground, {
+        main: directTimedSpans(textElement),
+        bg: background ? directTimedSpans(background) : [],
+      });
     }
   }
 }
 
-function parseTtmlAlternates(
-  doc: Document,
-  lines: LyricLine[],
-  lineIndexByKey: Map<string, number>,
-  paragraphByKey: Map<string, Element>,
-): void {
+// -- Inline -------------------------------------------------------------------
+
+// The text of each inline span of a role the reader takes from a container, by language.
+function inlineTexts(container: Element | null, wantedRole: string): Map<string, string> {
+  const texts = new Map<string, string>();
+  for (const [span, language] of container ? readInlineAlternates(container) : []) {
+    const text = span.textContent?.trim();
+    if (role(span) === wantedRole && text) texts.set(language, text);
+  }
+  return texts;
+}
+
+// Inline translations and romanization of a `<p>` and its x-bg container; a `<head>` entry read later wins.
+function withInlineAlternates(line: LyricLine, paragraph: Element, background: Element | null): LyricLine {
+  const main = inlineTexts(paragraph, "x-translation");
+  const bg = inlineTexts(background, "x-translation");
+  const translations: LineTranslations = {};
+  for (const language of new Set([...main.keys(), ...bg.keys()])) {
+    const bgText = bg.get(language);
+    translations[language] = {
+      language,
+      main: { text: main.get(language) ?? "" },
+      ...(bgText !== undefined && { bg: { text: bgText } }),
+      origin: "import",
+      sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
+    };
+  }
+  const withTranslations = main.size + bg.size > 0 ? { ...line, ...withLanguages(line, { translations }) } : line;
+  const romanMain = inlineTexts(paragraph, "x-roman");
+  const romanBg = inlineTexts(background, "x-roman");
+  const [romanLanguage] = [...romanMain.keys(), ...romanBg.keys()];
+  if (romanLanguage === undefined) return withTranslations;
+  const text = decodeTransliterationText(romanMain.get(romanLanguage) ?? "");
+  const romanBackground = romanBg.has(romanLanguage)
+    ? decodeTransliterationText(romanBg.get(romanLanguage) ?? "") || undefined
+    : undefined;
+  return withTransliteration(withTranslations, romanLanguage, text, romanBackground, { main: [], bg: [] });
+}
+
+function parseTtmlAlternates(doc: Document, lines: LyricLine[], lineIndexByKey: Map<string, number>): void {
   const root =
     doc.getElementsByTagName("iTunesMetadata")[0] ?? doc.getElementsByTagNameNS(ITUNES_NS, "iTunesMetadata")[0];
   if (!root) return;
-  parseTranslations(root, lines, lineIndexByKey, paragraphByKey);
+  parseTranslations(root, lines, lineIndexByKey);
   parseTransliterations(root, lines, lineIndexByKey);
 }
 
-export { parseTtmlAlternates };
+export { parseTtmlAlternates, withInlineAlternates };

@@ -1,8 +1,16 @@
 import { type DocPassthrough, isEmptyPassthrough, type Passthrough } from "insync/passthrough";
-import type { XmlAttr } from "insync/xml-node";
+import type { XmlAttr, XmlElement } from "insync/xml-node";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { withLinePassthrough } from "@/domain/line/passthrough";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import {
+  type AnchorOf,
+  noAnchors,
+  rootAnchors,
+  sectionAnchors,
+  trackAnchors,
+} from "@/utils/lyrics-parsers/ttml-anchors";
 import { ITUNES_NS, isModelledAttribute, modelledChildTest, type TtmlNode } from "@/utils/lyrics-parsers/ttml-modelled";
 import { xmlAttrsFromDom, xmlChildrenFromDom, xmlElementFromDom } from "@/utils/lyrics-parsers/xml-node-from-dom";
 import { backgroundEnvelope, capturedTimes, lineEnvelope } from "@/utils/ttml-kept-times";
@@ -14,14 +22,35 @@ function withoutEmpty(kept: Passthrough): Passthrough | undefined {
   return isEmptyPassthrough(kept) ? undefined : kept;
 }
 
-// The unmodelled attributes and children of one node, plus anything the caller adds.
-function nodePassthrough(node: TtmlNode, element: Element, extra: Passthrough = {}): Passthrough | undefined {
-  const attrs = xmlAttrsFromDom(element, (attr) => !isModelledAttribute(node, attr));
+// The unmodelled children of one node, and the anchor each followed when any came before an anchor.
+function keptChildren(
+  node: TtmlNode,
+  element: Element,
+  anchorOf: AnchorOf,
+): Pick<Passthrough, "elements" | "elementsAfter"> {
   const isModelled = modelledChildTest(node, element);
-  const elements = Array.from(element.children)
-    .filter((child) => !isModelled(child))
-    .map(xmlElementFromDom);
-  return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...(elements.length > 0 && { elements }), ...extra });
+  const elements: XmlElement[] = [];
+  const elementsAfter: (string | null)[] = [];
+  let last: string | null = null;
+  for (const child of element.childNodes) {
+    if (child.nodeType === Node.ELEMENT_NODE && !isModelled(child as Element)) {
+      elements.push(xmlElementFromDom(child as Element));
+      elementsAfter.push(last);
+    } else last = anchorOf(child) ?? last;
+  }
+  if (elements.length === 0) return {};
+  return { elements, ...(elementsAfter.some((anchor) => anchor !== last) && { elementsAfter }) };
+}
+
+// The unmodelled attributes and children of one node, plus anything the caller adds.
+function nodePassthrough(
+  node: TtmlNode,
+  element: Element,
+  extra: Passthrough = {},
+  anchorOf: AnchorOf = noAnchors,
+): Passthrough | undefined {
+  const attrs = xmlAttrsFromDom(element, (attr) => !isModelledAttribute(node, attr));
+  return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...keptChildren(node, element, anchorOf), ...extra });
 }
 
 // Several elements written as one, such as every `<metadata>` of a head; the first value of an attribute wins.
@@ -39,18 +68,18 @@ const childrenNamed = (parent: Element | undefined, name: string) =>
 
 // -- Document -----------------------------------------------------------------
 
-function docPassthrough(doc: Document): DocPassthrough {
+function docPassthrough(doc: Document, lineByParagraph: ReadonlyMap<Element, LyricLine>): DocPassthrough {
   const root = doc.documentElement;
   const [head] = childrenNamed(root, "head");
   const [body] = childrenNamed(root, "body");
   const iTunesMetadata =
     doc.getElementsByTagName("iTunesMetadata")[0] ?? doc.getElementsByTagNameNS(ITUNES_NS, "iTunesMetadata")[0];
   const captured: [keyof DocPassthrough, Passthrough | undefined][] = [
-    ["tt", nodePassthrough("tt", root)],
+    ["tt", nodePassthrough("tt", root, {}, rootAnchors)],
     ["head", head && nodePassthrough("head", head)],
     ["metadata", mergedPassthrough("metadata", childrenNamed(head, "metadata"))],
     ["iTunesMetadata", iTunesMetadata && nodePassthrough("iTunesMetadata", iTunesMetadata)],
-    ["body", body && nodePassthrough("body", body)],
+    ["body", body && nodePassthrough("body", body, {}, sectionAnchors(lineByParagraph))],
   ];
   return Object.fromEntries(captured.filter(([, kept]) => kept !== undefined));
 }
@@ -77,10 +106,20 @@ const withTimes = (times: Passthrough["times"]) => (times ? { times } : {});
 
 // A `<p>` and its x-bg container: unmodelled data, and their own times when the writer would not derive them.
 function withParagraphCapture(line: LyricLine, paragraph: Element, background: Element | null): LyricLine {
-  const kept = nodePassthrough("p", paragraph, withTimes(capturedTimes(paragraph, lineEnvelope(line), true)));
+  const kept = nodePassthrough(
+    "p",
+    paragraph,
+    withTimes(capturedTimes(paragraph, lineEnvelope(line), true)),
+    trackAnchors(paragraph, timedSyllables(mainTrack(line)), true),
+  );
   const keptBackground =
     background &&
-    nodePassthrough("background", background, withTimes(capturedTimes(background, backgroundEnvelope(line), false)));
+    nodePassthrough(
+      "background",
+      background,
+      withTimes(capturedTimes(background, backgroundEnvelope(line), false)),
+      trackAnchors(background, timedSyllables(backgroundTrack(line)), false),
+    );
   if (!kept && !keptBackground) return line;
   return withLinePassthrough(line, {
     ...(kept && { line: kept }),

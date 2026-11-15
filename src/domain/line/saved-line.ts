@@ -1,5 +1,5 @@
-import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import { isEmptyPassthrough } from "insync/passthrough";
+import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import { msFromSeconds, secondsFromMs } from "insync/time";
 import { languagesFromSaved, savedLanguages } from "@/domain/language/saved-languages";
 import { groupFieldsOf } from "@/domain/line/group-fields";
@@ -12,13 +12,14 @@ import type {
   TrackTiming,
   UntimedSyllable,
 } from "@/domain/line/model";
+import { placesKeptElements } from "@/domain/line/passthrough";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 
 // -- Types --------------------------------------------------------------------
 
 interface SavedLineOptions {
-  // Records keep syllable and track ids; links leave them out.
+  // Records keep syllable and track ids; links leave them out unless kept TTML elements are placed by them.
   withIds: boolean;
 }
 
@@ -59,7 +60,7 @@ function savedLine(line: LyricLine, options: SavedLineOptions): SavedLine {
     line.languages && savedLanguages(line.languages, { main: main.syllables, bg: background?.syllables ?? [] });
   return {
     id: line.id,
-    tracks: line.tracks.map((track) => savedTrack(track, options)),
+    tracks: line.tracks.map((track) => savedTrack(track, placesKeptElements(line) ? { withIds: true } : options)),
     ...(languages && { languages }),
     ...groupFieldsOf(line),
     ...(!isEmptyPassthrough(line.passthrough) && { passthrough: line.passthrough }),

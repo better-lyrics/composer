@@ -11,12 +11,13 @@ import { YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { type TimingGranularity, timingGranularityOf } from "@/domain/project/timing-granularity";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
+import { BODY_ANCHOR, HEAD_ANCHOR } from "@/utils/lyrics-parsers/ttml-anchors";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
 import { bodyLines } from "@/utils/ttml-body";
 import { headLines } from "@/utils/ttml-head";
 import { keptPrefixDeclarations } from "@/utils/ttml-kept-prefixes";
 import { keyedExportLines } from "@/utils/ttml-line-keys";
-import { keptAttributes, keptElementLines } from "@/utils/ttml-passthrough-write";
+import { keptAmongLines, keptAttributes } from "@/utils/ttml-passthrough-write";
 
 // -- Generator ----------------------------------------------------------------
 
@@ -64,11 +65,13 @@ function generateTTML({
     `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${ITUNES_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media"${langAttr} itunes:timing="${timingValue}" composer:timing="${timingValue}"${keptAttributes(passthrough?.tt)}${keptPrefixDeclarations({ passthrough, parts: songParts, agents, lines })}>`,
   );
 
-  parts.push(
-    ...headLines({ metadata, agents, groups, keyedLines, writesWords, youtubeVideoId, passthrough }, ind),
-    ...bodyLines({ lines, keyById, writesWords, duration, parts: songParts, passthrough }, ind),
-  );
-  parts.push(...keptElementLines(passthrough?.tt, ind(1)), "</tt>");
+  const head = headLines({ metadata, agents, groups, keyedLines, writesWords, youtubeVideoId, passthrough }, ind);
+  const body = bodyLines({ lines, keyById, writesWords, duration, parts: songParts, passthrough }, ind);
+  const units = [
+    { out: head, anchors: [HEAD_ANCHOR] },
+    { out: body, anchors: [BODY_ANCHOR] },
+  ];
+  parts.push(...keptAmongLines(units, passthrough?.tt, ind(1), [HEAD_ANCHOR, BODY_ANCHOR]), "</tt>");
 
   return parts.join(nl);
 }

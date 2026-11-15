@@ -1,7 +1,8 @@
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
-import { UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
+import { LYRIC_ROLES, UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
 import { syllableCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
+import { parseXmlDocument, type XmlParseResult } from "@/utils/xml-document";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -39,6 +40,13 @@ function declareMissingNamespaces(content: string): string {
   const additions = missing.map((prefix) => ` xmlns:${prefix}="${UNBOUND_NAMESPACE_PREFIX}${prefix}"`).join("");
   const patchedRootTag = rootTag.replace(/>$/, `${additions}>`);
   return content.replace(rootTag, patchedRootTag);
+}
+
+// The document the reader reads; one pasted with JSON escapes is unescaped only when it does not parse as written.
+function parseTtmlDocument(content: string): XmlParseResult {
+  const asWritten = parseXmlDocument(declareMissingNamespaces(content));
+  if (asWritten.ok) return asWritten;
+  return parseXmlDocument(declareMissingNamespaces(content.replace(/\\"/g, '"').replace(/\\n/g, "\n")));
 }
 
 function parseTtmlTimestamp(timestamp: string): number {
@@ -90,8 +98,8 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
       const el = node as Element;
       const role = el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
 
-      // Skip x-bg containers (handled separately)
-      if (role === "x-bg" || excludeContainer?.contains(el)) continue;
+      // Skip x-bg containers (handled separately), translations and romanization
+      if (LYRIC_ROLES.has(role ?? "") || excludeContainer?.contains(el)) continue;
 
       // Handle span with timing
       if (el.tagName.toLowerCase() === "span" && el.hasAttribute("begin")) {
@@ -121,4 +129,4 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
 
 // -- Exports ------------------------------------------------------------------
 
-export { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp, ROOT_TT_TAG_REGEX };
+export { extractTimedWords, parseTtmlDocument, parseTtmlTimestamp, ROOT_TT_TAG_REGEX };

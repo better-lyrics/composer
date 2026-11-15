@@ -18,4 +18,5 @@ function parseXmlDocument(xml: string): XmlParseResult {
   return parseError ? { ok: false, message: firstLineOf(parseError) } : { ok: true, doc };
 }
 
+export type { XmlParseResult };
 export { parseXmlDocument };
