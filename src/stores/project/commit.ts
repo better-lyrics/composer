@@ -70,13 +70,15 @@ function withPartsSettled(before: LyricRoot, after: LyricRoot): LyricRoot {
   return parts === after.parts ? after : { ...after, parts };
 }
 
-// A command that writes back the values already there is no step: undo would stop on it and change nothing.
-function changesNothing(before: LyricRoot, after: LyricRoot): boolean {
+// A command that writes back the values already there is no step: undo would stop on it and change nothing. The fold
+// builds a new doc for any rewritten line, so the doc is compared by value, and only once every line matched.
+function changesNothing(before: LyricRoot, after: LyricRoot, beforeDoc: LyricDoc, afterDoc: LyricDoc): boolean {
   if (after.groups !== before.groups || after.agents !== before.agents || after.parts !== before.parts) return false;
   if (after.passthrough !== before.passthrough || after.lines.length !== before.lines.length) return false;
-  return after.lines.every(
+  const sameLines = after.lines.every(
     (line, index) => line === before.lines[index] || isStructurallyEqual(line, before.lines[index]),
   );
+  return sameLines && isStructurallyEqual(afterDoc, beforeDoc);
 }
 
 interface Written {
@@ -181,7 +183,7 @@ function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitM
           splitChar: ctx.splitChar,
         });
   const parted = withPartsSettled(before, written.root);
-  if (changesNothing(before, parted)) return { ...nothing, outcome };
+  if (changesNothing(before, parted, doc, written.doc)) return { ...nothing, outcome };
   return {
     patch: writeRoot(state, { root: parted, doc: written.doc }, command, mode),
     outcome,
