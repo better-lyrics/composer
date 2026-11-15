@@ -15,8 +15,8 @@ function harborLines(secondWordBegin = 3): LyricLine[] {
       id: "harbor-1",
       text: "paper lanterns glow",
       words: [
-        { text: "paper ", begin: 2, end: 3 },
-        { text: "lanterns ", begin: secondWordBegin, end: 4 },
+        { text: "paper", sep: " ", begin: 2, end: 3 },
+        { text: "lanterns", sep: " ", begin: secondWordBegin, end: 4 },
         { text: "glow", begin: 4, end: 6 },
       ],
     }),

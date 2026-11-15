@@ -16,7 +16,7 @@ const START_X = 100;
 const chorus = createLine({
   id: "c0",
   text: "go now",
-  words: [createWord({ text: "go ", begin: 10, end: 11 }), createWord({ text: "now", begin: 11, end: 12 })],
+  words: [createWord({ text: "go", sep: " ", begin: 10, end: 11 }), createWord({ text: "now", begin: 11, end: 12 })],
   groupId: "g1",
   instanceIdx: 0,
   templateLineIdx: 0,

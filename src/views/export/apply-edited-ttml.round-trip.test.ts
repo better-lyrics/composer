@@ -126,7 +126,7 @@ describe("applyEditedTtml · whether the export holds the project", () => {
           createLine({
             text: "End now",
             words: [
-              { text: "End ", begin: 1, end: 1.5 },
+              { text: "End", sep: " ", begin: 1, end: 1.5 },
               { text: "now", begin: 1.5, end: 2 },
             ],
           }),
@@ -135,7 +135,7 @@ describe("applyEditedTtml · whether the export holds the project", () => {
       const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">now<", ">no|w<");
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
       const applied = useProjectStore.getState().lines;
-      expect(applied[0]?.words?.map((word) => word.text)).toEqual(["End ", "no|w"]);
+      expect(applied[0]?.words?.map((word) => word.text + word.sep)).toEqual(["End ", "no|w"]);
 
       const again = generateProjectTtml(useProjectStore.getState(), 0);
       expect(applyEditedTtml(again, 0)).toEqual({ status: "export-only", reason: "not-synced" });

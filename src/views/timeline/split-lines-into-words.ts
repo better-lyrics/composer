@@ -21,7 +21,7 @@ type SplitTarget = Pick<WordSelection, "lineId" | "type">;
 
 function splitMultiWordWord(word: WordTiming): WordTiming[] {
   const asLine: { text: string; begin: number; end: number; words?: WordTiming[] } = {
-    text: word.text.trimEnd(),
+    text: word.text,
     begin: word.begin,
     end: word.end,
   };
@@ -32,7 +32,7 @@ function splitMultiWordWord(word: WordTiming): WordTiming[] {
   return parts.map((part, index) => ({
     ...base,
     ...part,
-    text: index === lastIndex && word.text.endsWith(" ") ? `${part.text} ` : part.text,
+    sep: index === lastIndex ? (word.sep.endsWith(" ") ? " " : "") : part.sep,
   }));
 }
 

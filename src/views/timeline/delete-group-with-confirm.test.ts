@@ -28,9 +28,9 @@ function seedChorusGroup() {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 30, end: 30.4 },
-          { text: "love ", begin: 30.4, end: 30.8 },
-          { text: "you", begin: 30.8, end: 31.2 },
+          { text: "I", sep: " ", begin: 30, end: 30.4 },
+          { text: "love", sep: " ", begin: 30.4, end: 30.8 },
+          { text: "you", sep: "", begin: 30.8, end: 31.2 },
         ],
       },
       {
@@ -41,9 +41,9 @@ function seedChorusGroup() {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 60, end: 60.4 },
-          { text: "love ", begin: 60.4, end: 60.8 },
-          { text: "you", begin: 60.8, end: 61.2 },
+          { text: "I", sep: " ", begin: 60, end: 60.4 },
+          { text: "love", sep: " ", begin: 60.4, end: 60.8 },
+          { text: "you", sep: "", begin: 60.8, end: 61.2 },
         ],
       },
     ],

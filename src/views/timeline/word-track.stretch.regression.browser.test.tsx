@@ -17,8 +17,8 @@ import { describe, expect, it } from "vitest";
 describe("WordTrack selection stretch regressions", () => {
   it("regression: keeps a mid-drag undo when the drag continues", async () => {
     const sA = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks, lineId } = await renderStretchTrack(sA, [0, 1]);
@@ -45,8 +45,8 @@ describe("WordTrack selection stretch regressions", () => {
 
   it("regression: a re-entrant drag baselines off committed state, not a transient", async () => {
     const l0 = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks } = await renderStretchTrack(l0, [0, 1]);
@@ -75,8 +75,8 @@ describe("WordTrack selection stretch regressions", () => {
 
   it("regression: follows a timeline scroll that happens mid-drag", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     useTimelineStore.setState({ scrollLeft: 0 });

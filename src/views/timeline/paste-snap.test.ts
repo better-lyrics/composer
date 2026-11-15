@@ -18,7 +18,7 @@ const clip = (...words: [number, number][]): ClipboardData => ({
 const wordTarget = { lineIndex: 0, lane: "word" as const, bypass: false };
 
 function seed(targetWords: [number, number][], otherWords: [number, number][] = [], playhead = 0) {
-  const words = (pairs: [number, number][]) => pairs.map(([begin, end]) => ({ text: "w", begin, end }));
+  const words = (pairs: [number, number][]) => pairs.map(([begin, end]) => ({ text: "w", sep: "", begin, end }));
   useProjectStore.setState({
     lines: [
       createLine({

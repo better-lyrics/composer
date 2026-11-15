@@ -8,7 +8,8 @@ const OPTIONS = { mergeStandaloneLines: false, preserveBrackets: false };
 function wordsAt(texts: string[], begin: number, end: number): WordTiming[] {
   const step = (end - begin) / texts.length;
   return texts.map((text, i) => ({
-    text: i < texts.length - 1 ? `${text} ` : text,
+    text,
+    sep: i < texts.length - 1 ? " " : "",
     begin: begin + i * step,
     end: begin + (i + 1) * step,
   }));

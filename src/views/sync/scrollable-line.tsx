@@ -99,7 +99,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 }) => {
   // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const wordTexts = useMemo(
-    () => displayWordTexts ?? (words?.length ? words.map((w) => w.text) : splitIntoWords(text)),
+    () => displayWordTexts ?? (words?.length ? words.map((w) => w.text + w.sep) : splitIntoWords(text)),
     [displayWordTexts, text, words, splitCharacter],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
@@ -107,7 +107,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     () =>
       displayBackgroundWordTexts ??
       (backgroundWords?.length
-        ? backgroundWords.map((w) => w.text)
+        ? backgroundWords.map((w) => w.text + w.sep)
         : (displayBackgroundText ?? backgroundText)
           ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "")
           : []),

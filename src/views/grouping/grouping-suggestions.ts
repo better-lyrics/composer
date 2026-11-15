@@ -22,7 +22,7 @@ function sameWordTexts(a: readonly WordTiming[] | undefined, b: readonly WordTim
   if (a === b) return true;
   const length = a?.length ?? 0;
   if (length !== (b?.length ?? 0)) return false;
-  for (let i = 0; i < length; i++) if (a?.[i].text !== b?.[i].text) return false;
+  for (let i = 0; i < length; i++) if (a?.[i].text !== b?.[i].text || a?.[i].sep !== b?.[i].sep) return false;
   return true;
 }
 

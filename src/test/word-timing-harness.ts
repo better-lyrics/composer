@@ -39,8 +39,8 @@ function makeLine() {
   return createLine({
     text: "a b c",
     words: [
-      { text: "a ", begin: 0, end: 1 },
-      { text: "b ", begin: 1, end: 2 },
+      { text: "a", sep: " ", begin: 0, end: 1 },
+      { text: "b", sep: " ", begin: 1, end: 2 },
       { text: "c", begin: 2, end: 3 },
     ],
   });

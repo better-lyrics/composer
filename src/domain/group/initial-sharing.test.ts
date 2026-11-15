@@ -15,7 +15,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -26,7 +26,7 @@ const shifted = (instanceIdx: number, begin: number, secondWordShift = 0) =>
     id: `c${instanceIdx}-0`,
     text: "I want",
     words: [
-      { text: "I ", begin, end: begin + 0.4 },
+      { text: "I", sep: " ", begin, end: begin + 0.4 },
       { text: "want", begin: begin + 0.5 + secondWordShift, end: begin + 1 + secondWordShift },
     ],
     groupId: "g1",
@@ -78,7 +78,7 @@ describe("initialGroupSharing", () => {
     const partial = createLine({
       id: "c0-0",
       text: "I want",
-      words: [{ text: "I ", begin: 1, end: 1.4 }],
+      words: [{ text: "I", sep: " ", begin: 1, end: 1.4 }],
       groupId: "g1",
       instanceIdx: 0,
       templateLineIdx: 0,
@@ -162,8 +162,8 @@ describe("initialGroupSharing", () => {
           id: `h${instanceIdx}`,
           text: "I want you",
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
-            { text: "want ", begin: begin + (instanceIdx === 0 ? 0.5 : 0.8), end: begin + 1.2 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
+            { text: "want", sep: " ", begin: begin + (instanceIdx === 0 ? 0.5 : 0.8), end: begin + 1.2 },
           ],
           groupId: "g1",
           instanceIdx,

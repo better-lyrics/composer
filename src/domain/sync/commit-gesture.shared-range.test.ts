@@ -1,10 +1,11 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
-const word = (text: string, begin: number, end: number) => ({ text, begin, end });
+const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const sharing = [createGroup({ id: "g1", sharesTiming: true })];
 
 function chorusLine(id: string, instanceIdx: number, timing: Partial<LyricLine> = {}): LyricLine {

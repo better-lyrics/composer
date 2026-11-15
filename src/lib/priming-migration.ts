@@ -16,7 +16,7 @@ import {
   repairOldProjectStems,
 } from "@/lib/project-stems";
 import type { SavedProjectStems } from "@/domain/stems/saved-stems";
-import type { SavedProject } from "@/lib/saved-project";
+import { type SavedProject, linesFromSaved, savedLines } from "@/lib/saved-project";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -80,10 +80,10 @@ function shiftSavedTimings(project: SavedProject, deltaSec: number): void {
   if (deltaSec === 0) return;
   const grid = readBeatGrid(project.beatGrid);
   const shifted = shiftedSongTimings(
-    { lines: project.lines ?? [], customSnapPoints: project.customSnapPoints ?? [], beatGrid: grid },
+    { lines: linesFromSaved(project.lines ?? []), customSnapPoints: project.customSnapPoints ?? [], beatGrid: grid },
     deltaSec,
   );
-  project.lines = shifted.lines;
+  project.lines = savedLines(shifted.lines);
   if (project.customSnapPoints) project.customSnapPoints = shifted.customSnapPoints;
   if (grid) project.beatGrid = shifted.beatGrid;
 }

@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText, withDerivedText, wordContentSpans } from "@/domain/line/reconstruct-text";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // -- Helpers ------------------------------------------------------------------
 
 function w(text: string): WordTiming {
-  return { text, begin: 0, end: 1 };
+  return wordFromSpaced({ text, begin: 0, end: 1 });
 }
 
 // -- reconstructLineText ------------------------------------------------------

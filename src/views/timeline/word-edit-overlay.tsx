@@ -80,10 +80,9 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
     (value: string) => {
       if (!line || !wordsArray || !word) return;
       const trimmed = value.trim();
-      if (trimmed && trimmed !== word.text.trimEnd()) {
+      if (trimmed && trimmed !== word.text) {
         const updatedWords = [...wordsArray];
-        const hadTrailingSpace = word.text.endsWith(" ");
-        updatedWords[wordIndex] = { ...word, text: hadTrailingSpace ? `${trimmed} ` : trimmed };
+        updatedWords[wordIndex] = { ...word, text: trimmed, sep: word.sep.endsWith(" ") ? " " : "" };
         updateLineWithHistory(
           lineId,
           type === "word" ? effectiveWordTextEdit(line, updatedWords) : manualBackgroundWordEdit(updatedWords),
@@ -122,7 +121,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
         ref={inputRef}
         type="text"
         aria-label="Edit word"
-        defaultValue={word.text.trimEnd()}
+        defaultValue={word.text}
         onKeyDown={handleKeyDown}
         onBlur={commitWordEdit}
         className="fixed layer-floating px-2 py-1.5 text-sm text-composer-text bg-composer-bg border border-composer-border rounded-lg cursor-text focus:outline-none focus:border-composer-accent"

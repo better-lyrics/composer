@@ -1,8 +1,9 @@
 import { clampBoundaryTime, isBoundaryFlush } from "@/domain/word/boundary";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 
-const w = (text: string, begin: number, end: number): WordTiming => ({ text, begin, end });
+const w = (text: string, begin: number, end: number): WordTiming => wordFromSpaced({ text, begin, end });
 
 const conjoined: WordTiming[] = [w("Hel", 0, 0.4), w("lo ", 0.4, 0.9), w("world", 0.9, 1.6)];
 const gapped: WordTiming[] = [w("Hel", 0, 0.4), w("lo ", 0.6, 0.9), w("world", 1.2, 1.6)];

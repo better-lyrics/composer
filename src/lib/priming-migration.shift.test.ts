@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
-import type { WordTiming } from "@/domain/word/timing";
+import type { SpacedWord } from "@/domain/word/spaced-words";
 import { primingMigrationShift, shiftSavedTimings } from "@/lib/priming-migration";
 import { storedProject } from "@/test/projects";
 
@@ -56,7 +56,7 @@ describe("shiftSavedTimings", () => {
     shiftSavedTimings(project, P);
 
     const line = project.lines[0] as { begin: number; end: number };
-    const word = project.lines[1] as { words: WordTiming[]; backgroundWords: WordTiming[] };
+    const word = project.lines[1] as { words: SpacedWord[]; backgroundWords: SpacedWord[] };
     expect(line.begin).toBeCloseTo(1 + P, 9);
     expect(line.end).toBeCloseTo(2 + P, 9);
     expect(word.words[0].begin).toBeCloseTo(3 + P, 9);

@@ -49,7 +49,7 @@ function chorusSong(): EditedTtmlProject {
         text: "Don't stop|ping",
         agentId: "v2",
         words: [
-          { text: "Don't ", begin: 2.5, end: 3, explicit: true },
+          { text: "Don't", sep: " ", begin: 2.5, end: 3, explicit: true },
           { text: "stop", begin: 3, end: 3.4, syllableGroupId: "s1" },
           { text: "ping", begin: 3.4, end: 4.0004, syllableGroupId: "s1" },
         ],
@@ -92,7 +92,7 @@ function chorusSong(): EditedTtmlProject {
         id: "outro",
         text: "End now",
         words: [
-          { text: "End ", begin: 8, end: 8.5 },
+          { text: "End", sep: " ", begin: 8, end: 8.5 },
           { text: "now", begin: 8.5, end: 9 },
         ],
       }),

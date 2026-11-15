@@ -24,8 +24,8 @@ function wordLine(id: string, agentId = "v1"): LyricLine {
     agentId,
     text: "Is it so",
     words: [
-      { text: "Is ", begin: 34.059, end: 34.189 },
-      { text: "it ", begin: 34.189, end: 34.309 },
+      { text: "Is", sep: " ", begin: 34.059, end: 34.189 },
+      { text: "it", sep: " ", begin: 34.189, end: 34.309 },
       { text: "so", begin: 34.309, end: 34.413 },
     ],
   });
@@ -72,7 +72,7 @@ describe("writeLrc", () => {
   it("round-trips word timing through the LRC parser", () => {
     const parsed = parseLrc(writeLrc(doc([wordLine("a")])));
 
-    expect(parsed.lines[0].words?.map((word) => [word.text, word.begin, word.end])).toEqual([
+    expect(parsed.lines[0].words?.map((word) => [word.text + word.sep, word.begin, word.end])).toEqual([
       ["Is ", 34.06, 34.19],
       ["it ", 34.19, 34.31],
       ["so", 34.31, 34.41],
@@ -106,7 +106,7 @@ describe("writeLrc", () => {
         words: [{ text: "Main", begin: 1, end: 2 }],
         backgroundText: "oh yeah",
         backgroundWords: [
-          { text: "oh ", begin: 2, end: 2.5 },
+          { text: "oh", sep: " ", begin: 2, end: 2.5 },
           { text: "yeah", begin: 2.5, end: 3 },
         ],
       });
@@ -118,7 +118,7 @@ describe("writeLrc", () => {
       const line = createLine({
         text: "I'm here",
         words: [
-          { text: "I'm ", begin: 3, end: 3.5 },
+          { text: "I'm", sep: " ", begin: 3, end: 3.5 },
           { text: "here", begin: 3.5, end: 4 },
         ],
         backgroundText: "oh",
@@ -128,7 +128,7 @@ describe("writeLrc", () => {
       const parsed = parseLrc(writeLrc(doc([line])));
 
       const words = parsed.lines[0].words ?? [];
-      expect(words.map((word) => word.text).join("")).toBe("I'm here (oh)");
+      expect(words.map((word) => word.text + word.sep).join("")).toBe("I'm here (oh)");
       for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
     });
 
@@ -136,7 +136,7 @@ describe("writeLrc", () => {
       const line = createLine({
         text: "Main words",
         words: [
-          { text: "Main ", begin: 1, end: 2 },
+          { text: "Main", sep: " ", begin: 1, end: 2 },
           { text: "words", begin: 2, end: 3 },
         ],
         backgroundText: "oh",
@@ -211,7 +211,7 @@ describe("writeQrc", () => {
   it("round-trips word timing through the QRC parser", () => {
     const parsed = parseQrc(writeQrc(doc([wordLine("a")])));
 
-    expect(parsed.lines[0].words?.map((word) => [word.text, word.begin, word.end])).toEqual([
+    expect(parsed.lines[0].words?.map((word) => [word.text + word.sep, word.begin, word.end])).toEqual([
       ["Is ", 34.059, 34.189],
       ["it ", 34.189, 34.309],
       ["so", 34.309, 34.413],

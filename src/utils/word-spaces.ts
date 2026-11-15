@@ -10,16 +10,16 @@ const DEFAULT_MIN_WORD_DURATION = 0.05;
 function trimTrailingSpaceFromLast(words: WordTiming[]): WordTiming[] {
   if (words.length === 0) return words;
   const last = words[words.length - 1];
-  if (!last.text.endsWith(" ")) return words;
+  if (!last.sep.endsWith(" ")) return words;
   const next = words.slice();
-  next[next.length - 1] = { ...last, text: last.text.trimEnd() };
+  next[next.length - 1] = { ...last, sep: "" };
   return next;
 }
 
 function withTrailingSpace(words: WordTiming[]): WordTiming[] {
   const last = words.at(-1);
-  if (!last || last.text.endsWith(" ")) return words;
-  return [...words.slice(0, -1), { ...last, text: `${last.text} ` }];
+  if (!last || last.sep.endsWith(" ")) return words;
+  return [...words.slice(0, -1), { ...last, sep: `${last.sep} ` }];
 }
 
 function resolveOverlapsForward(words: WordTiming[], duration: number): WordTiming[] {

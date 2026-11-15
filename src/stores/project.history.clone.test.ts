@@ -35,7 +35,7 @@ const chorus = (instanceIdx: number, begin: number) =>
     id: `c${instanceIdx}`,
     text: "I want",
     words: [
-      { text: "I ", begin, end: begin + 0.4 },
+      { text: "I", sep: " ", begin, end: begin + 0.4 },
       { text: "want", begin: begin + 0.5, end: begin + 1 },
     ],
     groupId: "g1",
@@ -51,10 +51,10 @@ describe("history snapshot integrity", () => {
         id: "L1",
         text: "hello",
         agentId: "v1",
-        words: [{ text: "hello", begin: 0, end: 1 }],
+        words: [{ text: "hello", sep: "", begin: 0, end: 1 }],
       },
     ]);
-    store.updateLineWithHistory("L1", { words: [{ text: "hello!", begin: 0, end: 1 }] });
+    store.updateLineWithHistory("L1", { words: [{ text: "hello!", sep: "", begin: 0, end: 1 }] });
     const beforeUndo = useProjectStore.getState().lines[0].words?.[0].text;
     expect(beforeUndo).toBe("hello!");
     store.undo();
@@ -97,13 +97,13 @@ describe("history snapshot integrity", () => {
         text: "a",
         agentId: "v1",
         words: [
-          { text: "a ", begin: 0, end: 0.5 },
-          { text: "b", begin: 0.5, end: 1 },
+          { text: "a", sep: " ", begin: 0, end: 0.5 },
+          { text: "b", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ]);
-    store.updateLineWithHistory("A", { words: [{ text: "ab", begin: 0, end: 1 }] });
-    store.updateLineWithHistory("A", { words: [{ text: "ABC", begin: 0, end: 1 }] });
+    store.updateLineWithHistory("A", { words: [{ text: "ab", sep: "", begin: 0, end: 1 }] });
+    store.updateLineWithHistory("A", { words: [{ text: "ABC", sep: "", begin: 0, end: 1 }] });
     store.undo();
     expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ab");
     store.undo();

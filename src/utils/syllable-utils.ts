@@ -1,8 +1,8 @@
-import type { WordTiming } from "@/domain/word/timing";
+import type { SubPartition } from "@/utils/word-timing";
 
 // -- Helpers ------------------------------------------------------------------
 
-function distributeTiming(text: string, splitPoints: number[], begin: number, end: number): WordTiming[] {
+function distributeTiming(text: string, splitPoints: number[], begin: number, end: number): SubPartition[] {
   const parts: string[] = [];
   let lastIdx = 0;
 
@@ -21,7 +21,7 @@ function distributeTiming(text: string, splitPoints: number[], begin: number, en
   let currentBegin = begin;
   return parts.map((part, index) => {
     const partEnd = index === parts.length - 1 ? end : currentBegin + part.length * charDuration;
-    const timing: WordTiming = {
+    const timing: SubPartition = {
       text: part,
       begin: currentBegin,
       end: partEnd,

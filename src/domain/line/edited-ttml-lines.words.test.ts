@@ -11,7 +11,7 @@ function syllableLine(): LyricLine {
     text: "Hel|lo world",
     words: [
       { text: "Hel", begin: 1.0004, end: 1.5, syllableGroupId: "s1" },
-      { text: "lo ", begin: 1.5, end: 2, syllableGroupId: "s1" },
+      { text: "lo", sep: " ", begin: 1.5, end: 2, syllableGroupId: "s1" },
       { text: "world", begin: 2.0002, end: 3, explicit: true },
     ],
   });
@@ -27,7 +27,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const words = merged[0]?.words ?? [];
       expect(words[0]).toBe(stored[0]?.words?.[0]);
       expect(words[2]).toBe(stored[0]?.words?.[2]);
-      expect(words[1]).toEqual({ text: "lo ", begin: 1.6, end: 2, syllableGroupId: "s1" });
+      expect(words[1]).toEqual({ text: "lo", sep: " ", begin: 1.6, end: 2, syllableGroupId: "s1" });
       expect(merged[0]?.text).toBe("Hel|lo world");
     });
 
@@ -40,7 +40,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
           end: 3,
           backgroundText: "ooh ahh",
           backgroundWords: [
-            { text: "ooh ", begin: 1.0004, end: 2, syllableGroupId: "b1" },
+            { text: "ooh", sep: " ", begin: 1.0004, end: 2, syllableGroupId: "b1" },
             { text: "ahh", begin: 2, end: 3 },
           ],
         }),
@@ -53,7 +53,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       );
       const words = merged[0]?.backgroundWords ?? [];
       expect(words[0]).toBe(stored[0]?.backgroundWords?.[0]);
-      expect(words[1]).toEqual({ text: "ahh", begin: 2, end: 2.8 });
+      expect(words[1]).toEqual({ text: "ahh", sep: "", begin: 2, end: 2.8 });
     });
   });
 
@@ -67,7 +67,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
           end: 3,
           backgroundText: "yeah o|oh",
           backgroundWords: [
-            { text: "yeah ", begin: 1.0004, end: 1.5 },
+            { text: "yeah", sep: " ", begin: 1.0004, end: 1.5 },
             { text: "o", begin: 1.5, end: 1.8, syllableGroupId: "b1" },
             { text: "oh", begin: 1.8, end: 2.0004, syllableGroupId: "b1" },
           ],
@@ -77,7 +77,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const words = merged[0]?.backgroundWords ?? [];
       expect(words[0]).toBe(stored[0]?.backgroundWords?.[0]);
       expect(words[1]).toBe(stored[0]?.backgroundWords?.[1]);
-      expect(words[2]).toEqual({ text: "ohh", begin: 1.8, end: 2, syllableGroupId: "b1" });
+      expect(words[2]).toEqual({ text: "ohh", sep: "", begin: 1.8, end: 2, syllableGroupId: "b1" });
       expect(merged[0]?.backgroundText).toBe("yeah o|ohh");
     });
   });
@@ -93,7 +93,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const stored = [syllableLine()];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace("</span><span", "</span> <span"));
       const words = merged[0]?.words ?? [];
-      expect(words.map((word) => word.text)).toEqual(["Hel ", "lo ", "world"]);
+      expect(words.map((word) => word.text + word.sep)).toEqual(["Hel ", "lo ", "world"]);
       expect(words[0]?.syllableGroupId).toBeUndefined();
     });
   });

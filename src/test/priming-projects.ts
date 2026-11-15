@@ -19,8 +19,8 @@ function seedSavedProject(
           text: "hello world",
           agentId: DEFAULT_AGENTS[0].id,
           words: [
-            { text: "hello", begin: 1.0, end: 1.5 },
-            { text: "world", begin: 1.5, end: 2.0 },
+            { text: "hello", sep: "", begin: 1.0, end: 1.5 },
+            { text: "world", sep: "", begin: 1.5, end: 2.0 },
           ],
         },
       ],

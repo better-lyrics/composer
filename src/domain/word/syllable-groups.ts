@@ -44,7 +44,7 @@ function computeByTrailingSpace(words: WordTiming[]): SyllableGroup[] {
   let groupStart = 0;
 
   for (let i = 0; i < words.length; i++) {
-    const hasTrailingSpace = words[i].text.endsWith(" ");
+    const hasTrailingSpace = words[i].sep.endsWith(" ");
     const isLast = i === words.length - 1;
 
     if (hasTrailingSpace || isLast) {
@@ -143,7 +143,7 @@ function absorbDeletedSyllablesIntoNeighbors(words: WordTiming[], deletedIndices
     if (newBegin === undefined && newEnd === undefined && boundary === undefined) return w;
     return {
       ...w,
-      text: boundary === undefined ? w.text : `${w.text}${boundary}`,
+      sep: boundary === undefined ? w.sep : `${w.sep}${boundary}`,
       begin: newBegin !== undefined && newBegin < w.begin ? newBegin : w.begin,
       end: newEnd !== undefined && newEnd > w.end ? newEnd : w.end,
     };
@@ -158,10 +158,9 @@ function boundariesHandedBack(words: WordTiming[], deleted: Set<number>): Map<nu
     if (!deleted.has(i) || deleted.has(i - 1)) continue;
     let end = i;
     while (deleted.has(end + 1)) end++;
-    const boundaryText = words.slice(i, end + 1).findLast((w) => w.text.endsWith(" "))?.text;
-    const boundary = boundaryText?.slice(boundaryText.trimEnd().length);
+    const boundary = words.slice(i, end + 1).findLast((w) => w.sep.endsWith(" "))?.sep;
     const survivorAfter = end + 1 < words.length;
-    if (survivorAfter && boundary && !words[i - 1].text.endsWith(" ")) handed.set(i - 1, boundary);
+    if (survivorAfter && boundary && !words[i - 1].sep.endsWith(" ")) handed.set(i - 1, boundary);
   }
   return handed;
 }

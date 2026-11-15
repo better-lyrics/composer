@@ -50,8 +50,7 @@ function splitWordIntoSyllables({
   const groupId = reuseGroupId && word.syllableGroupId !== undefined ? word.syllableGroupId : nanoid(8);
   const { transliterationJoinerAfter: outerTransliterationJoiner, ...wordWithoutJoiner } = word;
   const sourceForSplit: WordTiming = { ...wordWithoutJoiner, syllableGroupId: groupId };
-  const trimmed = word.text.trimEnd();
-  const partitions = distributeTiming(trimmed, splitPoints, word.begin, word.end);
+  const partitions = distributeTiming(word.text, splitPoints, word.begin, word.end);
   const newWords = splitSourceWord(sourceForSplit, partitions);
   if (word.transliteration && transliterationSplitPoints) {
     const { parts: transliterations, joiners } = splitParts(word.transliteration.trim(), transliterationSplitPoints);
@@ -69,10 +68,9 @@ function splitWordIntoSyllables({
     const last = newWords[newWords.length - 1];
     newWords[newWords.length - 1] = { ...last, transliterationJoinerAfter: outerTransliterationJoiner };
   }
-  const trailingWhitespace = word.text.slice(trimmed.length);
-  if (trailingWhitespace && newWords.length > 0) {
+  if (word.sep && newWords.length > 0) {
     const last = newWords[newWords.length - 1];
-    newWords[newWords.length - 1] = { ...last, text: `${last.text}${trailingWhitespace}` };
+    newWords[newWords.length - 1] = { ...last, sep: `${last.sep}${word.sep}` };
   }
   return newWords;
 }

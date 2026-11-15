@@ -47,7 +47,7 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
         .length,
     [lines, lineId, wordIndex, type, caseInsensitive, splitPoints],
   );
-  const text = word.text.trimEnd();
+  const text = word.text;
 
   return (
     <div id={panelId} className="p-5">
@@ -108,7 +108,7 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
 
 // Every synced word has a splitter, so its popover mounts on the first open and stays mounted after.
 const SyllableSplitter: React.FC<SyllableSplitterProps> = (props) => {
-  if (props.word.text.trimEnd().length < 2) {
+  if (props.word.text.length < 2) {
     return null;
   }
 

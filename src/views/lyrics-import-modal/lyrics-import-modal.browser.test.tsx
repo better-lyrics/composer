@@ -192,7 +192,7 @@ describe("LyricsImportModal paste section commit", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     const [line] = useProjectStore.getState().lines;
     expect(line && mainBounds(line)).toEqual({ begin: 2, end: 3 });
-    expect(line?.words?.map((word) => word.text)).toEqual(["Hel", "lo"]);
+    expect(line?.words?.map((word) => word.text + word.sep)).toEqual(["Hel", "lo"]);
   });
 
   it("disables Import when paste is whitespace only", async () => {

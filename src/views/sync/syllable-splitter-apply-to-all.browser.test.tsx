@@ -141,7 +141,7 @@ function makeLine(id: string, wordText: string, beginOffset: number) {
   return createLine({
     id,
     text: wordText,
-    words: [{ text: wordText, begin: beginOffset, end: beginOffset + 1 }],
+    words: [{ text: wordText, sep: "", begin: beginOffset, end: beginOffset + 1 }],
   });
 }
 
@@ -151,7 +151,7 @@ async function openSplitterFor(lineId: string, wordText: string) {
       <SyllableSplitter
         lineId={lineId}
         type="word"
-        word={{ text: wordText, begin: 0, end: 1 }}
+        word={{ text: wordText, sep: "", begin: 0, end: 1 }}
         wordIndex={0}
         onSplit={() => {}}
       />
@@ -253,7 +253,7 @@ describe("SyllableSplitter wiring", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ text: "running", begin: 0, end: 1 }}
+          word={{ text: "running", sep: "", begin: 0, end: 1 }}
           wordIndex={0}
           onSplit={onSplit}
         />
@@ -295,7 +295,7 @@ describe("regressions: apply-to-all confirm stacking", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ text: "running", begin: 0, end: 1 }}
+          word={{ text: "running", sep: "", begin: 0, end: 1 }}
           wordIndex={0}
           onSplit={() => {}}
         />
