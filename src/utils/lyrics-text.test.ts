@@ -7,7 +7,7 @@ import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

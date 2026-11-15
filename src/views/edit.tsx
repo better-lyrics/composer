@@ -26,7 +26,7 @@ import type { LyricBurst } from "@/stores/project/history-types";
 import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
-import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals, lineHasInlineParens } from "insync/background-vocal-extraction";
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { pluralWord } from "insync/pluralize";

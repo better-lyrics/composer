@@ -3,7 +3,7 @@ import type { LyricLine, MainTrack } from "insync/line";
 import { trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack } from "insync/line-track";
 import { newBackgroundTrack, withBackgroundTrack, withTrackText } from "insync/line-track-writes";
-import { classifyLine } from "@/utils/background-vocal-extraction";
+import { classifyLine } from "insync/background-vocal-extraction";
 
 // -- Functions ----------------------------------------------------------------
 

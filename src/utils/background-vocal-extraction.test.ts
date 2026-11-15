@@ -13,7 +13,7 @@ import {
   extractInlineFromLine,
   lineHasInlineParens,
   scanParenGroups,
-} from "@/utils/background-vocal-extraction";
+} from "insync/background-vocal-extraction";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Specification table -------------------------------------------------------

@@ -14,7 +14,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { findInsertionSlot } from "@/utils/word-spaces";
+import { findInsertionSlot } from "insync/word-spaces";
 import { useAltHeld } from "@/views/timeline/alt-key-held";
 import { selectWordUnlessSelected } from "@/views/timeline/selection-playback";
 import { toggleStepLane } from "@/views/timeline/step-timing/press-step-key";

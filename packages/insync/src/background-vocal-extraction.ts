@@ -1,17 +1,17 @@
-import { isLinked } from "insync/instance-predicates";
-import { withBackground, withSeededBackground } from "insync/line-background";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { bgBounds } from "insync/line-bounds";
-import { isWordSynced } from "insync/line-predicates";
-import { wordContentSpans } from "insync/line-reconstruct-text";
-import { backgroundText, lineText, syllablesText } from "insync/line-text";
-import { backgroundTrack, mainTrack, roleWords } from "insync/line-track";
-import { withMainTrack, withTrackSyllables, withTrackText } from "insync/line-track-writes";
-import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
-import { wordFromSpaced } from "insync/word-spaced-words";
-import type { WordTiming } from "insync/word-timing";
-import { joinBackgroundText } from "@/utils/background-vocal-brackets";
-import { mergeStandaloneInto } from "@/utils/background-vocal-standalone-merge";
+import { isLinked } from "./instance-predicates";
+import { withBackground, withSeededBackground } from "./line-background";
+import type { LineUpdate, LyricLine } from "./line";
+import { bgBounds } from "./line-bounds";
+import { isWordSynced } from "./line-predicates";
+import { wordContentSpans } from "./line-reconstruct-text";
+import { backgroundText, lineText, syllablesText } from "./line-text";
+import { backgroundTrack, mainTrack, roleWords } from "./line-track";
+import { withMainTrack, withTrackSyllables, withTrackText } from "./line-track-writes";
+import { remapWordTextsPreservingTiming } from "./word-remap-text";
+import { wordFromSpaced } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
+import { joinBackgroundText } from "./background-vocal-brackets";
+import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
 
 // -- Types --------------------------------------------------------------------
 

@@ -11,7 +11,7 @@ import { mainTimingEdit } from "insync/line-track-writes";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";
-import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "insync/word-spaces";
 
 // -- Types --------------------------------------------------------------------
 

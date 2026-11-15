@@ -5,7 +5,7 @@ import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
-import { classifyLine } from "@/utils/background-vocal-extraction";
+import { classifyLine } from "insync/background-vocal-extraction";
 import { cn } from "@/utils/cn";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconArrowBackUp, IconChevronDown, IconMicrophone } from "@tabler/icons-react";

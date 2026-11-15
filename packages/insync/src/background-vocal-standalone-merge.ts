@@ -1,15 +1,15 @@
-import { type BackgroundSource, withBackground, withSeededBackgroundWords } from "insync/line-background";
-import { effectiveBounds, mainBounds } from "insync/line-bounds";
-import type { LyricLine } from "insync/line";
-import { isLineSynced } from "insync/line-predicates";
-import { backgroundText, syllablesText } from "insync/line-text";
-import { spreadSpan } from "insync/line-span-to-words";
-import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "insync/line-track";
-import { lastEnd } from "insync/word-bounds";
-import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
-import type { WordTiming } from "insync/word-timing";
-import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "@/utils/background-vocal-brackets";
-import { createInitialBgWords } from "insync/lyric-words";
+import { type BackgroundSource, withBackground, withSeededBackgroundWords } from "./line-background";
+import { effectiveBounds, mainBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
+import { isLineSynced } from "./line-predicates";
+import { backgroundText, syllablesText } from "./line-text";
+import { spreadSpan } from "./line-span-to-words";
+import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "./line-track";
+import { lastEnd } from "./word-bounds";
+import { remapWordTextsPreservingTiming } from "./word-remap-text";
+import type { WordTiming } from "./word-timing";
+import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "./background-vocal-brackets";
+import { createInitialBgWords } from "./lyric-words";
 
 // -- Types --------------------------------------------------------------------
 

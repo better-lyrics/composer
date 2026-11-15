@@ -14,7 +14,7 @@ import { UNISON_SETTING_DEFAULTS, type UnisonSettings } from "@/stores/settings-
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
-import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
+import { DEFAULT_MIN_WORD_DURATION } from "insync/word-spaces";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

@@ -1,6 +1,6 @@
-import { wordFromSpaced } from "insync/word-spaced-words";
-import type { WordTiming } from "insync/word-timing";
-import { withTrailingSpace } from "@/utils/word-spaces";
+import { wordFromSpaced } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
+import { withTrailingSpace } from "./word-spaces";
 
 // -- Trailing space accessors -------------------------------------------------
 

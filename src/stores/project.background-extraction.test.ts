@@ -10,7 +10,7 @@ import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
-import { extractInlineFromLine } from "@/utils/background-vocal-extraction";
+import { extractInlineFromLine } from "insync/background-vocal-extraction";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 beforeEach(() => {

@@ -16,7 +16,7 @@ import { cn } from "@/utils/cn";
 import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
 import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
 import { splitIntoWordsWithMeta } from "insync/lyric-words";
-import { findInsertionSlot } from "@/utils/word-spaces";
+import { findInsertionSlot } from "insync/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
 import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";

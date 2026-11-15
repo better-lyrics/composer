@@ -18,7 +18,7 @@ import { type ConfirmOptions, useConfirm, useConfirmStore } from "@/stores/confi
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { type SettingsState, useSettingsStore } from "@/stores/settings";
-import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import {
   type ParseIssue,

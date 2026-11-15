@@ -1,6 +1,6 @@
-import type { TimeRange } from "insync/group-shared-timing";
-import { endedWord } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import type { TimeRange } from "./group-shared-timing";
+import { endedWord } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 
 // -- Constants -----------------------------------------------------------------
 

@@ -8,7 +8,7 @@ import type { GuideNudge, GuideNudgeCopy } from "@/guide/catalog/types";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { slowerPlaybackRate, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { lineHasInlineParens } from "@/utils/background-vocal-extraction";
+import { lineHasInlineParens } from "insync/background-vocal-extraction";
 import {
   IconAbc,
   IconBrain,

@@ -10,7 +10,7 @@ import { backgroundTrack, isSpanTimed, timedSyllables } from "insync/line-track"
 import { withBackgroundTrack, withTrackText } from "insync/line-track-writes";
 import { isSectionTagLine } from "insync/lyrics-file-genius-text";
 import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
-import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "@/utils/background-vocal-extraction";
+import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "insync/background-vocal-extraction";
 
 // -- Types --------------------------------------------------------------------
 

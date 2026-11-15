@@ -9,7 +9,7 @@ import type { ProjectMetadata } from "insync/metadata";
 import type { Bounds } from "insync/word-bounds";
 import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { withTrailingSpace } from "@/utils/word-spaces";
+import { withTrailingSpace } from "insync/word-spaces";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

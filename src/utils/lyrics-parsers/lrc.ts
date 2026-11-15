@@ -6,7 +6,7 @@ import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { type ParseIssue, type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
-import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
+import { DEFAULT_MIN_WORD_DURATION } from "insync/word-spaces";
 
 // -- Constants ----------------------------------------------------------------
 

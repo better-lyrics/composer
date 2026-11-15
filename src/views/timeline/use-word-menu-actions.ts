@@ -11,7 +11,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
-import { findInsertionSlot } from "@/utils/word-spaces";
+import { findInsertionSlot } from "insync/word-spaces";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

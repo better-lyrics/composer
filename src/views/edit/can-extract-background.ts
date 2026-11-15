@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { useSettingsStore } from "@/stores/settings";
-import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
