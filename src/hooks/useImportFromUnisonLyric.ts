@@ -1,4 +1,5 @@
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
+import { useProjectIndex } from "@/hooks/useProjectIndex";
 import { openUnisonLyricFromLink } from "@/lib/unison/open-unison-lyric";
 import { getPersistenceSettled, markLinkProjectSettled } from "@/lib/persistence-settled";
 import { UNISON_LYRIC_PARAM, readBootUnisonLyric } from "@/utils/incoming-link";
@@ -18,8 +19,10 @@ function useImportFromUnisonLyric(): void {
   // Read at render: the effect below strips the param.
   const [link] = useState(readBootUnisonLyric);
   const lyricQuery = useUnisonLyric(link.id);
+  const index = useProjectIndex();
   const navigate = useNavigate();
   const appliedRef = useRef(false);
+  const [persistenceSettled, setPersistenceSettled] = useState(false);
 
   useEffect(() => {
     if (!link.present) return;
@@ -34,24 +37,39 @@ function useImportFromUnisonLyric(): void {
   }, [link]);
 
   useEffect(() => {
+    if (link.id === null) return;
+    void getPersistenceSettled().then(() => setPersistenceSettled(true));
+  }, [link.id]);
+
+  useEffect(() => {
     if (link.id === null || lyricQuery.status === "pending" || appliedRef.current) return;
-    appliedRef.current = true;
     if (lyricQuery.status === "error") {
+      appliedRef.current = true;
       console.warn(LOG_PREFIX, "could not fetch the linked Unison lyric", lyricQuery.error);
       showUnisonLyricLinkFailedToast();
       markLinkProjectSettled("failed");
       return;
     }
-    const lyric = lyricQuery.data;
-    getPersistenceSettled()
-      .then(() => openUnisonLyricFromLink(lyric, navigate))
+    if (!persistenceSettled || (!index.entries && !index.error)) return;
+    appliedRef.current = true;
+    if (!index.entries) console.warn(LOG_PREFIX, "project index unread, opening the Unison lyric unlinked");
+    openUnisonLyricFromLink(lyricQuery.data, index.entries ?? null, navigate)
       .then((opened) => markLinkProjectSettled(opened ? "created" : "failed"))
       .catch((error: unknown) => {
         console.error(LOG_PREFIX, "could not open the linked Unison lyric", error);
         showUnisonLyricLinkFailedToast();
         markLinkProjectSettled("failed");
       });
-  }, [link.id, lyricQuery.status, lyricQuery.data, lyricQuery.error, navigate]);
+  }, [
+    link.id,
+    lyricQuery.status,
+    lyricQuery.data,
+    lyricQuery.error,
+    persistenceSettled,
+    index.entries,
+    index.error,
+    navigate,
+  ]);
 }
 
 // -- Exports ------------------------------------------------------------------

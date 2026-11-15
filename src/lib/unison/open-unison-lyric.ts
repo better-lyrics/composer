@@ -1,10 +1,10 @@
 import { toast } from "sonner";
 import { artistCredit } from "@/domain/project/display-title";
+import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { linksOnOpen } from "@/domain/unison/linked-projects";
 import type { NewSongProject } from "@/lib/open-project";
-import { listProjectIndex } from "@/lib/project-repository";
 import type { UnisonLyric, UnisonLyricsFormat } from "@/lib/unison/api-types";
 import { readUnisonSession } from "@/lib/unison/session";
 import { createVideoProject, loadVideoProject } from "@/lib/unison/video-project";
@@ -89,8 +89,13 @@ async function openUnisonLyric(lyric: UnisonLyric, options: OpenUnisonLyricOptio
 }
 
 // Resolves before the video loads, as ?v= does, so link details never reach a project opened mid-download.
-async function openUnisonLyricFromLink(lyric: UnisonLyric, navigate: (path: string) => void): Promise<boolean> {
-  const link = linksOnOpen(lyric, readUnisonSession()?.keyId ?? null, await listProjectIndex());
+// Null entries mean the index could not be read, so no project is known to lack the link.
+async function openUnisonLyricFromLink(
+  lyric: UnisonLyric,
+  entries: readonly ProjectIndexEntry[] | null,
+  navigate: (path: string) => void,
+): Promise<boolean> {
+  const link = entries !== null && linksOnOpen(lyric, readUnisonSession()?.keyId ?? null, entries);
   const started = await createUnisonLyricProject(lyric, { link, navigate });
   if (!started) return false;
   void loadVideoProject(lyric.videoId, started);
