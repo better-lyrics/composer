@@ -19,6 +19,7 @@ import {
   anchorResolver,
   keptAmongInline,
   keptAmongLines,
+  keptElementAnchors,
   keptAttributes,
   keptTimesAttributes,
   type Placed,
@@ -106,8 +107,9 @@ function paragraph(line: LyricLine, source: BodySource, indent: string, splitCha
   const content =
     source.writesWords && isWordSynced(line)
       ? spanPieces(timedSyllables(main))
-      : untimedTrackPieces(main, lineText(line, splitChar), splitChar).map((piece, index, pieces) =>
-          index === pieces.length - 1 ? { ...piece, anchors: [...piece.anchors, TEXT_ANCHOR] } : piece,
+      : untimedTrackPieces(main, lineText(line, splitChar), splitChar, keptElementAnchors(line.passthrough)).map(
+          (piece, index, pieces) =>
+            index === pieces.length - 1 ? { ...piece, anchors: [...piece.anchors, TEXT_ANCHOR] } : piece,
         );
   const mainSpanAttr = isLineSynced(line) ? mainSpanAttributes(line, begin, end) : "";
   const background = backgroundSpan(line, source.writesWords, splitChar);

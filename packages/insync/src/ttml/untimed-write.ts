@@ -8,6 +8,10 @@ import { isStructurallyEqual } from "../structural-equal";
 import { spanContent, timedSpan } from "./markup";
 import type { Placed } from "./passthrough-write";
 
+// -- Constants ----------------------------------------------------------------
+
+const NO_ELEMENT_ANCHORS: ReadonlySet<string> = new Set();
+
 // -- Helpers ------------------------------------------------------------------
 
 const keptOf = (syllable: Syllable): Passthrough | undefined =>
@@ -16,9 +20,14 @@ const keptOf = (syllable: Syllable): Passthrough | undefined =>
 // -- Functions ----------------------------------------------------------------
 
 // A track's text as written without syllable times, one piece per syllable, each standing for its syllable. Each run
-// of untimed syllables read from one kept span is one piece written inside that span again; the space after the run
-// stays outside it.
-function untimedTrackPieces(track: LineTrack | undefined, text: string, splitChar: string): Placed<string>[] {
+// of untimed syllables read from one kept span is one piece written inside that span again, ending at a syllable a
+// kept element follows so the element stays after it; the space after the run stays outside it.
+function untimedTrackPieces(
+  track: LineTrack | undefined,
+  text: string,
+  splitChar: string,
+  elementAnchors: ReadonlySet<string>,
+): Placed<string>[] {
   const syllables = track?.syllables ?? [];
   if (syllables.length === 0) return [{ out: escapeXmlText(withoutSplitCharacter(text, splitChar)), anchors: [] }];
   const joint = (index: number) => withoutSplitCharacter(syllableJoint(syllables, index, splitChar), splitChar);
@@ -33,7 +42,13 @@ function untimedTrackPieces(track: LineTrack | undefined, text: string, splitCha
       continue;
     }
     let last = index;
-    while (last + 1 < syllables.length && isStructurallyEqual(keptOf(syllables[last + 1]), kept)) last++;
+    while (
+      last + 1 < syllables.length &&
+      !elementAnchors.has(syllables[last].id) &&
+      isStructurallyEqual(keptOf(syllables[last + 1]), kept)
+    ) {
+      last++;
+    }
     let inner = "";
     for (let at = index; at < last; at++) inner += word(at) + joint(at);
     inner += word(last);
@@ -47,7 +62,7 @@ function untimedTrackPieces(track: LineTrack | undefined, text: string, splitCha
 }
 
 function untimedTrackContent(track: LineTrack | undefined, text: string, splitChar: string): string {
-  return untimedTrackPieces(track, text, splitChar)
+  return untimedTrackPieces(track, text, splitChar, NO_ELEMENT_ANCHORS)
     .map((piece) => piece.out)
     .join("");
 }

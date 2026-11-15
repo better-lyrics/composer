@@ -236,6 +236,18 @@ describe("ttml kept data edges", () => {
     expect(ttml).toMatch(/>comes<\/span> <k:mark\/><span [^>]*>in<\/span><\/p>/);
   });
 
+  it("regression: a kept element between two alike untimed spans of a line-synced line stays between them", () => {
+    const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:x-vendor="https://vendor.example/x"><body><div><p begin="0:01.000" end="0:03.000"><span x-vendor:c="red">one </span><x-vendor:note/><span x-vendor:c="red">two</span></p></div></body></tt>`;
+    const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: [],
+      lines: parsed.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
+    expect(ttml).toContain('<span x-vendor:c="red">one</span> <x-vendor:note/><span x-vendor:c="red">two</span></p>');
+  });
+
   it("regression: a body element between two plain sections stays between their lines", () => {
     const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:k="https://vendor.example/k"><body><div><p begin="0:01.000" end="0:02.000">Low tide</p></div><k:break/><div><p begin="0:03.000" end="0:04.000">High tide</p></div></body></tt>`;
     const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
