@@ -57,7 +57,7 @@ describe("ttml export · empty lines", () => {
           begin: 3,
           end: 4,
           backgroundText: "ooh",
-          backgroundWords: [{ id: "w1", text: "ooh", sep: "", begin: 3, end: 3.5 }],
+          backgroundWords: [{ id: "w1", text: "ooh", sep: "", begin: 3, end: 3.5, joinsNext: false }],
         },
       ]);
       expect(ttml).toContain(">ooh</span>");
@@ -81,8 +81,8 @@ describe("ttml export · empty lines", () => {
           text: "one two",
           agentId: "v1",
           words: [
-            { id: "w2", text: "one", sep: " ", begin: 1, end: 1.5 },
-            { id: "w3", text: "two", sep: "", begin: 1.5, end: 2 },
+            { id: "w2", text: "one", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+            { id: "w3", text: "two", sep: "", begin: 1.5, end: 2, joinsNext: false },
           ],
         },
         { id: "c", text: " ", agentId: "v1", begin: 2, end: 3 },

@@ -256,8 +256,16 @@ describe("createLanguageAutoRefresh", () => {
               updates: {
                 text: "Здравствуй, мир",
                 words: [
-                  { id: "w1", text: "Здравствуй,", sep: " ", begin: 1, end: 2, transliteration: "Privet," },
-                  { id: "w2", text: "мир", sep: "", begin: 2, end: 3, transliteration: "mir" },
+                  {
+                    id: "w1",
+                    text: "Здравствуй,",
+                    sep: " ",
+                    begin: 1,
+                    end: 2,
+                    transliteration: "Privet,",
+                    joinsNext: false,
+                  },
+                  { id: "w2", text: "мир", sep: "", begin: 2, end: 3, transliteration: "mir", joinsNext: false },
                 ],
               },
             },

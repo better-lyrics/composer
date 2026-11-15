@@ -3,7 +3,7 @@ import { renderHook } from "vitest-browser-react";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { makeAltDuplicateEvent } from "@/views/timeline/use-timeline-dnd.test-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -17,10 +17,10 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 2, end: begin + 3 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 2, end: begin + 3 },
+    ]),
   });
 }
 

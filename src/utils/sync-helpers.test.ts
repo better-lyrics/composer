@@ -21,7 +21,7 @@ describe("createTrackWordsFromTextAt", () => {
     it("returns null when the bg track already has words", () => {
       const timed: LyricLine = {
         ...base,
-        backgroundWords: [{ id: "w1", text: "ooh yeah", sep: "", begin: 1, end: 2 }],
+        backgroundWords: [{ id: "w1", text: "ooh yeah", sep: "", begin: 1, end: 2, joinsNext: false }],
       };
       expect(createTrackWordsFromTextAt(timed, "bg", 5, 100)).toBeNull();
     });
@@ -70,7 +70,10 @@ describe("createTrackWordsFromTextAt", () => {
 
     describe("edge cases", () => {
       it("returns null when the line already has words", () => {
-        const timed: LyricLine = { ...untimed, words: [{ id: "w2", text: "hello world", sep: "", begin: 1, end: 2 }] };
+        const timed: LyricLine = {
+          ...untimed,
+          words: [{ id: "w2", text: "hello world", sep: "", begin: 1, end: 2, joinsNext: false }],
+        };
         expect(createTrackWordsFromTextAt(timed, "word", 5, 100)).toBeNull();
       });
 

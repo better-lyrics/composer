@@ -9,8 +9,8 @@ import type { WordTiming } from "@/domain/word/timing";
 //   begin, end       positional, computed from context
 //   explicit         source-positional: copied from the source word in matched/split flows;
 //                    set explicitly when user marks
-//   syllableGroupId  structural: inherited from bracket sibling in LCS new-slot;
-//                    copied from source in split; regenerated on alt-duplicate
+//   joinsNext        structural: set by whoever creates syllables; split pieces join
+//                    except the last, which keeps the source word's join
 //   transliterationJoinerAfter
 //                    structural: assigned and transferred by syllable splitting;
 //                    consumed when the complete syllable group is merged
@@ -30,8 +30,7 @@ interface BracketedSynthesisInput {
   sep: string;
   begin: number;
   end: number;
-  leftBracket?: WordTiming;
-  rightBracket?: WordTiming;
+  joinsNext: boolean;
   explicit?: boolean;
 }
 
@@ -48,28 +47,18 @@ function cloneWord(source: WordTiming, overrides: Partial<WordTiming>): WordTimi
 }
 
 function synthesizeBracketedWord(input: BracketedSynthesisInput): WordTiming {
-  const { text, sep, begin, end, leftBracket, rightBracket, explicit } = input;
-  const leftId = leftBracket?.syllableGroupId;
-  const rightId = rightBracket?.syllableGroupId;
-  const inheritedGroupId =
-    leftId !== undefined && (rightId === undefined || rightId === leftId)
-      ? leftId
-      : rightId !== undefined && leftBracket === undefined
-        ? rightId
-        : undefined;
-  const result: WordTiming = { id: newWordId(), text, sep, begin, end };
-  if (explicit) result.explicit = true;
-  if (inheritedGroupId !== undefined) result.syllableGroupId = inheritedGroupId;
-  return result;
+  const { text, sep, begin, end, joinsNext, explicit } = input;
+  return { id: newWordId(), text, sep, begin, end, joinsNext, ...(explicit && { explicit: true }) };
 }
 
 function splitSourceWord(source: WordTiming, subPartitions: SubPartition[]): WordTiming[] {
   return withSplitIds(
-    subPartitions.map((sub) => ({
+    subPartitions.map((sub, index) => ({
       ...source,
       ...splitTrailingWhitespace(sub.text),
       begin: sub.begin,
       end: sub.end,
+      ...(index < subPartitions.length - 1 && { joinsNext: true }),
     })),
   );
 }

@@ -9,9 +9,9 @@ describe("shiftWords", () => {
   it("moves every word by the delta", () => {
     expect(shiftWords([word("a ", 1, 2), word("b", 2, 3)], 5)).toEqual([word("a ", 6, 7), word("b", 7, 8)]);
   });
-  it("keeps other word fields such as syllableGroupId and explicit", () => {
-    const shifted = shiftWords([{ ...word("a", 1, 2), syllableGroupId: "g1", explicit: true }], 1);
-    expect(shifted[0]).toMatchObject({ syllableGroupId: "g1", explicit: true, begin: 2, end: 3 });
+  it("keeps other word fields such as joinsNext and explicit", () => {
+    const shifted = shiftWords([{ ...word("a", 1, 2), joinsNext: true, explicit: true }], 1);
+    expect(shifted[0]).toMatchObject({ joinsNext: true, explicit: true, begin: 2, end: 3 });
   });
   it("clamps at zero instead of going negative", () => {
     expect(shiftWords([word("a", 1, 2)], -5)).toEqual([word("a", 0, 0)]);

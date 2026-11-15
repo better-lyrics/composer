@@ -76,7 +76,12 @@ describe("alignmentReview", () => {
       }),
     );
     const edited = withBackground.map((line, i) =>
-      i < 3 ? { ...line, backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 15.1, end: 15.5 }] } : line,
+      i < 3
+        ? {
+            ...line,
+            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 15.1, end: 15.5, joinsNext: false }],
+          }
+        : line,
     );
     expect(alignmentReview(edited, fingerprintsOf(withBackground)).tier).toBe("reviewed");
   });

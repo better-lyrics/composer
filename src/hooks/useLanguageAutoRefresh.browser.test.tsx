@@ -38,9 +38,9 @@ describe("useLanguageAutoRefresh", () => {
           updates: {
             text: "Где ты сейчас",
             words: [
-              { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde" },
-              { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty" },
-              { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4 },
+              { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde", joinsNext: false },
+              { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty", joinsNext: false },
+              { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4, joinsNext: false },
             ],
           },
         },

@@ -41,8 +41,8 @@ describe("createLanguageAutoRefresh history", () => {
             updates: {
               text: "Добрый вечер",
               words: [
-                { id: "w1", text: "Добрый", sep: " ", begin: 1, end: 2, transliteration: "Dobroye" },
-                { id: "w2", text: "вечер", sep: "", begin: 2, end: 3, transliteration: "utro" },
+                { id: "w1", text: "Добрый", sep: " ", begin: 1, end: 2, transliteration: "Dobroye", joinsNext: false },
+                { id: "w2", text: "вечер", sep: "", begin: 2, end: 3, transliteration: "utro", joinsNext: false },
               ],
             },
           },

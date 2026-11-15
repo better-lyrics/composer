@@ -233,7 +233,9 @@ describe("sharedTimingFanOut", () => {
     it("never copies a line outside the group", () => {
       const outside = createLine({ id: "x", text: "Hey", words: [{ text: "Hey", begin: 5, end: 6 }] });
       const before = [outside, chorus(0, 0, 10), chorus(1, 0, 40)];
-      const after = edit(before, "x", () => ({ words: [{ id: "w1", text: "Hey", sep: "", begin: 5, end: 6.5 }] }));
+      const after = edit(before, "x", () => ({
+        words: [{ id: "w1", text: "Hey", sep: "", begin: 5, end: 6.5, joinsNext: false }],
+      }));
       const result = sharedTimingFanOut(before, after, sharing, ["x"]);
       expect(result.lines).toBe(after);
       expect(result.touchedGroupIds).toEqual([]);
@@ -254,7 +256,9 @@ describe("sharedTimingFanOut", () => {
 
     it("skips a source whose instance had no start before the edit", () => {
       const before = [chorus(0, 0), chorus(1, 0, 40)];
-      const after = edit(before, "c0-0", () => ({ words: [{ id: "w2", text: "I", sep: " ", begin: 10, end: 10.4 }] }));
+      const after = edit(before, "c0-0", () => ({
+        words: [{ id: "w2", text: "I", sep: " ", begin: 10, end: 10.4, joinsNext: false }],
+      }));
       expect(sharedTimingFanOut(before, after, sharing, ["c0-0"]).lines).toBe(after);
     });
 

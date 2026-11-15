@@ -29,13 +29,14 @@ function splitMultiWordWord(word: WordTiming): WordTiming[] {
   };
   const parts = convertLineToWord(asLine).words;
   if (!parts || parts.length < 2) return [word];
-  const { syllableGroupId: _drop, transliteration: _t, transliterationJoinerAfter: _j, ...base } = word;
+  const { transliteration: _t, transliterationJoinerAfter: _j, joinsNext, ...base } = word;
   const lastIndex = parts.length - 1;
   return parts.map((part, index) => ({
     ...base,
     ...part,
     id: index === 0 ? word.id : part.id,
     sep: index === lastIndex ? (word.sep.endsWith(" ") ? " " : "") : part.sep,
+    ...(index === lastIndex && { joinsNext }),
   }));
 }
 

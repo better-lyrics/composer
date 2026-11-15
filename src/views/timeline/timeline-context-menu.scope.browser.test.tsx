@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
@@ -14,7 +14,10 @@ describe("TimelineContextMenu selection scope", () => {
   it("offers only commands that act on the whole selection when several words are selected", async () => {
     const line = createLine({
       text: "every day",
-      words: [createWord({ text: "every", sep: " ", begin: 0, end: 1 }), createWord({ text: "day", begin: 1, end: 2 })],
+      words: createWords([
+        { text: "every", sep: " ", begin: 0, end: 1 },
+        { text: "day", begin: 1, end: 2 },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({

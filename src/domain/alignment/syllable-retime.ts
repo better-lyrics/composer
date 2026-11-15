@@ -10,19 +10,24 @@ import type { WordTiming } from "@/domain/word/timing";
 /** First and last word index of one syllable group. */
 type GroupRange = [number, number];
 
+interface SyllableGroupBounds {
+  startIndex: number;
+  endIndex: number;
+}
+
 // -- Functions ----------------------------------------------------------------
+
+function groupKey(words: readonly WordTiming[], { startIndex, endIndex }: SyllableGroupBounds): string {
+  return `${words[startIndex].begin}|${words[endIndex].end}|${endIndex - startIndex}`;
+}
 
 /** Syllable groups in `after` that `before` didn't have, or that gained or lost syllables. */
 function newSyllableGroups(before: readonly WordTiming[] | undefined, after: WordTiming[]): GroupRange[] {
-  const sizeBefore = new Map<string, number>();
-  for (const word of before ?? []) {
-    if (word.syllableGroupId) sizeBefore.set(word.syllableGroupId, (sizeBefore.get(word.syllableGroupId) ?? 0) + 1);
-  }
-  return computeSyllableGroups(after).flatMap(({ startIndex, endIndex }): GroupRange[] => {
-    const id = after[startIndex].syllableGroupId;
-    if (!id) return [];
-    return sizeBefore.get(id) === endIndex - startIndex + 1 ? [] : [[startIndex, endIndex]];
-  });
+  const previous = before ?? [];
+  const kept = new Set(computeSyllableGroups(previous).map((group) => groupKey(previous, group)));
+  return computeSyllableGroups(after).flatMap((group): GroupRange[] =>
+    kept.has(groupKey(after, group)) ? [] : [[group.startIndex, group.endIndex]],
+  );
 }
 
 /**

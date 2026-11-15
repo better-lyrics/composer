@@ -6,7 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 
@@ -88,7 +88,10 @@ describe("select word under playhead", () => {
         createLine({
           id: lineId,
           text: "alpha beta",
-          words: [createWord({ text: "alpha", begin: 0, end: 1 }), createWord({ text: "beta", begin: 1, end: 2 })],
+          words: createWords([
+            { text: "alpha", begin: 0, end: 1 },
+            { text: "beta", begin: 1, end: 2 },
+          ]),
           backgroundText: "echo",
           backgroundWords: [createWord({ text: "echo", begin: 0.4, end: 0.9 })],
         }),

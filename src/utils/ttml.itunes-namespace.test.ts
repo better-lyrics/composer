@@ -13,8 +13,8 @@ const wordLine: LyricLine = {
   text: "hello world",
   agentId: "v1",
   words: [
-    { id: "w1", text: "hello", sep: " ", begin: 1, end: 1.5 },
-    { id: "w2", text: "world", sep: "", begin: 1.5, end: 2 },
+    { id: "w1", text: "hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+    { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
   ],
 };
 
@@ -85,8 +85,8 @@ describe("ttml export · Apple Music dialect regressions", () => {
           text: "hi there",
           agentId: "v1",
           words: [
-            { id: "w3", text: "hi", sep: " ", begin: 65.5, end: 66 },
-            { id: "w4", text: "there", sep: "", begin: 66, end: 66.75 },
+            { id: "w3", text: "hi", sep: " ", begin: 65.5, end: 66, joinsNext: false },
+            { id: "w4", text: "there", sep: "", begin: 66, end: 66.75, joinsNext: false },
           ],
         },
       ],
@@ -115,8 +115,18 @@ describe("ttml export · Apple Music dialect regressions", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        { id: "a", text: "hi", agentId: "v1", words: [{ id: "w5", text: "hi", sep: "", begin: 65.25, end: 66 }] },
-        { id: "b", text: "yo", agentId: "v1", words: [{ id: "w6", text: "yo", sep: "", begin: 3665.25, end: 3666 }] },
+        {
+          id: "a",
+          text: "hi",
+          agentId: "v1",
+          words: [{ id: "w5", text: "hi", sep: "", begin: 65.25, end: 66, joinsNext: false }],
+        },
+        {
+          id: "b",
+          text: "yo",
+          agentId: "v1",
+          words: [{ id: "w6", text: "yo", sep: "", begin: 3665.25, end: 3666, joinsNext: false }],
+        },
       ],
     });
     // single-digit minutes stay unpadded (1:05.250, never 01:05.250)

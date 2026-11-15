@@ -200,9 +200,9 @@ describe("placeSharedInstance", () => {
       });
       const target = createLine({ id: "c1-0", text: "a|way", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 });
       const words = placeSharedInstance([reference, target], sharing, "g1", 1, 40)[0]?.updates.words;
-      expect(words?.map((word) => [word.text, word.syllableGroupId])).toEqual([
-        ["a", "s1"],
-        ["way", "s1"],
+      expect(words?.map((word) => [word.text, word.joinsNext])).toEqual([
+        ["a", true],
+        ["way", false],
       ]);
     });
   });
@@ -279,7 +279,7 @@ describe("realignSharedInstance", () => {
     it("realigns background vocals the reference has timing for", () => {
       const background = (begin: number) => ({
         backgroundText: "oh",
-        backgroundWords: [{ id: newWordId(), text: "oh", sep: "", begin, end: begin + 0.4 }],
+        backgroundWords: [{ id: newWordId(), text: "oh", sep: "", begin, end: begin + 0.4, joinsNext: false }],
       });
       const lines = [
         { ...chorus(0, 0, 10), ...background(10.2) },

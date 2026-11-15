@@ -20,9 +20,9 @@ describe("applyWordDeletion", () => {
         text: "every night in my dreams",
         agentId: "v1",
         words: [
-          { id: "w1", text: "every", sep: " ", begin: 0, end: 0.3 },
-          { id: "w2", text: "night", sep: " ", begin: 0.3, end: 0.6 },
-          { id: "w3", text: "in", sep: " ", begin: 0.6, end: 1 },
+          { id: "w1", text: "every", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w2", text: "night", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+          { id: "w3", text: "in", sep: " ", begin: 0.6, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -37,9 +37,9 @@ describe("applyWordDeletion", () => {
         text: "I love you",
         agentId: "v1",
         words: [
-          { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3 },
-          { id: "w5", text: "love", sep: " ", begin: 0.3, end: 0.6 },
-          { id: "w6", text: "you", sep: "", begin: 0.6, end: 1 },
+          { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w5", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+          { id: "w6", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -56,8 +56,8 @@ describe("applyWordDeletion", () => {
         text: "I love",
         agentId: "v1",
         words: [
-          { id: "w7", text: "I", sep: " ", begin: 0, end: 0.3 },
-          { id: "w8", text: "love", sep: "", begin: 0.3, end: 0.6 },
+          { id: "w7", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w8", text: "love", sep: "", begin: 0.3, end: 0.6, joinsNext: false },
         ],
       },
     ];
@@ -79,7 +79,7 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "I",
         agentId: "v1",
-        words: [{ id: "w9", text: "I", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w9", text: "I", sep: "", begin: 0, end: 1, joinsNext: false }],
       },
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 0 }];
@@ -128,8 +128,8 @@ describe("applyWordDeletion", () => {
         text: "I love",
         agentId: "v1",
         words: [
-          { id: "w10", text: "I", sep: " ", begin: 1, end: 1.3 },
-          { id: "w11", text: "love", sep: "", begin: 1.3, end: 1.6 },
+          { id: "w10", text: "I", sep: " ", begin: 1, end: 1.3, joinsNext: false },
+          { id: "w11", text: "love", sep: "", begin: 1.3, end: 1.6, joinsNext: false },
         ],
       },
       { id: "drop", text: "to clear", agentId: "v1", begin: 2, end: 3 },
@@ -154,9 +154,9 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "main",
         agentId: "v1",
-        words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundText: "bg",
-        backgroundWords: [{ id: "w13", text: "bg", sep: "", begin: 0, end: 1 }],
+        backgroundWords: [{ id: "w13", text: "bg", sep: "", begin: 0, end: 1, joinsNext: false }],
       },
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "bg", wordIndex: 0 }];
@@ -173,11 +173,11 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "main",
         agentId: "v1",
-        words: [{ id: "w14", text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w14", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundText: "ohoh",
         backgroundWords: [
-          { id: "w15", text: "oh", sep: "", begin: 0, end: 0.5 },
-          { id: "w16", text: "oh", sep: "", begin: 0.5, end: 1 },
+          { id: "w15", text: "oh", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w16", text: "oh", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -194,9 +194,9 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "main",
         agentId: "v1",
-        words: [{ id: "w17", text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w17", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundText: "bg",
-        backgroundWords: [{ id: "w18", text: "bg", sep: "", begin: 0, end: 1 }],
+        backgroundWords: [{ id: "w18", text: "bg", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundTextSource: "extraction",
       },
     ];
@@ -212,11 +212,11 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "main",
         agentId: "v1",
-        words: [{ id: "w19", text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w19", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundText: "ohoh",
         backgroundWords: [
-          { id: "w20", text: "oh", sep: "", begin: 0, end: 0.5 },
-          { id: "w21", text: "oh", sep: "", begin: 0.5, end: 1 },
+          { id: "w20", text: "oh", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w21", text: "oh", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
       },
@@ -233,13 +233,13 @@ describe("applyWordDeletion", () => {
         text: "I love",
         agentId: "v1",
         words: [
-          { id: "w22", text: "I", sep: " ", begin: 0, end: 0.3 },
-          { id: "w23", text: "love", sep: "", begin: 0.3, end: 0.6 },
+          { id: "w22", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w23", text: "love", sep: "", begin: 0.3, end: 0.6, joinsNext: false },
         ],
         backgroundText: "ohoh",
         backgroundWords: [
-          { id: "w24", text: "oh", sep: "", begin: 0, end: 0.5 },
-          { id: "w25", text: "oh", sep: "", begin: 0.5, end: 1 },
+          { id: "w24", text: "oh", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w25", text: "oh", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
       },
@@ -256,9 +256,9 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "I",
         agentId: "v1",
-        words: [{ id: "w26", text: "I", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w26", text: "I", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundText: "ah",
-        backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 0, end: 1 }],
+        backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 0, end: 1, joinsNext: false }],
       },
     ];
     const sel: DeletionSelection[] = [
@@ -292,10 +292,10 @@ describe("applyWordDeletion", () => {
         text: "every world",
         agentId: "v1",
         words: [
-          { id: "w28", text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { id: "w29", text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
-          { id: "w30", text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
-          { id: "w31", text: "world", sep: "", begin: 0.7, end: 1 },
+          { id: "w28", text: "ev", sep: "", begin: 0, end: 0.2, joinsNext: true },
+          { id: "w29", text: "er", sep: "", begin: 0.3, end: 0.5, joinsNext: true },
+          { id: "w30", text: "y", sep: "", begin: 0.5, end: 0.7, joinsNext: false },
+          { id: "w31", text: "world", sep: "", begin: 0.7, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -323,7 +323,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w32", text: "x", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w32", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
@@ -349,8 +349,8 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { id: "w33", text: "I", sep: " ", begin: 5, end: 5.5 },
-          { id: "w34", text: "love", sep: "", begin: 5.5, end: 6 },
+          { id: "w33", text: "I", sep: " ", begin: 5, end: 5.5, joinsNext: false },
+          { id: "w34", text: "love", sep: "", begin: 5.5, end: 6, joinsNext: false },
         ],
       },
       {
@@ -360,7 +360,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 1,
         templateLineIdx: 1,
-        words: [{ id: "w35", text: "you", sep: "", begin: 6, end: 7 }],
+        words: [{ id: "w35", text: "you", sep: "", begin: 6, end: 7, joinsNext: false }],
       },
     ];
     const result = applyWordDeletion(
@@ -387,7 +387,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w36", text: "I love", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w36", text: "I love", sep: "", begin: 5, end: 6, joinsNext: false }],
       },
       {
         id: "A2",
@@ -396,7 +396,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 1,
         templateLineIdx: 1,
-        words: [{ id: "w37", text: "you", sep: "", begin: 6, end: 7 }],
+        words: [{ id: "w37", text: "you", sep: "", begin: 6, end: 7, joinsNext: false }],
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "A1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
@@ -405,7 +405,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     expect(result.find((l) => l.id === "A2")?.groupId).toBe("cannon");
     expect(result.find((l) => l.id === "A1")?.words).toBeUndefined();
     expect(timedSyllables(mainTrack(result.find((l) => l.id === "A2")!))).toEqual([
-      { text: "you", sep: "", begin: 6, end: 7 },
+      { text: "you", sep: "", begin: 6, end: 7, joinsNext: false },
     ]);
   });
 
@@ -420,8 +420,8 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         templateLineIdx: 0,
         backgroundText: "ah ah",
         backgroundWords: [
-          { id: "w38", text: "ah", sep: " ", begin: 5, end: 5.5 },
-          { id: "w39", text: "ah", sep: "", begin: 5.5, end: 6 },
+          { id: "w38", text: "ah", sep: " ", begin: 5, end: 5.5, joinsNext: false },
+          { id: "w39", text: "ah", sep: "", begin: 5.5, end: 6, joinsNext: false },
         ],
       },
     ];
@@ -446,9 +446,9 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w40", text: "main", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w40", text: "main", sep: "", begin: 5, end: 6, joinsNext: false }],
         backgroundText: "ah",
-        backgroundWords: [{ id: "w41", text: "ah", sep: "", begin: 5, end: 5.5 }],
+        backgroundWords: [{ id: "w41", text: "ah", sep: "", begin: 5, end: 5.5, joinsNext: false }],
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
@@ -487,7 +487,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w42", text: "x", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w42", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
       },
       {
         id: "B1",
@@ -496,7 +496,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w43", text: "y", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w43", text: "y", sep: "", begin: 10, end: 11, joinsNext: false }],
       },
     ];
     const result = applyWordDeletion(
@@ -519,7 +519,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w44", text: "x", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w44", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
       },
       {
         id: "B1",
@@ -528,7 +528,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         groupId: "cannon",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w45", text: "y", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w45", text: "y", sep: "", begin: 10, end: 11, joinsNext: false }],
       },
     ];
     // Only delete A1's word, not B1's
@@ -539,7 +539,12 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
 
   it("non-grouped lines that get fully emptied: nothing to strip, just left as empty rows", () => {
     const lines: LyricLine[] = [
-      { id: "L1", text: "x", agentId: "v1", words: [{ id: "w46", text: "x", sep: "", begin: 5, end: 6 }] },
+      {
+        id: "L1",
+        text: "x",
+        agentId: "v1",
+        words: [{ id: "w46", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
+      },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].groupId).toBeUndefined();
@@ -558,7 +563,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 0,
         detached: true,
-        words: [{ id: "w47", text: "x", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w47", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
@@ -576,9 +581,9 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { id: "w48", text: "I", sep: " ", begin: 5, end: 5.3 },
-          { id: "w49", text: "love", sep: " ", begin: 5.3, end: 5.6 },
-          { id: "w50", text: "you", sep: "", begin: 5.6, end: 6 },
+          { id: "w48", text: "I", sep: " ", begin: 5, end: 5.3, joinsNext: false },
+          { id: "w49", text: "love", sep: " ", begin: 5.3, end: 5.6, joinsNext: false },
+          { id: "w50", text: "you", sep: "", begin: 5.6, end: 6, joinsNext: false },
         ],
       },
     ];
@@ -599,8 +604,8 @@ describe("applyWordDeletion · regressions", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w51", text: "hold", sep: " ", begin: 4, end: 4.5 },
-          { id: "w52", text: "me", sep: "", begin: 4.5, end: 5 },
+          { id: "w51", text: "hold", sep: " ", begin: 4, end: 4.5, joinsNext: false },
+          { id: "w52", text: "me", sep: "", begin: 4.5, end: 5, joinsNext: false },
         ],
       },
     ];

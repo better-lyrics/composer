@@ -48,7 +48,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         { text: "bar", begin: 2.5, end: 3 },
       ],
     });
-    const moved: WordTiming = { id: "w1", text: "world", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w1", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -87,7 +87,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       backgroundText: "ooh",
       backgroundTextSource: "manual",
     });
-    const moved: WordTiming = { id: "w2", text: "world", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w2", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -130,7 +130,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       backgroundText: "yeah",
       backgroundTextSource: "manual",
     });
-    const moved: WordTiming = { id: "w3", text: "ahh", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w3", text: "ahh", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -169,7 +169,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "B",
       words: [{ text: "first", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { id: "w4", text: "ahh", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w4", text: "ahh", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -206,8 +206,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "B",
       words: [{ text: "alpha", begin: 3, end: 3.5 }],
     });
-    const moveW1: WordTiming = { id: "w5", text: "one", sep: "", begin: 5, end: 5.4 };
-    const moveW2: WordTiming = { id: "w6", text: "two", sep: "", begin: 5.5, end: 5.9 };
+    const moveW1: WordTiming = { id: "w5", text: "one", sep: "", begin: 5, end: 5.4, joinsNext: true };
+    const moveW2: WordTiming = { id: "w6", text: "two", sep: "", begin: 5.5, end: 5.9, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -258,8 +258,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "C",
       words: [{ text: "c1", begin: 4, end: 4.5 }],
     });
-    const fromA: WordTiming = { id: "w7", text: "a2", sep: "", begin: 6, end: 6.4 };
-    const fromB: WordTiming = { id: "w8", text: "b1", sep: "", begin: 7, end: 7.4 };
+    const fromA: WordTiming = { id: "w7", text: "a2", sep: "", begin: 6, end: 6.4, joinsNext: true };
+    const fromB: WordTiming = { id: "w8", text: "b1", sep: "", begin: 7, end: 7.4, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB, lineC],
       [
@@ -310,7 +310,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       instanceIdx: 1,
       words: [{ text: "other", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { id: "w9", text: "word", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w9", text: "word", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -344,7 +344,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       begin: 10,
       end: 12,
     });
-    const moved: WordTiming = { id: "w10", text: "world", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w10", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -376,7 +376,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       id: "B",
       words: [{ text: "blocker", begin: 5, end: 6 }],
     });
-    const moved: WordTiming = { id: "w11", text: "world", sep: "", begin: 5.3, end: 5.7 };
+    const moved: WordTiming = { id: "w11", text: "world", sep: "", begin: 5.3, end: 5.7, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -408,8 +408,8 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       id: "B",
       words: [{ text: "anchor", begin: 2, end: 2.5 }],
     });
-    const moveW1: WordTiming = { id: "w12", text: "one", sep: "", begin: 5, end: 5.5 };
-    const moveW2: WordTiming = { id: "w13", text: "two", sep: "", begin: 5.3, end: 5.8 };
+    const moveW1: WordTiming = { id: "w12", text: "one", sep: "", begin: 5, end: 5.5, joinsNext: true };
+    const moveW2: WordTiming = { id: "w13", text: "two", sep: "", begin: 5.3, end: 5.8, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -454,7 +454,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "x", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { id: "w14", text: "beta", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w14", text: "beta", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -488,7 +488,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "foo", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { id: "w15", text: "world", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w15", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -509,7 +509,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(lineText(b)).toBe("foo world");
   });
 
-  it("regenerates syllable group ids on inserted words", () => {
+  it("keeps syllables joined on inserted words", () => {
     const lineA = createLine({
       id: "A",
       words: [
@@ -521,8 +521,8 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "anchor", begin: 2, end: 2.5 }],
     });
-    const moveW1: WordTiming = { id: "w16", text: "ti", sep: "", begin: 5, end: 5.4, syllableGroupId: "shared" };
-    const moveW2: WordTiming = { id: "w17", text: "tle", sep: "", begin: 5.4, end: 5.8, syllableGroupId: "shared" };
+    const moveW1: WordTiming = { id: "w16", text: "ti", sep: "", begin: 5, end: 5.4, joinsNext: true };
+    const moveW2: WordTiming = { id: "w17", text: "tle", sep: "", begin: 5.4, end: 5.8, joinsNext: false };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -551,9 +551,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     const inserted = b.words?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
     expect(inserted).toHaveLength(2);
-    for (const w of inserted) expect(w.syllableGroupId).not.toBe("shared");
-    expect(inserted[0].syllableGroupId).toBeDefined();
-    expect(inserted[0].syllableGroupId).toBe(inserted[1].syllableGroupId);
+    expect(inserted.map((w) => w.joinsNext)).toEqual([true, false]);
   });
 
   it("does not mutate the input lines array", () => {
@@ -579,7 +577,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "word",
-          word: { id: "w18", text: "world", sep: "", begin: 5, end: 5.5 },
+          word: { id: "w18", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true },
         },
       ],
       wholeSong,
@@ -609,7 +607,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "word",
-          word: { id: "w19", text: "world", sep: "", begin: 5, end: 5.5 },
+          word: { id: "w19", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true },
         },
       ],
       wholeSong,
@@ -628,7 +626,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "anchor", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { id: "w20", text: "only", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w20", text: "only", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -664,7 +662,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
       ],
     });
     const lineB = createLine({ id: "B", text: "" });
-    const moved: WordTiming = { id: "w21", text: "world", sep: "", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w21", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -705,7 +703,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "word",
-          word: { id: "w22", text: "moved", sep: "", begin: 5, end: 5.5 },
+          word: { id: "w22", text: "moved", sep: "", begin: 5, end: 5.5, joinsNext: true },
         },
       ],
       wholeSong,
@@ -724,7 +722,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
       id: "B",
       words: [{ text: "neighbor", begin: 2, end: 5 }],
     });
-    const moved: WordTiming = { id: "w23", text: "moved", sep: "", begin: 5, end: 5 };
+    const moved: WordTiming = { id: "w23", text: "moved", sep: "", begin: 5, end: 5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -764,7 +762,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
     sourceTrack: "word" as const,
     targetLineId,
     targetTrack: "word" as const,
-    word: { id: newWordId(), text: "alpha", sep: "", begin: 6, end: 6.3 },
+    word: { id: newWordId(), text: "alpha", sep: "", begin: 6, end: 6.3, joinsNext: true },
   });
 
   it("returns updates for exactly the source and target lines", () => {
@@ -839,7 +837,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "bg",
-          word: { id: "w24", text: "lead", sep: "", begin: 6, end: 7 },
+          word: { id: "w24", text: "lead", sep: "", begin: 6, end: 7, joinsNext: true },
         },
       ],
       wholeSong,

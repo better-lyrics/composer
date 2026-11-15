@@ -14,10 +14,11 @@ function proportionalRemap(sourceAfter: WordTiming[], siblingWords: WordTiming[]
   const siblingEnd = Math.max(...siblingWords.map((w) => w.end));
   const siblingSpan = siblingEnd - siblingStart;
   if (siblingSpan <= 0) return null;
-  return sourceAfter.map((w) => ({
+  return sourceAfter.map(({ joinsNext, ...w }) => ({
     id: newWordId(),
     text: w.text,
     sep: w.sep,
+    joinsNext,
     begin: siblingStart + ((w.begin - sourceStart) / sourceSpan) * siblingSpan,
     end: siblingStart + ((w.end - sourceStart) / sourceSpan) * siblingSpan,
     ...(w.explicit ? { explicit: true as const } : {}),
@@ -59,10 +60,12 @@ function applySiblingWords(
     if (matchedBefore[i] !== null) {
       const bIdx = matchedBefore[i] as number;
       const { explicit: _siblingExplicit, ...siblingBase } = siblingWords[bIdx];
+      const { text, sep, joinsNext } = sourceAfter[i];
       result[i] = {
         ...siblingBase,
-        text: sourceAfter[i].text,
-        sep: sourceAfter[i].sep,
+        text,
+        sep,
+        joinsNext,
         ...(sourceAfter[i].explicit ? { explicit: true as const } : {}),
       };
       lastMatchedBefore = bIdx;
@@ -95,9 +98,6 @@ function applySiblingWords(
     const slotSpan = slotEnd - slotStart;
     const runLen = runEnd - i;
 
-    const leftBracket = lastMatchedBefore >= 0 ? siblingWords[lastMatchedBefore] : undefined;
-    const rightBracket = nextMatchedBefore < siblingWords.length ? siblingWords[nextMatchedBefore] : undefined;
-
     for (let k = i; k < runEnd; k++) {
       const w = sourceAfter[k];
       let begin: number;
@@ -113,15 +113,8 @@ function applySiblingWords(
         begin = slotStart;
         end = slotStart;
       }
-      result[k] = synthesizeBracketedWord({
-        text: w.text,
-        sep: w.sep,
-        begin,
-        end,
-        leftBracket,
-        rightBracket,
-        explicit: w.explicit ?? false,
-      });
+      const { text, sep, joinsNext, explicit } = w;
+      result[k] = synthesizeBracketedWord({ text, sep, begin, end, joinsNext, explicit: explicit ?? false });
     }
 
     i = runEnd;

@@ -30,6 +30,6 @@ describe("wordsFromSyllables", () => {
       { text: "Pa", sep: "", joinsNext: true, span: [1000 as Ms, 1200 as Ms] },
       { text: "per", sep: " ", joinsNext: false },
     ]);
-    expect(words).toEqual([{ text: "Pa", begin: 1, end: 1.2, syllableGroupId: "w0" }]);
+    expect(words).toEqual([{ text: "Pa", begin: 1, end: 1.2 }]);
   });
 });
