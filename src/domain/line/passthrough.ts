@@ -45,6 +45,11 @@ function withUntimedPassthrough<T extends LineTrack>(track: T, kept: UntimedPass
 
 // -- Functions ----------------------------------------------------------------
 
+// Kept elements of the line or its background placed after a syllable, which they find again by its id.
+function placesKeptElements(line: LyricLine): boolean {
+  return !!(line.passthrough?.elementsAfter || backgroundTrack(line)?.passthrough?.elementsAfter);
+}
+
 function linePassthroughOf(line: LyricLine): LinePassthrough | undefined {
   const background = backgroundTrack(line)?.passthrough;
   const mainUntimed = untimedPassthroughOf(mainTrack(line));
@@ -102,4 +107,4 @@ function withoutKeptData(line: LyricLine): LyricLine {
 // -- Exports ------------------------------------------------------------------
 
 export type { LinePassthrough };
-export { linePassthroughOf, withLinePassthrough, withoutKeptData };
+export { linePassthroughOf, placesKeptElements, withLinePassthrough, withoutKeptData };
