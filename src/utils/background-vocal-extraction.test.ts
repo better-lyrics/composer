@@ -1271,6 +1271,41 @@ describe("extractBackgroundVocals: existing backgroundText", () => {
   });
 });
 
+describe("extractBackgroundVocals: standalone line with its own background", () => {
+  const merge = { mergeStandaloneLines: true, preserveBrackets: false };
+
+  it("regression: merging keeps the standalone line's own background after its lyrics", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line", backgroundText: "ah" }),
+      createLine({ id: "2", text: "(hey yeah)", backgroundText: "oh oh yeah" }),
+    ];
+    const [merged] = extractBackgroundVocals(lines, merge, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ah hey yeah oh oh yeah");
+  });
+
+  it("keeps the timing of the standalone line's own background words, in order", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(hey yeah)",
+        words: [
+          { text: "(hey", sep: " ", begin: 5, end: 5.5 },
+          { text: "yeah)", begin: 5.5, end: 6 },
+        ],
+        backgroundText: "oh",
+        backgroundWords: [{ text: "oh", begin: 6.2, end: 6.5 }],
+      }),
+    ];
+    const [merged] = extractBackgroundVocals(lines, merge, DEFAULT_SPLIT_CHARACTER);
+    expect(roleWords(merged, "bg")?.map(({ text, begin, end }) => ({ text, begin, end }))).toEqual([
+      { text: "hey", begin: 5, end: 5.5 },
+      { text: "yeah", begin: 5.5, end: 6 },
+      { text: "oh", begin: 6.2, end: 6.5 },
+    ]);
+  });
+});
+
 // -- extractBackgroundVocals: input not mutated -------------------------------
 
 describe("extractBackgroundVocals: input not mutated", () => {

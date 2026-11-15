@@ -5,8 +5,10 @@ import type { LineTrack, LyricLine, Syllable } from "../line";
 import { syllableJoint, syllablesText } from "../line-text";
 import { backgroundTrack, mainTrack } from "../line-track";
 import { withBackgroundTrack, withMainTrack } from "../line-track-writes";
-import { elementRole, isLyricTextElement, LYRIC_ROLES } from "./modelled";
+import type { WordTiming } from "../word-timing";
+import { elementRole, isLyricTextElement, isTimedWordSpan, LYRIC_ROLES } from "./modelled";
 import { mixedContentPassthrough } from "./passthrough-read";
+import { parseTtmlTimestamp } from "./timestamp";
 import { markupBaseText } from "./markup";
 
 // -- Types --------------------------------------------------------------------
@@ -78,6 +80,45 @@ function trimmedLyric(text: string, spans: readonly KeptSpan[], ends: ReadonlyMa
   };
 }
 
+// -- Untimed rest -------------------------------------------------------------
+
+// The text after a container's last timed span, as written: the untimed rest of a partly synced track.
+function untimedTail(container: XmlReadElement): string {
+  const nodes = container.childNodes;
+  const last = nodes.findLastIndex((node) => node.kind === "element" && isTimedWordSpan(node));
+  let tail = "";
+  for (const node of nodes.slice(last + 1)) if (node.kind === "text") tail += node.text;
+  return tail;
+}
+
+// A word-synced track's words and text, the text running on through the untimed rest after the last span; a rest
+// written straight after that span joins its word.
+function timedTrackText(
+  words: WordTiming[],
+  container: XmlReadElement,
+  splitChar: string,
+): { text: string; words: WordTiming[] } {
+  const tail = untimedTail(container);
+  const closing = words.at(-1);
+  if (!closing || tail.trim() === "") return { text: syllablesText(words, splitChar), words };
+  const read = /^\s/.test(tail) || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
+  return { text: syllablesText(read, splitChar) + tail.trim(), words: read };
+}
+
+// An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`; one that
+// wrote none takes the time of a line-synced `<p>`, as TTML times it.
+function untimedBackgroundSpan(bg: XmlReadElement, begin: number, end: number, lineSynced: boolean) {
+  if (!bg.hasAttribute("begin") && !bg.hasAttribute("end")) {
+    return lineSynced && Number.isFinite(begin) && Number.isFinite(end) && begin <= end
+      ? { backgroundBegin: begin, backgroundEnd: end }
+      : {};
+  }
+  const ownBegin = bg.hasAttribute("begin") ? parseTtmlTimestamp(bg.getAttribute("begin") ?? "") : begin;
+  const ownEnd = bg.hasAttribute("end") ? parseTtmlTimestamp(bg.getAttribute("end") ?? "") : end;
+  if (!Number.isFinite(ownBegin) || !Number.isFinite(ownEnd) || ownEnd < ownBegin) return {};
+  return { backgroundBegin: ownBegin, backgroundEnd: ownEnd };
+}
+
 // -- Syllables ----------------------------------------------------------------
 
 // Where each syllable sits in the text the syllables spell.
@@ -144,4 +185,4 @@ function untimedAnchors(
 // -- Exports ------------------------------------------------------------------
 
 export type { UntimedLyric };
-export { untimedAnchors, untimedLyric, withSpansFromMarkup, withUntimedSpans };
+export { timedTrackText, untimedAnchors, untimedBackgroundSpan, untimedLyric, withSpansFromMarkup, withUntimedSpans };

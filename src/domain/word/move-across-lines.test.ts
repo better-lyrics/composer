@@ -907,4 +907,32 @@ describe("applyWordMoveAcrossLines: partly synced lines", () => {
       "away",
     ]);
   });
+
+  it("regression: moving the only timed background word keeps the background's untimed rest", () => {
+    const line = createLine({
+      id: "A",
+      words: [{ text: "Forever", begin: 1, end: 2 }],
+      backgroundText: "ooh the wind",
+      backgroundWords: [{ text: "ooh", sep: " ", begin: 1.2, end: 1.5 }],
+    });
+    const moved: WordTiming = { id: "w98", text: "ooh", sep: "", begin: 2.2, end: 2.5, joinsNext: false };
+    const result = applyWordMoveAcrossLines(
+      [line],
+      [
+        {
+          sourceLineId: "A",
+          sourceWordIndex: 0,
+          sourceTrack: "bg",
+          targetLineId: "A",
+          targetTrack: "word",
+          word: moved,
+        },
+      ],
+      wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    if (!result.ok) throw new Error("expected ok");
+    const after = findById(applyUpdates([line], result.updates), "A");
+    expect(backgroundTrack(after)?.syllables.map((syllable) => syllable.text)).toEqual(["the", "wind"]);
+  });
 });
