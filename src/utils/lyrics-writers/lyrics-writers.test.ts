@@ -77,6 +77,11 @@ describe("writeLrc", () => {
     expect(writeQrc(doc([line]))).toContain("(ooh)(12000,2000)");
   });
 
+  it("regression: writes split marks of an untimed background as joined syllables, as it does for main text", () => {
+    const line = createLine({ text: "o|oh ah|ah", begin: 1, end: 3, backgroundText: "o|oh ah|ah" });
+    expect(writeLrc(doc([line]))).toContain("[00:01.00]ooh ahah (ooh ahah)");
+  });
+
   it("regression: keeps the untimed rest of a partly synced line inside the last word's tags", () => {
     expect(writeLrc(doc([partlySynced()]))).toContain("[00:34.06]<00:34.06>Is <00:34.19>it so<00:34.31>");
   });

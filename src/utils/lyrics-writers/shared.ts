@@ -3,8 +3,7 @@ import type { Agent } from "insync/agent";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";
-import { backgroundText } from "insync/line-text";
-import { mainTrack } from "insync/line-track";
+import { backgroundTrack, mainTrack } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";
 import type { Bounds } from "insync/word-bounds";
 import { spacedText } from "insync/word-spaced-words";
@@ -48,7 +47,7 @@ function parenthesized(words: WordTiming[]): WordTiming[] {
 function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
   const timed = drawnSyllables(line, "bg", getSplitCharacter());
   if (timed.length) return parenthesized(timed);
-  const text = backgroundText(line, getSplitCharacter())?.trim();
+  const text = spacedText(backgroundTrack(line)?.syllables ?? []).trim();
   return text
     ? parenthesized([{ id: "background", text, sep: "", begin: bounds.begin, end: bounds.end, joinsNext: false }])
     : [];
