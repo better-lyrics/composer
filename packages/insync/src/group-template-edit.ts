@@ -126,6 +126,29 @@ function counterpartOf(source: Map<number, SlotLine>, target: Map<number, SlotLi
   return (id) => pairs.get(id);
 }
 
+// Template lines a command moved syllables between, by the slots of each: an instance takes such a move only whole.
+function slotsMovedTogether(edits: readonly Edit[]): Map<string, number[]> {
+  const slotOfSyllable = new Map<string, number>();
+  for (const { before } of edits)
+    for (const track of before.tracks)
+      for (const syllable of track.syllables)
+        slotOfSyllable.set(`${before.groupId}\u0000${syllable.id}`, before.templateLineIdx);
+  const together = new Map<string, number[]>();
+  const link = (groupId: string, from: number, to: number) => {
+    const key = slotKey(groupId, from);
+    together.set(key, [...new Set([...(together.get(key) ?? [from]), to])]);
+  };
+  for (const { after } of edits)
+    for (const track of after.tracks)
+      for (const syllable of track.syllables) {
+        const from = slotOfSyllable.get(`${after.groupId}\u0000${syllable.id}`);
+        if (from === undefined || from === after.templateLineIdx) continue;
+        link(after.groupId, from, after.templateLineIdx);
+        link(after.groupId, after.templateLineIdx, from);
+      }
+  return together;
+}
+
 function isSplit(edit: Edit): boolean {
   return edit.after.tracks.some((track, index) => {
     const previous = edit.before.tracks[index];
@@ -139,8 +162,8 @@ function isSplit(edit: Edit): boolean {
 
 // An edit to a group line's content is an edit to its template line, so every other instance that follows the
 // template and was not edited itself gets it: on the shared timing where both instances share it, else on its own
-// timing. Detached lines, and instances the same command edited differently, keep their own content. Work grows with
-// the lines and the edited template lines.
+// timing. Detached lines, and instances the same command edited differently, keep their own content, and so does an
+// instance missing a line the command moved words to or from. Work grows with the lines and the edited template lines.
 function carryTemplateEdits({ before, after, groups, anchors, splitChar }: TemplateEditInput): TemplateEdits {
   const { edits, edited } = templateLineEdits(before, after);
   if (edits.length === 0) return { lines: after, splits: [] };
@@ -168,12 +191,18 @@ function carryTemplateEdits({ before, after, groups, anchors, splitChar }: Templ
     return counterpart;
   };
   const bySlot = new Map(edits.map((edit) => [slotKey(edit.after.groupId, edit.after.templateLineIdx), edit]));
+  const movedTogether = slotsMovedTogether(edits);
+  const takesWholeMove = (line: SlotLine) =>
+    (movedTogether.get(slotKey(line.groupId, line.templateLineIdx)) ?? []).every((slot) => {
+      const other = byInstance.get(instanceKey(line.groupId, line.instanceIdx))?.get(slot);
+      return other !== undefined && !edited.has(other.id);
+    });
   const splits = new Map<string, Set<number>>();
   let lines = after;
   after.forEach((line, index) => {
     if (!isSlotLine(line)) return;
     const edit = bySlot.get(slotKey(line.groupId, line.templateLineIdx));
-    if (!edit || edited.has(line.id) || sameSharedContent(line, edit.after)) return;
+    if (!edit || edited.has(line.id) || sameSharedContent(line, edit.after) || !takesWholeMove(line)) return;
     const { groupId, instanceIdx: from } = edit.after;
     const group = groupsById.get(groupId);
     const shared = sharesTiming(group, from) && sharesTiming(group, line.instanceIdx);
