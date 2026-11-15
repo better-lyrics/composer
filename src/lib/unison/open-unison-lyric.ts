@@ -2,7 +2,11 @@ import { toast } from "sonner";
 import { artistCredit } from "@/domain/project/display-title";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { linksOnOpen } from "@/domain/unison/linked-projects";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { listProjectIndex } from "@/lib/project-repository";
 import type { UnisonLyric, UnisonLyricsFormat } from "@/lib/unison/api-types";
+import { readUnisonSession } from "@/lib/unison/session";
 import { startVideoProject } from "@/lib/unison/video-project";
 import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
@@ -76,6 +80,13 @@ async function openUnisonLyric(lyric: UnisonLyric, { link, navigate }: OpenUniso
   });
 }
 
+async function openUnisonLyricFromLink(lyric: UnisonLyric, navigate: (path: string) => void): Promise<boolean> {
+  const link = linksOnOpen(lyric, readUnisonSession()?.keyId ?? null, await listProjectIndex());
+  const before = openProjectIdSnapshot();
+  await openUnisonLyric(lyric, { link, navigate });
+  return openProjectIdSnapshot() !== before;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { openUnisonLyric, readUnisonLyric, withUnisonDetails };
+export { openUnisonLyric, openUnisonLyricFromLink, readUnisonLyric, withUnisonDetails };

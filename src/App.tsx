@@ -5,6 +5,7 @@ import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { useImportFromLinkedFiles } from "@/hooks/useImportFromLinkedFiles";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
+import { useImportFromUnisonLyric } from "@/hooks/useImportFromUnisonLyric";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
 import { useLaunchQueue } from "@/hooks/useLaunchQueue";
@@ -120,6 +121,7 @@ const AppShell: React.FC = () => {
   useResolveYouTubeTunnel();
   useImportFromQuery();
   useImportFromYouTube();
+  useImportFromUnisonLyric();
   useLaunchQueue();
   usePanicRecovery();
   useAutoSeparate();

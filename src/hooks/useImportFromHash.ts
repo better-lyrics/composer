@@ -3,13 +3,14 @@ import type { LyricLine } from "@/domain/line/model";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { hasBootUnisonLyric } from "@/hooks/useImportFromUnisonLyric";
 import { startSongInNewProject } from "@/lib/open-project";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
 import { isFromNewerComposer } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import { showNewProjectToast, showNewerLinkToast } from "@/utils/project-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -72,6 +73,8 @@ async function importInNewProject(payload: ImportPayload, metadata: ProjectMetad
 // -- Hook ---------------------------------------------------------------------
 
 function useImportFromHash(): void {
+  const [unisonLyricLink] = useState(hasBootUnisonLyric);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       markHashImportSettled();
@@ -79,6 +82,12 @@ function useImportFromHash(): void {
     }
     const { hash } = window.location;
     if (!hash.startsWith(IMPORT_HASH_PREFIX)) {
+      markHashImportSettled();
+      return;
+    }
+    if (unisonLyricLink) {
+      console.warn(LOG_PREFIX, "skipped the converter result: the link opens a Unison lyric");
+      clearImportHash();
       markHashImportSettled();
       return;
     }
@@ -120,7 +129,7 @@ function useImportFromHash(): void {
     };
 
     void runImport();
-  }, []);
+  }, [unisonLyricLink]);
 }
 
 // -- Exports ------------------------------------------------------------------
