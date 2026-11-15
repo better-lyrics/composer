@@ -6,7 +6,9 @@ import { pasteLyrics } from "insync/commands/edit-text";
 import { duplicateWords, moveWords, moveWordsAcrossLines } from "insync/commands/word-moves";
 import { pieceOf, trackPieces } from "insync/language-pieces";
 import type { LineLanguages } from "insync/language";
-import { roleWords, type WordTrack } from "insync/line-track";
+import { lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords, type WordTrack } from "insync/line-track";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -204,5 +206,101 @@ describe("word moves inside a group instance", () => {
     expect(wordTimes("top-1")?.map(([text]) => text)).toEqual(["glow", "We", "tonight"]);
     expect(detachedIds).toEqual(["top-1"]);
     expect(useProjectStore.getState().lines.find((line) => line.id === "top-1")?.detached).toBe(true);
+  });
+});
+
+describe("word moves in partly timed lines", () => {
+  const silver = createWord({ text: "Silver", sep: " ", begin: 1, end: 2 });
+  const light = createWord({ text: "light", sep: " ", begin: 2, end: 3 });
+
+  beforeEach(() => {
+    useProjectStore.getState().reset();
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        createLine({ id: "sky", text: "Silver light birds are flying", words: [silver, light] }),
+        createLine({ id: "dance", text: "dancing", words: [createWord({ text: "dancing", begin: 6, end: 7 })] }),
+      ],
+      groups: [],
+    });
+  });
+
+  const lineById = (id: string) => {
+    const found = useProjectStore.getState().lines.find((line) => line.id === id);
+    if (!found) throw new Error(`no line ${id}`);
+    return found;
+  };
+  const endsItsWord = (id: string) => mainTrack(lineById(id)).syllables.at(-1)?.joinsNext;
+
+  it("regression: a timed word moved before its neighbour keeps a space before the untimed rest", () => {
+    useProjectStore
+      .getState()
+      .commit(moveWords({ addresses: [addressOf({ id: "sky" }, "word", light)], timeDelta: -2, duration: 60 }));
+    expect(lineText(lineById("sky"), DEFAULT_SPLIT_CHARACTER)).toBe("light Silver birds are flying");
+  });
+
+  it("regression: a timed word moved out keeps a space between what stays and the untimed rest", () => {
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf({ id: "sky" }, "word", light)],
+        fromLineId: "sky",
+        targetLineId: "dance",
+        targetTrack: "word",
+        timeDelta: 5,
+        duration: 60,
+      }),
+    );
+    expect(lineText(lineById("sky"), DEFAULT_SPLIT_CHARACTER)).toBe("Silver birds are flying");
+    expect(lineText(lineById("dance"), DEFAULT_SPLIT_CHARACTER)).toBe("dancing light");
+    expect(endsItsWord("dance")).toBe(false);
+  });
+
+  it("regression: a word moved into a partly timed line ends its word before the untimed rest", () => {
+    const dancing = roleWords(lineById("dance"), "main")?.[0];
+    if (!dancing) throw new Error("expected dancing");
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf({ id: "dance" }, "word", dancing)],
+        fromLineId: "dance",
+        targetLineId: "sky",
+        targetTrack: "word",
+        timeDelta: -2.5,
+        duration: 60,
+      }),
+    );
+    expect(lineText(lineById("sky"), DEFAULT_SPLIT_CHARACTER)).toBe("Silver light dancing birds are flying");
+    expect(endsItsWord("sky")).toBe(false);
+  });
+
+  it("regression: a word's last syllable moved before its first leaves no join at the end of the line", () => {
+    const lan = createWord({ text: "Lan", sep: "", begin: 10, end: 10.5, joinsNext: true });
+    const terns = createWord({ text: "terns", sep: "", begin: 10.5, end: 11 });
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "glow", text: "Lanterns", words: [lan, terns] })],
+      groups: [],
+    });
+    useProjectStore
+      .getState()
+      .commit(moveWords({ addresses: [addressOf({ id: "glow" }, "word", terns)], timeDelta: -1, duration: 60 }));
+    expect(endsItsWord("glow")).toBe(false);
+  });
+
+  it("regression: a joined syllable moved onto an empty background lane ends that track", () => {
+    const lan = createWord({ text: "Lan", sep: "", begin: 10, end: 10.5, joinsNext: true });
+    const terns = createWord({ text: "terns", sep: "", begin: 10.5, end: 11 });
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "glow", text: "Lanterns", words: [lan, terns] })],
+      groups: [],
+    });
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf({ id: "glow" }, "word", lan)],
+        fromLineId: "glow",
+        targetLineId: "glow",
+        targetTrack: "bg",
+        timeDelta: 0,
+        duration: 60,
+      }),
+    );
+    expect(backgroundTrack(lineById("glow"))?.syllables.at(-1)?.joinsNext).toBe(false);
   });
 });

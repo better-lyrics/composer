@@ -103,7 +103,7 @@ function showLineDiffersToast(lineIds: readonly string[], lines = useProjectStor
 }
 
 function showSplitInAllInstancesToast(count: number): void {
-  toast(`Split in all ${count} instances`, { duration: GROUP_TOAST_DURATION_MS });
+  showGroupActionToast(`Split in all ${count} instances`);
 }
 
 function showSharedSongEdgeToast(): void {

@@ -530,7 +530,7 @@ describe("ported behaviour", () => {
     const lines = [
       createLine({
         id: "l0",
-        text: "one two three",
+        text: "one two three|teen",
         words: [word("one ", 0, 1), word("two ", 1, 2), { ...word("three", 2, 3), explicit: true, joinsNext: true }],
       }),
     ];
@@ -566,7 +566,7 @@ describe("ported behaviour", () => {
 
   it("preserves explicit and joinsNext on the word hold-end closes", () => {
     const lines = [
-      createLine({ id: "l0", text: "one", words: [{ ...word("one", 5, 5), explicit: true, joinsNext: true }] }),
+      createLine({ id: "l0", text: "one|der", words: [{ ...word("one", 5, 5), explicit: true, joinsNext: true }] }),
     ];
     const after = apply(lines, run(lines, "hold-end", [0, 0], 6));
     expect(timedSyllables(mainTrack(after[0]))[0]).toEqual({

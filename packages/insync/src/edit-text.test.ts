@@ -61,4 +61,8 @@ describe("shiftCaretPastRewrittenRows", () => {
   it("keeps the caret when the displayed text has more rows than the typed text", () => {
     expect(shiftCaretPastRewrittenRows("a\nb", "abc\nb\nc", 3)).toBe(3);
   });
+
+  it("regression: a join that moves the background behind the joined words keeps the caret where the rows met", () => {
+    expect(shiftCaretPastRewrittenRows("love (away)you\nlove (away)", "love you (away)\nlove (away)", 11)).toBe(5);
+  });
 });

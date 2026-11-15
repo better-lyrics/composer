@@ -465,19 +465,42 @@ describe("pasting onto a line of a group that shares timing", () => {
         sep: "",
         begin: 6.5,
         end: 7.5,
-        joinsNext: true,
+        joinsNext: false,
       });
       expect(roleWords(updatedLine(updates?.[1].updates), "main")?.[2]).toMatchObject({
         text: "y",
         sep: "",
         begin: 16,
         end: 16.5,
-        joinsNext: true,
+        joinsNext: false,
       });
     });
   });
 
   describe("regressions", () => {
+    it("regression: a line-synced block pasted onto an untimed row stays apart from its words", () => {
+      const untimed = line("l1", undefined, "Lanterns drift away");
+      const clipboard: ClipboardData = {
+        entries: [
+          {
+            word: { id: "block", text: "Paper wings", sep: "", begin: 4, end: 6, joinsNext: false },
+            lineOffset: 0,
+            trackType: "word",
+          },
+        ],
+      };
+      const updates = applyPasteToLines({
+        lines: [untimed],
+        clipboard,
+        targetLineIndex: 0,
+        timeDelta: 0,
+        rangeOf: wholeSong(10),
+      });
+      const pasted = updatedLine(updates?.[0].updates);
+      if (!pasted) throw new Error("expected the paste to write the line");
+      expect(lineText(pasted, DEFAULT_SPLIT_CHARACTER)).toBe("Paper wings Lanterns drift away");
+    });
+
     it("regression: a line of an old group still takes a pasted word up to the song end", () => {
       expect(roleWords(updatedLine(paste(clipboardAt(12.5, 13.5), 0, false)?.[0].updates), "main")?.[2]).toMatchObject({
         begin: 12.5,
