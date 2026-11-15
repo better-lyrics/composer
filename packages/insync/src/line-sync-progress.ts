@@ -1,10 +1,11 @@
-import { effectiveBounds } from "./line-bounds";
 import type { LyricLine } from "./line";
+import { effectiveBounds } from "./line-bounds";
 import { hasMainLyrics, isLineSynced } from "./line-predicates";
 import { backgroundText, lineText } from "./line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
-import type { WordTiming } from "./word-timing";
 import { splitIntoWordsWithMeta } from "./lyric-words";
+import { memoBySplitCharacter } from "./memo-by-identity";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 
@@ -40,7 +41,6 @@ interface SlotRange {
 type TrackGap = Omit<SyncGap, "lineIndex">;
 
 interface LineSyncFacts {
-  splitChar: string;
   syncable: boolean;
   timed: boolean;
   slots: number;
@@ -133,19 +133,14 @@ function mainGap(line: LyricLine, parts: readonly string[], splitChar: string): 
 // -- Cache --------------------------------------------------------------------
 
 // A tap replaces one line object, so every other line answers from here and a whole-song pass stays cheap.
-const factsByLine = new WeakMap<LyricLine, LineSyncFacts>();
-
-function lineSyncFacts(line: LyricLine, splitChar: string): LineSyncFacts {
-  const cached = factsByLine.get(line);
-  if (cached?.splitChar === splitChar) return cached;
+const lineSyncFacts = memoBySplitCharacter((line: LyricLine, splitChar: string): LineSyncFacts => {
   const parts = splitIntoWordsWithMeta(lineText(line, splitChar), splitChar).parts;
   const slots = parts.length;
   const main = mainGap(line, parts, splitChar);
   const background = backgroundGap(line, splitChar);
   const trackGaps = [main, background].filter((gap) => gap !== null);
   const lineSynced = isLineSynced(line);
-  const facts: LineSyncFacts = {
-    splitChar,
+  return {
     syncable: hasMainLyrics(line, splitChar),
     timed: effectiveBounds(line) !== null,
     slots,
@@ -154,9 +149,7 @@ function lineSyncFacts(line: LyricLine, splitChar: string): LineSyncFacts {
     backgroundComplete: background === null,
     trackGaps,
   };
-  factsByLine.set(line, facts);
-  return facts;
-}
+});
 
 // -- Predicates ---------------------------------------------------------------
 

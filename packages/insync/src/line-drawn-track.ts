@@ -1,5 +1,5 @@
-import { withAlignedTransliteration } from "./language-align";
 import type { LanguagePieces, LineLanguages } from "./language";
+import { withAlignedTransliteration } from "./language-align";
 import { trackPieces } from "./language-pieces";
 import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "./line";
 import { trackText } from "./line-text";
@@ -14,10 +14,11 @@ import {
   trackOf,
 } from "./line-track";
 import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "./line-track-writes";
+import { memoBySplitCharacter } from "./memo-by-identity";
+import { withoutSplitCharacter } from "./split-character-text";
 import { lineTimingWordId } from "./word-id";
 import { wordFromSpaced } from "./word-spaced-words";
 import type { WordTiming } from "./word-timing";
-import { withoutSplitCharacter } from "./split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,15 +28,9 @@ interface CachedSpanBlock {
   syllables: WordTiming[];
 }
 
-interface CachedLine {
-  splitChar: string;
-  line: LyricLine;
-}
-
 // -- Caches -------------------------------------------------------------------
 
 const spanBlockByTrack = new WeakMap<LineTrack, CachedSpanBlock>();
-const drawnLineByLine = new WeakMap<LyricLine, CachedLine>();
 
 // -- Syllables ----------------------------------------------------------------
 
@@ -79,13 +74,10 @@ function withDrawnTracks(line: LyricLine, splitChar: string): LyricLine {
 }
 
 // The line as the Timeline draws it, for reads only: each span as one block, readings aligned to the drawn syllables.
-function drawnLine(line: LyricLine, splitChar: string): LyricLine {
-  const cached = drawnLineByLine.get(line);
-  if (cached?.splitChar === splitChar) return cached.line;
-  const drawn = withAlignedTransliteration(withDrawnTracks(line, splitChar), splitChar);
-  drawnLineByLine.set(line, { splitChar, line: drawn });
-  return drawn;
-}
+const drawnLine = memoBySplitCharacter(
+  (line: LyricLine, splitChar: string): LyricLine =>
+    withAlignedTransliteration(withDrawnTracks(line, splitChar), splitChar),
+);
 
 // -- Languages ----------------------------------------------------------------
 
