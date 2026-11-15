@@ -1,5 +1,5 @@
-import { shareGroupTiming } from "@/domain/commands/group-edits";
-import { NOTHING_SHARED } from "@/domain/group/group-plans";
+import { shareGroupTiming } from "insync/commands/group-edits";
+import { NOTHING_SHARED } from "insync/group-plans";
 import type { SharingOutcome } from "insync/group-shared-placement";
 import { type SharedTimingSuggestion, sharedTimingSuggestions } from "insync/group-shared-timing-suggestions";
 import { useAudioStore } from "@/stores/audio";

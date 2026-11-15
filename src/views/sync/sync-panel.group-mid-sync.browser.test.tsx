@@ -10,7 +10,7 @@ import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { GroupingNotices } from "@/test/grouping-notices";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { beforeEach, describe, expect, it } from "vitest";
-import { groupRepeatingSections } from "@/domain/commands/group-edits";
+import { groupRepeatingSections } from "insync/commands/group-edits";
 
 // -- Fixtures -----------------------------------------------------------------
 

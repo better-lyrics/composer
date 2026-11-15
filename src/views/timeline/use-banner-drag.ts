@@ -1,4 +1,4 @@
-import { shiftInstance } from "@/domain/commands/instance-edits";
+import { shiftInstance } from "insync/commands/instance-edits";
 import { useCallback, useRef, useState } from "react";
 import { wholeSongRange } from "insync/group-shared-timing";
 import { instanceKey } from "insync/instance-key";

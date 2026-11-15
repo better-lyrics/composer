@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLyrics } from "insync/commands/edit-text";
 import { lineFromFields } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";

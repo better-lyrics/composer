@@ -248,5 +248,4 @@ function validateDoc(doc: Doc, { songEnd }: DocValidationOptions = {}): DocRepor
 
 // -- Exports ------------------------------------------------------------------
 
-export type { DocFinding, DocReport, DocRule, DocValidationOptions };
 export { validateDoc };

@@ -3,7 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 
 // -- Setup --------------------------------------------------------------------
 

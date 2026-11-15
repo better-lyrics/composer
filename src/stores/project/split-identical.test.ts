@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { splitIdenticalSyllables } from "insync/commands/word-edits";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";

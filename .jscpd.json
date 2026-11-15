@@ -1,5 +1,5 @@
 {
-  "path": ["src"],
+  "path": ["src", "packages/insync/src"],
   "format": ["typescript", "tsx"],
   "ignore": ["**/*.test.ts", "**/*.test.tsx", "**/*.browser.test.tsx", "src/test/**"],
   "reporters": ["console"],

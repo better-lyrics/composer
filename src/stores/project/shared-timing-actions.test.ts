@@ -3,11 +3,11 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { LyricCommand } from "@/domain/commands/command";
-import { groupRepeatingSections, shareGroupTiming } from "@/domain/commands/group-edits";
-import { addInstance, placeInstance, setInstanceOwnTiming } from "@/domain/commands/instance-edits";
-import { isRefused } from "@/domain/commands/outcome";
-import { NOTHING_SHARED } from "@/domain/group/group-plans";
+import type { LyricCommand } from "insync/commands/command";
+import { groupRepeatingSections, shareGroupTiming } from "insync/commands/group-edits";
+import { addInstance, placeInstance, setInstanceOwnTiming } from "insync/commands/instance-edits";
+import { isRefused } from "insync/commands/outcome";
+import { NOTHING_SHARED } from "insync/group-plans";
 import type { RealignRefusal, SharingOutcome } from "insync/group-shared-placement";
 import type { LinkGroup } from "insync/group";
 import { fieldsOfLine } from "insync/line-from-fields";

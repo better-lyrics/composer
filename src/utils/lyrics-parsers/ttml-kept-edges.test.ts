@@ -6,8 +6,8 @@ import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingWrite } from "insync/line-track-writes";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
-import { generateTTML } from "@/utils/ttml";
+import { parseTtml } from "insync/ttml/read";
+import { generateTTML } from "insync/ttml/write";
 import { parseXmlDocument } from "@/utils/xml-document";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

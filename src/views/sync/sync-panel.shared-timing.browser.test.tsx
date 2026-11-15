@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 import { fieldsOfLine } from "insync/line-from-fields";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";

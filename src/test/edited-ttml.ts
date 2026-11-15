@@ -1,9 +1,9 @@
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { LinkGroup } from "insync/group";
-import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { mergeEditedTtmlLines } from "insync/line-edited-ttml-lines";
 import type { LyricLine } from "insync/line";
 import { PARSERS } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants ----------------------------------------------------------------

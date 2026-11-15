@@ -1,7 +1,7 @@
 import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@tabler/icons-react";
 import { useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { pasteLanguageLines } from "@/domain/commands/languages";
+import { pasteLanguageLines } from "insync/commands/languages";
 import { alignTrackToLine, validateTransliterationAlignment } from "insync/language-align";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { lineTranslations, lineTransliteration, withLanguages } from "insync/language-line-languages";

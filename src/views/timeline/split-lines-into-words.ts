@@ -1,4 +1,4 @@
-import { convertToWordTiming } from "@/domain/commands/line-timing";
+import { convertToWordTiming } from "insync/commands/line-timing";
 import { withKeptSyllablePieces } from "insync/language-pieces";
 import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import type { LyricLine } from "insync/line";

@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { addInstance } from "@/domain/commands/instance-edits";
+import { addInstance } from "insync/commands/instance-edits";
 import type { LinkGroup } from "insync/group";
 import { withSeededBackground } from "insync/line-background";
 import { drawnSyllables } from "insync/line-drawn-track";

@@ -69,4 +69,3 @@ function syllablesFromWords(words: readonly WordsInput[]): SyllableTrack {
 // -- Exports ------------------------------------------------------------------
 
 export { groupIdsForJoins, joinsFromWords, splitTrailingWhitespace, syllablesFromWords };
-export type { WordsInput };

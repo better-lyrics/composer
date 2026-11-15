@@ -1,5 +1,5 @@
 import { hasLetterOrDigit } from "@/domain/alignment/cjk";
-import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { parseTtmlTimestamp } from "insync/ttml/read-helpers";
 import { parseXmlDocument } from "@/utils/xml-document";
 
 // Mirrors Unison's submit checks (`detectPrettyPrintedTtml` and

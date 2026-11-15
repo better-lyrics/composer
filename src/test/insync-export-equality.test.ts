@@ -24,9 +24,9 @@ import {
   buildMatchingAlternateLanguageTtml,
   buildSyncedTtml,
 } from "@/test/ttml-fixtures";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { parseTtml } from "insync/ttml/read";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants ----------------------------------------------------------------

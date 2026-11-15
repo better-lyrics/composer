@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { editBackgroundText, typeLyrics } from "@/domain/commands/edit-text";
+import { editBackgroundText, typeLyrics } from "insync/commands/edit-text";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { withSeededBackground } from "insync/line-background";
 import { backgroundText, lineText } from "insync/line-text";

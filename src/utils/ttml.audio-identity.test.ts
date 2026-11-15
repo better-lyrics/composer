@@ -1,7 +1,7 @@
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
-import { generateTTML, withoutAudioIdentity } from "@/utils/ttml";
+import { generateTTML, withoutAudioIdentity } from "insync/ttml/write";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

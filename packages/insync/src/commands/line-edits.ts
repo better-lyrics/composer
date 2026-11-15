@@ -1,0 +1,94 @@
+import type { CommandContext, HistoryNote, LyricCommand } from "./command";
+import { type Applied, type LyricRoot, type Refusal, applied, refused } from "./outcome";
+import { applyLineUpdates } from "../line-apply-line-updates";
+import { lineFromFields } from "../line-from-fields";
+import type { LineUpdate } from "../line";
+
+// -- Types --------------------------------------------------------------------
+
+interface EditLinesOptions {
+  copiesSharedTiming?: boolean;
+}
+
+type PlannedEdit = readonly LineUpdate[] | { refused: Refusal };
+
+// -- Functions ----------------------------------------------------------------
+
+// The one way a command writes line patches: each patch lands on its own line. Other instances of a group line get
+// the edit from its template when the commit folds it.
+function withLineUpdates(root: LyricRoot, updates: readonly LineUpdate[]): Applied {
+  const lines = [...root.lines];
+  const indexById = new Map<string, number>();
+  for (let i = 0; i < lines.length; i++) indexById.set(lines[i].id, i);
+
+  for (const { id, updates: lineUpdates } of updates) {
+    const targetIdx = indexById.get(id);
+    const target = targetIdx !== undefined ? lines[targetIdx] : undefined;
+    if (targetIdx === undefined || !target) continue;
+    lines[targetIdx] = { ...target, ...lineUpdates };
+  }
+  return applied(
+    { ...root, lines },
+    updates.map((update) => update.id),
+  );
+}
+
+// A command that plans line patches; an empty plan writes nothing.
+function lineEditCommand(
+  note: HistoryNote,
+  plan: (root: LyricRoot, ctx: CommandContext) => PlannedEdit,
+  options: EditLinesOptions = {},
+): LyricCommand {
+  const { copiesSharedTiming = true } = options;
+  return {
+    note,
+    copiesSharedTiming,
+    run: (root, ctx) => {
+      const planned = plan(root, ctx);
+      if ("refused" in planned) return planned;
+      return planned.length === 0 ? applied(root, []) : withLineUpdates(root, planned);
+    },
+  };
+}
+
+// -- Commands -----------------------------------------------------------------
+
+// Data that follows the lyrics (language refresh, alignment retime): no shared copy, no text.
+function patchLines(updates: readonly LineUpdate[]): LyricCommand {
+  return {
+    note: { command: "patch lines", args: updates.map((update) => update.id) },
+    copiesSharedTiming: false,
+    run: (root) =>
+      applied(
+        { ...root, lines: applyLineUpdates(root.lines, updates) },
+        updates.map((update) => update.id),
+      ),
+  };
+}
+
+function insertEmptyLine({
+  anchorLineId,
+  position,
+}: {
+  anchorLineId: string;
+  position: "above" | "below";
+}): LyricCommand {
+  return {
+    note: { command: "insert line", args: [anchorLineId, position] },
+    copiesSharedTiming: false,
+    run: (root, ctx) => {
+      const anchorIndex = root.lines.findIndex((line) => line.id === anchorLineId);
+      if (anchorIndex === -1) return refused({ reason: "line-gone", lineId: anchorLineId });
+      const newLine = lineFromFields(
+        { id: ctx.newId(), text: "", agentId: root.agents?.[0]?.id ?? "v1" },
+        ctx.splitChar,
+      );
+      const lines = root.lines.toSpliced(position === "above" ? anchorIndex : anchorIndex + 1, 0, newLine);
+      return applied({ ...root, lines }, [newLine.id]);
+    },
+  };
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { insertEmptyLine, lineEditCommand, patchLines, withLineUpdates };

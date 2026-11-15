@@ -742,4 +742,47 @@ describe("how a gesture ends the previous slot", () => {
       updates: { end: 12.5 },
     });
   });
+
+  it("regression: a held re-record that starts inside the previous line's set word keeps every tap", () => {
+    let lines = [
+      createLine({
+        id: "l0",
+        text: "follow the river",
+        words: [word("follow ", 1, 2), word("the ", 2, 3), word("river", 3, 4)],
+      }),
+      createLine({
+        id: "l1",
+        text: "down to the open sea",
+        words: [
+          word("down ", 5, 5.5),
+          word("to ", 5.5, 6),
+          word("the ", 6, 6.5),
+          word("open ", 6.5, 7),
+          word("sea", 7, 7.5),
+        ],
+      }),
+    ];
+    const steps: [SyncGesture, number][] = [
+      ["hold-start", 2.5],
+      ["hold-tap", 3],
+      ["hold-tap", 3.5],
+      ["hold-tap", 4],
+      ["hold-tap", 4.5],
+      ["hold-end", 5],
+    ];
+    let cursor: [number, number] = [1, 0];
+    for (const [gesture, time] of steps) {
+      const commit = run(lines, gesture, cursor, time);
+      lines = apply(lines, commit);
+      if (commit) cursor = [commit.nextCursor.lineIndex, commit.nextCursor.wordIndex];
+    }
+    expect(timedSyllables(mainTrack(lines[1])).map((w) => [w.begin, w.end])).toEqual([
+      [2.5, 3],
+      [3, 3.5],
+      [3.5, 4],
+      [4, 4.5],
+      [4.5, 5],
+    ]);
+    expect(timedSyllables(mainTrack(lines[0]))[2].end).toBe(4);
+  });
 });

@@ -12,11 +12,11 @@ import { backgroundText, lineText } from "insync/line-text";
 import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { addGroup, addGroupWithLines, removeGroup, updateGroup } from "@/domain/commands/group-edits";
-import { addInstance, detachLine, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { splitWord } from "@/domain/commands/word-structure";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { addGroup, addGroupWithLines, removeGroup, updateGroup } from "insync/commands/group-edits";
+import { addInstance, detachLine, removeInstance, shiftInstance } from "insync/commands/instance-edits";
+import { pasteLines } from "insync/commands/instance-rows";
+import { splitWord } from "insync/commands/word-structure";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const SONG_LENGTH = 300;

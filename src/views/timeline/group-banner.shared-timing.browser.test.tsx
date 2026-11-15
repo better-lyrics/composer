@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 import type { LinkGroup } from "insync/group";
 import type { LineUpdate } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";

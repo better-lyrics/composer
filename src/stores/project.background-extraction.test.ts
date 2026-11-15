@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLines } from "insync/commands/instance-rows";
 import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { backgroundText, lineText } from "insync/line-text";

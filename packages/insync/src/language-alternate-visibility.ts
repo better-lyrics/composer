@@ -8,4 +8,4 @@ function alternateMatchesMainText(alternate: string | undefined, main: string, s
   return alternate !== undefined && comparableLyricText(alternate, splitChar) === comparableLyricText(main, splitChar);
 }
 
-export { alternateMatchesMainText, comparableLyricText };
+export { alternateMatchesMainText };

@@ -9,7 +9,7 @@ import { LRC_OUTPUT, TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
 import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

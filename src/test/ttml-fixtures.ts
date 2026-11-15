@@ -4,7 +4,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------

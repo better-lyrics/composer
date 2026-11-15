@@ -12,7 +12,7 @@ import {
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { convertToWordTiming } from "@/domain/commands/line-timing";
+import { convertToWordTiming } from "insync/commands/line-timing";
 import { instanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
 import { hasTransliteration } from "insync/language-has-transliteration";

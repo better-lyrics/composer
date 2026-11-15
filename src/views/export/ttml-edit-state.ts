@@ -1,5 +1,5 @@
 import type { TtmlEditState } from "@/stores/project/types";
-import { withoutAudioIdentity } from "@/utils/ttml";
+import { withoutAudioIdentity } from "insync/ttml/write";
 
 // -- Types --------------------------------------------------------------------
 

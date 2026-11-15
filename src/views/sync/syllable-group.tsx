@@ -1,4 +1,4 @@
-import { mergeSyllableGroup } from "@/domain/commands/word-edits";
+import { mergeSyllableGroup } from "insync/commands/word-edits";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { IconArrowMerge } from "@tabler/icons-react";

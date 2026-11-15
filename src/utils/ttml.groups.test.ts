@@ -6,7 +6,7 @@ import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };

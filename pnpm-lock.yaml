@@ -186,7 +186,11 @@ importers:
         specifier: ^2.3.0
         version: 2.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@4.1.12)
 
-  packages/insync: {}
+  packages/insync:
+    dependencies:
+      fast-xml-parser:
+        specifier: ^5.10.1
+        version: 5.11.2
 
 packages:
 

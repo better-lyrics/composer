@@ -1,0 +1,53 @@
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { applied, changedLineIds, refused, withLines } from "./outcome";
+import { withNewInstance } from "../group-own-timing";
+import type { LineUpdate, LyricLine } from "../line";
+
+// -- Helpers ------------------------------------------------------------------
+
+// The placement planners lay the instance into existing rows and hand back the whole lines array.
+function adoptInstance(command: string, groupId: string, instanceIdx: number, lines: LyricLine[]): LyricCommand {
+  return {
+    note: { command, args: [groupId, instanceIdx] },
+    copiesSharedTiming: false,
+    run: (root) =>
+      applied(
+        { ...root, lines, groups: withNewInstance(root.groups, groupId, instanceIdx) },
+        changedLineIds(root.lines, lines),
+      ),
+  };
+}
+
+// -- Commands -----------------------------------------------------------------
+
+function fillInstanceRows(groupId: string, instanceIdx: number, lines: LyricLine[]): LyricCommand {
+  return adoptInstance("fill instance rows", groupId, instanceIdx, lines);
+}
+
+function conformToInstance(groupId: string, instanceIdx: number, lines: LyricLine[]): LyricCommand {
+  return adoptInstance("conform to instance", groupId, instanceIdx, lines);
+}
+
+// Pasted words carry ids minted for the paste, so the caller passes the planned lines.
+function pasteLines(updates: readonly LineUpdate[]): LyricCommand {
+  return lineEditCommand({ command: "paste lines", args: updates.map((update) => update.id) }, () => updates);
+}
+
+function deleteLine(lineId: string): LyricCommand {
+  return {
+    note: { command: "delete line", args: [lineId] },
+    copiesSharedTiming: false,
+    run: (root) =>
+      root.lines.some((line) => line.id === lineId)
+        ? withLines(
+            root,
+            root.lines.filter((line) => line.id !== lineId),
+          )
+        : refused({ reason: "line-gone", lineId }),
+  };
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { conformToInstance, deleteLine, fillInstanceRows, pasteLines };

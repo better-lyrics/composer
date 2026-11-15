@@ -2,7 +2,7 @@ import type { Agent } from "insync/agent";
 import type { ProjectMetadata } from "insync/metadata";
 import { createGroup } from "@/test/factories";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

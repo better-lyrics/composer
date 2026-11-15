@@ -3,9 +3,9 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { addGroup } from "@/domain/commands/group-edits";
-import { mergeSyllableGroup, snapSyllablesFlush } from "@/domain/commands/word-edits";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { addGroup } from "insync/commands/group-edits";
+import { mergeSyllableGroup, snapSyllablesFlush } from "insync/commands/word-edits";
 import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";

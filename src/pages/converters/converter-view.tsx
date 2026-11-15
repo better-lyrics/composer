@@ -14,7 +14,7 @@ import { isFileDrag } from "@/utils/file-drag";
 import { fileNameWithoutExtension } from "@/utils/file-name";
 import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
-import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { skippedLinesMessage } from "insync/parse-result";
 import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";

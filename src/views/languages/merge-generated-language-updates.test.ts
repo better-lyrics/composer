@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { saveTransliterationAlignment } from "@/domain/commands/languages";
-import { moveWords } from "@/domain/commands/word-moves";
+import { saveTransliterationAlignment } from "insync/commands/languages";
+import { moveWords } from "insync/commands/word-moves";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { roleWords } from "insync/line-track";
 import { addressOf } from "insync/selection-resolve";

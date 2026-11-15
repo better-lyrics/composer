@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo, useState } from "react";
 import type { LanguagePieces } from "insync/language";
 import { pieceOf } from "insync/language-pieces";
 import { timedTransliterationSlice } from "insync/language-transliteration-format";
-import { insertWord } from "@/domain/commands/word-structure";
+import { insertWord } from "insync/commands/word-structure";
 import { isAddressed } from "insync/selection-identity";
 import { overlapsLoopRegion } from "insync/selection-loop-region";
 import { addressOf } from "insync/selection-resolve";

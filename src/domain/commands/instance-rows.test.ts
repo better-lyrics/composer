@@ -1,8 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { deleteLine } from "@/domain/commands/instance-rows";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { deleteLine } from "insync/commands/instance-rows";
+import { pasteLyrics } from "insync/commands/edit-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";

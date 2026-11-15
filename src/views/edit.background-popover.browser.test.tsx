@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { pasteLines } from "insync/commands/instance-rows";
 import { backgroundText } from "insync/line-text";
 import { backgroundTrack } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";

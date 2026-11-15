@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLines } from "insync/commands/instance-rows";
 import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
 import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";

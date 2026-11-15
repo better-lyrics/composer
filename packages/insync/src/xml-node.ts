@@ -49,5 +49,5 @@ function writeXmlElement(element: XmlElement): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { XmlAttr, XmlChild, XmlElement, XmlText };
+export type { XmlAttr, XmlChild, XmlElement };
 export { escapeXmlAttribute, escapeXmlText, writeXmlAttrs, writeXmlChild, writeXmlElement };

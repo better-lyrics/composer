@@ -78,4 +78,3 @@ function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: 
 // -- Exports ------------------------------------------------------------------
 
 export { closeSlotWords, closingUpdate, previousSlotEnd, tapEnd };
-export type { SlotWriteIntent };

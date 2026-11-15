@@ -2,8 +2,8 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { splitSyncWord } from "@/domain/commands/sync";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { splitSyncWord } from "insync/commands/sync";
 import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWords } from "@/test/factories";

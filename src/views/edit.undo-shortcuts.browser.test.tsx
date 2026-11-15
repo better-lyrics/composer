@@ -7,7 +7,7 @@ import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 import { EditPanel } from "@/views/edit";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLines } from "insync/commands/instance-rows";
 
 // -- Constants ----------------------------------------------------------------
 

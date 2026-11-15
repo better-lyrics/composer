@@ -50,4 +50,4 @@ function getLanguageAlignmentErrorItems(lines: LyricLine[], splitChar: string): 
 }
 
 export { getLanguageAlignmentErrorItems, getLanguageAlignmentErrors };
-export type { LanguageAlignmentError, LanguageAlignmentErrorField };
+export type { LanguageAlignmentErrorField };

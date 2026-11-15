@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { markWordsExplicit } from "@/domain/commands/word-edits";
+import { markWordsExplicit } from "insync/commands/word-edits";
 import type { LinkGroup } from "insync/group";
 import { withSeededBackground } from "insync/line-background";
 import { drawnSyllables } from "insync/line-drawn-track";
@@ -15,7 +15,7 @@ import type { SyllableAddress } from "insync/selection-model";
 import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWords } from "@/test/factories";
-import { generateLineTtml } from "@/utils/ttml";
+import { generateLineTtml } from "insync/ttml/write";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

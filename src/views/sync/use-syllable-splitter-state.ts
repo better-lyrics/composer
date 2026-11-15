@@ -1,4 +1,4 @@
-import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
+import { splitIdenticalSyllables } from "insync/commands/word-edits";
 import type { LanguagePiece } from "insync/language";
 import type { PositionalPieces } from "insync/language-pieces";
 import type { WordTiming } from "insync/word-timing";

@@ -4,7 +4,7 @@ import { coversSpan, mergeRanges, type PlayedRange } from "@/domain/alignment/pl
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { isLineTimed } from "insync/line-sync-progress";
-import { isExportedLine } from "@/utils/ttml-line-keys";
+import { isExportedLine } from "insync/ttml/line-keys";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

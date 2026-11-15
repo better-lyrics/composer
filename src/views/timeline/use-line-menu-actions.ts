@@ -1,9 +1,9 @@
 import { useCallback } from "react";
-import { detachLine, placeInstance } from "@/domain/commands/instance-edits";
-import { deleteLine } from "@/domain/commands/instance-rows";
-import { placeLineAt } from "@/domain/commands/line-timing";
-import { isRefused } from "@/domain/commands/outcome";
-import { assignSinger } from "@/domain/commands/singer";
+import { detachLine, placeInstance } from "insync/commands/instance-edits";
+import { deleteLine } from "insync/commands/instance-rows";
+import { placeLineAt } from "insync/commands/line-timing";
+import { isRefused } from "insync/commands/outcome";
+import { assignSinger } from "insync/commands/singer";
 import { isSharedLine } from "insync/group-shared-timing";
 import { instanceName } from "insync/instance-name";
 import { isLinked } from "insync/instance-predicates";

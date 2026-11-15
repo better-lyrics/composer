@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { splitWord } from "@/domain/commands/word-structure";
+import { splitWord } from "insync/commands/word-structure";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

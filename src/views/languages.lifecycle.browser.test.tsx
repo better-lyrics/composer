@@ -8,7 +8,7 @@ import { LanguagesPanel } from "@/views/languages";
 import { Activity } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@/test/render";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 import { getSplitCharacter } from "@/utils/split-character";
 
 const source = "こんにちは";

@@ -15,8 +15,11 @@ function importSpecifiers(source: string): string[] {
   return [...source.matchAll(IMPORT_SPECIFIER)].map((match) => match[1] ?? match[2] ?? match[3]);
 }
 
+// Third-party packages insync depends on directly (`packages/insync/package.json`).
+const PACKAGE_DEPENDENCIES: ReadonlySet<string> = new Set(["fast-xml-parser"]);
+
 function isPackageInternal(file: string, specifier: string): boolean {
-  if (specifier.startsWith("node:") || specifier === "vitest") return true;
+  if (specifier.startsWith("node:") || specifier === "vitest" || PACKAGE_DEPENDENCIES.has(specifier)) return true;
   if (!specifier.startsWith(".")) return false;
   const target = relative(PACKAGE_ROOT, resolve(dirname(file), specifier));
   return !target.startsWith("..");
@@ -25,7 +28,7 @@ function isPackageInternal(file: string, specifier: string): boolean {
 // -- Tests --------------------------------------------------------------------
 
 describe("insync boundary", () => {
-  it("insync imports only itself and node built-ins", () => {
+  it("insync imports only itself, node built-ins and its own dependencies", () => {
     const offenders = [...walkSourceFiles(PACKAGE_ROOT)].flatMap((file) =>
       importSpecifiers(readFileSync(file, "utf8"))
         .filter((specifier) => !isPackageInternal(file, specifier))

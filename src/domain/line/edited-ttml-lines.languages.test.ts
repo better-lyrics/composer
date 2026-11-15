@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { holdsEveryLine } from "@/domain/line/edited-ttml-lines";
+import { holdsEveryLine } from "insync/line-edited-ttml-lines";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";

@@ -1,7 +1,7 @@
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 import { useState } from "react";
 import { getAgentColor } from "insync/agent-colors";
-import { setLanguageFields } from "@/domain/commands/languages";
+import { setLanguageFields } from "insync/commands/languages";
 import { alignTrackToLine } from "insync/language-align";
 import { getLanguageAlignmentErrors } from "insync/language-alignment-errors";
 import { languageSourceFingerprint } from "insync/language-fingerprint";

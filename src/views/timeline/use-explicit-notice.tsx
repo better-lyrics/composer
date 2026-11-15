@@ -1,6 +1,6 @@
 import { IconAlertTriangle, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
-import { markWordsExplicit, toggleWordExplicit } from "@/domain/commands/word-edits";
+import { markWordsExplicit, toggleWordExplicit } from "insync/commands/word-edits";
 import { backgroundText, lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";

@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { addInstance } from "@/domain/commands/instance-edits";
+import { addInstance } from "insync/commands/instance-edits";
 import { withAlignedTransliteration } from "insync/language-align";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

@@ -6,8 +6,8 @@ import { INITIAL_STATE, useProjectStore } from "@/stores/project";
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLines } from "insync/commands/instance-rows";
+import { pasteLyrics } from "insync/commands/edit-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // These tests pin the contract that nudging a line-synced row by writing

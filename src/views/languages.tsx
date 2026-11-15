@@ -1,4 +1,4 @@
-import { applyGeneratedLanguages, removeTranslation } from "@/domain/commands/languages";
+import { applyGeneratedLanguages, removeTranslation } from "insync/commands/languages";
 import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
 import { pastedRows } from "insync/language-paste-import";
 import { noteGuideSignal } from "@/lib/guide-signals";

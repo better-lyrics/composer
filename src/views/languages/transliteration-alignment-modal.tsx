@@ -1,4 +1,4 @@
-import { saveTransliterationAlignment } from "@/domain/commands/languages";
+import { saveTransliterationAlignment } from "insync/commands/languages";
 import { planTransliterationAlignment } from "insync/language-align";
 import { fieldWords, type TrackField } from "insync/line-track";
 import { lineTransliteration } from "insync/language-line-languages";

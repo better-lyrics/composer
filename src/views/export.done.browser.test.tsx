@@ -4,7 +4,7 @@ import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { ExportPanel } from "@/views/export";
 import { getSplitCharacter } from "@/utils/split-character";
 

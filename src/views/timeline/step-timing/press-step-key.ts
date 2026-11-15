@@ -1,6 +1,6 @@
 import { drawnSyllables } from "insync/line-drawn-track";
 import { toast } from "sonner";
-import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
+import { pressStepKey as stepKeyCommand } from "insync/commands/word-timing";
 import type { LyricLine } from "insync/line";
 import { type WordTrack, trackRole } from "insync/line-track";
 import { addressOf, toAddress } from "insync/selection-resolve";

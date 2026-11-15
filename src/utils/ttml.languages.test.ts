@@ -5,7 +5,7 @@ import type { ProjectMetadata } from "insync/metadata";
 import { newWordId } from "insync/word-id";
 import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = { title: "Languages", artists: [], album: "", duration: 10, language: "ja" };

@@ -7,7 +7,7 @@ import { linesFromSaved } from "@/lib/saved-project";
 import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import type { ParseResult } from "insync/parse-result";
 import { pluralize } from "insync/pluralize";
 import { formatProjectCount } from "@/utils/project-count";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE, isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { insertEmptyLine } from "@/domain/commands/line-edits";
+import { insertEmptyLine } from "insync/commands/line-edits";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";

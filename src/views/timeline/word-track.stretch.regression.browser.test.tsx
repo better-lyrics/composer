@@ -11,7 +11,7 @@ import {
   storeWords,
 } from "@/views/timeline/word-track.stretch-harness";
 import { describe, expect, it } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 
 // Regressions for two logic bugs found in the original stretch gesture, both
 // reproduced deterministically through the real WordTrack gesture.

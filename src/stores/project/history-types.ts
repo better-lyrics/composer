@@ -1,8 +1,8 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "insync/agent";
-import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
-import type { Outcome } from "@/domain/commands/outcome";
+import type { HistoryNote, LyricCommand } from "insync/commands/command";
+import type { Outcome } from "insync/commands/outcome";
 import type { LinkGroup, LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { SnapPoint } from "@/domain/snap-point/model";

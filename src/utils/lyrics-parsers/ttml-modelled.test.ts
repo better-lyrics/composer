@@ -8,7 +8,7 @@ import {
   buildSyncedTtml,
 } from "@/test/ttml-fixtures";
 import { readTtmlDocument, unmodelledNodes } from "@/test/ttml-unmodelled";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("ttml modelled", () => {

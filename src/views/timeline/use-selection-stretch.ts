@@ -1,4 +1,4 @@
-import { stretchSelection } from "@/domain/commands/word-timing";
+import { stretchSelection } from "insync/commands/word-timing";
 import { timeRangeResolver } from "insync/group-shared-timing";
 import { copyThroughTemplate, instanceAnchors } from "insync/group-template-copy";
 import { applyLineUpdates } from "insync/line-apply-line-updates";

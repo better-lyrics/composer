@@ -7,7 +7,7 @@ import { isMac } from "@/utils/platform";
 import { EditorScreen } from "@/views/editor-screen";
 import { LanguagesPanel } from "@/views/languages";
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLines } from "insync/commands/instance-rows";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------

@@ -1,6 +1,6 @@
-import { addInstance } from "@/domain/commands/instance-edits";
+import { addInstance } from "insync/commands/instance-edits";
 import { toast } from "sonner";
-import { fillInstanceRows, pasteLines } from "@/domain/commands/instance-rows";
+import { fillInstanceRows, pasteLines } from "insync/commands/instance-rows";
 import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LineTemplate } from "insync/group-template";
 import { templateSourceInstance } from "insync/group-template-source";

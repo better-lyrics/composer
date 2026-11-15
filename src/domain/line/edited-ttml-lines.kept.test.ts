@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { mergedEditedKept } from "@/domain/line/edited-ttml-kept";
-import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { mergedEditedKept } from "insync/line-edited-ttml-kept";
+import { mergeEditedTtmlLines } from "insync/line-edited-ttml-lines";
 import type { LyricLine } from "insync/line";
 import { importableMetadata } from "insync/project-imported-metadata";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
-import { generateTTML } from "@/utils/ttml";
+import type { ParseResult } from "insync/parse-result";
+import { parseTtml } from "insync/ttml/read";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------

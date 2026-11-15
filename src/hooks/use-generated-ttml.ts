@@ -5,7 +5,7 @@ import type { TimingGranularity } from "insync/project-timing-granularity";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

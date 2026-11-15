@@ -5,7 +5,7 @@ import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "insync/line-track-writes";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------

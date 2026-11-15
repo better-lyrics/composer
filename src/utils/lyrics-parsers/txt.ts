@@ -1,6 +1,6 @@
 import { lineFromFields } from "insync/line-from-fields";
 import { readGeniusLyrics, readsAsGeniusLyrics } from "insync/lyrics-file-genius-text";
-import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { type ParseResult, generateLineId } from "insync/parse-result";
 import { getSplitCharacter } from "@/utils/split-character";
 import { cleanSplitCharacters } from "insync/split-character-text";
 

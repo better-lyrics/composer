@@ -10,9 +10,9 @@ import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { removeSinger, replaceLyrics } from "insync/commands/lyrics-replace";
+import { pasteLines } from "insync/commands/instance-rows";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function seedLine(id: string, overrides: Partial<LineFields> = {}): LyricLine {

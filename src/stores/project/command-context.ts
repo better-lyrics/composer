@@ -1,4 +1,4 @@
-import type { CommandContext } from "@/domain/commands/command";
+import type { CommandContext } from "insync/commands/command";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { getSplitCharacter } from "@/utils/split-character";

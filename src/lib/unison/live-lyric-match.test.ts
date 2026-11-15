@@ -8,7 +8,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
 import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------

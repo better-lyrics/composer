@@ -8,7 +8,7 @@ import { SAVED_PROJECT_VERSION, savedKeptRoot, savedLinesForLink } from "@/lib/s
 import type { ConvertArgs } from "@/pages/converters/converter-view";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
-import { UNSUPPORTED_LRC_TAGS_MESSAGE, hasUnsupportedTags, skippedLineCount } from "@/utils/lyrics-parsers/shared";
+import { UNSUPPORTED_LRC_TAGS_MESSAGE, hasUnsupportedTags, skippedLineCount } from "insync/parse-result";
 
 // -- Types --------------------------------------------------------------------
 

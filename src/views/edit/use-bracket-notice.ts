@@ -1,4 +1,4 @@
-import { removeSectionTagLines } from "@/domain/commands/edit-text";
+import { removeSectionTagLines } from "insync/commands/edit-text";
 import { isSectionTagLine } from "insync/lyrics-file-genius-text";
 import { useProjectStore } from "@/stores/project";
 import type { NoticeAction, NoticeKind } from "@/ui/notices/notice-model";

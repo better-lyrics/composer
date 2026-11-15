@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { extractLineBackground } from "@/domain/commands/edit-text";
+import { extractLineBackground } from "insync/commands/edit-text";
 import { bgBounds } from "insync/line-bounds";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";

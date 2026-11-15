@@ -1,5 +1,5 @@
-import { addGroupWithLines, updateGroup } from "@/domain/commands/group-edits";
-import { conformToInstance } from "@/domain/commands/instance-rows";
+import { addGroupWithLines, updateGroup } from "insync/commands/group-edits";
+import { conformToInstance } from "insync/commands/instance-rows";
 import { instanceCount } from "insync/instance-enumerate";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";

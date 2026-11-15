@@ -11,7 +11,7 @@ import { jumpToRow } from "@/test/shared-timing-sync";
 import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { describe, expect, it } from "vitest";
-import { groupRepeatingSections, removeGroup } from "@/domain/commands/group-edits";
+import { groupRepeatingSections, removeGroup } from "insync/commands/group-edits";
 
 // -- Fixtures -----------------------------------------------------------------
 

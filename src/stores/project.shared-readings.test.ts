@@ -4,14 +4,14 @@ import type { LyricLine } from "insync/line";
  */
 
 import { describe, expect, it } from "vitest";
-import { splitSyncWord } from "@/domain/commands/sync";
+import { splitSyncWord } from "insync/commands/sync";
 import { realignSharedInstance } from "insync/group-shared-placement";
 import type { LineLanguages } from "insync/language";
 import { trackPieces } from "insync/language-pieces";
 import { roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function chorusLine(id: string, instanceIdx: number, begin: number): LyricLine {

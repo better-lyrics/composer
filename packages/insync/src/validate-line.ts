@@ -75,5 +75,4 @@ function validateLine(line: SavedLine): LineReport {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { LineFinding, LineReport, LineRule };
 export { validateLine };

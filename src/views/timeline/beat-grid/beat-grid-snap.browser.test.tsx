@@ -11,7 +11,7 @@ import { applyWordPatch } from "insync/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { beforeEach, describe, expect, it } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 
 // -- Constants -----------------------------------------------------------------
 

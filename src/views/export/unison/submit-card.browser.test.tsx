@@ -7,7 +7,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";

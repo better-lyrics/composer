@@ -1,5 +1,5 @@
 import { instanceKey, lineInstanceKey } from "insync/instance-key";
-import { retimeWord } from "@/domain/commands/word-timing";
+import { retimeWord } from "insync/commands/word-timing";
 import type { WordTrack } from "insync/line-track";
 import { addressAt } from "insync/selection-resolve";
 import type { WordTiming } from "insync/word-timing";
