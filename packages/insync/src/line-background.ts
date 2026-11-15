@@ -7,6 +7,7 @@ import {
   newBackgroundTrack,
   trackTimingWrite,
   withBackgroundTrack,
+  withEndedTrack,
   withTrackSpan,
   withTrackSyllables,
 } from "./line-track-writes";
@@ -54,7 +55,7 @@ function withoutBackground(line: LyricLine): LyricLine {
 // block of a line-synced background moves its span.
 function withManualBackgroundWords(line: LyricLine, words: readonly WordTiming[], splitChar: string): LyricLine {
   const background = backgroundTrack(line);
-  if (!background) return withBackground(line, { words, source: "manual" }, splitChar);
+  if (!background) return withBackground(line, { words: withEndedTrack(words), source: "manual" }, splitChar);
   const written = trackTimingWrite(background, words);
   return withBackgroundTrack(line, written.syllables.length > 0 ? { ...written, source: "manual" } : undefined);
 }

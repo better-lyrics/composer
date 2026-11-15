@@ -10,6 +10,8 @@ import { drawnSyllables } from "insync/line-drawn-track";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
+import { mainBounds } from "insync/line-bounds";
+import { lineText } from "insync/line-text";
 import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
@@ -296,6 +298,69 @@ describe("instanceToTemplate", () => {
     expect(template).toHaveLength(1);
     expect(template[0].words?.[0].relativeBegin).toBeCloseTo(0);
     expect(template[0].words?.[1].relativeEnd).toBeCloseTo(2);
+  });
+
+  const slotLine = (
+    id: string,
+    instanceIdx: number,
+    templateLineIdx: number,
+    words: Array<[string, number, number]>,
+    detached?: true,
+  ): LyricLine =>
+    lineFromFields(
+      {
+        id,
+        text: words.map(([text]) => text).join(" "),
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx,
+        ...(detached && { detached }),
+        words: words.map(([text, begin, end], index) => ({
+          id: `${id}-w${index}`,
+          text,
+          sep: index < words.length - 1 ? " " : "",
+          begin,
+          end,
+          joinsNext: false,
+        })),
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+
+  it("regression: an instance added from one with a detached row takes that slot from an intact instance", () => {
+    const ls = [
+      slotLine("a0", 0, 0, [["Lanterns", 1, 1.5]], true),
+      slotLine("b0", 0, 1, [
+        ["Paper", 5, 5.5],
+        ["wings", 5.6, 6.5],
+      ]),
+      slotLine("a1", 1, 0, [
+        ["Lanterns", 11, 11.5],
+        ["glowing", 11.6, 12.5],
+      ]),
+      slotLine("b1", 1, 1, [
+        ["Paper", 15, 15.5],
+        ["wings", 15.6, 16.5],
+      ]),
+    ];
+    useProjectStore.setState({ lines: ls, groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(addInstance("g1", instanceToTemplate(ls, "g1", 0), 40));
+    const added = useProjectStore.getState().lines.filter((line) => line.groupId === "g1" && line.instanceIdx === 2);
+    expect(
+      added.map((line) => [line.templateLineIdx, lineText(line, DEFAULT_SPLIT_CHARACTER), mainBounds(line)]),
+    ).toEqual([
+      [0, "Lanterns glowing", { begin: 40, end: 41.5 }],
+      [1, "Paper wings", { begin: 44, end: 45.5 }],
+    ]);
+  });
+
+  it("regression: an instance added from a group without its first slot keeps each line's slot", () => {
+    const ls = [slotLine("b0", 0, 1, [["Paper", 5, 5.5]]), slotLine("c0", 0, 2, [["wings", 6, 6.5]])];
+    useProjectStore.setState({ lines: ls, groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(addInstance("g1", instanceToTemplate(ls, "g1", 0), 40));
+    const added = useProjectStore.getState().lines.filter((line) => line.instanceIdx === 1);
+    expect(added.map((line) => line.templateLineIdx)).toEqual([1, 2]);
   });
 });
 

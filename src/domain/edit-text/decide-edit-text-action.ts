@@ -1,7 +1,7 @@
 import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
 import { diffEditTextChange, withMovedTextDetached } from "insync/edit-text-diff-edit-text";
-import { editTextWithRewrittenRows } from "insync/edit-text";
-import { type BackgroundRange, NO_RANGES } from "insync/edit-text-shown-row";
+import { editTextWithRewrittenRows, linesToEditText } from "insync/edit-text";
+import { type BackgroundRange, NO_RANGES, type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LinkGroup } from "insync/group";
 import type { InstanceAnchors } from "insync/group-template-copy";
 import { type CarriedSplit, carryTemplateEdits } from "insync/group-template-edit";
@@ -53,6 +53,15 @@ function typedLyricLines(
   return textToLyricLines(mainTexts, defaultAgentId, lines, splitCharacter, backgrounds);
 }
 
+function committedEditText(
+  lines: readonly LyricLine[],
+  ranges: readonly BackgroundRange[] | undefined,
+  splitCharacter: string,
+): ShownEditText {
+  if (ranges) return shownEditText(lines, splitCharacter);
+  return { text: linesToEditText(lines, splitCharacter), ranges: NO_RANGES };
+}
+
 function decideEditTextAction({
   text,
   defaultAgentId,
@@ -67,11 +76,16 @@ function decideEditTextAction({
 
   if (diff.hasStructuralChange) {
     const moved = withMovedTextDetached(lines, lyricLines);
+    // A break that takes lines out of their instance commits them, so the text shows them as committed.
+    const leftInstance = moved.detachedIds.length > 0 || moved.removedIds.length > 0;
+    const shown = leftInstance
+      ? committedEditText(moved.lines, ranges, splitCharacter)
+      : { text, ranges: ranges ?? NO_RANGES };
     return {
       kind: "apply",
       finalLines: moved.lines,
-      editText: text,
-      editRanges: ranges ?? NO_RANGES,
+      editText: shown.text,
+      editRanges: shown.ranges,
       detachedIds: moved.detachedIds,
       removedIds: moved.removedIds,
       splits: [],

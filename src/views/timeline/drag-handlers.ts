@@ -96,7 +96,13 @@ function applySameLineReorder(
   duration: number,
 ) {
   const addresses = addressesOf(lines, wordsToMove);
-  useProjectStore.getState().commit(moveWords({ addresses, timeDelta, duration }));
+  let detachedIds: readonly string[] = [];
+  const outcome = useProjectStore.getState().commit(
+    moveWords({ addresses, timeDelta, duration }, (detached) => {
+      detachedIds = detached;
+    }),
+  );
+  if (!isRefused(outcome)) showLineDiffersToast(detachedIds);
 }
 
 // -- Cross-line move ----------------------------------------------------------

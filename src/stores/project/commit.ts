@@ -1,7 +1,7 @@
 import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "insync/line";
 import type { LyricCommand } from "insync/commands/command";
-import { type Applied, applied, isRefused, type LyricRoot, type Outcome } from "insync/commands/outcome";
+import { type Applied, applied, isRefused, type LyricRoot, type Outcome, refused } from "insync/commands/outcome";
 import { foldLines } from "insync/group-fold";
 import type { LyricDoc } from "insync/group";
 import type { CarriedSplit } from "insync/group-template-edit";
@@ -68,7 +68,7 @@ interface FoldOptions {
   splitChar: string;
 }
 
-type Folded = Written & { copiedGroupIds: readonly string[]; splits: readonly CarriedSplit[] };
+type Folded = Written & { copiedGroupIds: readonly string[]; splits: readonly CarriedSplit[]; copyBlocked?: true };
 
 // Command output goes back into the doc through the fold, which carries template edits and shared timing.
 function folded(state: ProjectState, doc: LyricDoc, root: LyricRoot, ran: Applied, options: FoldOptions): Folded {
@@ -82,7 +82,8 @@ function folded(state: ProjectState, doc: LyricDoc, root: LyricRoot, ran: Applie
     splitChar: getSplitCharacter(),
   });
   const settled = withChangedLinesSettled(state.lines, fold.lines);
-  const { copiedGroupIds, splits } = fold;
+  const { copiedGroupIds, splits, copyBlocked } = fold;
+  if (copyBlocked) return { root, doc, copiedGroupIds, splits, copyBlocked };
   if (settled === fold.lines)
     return { root: { ...ran.root, lines: fold.lines }, doc: fold.doc, copiedGroupIds, splits };
   const resettled = foldLines({
@@ -142,6 +143,7 @@ function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitM
     songEnd: ctx.songEnd,
     splitChar: ctx.splitChar,
   });
+  if (copied.copyBlocked) return { ...nothing, outcome: refused({ reason: "placement-out-of-range" }) };
   const outcome = command.afterSharedCopy
     ? command.afterSharedCopy(copied.root, ctx)
     : applied(copied.root, ran.touched);

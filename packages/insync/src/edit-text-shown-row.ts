@@ -6,11 +6,13 @@ import { mainTrack } from "./line-track";
 // -- Types --------------------------------------------------------------------
 
 // Where a row shows its background track: the `(...)` token at [start, end). A bracketed background was stored with
-// its brackets, so the token is its text; otherwise the brackets only wrap it.
+// its brackets, so the token is its text; otherwise the brackets only wrap it. `withoutMain` marks a token shown for a
+// line with no main text, so a row of only such tokens reads back as that line instead of as typed text.
 interface BackgroundRange {
   start: number;
   end: number;
   bracketed: boolean;
+  withoutMain?: true;
 }
 
 interface ShownRow {
@@ -49,7 +51,8 @@ function middleOffset(line: LyricLine, afterIndex: number, splitChar: string): n
 function rowWithToken(before: string, token: string, after: string, bracketed: boolean): ShownRow {
   const lead = before ? `${before} ` : "";
   const text = `${lead}${token}${after ? ` ${after}` : ""}`;
-  return { text, background: { start: lead.length, end: lead.length + token.length, bracketed } };
+  const range: BackgroundRange = { start: lead.length, end: lead.length + token.length, bracketed };
+  return { text, background: before.trim() || after.trim() ? range : { ...range, withoutMain: true } };
 }
 
 // The background goes where the export places it among the main words; an untimed one goes at the end.

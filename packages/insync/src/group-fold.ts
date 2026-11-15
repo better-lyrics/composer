@@ -23,6 +23,7 @@ interface Folded {
   doc: LyricDoc;
   copiedGroupIds: readonly string[];
   splits: readonly CarriedSplit[];
+  copyBlocked?: true;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -84,6 +85,7 @@ function foldLines(input: FoldInput): Folded {
   const copy = copiesSharedTiming
     ? copyThroughTemplate({ doc, before, after: edited.lines, groups, touched, anchors, songEnd })
     : null;
+  if (copy?.blocked) return { lines: before, doc, copiedGroupIds: [], splits: [], copyBlocked: true };
   const output = copy?.lines ?? edited.lines;
   const lines = sameElements(output, before) ? before : output;
   if (lines === before) return { lines, doc, copiedGroupIds: [], splits: [] };

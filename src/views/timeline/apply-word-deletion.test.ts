@@ -16,6 +16,25 @@ import { fieldUpdates } from "@/test/field-updates";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("applyWordDeletion", () => {
+  it("regression: deleting the last syllable of a word leaves the new last syllable ending the track", () => {
+    const lines: LyricLine[] = [
+      lineFromFields(
+        {
+          id: "l1",
+          text: "Lanterns",
+          agentId: "v1",
+          words: [
+            { id: "w1", text: "Lan", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w2", text: "terns", sep: "", begin: 0.3, end: 0.6, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+    ];
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 1 }], DEFAULT_SPLIT_CHARACTER);
+    expect(mainTrack(result[0]).syllables.at(-1)?.joinsNext).toBe(false);
+  });
+
   it("regression: deleting a timed word on a partly synced line keeps the untimed lyrics", () => {
     const lines: LyricLine[] = [
       lineFromFields(

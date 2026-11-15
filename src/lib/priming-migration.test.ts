@@ -82,9 +82,12 @@ describe("shiftAllTimings", () => {
       lineFromFields(
         {
           id: "L",
-          text: "x",
+          text: "x|y",
           agentId: "a",
-          words: [{ id: "w5", text: "x", sep: "", begin: 1.0, end: 1.5, explicit: true, joinsNext: true }],
+          words: [
+            { id: "w5", text: "x", sep: "", begin: 1.0, end: 1.5, explicit: true, joinsNext: true },
+            { id: "w5b", text: "y", sep: "", begin: 1.5, end: 2.0, joinsNext: false },
+          ],
         },
         DEFAULT_SPLIT_CHARACTER,
       ),
@@ -104,8 +107,11 @@ describe("shiftAllTimings", () => {
           id: "L",
           text: "main",
           agentId: "a",
-          backgroundText: "bg",
-          backgroundWords: [{ id: "w6", text: "bg", sep: "", begin: 1.0, end: 1.5, explicit: true, joinsNext: true }],
+          backgroundText: "b|g",
+          backgroundWords: [
+            { id: "w6", text: "b", sep: "", begin: 1.0, end: 1.5, explicit: true, joinsNext: true },
+            { id: "w6b", text: "g", sep: "", begin: 1.5, end: 2.0, joinsNext: false },
+          ],
         },
         DEFAULT_SPLIT_CHARACTER,
       ),

@@ -5,7 +5,7 @@ import { timeRangeResolver } from "../group-shared-timing";
 import type { PositionalPieces } from "../language-pieces";
 import { splitWordsKeepingTransliteration } from "../language-reconcile-syllable-split";
 import { effectiveBounds } from "../line-bounds";
-import type { LyricLine } from "../line";
+import type { LineUpdate, LyricLine } from "../line";
 import { shiftLineTiming } from "../line-shift";
 import { withRoleWords, withoutLineTiming } from "../line-track-writes";
 import { roleWords, type WordTrack } from "../line-track";
@@ -46,6 +46,11 @@ function syncGesture(
       return commit?.lineUpdates ?? [];
     },
   );
+}
+
+// A tap that only ends the line above an instance that stays where it is.
+function syncClosingTap(updates: readonly LineUpdate[]): LyricCommand {
+  return lineEditCommand({ command: "sync gesture", args: ["closing tap"] }, () => [...updates]);
 }
 
 function resetSync(): LyricCommand {
@@ -103,4 +108,4 @@ function splitSyncWord(
 
 // -- Exports ------------------------------------------------------------------
 
-export { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture };
+export { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncClosingTap, syncGesture };
