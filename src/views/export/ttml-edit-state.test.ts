@@ -1,4 +1,4 @@
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { crossedProjectChange, keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";

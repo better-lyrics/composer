@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { importableMetadata } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { importableMetadata } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { outgoingTtml } from "@/lib/outgoing-ttml";
 import { useProjectStore } from "@/stores/project";
 import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";

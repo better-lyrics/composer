@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { projectAudioSource } from "@/audio/project-audio-source";
 import { syncProgress } from "@/domain/line/sync-progress";
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

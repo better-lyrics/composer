@@ -3,7 +3,7 @@ import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "insync/agent";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "insync/metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { startSongInNewProject } from "@/lib/open-project";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
 import { isFromNewerComposer, linesFromLink } from "@/lib/saved-project";

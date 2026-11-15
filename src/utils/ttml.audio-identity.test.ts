@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "insync/agent-colors";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML, withoutAudioIdentity } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";

@@ -1,5 +1,5 @@
-import type { ProjectMetadata } from "insync/metadata";
-import { RESERVED_META_KEYS, fromComposerMeta, toComposerMeta } from "@/domain/project/metadata-ttml";
+import type { ProjectMetadata } from "./metadata";
+import { RESERVED_META_KEYS, fromComposerMeta, toComposerMeta } from "./project-metadata-ttml";
 import { describe, expect, it } from "vitest";
 
 const base: ProjectMetadata = {

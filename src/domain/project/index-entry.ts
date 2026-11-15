@@ -5,7 +5,7 @@ import type { LyricLine } from "insync/line";
 import { lineFromSaved } from "@/domain/line/saved-line";
 import { hasAnyTiming, hasMainLyrics, isWordSynced } from "insync/line-predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";

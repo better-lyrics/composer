@@ -1,4 +1,4 @@
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { findOpenProjectId } from "@/lib/open-project-session";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { useProjectStore } from "@/stores/project";

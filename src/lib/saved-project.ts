@@ -10,11 +10,11 @@ import { withSeededBackground, withSeededBackgroundWords } from "@/domain/line/b
 import type { LyricLine } from "insync/line";
 import { lineFromSaved, savedLine } from "@/domain/line/saved-line";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
-import type { MetadataKey } from "@/domain/project/imported-metadata";
+import type { MetadataKey } from "insync/project-imported-metadata";
 import type { ProjectMetadata } from "insync/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { StoredData } from "@/domain/storage/stored-data";
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import type { GranularityMode } from "@/stores/project";

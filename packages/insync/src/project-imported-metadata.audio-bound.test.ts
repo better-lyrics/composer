@@ -1,6 +1,6 @@
-import { AUDIO_BOUND_METADATA_KEYS, importableMetadata, metadataAfterImport } from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "insync/metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { AUDIO_BOUND_METADATA_KEYS, importableMetadata, metadataAfterImport } from "./project-imported-metadata";
+import type { ProjectMetadata } from "./metadata";
+import { normalizeLoadedMetadata } from "./project-normalize-metadata";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------

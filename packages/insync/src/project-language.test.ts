@@ -1,4 +1,4 @@
-import { isValidLanguageTag, normalizeLanguageTag } from "@/domain/project/language";
+import { isValidLanguageTag, normalizeLanguageTag } from "./project-language";
 import { describe, expect, it } from "vitest";
 
 describe("normalizeLanguageTag", () => {

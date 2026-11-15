@@ -4,9 +4,9 @@ import {
   importedKeysAfterWrite,
   isMetadataKey,
   metadataAfterImport,
-} from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "insync/metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+} from "./project-imported-metadata";
+import type { ProjectMetadata } from "./metadata";
+import { normalizeLoadedMetadata } from "./project-normalize-metadata";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------

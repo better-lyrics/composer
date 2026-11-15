@@ -1,4 +1,4 @@
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 import { isCodeBlockSwap } from "@/ui/lyrics-code/code-block-mutation";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { Scroll } from "@/ui/scroll";

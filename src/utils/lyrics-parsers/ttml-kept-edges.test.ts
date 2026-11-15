@@ -4,7 +4,7 @@ import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingWrite } from "@/domain/line/track-writes";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";

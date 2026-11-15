@@ -3,7 +3,7 @@ import { readExportTiming, withExportTiming } from "@/domain/alignment/export-ti
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

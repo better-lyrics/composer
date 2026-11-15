@@ -1,7 +1,7 @@
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
-import { metadataAfterImport } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { metadataAfterImport } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createProjectId, saveProjectRecord } from "@/lib/project-repository";
 import { SAVED_PROJECT_VERSION, type SavedProject, savedKeptRoot, savedLines } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";

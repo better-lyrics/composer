@@ -1,4 +1,4 @@
-import { isValidLanguageTag, normalizeLanguageTag } from "@/domain/project/language";
+import { isValidLanguageTag, normalizeLanguageTag } from "insync/project-language";
 import { useProjectStore } from "@/stores/project";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { ExtraFieldList } from "@/views/export/extra-field-list";

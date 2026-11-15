@@ -6,7 +6,7 @@ import { isLineSynced, isWordSynced } from "insync/line-predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { timingGranularityOf } from "@/domain/project/timing-granularity";
+import { timingGranularityOf } from "insync/project-timing-granularity";
 import { useProjectStore } from "@/stores/project";
 import {
   type EditOperation,

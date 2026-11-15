@@ -1,4 +1,4 @@
-import { RESERVED_META_KEYS } from "@/domain/project/metadata-ttml";
+import { RESERVED_META_KEYS } from "insync/project-metadata-ttml";
 import { reconcileKeyedRows } from "@/views/export/reconcile-keyed-rows";
 import { nanoid } from "nanoid";
 

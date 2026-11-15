@@ -1,4 +1,4 @@
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "./project-normalize-metadata";
 import { describe, expect, it } from "vitest";
 
 describe("normalizeLoadedMetadata", () => {

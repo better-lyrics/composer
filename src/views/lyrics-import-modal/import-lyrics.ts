@@ -7,7 +7,7 @@ import { withSeededBackground } from "@/domain/line/background";
 import { hasAnyTiming } from "insync/line-predicates";
 import { lineText } from "insync/line-text";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
-import { importableMetadata } from "@/domain/project/imported-metadata";
+import { importableMetadata } from "insync/project-imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "insync/metadata";
 import { noteGuideSignal } from "@/lib/guide-signals";

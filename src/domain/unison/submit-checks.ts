@@ -3,7 +3,7 @@ import type { LyricLine } from "insync/line";
 import { fullySyncedLineCount, isSyncableLine, type SyncGap, syncGaps } from "@/domain/line/sync-progress";
 import { type ZeroLengthWordIssue, zeroLengthWordIssues } from "@/domain/line/zero-length-words";
 import { namedArtists } from "@/domain/project/display-title";
-import { normalizeLanguageTag } from "@/domain/project/language";
+import { normalizeLanguageTag } from "insync/project-language";
 import { type UnisonTtmlProblem, precheckUnisonTtml } from "@/domain/unison/ttml-precheck";
 import { isValidIsrc } from "@/utils/isrc";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";

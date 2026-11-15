@@ -1,6 +1,6 @@
 import { writeXmlChild, writeXmlElement } from "insync/xml-node";
-import { importableMetadata } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { importableMetadata } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { parseTtmlDocument } from "@/utils/lyrics-parsers/ttml-helpers";
 import {

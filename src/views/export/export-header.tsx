@@ -1,4 +1,4 @@
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 import { Button } from "@/ui/button";
 import { SegmentedControl, type SegmentedOption } from "@/ui/segmented-control";
 import { ProjectMenuButton } from "@/views/export/project-menu-button";

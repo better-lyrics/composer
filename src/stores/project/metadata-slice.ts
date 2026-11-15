@@ -1,7 +1,7 @@
 import { withDefaultAgentNames } from "insync/agent-default-names";
 import { applyEditedLyrics, replaceLyrics } from "@/domain/commands/lyrics-replace";
-import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createAlignmentReviewInitialState } from "@/stores/project/alignment-review-slice";
 import { createBeatGridInitialState } from "@/stores/project/beat-grid-slice";

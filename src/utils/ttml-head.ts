@@ -5,7 +5,7 @@ import { placeholderAgentName } from "insync/agent-placeholder-name";
 import type { LinkGroup } from "insync/group";
 import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
 import type { ProjectMetadata } from "insync/metadata";
-import { toComposerMeta, YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
+import { toComposerMeta, YOUTUBE_VIDEO_ID_KEY } from "insync/project-metadata-ttml";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
 import {
   hasAlternateText,
