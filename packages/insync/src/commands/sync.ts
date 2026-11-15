@@ -35,13 +35,18 @@ function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefi
 // One gesture is one step; `report` gets the plan so the view moves its cursor without planning again.
 function syncGesture(
   gesture: SyncGesture,
-  ctx: Omit<GestureContext, "groups" | "splitChar">,
+  ctx: Omit<GestureContext, "groups" | "splitChar" | "songEnd">,
   report: (commit: GestureCommit | null) => void,
 ): LyricCommand {
   return lineEditCommand(
     { command: "sync gesture", args: [gesture, ctx.cursor.lineIndex, ctx.cursor.wordIndex] },
     (root, command) => {
-      const commit = commitGesture(root.lines, gesture, { ...ctx, groups: root.groups, splitChar: command.splitChar });
+      const commit = commitGesture(root.lines, gesture, {
+        ...ctx,
+        groups: root.groups,
+        splitChar: command.splitChar,
+        songEnd: command.songEnd,
+      });
       report(commit);
       return commit?.lineUpdates ?? [];
     },

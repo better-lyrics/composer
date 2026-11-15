@@ -59,15 +59,17 @@ function distributeWordsInLine(text: string, begin: number, end: number, splitCh
 
 // -- BG Word Creation ---------------------------------------------------------
 
+// Without an end, each word gets the default length, ending no later than the song.
 function createInitialBgWords(
   backgroundText: string,
   begin: number,
   end: number | undefined,
   splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
 ): WordTiming[] {
   const wordCount = splitIntoWords(backgroundText, splitChar).length;
   if (wordCount === 0) return [];
-  const resolvedEnd = end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION;
+  const resolvedEnd = end ?? Math.max(begin, Math.min(begin + wordCount * DEFAULT_BG_WORD_DURATION, songEnd));
   return distributeWordsInLine(backgroundText, begin, resolvedEnd, splitChar);
 }
 
