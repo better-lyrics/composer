@@ -22,27 +22,26 @@ function savedSpan(begin: number, end: number): SavedSpan {
 }
 
 function savedSyllable(syllable: Syllable, { withIds }: SavedLineOptions): SavedSyllable {
-  return {
-    ...(withIds && { id: syllable.id }),
-    text: syllable.text,
-    sep: syllable.sep,
-    ...(syllable.joinsNext && { joinsNext: true }),
-    ...(isTimedSyllable(syllable) && { span: savedSpan(syllable.begin, syllable.end) }),
-    ...(syllable.explicit && { explicit: true }),
-    ...(!isEmptyPassthrough(syllable.passthrough) && { passthrough: syllable.passthrough }),
-  };
+  const saved: SavedSyllable = withIds
+    ? { id: syllable.id, text: syllable.text, sep: syllable.sep }
+    : { text: syllable.text, sep: syllable.sep };
+  if (syllable.joinsNext) saved.joinsNext = true;
+  if (isTimedSyllable(syllable)) saved.span = savedSpan(syllable.begin, syllable.end);
+  if (syllable.explicit) saved.explicit = true;
+  if (!isEmptyPassthrough(syllable.passthrough)) saved.passthrough = syllable.passthrough;
+  return saved;
 }
 
 function savedTrack(track: LineTrack, options: SavedLineOptions): SavedTrack {
-  return {
-    ...(options.withIds && { id: track.id }),
-    role: track.role,
-    ...(track.role === "main" && { agent: track.agentId }),
-    ...(track.role === "bg" && track.source && { source: track.source }),
-    ...(isSpanTimed(track) && { span: savedSpan(track.begin, track.end) }),
-    syllables: track.syllables.map((syllable) => savedSyllable(syllable, options)),
-    ...(track.role === "bg" && !isEmptyPassthrough(track.passthrough) && { passthrough: track.passthrough }),
-  };
+  const saved: SavedTrack = options.withIds
+    ? { id: track.id, role: track.role, syllables: [] }
+    : { role: track.role, syllables: [] };
+  if (track.role === "main") saved.agent = track.agentId;
+  if (track.role === "bg" && track.source) saved.source = track.source;
+  if (isSpanTimed(track)) saved.span = savedSpan(track.begin, track.end);
+  saved.syllables = track.syllables.map((syllable) => savedSyllable(syllable, options));
+  if (track.role === "bg" && !isEmptyPassthrough(track.passthrough)) saved.passthrough = track.passthrough;
+  return saved;
 }
 
 function savedLine(line: LyricLine, options: SavedLineOptions): SavedLine {
@@ -50,9 +49,10 @@ function savedLine(line: LyricLine, options: SavedLineOptions): SavedLine {
   const background = backgroundTrack(line);
   const languages =
     line.languages && savedLanguages(line.languages, { main: main.syllables, bg: background?.syllables ?? [] });
+  const trackOptions = placesKeptElements(line) ? { withIds: true } : options;
   return {
     id: line.id,
-    tracks: line.tracks.map((track) => savedTrack(track, placesKeptElements(line) ? { withIds: true } : options)),
+    tracks: line.tracks.map((track) => savedTrack(track, trackOptions)),
     ...(languages && { languages }),
     ...groupFieldsOf(line),
     ...(!isEmptyPassthrough(line.passthrough) && { passthrough: line.passthrough }),
