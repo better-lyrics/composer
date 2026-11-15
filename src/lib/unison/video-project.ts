@@ -34,14 +34,18 @@ async function createVideoProject({ title, prepare, navigate }: VideoProjectStar
   return started;
 }
 
-async function loadVideoProject(videoId: string, started: NewSongProject): Promise<void> {
+async function loadVideoProject(videoId: string, started: NewSongProject): Promise<boolean> {
   try {
     await loadVideoWithRollback(videoId, started.newId, started.previousId);
+    return true;
   } catch (error) {
     if (isYouTubeLoadFailure(error)) toast.error(error.message);
     else if (!isYouTubeLoadError(error)) console.error(LOG_PREFIX, "could not load the video", error);
-    return;
+    return false;
   }
+}
+
+function announceVideoProject(started: NewSongProject): void {
   showNewProjectToast(
     useProjectStore.getState().metadata.title,
     started.previousTitle,
@@ -52,9 +56,10 @@ async function loadVideoProject(videoId: string, started: NewSongProject): Promi
 
 async function startVideoProject(start: VideoProjectStart): Promise<void> {
   const started = await createVideoProject(start);
-  if (started) await loadVideoProject(start.videoId, started);
+  if (started && (await loadVideoProject(start.videoId, started))) announceVideoProject(started);
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { createVideoProject, loadVideoProject, startVideoProject };
+export { announceVideoProject, createVideoProject, loadVideoProject, startVideoProject };
+export type { VideoProjectStart };

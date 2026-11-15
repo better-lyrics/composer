@@ -208,6 +208,21 @@ describe("useImportFromUnisonLyric", () => {
       expect(useProjectStore.getState().metadata.title).toBe("Alpha");
     });
 
+    it("keeps the lyric project in view and offers Switch back when the video does not load", async () => {
+      await seedOpenAlpha();
+      stubUnisonLyric(ownLyric());
+      const { screen, outcome } = await bootWithLink(`?unisonLyric=${LYRIC_ID}`);
+      await expect.poll(() => isYouTubeSourceFor(useAudioStore.getState().source, VIDEO_ID)).toBe(true);
+      useAudioStore.getState().failYouTubeLoad("Couldn't load YouTube audio.");
+
+      await expect.poll(outcome).toBe("created");
+      await expect.element(screen.getByText(CREATED_TOAST)).toBeInTheDocument();
+      expect(useProjectStore.getState().activeTab).toBe("edit");
+      await screen.getByRole("button", { name: "Switch back" }).click();
+      await expect.poll(openProjectIdSnapshot).toBe("a");
+      expect(useProjectStore.getState().metadata.title).toBe("Alpha");
+    });
+
     it("leaves the open project alone when the lyric cannot be read", async () => {
       await seedOpenAlpha();
       stubUnisonLyric(ownLyric({ lyrics: "" }));
