@@ -2,10 +2,10 @@ import type { XmlAttr, XmlChild, XmlElement } from "./xml-node";
 
 // -- Types --------------------------------------------------------------------
 
-// A node's own times, kept while the envelope its content derives still formats to `envelope`.
+// A node's own times, either or both, kept while the envelope its content derives still formats to `envelope`.
 interface KeptTimes {
-  readonly begin: string;
-  readonly end: string;
+  readonly begin?: string;
+  readonly end?: string;
   readonly envelope: readonly [string, string];
 }
 
@@ -14,7 +14,7 @@ interface Passthrough {
   readonly attrs?: readonly XmlAttr[];
   readonly elements?: readonly XmlElement[];
   readonly times?: KeptTimes;
-  // Syllables only: the children of a timed span that holds elements, such as ruby.
+  // Syllables and singer names only: the children of a node that holds elements, such as ruby.
   readonly markup?: readonly XmlChild[];
 }
 
@@ -42,7 +42,10 @@ function isEmptyDocPassthrough(kept: DocPassthrough | undefined): boolean {
 
 // -- Times --------------------------------------------------------------------
 
-function keptTimes(kept: KeptTimes, envelope: readonly [string, string]): readonly [string, string] | null {
+function keptTimes(
+  kept: KeptTimes,
+  envelope: readonly [string, string],
+): readonly [string | undefined, string | undefined] | null {
   return kept.envelope[0] === envelope[0] && kept.envelope[1] === envelope[1] ? [kept.begin, kept.end] : null;
 }
 

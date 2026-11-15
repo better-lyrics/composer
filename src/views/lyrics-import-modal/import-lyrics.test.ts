@@ -251,7 +251,12 @@ describe("importLyrics agents", () => {
       buildContext(),
     );
     const stored = useProjectStore.getState().agents;
-    expect(stored.find((a) => a.id === "v2")).toEqual({ id: "v2", type: "person", name: "Voice 2" });
+    expect(stored.find((a) => a.id === "v2")).toEqual({
+      id: "v2",
+      type: "person",
+      name: "Voice 2",
+      namePassthrough: { attrs: [["type", "full"]] },
+    });
   });
 
   it("updates name and type on existing agents", async () => {

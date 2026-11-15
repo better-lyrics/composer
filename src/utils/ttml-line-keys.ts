@@ -89,4 +89,4 @@ function renumberLineKeys(ttml: string, from: LineKeyIds, to: LineKeyIds): strin
 // -- Exports ------------------------------------------------------------------
 
 export { canonicalLineKeys, isExportedLine, keyedExportLines, lineKeyIds, renumberLineKeys };
-export type { LineKeyIds };
+export type { KeyedLine, LineKeyIds };
