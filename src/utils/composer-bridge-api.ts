@@ -5,6 +5,7 @@
 import { settingEntry } from "@/stores/settings-catalog";
 import { composeAbortSignals } from "@/utils/abort-signals";
 import { blobToDataUrl } from "@/utils/blob-data-url";
+import { type BodyProgress, readBodyWithProgress } from "@/utils/read-response-body";
 import { stripTrailingSlashes } from "@/utils/url";
 
 const BRIDGE_REPO_URL = "https://github.com/better-lyrics/composer-bridge";
@@ -74,7 +75,12 @@ async function checkBridgeHealth(baseUrl: string, signal?: AbortSignal): Promise
   }
 }
 
-async function getAudioFromBridge(baseUrl: string, videoId: string, signal?: AbortSignal): Promise<BridgeAudio> {
+async function getAudioFromBridge(
+  baseUrl: string,
+  videoId: string,
+  signal?: AbortSignal,
+  onProgress: (progress: BodyProgress) => void = () => {},
+): Promise<BridgeAudio> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), AUDIO_TIMEOUT_MS);
   const composed = composeAbortSignals(signal, controller.signal);
@@ -83,7 +89,7 @@ async function getAudioFromBridge(baseUrl: string, videoId: string, signal?: Abo
       signal: composed,
     });
     if (!res.ok) throw new BridgeError("http", `bridge audio: ${res.status}`, res.status);
-    const buffer = await res.arrayBuffer();
+    const buffer = await readBodyWithProgress(res, onProgress);
     if (buffer.byteLength === 0) throw new BridgeError("empty", "bridge returned empty audio");
     return {
       buffer,
