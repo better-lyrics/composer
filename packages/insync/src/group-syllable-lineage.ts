@@ -143,7 +143,8 @@ function leadsIn(
 
 // Timed syllables the edit added with no source under them fill the gap the instance has where they sit, split evenly.
 // Added before the first or after the last syllable the instance has, they keep the edit's gaps and lengths at the
-// instance's scale, inside the instance's room: after the line before it ends, before the line after it starts.
+// instance's scale, inside the instance's room: after the line before it ends, before the line after it starts. With no
+// timed syllable of the instance beside them they stay untimed.
 function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes[], room: LineRoom): CarriedTimes[] {
   const { floor, limit } = room;
   const filled = [...times];
@@ -171,6 +172,10 @@ function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes
       continue;
     }
     if (!previous && next && leadsIn(after, filled, start, end, scale, floor)) {
+      start = end;
+      continue;
+    }
+    if (!previous && !next) {
       start = end;
       continue;
     }

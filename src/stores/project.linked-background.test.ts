@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { editBackgroundText } from "insync/commands/edit-text";
 import { addGroup } from "insync/commands/group-edits";
 import { pasteLines } from "insync/commands/instance-rows";
 import { mergeSyllableGroup } from "insync/commands/word-edits";
@@ -200,5 +201,31 @@ describe("project store · background vocals across linked instances", () => {
       ["yeah", 60.5, 61],
     ]);
     expect(timedSyllables(backgroundTrack(lineById("a0"))).map((word) => word.text)).toEqual(["ooh", "yeah"]);
+  });
+
+  it("regression: background text typed on a shared line seeds over an own-timing instance's own line", () => {
+    const words = (begin: number) => [
+      { id: `${begin}-hold`, text: "Hold", sep: " ", begin, end: begin + 0.5, joinsNext: false },
+      { id: `${begin}-close`, text: "close", sep: "", begin: begin + 0.5, end: begin + 1.4, joinsNext: false },
+    ];
+    const instance = (id: string, instanceIdx: number, begin: number): LyricLine =>
+      lineFromFields(
+        { id, text: "Hold close", agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx: 0, words: words(begin) },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+    const before = lineFromFields(
+      { id: "p", text: "Hollow way", agentId: "v1", begin: 24, end: 26 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    useProjectStore.getState().restoreLyrics({
+      lines: [instance("a0", 0, 4), before, instance("a1", 1, 26)],
+      groups: [{ ...seedGroup("g1"), sharesTiming: true, ownTimingInstances: [1] }],
+    });
+
+    useProjectStore.getState().commit(editBackgroundText("a0", "glow on"));
+
+    const own = timedSyllables(backgroundTrack(lineById("a1")));
+    expect(own.map((word) => word.text.trim())).toEqual(["glow", "on"]);
+    expect(own.every((word) => word.begin >= 26.7 && word.end <= 27.4 && word.end > word.begin)).toBe(true);
   });
 });

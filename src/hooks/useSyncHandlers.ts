@@ -2,7 +2,14 @@ import { useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { placeInstance } from "insync/commands/instance-edits";
 import { isRefused } from "insync/commands/outcome";
-import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "insync/commands/sync";
+import {
+  resetSync,
+  retimeSyncWord,
+  shiftSyncLine,
+  splitSyncWord,
+  syncClosingTap,
+  syncGesture,
+} from "insync/commands/sync";
 import { effectiveBounds } from "insync/line-bounds";
 import type { PositionalPieces } from "insync/language-pieces";
 import { drawnSyllables } from "insync/line-drawn-track";
@@ -122,6 +129,12 @@ function useSyncHandlers({
         groups: useProjectStore.getState().groups,
         splitChar: getSplitCharacter(),
       });
+      if (anchor?.keepsPlacement) {
+        useProjectStore.getState().commit(syncClosingTap(anchor.precedingUpdates));
+        const position = syncAddressAt(useProjectStore.getState().lines, anchor.anchorCursor);
+        setSyncState((prev) => ({ ...prev, position }));
+        return true;
+      }
       const { duration } = useAudioStore.getState();
       const placing =
         anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates);
@@ -158,11 +171,15 @@ function useSyncHandlers({
         return true;
       }
       const planned: { commit: GestureCommit | null } = { commit: null };
-      useProjectStore.getState().commit(
+      const outcome = useProjectStore.getState().commit(
         syncGesture(gesture, ctx, (commit) => {
           planned.commit = commit;
         }),
       );
+      if (isRefused(outcome)) {
+        if (outcome.refused.reason === "placement-out-of-range") showPlacementBlockedToast();
+        return false;
+      }
       const { commit } = planned;
       if (!commit) return false;
       const position = syncAddressAt(useProjectStore.getState().lines, commit.nextCursor);

@@ -253,3 +253,45 @@ describe("carryTemplateEdits · a word added at the front", () => {
     expect(spans(out)[0]).toEqual(["So", 39.5, 40]);
   });
 });
+
+describe("carryTemplateEdits · untimed instances", () => {
+  it("regression: a timed word added at the front stays untimed on an untimed instance, never at zero", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Paper wings", words: words(11, ["Paper", "wings"]) }),
+      groupLine("L2", 1, { text: "Paper wings" }),
+    ];
+    const [paper, wings] = timedSyllables(mainTrack(before[0]));
+    const added = [{ ...paper, id: "red", text: "Red", begin: 9, end: 10 }, paper, wings];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "Red Paper wings", words: added })), [
+      shared,
+    ])[1];
+    expect(lineText(out, DEFAULT_SPLIT_CHARACTER)).toBe("Red Paper wings");
+    expect(spans(out)).toEqual([]);
+  });
+
+  it("regression: a letter deleted in an untimed instance keeps the timed instance's times", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Paper wings" }),
+      groupLine("L2", 1, { text: "Paper wings", words: words(11, ["Paper", "wings"]) }),
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "Paper wing" })), [shared])[1];
+    expect(spans(out)).toEqual([
+      ["Paper", 11, 11.5],
+      ["wing", 11.5, 12],
+    ]);
+  });
+
+  it("regression: a singer change on an untimed instance moves times onto its split by letters, never by position", () => {
+    const syllables = (begin: number, texts: readonly string[]) =>
+      words(begin, texts, 1).map((word, index) => ({ ...word, sep: "", joinsNext: index < texts.length - 1 }));
+    const before = [
+      groupLine("L1", 0, { text: "beau|ti|ful" }),
+      groupLine("L2", 1, { text: "be|aut|iful", words: syllables(10, ["be", "aut", "iful"]) }),
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { agentId: "v2" })))[1];
+    const [beau] = spans(out);
+    expect(beau[0]).toBe("beau");
+    expect(beau[1]).toBe(10);
+    expect(beau[2]).toBeCloseTo(11 + 2 / 3);
+  });
+});

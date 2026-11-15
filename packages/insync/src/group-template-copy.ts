@@ -39,6 +39,8 @@ interface TemplateCopy {
   // Per group: the template the copies came from and the instance that wrote it.
   templates: Map<string, readonly TemplateLine[]>;
   sources: Map<string, number>;
+  // A copy had to move onto another instance to stay in the song, so the edit cannot be copied.
+  blocked?: true;
 }
 
 type SlotLine = LinkedLine & { templateLineIdx: number };
@@ -185,7 +187,9 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
       copiedInstances.add(instanceKey(groupId, idx));
     }
   }
-  return { ...result, lines: withCopiesInSong(lines, copiedInstances, input.songEnd), copiedGroupIds: [...copied] };
+  const fitted = withCopiesInSong(lines, copiedInstances, input.songEnd);
+  if (!fitted) return { ...result, blocked: true };
+  return { ...result, lines: fitted, copiedGroupIds: [...copied] };
 }
 
 // -- Exports ------------------------------------------------------------------
