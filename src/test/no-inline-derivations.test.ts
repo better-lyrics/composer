@@ -61,7 +61,7 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline line-synced check",
     regex: /\.begin !== undefined &&\s*[\w.]+\.end !== undefined/,
-    use: "isLineSynced from @/domain/line/predicates",
+    use: "isLineSynced from insync/line-predicates",
   },
   {
     name: "inline first-word-begin access",
@@ -91,12 +91,12 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline word-selection identity check",
     regex: /\.wordIndex === [\w.]+\.wordIndex\b/,
-    use: "sameWordSelection / isWordSelected from @/domain/selection/identity",
+    use: "sameWordSelection / isWordSelected from insync/selection-identity",
   },
   {
     name: "inline syllable join read",
     regex: /\.joinsNext\b/,
-    use: "computeSyllableGroups / isInSyllableGroup from @/domain/word/syllable-groups",
+    use: "computeSyllableGroups / isInSyllableGroup from insync/word-syllable-groups",
   },
   {
     name: "inline snap-point time projection",
@@ -106,7 +106,7 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline project timing granularity",
     regex: /\.some\(\s*isWordSynced\b/,
-    use: "timingGranularityOf from @/domain/project/timing-granularity",
+    use: "timingGranularityOf from insync/project-timing-granularity",
   },
   {
     name: "local BG drop zone height",
@@ -117,12 +117,12 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline line timed check",
     regex: /effectiveBounds\([^()]*\)\s*!==\s*null/,
-    use: "isLineTimed from @/domain/line/sync-progress",
+    use: "isLineTimed from insync/line-sync-progress",
   },
   {
     name: "inline raw line begin check",
     regex: /\?\.begin\s*!==\s*undefined/,
-    use: "isLineTimed from @/domain/line/sync-progress or isLineSynced from @/domain/line/predicates",
+    use: "isLineTimed from insync/line-sync-progress or isLineSynced from insync/line-predicates",
   },
   {
     name: "inline instance ordinal",
