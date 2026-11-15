@@ -1,4 +1,5 @@
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import { isOwnLyric } from "@/domain/unison/ownership";
 
 // -- Derivations ---------------------------------------------------------------
 
@@ -14,6 +15,15 @@ function lyricsWithoutProject<T extends { id: number }>(
   return lyrics.filter((lyric) => !linked.has(String(lyric.id)));
 }
 
+// One project carries the link, so a second copy of your own lyric opens unlinked.
+function linksOnOpen(
+  lyric: { id: number; submitter?: { keyId: string } },
+  keyId: string | null,
+  entries: readonly ProjectIndexEntry[],
+): boolean {
+  return isOwnLyric(lyric, keyId) && !projectsByLyricId(entries).has(String(lyric.id));
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { lyricsWithoutProject, projectsByLyricId };
+export { linksOnOpen, lyricsWithoutProject, projectsByLyricId };

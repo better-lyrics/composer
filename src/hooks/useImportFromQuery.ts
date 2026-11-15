@@ -10,7 +10,7 @@ import { isProjectNonEmpty } from "@/lib/project-non-empty";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
-import { SONG_QUERY_PARAM_NAMES, hasLinkedFileParams, readTrimmed } from "@/utils/incoming-link";
+import { SONG_QUERY_PARAM_NAMES, hasBootUnisonLyric, hasLinkedFileParams, readTrimmed } from "@/utils/incoming-link";
 import { stripQueryParams } from "@/utils/url-params";
 import { readYouTubeParam } from "@/utils/youtube-link-params";
 
@@ -50,7 +50,7 @@ type BootLink = "video" | "files" | "none";
 function readBootLink(): BootLink {
   if (typeof window === "undefined") return "none";
   const params = new URLSearchParams(window.location.search);
-  if (readYouTubeParam(params) !== null) return "video";
+  if (readYouTubeParam(params) !== null || hasBootUnisonLyric()) return "video";
   return hasLinkedFileParams(params) ? "files" : "none";
 }
 

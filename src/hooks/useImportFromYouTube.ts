@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { isYouTubeLoadError, loadVideoWithRollback, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { type VideoProjectOutcome, openProjectForVideo } from "@/lib/open-video-project";
 import { getPersistenceSettled, getQueryImportSettled, markLinkProjectSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { hasBootUnisonLyric } from "@/utils/incoming-link";
 import { showLinkedProjectToast } from "@/utils/project-toast";
 import { hasLoadedYouTubeSourceFor } from "@/utils/youtube-source";
 import { readYouTubeParam, stripYouTubeParams } from "@/utils/youtube-link-params";
@@ -46,10 +47,15 @@ function useImportFromYouTube(): void {
   const loadYouTubeSource = useLoadYouTubeSource();
   const loadRef = useRef(loadYouTubeSource);
   loadRef.current = loadYouTubeSource;
+  const [unisonLyricLink] = useState(hasBootUnisonLyric);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const raw = readYouTubeParam(new URLSearchParams(window.location.search));
+    if (unisonLyricLink) {
+      if (raw) stripYouTubeParams();
+      return;
+    }
     if (!raw) {
       markLinkProjectSettled("none");
       return;
@@ -88,7 +94,7 @@ function useImportFromYouTube(): void {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [unisonLyricLink]);
 }
 
 // -- Exports ------------------------------------------------------------------

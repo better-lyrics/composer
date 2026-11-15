@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { quotedTitle } from "@/domain/project/display-title";
-import { projectsByLyricId } from "@/domain/unison/linked-projects";
-import { isOwnLyric } from "@/domain/unison/ownership";
+import { linksOnOpen } from "@/domain/unison/linked-projects";
 import { fetchUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { useUnisonSearch } from "@/hooks/unison/useUnisonSearch";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
@@ -86,8 +85,7 @@ const SearchView: React.FC = () => {
   const open = (result: UnisonSearchResult) => {
     if (openingId !== null || !entries) return;
     setOpeningId(result.id);
-    // One project carries the link, so a second copy of your own lyric opens unlinked.
-    const link = isOwnLyric(result, ownKeyId) && !projectsByLyricId(entries).has(String(result.id));
+    const link = linksOnOpen(result, ownKeyId, entries);
     fetchUnisonLyric(queryClient, result.id)
       .then((lyric) => openUnisonLyric(lyric, { link, navigate }))
       .catch((error: unknown) => {
