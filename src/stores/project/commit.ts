@@ -5,7 +5,7 @@ import { type Applied, applied, isRefused, type LyricRoot, type Outcome } from "
 import { foldLines } from "@/domain/group/fold";
 import type { LyricDoc } from "insync/group";
 import type { CarriedSplit } from "@/domain/group/template-edit";
-import { withoutOrphanPieces } from "@/domain/language/pieces";
+import { withoutOrphanPieces } from "insync/language-pieces";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
 import type { CommitMode } from "@/stores/project/history-types";

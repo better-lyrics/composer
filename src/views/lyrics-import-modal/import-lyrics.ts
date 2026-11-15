@@ -2,7 +2,7 @@ import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "insync/line";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { detectNonLatinLanguage } from "@/domain/language/script-detection";
+import { detectNonLatinLanguage } from "insync/language-script-detection";
 import { withSeededBackground } from "@/domain/line/background";
 import { hasAnyTiming } from "insync/line-predicates";
 import { lineText } from "insync/line-text";

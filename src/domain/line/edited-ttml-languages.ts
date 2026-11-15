@@ -1,7 +1,7 @@
-import { languagesWith, lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
+import { languagesWith, lineTranslations, lineTransliteration } from "insync/language-line-languages";
 import type { LanguagePieces, LanguageSide, LineLanguage, LineLanguages, LineTranslations } from "insync/language";
-import { keyedPieces, pieceOf, trackPieces } from "@/domain/language/pieces";
-import { withoutPieces, withPiecesOn } from "@/domain/language/side-pieces";
+import { keyedPieces, pieceOf, trackPieces } from "insync/language-pieces";
+import { withoutPieces, withPiecesOn } from "insync/language-side-pieces";
 import type { LyricLine } from "insync/line";
 import { roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";

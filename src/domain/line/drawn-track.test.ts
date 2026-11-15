@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnLanguages, drawnLine, drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";

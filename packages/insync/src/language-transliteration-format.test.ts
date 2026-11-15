@@ -5,7 +5,7 @@ import {
   timingLexicalWordGroups,
   transliterationPronunciationParts,
   transliterationWordGroups,
-} from "@/domain/language/transliteration-format";
+} from "./language-transliteration-format";
 import { describe, expect, it } from "vitest";
 
 describe("transliteration display format", () => {

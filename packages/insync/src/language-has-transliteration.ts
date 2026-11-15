@@ -1,5 +1,5 @@
-import { lineTransliteration } from "@/domain/language/line-languages";
-import type { LyricLine } from "insync/line";
+import { lineTransliteration } from "./language-line-languages";
+import type { LyricLine } from "./line";
 
 // -- Functions -----------------------------------------------------------------
 

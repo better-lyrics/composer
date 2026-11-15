@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { addInstance } from "@/domain/commands/instance-edits";
-import { withAlignedTransliteration } from "@/domain/language/align";
+import { withAlignedTransliteration } from "insync/language-align";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "insync/word-id";

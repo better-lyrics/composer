@@ -6,8 +6,8 @@ import {
   syllableLineage,
   targetId,
 } from "@/domain/group/syllable-lineage";
-import { withAlignedWords } from "@/domain/language/align";
-import { regroupedLanguages, withOwnPieces } from "@/domain/language/pieces";
+import { withAlignedWords } from "insync/language-align";
+import { regroupedLanguages, withOwnPieces } from "insync/language-pieces";
 import { withSeededBackground } from "@/domain/line/background";
 import type { BackgroundTrack, LineTrack, LineTracks, LyricLine, MainTrack, Syllable } from "insync/line";
 import {

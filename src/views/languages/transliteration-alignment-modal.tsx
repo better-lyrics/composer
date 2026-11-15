@@ -1,10 +1,10 @@
 import { saveTransliterationAlignment } from "@/domain/commands/languages";
-import { planTransliterationAlignment } from "@/domain/language/align";
+import { planTransliterationAlignment } from "insync/language-align";
 import { fieldWords, type TrackField } from "insync/line-track";
-import { lineTransliteration } from "@/domain/language/line-languages";
+import { lineTransliteration } from "insync/language-line-languages";
 import type { LanguagePiece, LanguagePieces } from "insync/language";
-import { keyedPieces, pieceOf, positionalPieces } from "@/domain/language/pieces";
-import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "@/domain/language/transliteration-format";
+import { keyedPieces, pieceOf, positionalPieces } from "insync/language-pieces";
+import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "insync/language-transliteration-format";
 import type { LyricLine } from "insync/line";
 import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

@@ -1,5 +1,5 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
+import { getLanguageAlignmentErrorItems } from "insync/language-alignment-errors";
 import type { LyricLine } from "insync/line";
 import { legacyLine } from "@/test/legacy-languages";
 import { describe, expect, it } from "vitest";

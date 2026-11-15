@@ -1,5 +1,5 @@
-import { lineTransliteration } from "@/domain/language/line-languages";
-import { pieceOf } from "@/domain/language/pieces";
+import { lineTransliteration } from "insync/language-line-languages";
+import { pieceOf } from "insync/language-pieces";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";

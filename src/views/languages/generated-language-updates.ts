@@ -1,13 +1,13 @@
-import { alignTrackToLine } from "@/domain/language/align";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { alignTrackToLine } from "insync/language-align";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import {
   lineTranslations,
   lineTransliteration,
   withLanguages,
   withoutTransliteration,
-} from "@/domain/language/line-languages";
+} from "insync/language-line-languages";
 import type { LineLanguage, LineTranslations, TransliterationSegment } from "insync/language";
-import { withoutPieces } from "@/domain/language/side-pieces";
+import { withoutPieces } from "insync/language-side-pieces";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";

@@ -4,7 +4,7 @@
 
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { duplicateWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
-import { pieceOf, trackPieces } from "@/domain/language/pieces";
+import { pieceOf, trackPieces } from "insync/language-pieces";
 import type { LineLanguages } from "insync/language";
 import { roleWords, type WordTrack } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";

@@ -1,7 +1,7 @@
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import type { LanguageContentOrigin } from "insync/language";
-import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
+import { staleGeneratedLanguages } from "insync/language-stale-generated";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

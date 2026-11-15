@@ -1,4 +1,4 @@
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { useSettingsStore } from "@/stores/settings";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getSplitCharacter } from "@/utils/split-character";

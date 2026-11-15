@@ -1,4 +1,4 @@
-import { lineTranslations } from "@/domain/language/line-languages";
+import { lineTranslations } from "insync/language-line-languages";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";

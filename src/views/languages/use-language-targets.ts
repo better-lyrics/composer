@@ -1,4 +1,4 @@
-import { lineTranslations } from "@/domain/language/line-languages";
+import { lineTranslations } from "insync/language-line-languages";
 import type { LyricLine } from "insync/line";
 import type { ProjectMetadata } from "insync/metadata";
 import { isStructurallyEqual } from "insync/structural-equal";

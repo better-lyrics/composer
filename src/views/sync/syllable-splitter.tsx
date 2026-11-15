@@ -1,4 +1,4 @@
-import { alignedPieceOf } from "@/domain/language/aligned-piece";
+import { alignedPieceOf } from "insync/language-aligned-piece";
 import type { LanguagePiece } from "insync/language";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";

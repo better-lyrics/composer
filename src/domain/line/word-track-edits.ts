@@ -1,5 +1,5 @@
-import { withAlignedWords } from "@/domain/language/align";
-import { regroupedLanguages } from "@/domain/language/pieces";
+import { withAlignedWords } from "insync/language-align";
+import { regroupedLanguages } from "insync/language-pieces";
 import { withManualBackgroundWords } from "@/domain/line/background";
 import { explicitFieldWords } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";

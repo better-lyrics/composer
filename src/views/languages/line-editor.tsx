@@ -2,23 +2,23 @@ import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 import { useState } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { setLanguageFields } from "@/domain/commands/languages";
-import { alignTrackToLine } from "@/domain/language/align";
-import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { alignTrackToLine } from "insync/language-align";
+import { getLanguageAlignmentErrors } from "insync/language-alignment-errors";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import {
   lineTranslations,
   lineTransliteration,
   withLanguages,
   withoutTransliteration,
-} from "@/domain/language/line-languages";
-import { manualSegments } from "@/domain/language/manual-segments";
+} from "insync/language-line-languages";
+import { manualSegments } from "insync/language-manual-segments";
 import type { LineLanguage } from "insync/language";
 import {
   alignmentNeedsReview,
   getLanguageReviewTracks,
   isTransliterationSourceStale,
   languageLineAnchorId,
-} from "@/domain/language/review";
+} from "insync/language-review";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";

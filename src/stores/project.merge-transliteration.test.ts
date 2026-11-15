@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { addGroup } from "@/domain/commands/group-edits";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
-import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
+import type { V3TransliterationTrack } from "insync/language-v3-languages";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "insync/word-id";

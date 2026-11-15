@@ -1,5 +1,5 @@
-import { roleWords } from "insync/line-track";
-import type { LyricLine } from "insync/line";
+import { roleWords } from "./line-track";
+import type { LyricLine } from "./line";
 
 type BackgroundPlacement = { position: "front" } | { position: "middle"; afterWordIndex: number } | { position: "end" };
 

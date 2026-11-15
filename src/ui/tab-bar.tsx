@@ -1,5 +1,5 @@
-import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
-import { getLanguageReviewItems } from "@/domain/language/review";
+import { getLanguageAlignmentErrorItems } from "insync/language-alignment-errors";
+import { getLanguageReviewItems } from "insync/language-review";
 import { PROJECT_TABS, type ProjectTab } from "@/domain/project/tab";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";

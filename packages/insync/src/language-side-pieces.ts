@@ -1,4 +1,4 @@
-import type { BackgroundLanguage, LanguagePieces, LanguageSide, LineLanguage, LineLanguages } from "insync/language";
+import type { BackgroundLanguage, LanguagePieces, LanguageSide, LineLanguage, LineLanguages } from "./language";
 
 // -- Track sides --------------------------------------------------------------
 

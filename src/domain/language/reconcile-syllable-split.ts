@@ -1,8 +1,8 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { withAlignedWords } from "@/domain/language/align";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { languagesWith, lineTransliteration } from "@/domain/language/line-languages";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
+import { withAlignedWords } from "insync/language-align";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { languagesWith, lineTransliteration } from "insync/language-line-languages";
+import { wholeLineSegments } from "insync/language-manual-segments";
 import type {
   LanguagePiece,
   LanguagePieces,
@@ -19,8 +19,8 @@ import {
   pieceOf,
   positionalPieces,
   trackPieces,
-} from "@/domain/language/pieces";
-import { withPiecesOn, withTrackPieces } from "@/domain/language/side-pieces";
+} from "insync/language-pieces";
+import { withPiecesOn, withTrackPieces } from "insync/language-side-pieces";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText, syllablesText } from "insync/line-text";
 import { withRoleWords } from "@/domain/line/track-writes";

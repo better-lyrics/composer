@@ -1,6 +1,6 @@
-import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
+import { alternateMatchesMainText } from "./language-alternate-visibility";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 describe("alternateMatchesMainText", () => {
   it("matches case, punctuation, split markers, and whitespace like Better Lyrics", () => {

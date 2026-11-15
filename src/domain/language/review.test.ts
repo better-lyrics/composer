@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import type { LineLanguage } from "insync/language";
 import {
   alignmentNeedsReview,
@@ -7,8 +7,8 @@ import {
   getLanguageReviewItems,
   getLanguageReviewTracks,
   isTransliterationSourceStale,
-} from "@/domain/language/review";
-import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
+} from "insync/language-review";
+import type { V3TransliterationTrack } from "insync/language-v3-languages";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { withFields } from "@/test/field-updates";

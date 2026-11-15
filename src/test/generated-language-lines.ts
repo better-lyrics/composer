@@ -1,4 +1,4 @@
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import type { LyricLine } from "insync/line";
 import { roleWords } from "insync/line-track";
 import { newWordId } from "insync/word-id";

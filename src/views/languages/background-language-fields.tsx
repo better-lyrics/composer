@@ -1,8 +1,8 @@
 import { IconSeparatorVertical } from "@tabler/icons-react";
-import { alignTrackToLine } from "@/domain/language/align";
-import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
+import { alignTrackToLine } from "insync/language-align";
+import { lineTranslations, lineTransliteration, withLanguages } from "insync/language-line-languages";
 import type { LineLanguage } from "insync/language";
-import { alignmentNeedsReview, isTransliterationSourceStale } from "@/domain/language/review";
+import { alignmentNeedsReview, isTransliterationSourceStale } from "insync/language-review";
 import type { LyricLine } from "insync/line";
 import { backgroundText } from "insync/line-text";
 import { backgroundTrack, timedSyllables } from "insync/line-track";

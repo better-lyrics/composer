@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { type PositionalPieces, positionalPieces } from "@/domain/language/pieces";
+import { type PositionalPieces, positionalPieces } from "insync/language-pieces";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";

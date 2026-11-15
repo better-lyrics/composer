@@ -1,6 +1,6 @@
-import type { TransliterationSegment } from "insync/language";
-import type { LyricLine } from "insync/line";
-import { lineText } from "insync/line-text";
+import type { TransliterationSegment } from "./language";
+import type { LyricLine } from "./line";
+import { lineText } from "./line-text";
 
 // -- Segments -----------------------------------------------------------------
 

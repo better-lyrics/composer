@@ -1,6 +1,6 @@
-import type { SavedLanguages, SavedLineLanguage, SavedPieces } from "insync/saved-line";
-import type { LanguagePieces, LineLanguage, LineLanguages } from "insync/language";
-import { keyedPieces, positionalPieces } from "@/domain/language/pieces";
+import type { SavedLanguages, SavedLineLanguage, SavedPieces } from "./saved-line";
+import type { LanguagePieces, LineLanguage, LineLanguages } from "./language";
+import { keyedPieces, positionalPieces } from "./language-pieces";
 
 // -- Types --------------------------------------------------------------------
 

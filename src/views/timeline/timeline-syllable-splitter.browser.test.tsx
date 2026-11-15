@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { getLanguageReviewTracks } from "@/domain/language/review";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { getLanguageReviewTracks } from "insync/language-review";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";

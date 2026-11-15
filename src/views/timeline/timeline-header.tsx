@@ -15,7 +15,7 @@ import { useShallow } from "zustand/react/shallow";
 import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { instanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
-import { hasTransliteration } from "@/domain/language/has-transliteration";
+import { hasTransliteration } from "insync/language-has-transliteration";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { convertLineToWord } from "@/domain/line/span-to-words";

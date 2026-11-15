@@ -1,4 +1,4 @@
-import { hasLatinLetter } from "@/domain/language/script-detection";
+import { hasLatinLetter } from "insync/language-script-detection";
 import { isShortcutDisabled } from "@/lib/disabled-shortcuts";
 import { bindingsEqual } from "@/stores/shortcut-binding-compare";
 import { getEffectiveBinding } from "@/stores/shortcut-bindings";

@@ -1,10 +1,10 @@
-import { alignTrackToLine } from "@/domain/language/align";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { lineTranslations, withLanguages } from "@/domain/language/line-languages";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
+import { alignTrackToLine } from "insync/language-align";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { lineTranslations, withLanguages } from "insync/language-line-languages";
+import { wholeLineSegments } from "insync/language-manual-segments";
 import type { LanguagePieces, LineLanguage, LineTranslations } from "insync/language";
-import { keyedPieces } from "@/domain/language/pieces";
-import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
+import { keyedPieces } from "insync/language-pieces";
+import { normalizeTransliterationForEditing } from "insync/language-transliteration-format";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";

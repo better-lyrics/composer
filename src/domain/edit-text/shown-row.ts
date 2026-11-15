@@ -1,4 +1,4 @@
-import { alternateBackgroundPlacement } from "@/domain/language/background-placement";
+import { alternateBackgroundPlacement } from "insync/language-background-placement";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText, syllableJoint } from "insync/line-text";
 import { mainTrack } from "insync/line-track";

@@ -8,10 +8,10 @@ import type {
   TrackLanguage,
   TransliterationAlignmentStatus,
   TransliterationSegment,
-} from "insync/language";
-import { keyedPieces, type PositionalPieces, positionalPieces } from "@/domain/language/pieces";
-import { sidePieces, withPiecesOn } from "@/domain/language/side-pieces";
-import type { WordTiming } from "insync/word-timing";
+} from "./language";
+import { keyedPieces, type PositionalPieces, positionalPieces } from "./language-pieces";
+import { sidePieces, withPiecesOn } from "./language-side-pieces";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

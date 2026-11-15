@@ -1,8 +1,8 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { withLineUpdates } from "@/domain/commands/line-edits";
 import { applied, refused } from "@/domain/commands/outcome";
-import { withAlignedWords } from "@/domain/language/align";
-import { regroupedLanguages } from "@/domain/language/pieces";
+import { withAlignedWords } from "insync/language-align";
+import { regroupedLanguages } from "insync/language-pieces";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { fieldRole, fieldWords, type TrackField, trackField } from "insync/line-track";
 import { withFieldWords } from "@/domain/line/word-track-edits";

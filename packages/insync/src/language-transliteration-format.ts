@@ -1,4 +1,4 @@
-import type { WordTiming } from "insync/word-timing";
+import type { WordTiming } from "./word-timing";
 
 const DASHES = /[-\u2010-\u2015]+/g;
 

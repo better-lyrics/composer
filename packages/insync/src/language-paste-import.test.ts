@@ -1,4 +1,4 @@
-import { alignPastedLanguageLines } from "@/domain/language/paste-import";
+import { alignPastedLanguageLines } from "./language-paste-import";
 import { describe, expect, it } from "vitest";
 
 describe("pasted language line alignment", () => {

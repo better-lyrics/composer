@@ -1,6 +1,6 @@
 import { refreshGeneratedLanguages } from "@/domain/commands/languages";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { staleGeneratedLanguages } from "insync/language-stale-generated";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";

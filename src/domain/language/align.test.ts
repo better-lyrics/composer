@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "@/domain/language/align";
+import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "insync/language-align";
 import type { LineLanguage, TransliterationAlignmentStatus } from "insync/language";
-import { mappedTransliteration } from "@/domain/language/pieces";
+import { mappedTransliteration } from "insync/language-pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";

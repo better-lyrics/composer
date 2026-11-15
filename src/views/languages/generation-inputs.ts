@@ -1,4 +1,4 @@
-import { languageSourceText } from "@/domain/language/source-text";
+import { languageSourceText } from "insync/language-source-text";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import type { LanguageLineInput } from "@/services/language-provider";

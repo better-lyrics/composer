@@ -1,16 +1,16 @@
 import { withFields } from "@/test/field-updates";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
-import { planTransliterationAlignment } from "@/domain/language/align";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { positionalPieces } from "@/domain/language/pieces";
-import { withoutPieces } from "@/domain/language/side-pieces";
+import { planTransliterationAlignment } from "insync/language-align";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { positionalPieces } from "insync/language-pieces";
+import { withoutPieces } from "insync/language-side-pieces";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
   type WordSplitResult,
 } from "@/domain/language/reconcile-syllable-split";
-import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
+import type { V3TransliterationTrack } from "insync/language-v3-languages";
 import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";

@@ -1,5 +1,5 @@
-import { lineTransliteration } from "@/domain/language/line-languages";
-import { withoutPieces } from "@/domain/language/side-pieces";
+import { lineTransliteration } from "insync/language-line-languages";
+import { withoutPieces } from "insync/language-side-pieces";
 import type { LyricLine } from "insync/line";
 import { isStructurallyEqual } from "insync/structural-equal";
 

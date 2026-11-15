@@ -1,4 +1,4 @@
-import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
+import { containsNonLatin, detectNonLatinLanguage } from "./language-script-detection";
 import { describe, expect, it } from "vitest";
 
 describe("non-Latin script detection", () => {

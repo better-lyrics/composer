@@ -1,6 +1,6 @@
 import { applyGeneratedLanguages, removeTranslation } from "@/domain/commands/languages";
-import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
-import { pastedRows } from "@/domain/language/paste-import";
+import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
+import { pastedRows } from "insync/language-paste-import";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";

@@ -1,6 +1,6 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LanguagePiece } from "insync/language";
-import { withAddedPieces } from "@/domain/language/pieces";
+import { withAddedPieces } from "insync/language-pieces";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine, MainTrack } from "insync/line";

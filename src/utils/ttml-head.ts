@@ -3,7 +3,7 @@ import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
 import type { Agent } from "insync/agent";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "insync/group";
-import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
+import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
 import type { ProjectMetadata } from "insync/metadata";
 import { toComposerMeta, YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";

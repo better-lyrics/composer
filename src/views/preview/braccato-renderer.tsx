@@ -1,4 +1,4 @@
-import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
+import { alternateMatchesMainText } from "insync/language-alternate-visibility";
 import type { Bounds } from "insync/word-bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";

@@ -2,7 +2,7 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { PositionalPieces } from "@/domain/language/pieces";
+import type { PositionalPieces } from "insync/language-pieces";
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";

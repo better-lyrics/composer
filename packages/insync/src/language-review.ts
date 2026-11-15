@@ -1,8 +1,8 @@
-import { backgroundText, lineText } from "insync/line-text";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
-import type { LanguageSide, LineLanguage } from "insync/language";
-import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "./line-text";
+import { languageSourceFingerprint } from "./language-fingerprint";
+import { lineTranslations, lineTransliteration, withLanguages } from "./language-line-languages";
+import type { LanguageSide, LineLanguage } from "./language";
+import type { LyricLine } from "./line";
 
 type LanguageReviewReason = "source-changed" | "alignment";
 type LanguageReviewTrack = ({ kind: "transliteration" } | { kind: "translation"; language: string }) & {

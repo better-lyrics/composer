@@ -1,13 +1,13 @@
-import { lineTransliteration, withLanguages } from "@/domain/language/line-languages";
+import { lineTransliteration, withLanguages } from "./language-line-languages";
 import type {
   BackgroundLanguage,
   LanguagePieces,
   LanguageSide,
   LineLanguage,
   TransliterationAlignmentStatus,
-} from "insync/language";
-import { mappedTransliteration, slicedPieces, trackPieces } from "@/domain/language/pieces";
-import { withPiecesOn, withSidePieces, withTrackPieces } from "@/domain/language/side-pieces";
+} from "./language";
+import { mappedTransliteration, slicedPieces, trackPieces } from "./language-pieces";
+import { withPiecesOn, withSidePieces, withTrackPieces } from "./language-side-pieces";
 import {
   normalizeTransliterationForEditing,
   sourceWordCount,
@@ -15,12 +15,12 @@ import {
   timingLexicalWordGroups,
   transliterationWordGroups,
   twoSpaceSeparatorRegions,
-} from "@/domain/language/transliteration-format";
-import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "insync/line-text";
-import { roleWords } from "insync/line-track";
-import { spacedText } from "insync/word-spaced-words";
-import type { WordTiming } from "insync/word-timing";
+} from "./language-transliteration-format";
+import type { LyricLine } from "./line";
+import { backgroundText, lineText } from "./line-text";
+import { roleWords } from "./line-track";
+import { spacedText } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
 
 interface TransliterationAlignmentPlan {
   pieces: LanguagePieces | undefined;

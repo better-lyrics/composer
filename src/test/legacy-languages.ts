@@ -1,5 +1,5 @@
 import type { LanguagePieces, LineLanguage, LineLanguages } from "insync/language";
-import { keyedPieces } from "@/domain/language/pieces";
+import { keyedPieces } from "insync/language-pieces";
 import {
   languagesFromV3,
   lineLanguageFromV3,
@@ -11,7 +11,7 @@ import {
   v3PiecesOf,
   v3WordPieces,
   withoutV3Piece,
-} from "@/domain/language/v3-languages";
+} from "insync/language-v3-languages";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { roleWords } from "insync/line-track";

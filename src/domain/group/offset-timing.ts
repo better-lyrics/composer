@@ -1,4 +1,4 @@
-import { withReadingsOf } from "@/domain/language/pieces";
+import { withReadingsOf } from "insync/language-pieces";
 import type { LineTrack, LineUpdate, LyricLine } from "insync/line";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import {

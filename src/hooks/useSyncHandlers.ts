@@ -4,7 +4,7 @@ import { placeInstance } from "@/domain/commands/instance-edits";
 import { isRefused } from "@/domain/commands/outcome";
 import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "@/domain/commands/sync";
 import { effectiveBounds } from "insync/line-bounds";
-import type { PositionalPieces } from "@/domain/language/pieces";
+import type { PositionalPieces } from "insync/language-pieces";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { hasAnyTiming } from "insync/line-predicates";

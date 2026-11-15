@@ -1,5 +1,5 @@
 import { hasKana } from "@/domain/alignment/cjk";
-import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
+import { detectNonLatinLanguage, hasLatinLetter } from "insync/language-script-detection";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { getSplitCharacter } from "@/utils/split-character";

@@ -1,14 +1,14 @@
 import { escapeXmlText } from "insync/xml-node";
-import { alignTrackToLine } from "@/domain/language/align";
-import { type BackgroundPlacement, alternateBackgroundPlacement } from "@/domain/language/background-placement";
-import { lineTransliteration } from "@/domain/language/line-languages";
+import { alignTrackToLine } from "insync/language-align";
+import { type BackgroundPlacement, alternateBackgroundPlacement } from "insync/language-background-placement";
+import { lineTransliteration } from "insync/language-line-languages";
 import type { LanguagePieces, LineLanguage } from "insync/language";
-import { pieceOf } from "@/domain/language/pieces";
+import { pieceOf } from "insync/language-pieces";
 import {
   hasLexicalBoundaryAfter,
   normalizeTransliterationForEditing,
   timedTransliterationSlice,
-} from "@/domain/language/transliteration-format";
+} from "insync/language-transliteration-format";
 import type { LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";

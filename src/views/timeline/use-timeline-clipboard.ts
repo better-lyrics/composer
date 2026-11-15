@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { languageSide, pieceOf } from "@/domain/language/pieces";
+import { languageSide, pieceOf } from "insync/language-pieces";
 import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
 import { trackRole } from "insync/line-track";
 import { resolveAddresses } from "@/domain/selection/resolve";

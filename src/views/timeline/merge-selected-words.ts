@@ -1,5 +1,5 @@
 import { mergeWords } from "@/domain/commands/word-merge";
-import { withAlignedWords } from "@/domain/language/align";
+import { withAlignedWords } from "insync/language-align";
 import type { LyricLine } from "insync/line";
 import { trackWords, type WordTrack } from "insync/line-track";
 import type { SelectionRun } from "@/domain/selection/contiguous";

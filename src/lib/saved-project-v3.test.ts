@@ -1,6 +1,6 @@
 import { roleWords } from "insync/line-track";
 import { backgroundText, lineText } from "insync/line-text";
-import { pieceOf, trackPieces } from "@/domain/language/pieces";
+import { pieceOf, trackPieces } from "insync/language-pieces";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import { savedLinesV3 } from "@/test/saved-v3";
 import { describe, expect, it } from "vitest";

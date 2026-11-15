@@ -4,7 +4,7 @@ import {
   type V3Piece,
   v3PiecesOf,
   withoutV3Piece,
-} from "@/domain/language/v3-languages";
+} from "insync/language-v3-languages";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { withSplitMarksFromWords } from "insync/line-reconstruct-text";

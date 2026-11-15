@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo, useState } from "react";
 import type { LanguagePieces } from "insync/language";
-import { pieceOf } from "@/domain/language/pieces";
-import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
+import { pieceOf } from "insync/language-pieces";
+import { timedTransliterationSlice } from "insync/language-transliteration-format";
 import { insertWord } from "@/domain/commands/word-structure";
 import { isAddressed } from "@/domain/selection/identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";

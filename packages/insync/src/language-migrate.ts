@@ -1,15 +1,15 @@
-import { alignTrackToLine } from "@/domain/language/align";
-import { lineTransliteration, withLanguages } from "@/domain/language/line-languages";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
-import type { LanguagePieces, LineLanguage } from "insync/language";
-import { mappedTransliteration, trackPieces } from "@/domain/language/pieces";
-import { languageSourceText } from "@/domain/language/source-text";
-import { DASHES, normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "insync/line-text";
-import { roleWords } from "insync/line-track";
-import { spacedText } from "insync/word-spaced-words";
-import type { WordTiming } from "insync/word-timing";
+import { alignTrackToLine } from "./language-align";
+import { lineTransliteration, withLanguages } from "./language-line-languages";
+import { wholeLineSegments } from "./language-manual-segments";
+import type { LanguagePieces, LineLanguage } from "./language";
+import { mappedTransliteration, trackPieces } from "./language-pieces";
+import { languageSourceText } from "./language-source-text";
+import { DASHES, normalizeTransliterationForEditing, sourceWordCount } from "./language-transliteration-format";
+import type { LyricLine } from "./line";
+import { backgroundText, lineText } from "./line-text";
+import { roleWords } from "./line-track";
+import { spacedText } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
 
 const SOFT_MARKER = "\uE004";
 const WORD_MARKER = "\uE005";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";

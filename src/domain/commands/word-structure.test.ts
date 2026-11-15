@@ -9,7 +9,7 @@ import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, roleWords } from "insync/line-track";
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";
-import { trackPieces } from "@/domain/language/pieces";
+import { trackPieces } from "insync/language-pieces";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";

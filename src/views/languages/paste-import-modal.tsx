@@ -2,12 +2,12 @@ import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@t
 import { useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { pasteLanguageLines } from "@/domain/commands/languages";
-import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
+import { alignTrackToLine, validateTransliterationAlignment } from "insync/language-align";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { lineTranslations, lineTransliteration, withLanguages } from "insync/language-line-languages";
+import { wholeLineSegments } from "insync/language-manual-segments";
 import type { LineLanguage } from "insync/language";
-import { alignPastedLanguageLines } from "@/domain/language/paste-import";
+import { alignPastedLanguageLines } from "insync/language-paste-import";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";

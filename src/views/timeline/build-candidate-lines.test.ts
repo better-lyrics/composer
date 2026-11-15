@@ -2,8 +2,8 @@
  * @vitest-environment node
  */
 
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { trackPieces } from "@/domain/language/pieces";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { trackPieces } from "insync/language-pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";

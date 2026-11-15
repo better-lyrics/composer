@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
+import type { V3TransliterationTrack } from "insync/language-v3-languages";
 import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

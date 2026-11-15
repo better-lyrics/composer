@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
+import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
 import type { LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";
 import { lineText } from "insync/line-text";

@@ -1,14 +1,14 @@
 import { roleWords } from "insync/line-track";
 import { backgroundText, lineText } from "insync/line-text";
-import { withAlignedTransliteration } from "@/domain/language/align";
-import { lineTransliteration } from "@/domain/language/line-languages";
+import { withAlignedTransliteration } from "insync/language-align";
+import { lineTransliteration } from "insync/language-line-languages";
 import type { LanguagePieces, LineLanguages } from "insync/language";
-import { pieceOf, trackPieces } from "@/domain/language/pieces";
+import { pieceOf, trackPieces } from "insync/language-pieces";
 import {
   normalizeTransliterationForEditing,
   sourceWordCount,
   timedTransliterationSlice,
-} from "@/domain/language/transliteration-format";
+} from "insync/language-transliteration-format";
 import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { spacedText, wordsFromSpaced } from "insync/word-spaced-words";

@@ -1,4 +1,4 @@
-import { withKeptSyllablePieces } from "@/domain/language/pieces";
+import { withKeptSyllablePieces } from "insync/language-pieces";
 import { withManualBackgroundWords } from "@/domain/line/background";
 import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";

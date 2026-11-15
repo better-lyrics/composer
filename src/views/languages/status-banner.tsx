@@ -1,4 +1,4 @@
-import { languageLineAnchorId } from "@/domain/language/review";
+import { languageLineAnchorId } from "insync/language-review";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";

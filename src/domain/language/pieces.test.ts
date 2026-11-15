@@ -7,7 +7,7 @@ import {
   regroupedPieces,
   trackPieces,
   withReadingsOf,
-} from "@/domain/language/pieces";
+} from "insync/language-pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { mergeWordRun } from "insync/word-merge-run";
 import type { WordTiming } from "insync/word-timing";

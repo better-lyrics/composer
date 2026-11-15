@@ -1,7 +1,7 @@
-import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
-import type { LanguageAlignmentErrorField } from "@/domain/language/alignment-errors";
-import { getLanguageReviewItems } from "@/domain/language/review";
-import type { LanguageReviewTrack } from "@/domain/language/review";
+import { getLanguageAlignmentErrorItems } from "insync/language-alignment-errors";
+import type { LanguageAlignmentErrorField } from "insync/language-alignment-errors";
+import { getLanguageReviewItems } from "insync/language-review";
+import type { LanguageReviewTrack } from "insync/language-review";
 import type { LyricLine } from "insync/line";
 import { LanguageStatusBanner } from "@/views/languages/status-banner";
 import { pluralize } from "insync/pluralize";

@@ -1,4 +1,4 @@
-import { pluralize } from "insync/pluralize";
+import { pluralize } from "./pluralize";
 
 interface PasteAlignment {
   mappedLines: string[];
