@@ -6,7 +6,7 @@ import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/lin
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingEdit, mainTimingWrite } from "@/domain/line/track-writes";
-import { lineTimingWordId } from "@/domain/word/id";
+import { lineTimingWordId } from "insync/word-id";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { patchOf } from "@/test/field-updates";

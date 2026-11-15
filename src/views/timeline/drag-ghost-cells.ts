@@ -3,11 +3,7 @@ import { drawnSyllables } from "@/domain/line/drawn-track";
 import { trackRole } from "insync/line-track";
 import { sameAddress } from "@/domain/selection/identity";
 import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
-import {
-  type SyllablePosition,
-  expandSelectionToGroupmates,
-  getSyllablePositions,
-} from "@/domain/word/syllable-groups";
+import { type SyllablePosition, expandSelectionToGroupmates, getSyllablePositions } from "insync/word-syllable-groups";
 import type { DragGhostCell } from "@/views/timeline/drag-ghost";
 import { type DragData, type DragWord, draggedWord } from "@/views/timeline/drag-handlers";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";

@@ -8,7 +8,7 @@ import { lineText } from "@/domain/line/text";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
 import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

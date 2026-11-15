@@ -7,7 +7,7 @@ import { backgroundText } from "@/domain/line/text";
 import { mainTrack } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";
 import type { Bounds } from "insync/word-bounds";
-import { spacedText } from "@/domain/word/spaced-words";
+import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { withTrailingSpace } from "@/utils/word-spaces";
 import { getSplitCharacter } from "@/utils/split-character";

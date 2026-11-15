@@ -7,7 +7,7 @@ import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "@/domain/selection/resolve";
 import type { MoveRejectReason } from "@/domain/word/move-across-lines";
-import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import { useProjectStore } from "@/stores/project";
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { toast } from "sonner";

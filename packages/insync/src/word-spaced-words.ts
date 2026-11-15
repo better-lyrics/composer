@@ -1,6 +1,6 @@
-import { groupIdsForJoins, joinsFromWords, splitTrailingWhitespace } from "insync/from-words";
-import { newWordId } from "@/domain/word/id";
-import type { WordTiming } from "insync/word-timing";
+import { groupIdsForJoins, joinsFromWords, splitTrailingWhitespace } from "./from-words";
+import { newWordId } from "./word-id";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

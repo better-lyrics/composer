@@ -1,4 +1,4 @@
-import type { Bounds } from "insync/word-bounds";
+import type { Bounds } from "./word-bounds";
 
 // -- Functions ----------------------------------------------------------------
 

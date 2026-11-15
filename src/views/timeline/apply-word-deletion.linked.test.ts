@@ -10,7 +10,7 @@ import { lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { addressAt } from "@/domain/selection/resolve";
 import type { DeletionSelection } from "@/domain/word/apply-word-deletion";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

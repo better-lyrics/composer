@@ -1,5 +1,5 @@
-import { withFreeIds } from "@/domain/word/id";
-import { endedWord } from "@/domain/word/syllable-groups";
+import { withFreeIds } from "insync/word-id";
+import { endedWord } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 

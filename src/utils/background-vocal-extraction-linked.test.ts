@@ -5,7 +5,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { roleWords } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

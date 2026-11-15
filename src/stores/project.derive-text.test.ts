@@ -7,8 +7,8 @@ import { mergeSyllableGroup, snapSyllablesFlush, toggleWordExplicit } from "@/do
 import { splitWord } from "@/domain/commands/word-structure";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { newWordId } from "@/domain/word/id";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { newWordId } from "insync/word-id";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 
 /**

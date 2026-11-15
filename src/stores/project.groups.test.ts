@@ -9,7 +9,7 @@ import { backgroundText, lineText } from "@/domain/line/text";
 /**
  * @vitest-environment node
  */
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";

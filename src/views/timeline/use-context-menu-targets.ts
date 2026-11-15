@@ -13,7 +13,7 @@ import { lineText } from "@/domain/line/text";
 import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "insync/line-track";
 import { isAddressed } from "@/domain/selection/identity";
 import { resolveAddress } from "@/domain/selection/resolve";
-import { hasIntraGroupGap, isInSyllableGroup } from "@/domain/word/syllable-groups";
+import { hasIntraGroupGap, isInSyllableGroup } from "insync/word-syllable-groups";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { countAlignableLines } from "@/stores/alignment-plan";
 import { useAudioStore } from "@/stores/audio";

@@ -1,7 +1,7 @@
-import { newWordId } from "@/domain/word/id";
-import { isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun, mergeWordText } from "@/domain/word/merge-run";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "insync/word-timing";
+import { newWordId } from "./word-id";
+import { isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun, mergeWordText } from "./word-merge-run";
+import { wordFromSpaced } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------

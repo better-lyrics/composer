@@ -6,7 +6,7 @@ import type { LanguagePiece, LanguagePieces } from "insync/language";
 import { keyedPieces, pieceOf, positionalPieces } from "@/domain/language/pieces";
 import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "insync/line";
-import { spacedText } from "@/domain/word/spaced-words";
+import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";

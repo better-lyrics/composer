@@ -11,7 +11,7 @@ import {
   expandSelectionToGroupmates,
   getSyllablePositions,
   hasIntraGroupGap,
-} from "@/domain/word/syllable-groups";
+} from "./word-syllable-groups";
 
 // -- id-mode -------------------------------------------------------------------
 

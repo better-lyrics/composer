@@ -9,7 +9,7 @@ import { isLineSynced } from "@/domain/line/predicates";
 import { trackRole, untimedSyllablesOf } from "insync/line-track";
 import { mainTimingEdit } from "@/domain/line/track-writes";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { boundsOverlap } from "@/domain/word/overlap";
+import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";
 import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 

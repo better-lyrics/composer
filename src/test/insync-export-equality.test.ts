@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { withoutV3Piece } from "@/domain/language/v3-languages";
 import type { LyricLine } from "insync/line";
-import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { spacedFromWords, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import type { SavedProjectV3 } from "@/lib/saved-project";

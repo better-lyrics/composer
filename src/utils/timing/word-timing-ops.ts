@@ -2,7 +2,7 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { applyStepKey, type StepKey, type StepRefusal } from "@/domain/step-timing/step-write";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
-import { getSyllablePositions } from "@/domain/word/syllable-groups";
+import { getSyllablePositions } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------

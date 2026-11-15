@@ -1,5 +1,5 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { endedWord } from "@/domain/word/syllable-groups";
+import { endedWord } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Constants -----------------------------------------------------------------

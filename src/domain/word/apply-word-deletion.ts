@@ -6,7 +6,7 @@ import type { LyricLine } from "insync/line";
 import { hasAnyTiming, isLineSynced } from "@/domain/line/predicates";
 import { mainTrack, roleWords } from "insync/line-track";
 import { withMainTrack, withoutTrackTiming, withTrackWords } from "@/domain/line/track-writes";
-import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
+import { absorbDeletedSyllablesIntoNeighbors } from "insync/word-syllable-groups";
 
 interface DeletionSelection {
   lineId: string;

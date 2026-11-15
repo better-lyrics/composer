@@ -1,9 +1,9 @@
 import type { LineTrack, Syllable, UntimedSyllable } from "insync/line";
 import { timedSyllables } from "insync/line-track";
-import { lcsPairs, wordKey } from "@/domain/word/alignment";
-import { newWordId } from "@/domain/word/id";
+import { lcsPairs, wordKey } from "insync/word-alignment";
+import { newWordId } from "insync/word-id";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import { textParts } from "@/domain/word/text-parts";
+import { textParts } from "insync/word-text-parts";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Tokens -------------------------------------------------------------------

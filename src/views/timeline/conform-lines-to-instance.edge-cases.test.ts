@@ -7,7 +7,7 @@ import { backgroundText, lineText } from "@/domain/line/text";
  * @vitest-environment node
  */
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { withFields } from "@/test/field-updates";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";

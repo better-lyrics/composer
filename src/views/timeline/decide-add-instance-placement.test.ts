@@ -6,7 +6,7 @@ import { mainTrack, timedSyllables } from "insync/line-track";
  */
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "insync/line";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { describe, expect, it } from "vitest";
 import { decideAddInstancePlacement, templateDuration } from "./decide-add-instance-placement";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

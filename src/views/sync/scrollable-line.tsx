@@ -1,5 +1,5 @@
 import { getAgentColor } from "@/domain/agent/colors";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
 import { withoutSplitCharacter } from "insync/split-character-text";

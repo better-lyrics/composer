@@ -1,5 +1,5 @@
 import { splitTrailingWhitespace } from "insync/from-words";
-import { newWordId, withSplitIds } from "@/domain/word/id";
+import { newWordId, withSplitIds } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Field policy for WordTiming creation flows -------------------------------

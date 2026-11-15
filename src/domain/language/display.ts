@@ -11,7 +11,7 @@ import {
 } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";
-import { spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { spacedText, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { withoutSplitCharacter } from "insync/split-character-text";
 import { splitIntoWordsWithMeta } from "@/utils/lyric-words";

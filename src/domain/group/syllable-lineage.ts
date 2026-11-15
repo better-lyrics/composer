@@ -1,7 +1,7 @@
 import type { Syllable } from "insync/line";
 import { isTimedSyllable, untimedSyllable } from "insync/line-track";
-import { lcsPairs, wordKey } from "@/domain/word/alignment";
-import { newWordId } from "@/domain/word/id";
+import { lcsPairs, wordKey } from "insync/word-alignment";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------

@@ -4,7 +4,7 @@ import { updatedLine, withFields } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";
 import { placeSharedInstance, realignSharedInstance, realignSharedInstances } from "@/domain/group/shared-placement";
 import type { LyricLine } from "insync/line";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

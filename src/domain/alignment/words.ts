@@ -1,5 +1,5 @@
 import { splitCjkPart } from "@/domain/alignment/cjk";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { splitTrailingWhitespace } from "insync/from-words";
 

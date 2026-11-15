@@ -1,6 +1,6 @@
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, timedSyllables, trackWords } from "insync/line-track";
-import { isInSyllableGroup } from "@/domain/word/syllable-groups";
+import { isInSyllableGroup } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------

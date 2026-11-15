@@ -1,5 +1,5 @@
 import { clampBoundaryTime, isBoundaryFlush } from "@/domain/word/boundary";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { describe, expect, it } from "vitest";
 

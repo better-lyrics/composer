@@ -9,7 +9,7 @@ import {
   withTrackWords,
 } from "@/domain/line/track-writes";
 import type { Bounds } from "insync/word-bounds";
-import { withIdsOf } from "@/domain/word/id";
+import { withIdsOf } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { isStructurallyEqual } from "insync/structural-equal";
 

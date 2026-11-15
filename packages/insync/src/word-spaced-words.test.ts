@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { spacedFromWords, wordsFromSpaced } from "./word-spaced-words";
 
 describe("spaced words", () => {
   it("moves trailing whitespace into sep and back", () => {

@@ -1,4 +1,4 @@
-import { withSplitIds } from "@/domain/word/id";
+import { withSplitIds } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { distributeTiming } from "@/utils/syllable-utils";
 

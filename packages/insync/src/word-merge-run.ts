@@ -1,6 +1,6 @@
-import { splitTrailingWhitespace } from "insync/from-words";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import { splitTrailingWhitespace } from "./from-words";
+import { computeSyllableGroups } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

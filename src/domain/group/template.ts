@@ -3,7 +3,7 @@ import { keyedPieces, pieceOf } from "@/domain/language/pieces";
 import { withPiecesOn } from "@/domain/language/side-pieces";
 import type { LineFields } from "@/domain/line/line-from-fields";
 import type { LinePassthrough } from "@/domain/line/passthrough";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------

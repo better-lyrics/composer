@@ -10,7 +10,7 @@ import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/lin
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";

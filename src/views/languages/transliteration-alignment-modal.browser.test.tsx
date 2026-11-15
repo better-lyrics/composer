@@ -5,7 +5,7 @@ import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";

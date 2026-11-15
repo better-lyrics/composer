@@ -17,7 +17,7 @@ import {
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 } from "@/domain/selection/nudge";
-import { spacedText } from "@/domain/word/spaced-words";
+import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";

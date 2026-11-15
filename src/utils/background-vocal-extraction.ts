@@ -8,7 +8,7 @@ import { backgroundText, lineText, syllablesText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords } from "insync/line-track";
 import { withMainTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { joinBackgroundText } from "@/utils/background-vocal-brackets";
 import { mergeStandaloneInto } from "@/utils/background-vocal-standalone-merge";

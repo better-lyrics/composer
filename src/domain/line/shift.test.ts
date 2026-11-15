@@ -2,7 +2,7 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "insync/line";
 import { changedFields } from "@/test/field-updates";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

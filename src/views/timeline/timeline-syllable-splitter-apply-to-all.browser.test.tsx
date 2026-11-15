@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

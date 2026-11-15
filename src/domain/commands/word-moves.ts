@@ -13,7 +13,7 @@ import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
-import { boundsOverlap } from "@/domain/word/overlap";
+import { boundsOverlap } from "insync/word-overlap";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
 import type { WordTiming } from "insync/word-timing";
 import { cloneWord } from "@/utils/word-timing";

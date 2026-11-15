@@ -3,7 +3,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
-import { wordsFromSpaced } from "@/domain/word/spaced-words";
+import { wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import type { ProjectSaveInput } from "@/lib/persistence";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

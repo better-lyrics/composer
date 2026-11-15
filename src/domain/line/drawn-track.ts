@@ -14,8 +14,8 @@ import {
   trackOf,
 } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
-import { lineTimingWordId } from "@/domain/word/id";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { lineTimingWordId } from "insync/word-id";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { withoutSplitCharacter } from "insync/split-character-text";
 

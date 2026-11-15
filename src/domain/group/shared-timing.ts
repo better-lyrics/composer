@@ -7,7 +7,7 @@ import type { LyricLine } from "insync/line";
 import { isWordSynced } from "@/domain/line/predicates";
 import { roleWords } from "insync/line-track";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
-import { withoutWordIds } from "@/domain/word/id";
+import { withoutWordIds } from "insync/word-id";
 import { isStructurallyEqual } from "insync/structural-equal";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 

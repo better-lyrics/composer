@@ -15,7 +15,7 @@ import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables, type WordTrack } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { createWords } from "@/test/factories";
 import {
   type LegacyWord,

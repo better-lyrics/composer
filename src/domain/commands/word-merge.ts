@@ -8,7 +8,7 @@ import { fieldRole, fieldWords, type TrackField, trackField } from "insync/line-
 import { withFieldWords } from "@/domain/line/word-track-edits";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
-import { mergeWordRun } from "@/domain/word/merge-run";
+import { mergeWordRun } from "insync/word-merge-run";
 
 // -- Helpers ------------------------------------------------------------------
 

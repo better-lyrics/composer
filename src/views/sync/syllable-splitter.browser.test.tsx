@@ -4,7 +4,7 @@ import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { describe, expect, it } from "vitest";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 
 const SINGLE_CHAR: WordTiming = { id: "w1", text: "a", sep: "", begin: 0, end: 1, joinsNext: true };
 const MULTI_CHAR: WordTiming = { id: "w2", text: "hello", sep: "", begin: 0, end: 1, joinsNext: true };

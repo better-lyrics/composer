@@ -9,7 +9,7 @@ import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields"
 import type { LyricLine } from "insync/line";
 import { withSplitMarksFromWords } from "@/domain/line/reconstruct-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 

@@ -12,7 +12,7 @@ import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { withSlotWord } from "@/domain/sync/slot-words";
 import type { Bounds } from "insync/word-bounds";
-import { enforceOrderAround } from "@/domain/word/order";
+import { enforceOrderAround } from "insync/word-order";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------

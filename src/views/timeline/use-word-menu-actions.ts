@@ -4,7 +4,7 @@ import { fillEmptyTrack, insertWord } from "@/domain/commands/word-structure";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { trackRole } from "insync/line-track";
 import { addressOf, toAddress } from "@/domain/selection/resolve";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";

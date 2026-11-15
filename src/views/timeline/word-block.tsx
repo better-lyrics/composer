@@ -1,6 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import { memo, useCallback, useMemo } from "react";
-import type { SyllablePosition } from "@/domain/word/syllable-groups";
+import type { SyllablePosition } from "insync/word-syllable-groups";
 import { cn } from "@/utils/cn";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";

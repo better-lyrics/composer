@@ -5,7 +5,7 @@ import { mappedTransliteration } from "@/domain/language/pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import {
   type LegacyWord,
   legacyLanguages,

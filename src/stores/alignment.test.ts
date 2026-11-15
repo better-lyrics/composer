@@ -7,7 +7,7 @@ import { pasteLyrics } from "@/domain/commands/edit-text";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { useAlignmentStore } from "@/stores/alignment";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";

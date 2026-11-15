@@ -6,7 +6,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { syllablesText } from "@/domain/line/text";
 import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectMetadata } from "insync/metadata";
-import { type SpacedWord, spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, spacedText, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import {
   MS_PER_SECOND,

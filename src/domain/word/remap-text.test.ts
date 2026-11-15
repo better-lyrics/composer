@@ -1,5 +1,5 @@
 import { insertSlot, remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

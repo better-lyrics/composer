@@ -3,7 +3,7 @@ import { roleWords } from "insync/line-track";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import { type FactoryLineOptions, createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

@@ -14,7 +14,7 @@ import type {
 } from "insync/line";
 import { placesKeptElements } from "@/domain/line/passthrough";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 
 // -- Types --------------------------------------------------------------------
 

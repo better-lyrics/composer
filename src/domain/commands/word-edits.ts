@@ -11,7 +11,7 @@ import {
 } from "@/domain/line/word-track-edits";
 import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
 import type { IdenticalMatchSource } from "@/utils/identical-word-matcher";
-import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { closeIntraGroupGaps, expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------

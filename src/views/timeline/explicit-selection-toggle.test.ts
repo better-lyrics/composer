@@ -12,7 +12,7 @@ import type { LyricLine } from "insync/line";
 import { backgroundTrack, roleWords, timedSyllables, trackRole } from "insync/line-track";
 import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
 import type { SyllableAddress } from "@/domain/selection/model";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWords } from "@/test/factories";
 import { generateLineTtml } from "@/utils/ttml";

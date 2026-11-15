@@ -1,6 +1,6 @@
 import { roleWords } from "insync/line-track";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ConfirmModalHost } from "@/ui/confirm-modal";

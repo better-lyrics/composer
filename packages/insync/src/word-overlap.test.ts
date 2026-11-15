@@ -1,5 +1,5 @@
-import type { Bounds } from "insync/word-bounds";
-import { boundsOverlap } from "@/domain/word/overlap";
+import type { Bounds } from "./word-bounds";
+import { boundsOverlap } from "./word-overlap";
 import { describe, expect, it } from "vitest";
 
 const b = (begin: number, end: number): Bounds => ({ begin, end });

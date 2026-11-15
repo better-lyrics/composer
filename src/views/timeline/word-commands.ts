@@ -4,7 +4,7 @@ import { type TrackField, trackField, trackWords } from "insync/line-track";
 import { contiguousSelectionRun, type SelectionRun } from "@/domain/selection/contiguous";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
-import { isInSyllableGroup } from "@/domain/word/syllable-groups";
+import { isInSyllableGroup } from "insync/word-syllable-groups";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import {

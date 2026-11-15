@@ -1,4 +1,4 @@
-import type { WordTiming } from "insync/word-timing";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

@@ -3,7 +3,7 @@ import type { LyricLine } from "insync/line";
 import { trackField } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
-import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------

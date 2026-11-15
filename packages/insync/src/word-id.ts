@@ -1,5 +1,5 @@
-import type { TrackRole } from "insync/line";
-import type { WordTiming } from "insync/word-timing";
+import type { TrackRole } from "./line";
+import type { WordTiming } from "./word-timing";
 
 // -- Functions ----------------------------------------------------------------
 

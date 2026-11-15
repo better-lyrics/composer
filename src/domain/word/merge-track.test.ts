@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { syllablesText } from "@/domain/line/text";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { describe, expect, it } from "vitest";
 import { mergeWordsIntoTrack } from "./merge-track";

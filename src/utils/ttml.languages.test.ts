@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
 import { lineText } from "@/domain/line/text";
 import type { ProjectMetadata } from "insync/metadata";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";

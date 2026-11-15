@@ -9,7 +9,7 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
-import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 

@@ -7,7 +7,7 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { WordTrack } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

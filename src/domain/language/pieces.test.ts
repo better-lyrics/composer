@@ -9,7 +9,7 @@ import {
   withReadingsOf,
 } from "@/domain/language/pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { mergeWordRun } from "@/domain/word/merge-run";
+import { mergeWordRun } from "insync/word-merge-run";
 import type { WordTiming } from "insync/word-timing";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

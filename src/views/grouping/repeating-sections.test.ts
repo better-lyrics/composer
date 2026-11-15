@@ -4,7 +4,7 @@
 import { roleWords } from "insync/line-track";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 import { describe, expect, it } from "vitest";

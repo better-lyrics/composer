@@ -5,8 +5,8 @@ import { withSplitMarksFromWords, wordContentSpans } from "@/domain/line/reconst
 import { lineText, syllablesText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
-import { wordKey } from "@/domain/word/alignment";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { wordKey } from "insync/word-alignment";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

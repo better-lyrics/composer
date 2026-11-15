@@ -8,7 +8,7 @@ import { nudgeSelectedWords } from "@/domain/selection/nudge";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { clampBoundaryTime } from "@/domain/word/boundary";
-import { boundsOverlap } from "@/domain/word/overlap";
+import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";

@@ -4,7 +4,7 @@ import type { LyricLine } from "insync/line";
 import { trackWords, type WordTrack } from "insync/line-track";
 import type { SelectionRun } from "@/domain/selection/contiguous";
 import { addressAt, toAddress } from "@/domain/selection/resolve";
-import { isPartialSyllableRun, isWholeSyllableGroupRun } from "@/domain/word/merge-run";
+import { isPartialSyllableRun, isWholeSyllableGroupRun } from "insync/word-merge-run";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getSplitCharacter } from "@/utils/split-character";

@@ -5,8 +5,8 @@ import { explicitFieldWords } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { fieldRole, fieldWords, type TrackField } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
-import { mergedWord } from "@/domain/word/merge-run";
-import { computeSyllableGroups, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { mergedWord } from "insync/word-merge-run";
+import { computeSyllableGroups, expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
