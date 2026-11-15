@@ -19,7 +19,14 @@ import { MAIN_BEGIN_ATTRIBUTE, MAIN_END_ATTRIBUTE } from "./main-span";
 import { parseTtmlTimestamp } from "./timestamp";
 import { partsFromDivs } from "./parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "./passthrough-read";
-import { type UntimedLyric, timedTrackText, untimedAnchors, untimedLyric, withUntimedSpans } from "./untimed-read";
+import {
+  type UntimedLyric,
+  timedTrackText,
+  untimedAnchors,
+  untimedBackgroundSpan,
+  untimedLyric,
+  withUntimedSpans,
+} from "./untimed-read";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -48,15 +55,6 @@ function untimedMainSpan(p: XmlReadElement, begin: number, end: number): { begin
     begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
     end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
   };
-}
-
-// An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`.
-function untimedBackgroundSpan(bg: XmlReadElement, begin: number, end: number) {
-  if (!bg.hasAttribute("begin") && !bg.hasAttribute("end")) return {};
-  const ownBegin = bg.hasAttribute("begin") ? parseTtmlTimestamp(bg.getAttribute("begin") ?? "") : begin;
-  const ownEnd = bg.hasAttribute("end") ? parseTtmlTimestamp(bg.getAttribute("end") ?? "") : end;
-  if (!Number.isFinite(ownBegin) || !Number.isFinite(ownEnd) || ownEnd < ownBegin) return {};
-  return { backgroundBegin: ownBegin, backgroundEnd: ownEnd };
 }
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
@@ -196,6 +194,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     let untimedBackground: UntimedLyric | undefined;
     let backgroundSpan: { backgroundBegin?: number; backgroundEnd?: number } = {};
     let untimedMain: UntimedLyric | undefined;
+    const { words, text: timedText } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
 
     if (bgContainer) {
       const timedBackground = timedTrackText(extractTimedWords(bgContainer, null), bgContainer, splitChar);
@@ -205,7 +204,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
-        backgroundSpan = untimedBackgroundSpan(bgContainer, begin, end);
+        backgroundSpan = untimedBackgroundSpan(bgContainer, begin, end, words.length === 0);
       }
     }
 
@@ -214,9 +213,6 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     // double it, and so the provenance triple stays coherent.
     const backgroundTextSource: "manual" | undefined =
       backgroundText || (backgroundWords && backgroundWords.length > 0) ? "manual" : undefined;
-
-    // Check for word-level timing (span elements NOT inside x-bg)
-    const { words, text: timedText } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
 
     if (words.length > 0) {
       lines.push(

@@ -8,6 +8,7 @@ import { withBackgroundTrack, withMainTrack } from "../line-track-writes";
 import type { WordTiming } from "../word-timing";
 import { elementRole, isLyricTextElement, isTimedWordSpan, LYRIC_ROLES } from "./modelled";
 import { mixedContentPassthrough } from "./passthrough-read";
+import { parseTtmlTimestamp } from "./timestamp";
 import { markupBaseText } from "./markup";
 
 // -- Types --------------------------------------------------------------------
@@ -104,6 +105,20 @@ function timedTrackText(
   return { text: syllablesText(read, splitChar) + tail.trim(), words: read };
 }
 
+// An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`; one that
+// wrote none takes the time of a line-synced `<p>`, as TTML times it.
+function untimedBackgroundSpan(bg: XmlReadElement, begin: number, end: number, lineSynced: boolean) {
+  if (!bg.hasAttribute("begin") && !bg.hasAttribute("end")) {
+    return lineSynced && Number.isFinite(begin) && Number.isFinite(end) && begin <= end
+      ? { backgroundBegin: begin, backgroundEnd: end }
+      : {};
+  }
+  const ownBegin = bg.hasAttribute("begin") ? parseTtmlTimestamp(bg.getAttribute("begin") ?? "") : begin;
+  const ownEnd = bg.hasAttribute("end") ? parseTtmlTimestamp(bg.getAttribute("end") ?? "") : end;
+  if (!Number.isFinite(ownBegin) || !Number.isFinite(ownEnd) || ownEnd < ownBegin) return {};
+  return { backgroundBegin: ownBegin, backgroundEnd: ownEnd };
+}
+
 // -- Syllables ----------------------------------------------------------------
 
 // Where each syllable sits in the text the syllables spell.
@@ -170,4 +185,4 @@ function untimedAnchors(
 // -- Exports ------------------------------------------------------------------
 
 export type { UntimedLyric };
-export { timedTrackText, untimedAnchors, untimedLyric, withSpansFromMarkup, withUntimedSpans };
+export { timedTrackText, untimedAnchors, untimedBackgroundSpan, untimedLyric, withSpansFromMarkup, withUntimedSpans };
