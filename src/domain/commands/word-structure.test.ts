@@ -8,6 +8,8 @@ import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, roleWords } from "insync/line-track";
 import { deleteWords, insertWord, typeWordText } from "insync/commands/word-structure";
+import { syncGesture } from "insync/commands/sync";
+import { withAlignedTransliteration } from "insync/language-align";
 import { pasteLyrics } from "insync/commands/edit-text";
 import { trackPieces } from "insync/language-pieces";
 import { addressOf } from "insync/selection-resolve";
@@ -112,5 +114,22 @@ describe("word structure commands", () => {
     const [block] = drawnSyllables(line, "bg", DEFAULT_SPLIT_CHARACTER);
     useProjectStore.getState().commit(deleteWords([addressOf(line, "bg", block)]));
     expect(backgroundTrack(useProjectStore.getState().lines[0])).toBeUndefined();
+  });
+});
+
+describe("romanization through Sync", () => {
+  it("regression: a romanization with no readings still infers them once every syllable is synced", () => {
+    const main = { text: "HO NO KO" };
+    const transliteration = { language: "ja-Latn", origin: "google" as const, sourceFingerprint: "", main };
+    const line = { ...createLine({ id: "l5", text: "ほ の こ" }), languages: { transliteration } };
+    useProjectStore.setState({ lines: [line] });
+    for (let wordIndex = 0; wordIndex < 3; wordIndex++) {
+      const cursor = { lineIndex: 0, wordIndex };
+      const ctx = { cursor, jumped: false, time: 1 + wordIndex, defaultWordDuration: 0.5 };
+      useProjectStore.getState().commit(syncGesture("tap-word", ctx, () => {}));
+    }
+    const synced = withAlignedTransliteration(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER);
+    const pieces = trackPieces(synced, "main");
+    expect(roleWords(synced, "main")?.map((word) => pieces?.[word.id]?.text)).toEqual(["HO", "NO", "KO"]);
   });
 });

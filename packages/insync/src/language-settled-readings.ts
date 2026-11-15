@@ -1,6 +1,6 @@
 import type { BackgroundLanguage, LanguageSide, LineLanguage } from "./language";
 import { languagesWith, lineTransliteration } from "./language-line-languages";
-import { mappedTransliteration, withoutOrphanPieces } from "./language-pieces";
+import { hasReadings, mappedTransliteration, trackPieces, withoutOrphanPieces } from "./language-pieces";
 import { normalizeTransliterationForEditing } from "./language-transliteration-format";
 import type { LyricLine } from "./line";
 import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
@@ -36,6 +36,7 @@ function settledTrack(track: LineLanguage, before: LyricLine | undefined, line: 
     const words = sideSyllables(line, side);
     if (!sideTrack?.text?.trim() || words.length === 0) continue;
     if (sameSyllableIds(sideSyllables(before, side), words)) continue;
+    if (!hasReadings(trackPieces(before ?? line, side))) continue;
     const next = settledSide(sideTrack, words);
     if (next !== sideTrack) settled = { ...settled, [side]: next };
   }

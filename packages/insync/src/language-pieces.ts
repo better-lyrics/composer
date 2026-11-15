@@ -39,6 +39,10 @@ function keyedPieces(words: readonly Keyed[], positional: PositionalPieces): Lan
   return entries.length ? Object.fromEntries(entries) : undefined;
 }
 
+function hasReadings(pieces: LanguagePieces | undefined): boolean {
+  return pieces !== undefined && Object.values(pieces).some((piece) => piece.text !== undefined);
+}
+
 function legacyJoiner(words: readonly WordTiming[], pieces: LanguagePieces | undefined, index: number): string {
   return pieceOf(pieces, words[index])?.joinerAfter ?? (hasLexicalBoundaryAfter([...words], index) ? "  " : " ");
 }
@@ -188,6 +192,7 @@ function withoutOrphanPieces<T extends LyricLine>(line: T): T {
 
 export type { PositionalPieces };
 export {
+  hasReadings,
   keyedPieces,
   languageSide,
   mappedTransliteration,

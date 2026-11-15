@@ -6,7 +6,7 @@ import type {
   TransliterationAlignmentStatus,
 } from "./language";
 import { lineTransliteration, withLanguages } from "./language-line-languages";
-import { mappedTransliteration, slicedPieces, trackPieces } from "./language-pieces";
+import { hasReadings, mappedTransliteration, slicedPieces, trackPieces } from "./language-pieces";
 import { withPiecesOn, withSidePieces, withTrackPieces } from "./language-side-pieces";
 import {
   normalizeTransliterationForEditing,
@@ -136,7 +136,7 @@ function planTransliterationAlignment(
       status: previousStatus === "confirmed" || previousStatus === "needs-review" ? previousStatus : "inferred",
     };
   }
-  if (previousStatus === "needs-review") return { pieces, status: "needs-review" };
+  if (previousStatus === "needs-review" && hasReadings(pieces)) return { pieces, status: "needs-review" };
 
   const lexicalGroups = timingLexicalWordGroups(words);
   const groupWeights = lexicalGroups.map((group) => group.words.reduce((sum, word) => sum + [...word.text].length, 0));
