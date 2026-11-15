@@ -1,5 +1,6 @@
 import { isValidLanguageTag, normalizeLanguageTag } from "@/domain/project/language";
 import { useProjectStore } from "@/stores/project";
+import { useErrorAfterBlur } from "@/hooks/useErrorAfterBlur";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { ExtraFieldList } from "@/views/export/extra-field-list";
 import { MetadataFieldList } from "@/views/export/metadata-field-list";
@@ -19,6 +20,8 @@ const MetadataPanel: React.FC = () => {
   const setMetadata = useProjectStore((s) => s.setMetadata);
 
   const languageHintId = useId();
+  const languageErrorId = useId();
+  const isrcErrorId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
   // These actions unmount the button that ran them, so focus moves to the stable panel title.
   const thenFocusTitle = (action: () => void) => () => {
@@ -28,6 +31,8 @@ const MetadataPanel: React.FC = () => {
   const [isrcValue, setIsrcDraft] = useNormalizedDraft(metadata.isrc, normalizeIsrc);
   const trimmedIsrc = isrcValue.trim();
   const isrcInvalid = trimmedIsrc !== "" && !isValidIsrc(trimmedIsrc);
+  const isrcError = useErrorAfterBlur(isrcInvalid);
+  const showIsrcError = isrcError.shown;
 
   const handleIsrcChange = (value: string) => {
     setIsrcDraft(value);
@@ -37,6 +42,8 @@ const MetadataPanel: React.FC = () => {
   const [languageValue, setLanguageDraft] = useNormalizedDraft(metadata.language, normalizeLanguageTag);
   const trimmedLanguage = languageValue.trim();
   const languageInvalid = trimmedLanguage !== "" && !isValidLanguageTag(trimmedLanguage);
+  const languageError = useErrorAfterBlur(languageInvalid);
+  const showLanguageError = languageError.shown;
 
   const handleLanguageChange = (value: string) => {
     setLanguageDraft(value);
@@ -90,15 +97,17 @@ const MetadataPanel: React.FC = () => {
           <SuggestedField
             fieldName="ISRC"
             className="font-mono font-medium tabular-nums"
-            aria-invalid={isrcInvalid}
+            aria-invalid={showIsrcError}
+            aria-describedby={showIsrcError ? isrcErrorId : undefined}
+            onBlur={isrcError.reveal}
             value={isrcValue}
             placeholder="e.g. USQX91700001"
             onChange={(e) => handleIsrcChange(e.target.value)}
             suggestion={suggestions.isrc}
             onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
           >
-            {isrcInvalid && (
-              <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+            {showIsrcError && (
+              <span id={isrcErrorId} className="text-xs text-composer-error-text select-text cursor-text">
                 Invalid ISRC ・ expected 12 characters like USQX91700001
               </span>
             )}
@@ -110,15 +119,16 @@ const MetadataPanel: React.FC = () => {
           <input
             type="text"
             aria-label="Language"
-            aria-describedby={languageHintId}
-            aria-invalid={languageInvalid}
+            aria-describedby={showLanguageError ? `${languageErrorId} ${languageHintId}` : languageHintId}
+            aria-invalid={showLanguageError}
+            onBlur={languageError.reveal}
             value={languageValue}
             placeholder="e.g. en, ja, pt-BR"
             onChange={(e) => handleLanguageChange(e.target.value)}
             className={DETAILS_FIELD_STYLES}
           />
-          {languageInvalid && (
-            <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+          {showLanguageError && (
+            <span id={languageErrorId} className="text-xs text-composer-error-text select-text cursor-text">
               Invalid language ・ expected a BCP-47 tag like en or pt-BR
             </span>
           )}
