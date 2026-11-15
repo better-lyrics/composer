@@ -2,7 +2,7 @@ import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "o
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { WordTiming } from "insync/word-timing";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/lyric-words";

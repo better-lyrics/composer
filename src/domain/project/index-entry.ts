@@ -3,7 +3,7 @@ import type { LanguageTextVariant } from "@/domain/language/display";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineFromSaved } from "@/domain/line/saved-line";
-import { hasAnyTiming, hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
+import { hasAnyTiming, hasMainLyrics, isWordSynced } from "insync/line-predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import type { ResumePosition } from "@/domain/project/resume-position";

@@ -3,7 +3,7 @@ import type { LyricLine } from "insync/line";
 import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { trackRole } from "insync/line-track";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types ---------------------------------------------------------------------

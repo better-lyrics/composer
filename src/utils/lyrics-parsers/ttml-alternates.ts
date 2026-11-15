@@ -6,7 +6,7 @@ import type { LanguagePieces, LineLanguage, LineTranslations } from "insync/lang
 import { keyedPieces } from "@/domain/language/pieces";
 import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";

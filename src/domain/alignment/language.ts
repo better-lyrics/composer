@@ -1,7 +1,7 @@
 import { hasKana } from "@/domain/alignment/cjk";
 import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

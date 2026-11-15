@@ -1,5 +1,5 @@
-import { effectiveBounds } from "insync/line-bounds";
-import type { LyricLine } from "insync/line";
+import { effectiveBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
 
 // -- Functions ----------------------------------------------------------------
 

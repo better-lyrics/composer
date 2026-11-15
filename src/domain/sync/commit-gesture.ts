@@ -1,6 +1,6 @@
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "insync/group";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { bgBounds, mainBounds } from "insync/line-bounds";
 import { withBackgroundSeededFrom, withSeededBackground } from "@/domain/line/background";
 import type { LineUpdate, LyricLine } from "insync/line";

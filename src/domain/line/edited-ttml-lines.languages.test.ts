@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { holdsEveryLine } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

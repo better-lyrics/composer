@@ -1,6 +1,6 @@
 import { languageSourceText } from "@/domain/language/source-text";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import type { LanguageLineInput } from "@/services/language-provider";
 import { getSplitCharacter } from "@/utils/split-character";
 

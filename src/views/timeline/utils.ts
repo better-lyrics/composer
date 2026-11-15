@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineInstanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import type { ResolvedAddress } from "@/domain/selection/resolve";

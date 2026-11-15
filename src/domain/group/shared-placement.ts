@@ -9,11 +9,11 @@ import {
   sharesTiming,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "insync/group";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { isWordSynced } from "@/domain/line/predicates";
+import { isWordSynced } from "insync/line-predicates";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 
 // -- Types --------------------------------------------------------------------

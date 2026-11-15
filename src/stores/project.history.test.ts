@@ -3,7 +3,7 @@ import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields"
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 /**
  * @vitest-environment node
  */

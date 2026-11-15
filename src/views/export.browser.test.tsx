@@ -3,7 +3,7 @@ import { mainTrack } from "insync/line-track";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

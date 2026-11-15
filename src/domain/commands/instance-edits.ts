@@ -12,7 +12,7 @@ import {
 } from "@/domain/group/template";
 import { nextInstanceIdx } from "insync/instance-enumerate";
 import { belongsToInstance, isAttachedToInstance } from "insync/instance-predicates";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { withLinePassthrough } from "@/domain/line/passthrough";

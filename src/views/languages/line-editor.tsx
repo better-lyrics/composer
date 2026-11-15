@@ -20,7 +20,7 @@ import {
   languageLineAnchorId,
 } from "@/domain/language/review";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { StatusChip } from "@/ui/status-chip";

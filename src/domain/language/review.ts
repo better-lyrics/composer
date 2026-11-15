@@ -1,4 +1,4 @@
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
 import type { LanguageSide, LineLanguage } from "insync/language";

@@ -7,7 +7,7 @@ import { backgroundTrack, mainTrack, roleWords } from "insync/line-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { diffEditTextChange } from "./diff-edit-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

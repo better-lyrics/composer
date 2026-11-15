@@ -1,7 +1,7 @@
 import type { Passthrough } from "insync/passthrough";
 import type { XmlChild } from "insync/xml-node";
 import type { LineTrack, LyricLine } from "insync/line";
-import { syllableJoint, syllablesText } from "@/domain/line/text";
+import { syllableJoint, syllablesText } from "insync/line-text";
 import { backgroundTrack, mainTrack } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 import { elementRole, isLyricTextElement, LYRIC_ROLES } from "@/utils/lyrics-parsers/ttml-modelled";

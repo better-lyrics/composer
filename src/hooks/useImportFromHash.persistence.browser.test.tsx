@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getHashImportSettled, getPersistenceSettled } from "@/lib/persistence-settled";

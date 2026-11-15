@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";

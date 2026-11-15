@@ -1,5 +1,5 @@
-import type { LyricLine } from "insync/line";
-import { backgroundTrack, mainTrack } from "insync/line-track";
+import type { LyricLine } from "./line";
+import { backgroundTrack, mainTrack } from "./line-track";
 
 // -- Functions ----------------------------------------------------------------
 

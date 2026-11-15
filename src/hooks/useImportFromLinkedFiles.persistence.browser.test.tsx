@@ -1,6 +1,6 @@
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useImportFromLinkedFiles } from "@/hooks/useImportFromLinkedFiles";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { usePersistence } from "@/hooks/usePersistence";

@@ -10,7 +10,7 @@ import {
   timedTransliterationSlice,
 } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "insync/line";
-import { isWordSynced } from "@/domain/line/predicates";
+import { isWordSynced } from "insync/line-predicates";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { emitWordSpan } from "@/utils/ttml-markup";

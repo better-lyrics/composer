@@ -6,7 +6,7 @@ import { mappedTransliteration, trackPieces } from "@/domain/language/pieces";
 import { languageSourceText } from "@/domain/language/source-text";
 import { DASHES, normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

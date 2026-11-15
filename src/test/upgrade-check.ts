@@ -4,7 +4,7 @@ import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import { withSeededBackground, withSeededBackgroundWords } from "@/domain/line/background";
 import { bgBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
+import { isLineSynced } from "insync/line-predicates";
 import { backgroundTrack } from "insync/line-track";
 import { linesFromSaved, type SavedProjectV3, upgradeSavedProject } from "@/lib/saved-project";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";

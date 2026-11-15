@@ -3,7 +3,7 @@ import { withSeededBackground } from "@/domain/line/background";
 import { bgBounds } from "insync/line-bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
 import { createLine } from "@/test/factories";

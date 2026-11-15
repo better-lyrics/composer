@@ -1,6 +1,6 @@
-import { syllableJoint, syllablesText } from "@/domain/line/text";
-import type { WordTiming } from "insync/word-timing";
-import { withoutSplitCharacter } from "insync/split-character-text";
+import { syllableJoint, syllablesText } from "./line-text";
+import type { WordTiming } from "./word-timing";
+import { withoutSplitCharacter } from "./split-character-text";
 
 // -- Word content spans -------------------------------------------------------
 

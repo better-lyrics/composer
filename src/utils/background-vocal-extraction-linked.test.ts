@@ -3,7 +3,7 @@ import { extractLineBackground } from "@/domain/commands/edit-text";
 import { bgBounds } from "insync/line-bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";

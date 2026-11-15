@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";

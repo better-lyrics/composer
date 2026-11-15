@@ -1,5 +1,5 @@
 import { roleWords } from "insync/line-track";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { validateTransliterationAlignment } from "@/domain/language/align";
 import { lineTransliteration } from "@/domain/language/line-languages";
 import type { LyricLine } from "insync/line";

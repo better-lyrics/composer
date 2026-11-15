@@ -1,4 +1,4 @@
-import { lineStarts, startedLineIndex } from "@/domain/line/line-at-time";
+import { lineStarts, startedLineIndex } from "insync/line-at-time";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

@@ -12,7 +12,7 @@ import { toTemplateLine } from "@/domain/group/template-line";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
-import { isWordSynced } from "@/domain/line/predicates";
+import { isWordSynced } from "insync/line-predicates";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 
 // -- Types --------------------------------------------------------------------

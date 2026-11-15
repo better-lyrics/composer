@@ -9,7 +9,7 @@ import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { LineLanguage } from "insync/language";
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";

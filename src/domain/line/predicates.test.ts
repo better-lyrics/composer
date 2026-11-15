@@ -1,7 +1,7 @@
 import { isSpanTimed, mainTrack } from "insync/line-track";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "insync/line-predicates";
 import { backgroundTrack } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { describe, expect, it } from "vitest";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

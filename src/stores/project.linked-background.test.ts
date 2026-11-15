@@ -9,7 +9,7 @@ import { bgBounds } from "insync/line-bounds";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 
 /**
  * @vitest-environment node

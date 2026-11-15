@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { GENIUS_PAGE_COPY, TAGGED_LYRICS } from "@/test/genius-fixtures";
 import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { backupText, projectFileText } from "@/test/project-file-fixtures";

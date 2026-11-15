@@ -1,6 +1,6 @@
 import type { LyricLine } from "insync/line";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { trackRole, untimedSyllablesOf } from "insync/line-track";
 import type { SyncAddress } from "@/domain/sync/address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";

@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { type SyncGapTrack, timedWordSlotRanges } from "@/domain/line/sync-progress";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 

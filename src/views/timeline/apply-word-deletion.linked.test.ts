@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { deleteWords } from "@/domain/commands/word-structure";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { addressAt } from "@/domain/selection/resolve";
 import type { DeletionSelection } from "@/domain/word/apply-word-deletion";

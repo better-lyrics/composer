@@ -10,7 +10,7 @@ import {
 } from "@/domain/language/review";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { withFields } from "@/test/field-updates";
 import { legacyLine, legacyTrack } from "@/test/legacy-languages";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

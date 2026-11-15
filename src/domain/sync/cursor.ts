@@ -1,6 +1,6 @@
 import { mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
+import { isLineSynced } from "insync/line-predicates";
 import { type SyncGranularity, isSyncableLine } from "@/domain/line/sync-progress";
 import { mainTrack, timedSyllables } from "insync/line-track";
 

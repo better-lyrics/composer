@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
 import type { ProjectFile } from "@/lib/project-file";
 import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";

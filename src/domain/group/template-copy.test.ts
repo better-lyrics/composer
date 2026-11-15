@@ -7,8 +7,8 @@ import { withManualBackgroundWords, withSeededBackground } from "@/domain/line/b
 import { bgBounds, mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { isLineSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
 import { withAgent } from "@/domain/line/track-writes";
 import { chorus } from "@/test/chorus-lines";

@@ -3,7 +3,7 @@ import { lineInstanceKey } from "insync/instance-key";
 import { withManualBackgroundWords } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
-import { hasAnyTiming, isLineSynced } from "@/domain/line/predicates";
+import { hasAnyTiming, isLineSynced } from "insync/line-predicates";
 import { mainTrack, roleWords } from "insync/line-track";
 import { withMainTrack, withoutTrackTiming, withTrackWords } from "@/domain/line/track-writes";
 import { absorbDeletedSyllablesIntoNeighbors } from "insync/word-syllable-groups";

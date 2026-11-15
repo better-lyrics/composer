@@ -6,7 +6,7 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { mergeSyllableGroup, snapSyllablesFlush, toggleWordExplicit } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { newWordId } from "insync/word-id";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

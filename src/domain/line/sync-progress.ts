@@ -1,7 +1,7 @@
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { hasMainLyrics, isLineSynced } from "@/domain/line/predicates";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { hasMainLyrics, isLineSynced } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { splitIntoWordsWithMeta } from "@/utils/lyric-words";

@@ -1,6 +1,6 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { mainBounds } from "insync/line-bounds";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import type { ProjectFile } from "@/lib/project-file";

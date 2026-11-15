@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";

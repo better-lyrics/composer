@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { hasAnyTiming } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";

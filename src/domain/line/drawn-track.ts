@@ -2,7 +2,7 @@ import { withAlignedTransliteration } from "@/domain/language/align";
 import type { LanguagePieces, LineLanguages } from "insync/language";
 import { trackPieces } from "@/domain/language/pieces";
 import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "insync/line";
-import { trackText } from "@/domain/line/text";
+import { trackText } from "insync/line-text";
 import {
   backgroundTrack,
   fieldWords,

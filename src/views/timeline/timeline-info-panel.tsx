@@ -3,7 +3,7 @@ import { useCallback, useMemo } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { setWordBoundary } from "@/domain/commands/word-timing";
 import type { LyricLine } from "insync/line";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
 import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";

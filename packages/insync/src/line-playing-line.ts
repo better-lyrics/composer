@@ -1,6 +1,6 @@
-import { effectiveBounds } from "insync/line-bounds";
-import type { LyricLine } from "insync/line";
-import { memoByIdentity } from "insync/memo-by-identity";
+import { effectiveBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
+import { memoByIdentity } from "./memo-by-identity";
 
 // -- Interfaces ---------------------------------------------------------------
 

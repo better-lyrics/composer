@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useAudioStore } from "@/stores/audio";

@@ -9,7 +9,7 @@ import {
 import type { LineLanguage, LineTranslations, TransliterationSegment } from "insync/language";
 import { withoutPieces } from "@/domain/language/side-pieces";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { isStructurallyEqual } from "insync/structural-equal";
 import { getSplitCharacter } from "@/utils/split-character";

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { App } from "@/App";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { getSaveStatus } from "@/lib/save-status";

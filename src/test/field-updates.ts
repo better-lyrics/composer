@@ -1,6 +1,6 @@
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { hasAnyTiming } from "@/domain/line/predicates";
+import { hasAnyTiming } from "insync/line-predicates";
 import { mainTrack } from "insync/line-track";
 import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";

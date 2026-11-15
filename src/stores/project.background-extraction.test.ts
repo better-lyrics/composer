@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";

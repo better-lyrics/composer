@@ -2,7 +2,7 @@ import { linesOfInstance } from "insync/instance-enumerate";
 import { instanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 

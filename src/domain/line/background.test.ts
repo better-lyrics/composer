@@ -8,7 +8,7 @@ import {
 } from "@/domain/line/background";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { withFields } from "@/test/field-updates";

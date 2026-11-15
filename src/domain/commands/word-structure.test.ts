@@ -4,8 +4,8 @@
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainBounds } from "insync/line-bounds";
-import { isLineSynced } from "@/domain/line/predicates";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { isLineSynced } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, roleWords } from "insync/line-track";
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";

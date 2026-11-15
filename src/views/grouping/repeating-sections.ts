@@ -1,7 +1,7 @@
 import { repeatKey, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
 import type { LyricLine } from "insync/line";
-import { hasMainLyrics } from "@/domain/line/predicates";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { hasMainLyrics } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 

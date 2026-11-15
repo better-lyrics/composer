@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { backgroundTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";

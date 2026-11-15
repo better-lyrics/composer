@@ -4,7 +4,7 @@ import { agentDisplayName } from "@/domain/agent/display-name";
 import type { Agent } from "insync/agent";
 import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/language/display";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords, splitIntoWordsWithMeta } from "@/utils/lyric-words";
 import type { LaneGroupTag } from "@/views/sync/shared-sync-tags";

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

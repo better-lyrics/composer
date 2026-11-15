@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { loadProjectAudio } from "@/lib/project-audio";
 import { projectFileFrom } from "@/lib/project-file";

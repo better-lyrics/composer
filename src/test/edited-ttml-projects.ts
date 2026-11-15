@@ -6,7 +6,7 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { LineLanguage } from "insync/language";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";
 import { createGroup, createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";

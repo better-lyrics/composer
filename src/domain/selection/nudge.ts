@@ -1,9 +1,9 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "insync/line";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
 import { isSpanTimed, mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
 import type { Bounds } from "insync/word-bounds";

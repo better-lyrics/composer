@@ -6,7 +6,7 @@ import { withBackground, withSeededBackground, withoutBackground } from "@/domai
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "insync/line";
-import { syllablesText } from "@/domain/line/text";
+import { syllablesText } from "insync/line-text";
 import {
   backgroundTrack,
   isSpanTimed,

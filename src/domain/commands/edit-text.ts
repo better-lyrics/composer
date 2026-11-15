@@ -5,7 +5,7 @@ import { type LyricRoot, type Refusal, applied, refused } from "@/domain/command
 import type { LinkGroup } from "insync/group";
 import { isLinked } from "insync/instance-predicates";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, isSpanTimed, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackText } from "@/domain/line/track-writes";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";

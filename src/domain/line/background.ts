@@ -1,7 +1,7 @@
 import { effectiveBounds } from "insync/line-bounds";
 import { syllablesFromFields } from "@/domain/line/line-from-fields";
 import type { BackgroundSource, BackgroundTrack, LyricLine } from "insync/line";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, untimedSyllable } from "insync/line-track";
 import {
   newBackgroundTrack,

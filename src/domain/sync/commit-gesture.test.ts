@@ -4,7 +4,7 @@ import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { mainBounds } from "insync/line-bounds";
 import { changedFields, updatedLine } from "@/test/field-updates";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
 import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";

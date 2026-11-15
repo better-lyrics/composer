@@ -9,7 +9,7 @@ import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "insync/instance-enumerate";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "insync/line-track";
 import { isAddressed } from "@/domain/selection/identity";
 import { resolveAddress } from "@/domain/selection/resolve";

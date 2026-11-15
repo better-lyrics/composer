@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { hasMainLyrics } from "@/domain/line/predicates";
+import { hasMainLyrics } from "insync/line-predicates";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Predicates ---------------------------------------------------------------

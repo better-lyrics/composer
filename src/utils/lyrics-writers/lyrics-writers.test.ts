@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
 import { withSeededBackground } from "@/domain/line/background";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";
 import { createLine } from "@/test/factories";

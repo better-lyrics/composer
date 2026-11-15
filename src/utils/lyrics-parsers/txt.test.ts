@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { GENIUS_PAGE_COPY } from "@/test/genius-fixtures";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { mainBounds } from "insync/line-bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import { adoptOpenProjectId } from "@/lib/open-project-session";

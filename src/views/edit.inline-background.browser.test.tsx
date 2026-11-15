@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

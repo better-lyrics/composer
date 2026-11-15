@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { isWordSynced } from "@/domain/line/predicates";
+import { isWordSynced } from "insync/line-predicates";
 
 // -- Types --------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import type { LineTrack, LyricLine, TrackRole } from "insync/line";
 import { syllablesFromText } from "@/domain/line/syllables-from-text";
-import { trackText } from "@/domain/line/text";
+import { trackText } from "insync/line-text";
 import {
   backgroundTrack,
   isTimedSyllable,

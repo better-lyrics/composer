@@ -1,8 +1,8 @@
-import { bgBounds } from "insync/line-bounds";
-import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
-import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withoutSplitCharacter } from "insync/split-character-text";
+import { bgBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
+import { lineText } from "./line-text";
+import { isSpanTimed, mainTrack, timedSyllables } from "./line-track";
+import { withoutSplitCharacter } from "./split-character-text";
 
 // -- Predicates ---------------------------------------------------------------
 

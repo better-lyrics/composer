@@ -22,7 +22,7 @@ import {
 } from "@/domain/language/pieces";
 import { withPiecesOn, withTrackPieces } from "@/domain/language/side-pieces";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText, syllablesText } from "@/domain/line/text";
+import { backgroundText, lineText, syllablesText } from "insync/line-text";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { trackRole, trackWords, type WordTrack } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";

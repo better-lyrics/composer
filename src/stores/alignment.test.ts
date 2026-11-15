@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "insync/word-id";
 import { useAlignmentStore } from "@/stores/alignment";

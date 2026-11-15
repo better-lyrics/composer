@@ -1,6 +1,6 @@
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { syllablesText } from "@/domain/line/text";
+import { hasAnyTiming } from "insync/line-predicates";
+import { syllablesText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";
 import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

@@ -1,8 +1,8 @@
 import { expect } from "vitest";
 import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
 import type { LyricLine } from "insync/line";
-import { isWordSynced } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { isWordSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { stripSplitCharacter } from "@/utils/split-character";

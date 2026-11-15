@@ -6,7 +6,7 @@ import type { LinkGroup } from "insync/group";
 import { carryTemplateEdits } from "@/domain/group/template-edit";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withFields } from "@/test/field-updates";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

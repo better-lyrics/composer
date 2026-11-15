@@ -1,5 +1,5 @@
 import { backgroundTrack, roleWords } from "insync/line-track";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { updatedLine, patchOf } from "@/test/field-updates";
 import { describe, expect, it } from "vitest";
 import type { LineUpdate, LyricLine } from "insync/line";

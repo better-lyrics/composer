@@ -12,7 +12,7 @@ import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-place
 import type { LinkGroup } from "insync/group";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
 import { useProjectStore } from "@/stores/project";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

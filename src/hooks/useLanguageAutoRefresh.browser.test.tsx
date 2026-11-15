@@ -1,7 +1,7 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { fieldUpdates } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
 import { useProjectStore } from "@/stores/project";
 import { lineById, romanizedWords, timedLine } from "@/test/generated-language-lines";

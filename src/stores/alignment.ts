@@ -11,7 +11,7 @@ import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syl
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import { applyAlignedTimings, retimeNewSyllables } from "@/domain/commands/alignment";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
 import {

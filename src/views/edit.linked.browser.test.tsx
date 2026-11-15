@@ -3,7 +3,7 @@ import { userEvent } from "vitest/browser";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup } from "@/test/factories";

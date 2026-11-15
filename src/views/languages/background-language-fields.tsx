@@ -4,7 +4,7 @@ import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/l
 import type { LineLanguage } from "insync/language";
 import { alignmentNeedsReview, isTransliterationSourceStale } from "@/domain/language/review";
 import type { LyricLine } from "insync/line";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";

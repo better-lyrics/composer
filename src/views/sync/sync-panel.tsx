@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
-import { playingLineIndex } from "@/domain/line/playing-line";
+import { playingLineIndex } from "insync/line-playing-line";
 import { isProjectFullySynced, syncProgress } from "@/domain/line/sync-progress";
 import { SYNC_START } from "@/domain/sync/address";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";

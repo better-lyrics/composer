@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { useProjectStore } from "@/stores/project";

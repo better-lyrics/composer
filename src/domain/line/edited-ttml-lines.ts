@@ -7,7 +7,7 @@ import { fieldsOfLine, type LineFields, lineFromFields, untimedRest } from "@/do
 import type { LyricLine } from "insync/line";
 import { withoutKeptData } from "@/domain/line/passthrough";
 import { isSyncableLine } from "@/domain/line/sync-progress";
-import { trackText } from "@/domain/line/text";
+import { trackText } from "insync/line-text";
 import { backgroundTrack } from "insync/line-track";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";

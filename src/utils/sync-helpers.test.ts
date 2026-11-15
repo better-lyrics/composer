@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { convertLineToWord } from "@/domain/line/span-to-words";
-import { lineText, syllablesText } from "@/domain/line/text";
+import { lineText, syllablesText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { lineTimingWordId } from "insync/word-id";
 import { computeSyllableGroups } from "insync/word-syllable-groups";

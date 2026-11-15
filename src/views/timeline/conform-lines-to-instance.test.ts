@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { LineTemplate } from "@/domain/group/template";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

@@ -8,7 +8,7 @@ import { isSharedLine } from "@/domain/group/shared-timing";
 import { instanceName } from "@/domain/instance/name";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
 import { useAutoAlign } from "@/hooks/use-auto-align";
 import { noteGuideSignal } from "@/lib/guide-signals";

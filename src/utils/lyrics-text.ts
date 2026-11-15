@@ -3,7 +3,7 @@ import { withoutBackground } from "@/domain/line/background";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
-import { backgroundText, lineText, trackText } from "@/domain/line/text";
+import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";

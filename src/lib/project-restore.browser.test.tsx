@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { usePersistence } from "@/hooks/usePersistence";
 import { createProject, restoreOpenProject } from "@/lib/open-project";
 import { flushPendingSave } from "@/lib/persistence-debounce";

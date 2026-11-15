@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";

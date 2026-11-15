@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { trackText } from "@/domain/line/text";
+import { trackText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
 import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
 

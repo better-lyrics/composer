@@ -4,7 +4,7 @@ import { isLinked } from "insync/instance-predicates";
 import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
 import { mainTrack, roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 

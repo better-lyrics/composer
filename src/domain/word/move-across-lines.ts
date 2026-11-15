@@ -5,7 +5,7 @@ import { withoutBackground } from "@/domain/line/background";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
+import { isLineSynced } from "insync/line-predicates";
 import { trackRole, untimedSyllablesOf } from "insync/line-track";
 import { mainTimingEdit } from "@/domain/line/track-writes";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";

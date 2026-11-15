@@ -4,7 +4,7 @@ import { instanceKey } from "insync/instance-key";
 import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
 import { bgBounds, mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { isWordSynced } from "@/domain/line/predicates";
+import { isWordSynced } from "insync/line-predicates";
 import { roleWords } from "insync/line-track";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import { withoutWordIds } from "insync/word-id";

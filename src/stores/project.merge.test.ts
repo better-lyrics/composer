@@ -8,7 +8,7 @@ import { addGroup } from "@/domain/commands/group-edits";
 import { mergeSyllableGroup, snapSyllablesFlush } from "@/domain/commands/word-edits";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";

@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
-import { hasMainLyrics } from "@/domain/line/predicates";
+import { hasMainLyrics } from "insync/line-predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 
 // -- Types --------------------------------------------------------------------
 

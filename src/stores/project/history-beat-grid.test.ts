@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { resetGrid, withBarOneAt, withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";

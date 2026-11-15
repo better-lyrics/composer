@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

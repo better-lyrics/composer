@@ -1,7 +1,7 @@
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

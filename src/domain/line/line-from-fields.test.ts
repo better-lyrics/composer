@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { lineText, trackText } from "@/domain/line/text";
+import { lineText, trackText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { createLine, createWords } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

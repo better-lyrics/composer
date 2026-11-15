@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";

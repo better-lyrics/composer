@@ -3,7 +3,7 @@ import { lineTranslations } from "@/domain/language/line-languages";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { isLineTimed } from "@/domain/line/sync-progress";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import {
   type EditOperation,
   editLineText,

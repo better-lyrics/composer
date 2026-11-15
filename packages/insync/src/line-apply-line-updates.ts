@@ -1,4 +1,4 @@
-import type { LineUpdate, LyricLine } from "insync/line";
+import type { LineUpdate, LyricLine } from "./line";
 
 // -- Functions ----------------------------------------------------------------
 

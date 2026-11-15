@@ -7,7 +7,7 @@ import { retimeWord, setWordBoundary, stretchSelection } from "@/domain/commands
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";

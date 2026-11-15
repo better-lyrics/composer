@@ -3,7 +3,7 @@ import { userEvent } from "vitest/browser";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";

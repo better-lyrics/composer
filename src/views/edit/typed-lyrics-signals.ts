@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSettingsStore } from "@/stores/settings";

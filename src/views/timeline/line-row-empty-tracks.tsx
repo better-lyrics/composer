@@ -4,7 +4,7 @@ import { placeLineAt } from "@/domain/commands/line-timing";
 import { fillEmptyTrack } from "@/domain/commands/word-structure";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import type { WordTrack } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";
 import { newWordId } from "insync/word-id";

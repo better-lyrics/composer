@@ -1,7 +1,7 @@
 import { lineTransliteration } from "@/domain/language/line-languages";
 import { pieceOf } from "@/domain/language/pieces";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 

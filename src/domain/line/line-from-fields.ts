@@ -1,8 +1,8 @@
 import type { LineLanguages } from "insync/language";
 import type { BackgroundSource, BackgroundTrack, LyricLine, MainTrack, Syllable, TrackTiming } from "insync/line";
-import { groupFieldsOf } from "@/domain/line/group-fields";
+import { groupFieldsOf } from "insync/line-group-fields";
 import { textSyllables } from "@/domain/line/syllables-from-text";
-import { trackText } from "@/domain/line/text";
+import { trackText } from "insync/line-text";
 import { backgroundTrack, isExplicitBlock, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withTrackExplicit } from "@/domain/line/track-writes";
 import type { WordTiming } from "insync/word-timing";

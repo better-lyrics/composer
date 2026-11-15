@@ -3,7 +3,7 @@ import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { pieceOf } from "@/domain/language/pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
 import { withMainTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
 import { lineTimingWordId, newWordId } from "insync/word-id";

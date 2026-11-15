@@ -1,6 +1,6 @@
 import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import { coversLanguage } from "@/domain/alignment/language";
-import { hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { hasMainLyrics, isLineSynced, isWordSynced } from "insync/line-predicates";
 import { languageName } from "@/domain/project/language";
 import { useSelectedAlignmentModel } from "@/hooks/useAlignmentModels";
 import { useSongLanguage } from "@/hooks/useSongLanguage";

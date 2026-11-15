@@ -2,7 +2,7 @@ import { isEmptyPassthrough } from "insync/passthrough";
 import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import { msFromSeconds, secondsFromMs } from "insync/time";
 import { languagesFromSaved, savedLanguages } from "@/domain/language/saved-languages";
-import { groupFieldsOf } from "@/domain/line/group-fields";
+import { groupFieldsOf } from "insync/line-group-fields";
 import type {
   BackgroundTrack,
   LineTrack,

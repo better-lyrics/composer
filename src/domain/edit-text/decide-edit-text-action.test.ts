@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "insync/group";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";

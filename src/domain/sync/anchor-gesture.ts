@@ -1,6 +1,6 @@
 import { withOwnTiming } from "@/domain/group/own-timing";
 import { isAttachedToInstance } from "insync/instance-predicates";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { mainBounds } from "insync/line-bounds";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { type SyncAddress, sameSyncPosition } from "@/domain/sync/address";
