@@ -9,6 +9,7 @@ import {
   untimedSyllable,
 } from "./line-track";
 import type { WordTiming } from "./word-timing";
+import { endedWord } from "./word-syllable-groups";
 
 // -- Tracks -------------------------------------------------------------------
 
@@ -17,13 +18,34 @@ function syllableTimed<T extends LineTrack>(track: T, syllables: readonly Syllab
   return { ...rest, syllables } as T;
 }
 
+// The last timed syllable before the untimed rest keeps the join it had to that same syllable; any other one there
+// ends its word, so the two never run together.
+function seamBeforeUntimed(track: LineTrack, last: WordTiming, next: Syllable): WordTiming {
+  const at = track.syllables.findIndex((syllable) => syllable.id === last.id);
+  const own = track.syllables[at];
+  if (at < 0 || track.syllables[at + 1]?.id !== next.id) return last.sep && !last.joinsNext ? last : endedWord(last);
+  return last.sep || last.joinsNext ? last : { ...last, sep: own.sep, joinsNext: own.joinsNext };
+}
+
+function withEndedTrack(syllables: readonly Syllable[]): readonly Syllable[] {
+  const last = syllables.at(-1);
+  return last?.joinsNext ? [...syllables.slice(0, -1), { ...last, joinsNext: false }] : syllables;
+}
+
+// Timed syllables joined back to the untimed rest, and the last syllable of the track joining nothing.
+function joinedSyllables(track: LineTrack, words: readonly WordTiming[], untaken: readonly Syllable[]) {
+  const last = words.at(-1);
+  if (!last || untaken.length === 0) return withEndedTrack(untaken.length === 0 ? words : untaken);
+  return withEndedTrack([...words.slice(0, -1), seamBeforeUntimed(track, last, untaken[0]), ...untaken]);
+}
+
 // Untimed syllables the words did not take stay after them; a span gives way to words that are none of its own.
 function withTrackWords<T extends LineTrack>(track: T, words: readonly WordTiming[]): T {
   const own = new Set(track.syllables.map((syllable) => syllable.id));
-  if (isSpanTimed(track) && !words.some((word) => own.has(word.id))) return syllableTimed(track, words);
+  if (isSpanTimed(track) && !words.some((word) => own.has(word.id))) return syllableTimed(track, withEndedTrack(words));
   const taken = new Set(words.map((word) => word.id));
   const untaken = track.syllables.filter((syllable) => !isTimedSyllable(syllable) && !taken.has(syllable.id));
-  return syllableTimed(track, untaken.length === 0 ? words : [...words, ...untaken]);
+  return syllableTimed(track, joinedSyllables(track, words, untaken));
 }
 
 // The block of a span is explicit when every syllable is; a mark on the block marks or clears them all.

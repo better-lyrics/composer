@@ -120,7 +120,10 @@ describe("line edits on one instance", () => {
         fieldUpdates([
           {
             id: "s",
-            updates: { words: [{ id: "w19", text: "standalone", sep: "", begin: 1, end: 2, joinsNext: false }] },
+            updates: {
+              text: "standalone",
+              words: [{ id: "w19", text: "standalone", sep: "", begin: 1, end: 2, joinsNext: false }],
+            },
           },
         ]),
       ),
