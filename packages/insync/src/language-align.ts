@@ -1,4 +1,3 @@
-import { lineTransliteration, withLanguages } from "./language-line-languages";
 import type {
   BackgroundLanguage,
   LanguagePieces,
@@ -6,6 +5,7 @@ import type {
   LineLanguage,
   TransliterationAlignmentStatus,
 } from "./language";
+import { lineTransliteration, withLanguages } from "./language-line-languages";
 import { mappedTransliteration, slicedPieces, trackPieces } from "./language-pieces";
 import { withPiecesOn, withSidePieces, withTrackPieces } from "./language-side-pieces";
 import {
@@ -136,6 +136,7 @@ function planTransliterationAlignment(
       status: previousStatus === "confirmed" || previousStatus === "needs-review" ? previousStatus : "inferred",
     };
   }
+  if (previousStatus === "needs-review") return { pieces, status: "needs-review" };
 
   const lexicalGroups = timingLexicalWordGroups(words);
   const groupWeights = lexicalGroups.map((group) => group.words.reduce((sum, word) => sum + [...word.text].length, 0));
@@ -220,7 +221,12 @@ function sidePlan(
   const { text, words } = sideSource(line, side, splitChar);
   if (!words?.length) return null;
   const pieces = trackPieces(line, side);
-  return planTransliterationAlignment(words, pieces, timedPrefixText(text, words, track?.text ?? ""), status);
+  return planTransliterationAlignment(
+    words,
+    pieces,
+    timedPrefixText(text, words, track?.text ?? ""),
+    status ?? track?.alignmentStatus,
+  );
 }
 
 function withPlannedPieces(
