@@ -8,7 +8,7 @@ import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { shownEditText } from "insync/edit-text-shown-row";
+import { NO_RANGES, shownEditText } from "insync/edit-text-shown-row";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
@@ -447,5 +447,22 @@ describe("a background-only line", () => {
     const echo = action.finalLines[1];
     expect(lineText(echo, getSplitCharacter())).toBe("");
     expect(backgroundTrack(echo)?.syllables.map((syllable) => [syllable.id, syllable.begin])).toEqual([["bg-1", 4]]);
+  });
+});
+
+describe("breaking an instance line", () => {
+  it("regression: the row Enter breaks off shows without the space it started with", () => {
+    const lines = chorusLines();
+    const typed = ["I love you", "more than words", "verse line", "I love", " you", "more than words"].join("\n");
+    const action = decideEditTextAction({
+      text: typed,
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
+      ranges: NO_RANGES,
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.editText.split("\n")[4]).toBe("you");
   });
 });
