@@ -21,6 +21,7 @@ import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
 
@@ -30,7 +31,7 @@ describe("distributeWordsInLine", () => {
   it("distributes words proportionally by character length", () => {
     // "Hello" = 5 chars, "World" = 5 chars, total = 10 chars
     // Duration = 10 seconds, so each word gets 5 seconds
-    const words = distributeWordsInLine("Hello World", 0, 10);
+    const words = distributeWordsInLine("Hello World", 0, 10, DEFAULT_SPLIT_CHARACTER);
 
     expect(words).toHaveLength(2);
     expect(words[0]).toEqual({ text: "Hello", sep: " ", begin: 0, end: 5, joinsNext: false });
@@ -38,29 +39,29 @@ describe("distributeWordsInLine", () => {
   });
 
   it("handles single word", () => {
-    const words = distributeWordsInLine("Hello", 0, 5);
+    const words = distributeWordsInLine("Hello", 0, 5, DEFAULT_SPLIT_CHARACTER);
     expect(words).toEqual([{ text: "Hello", sep: "", begin: 0, end: 5, joinsNext: false }]);
   });
 
   it("handles empty string", () => {
-    const words = distributeWordsInLine("", 0, 5);
+    const words = distributeWordsInLine("", 0, 5, DEFAULT_SPLIT_CHARACTER);
     expect(words).toEqual([]);
   });
 
   it("handles whitespace-only string", () => {
-    const words = distributeWordsInLine("   ", 0, 5);
+    const words = distributeWordsInLine("   ", 0, 5, DEFAULT_SPLIT_CHARACTER);
     expect(words).toEqual([]);
   });
 
   it("handles multiple spaces between words", () => {
-    const words = distributeWordsInLine("Hello    World", 0, 10);
+    const words = distributeWordsInLine("Hello    World", 0, 10, DEFAULT_SPLIT_CHARACTER);
     expect(words).toHaveLength(2);
     expect(words[0]).toMatchObject({ text: "Hello", sep: " " });
     expect(words[1]).toMatchObject({ text: "World", sep: "" });
   });
 
   it("handles non-zero begin time", () => {
-    const words = distributeWordsInLine("Hi", 5, 7);
+    const words = distributeWordsInLine("Hi", 5, 7, DEFAULT_SPLIT_CHARACTER);
     expect(words).toEqual([{ text: "Hi", sep: "", begin: 5, end: 7, joinsNext: false }]);
   });
 });
@@ -70,8 +71,8 @@ describe("distributeWordsInLine", () => {
 describe("distributeLinesTiming", () => {
   it("distributes lines evenly across duration as word-synced lines", () => {
     const lines = [
-      lineFromFields({ id: "1", text: "Line one", agentId: "v1" }),
-      lineFromFields({ id: "2", text: "Line two", agentId: "v1" }),
+      lineFromFields({ id: "1", text: "Line one", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "2", text: "Line two", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const duration = 10;
 
@@ -87,7 +88,7 @@ describe("distributeLinesTiming", () => {
   });
 
   it("includes distributed words for each line", () => {
-    const lines = [lineFromFields({ id: "1", text: "Hello World", agentId: "v1" })];
+    const lines = [lineFromFields({ id: "1", text: "Hello World", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)];
     const duration = 11;
 
     const result = distributeLinesTiming(lines, duration);
@@ -103,7 +104,9 @@ describe("distributeLinesTiming", () => {
   });
 
   it("preserves original line properties", () => {
-    const lines = [{ ...lineFromFields({ id: "abc", text: "Test", agentId: "v2" }), extra: "data" }];
+    const lines = [
+      { ...lineFromFields({ id: "abc", text: "Test", agentId: "v2" }, DEFAULT_SPLIT_CHARACTER), extra: "data" },
+    ];
     const result = distributeLinesTiming(lines, 5);
 
     expect(result[0].id).toBe("abc");
@@ -116,15 +119,18 @@ describe("distributeLinesTiming", () => {
 
 describe("effectiveBounds (legacy call site coverage)", () => {
   it("returns timing from words when available", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      words: [
-        { id: "w1", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: true },
-        { id: "w2", text: "World", sep: "", begin: 5, end: 8, joinsNext: false },
-      ],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: true },
+          { id: "w2", text: "World", sep: "", begin: 5, end: 8, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -132,13 +138,16 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns direct timing when no words", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      begin: 3,
-      end: 7,
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        begin: 3,
+        end: 7,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -146,13 +155,16 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null when no timing available", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      begin: undefined,
-      end: undefined,
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        begin: undefined,
+        end: undefined,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -160,12 +172,15 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("prefers words timing over direct timing", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      words: [{ id: "w3", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: false }],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        words: [{ id: "w3", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -173,12 +188,15 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null for a word-synced line with an empty words array", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      words: [] as WordTiming[],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        words: [] as WordTiming[],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -186,20 +204,23 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("extends end past main words when bg words end later", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      words: [
-        { id: "w4", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: true },
-        { id: "w5", text: "World", sep: "", begin: 5, end: 8, joinsNext: false },
-      ],
-      backgroundText: "echo",
-      backgroundWords: [
-        { id: "w6", text: "ech", sep: "", begin: 6, end: 9, joinsNext: true },
-        { id: "w7", text: "o", sep: "", begin: 9, end: 12, joinsNext: false },
-      ],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        words: [
+          { id: "w4", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: true },
+          { id: "w5", text: "World", sep: "", begin: 5, end: 8, joinsNext: false },
+        ],
+        backgroundText: "echo",
+        backgroundWords: [
+          { id: "w6", text: "ech", sep: "", begin: 6, end: 9, joinsNext: true },
+          { id: "w7", text: "o", sep: "", begin: 9, end: 12, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -207,14 +228,17 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("pulls begin earlier when bg words begin before main words", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      words: [{ id: "w8", text: "Hello", sep: "", begin: 5, end: 8, joinsNext: false }],
-      backgroundText: "ooh",
-      backgroundWords: [{ id: "w9", text: "ooh", sep: "", begin: 3, end: 6, joinsNext: false }],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        words: [{ id: "w8", text: "Hello", sep: "", begin: 5, end: 8, joinsNext: false }],
+        backgroundText: "ooh",
+        backgroundWords: [{ id: "w9", text: "ooh", sep: "", begin: 3, end: 6, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -222,15 +246,18 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("extends line-synced end when bg words extend past it", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      begin: 3,
-      end: 7,
-      backgroundText: "ahh",
-      backgroundWords: [{ id: "w10", text: "ahh", sep: "", begin: 6, end: 10, joinsNext: false }],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        begin: 3,
+        end: 7,
+        backgroundText: "ahh",
+        backgroundWords: [{ id: "w10", text: "ahh", sep: "", begin: 6, end: 10, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -238,14 +265,17 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("leaves timing unchanged when bg words sit fully inside main range", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      words: [{ id: "w11", text: "Hello", sep: "", begin: 2, end: 10, joinsNext: false }],
-      backgroundText: "yeah",
-      backgroundWords: [{ id: "w12", text: "yeah", sep: "", begin: 4, end: 7, joinsNext: false }],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        words: [{ id: "w11", text: "Hello", sep: "", begin: 2, end: 10, joinsNext: false }],
+        backgroundText: "yeah",
+        backgroundWords: [{ id: "w12", text: "yeah", sep: "", begin: 4, end: 7, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -253,13 +283,16 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("ignores empty bg words array", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      words: [{ id: "w13", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: false }],
-      backgroundWords: [],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        words: [{ id: "w13", text: "Hello", sep: "", begin: 2, end: 5, joinsNext: false }],
+        backgroundWords: [],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -267,13 +300,16 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null when bg words exist but no main timing is set", () => {
-    const line = lineFromFields({
-      id: "1",
-      text: "Hello",
-      agentId: "v1",
-      backgroundText: "ooh",
-      backgroundWords: [{ id: "w14", text: "ooh", sep: "", begin: 3, end: 6, joinsNext: false }],
-    });
+    const line = lineFromFields(
+      {
+        id: "1",
+        text: "Hello",
+        agentId: "v1",
+        backgroundText: "ooh",
+        backgroundWords: [{ id: "w14", text: "ooh", sep: "", begin: 3, end: 6, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     const timing = effectiveBounds(line);
 
@@ -313,7 +349,7 @@ describe("formatTime", () => {
 
 describe("getDrawnRows", () => {
   function l(id: string, extras: Partial<LineFields> = {}): LyricLine {
-    return lineFromFields({ id, text: "x", agentId: "v1", ...extras });
+    return lineFromFields({ id, text: "x", agentId: "v1", ...extras }, DEFAULT_SPLIT_CHARACTER);
   }
 
   it("interleaves a header before each instance run", () => {
@@ -453,63 +489,77 @@ describe("getDrawnRows", () => {
 describe("instanceBounds (legacy call site coverage)", () => {
   it("uses min/max across word and bg word timings", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "x",
-        agentId: "v1",
-        words: [
-          { id: "w22", text: "hello", sep: " ", begin: 5, end: 6, joinsNext: false },
-          { id: "w23", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
-        ],
-        backgroundWords: [{ id: "w24", text: "yeah", sep: "", begin: 4, end: 4.5, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "x",
+          agentId: "v1",
+          words: [
+            { id: "w22", text: "hello", sep: " ", begin: 5, end: 6, joinsNext: false },
+            { id: "w23", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
+          ],
+          backgroundWords: [{ id: "w24", text: "yeah", sep: "", begin: 4, end: 4.5, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 4, end: 7 });
   });
 
   it("ignores stale line.begin/end when words are present", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "x",
-        agentId: "v1",
-        words: [
-          { id: "w25", text: "hello", sep: "", begin: 5, end: 6, joinsNext: true },
-          { id: "w26", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "x",
+          agentId: "v1",
+          words: [
+            { id: "w25", text: "hello", sep: "", begin: 5, end: 6, joinsNext: true },
+            { id: "w26", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
   it("ignores stale line.begin/end when only bg words are present", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "x",
-        agentId: "v1",
-        begin: 10,
-        end: 20,
-        backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 5, end: 6, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "x",
+          agentId: "v1",
+          begin: 10,
+          end: 20,
+          backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 5, end: 6, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 6 });
   });
 
   it("falls back to line.begin/end ONLY when the line is truly line-synced (no words and no bg words)", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "a", text: "x", agentId: "v1", begin: 5, end: 7 })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "a", text: "x", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
   it("mixes correctly across multiple lines: word-synced lines use words, line-synced uses begin/end", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "x",
-        agentId: "v1",
-        words: [{ id: "w28", text: "hello", sep: "", begin: 5, end: 6, joinsNext: false }],
-      }),
-      lineFromFields({ id: "b", text: "y", agentId: "v1", begin: 10, end: 12 }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "x",
+          agentId: "v1",
+          words: [{ id: "w28", text: "hello", sep: "", begin: 5, end: 6, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "b", text: "y", agentId: "v1", begin: 10, end: 12 }, DEFAULT_SPLIT_CHARACTER),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 12 });
   });
@@ -518,38 +568,47 @@ describe("instanceBounds (legacy call site coverage)", () => {
 describe("getWordsInInstance", () => {
   it("collects all words and bg words across all lines of an instance", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w29", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
-          { id: "w30", text: "love", sep: "", begin: 1, end: 2, joinsNext: false },
-        ],
-        backgroundWords: [{ id: "w31", text: "yeah", sep: "", begin: 0.5, end: 1.5, joinsNext: false }],
-      }),
-      lineFromFields({
-        id: "b",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 1,
-        words: [{ id: "w32", text: "you", sep: "", begin: 2, end: 3, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "x",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w29", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
+            { id: "w30", text: "love", sep: "", begin: 1, end: 2, joinsNext: false },
+          ],
+          backgroundWords: [{ id: "w31", text: "yeah", sep: "", begin: 0.5, end: 1.5, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "b",
+          text: "x",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 1,
+          words: [{ id: "w32", text: "you", sep: "", begin: 2, end: 3, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       // Other instance
-      lineFromFields({
-        id: "c",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [{ id: "w33", text: "I", sep: "", begin: 30, end: 31, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "c",
+          text: "x",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [{ id: "w33", text: "I", sep: "", begin: 30, end: 31, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
 
     const sels = getWordsInInstance(lines, "g1", 0);
@@ -567,7 +626,7 @@ describe("getWordsInInstance", () => {
 // -- nudgeSelectedWords --------------------------------------------------------
 
 function makeLine(id: string, words: WordTiming[]): LyricLine {
-  return lineFromFields({ id, text: spacedText(words), agentId: "v1", words });
+  return lineFromFields({ id, text: spacedText(words), agentId: "v1", words }, DEFAULT_SPLIT_CHARACTER);
 }
 
 describe("nudgeSelectedWords", () => {
@@ -579,7 +638,13 @@ describe("nudgeSelectedWords", () => {
         { id: "w36", text: "c", sep: "", begin: 5, end: 6, joinsNext: false },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], 0.05, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 1 }],
+      0.05,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBeCloseTo(0.05);
     expect(result.updates).toHaveLength(1);
     const updatedWords = roleWords(updatedLine(result.updates[0].updates), "main")!;
@@ -596,7 +661,13 @@ describe("nudgeSelectedWords", () => {
         { id: "w38", text: "b", sep: "", begin: 3, end: 4, joinsNext: false },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 1 }],
+      -0.05,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBeCloseTo(-0.05);
     expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].begin).toBeCloseTo(2.95);
     expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].end).toBeCloseTo(3.95);
@@ -609,7 +680,13 @@ describe("nudgeSelectedWords", () => {
         { id: "w40", text: "b", sep: "", begin: 1.02, end: 2, joinsNext: false },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 1 }],
+      -0.05,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBeCloseTo(-0.02);
     expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].begin).toBeCloseTo(1);
     expect(roleWords(updatedLine(result.updates[0].updates), "main")![1].end).toBeCloseTo(1.98);
@@ -622,7 +699,13 @@ describe("nudgeSelectedWords", () => {
         { id: "w42", text: "b", sep: "", begin: 1, end: 2, joinsNext: false },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 1 }],
+      -0.05,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
@@ -634,14 +717,26 @@ describe("nudgeSelectedWords", () => {
         { id: "w44", text: "b", sep: "", begin: 1, end: 2, joinsNext: false },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 0 }],
+      0.05,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
 
   it("clamps to 0 for the first word", () => {
     const lines = [makeLine("L", [{ id: "w45", text: "a", sep: "", begin: 0.02, end: 1, joinsNext: false }])];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], -0.05, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 0 }],
+      -0.05,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBeCloseTo(-0.02);
     expect(roleWords(updatedLine(result.updates[0].updates), "main")![0].begin).toBeCloseTo(0);
     expect(roleWords(updatedLine(result.updates[0].updates), "main")![0].end).toBeCloseTo(0.98);
@@ -649,7 +744,13 @@ describe("nudgeSelectedWords", () => {
 
   it("clamps to duration for the last word", () => {
     const lines = [makeLine("L", [{ id: "w46", text: "a", sep: "", begin: 8, end: 9.98, joinsNext: false }])];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 0 }],
+      0.05,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBeCloseTo(0.02);
     expect(roleWords(updatedLine(result.updates[0].updates), "main")![0].end).toBeCloseTo(10);
   });
@@ -671,6 +772,7 @@ describe("nudgeSelectedWords", () => {
       ],
       0.05,
       wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.appliedDelta).toBeCloseTo(0.05);
     const updated = roleWords(updatedLine(result.updates[0].updates), "main")!;
@@ -699,6 +801,7 @@ describe("nudgeSelectedWords", () => {
       ],
       0.05,
       wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.appliedDelta).toBeCloseTo(0.02);
     const updated = roleWords(updatedLine(result.updates[0].updates), "main")!;
@@ -707,19 +810,28 @@ describe("nudgeSelectedWords", () => {
 
   it("nudges background words via backgroundWords", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L",
-        text: "a",
-        agentId: "v1",
-        words: [{ id: "w55", text: "a", sep: "", begin: 0, end: 1, joinsNext: false }],
-        backgroundText: "ooh",
-        backgroundWords: [
-          { id: "w56", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: true },
-          { id: "w57", text: "ah", sep: "", begin: 5, end: 6, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L",
+          text: "a",
+          agentId: "v1",
+          words: [{ id: "w55", text: "a", sep: "", begin: 0, end: 1, joinsNext: false }],
+          backgroundText: "ooh",
+          backgroundWords: [
+            { id: "w56", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: true },
+            { id: "w57", text: "ah", sep: "", begin: 5, end: 6, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "bg", wordIndex: 0 }], 0.1, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "bg", wordIndex: 0 }],
+      0.1,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBeCloseTo(0.1);
     expect(roleWords(updatedLine(result.updates[0].updates), "bg")![0].begin).toBeCloseTo(2.1);
     expect(roleWords(updatedLine(result.updates[0].updates), "bg")![0].end).toBeCloseTo(3.1);
@@ -739,6 +851,7 @@ describe("nudgeSelectedWords", () => {
       ],
       0.05,
       wholeSong(5.05),
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.appliedDelta).toBeCloseTo(0.01);
     expect(result.updates).toHaveLength(2);
@@ -746,14 +859,20 @@ describe("nudgeSelectedWords", () => {
 
   it("returns no-op for empty selection", () => {
     const lines = [makeLine("L", [{ id: "w60", text: "a", sep: "", begin: 0, end: 1, joinsNext: false }])];
-    const result = nudgeSelectedWords(lines, [], 0.05, wholeSong(10));
+    const result = nudgeSelectedWords(lines, [], 0.05, wholeSong(10), DEFAULT_SPLIT_CHARACTER);
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
 
   it("returns no-op for zero delta", () => {
     const lines = [makeLine("L", [{ id: "w61", text: "a", sep: "", begin: 0, end: 1, joinsNext: false }])];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0, wholeSong(10));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "L", type: "word", wordIndex: 0 }],
+      0,
+      wholeSong(10),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
@@ -764,37 +883,46 @@ describe("nudgeSelectedWords", () => {
 describe("nudgeSelectedWords as instance shift", () => {
   it("shifts every word in an instance by the same delta when all words are selected", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "I love",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w62", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
-          { id: "w63", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
-        ],
-      }),
-      lineFromFields({
-        id: "B",
-        text: "all night",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 1,
-        words: [
-          { id: "w64", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
-          { id: "w65", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "I love",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w62", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
+            { id: "w63", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "B",
+          text: "all night",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 1,
+          words: [
+            { id: "w64", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
+            { id: "w65", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       // Standalone line OUTSIDE the instance, must NOT be touched
-      lineFromFields({
-        id: "C",
-        text: "outside",
-        agentId: "v1",
-        words: [{ id: "w66", text: "outside", sep: "", begin: 30, end: 31, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "C",
+          text: "outside",
+          agentId: "v1",
+          words: [{ id: "w66", text: "outside", sep: "", begin: 30, end: 31, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const allInstanceSelections = [
       { lineId: "A", type: "word" as const, wordIndex: 0 },
@@ -802,7 +930,7 @@ describe("nudgeSelectedWords as instance shift", () => {
       { lineId: "B", type: "word" as const, wordIndex: 0 },
       { lineId: "B", type: "word" as const, wordIndex: 1 },
     ];
-    const result = nudgeSelectedWords(lines, allInstanceSelections, 0.5, wholeSong(60));
+    const result = nudgeSelectedWords(lines, allInstanceSelections, 0.5, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.appliedDelta).toBe(0.5);
     const aWords = (roleWords(updatedLine(result.updates.find((u) => u.id === "A")?.updates), "main") ?? []) as {
       begin: number;
@@ -821,14 +949,23 @@ describe("nudgeSelectedWords as instance shift", () => {
 
   it("clamps shift to song duration when selection touches the end", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "x",
-        agentId: "v1",
-        words: [{ id: "w67", text: "x", sep: "", begin: 59.7, end: 60, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "x",
+          agentId: "v1",
+          words: [{ id: "w67", text: "x", sep: "", begin: 59.7, end: 60, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "A", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
+    const result = nudgeSelectedWords(
+      lines,
+      [{ lineId: "A", type: "word", wordIndex: 0 }],
+      0.5,
+      wholeSong(60),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBe(0);
   });
 });
@@ -838,23 +975,28 @@ describe("nudgeSelectedWords as instance shift", () => {
 describe("partitionNudgeSelections", () => {
   it("classifies word-synced lines as wordSynced", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "hello",
-        agentId: "v1",
-        words: [{ id: "w68", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "hello",
+          agentId: "v1",
+          words: [{ id: "w68", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 0 }];
-    const result = partitionNudgeSelections(lines, sels);
+    const result = partitionNudgeSelections(lines, sels, DEFAULT_SPLIT_CHARACTER);
     expect(result.wordSynced).toEqual(sels);
     expect(result.lineSynced).toEqual([]);
   });
 
   it("classifies line-synced lines as lineSynced", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 0 }];
-    const result = partitionNudgeSelections(lines, sels);
+    const result = partitionNudgeSelections(lines, sels, DEFAULT_SPLIT_CHARACTER);
     expect(result.lineSynced).toEqual(sels);
     expect(result.wordSynced).toEqual([]);
   });
@@ -863,80 +1005,99 @@ describe("partitionNudgeSelections", () => {
     // The Timeline draws a single 'word' for line-synced rows. If a user marquee-selected
     // a line-synced row from a viewport that briefly produced multiple synthetic indices,
     // we should still only shift the line once.
-    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const sels = [
       { lineId: "L1", type: "word" as const, wordIndex: 0 },
       { lineId: "L1", type: "word" as const, wordIndex: 0 },
     ];
-    const result = partitionNudgeSelections(lines, sels);
+    const result = partitionNudgeSelections(lines, sels, DEFAULT_SPLIT_CHARACTER);
     expect(result.lineSynced).toHaveLength(1);
   });
 
   it("treats backgroundWords selections as wordSynced regardless of line-sync state", () => {
     // BG words always have explicit timing even on otherwise line-synced rows
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "main",
-        agentId: "v1",
-        begin: 5,
-        end: 7,
-        backgroundWords: [{ id: "w69", text: "ah", sep: "", begin: 5.2, end: 5.6, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "main",
+          agentId: "v1",
+          begin: 5,
+          end: 7,
+          backgroundWords: [{ id: "w69", text: "ah", sep: "", begin: 5.2, end: 5.6, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const sels = [{ lineId: "L1", type: "bg" as const, wordIndex: 0 }];
-    const result = partitionNudgeSelections(lines, sels);
+    const result = partitionNudgeSelections(lines, sels, DEFAULT_SPLIT_CHARACTER);
     expect(result.wordSynced).toEqual(sels);
     expect(result.lineSynced).toEqual([]);
   });
 
   it("handles mixed selections across line-synced and word-synced rows", () => {
     const lines: LyricLine[] = [
-      lineFromFields({ id: "A", text: "synced", agentId: "v1", begin: 0, end: 1 }),
-      lineFromFields({
-        id: "B",
-        text: "with words",
-        agentId: "v1",
-        words: [{ id: "w70", text: "with words", sep: "", begin: 1, end: 2, joinsNext: false }],
-      }),
+      lineFromFields({ id: "A", text: "synced", agentId: "v1", begin: 0, end: 1 }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields(
+        {
+          id: "B",
+          text: "with words",
+          agentId: "v1",
+          words: [{ id: "w70", text: "with words", sep: "", begin: 1, end: 2, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const sels = [
       { lineId: "A", type: "word" as const, wordIndex: 0 },
       { lineId: "B", type: "word" as const, wordIndex: 0 },
     ];
-    const result = partitionNudgeSelections(lines, sels);
+    const result = partitionNudgeSelections(lines, sels, DEFAULT_SPLIT_CHARACTER);
     expect(result.lineSynced.map((s) => s.lineId)).toEqual(["A"]);
     expect(result.wordSynced.map((s) => s.lineId)).toEqual(["B"]);
   });
 
   it("drops selections referencing missing lines", () => {
-    const result = partitionNudgeSelections([], [{ lineId: "ghost", type: "word", wordIndex: 0 }]);
+    const result = partitionNudgeSelections(
+      [],
+      [{ lineId: "ghost", type: "word", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.wordSynced).toEqual([]);
     expect(result.lineSynced).toEqual([]);
   });
 
   it("treats lines with no words and no begin/end as neither (skipped)", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "empty", text: "", agentId: "v1" })];
-    const result = partitionNudgeSelections(lines, [{ lineId: "empty", type: "word", wordIndex: 0 }]);
+    const lines: LyricLine[] = [lineFromFields({ id: "empty", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)];
+    const result = partitionNudgeSelections(
+      lines,
+      [{ lineId: "empty", type: "word", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.wordSynced).toEqual([]);
     expect(result.lineSynced).toEqual([]);
   });
 
   it("expands a syllable-group selection to all groupmates in the wordSynced bucket", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "every",
-        agentId: "v1",
-        words: [
-          { id: "w71", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
-          { id: "w72", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-          { id: "w73", text: "y", sep: "", begin: 0.6, end: 1, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "every",
+          agentId: "v1",
+          words: [
+            { id: "w71", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w72", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w73", text: "y", sep: "", begin: 0.6, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 1 }];
-    const result = partitionNudgeSelections(lines, sels);
+    const result = partitionNudgeSelections(lines, sels, DEFAULT_SPLIT_CHARACTER);
     expect(result.wordSynced.map((s) => s.wordIndex)).toEqual([0, 1, 2]);
   });
 });
@@ -945,7 +1106,9 @@ describe("partitionNudgeSelections", () => {
 
 describe("shiftLineSyncedRows", () => {
   it("shifts begin and end by the requested delta and preserves line-sync (no words written)", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0.5);
     expect(result.updates).toHaveLength(1);
@@ -955,8 +1118,8 @@ describe("shiftLineSyncedRows", () => {
 
   it("shifts multiple line-synced rows together by the smallest allowed delta", () => {
     const lines: LyricLine[] = [
-      lineFromFields({ id: "A", text: "a", agentId: "v1", begin: 0.1, end: 1 }),
-      lineFromFields({ id: "B", text: "b", agentId: "v1", begin: 5, end: 6 }),
+      lineFromFields({ id: "A", text: "a", agentId: "v1", begin: 0.1, end: 1 }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "B", text: "b", agentId: "v1", begin: 5, end: 6 }, DEFAULT_SPLIT_CHARACTER),
     ];
     // Request -0.5s shift; A only has 0.1s headroom on the left, so applied delta is -0.1
     const result = shiftLineSyncedRows(
@@ -974,16 +1137,22 @@ describe("shiftLineSyncedRows", () => {
   });
 
   it("returns no-op when shift would push past 0 or duration", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 0, end: 1 })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 0, end: 1 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const r1 = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], -0.5, wholeSong(60));
     expect(r1.appliedDelta).toBe(0);
-    const lines2: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 59, end: 60 })];
+    const lines2: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 59, end: 60 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const r2 = shiftLineSyncedRows(lines2, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(r2.appliedDelta).toBe(0);
   });
 
   it("returns no-op for zero delta", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 5, end: 6 })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "x", agentId: "v1", begin: 5, end: 6 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
@@ -996,7 +1165,7 @@ describe("shiftLineSyncedRows", () => {
   });
 
   it("skips selections where line is missing or has no begin/end", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1" })];
+    const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "x", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)];
     const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
@@ -1012,20 +1181,27 @@ describe("shiftSelectionsTogether", () => {
     // If they apply different deltas, the group banner stretches asymmetrically.
     const lines: LyricLine[] = [
       // Word-synced row whose first word starts at 0.05 → max left shift = 0.05
-      lineFromFields({
-        id: "A",
-        text: "x",
-        agentId: "v1",
-        words: [{ id: "w74", text: "x", sep: "", begin: 0.05, end: 1, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "x",
+          agentId: "v1",
+          words: [{ id: "w74", text: "x", sep: "", begin: 0.05, end: 1, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       // Line-synced row with much more left headroom (begin=10)
-      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 10, end: 11 }),
+      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 10, end: 11 }, DEFAULT_SPLIT_CHARACTER),
     ];
-    const partitioned = partitionNudgeSelections(lines, [
-      { lineId: "A", type: "word", wordIndex: 0 },
-      { lineId: "B", type: "word", wordIndex: 0 },
-    ]);
-    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [
+        { lineId: "A", type: "word", wordIndex: 0 },
+        { lineId: "B", type: "word", wordIndex: 0 },
+      ],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     // Without the unified clamp: A shifts by -0.05, B shifts by -0.5 → asymmetric.
     // With unified clamp: both shift by -0.05.
     expect(result.appliedDelta).toBeCloseTo(-0.05);
@@ -1037,34 +1213,55 @@ describe("shiftSelectionsTogether", () => {
 
   it("nudging a line-synced background moves its span and marks it manual", () => {
     const line = withSeededBackground(
-      lineFromFields({ id: "A", text: "x", agentId: "v1", begin: 4, end: 8, backgroundText: "ooh yeah" }),
+      lineFromFields(
+        { id: "A", text: "x", agentId: "v1", begin: 4, end: 8, backgroundText: "ooh yeah" },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
     );
-    const partitioned = partitionNudgeSelections([line], [{ lineId: "A", type: "bg", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether([line], partitioned, 0.5, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      [line],
+      [{ lineId: "A", type: "bg", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether([line], partitioned, 0.5, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     const nudged = backgroundTrack(updatedLine(result.updates[0].updates)!);
     expect(nudged).toMatchObject({ begin: 6.5, end: 8.5, source: "manual" });
     expect(timedSyllables(nudged)).toEqual([]);
   });
 
   it("works when only the line-synced partition has selections", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "A", text: "x", agentId: "v1", begin: 5, end: 6 })];
-    const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "A", text: "x", agentId: "v1", begin: 5, end: 6 }, DEFAULT_SPLIT_CHARACTER),
+    ];
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [{ lineId: "A", type: "word", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.appliedDelta).toBeCloseTo(0.1);
     expect(mainBounds(updatedLine(result.updates[0].updates)!)!.begin).toBeCloseTo(5.1);
   });
 
   it("works when only the word-synced partition has selections", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "x",
-        agentId: "v1",
-        words: [{ id: "w75", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "x",
+          agentId: "v1",
+          words: [{ id: "w75", text: "x", sep: "", begin: 5, end: 6, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [{ lineId: "A", type: "word", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.appliedDelta).toBeCloseTo(0.1);
     expect((roleWords(updatedLine(result.updates[0].updates), "main") as { begin: number }[])[0].begin).toBeCloseTo(
       5.1,
@@ -1072,7 +1269,13 @@ describe("shiftSelectionsTogether", () => {
   });
 
   it("returns empty when both partitions are empty", () => {
-    const result = shiftSelectionsTogether([], { wordSynced: [], lineSynced: [] }, 0.5, wholeSong(60));
+    const result = shiftSelectionsTogether(
+      [],
+      { wordSynced: [], lineSynced: [] },
+      0.5,
+      wholeSong(60),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
@@ -1080,34 +1283,48 @@ describe("shiftSelectionsTogether", () => {
   it("clamps to the smaller of word-synced and line-synced headroom (line-synced wins)", () => {
     const lines: LyricLine[] = [
       // Word-synced row with tons of headroom on both sides
-      lineFromFields({
-        id: "A",
-        text: "x",
-        agentId: "v1",
-        words: [{ id: "w76", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "x",
+          agentId: "v1",
+          words: [{ id: "w76", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       // Line-synced row with only 0.01s headroom on the right (close to duration=60)
-      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 58.99, end: 59.99 }),
+      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 58.99, end: 59.99 }, DEFAULT_SPLIT_CHARACTER),
     ];
-    const partitioned = partitionNudgeSelections(lines, [
-      { lineId: "A", type: "word", wordIndex: 0 },
-      { lineId: "B", type: "word", wordIndex: 0 },
-    ]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.5, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [
+        { lineId: "A", type: "word", wordIndex: 0 },
+        { lineId: "B", type: "word", wordIndex: 0 },
+      ],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.5, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.appliedDelta).toBeCloseTo(0.01);
   });
 
   it("preserves direction when clamping (negative requestedDelta yields negative applied)", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "x",
-        agentId: "v1",
-        words: [{ id: "w77", text: "x", sep: "", begin: 0.05, end: 1, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "x",
+          agentId: "v1",
+          words: [{ id: "w77", text: "x", sep: "", begin: 0.05, end: 1, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [{ lineId: "A", type: "word", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.appliedDelta).toBeLessThan(0);
     expect(result.appliedDelta).toBeCloseTo(-0.05);
   });
@@ -1116,38 +1333,48 @@ describe("shiftSelectionsTogether", () => {
     // The user-reported bug: instance with all members selected, nudge left,
     // header right edge stays affixed while left edge moves. Unified clamp prevents.
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "I love",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w78", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
-          { id: "w79", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
-        ],
-      }),
-      lineFromFields({
-        id: "L2",
-        text: "all night",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 1,
-        words: [
-          { id: "w80", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
-          { id: "w81", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "I love",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w78", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
+            { id: "w79", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "L2",
+          text: "all night",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 1,
+          words: [
+            { id: "w80", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
+            { id: "w81", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [
-      { lineId: "L1", type: "word", wordIndex: 0 },
-      { lineId: "L1", type: "word", wordIndex: 1 },
-      { lineId: "L2", type: "word", wordIndex: 0 },
-      { lineId: "L2", type: "word", wordIndex: 1 },
-    ]);
-    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [
+        { lineId: "L1", type: "word", wordIndex: 0 },
+        { lineId: "L1", type: "word", wordIndex: 1 },
+        { lineId: "L2", type: "word", wordIndex: 0 },
+        { lineId: "L2", type: "word", wordIndex: 1 },
+      ],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.appliedDelta).toBeCloseTo(-0.5);
     const l1Words = (roleWords(updatedLine(result.updates.find((u) => u.id === "L1")?.updates), "main") ?? []) as {
       begin: number;
@@ -1169,18 +1396,25 @@ describe("shiftSelectionsTogether", () => {
 describe("shiftSelectionsTogether · background provenance", () => {
   it("stamps backgroundTextSource manual when nudging background words", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w82", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-        backgroundText: "ooh",
-        backgroundWords: [{ id: "w83", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: false }],
-        backgroundTextSource: "extraction",
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w82", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w83", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: false }],
+          backgroundTextSource: "extraction",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "bg", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [{ lineId: "A", type: "bg", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     const update = result.updates.find((u) => u.id === "A");
     expect((roleWords(updatedLine(update?.updates), "bg") as { begin: number }[])?.[0].begin).toBeCloseTo(2.1);
     expect(updatedLine(update?.updates) && backgroundTrack(updatedLine(update?.updates)!)?.source).toBe("manual");
@@ -1188,24 +1422,31 @@ describe("shiftSelectionsTogether · background provenance", () => {
 
   it("leaves the nudged background word data unchanged apart from timing", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w84", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-        backgroundText: "ooh aah",
-        backgroundWords: [
-          { id: "w85", text: "ooh", sep: " ", begin: 2, end: 2.5, joinsNext: false },
-          { id: "w86", text: "aah", sep: "", begin: 2.5, end: 3, joinsNext: false },
-        ],
-        backgroundTextSource: "extraction",
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w84", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+          backgroundText: "ooh aah",
+          backgroundWords: [
+            { id: "w85", text: "ooh", sep: " ", begin: 2, end: 2.5, joinsNext: false },
+            { id: "w86", text: "aah", sep: "", begin: 2.5, end: 3, joinsNext: false },
+          ],
+          backgroundTextSource: "extraction",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [
-      { lineId: "A", type: "bg", wordIndex: 0 },
-      { lineId: "A", type: "bg", wordIndex: 1 },
-    ]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [
+        { lineId: "A", type: "bg", wordIndex: 0 },
+        { lineId: "A", type: "bg", wordIndex: 1 },
+      ],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     const bg = roleWords(updatedLine(result.updates.find((u) => u.id === "A")?.updates), "bg") as {
       text: string;
       sep: string;
@@ -1218,23 +1459,30 @@ describe("shiftSelectionsTogether · background provenance", () => {
 
   it("regression: nudging main and background words on one line moves both in one update", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "call me",
-        agentId: "v1",
-        words: [
-          { id: "w89", text: "call", sep: " ", begin: 4, end: 4.5, joinsNext: false },
-          { id: "w90", text: "me", sep: "", begin: 4.5, end: 5, joinsNext: false },
-        ],
-        backgroundText: "ooh",
-        backgroundWords: [{ id: "w91", text: "ooh", sep: "", begin: 4.2, end: 4.8, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "call me",
+          agentId: "v1",
+          words: [
+            { id: "w89", text: "call", sep: " ", begin: 4, end: 4.5, joinsNext: false },
+            { id: "w90", text: "me", sep: "", begin: 4.5, end: 5, joinsNext: false },
+          ],
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w91", text: "ooh", sep: "", begin: 4.2, end: 4.8, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [
-      { lineId: "A", type: "word", wordIndex: 1 },
-      { lineId: "A", type: "bg", wordIndex: 0 },
-    ]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [
+        { lineId: "A", type: "word", wordIndex: 1 },
+        { lineId: "A", type: "bg", wordIndex: 0 },
+      ],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.updates).toHaveLength(1);
     const moved = updatedLine(result.updates[0].updates);
     expect(roleWords(moved, "main")?.[1].begin).toBeCloseTo(4.6);
@@ -1243,21 +1491,28 @@ describe("shiftSelectionsTogether · background provenance", () => {
 
   it("regression: nudging a line-timed row with its background words moves both in one update", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "call me",
-        agentId: "v1",
-        begin: 4,
-        end: 5,
-        backgroundText: "ooh",
-        backgroundWords: [{ id: "w92", text: "ooh", sep: "", begin: 4.2, end: 4.8, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "call me",
+          agentId: "v1",
+          begin: 4,
+          end: 5,
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w92", text: "ooh", sep: "", begin: 4.2, end: 4.8, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [
-      { lineId: "A", type: "word", wordIndex: 0 },
-      { lineId: "A", type: "bg", wordIndex: 0 },
-    ]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [
+        { lineId: "A", type: "word", wordIndex: 0 },
+        { lineId: "A", type: "bg", wordIndex: 0 },
+      ],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     expect(result.updates).toHaveLength(1);
     const moved = updatedLine(result.updates[0].updates);
     expect(moved && mainBounds(moved)?.begin).toBeCloseTo(4.1);
@@ -1266,18 +1521,25 @@ describe("shiftSelectionsTogether · background provenance", () => {
 
   it("does not touch background provenance when nudging only main words", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w87", text: "main", sep: "", begin: 5, end: 6, joinsNext: false }],
-        backgroundText: "ooh",
-        backgroundWords: [{ id: "w88", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: false }],
-        backgroundTextSource: "extraction",
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w87", text: "main", sep: "", begin: 5, end: 6, joinsNext: false }],
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w88", text: "ooh", sep: "", begin: 2, end: 3, joinsNext: false }],
+          backgroundTextSource: "extraction",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
-    const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
+    const partitioned = partitionNudgeSelections(
+      lines,
+      [{ lineId: "A", type: "word", wordIndex: 0 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60), DEFAULT_SPLIT_CHARACTER);
     const update = result.updates.find((u) => u.id === "A");
     expect("backgroundTextSource" in patchOf(update?.updates, lines[0])).toBe(false);
     expect("backgroundWords" in patchOf(update?.updates, lines[0])).toBe(false);

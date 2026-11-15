@@ -12,6 +12,7 @@ import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -46,7 +47,7 @@ function pasteText(textarea: HTMLTextAreaElement, text: string): ClipboardEvent 
 }
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => lineText(line));
+  return useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -173,7 +174,7 @@ describe("EditPanel smart paste", () => {
       expect(event.defaultPrevented).toBe(false);
       Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(textarea, "Hi (ooh)");
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
-      await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("(ooh)");
+      await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("(ooh)");
       expect(screen.container.textContent).not.toContain("Imported");
     });
   });

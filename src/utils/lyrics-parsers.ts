@@ -5,6 +5,7 @@ import type { ParseResult, ParserFn } from "@/utils/lyrics-parsers/shared";
 import { parseSrt } from "@/utils/lyrics-parsers/srt";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Registry -----------------------------------------------------------------
 
@@ -12,7 +13,7 @@ const PARSERS: Record<Exclude<LyricsFileType, "unknown">, ParserFn> = {
   txt: parseTxt,
   lrc: parseLrc,
   srt: parseSrt,
-  ttml: parseTtml,
+  ttml: (content) => parseTtml(content, getSplitCharacter()),
   qrc: parseQrc,
 };
 

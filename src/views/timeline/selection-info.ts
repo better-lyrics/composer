@@ -6,6 +6,7 @@ import type { SyllableAddress } from "@/domain/selection/model";
 import { wordAt } from "@/domain/selection/resolve";
 import type { WordTiming } from "insync/word-timing";
 import { pluralize } from "@/utils/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -24,7 +25,7 @@ interface MultiSelectionSummary {
 // -- Helpers ------------------------------------------------------------------
 
 function selectedWord(selection: SyllableAddress, lines: readonly LyricLine[]): WordTiming | null {
-  return wordAt(lines, selection);
+  return wordAt(lines, selection, getSplitCharacter());
 }
 
 // -- Functions ----------------------------------------------------------------

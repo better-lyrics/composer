@@ -1,7 +1,7 @@
-import { stripSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character-text";
 
-function languageSourceText(text: string): string {
-  return stripSplitCharacter(text).trim();
+function languageSourceText(text: string, splitChar: string): string {
+  return withoutSplitCharacter(text, splitChar).trim();
 }
 
 export { languageSourceText };

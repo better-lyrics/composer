@@ -203,7 +203,7 @@ function parseQrc(content: string, fallbackDuration?: number): ParseResult {
   const parsed = backfillZeroDurations(shifted, fallbackDuration);
   const { lines, metadata, agents } = partitionQrcLines(parsed, header.metadata);
 
-  const reconciledLines = lines.map((line) => lineFromFields(line));
+  const reconciledLines = lines.map((line) => lineFromFields(line, getSplitCharacter()));
   return {
     lines: reconciledLines,
     metadata,

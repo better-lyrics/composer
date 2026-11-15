@@ -15,6 +15,7 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -81,7 +82,7 @@ describe("useImportFromLinkedFiles", () => {
 
     expect(openProjectIdSnapshot()).not.toBe("a");
     expect(loadedFileName()).toBe("linked-song.wav");
-    expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual([
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
       "First linked line",
       "Second linked line",
     ]);

@@ -11,8 +11,12 @@ import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
-const LINE_SYNCED = lineFromFields({ id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 });
+const LINE_SYNCED = lineFromFields(
+  { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 },
+  getSplitCharacter(),
+);
 
 describe("drawn line write-back", () => {
   it("insert-line shortcut (N) leaves other line-synced lines line-synced", async () => {
@@ -20,12 +24,15 @@ describe("drawn line write-back", () => {
     useProjectStore.setState({
       activeTab: "timeline",
       lines: [
-        lineFromFields({
-          id: "w",
-          text: "hi",
-          agentId: "v1",
-          words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
-        }),
+        lineFromFields(
+          {
+            id: "w",
+            text: "hi",
+            agentId: "v1",
+            words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
+          },
+          getSplitCharacter(),
+        ),
         LINE_SYNCED,
       ],
     });

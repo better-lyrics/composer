@@ -8,6 +8,7 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 function findButton(pattern: RegExp): HTMLButtonElement | undefined {
   return Array.from(document.querySelectorAll("button")).find((b) => pattern.test(b.textContent ?? ""));
@@ -233,7 +234,7 @@ describe("TimelineContextMenu background provenance", () => {
 
     const updated = useProjectStore.getState().lines[0];
     expect(roleWords(updated, "bg")).toBeUndefined();
-    expect(backgroundText(updated)).toBeUndefined();
+    expect(backgroundText(updated, getSplitCharacter())).toBeUndefined();
     expect(backgroundTrack(updated)?.source).toBeUndefined();
   });
 
@@ -381,7 +382,7 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     await expect
       .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah"]);
-    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("ooh yeah");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("ooh yeah");
     const firstBegin = roleWords(useProjectStore.getState().lines[0], "bg")?.[0].begin ?? -1;
     expect(firstBegin).toBeGreaterThan(4.5);
     expect(firstBegin).toBeLessThanOrEqual(5);

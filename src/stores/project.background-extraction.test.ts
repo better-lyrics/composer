@@ -11,6 +11,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
 import { extractInlineFromLine } from "@/utils/background-vocal-extraction";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -28,23 +29,30 @@ const CHORUS_GROUP = { id: "g1", label: "Chorus", color: "#f472b6", templateVers
 
 describe("project store · background extraction on linked lines", () => {
   function seedLinkedChorus(lines: LineFields[]) {
-    useProjectStore.setState({ groups: [CHORUS_GROUP], lines: lines.map((line) => lineFromFields(line)) });
+    useProjectStore.setState({
+      groups: [CHORUS_GROUP],
+      lines: lines.map((line) => lineFromFields(line, DEFAULT_SPLIT_CHARACTER)),
+    });
     useProjectStore.getState().clearHistory();
   }
 
   function applyPullFromParens(lineId: string) {
     const target = useProjectStore.getState().lines.find((l) => l.id === lineId);
     if (!target) throw new Error(`line ${lineId} not found`);
-    const extracted = extractInlineFromLine(target, { mergeStandaloneLines: false, preserveBrackets: false });
+    const extracted = extractInlineFromLine(
+      target,
+      { mergeStandaloneLines: false, preserveBrackets: false },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     useProjectStore.getState().commit(
       pasteLines(
         fieldUpdates([
           {
             id: target.id,
             updates: {
-              text: lineText(extracted),
+              text: lineText(extracted, DEFAULT_SPLIT_CHARACTER),
               words: roleWords(extracted, "main"),
-              backgroundText: backgroundText(extracted),
+              backgroundText: backgroundText(extracted, DEFAULT_SPLIT_CHARACTER),
             },
           },
         ]),
@@ -64,12 +72,12 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(lineText(a0!)).toBe("Hello");
-    expect(backgroundText(a0!)).toBe("ooh");
-    expect(lineText(a1!)).toBe("Hello");
-    expect(backgroundText(a1!)).toBe("ooh");
-    expect(a0 && lineText(a0)).not.toContain("(");
-    expect(a1 && lineText(a1)).not.toContain("(");
+    expect(lineText(a0!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
+    expect(backgroundText(a0!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
+    expect(lineText(a1!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
+    expect(backgroundText(a1!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
+    expect(a0 && lineText(a0, DEFAULT_SPLIT_CHARACTER)).not.toContain("(");
+    expect(a1 && lineText(a1, DEFAULT_SPLIT_CHARACTER)).not.toContain("(");
   });
 
   it("keeps link metadata on both siblings after an untimed extraction", () => {
@@ -124,10 +132,10 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(lineText(a0!)).toBe("Hello");
-    expect(lineText(a1!)).toBe("Hello");
-    expect(backgroundText(a0!)).toBe("ooh");
-    expect(backgroundText(a1!)).toBe("ooh");
+    expect(lineText(a0!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
+    expect(lineText(a1!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
+    expect(backgroundText(a0!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
+    expect(backgroundText(a1!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
 
     expect(timedSyllables(mainTrack(a0!)).map((w) => w.text)).toEqual(["Hello"]);
     expect(timedSyllables(mainTrack(a1!)).map((w) => w.text)).toEqual(["Hello"]);
@@ -155,8 +163,8 @@ describe("project store · background extraction on linked lines", () => {
     applyPullFromParens("a0");
 
     const lines = useProjectStore.getState().lines;
-    expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("Hello");
-    expect(lineText(lines.find((l) => l.id === "a1")!)).toBe("Hello (ooh)");
+    expect(lineText(lines.find((l) => l.id === "a0")!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
+    expect(lineText(lines.find((l) => l.id === "a1")!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh)");
   });
 
   it("propagates the background provenance flag to the linked sibling", () => {
@@ -184,9 +192,9 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(backgroundText(a0!)).toBe("ooh");
+    expect(backgroundText(a0!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
     expect(backgroundTrack(a0!)?.source).toBe("extraction");
-    expect(backgroundText(a1!)).toBe("ooh");
+    expect(backgroundText(a1!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
     expect(backgroundTrack(a1!)?.source).toBe("extraction");
   });
 
@@ -232,9 +240,9 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0 && backgroundText(a0)).toBeUndefined();
+    expect(a0 && backgroundText(a0, DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     expect(a0 && backgroundTrack(a0)?.source).toBeUndefined();
-    expect(a1 && backgroundText(a1)).toBeUndefined();
+    expect(a1 && backgroundText(a1, DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     expect(a1 && backgroundTrack(a1)?.source).toBeUndefined();
   });
 
@@ -277,7 +285,9 @@ describe("project store · background extraction on linked lines", () => {
       { id: "w12", text: "aah", sep: "", begin: 1.5, end: 1.8, joinsNext: false },
     ];
     const a0Before = useProjectStore.getState().lines.find((line) => line.id === "a0")!;
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: manualBackgroundWordEdit(a0Before, edited) }]));
+    useProjectStore
+      .getState()
+      .commit(pasteLines([{ id: "a0", updates: manualBackgroundWordEdit(a0Before, edited, DEFAULT_SPLIT_CHARACTER) }]));
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
@@ -302,7 +312,7 @@ describe("project store · background extraction on linked lines", () => {
 
     useProjectStore.getState().undo();
     const lines = useProjectStore.getState().lines;
-    expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("Hello (ooh)");
-    expect(lineText(lines.find((l) => l.id === "a1")!)).toBe("Hello (ooh)");
+    expect(lineText(lines.find((l) => l.id === "a0")!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh)");
+    expect(lineText(lines.find((l) => l.id === "a1")!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh)");
   });
 });

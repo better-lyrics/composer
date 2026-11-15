@@ -3,6 +3,7 @@ import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-erro
 import type { LyricLine } from "insync/line";
 import { legacyLine } from "@/test/legacy-languages";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("getLanguageAlignmentErrorItems", () => {
   it("reports main and background transliteration errors by line", () => {
@@ -32,7 +33,7 @@ describe("getLanguageAlignmentErrorItems", () => {
       }),
     ];
 
-    expect(getLanguageAlignmentErrorItems(lines)).toEqual([
+    expect(getLanguageAlignmentErrorItems(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
       {
         lineId: "l1",
         lineIndex: 0,
@@ -53,7 +54,7 @@ describe("getLanguageAlignmentErrorItems", () => {
 
   it("omits aligned and empty transliterations", () => {
     const lines: LyricLine[] = [
-      lineFromFields({ id: "empty", text: "가|나", agentId: "v1" }),
+      lineFromFields({ id: "empty", text: "가|나", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
       legacyLine({
         id: "aligned",
         text: "가|나",
@@ -72,6 +73,6 @@ describe("getLanguageAlignmentErrorItems", () => {
       }),
     ];
 
-    expect(getLanguageAlignmentErrorItems(lines)).toEqual([]);
+    expect(getLanguageAlignmentErrorItems(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
   });
 });

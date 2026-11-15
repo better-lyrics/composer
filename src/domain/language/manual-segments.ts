@@ -8,8 +8,8 @@ function wholeLineSegments(original: string, transliteration: string): Translite
   return [{ original, transliteration }];
 }
 
-function manualSegments(line: LyricLine, value: string): TransliterationSegment[] {
-  return value.trim() ? wholeLineSegments(lineText(line), value.trim()) : [];
+function manualSegments(line: LyricLine, value: string, splitChar: string): TransliterationSegment[] {
+  return value.trim() ? wholeLineSegments(lineText(line, splitChar), value.trim()) : [];
 }
 
 // -- Exports ------------------------------------------------------------------

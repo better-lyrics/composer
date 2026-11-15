@@ -33,12 +33,13 @@ function skippedInstanceOf(
   groups: readonly LinkGroup[],
   groupId: string,
   instanceIdx: number,
+  splitChar: string,
 ): SkippedInstance | null {
   if (instanceStart(lines, groupId, instanceIdx) === null) return null;
   const indices = attachedLineIndices(lines, groupId, instanceIdx);
-  const syncable = indices.filter((index) => isSyncableLine(lines[index]));
+  const syncable = indices.filter((index) => isSyncableLine(lines[index], splitChar));
   if (syncable.length === 0) return null;
-  if (!sharedAnchorAt(lines, groups, { lineIndex: syncable[0], wordIndex: 0 })) return null;
+  if (!sharedAnchorAt(lines, groups, { lineIndex: syncable[0], wordIndex: 0 }, splitChar)) return null;
   return {
     groupId,
     instanceIdx,
@@ -50,12 +51,16 @@ function skippedInstanceOf(
 }
 
 // A placed shared instance is skipped when a tap on its first word would place it again from another instance.
-function skippedSharedInstances(lines: readonly LyricLine[], groups: readonly LinkGroup[]): SkippedInstance[] {
+function skippedSharedInstances(
+  lines: readonly LyricLine[],
+  groups: readonly LinkGroup[],
+  splitChar: string,
+): SkippedInstance[] {
   return groups
     .filter((group) => group.sharesTiming)
     .flatMap((group) =>
       sharedInstancesInLineOrder(lines, group).flatMap((instanceIdx) => {
-        const skipped = skippedInstanceOf(lines, groups, group.id, instanceIdx);
+        const skipped = skippedInstanceOf(lines, groups, group.id, instanceIdx, splitChar);
         return skipped ? [skipped] : [];
       }),
     );
@@ -101,6 +106,7 @@ function syncPositionPastSkipped(
   skippedInstances: readonly SkippedInstance[],
   cursor: SyncCursor,
   jumped: boolean,
+  splitChar: string,
   reRecording?: ReRecording,
 ): SyncPosition {
   const unchanged = { cursor, jumped };
@@ -109,7 +115,10 @@ function syncPositionPastSkipped(
   if (!skipped) return unchanged;
   if (isReRecording(reRecording, skipped)) return unchanged;
   if (cursor.lineIndex === skipped.firstLineIndex && cursor.wordIndex === 0) return unchanged;
-  return { cursor: { lineIndex: nextSyncableLineIndex(lines, skipped.lastLineIndex), wordIndex: 0 }, jumped: true };
+  return {
+    cursor: { lineIndex: nextSyncableLineIndex(lines, skipped.lastLineIndex, splitChar), wordIndex: 0 },
+    jumped: true,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------

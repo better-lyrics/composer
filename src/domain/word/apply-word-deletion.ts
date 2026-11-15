@@ -20,12 +20,16 @@ function isLineFullyEmpty(line: LyricLine): boolean {
   return !hasAnyTiming(line);
 }
 
-function trackLength(line: LyricLine, type: "word" | "bg"): number {
-  if (type === "bg") return drawnSyllables(line, "bg").length;
+function trackLength(line: LyricLine, type: "word" | "bg", splitChar: string): number {
+  if (type === "bg") return drawnSyllables(line, "bg", splitChar).length;
   return isLineSynced(line) ? 1 : (roleWords(line, "main")?.length ?? 0);
 }
 
-function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionSelection>): Map<string, LyricLine> {
+function deleteFromLines(
+  lines: LyricLine[],
+  selections: ReadonlyArray<DeletionSelection>,
+  splitChar: string,
+): Map<string, LyricLine> {
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number> }>();
   for (const sel of selections) {
     let entry = byLine.get(sel.lineId);
@@ -60,11 +64,11 @@ function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionS
       );
     }
 
-    const bgWords = drawnSyllables(line, "bg");
+    const bgWords = drawnSyllables(line, "bg", splitChar);
     if (bgWords.length > 0 && bgIdxs.size > 0) {
       const absorbed = absorbDeletedSyllablesIntoNeighbors(bgWords, bgIdxs);
       const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));
-      updatedLine = withManualBackgroundWords(updatedLine, remaining);
+      updatedLine = withManualBackgroundWords(updatedLine, remaining, splitChar);
     }
 
     updatedById.set(lineId, updatedLine);
@@ -93,6 +97,7 @@ function withLinkedSiblings(
   lines: LyricLine[],
   selections: ReadonlyArray<DeletionSelection>,
   emptied: Set<string>,
+  splitChar: string,
 ): DeletionSelection[] {
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
@@ -105,7 +110,7 @@ function withLinkedSiblings(
     for (const sibling of lines) {
       if (sibling.id === line.id || !isLinkedSibling(sibling, scope)) continue;
       if (emptied.has(lineInstanceKey(sibling) ?? "")) continue;
-      if (trackLength(sibling, sel.type) !== trackLength(line, sel.type)) continue;
+      if (trackLength(sibling, sel.type, splitChar) !== trackLength(line, sel.type, splitChar)) continue;
       expanded.push({ lineId: sibling.id, type: sel.type, wordIndex: sel.wordIndex });
     }
   }
@@ -114,12 +119,16 @@ function withLinkedSiblings(
 
 // -- Deletion -----------------------------------------------------------------
 
-function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<DeletionSelection>): LyricLine[] {
+function applyWordDeletion(
+  lines: LyricLine[],
+  selectedWords: ReadonlyArray<DeletionSelection>,
+  splitChar: string,
+): LyricLine[] {
   if (selectedWords.length === 0) return lines;
 
-  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords));
-  const selections = withLinkedSiblings(lines, selectedWords, emptied);
-  const updatedById = deleteFromLines(lines, selections);
+  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords, splitChar));
+  const selections = withLinkedSiblings(lines, selectedWords, emptied, splitChar);
+  const updatedById = deleteFromLines(lines, selections, splitChar);
 
   const result = lines.map((line) => updatedById.get(line.id) ?? line);
   if (emptied.size === 0) return result;

@@ -13,6 +13,7 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { withFields } from "@/test/field-updates";
 import { legacyLine, legacyTrack } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("getLanguageReviewItems", () => {
   it("reports stale alternate-language tracks by line", () => {
@@ -39,7 +40,7 @@ describe("getLanguageReviewItems", () => {
       }),
     ];
 
-    expect(getLanguageReviewItems(lines)).toEqual([
+    expect(getLanguageReviewItems(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
       {
         lineId: "l1",
         lineIndex: 0,
@@ -53,7 +54,7 @@ describe("getLanguageReviewItems", () => {
   });
 
   it("ignores stale flags when the source fingerprint still matches", () => {
-    const fingerprint = languageSourceFingerprint("to-do");
+    const fingerprint = languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "to-do");
     const lines: LyricLine[] = [
       legacyLine({
         id: "l1",
@@ -70,7 +71,7 @@ describe("getLanguageReviewItems", () => {
       }),
     ];
 
-    expect(getLanguageReviewItems(lines)).toEqual([]);
+    expect(getLanguageReviewItems(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
   });
 });
 
@@ -148,20 +149,26 @@ function backgroundOf(line: LyricLine): NonNullable<LineLanguage["bg"]> {
 }
 
 function confirmed(line: LyricLine, field: "words" | "backgroundWords"): LyricLine["languages"] {
-  return { transliteration: confirmTransliterationAlignment(line, field) };
+  return { transliteration: confirmTransliterationAlignment(line, field, DEFAULT_SPLIT_CHARACTER) };
 }
 
 describe("transliteration review", () => {
   it("distinguishes inferred alignment from alignment needing review", () => {
     const line = reviewLine();
-    transliterationOf(line).sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
-    expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["alignment"] }]);
+    transliterationOf(line).sourceFingerprint = languageSourceFingerprint(
+      DEFAULT_SPLIT_CHARACTER,
+      lineText(line, DEFAULT_SPLIT_CHARACTER),
+      backgroundText(line, DEFAULT_SPLIT_CHARACTER),
+    );
+    expect(getLanguageReviewTracks(line, DEFAULT_SPLIT_CHARACTER)).toEqual([
+      { kind: "transliteration", reasons: ["alignment"] },
+    ]);
     transliterationOf(line).main.alignmentStatus = "inferred";
-    expect(getLanguageReviewTracks(line)).toEqual([]);
+    expect(getLanguageReviewTracks(line, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
   });
 
   it("reports both causes when the source changed and boundaries need checking", () => {
-    expect(getLanguageReviewTracks(reviewLine())).toEqual([
+    expect(getLanguageReviewTracks(reviewLine(), DEFAULT_SPLIT_CHARACTER)).toEqual([
       { kind: "transliteration", reasons: ["source-changed", "alignment"] },
     ]);
   });
@@ -170,10 +177,12 @@ describe("transliteration review", () => {
     const line = reviewLine();
     backgroundOf(line).alignmentStatus = "confirmed";
     line.languages = confirmed(line, "words");
-    expect(isTransliterationSourceStale(line, "words")).toBe(false);
-    expect(isTransliterationSourceStale(line, "backgroundWords")).toBe(true);
+    expect(isTransliterationSourceStale(line, "words", DEFAULT_SPLIT_CHARACTER)).toBe(false);
+    expect(isTransliterationSourceStale(line, "backgroundWords", DEFAULT_SPLIT_CHARACTER)).toBe(true);
     expect(transliterationOf(line).sourceFingerprint).toBe("old-source");
-    expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["source-changed"] }]);
+    expect(getLanguageReviewTracks(line, DEFAULT_SPLIT_CHARACTER)).toEqual([
+      { kind: "transliteration", reasons: ["source-changed"] },
+    ]);
   });
 
   it("refreshes the shared fingerprint after both sides are reviewed, in either order", () => {
@@ -182,21 +191,31 @@ describe("transliteration review", () => {
       line.languages = confirmed(line, first);
       line.languages = confirmed(line, first === "words" ? "backgroundWords" : "words");
       expect(transliterationOf(line).sourceFingerprint).toBe(
-        languageSourceFingerprint(lineText(line), backgroundText(line)),
+        languageSourceFingerprint(
+          DEFAULT_SPLIT_CHARACTER,
+          lineText(line, DEFAULT_SPLIT_CHARACTER),
+          backgroundText(line, DEFAULT_SPLIT_CHARACTER),
+        ),
       );
       expect(transliterationOf(line).main.reviewedSourceFingerprint).toBeUndefined();
       expect(transliterationOf(line).bg?.reviewedSourceFingerprint).toBeUndefined();
       expect(transliterationOf(line).stale).toBeUndefined();
-      expect(getLanguageReviewTracks(line)).toEqual([]);
+      expect(getLanguageReviewTracks(line, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     }
   });
 
   it("does not clear an independent alignment warning when the source is already current", () => {
     const line = reviewLine();
-    transliterationOf(line).sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+    transliterationOf(line).sourceFingerprint = languageSourceFingerprint(
+      DEFAULT_SPLIT_CHARACTER,
+      lineText(line, DEFAULT_SPLIT_CHARACTER),
+      backgroundText(line, DEFAULT_SPLIT_CHARACTER),
+    );
     backgroundOf(line).alignmentStatus = "needs-review";
     line.languages = confirmed(line, "words");
-    expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["alignment"] }]);
+    expect(getLanguageReviewTracks(line, DEFAULT_SPLIT_CHARACTER)).toEqual([
+      { kind: "transliteration", reasons: ["alignment"] },
+    ]);
   });
 
   it("refreshes a single populated side without reviewing empty background content", () => {
@@ -204,15 +223,19 @@ describe("transliteration review", () => {
     delete backgroundOf(line).text;
     line.languages = confirmed(line, "words");
     expect(transliterationOf(line).sourceFingerprint).toBe(
-      languageSourceFingerprint(lineText(line), backgroundText(line)),
+      languageSourceFingerprint(
+        DEFAULT_SPLIT_CHARACTER,
+        lineText(line, DEFAULT_SPLIT_CHARACTER),
+        backgroundText(line, DEFAULT_SPLIT_CHARACTER),
+      ),
     );
-    expect(getLanguageReviewTracks(line)).toEqual([]);
+    expect(getLanguageReviewTracks(line, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
   });
 
   it("invalidates a side acknowledgement when the lyrics change again", () => {
     const line = reviewLine();
     line.languages = confirmed(line, "words");
     line.tracks = withFields(line, { text: "마나" }).tracks;
-    expect(isTransliterationSourceStale(line, "words")).toBe(true);
+    expect(isTransliterationSourceStale(line, "words", DEFAULT_SPLIT_CHARACTER)).toBe(true);
   });
 });

@@ -13,8 +13,8 @@ import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { stripSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 
 type LanguageTextVariant = "original" | "transliteration";
 
@@ -34,8 +34,8 @@ interface LanguageDisplayLine {
 }
 
 // Scratch slots for labels only; they never reach the store, so they need no fresh ids.
-function sourceSlots(text: string): WordTiming[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+function sourceSlots(text: string, splitChar: string): WordTiming[] {
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text, splitChar);
   return wordsFromSpaced(
     parts.map((part, index) => ({
       id: `slot-${index}`,
@@ -46,8 +46,8 @@ function sourceSlots(text: string): WordTiming[] {
   );
 }
 
-function comparableText(value: string): string {
-  return stripSplitCharacter(value).replace(/\s+/g, " ").trim();
+function comparableText(value: string, splitChar: string): string {
+  return withoutSplitCharacter(value, splitChar).replace(/\s+/g, " ").trim();
 }
 
 interface PiecedWords {
@@ -84,12 +84,14 @@ function displayTrackTexts(
   originalText: string,
   aligned: PiecedWords | undefined,
   alignedSourceSlots: PiecedWords | undefined,
+  splitChar: string,
 ): string[] {
   const sourceTexts = alignedSourceSlots?.words.map((_, index) => displayText(alignedSourceSlots, index)) ?? [];
   if (!aligned?.words.length) return sourceTexts;
   const alignedWords = aligned.words;
 
-  const coversFullTrack = comparableText(spacedText(alignedWords)) === comparableText(originalText);
+  const coversFullTrack =
+    comparableText(spacedText(alignedWords), splitChar) === comparableText(originalText, splitChar);
   if (coversFullTrack) {
     const canUseSourceFallbackByIndex = alignedWords.length === sourceTexts.length;
     return alignedWords.map((word, index) =>
@@ -108,24 +110,29 @@ function displayTrackTexts(
   return [...timedTexts, ...sourceTexts.slice(coveredSourceSlots)];
 }
 
-function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): LanguageDisplayLine {
+function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant, splitChar: string): LanguageDisplayLine {
   const transliteration = lineTransliteration(line);
   if (variant === "original" || !transliteration) {
     return {
-      text: lineText(line),
-      backgroundText: backgroundText(line),
+      text: lineText(line, splitChar),
+      backgroundText: backgroundText(line, splitChar),
       words: roleWords(line, "main"),
       backgroundWords: roleWords(line, "bg"),
     };
   }
 
-  const alignedLine = withAlignedTransliteration(line);
-  const text = lineText(line);
-  const background = backgroundText(line);
+  const alignedLine = withAlignedTransliteration(line, splitChar);
+  const text = lineText(line, splitChar);
+  const background = backgroundText(line, splitChar);
   const sourceLine = withAlignedTransliteration(
     background
-      ? withRoleWords(withRoleWords(line, "main", sourceSlots(text)), "bg", sourceSlots(background))
-      : withRoleWords(line, "main", sourceSlots(text)),
+      ? withRoleWords(
+          withRoleWords(line, "main", sourceSlots(text, splitChar)),
+          "bg",
+          sourceSlots(background, splitChar),
+        )
+      : withRoleWords(line, "main", sourceSlots(text, splitChar)),
+    splitChar,
   );
 
   return {
@@ -135,11 +142,11 @@ function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): 
     backgroundWords: roleWords(alignedLine, "bg"),
     languages: alignedLine.languages,
     wordTexts: transliteration.main.text
-      ? displayTrackTexts(text, piecedWords(alignedLine, "main"), piecedWords(sourceLine, "main"))
+      ? displayTrackTexts(text, piecedWords(alignedLine, "main"), piecedWords(sourceLine, "main"), splitChar)
       : undefined,
     backgroundWordTexts:
       background && transliteration.bg?.text
-        ? displayTrackTexts(background, piecedWords(alignedLine, "bg"), piecedWords(sourceLine, "bg"))
+        ? displayTrackTexts(background, piecedWords(alignedLine, "bg"), piecedWords(sourceLine, "bg"), splitChar)
         : undefined,
   };
 }

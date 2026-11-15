@@ -4,6 +4,7 @@ import { withRoleWords } from "@/domain/line/track-writes";
 import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const SLOW = { id: "y1", text: "Slow ", begin: 1, end: 2 };
 const TIDE = { id: "y2", text: "tide ", begin: 2, end: 3 };
@@ -48,6 +49,7 @@ describe("syncAddressPosition", () => {
       defaultAgentId: "v1",
       lines: [line],
       groups: [],
+      splitCharacter: DEFAULT_SPLIT_CHARACTER,
     });
     if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
     expect(syncAddressPosition(action.finalLines, stored)).toEqual({ lineIndex: 0, wordIndex: 5 });

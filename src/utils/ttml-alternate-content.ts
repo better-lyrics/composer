@@ -86,9 +86,9 @@ function transliterationChunks(line: LyricLine, timed: boolean, background = fal
   return text ? [escapeXmlText(emitUntimedTransliteration(text))] : [];
 }
 
-function renderTransliterationContent(rawLine: LyricLine, timed = true): string {
+function renderTransliterationContent(rawLine: LyricLine, splitChar: string, timed = true): string {
   const track = lineTransliteration(rawLine);
-  const line = track ? { ...rawLine, ...alignTrackToLine(rawLine, track) } : rawLine;
+  const line = track ? { ...rawLine, ...alignTrackToLine(rawLine, track, splitChar) } : rawLine;
   const mainChunks = transliterationChunks(line, timed);
   if (!lineTransliteration(line)?.bg?.text?.trim()) return mainChunks.join("");
 

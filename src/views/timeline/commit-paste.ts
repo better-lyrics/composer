@@ -19,6 +19,7 @@ import { instancePasteTemplate } from "@/views/timeline/instance-paste-template"
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -108,7 +109,7 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
         cancelLabel: "Paste as words",
       });
       if (ok) {
-        const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx);
+        const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx, getSplitCharacter());
         const template = instanceToTemplate(lines, match.groupId, sourceIdx);
         return placeInstance(lines, target, match.groupId, template, `Linked as another ${groupLabel}`);
       }

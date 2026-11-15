@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
-const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" });
+const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" }, getSplitCharacter());
 
 function songWithTwoChoruses() {
   return [

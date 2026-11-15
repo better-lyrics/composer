@@ -1,11 +1,11 @@
-import { stripSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character-text";
 
 // -- Functions ----------------------------------------------------------------
 
 // Normalizes a word's text for diff comparison: strips split characters and
 // trailing whitespace so "love" matches "love " etc.
-function wordKey(text: string): string {
-  return stripSplitCharacter(text).trim();
+function wordKey(text: string, splitChar: string): string {
+  return withoutSplitCharacter(text, splitChar).trim();
 }
 
 // Standard longest-common-subsequence pairs. Returns [(beforeIdx, afterIdx), ...]

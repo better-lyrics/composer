@@ -8,7 +8,8 @@ import { withRoleWords } from "@/domain/line/track-writes";
 import { wordKey } from "@/domain/word/alignment";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -57,11 +58,11 @@ describe("syllablesText", () => {
 describe("syllablesText round-trips through splitIntoWordsWithMeta", () => {
   for (const text of ["hello world", "hel|lo world", "one two three", "a|b|c", "single", "two|part"]) {
     it(`round-trips "${text}"`, () => {
-      const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+      const { parts, trailingSpace } = splitIntoWordsWithMeta(text, DEFAULT_SPLIT_CHARACTER);
       const words = parts.map((part, i) => w(trailingSpace[i] ? `${part} ` : part));
       const reconstructed = syllablesText(words, "|");
       expect(reconstructed).toBe(text);
-      expect(splitIntoWordsWithMeta(reconstructed).parts).toEqual(parts);
+      expect(splitIntoWordsWithMeta(reconstructed, DEFAULT_SPLIT_CHARACTER).parts).toEqual(parts);
     });
   }
 });
@@ -135,21 +136,23 @@ describe("wordContentSpans", () => {
 
 describe("timed words written on a partly synced line", () => {
   const partly = (text: string, words: string[]): LyricLine =>
-    lineFromFields({ id: "l1", agentId: "v1", text, words: words.map(w) });
+    lineFromFields({ id: "l1", agentId: "v1", text, words: words.map(w) }, DEFAULT_SPLIT_CHARACTER);
   // Words the writer kept, or timed from the untimed rest, are the same syllables: they keep their ids, as every
   // writer keeps them.
   const keptIds = (previous: LyricLine, words: WordTiming[]): WordTiming[] => {
     const before = [...mainTrack(previous).syllables];
     return words.map((word) => {
-      const at = before.findIndex((old) => wordKey(old.text) === wordKey(word.text));
+      const at = before.findIndex(
+        (old) => wordKey(old.text, DEFAULT_SPLIT_CHARACTER) === wordKey(word.text, DEFAULT_SPLIT_CHARACTER),
+      );
       if (at === -1) return word;
       const [kept] = before.splice(0, at + 1).slice(-1);
       return { ...word, id: kept.id };
     });
   };
-  const derivedText = (previous: LyricLine, words: string[], text = lineText(previous)) => {
-    expect(text).toBe(lineText(previous));
-    return lineText(withRoleWords(previous, "main", keptIds(previous, words.map(w))));
+  const derivedText = (previous: LyricLine, words: string[], text = lineText(previous, DEFAULT_SPLIT_CHARACTER)) => {
+    expect(text).toBe(lineText(previous, DEFAULT_SPLIT_CHARACTER));
+    return lineText(withRoleWords(previous, "main", keptIds(previous, words.map(w))), DEFAULT_SPLIT_CHARACTER);
   };
 
   it("keeps the untimed words when the timed words only change in place", () => {
@@ -188,7 +191,7 @@ describe("timed words written on a partly synced line", () => {
       { ...nana, text: "na", sep: "", joinsNext: true, end: 1.5 },
       { ...w("na "), begin: 1.5 },
     ];
-    expect(lineText(withRoleWords(previous, "main", split))).toBe("na|na na yeah");
+    expect(lineText(withRoleWords(previous, "main", split), DEFAULT_SPLIT_CHARACTER)).toBe("na|na na yeah");
   });
 });
 

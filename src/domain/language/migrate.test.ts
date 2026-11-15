@@ -3,6 +3,7 @@ import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { type LegacyLine, legacyLine, legacyWords } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 function oldLine(overrides: Partial<LegacyLine> = {}): LyricLine {
   return legacyLine({
@@ -22,7 +23,7 @@ function oldLine(overrides: Partial<LegacyLine> = {}): LyricLine {
 
 describe("legacy transliteration migration", () => {
   it("turns old Google dashes into pronunciation spaces and old spaces into word spaces", () => {
-    const migrated = migrateLegacyTransliterationLine(oldLine());
+    const migrated = migrateLegacyTransliterationLine(oldLine(), DEFAULT_SPLIT_CHARACTER);
 
     expect(migrated.languages?.transliteration?.main.text).toBe("geol eum eun  Like  a  dance");
     expect(migrated.languages?.transliteration?.main.alignmentStatus).toBe("inferred");
@@ -53,6 +54,7 @@ describe("legacy transliteration migration", () => {
           sourceFingerprint: "legacy",
         },
       }),
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(migrated.languages?.transliteration?.main.text).toBe("kyouhi");
@@ -73,6 +75,7 @@ describe("legacy transliteration migration", () => {
           sourceFingerprint: "legacy",
         },
       }),
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(migrated.languages?.transliteration?.main.text).toBe("to-do");
@@ -92,6 +95,7 @@ describe("legacy transliteration migration", () => {
           sourceFingerprint: "legacy",
         },
       }),
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(migrated.languages?.transliteration?.main.text).toBe("an nyeong  haseyo");
@@ -105,6 +109,7 @@ describe("legacy transliteration migration", () => {
           { id: "b1", text: "바다", sep: "", begin: 1, end: 2, transliteration: "bada", joinsNext: false },
         ],
       }),
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(legacyWords(roleWords(migrated, "bg"), migrated.languages, "bg")?.[0]).not.toHaveProperty("transliteration");

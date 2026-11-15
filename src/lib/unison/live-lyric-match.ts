@@ -10,6 +10,7 @@ import { loadProjectRecord } from "@/lib/project-storage";
 import { isFromNewerComposer, linesFromSaved, type StoredProject, upgradeSavedProject } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ function matchesLiveLyric(stored: StoredProject, lyric: UnisonLyric): boolean {
   const liveDetails = importableMetadata(parsed.metadata);
   const live = { ...parsed, lines: parsed.lines.map(withoutKeptData) };
   const write = editedLyricsWrite(current, {
-    lines: mergeEditedTtmlLines(lines, live),
+    lines: mergeEditedTtmlLines(lines, live, getSplitCharacter()),
     groups: parsed.groups ?? [],
     agents: parsed.agents?.map(agentWithoutKeptData),
     metadata: liveDetails,

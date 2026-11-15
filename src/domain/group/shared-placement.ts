@@ -43,9 +43,14 @@ interface RealignedInstances extends SharingOutcome {
 
 // -- Helpers ------------------------------------------------------------------
 
-function referenceInstance(lines: readonly LyricLine[], group: LinkGroup, excluding: number): number | null {
+function referenceInstance(
+  lines: readonly LyricLine[],
+  group: LinkGroup,
+  excluding: number,
+  splitChar: string,
+): number | null {
   const others = sharedInstancesInLineOrder(lines, group).filter((instanceIdx) => instanceIdx !== excluding);
-  return firstFullyTimedInstance(lines, group.id, others) ?? null;
+  return firstFullyTimedInstance(lines, group.id, others, splitChar) ?? null;
 }
 
 function sharedGroup(groups: readonly LinkGroup[], groupId: string, instanceIdx: number): LinkGroup | null {
@@ -74,14 +79,17 @@ function startsBeforeSong(updates: readonly LineUpdate[]): boolean {
   return updates.some((update) => hasNegativeTime(update.updates));
 }
 
-function dropsWordTiming(lines: readonly LyricLine[], updates: readonly LineUpdate[]): boolean {
+function dropsWordTiming(lines: readonly LyricLine[], updates: readonly LineUpdate[], splitChar: string): boolean {
   const byId = new Map(lines.map((line) => [line.id, line]));
   return updates.some(({ id, updates: copied }) => {
     const target = byId.get(id);
     if (!target) return false;
     const after = { ...target, ...copied };
     const dropsMain = isWordSynced(target) && !isWordSynced(after);
-    return dropsMain || (drawnSyllables(target, "bg").length > 0 && drawnSyllables(after, "bg").length === 0);
+    return (
+      dropsMain ||
+      (drawnSyllables(target, "bg", splitChar).length > 0 && drawnSyllables(after, "bg", splitChar).length === 0)
+    );
   });
 }
 
@@ -98,12 +106,15 @@ function placeSharedInstance(
   groupId: string,
   instanceIdx: number,
   anchorTime: number,
+  splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LineUpdate[] {
   const group = sharedGroup(groups, groupId, instanceIdx);
-  const reference = group ? referenceInstance(lines, group, instanceIdx) : null;
+  const reference = group ? referenceInstance(lines, group, instanceIdx, splitChar) : null;
   if (reference === null) return [];
-  const anchorLine = attachedLinesOfInstance(lines, groupId, instanceIdx).find(isSyncableLine);
+  const anchorLine = attachedLinesOfInstance(lines, groupId, instanceIdx).find((value) =>
+    isSyncableLine(value, splitChar),
+  );
   const referenceLine = attachedLinesOfInstance(lines, groupId, reference).find(
     (line) => line.templateLineIdx === anchorLine?.templateLineIdx,
   );
@@ -119,16 +130,17 @@ function realignSharedInstance(
   groups: readonly LinkGroup[],
   groupId: string,
   instanceIdx: number,
+  splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): Realignment {
   if (instanceStart(lines, groupId, instanceIdx) === null) return { updates: [] };
   const group = sharedGroup(groups, groupId, instanceIdx);
-  const reference = group ? referenceInstance(lines, group, instanceIdx) : null;
+  const reference = group ? referenceInstance(lines, group, instanceIdx, splitChar) : null;
   if (reference === null) return { refusal: "no-fully-synced-instance" };
   const offset = instanceOffset(lines, groupId, reference, instanceIdx);
   if (offset === null) return { refusal: "no-common-timed-line" };
   const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, offset);
-  if (dropsWordTiming(attachedLinesOfInstance(lines, groupId, instanceIdx), updates)) {
+  if (dropsWordTiming(attachedLinesOfInstance(lines, groupId, instanceIdx), updates, splitChar)) {
     return { refusal: "would-lose-word-timing" };
   }
   if (startsBeforeSong(updates)) return { refusal: "before-song-start" };
@@ -141,16 +153,17 @@ function realignSharedInstances(
   groups: readonly LinkGroup[],
   groupId: string,
   instanceIdxs: readonly number[],
+  splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): RealignedInstances {
   let nextLines = lines;
   const keptOwnTiming: KeptOwnTiming[] = [];
   for (const instanceIdx of instanceIdxs) {
-    const realignment = realignSharedInstance(nextLines, groups, groupId, instanceIdx, songEnd);
+    const realignment = realignSharedInstance(nextLines, groups, groupId, instanceIdx, splitChar, songEnd);
     if ("refusal" in realignment) keptOwnTiming.push({ instanceIdx, refusal: realignment.refusal });
     else if (realignment.updates.length) nextLines = applyLineUpdates(nextLines, realignment.updates);
   }
-  const replaced = replacedInstances(lines, nextLines).flatMap((instance) =>
+  const replaced = replacedInstances(lines, nextLines, splitChar).flatMap((instance) =>
     instance.groupId === groupId ? [instance.instanceIdx] : [],
   );
   return { lines: nextLines, keptOwnTiming, replaced };

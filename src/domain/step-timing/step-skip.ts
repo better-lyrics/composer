@@ -16,10 +16,11 @@ function stepSkippedLineIds(
   groups: readonly LinkGroup[],
   isCollapsed: InstanceCollapsed,
   cursorLine: LyricLine | null,
+  splitChar: string,
 ): Set<string> {
   const inCursorInstance = (line: LyricLine) =>
     cursorLine !== null && isLinked(cursorLine) && belongsToInstance(line, cursorLine.groupId, cursorLine.instanceIdx);
-  const shared = skippedSharedInstances(lines, groups).flatMap((instance) => instance.lineIds);
+  const shared = skippedSharedInstances(lines, groups, splitChar).flatMap((instance) => instance.lineIds);
   const collapsed = lines.filter((line) => isLinked(line) && isCollapsed(line.groupId, line.instanceIdx));
   const skipped = new Set([...shared, ...collapsed.map((line) => line.id)]);
   for (const line of lines) if (inCursorInstance(line)) skipped.delete(line.id);

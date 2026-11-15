@@ -4,6 +4,7 @@ import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -20,9 +21,9 @@ function timedWordsAgree(
 // -- Public --------------------------------------------------------------------
 
 function linesStructurallyEqual(a: LyricLine, b: LyricLine): boolean {
-  if (lineText(a) !== lineText(b)) return false;
+  if (lineText(a, getSplitCharacter()) !== lineText(b, getSplitCharacter())) return false;
   if (mainTrack(a).agentId !== mainTrack(b).agentId) return false;
-  if ((backgroundText(a) ?? "") !== (backgroundText(b) ?? "")) return false;
+  if ((backgroundText(a, getSplitCharacter()) ?? "") !== (backgroundText(b, getSplitCharacter()) ?? "")) return false;
   return (
     timedWordsAgree(timedSyllables(mainTrack(a)), timedSyllables(mainTrack(b))) &&
     timedWordsAgree(timedSyllables(backgroundTrack(a)), timedSyllables(backgroundTrack(b)))

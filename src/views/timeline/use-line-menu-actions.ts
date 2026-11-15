@@ -16,11 +16,12 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -47,7 +48,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const wordCount = splitIntoWordsWithMeta(lineText(line)).parts.length;
+    const wordCount = splitIntoWordsWithMeta(lineText(line, getSplitCharacter()), getSplitCharacter()).parts.length;
     const lineDuration = Math.max(wordCount, 1) * wordDuration;
     useProjectStore.getState().commit(placeLineAt(lineId, time, time + lineDuration));
     clearContextMenu();

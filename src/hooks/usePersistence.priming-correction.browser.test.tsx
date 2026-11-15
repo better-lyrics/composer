@@ -14,6 +14,7 @@ import { allowConsole } from "@/test/console-guard";
 import { croppedMp3StemWrite, saveStemFromOldBuild } from "@/test/legacy-stems";
 import { loadOpenProjectForRestore, restoredWords, savedTime, seedSavedProject } from "@/test/priming-projects";
 import { describe, expect, it, vi } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -33,15 +34,21 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
       primingStripped: true,
       primingCorrected: false,
       lines: [
-        lineFromFields({
-          id: "L1",
-          text: "hello",
-          agentId: DEFAULT_AGENTS[0].id,
-          words: [{ id: "w1", text: "hello", sep: "", begin: 1.0, end: 1.5, joinsNext: false }],
-          backgroundText: "oh",
-          backgroundWords: [{ id: "w2", text: "oh", sep: "", begin: 1.1, end: 1.4, joinsNext: false }],
-        }),
-        lineFromFields({ id: "L2", text: "line", agentId: DEFAULT_AGENTS[0].id, begin: 3, end: 4 }),
+        lineFromFields(
+          {
+            id: "L1",
+            text: "hello",
+            agentId: DEFAULT_AGENTS[0].id,
+            words: [{ id: "w1", text: "hello", sep: "", begin: 1.0, end: 1.5, joinsNext: false }],
+            backgroundText: "oh",
+            backgroundWords: [{ id: "w2", text: "oh", sep: "", begin: 1.1, end: 1.4, joinsNext: false }],
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields(
+          { id: "L2", text: "line", agentId: DEFAULT_AGENTS[0].id, begin: 3, end: 4 },
+          getSplitCharacter(),
+        ),
       ],
       customSnapPoints: [{ id: "m1", time: 5 }],
       beatGrid: detectedGrid({ beats: [1, 1.5, 2, 2.5], downbeats: [1] }),

@@ -4,6 +4,7 @@ import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "insync/line";
 import { PARSERS } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -17,7 +18,13 @@ function groupsReferencedBy(lines: readonly LyricLine[]): LinkGroup[] {
 }
 
 function exportedTtml(lines: LyricLine[]): string {
-  return generateTTML({ metadata: METADATA, agents: DEFAULT_AGENTS, lines, groups: groupsReferencedBy(lines) });
+  return generateTTML({
+    metadata: METADATA,
+    agents: DEFAULT_AGENTS,
+    lines,
+    groups: groupsReferencedBy(lines),
+    splitChar: DEFAULT_SPLIT_CHARACTER,
+  });
 }
 
 function ownExportLines(lines: LyricLine[]): LyricLine[] {
@@ -25,7 +32,7 @@ function ownExportLines(lines: LyricLine[]): LyricLine[] {
 }
 
 function mergeEditedExport(stored: LyricLine[], edit: (ttml: string) => string = (ttml) => ttml): LyricLine[] {
-  return mergeEditedTtmlLines(stored, PARSERS.ttml(edit(exportedTtml(stored))));
+  return mergeEditedTtmlLines(stored, PARSERS.ttml(edit(exportedTtml(stored))), DEFAULT_SPLIT_CHARACTER);
 }
 
 // -- Exports ------------------------------------------------------------------

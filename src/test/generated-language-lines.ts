@@ -5,12 +5,13 @@ import { newWordId } from "@/domain/word/id";
 import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers -----------------------------------------------------------------
 
 // The provider caches answers by text for the session, so every test uses its own lyrics.
 function timedLine(id: string, words: string[], romanized: string[], romanizedFrom = words.join(" ")): LyricLine {
-  const sourceFingerprint = languageSourceFingerprint(romanizedFrom);
+  const sourceFingerprint = languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, romanizedFrom);
   return legacyLine({
     id,
     agentId: "v1",

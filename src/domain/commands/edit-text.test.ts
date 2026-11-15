@@ -10,6 +10,8 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { getSplitCharacter } from "@/utils/split-character";
 
 beforeEach(() => useProjectStore.getState().reset());
 
@@ -17,6 +19,7 @@ describe("editBackgroundText", () => {
   it("regression: a line-synced background keeps its moved span when its text is retyped", () => {
     const seeded = withSeededBackground(
       createLine({ id: "l1", text: "Low tide", begin: 2, end: 6, backgroundText: "ooh" }),
+      DEFAULT_SPLIT_CHARACTER,
     );
     const moved = withBackgroundTrack(seeded, withTrackSpan(backgroundTrack(seeded)!, 4.5, 5.5));
     useProjectStore.setState({ lines: [moved] });
@@ -24,7 +27,7 @@ describe("editBackgroundText", () => {
     useProjectStore.getState().commit(editBackgroundText("l1", "ooh yeah"));
 
     const [line] = useProjectStore.getState().lines;
-    expect(backgroundText(line)).toBe("ooh yeah");
+    expect(backgroundText(line, getSplitCharacter())).toBe("ooh yeah");
     expect(backgroundTrack(line)).toMatchObject({ begin: 4.5, end: 5.5, source: "manual" });
   });
 });
@@ -59,6 +62,7 @@ describe("typing in one instance of a group", () => {
         defaultAgentId: "v1",
         lines,
         groups,
+        splitCharacter: DEFAULT_SPLIT_CHARACTER,
       });
       if (action.kind !== "apply") throw new Error(action.kind);
       const typed = action.finalLines[1];
@@ -66,9 +70,9 @@ describe("typing in one instance of a group", () => {
       useProjectStore.getState().commit(typeLyrics(lines, action.finalLines), "pending");
 
       const [earlier, edited] = useProjectStore.getState().lines;
-      expect(lineText(edited)).toBe("We glow so bright tonight");
+      expect(lineText(edited, getSplitCharacter())).toBe("We glow so bright tonight");
       expect(timedSyllables(mainTrack(edited))).toEqual(timedSyllables(mainTrack(typed)));
-      expect(lineText(earlier)).toBe("We glow so bright tonight");
+      expect(lineText(earlier, getSplitCharacter())).toBe("We glow so bright tonight");
     },
   );
 });

@@ -10,7 +10,11 @@ function compareQueued(a: ResolvedAddress, b: ResolvedAddress): number {
   return a.lineIndex - b.lineIndex || Number(a.type === "bg") - Number(b.type === "bg") || a.wordIndex - b.wordIndex;
 }
 
-function queueOrder(lines: readonly LyricLine[], selections: readonly SyllableAddress[]): SyllableAddress[] {
+function queueOrder(
+  lines: readonly LyricLine[],
+  selections: readonly SyllableAddress[],
+  splitChar: string,
+): SyllableAddress[] {
   const seen = new Set<string>();
   const unique = selections.filter((selection) => {
     const key = addressKey(selection);
@@ -18,14 +22,14 @@ function queueOrder(lines: readonly LyricLine[], selections: readonly SyllableAd
     seen.add(key);
     return true;
   });
-  return resolveAddresses(lines, unique)
+  return resolveAddresses(lines, unique, splitChar)
     .sort(compareQueued)
     .map(({ lineId, type, syllableId }) => ({ lineId, type, syllableId }));
 }
 
 // True when every queued word still resolves and the queue already runs in structural order.
-function isInQueueOrder(lines: readonly LyricLine[], queue: readonly SyllableAddress[]): boolean {
-  const resolved = resolveAddresses(lines, queue);
+function isInQueueOrder(lines: readonly LyricLine[], queue: readonly SyllableAddress[], splitChar: string): boolean {
+  const resolved = resolveAddresses(lines, queue, splitChar);
   if (resolved.length !== queue.length) return false;
   return resolved.every((address, index) => index === 0 || compareQueued(resolved[index - 1], address) < 0);
 }

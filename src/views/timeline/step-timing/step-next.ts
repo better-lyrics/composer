@@ -9,6 +9,7 @@ import { effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 import { type StepSkipView, stepSkipView } from "@/views/timeline/step-timing/step-skip-view";
 import { liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -56,7 +57,10 @@ function useStepNext(lines: readonly LyricLine[]): StepView | null {
     if (!live.cursor) return { ...skip, next: null };
     const focus = effectiveFocus(lines, focusedGroup);
     const include = (line: LyricLine) => isInFocus(line, focus) && !skip.skippedLineIds.has(line.id);
-    return { ...skip, next: nextCursorSlot(lines, live.cursor, live.queue, include, withBackground) };
+    return {
+      ...skip,
+      next: nextCursorSlot(lines, live.cursor, live.queue, include, getSplitCharacter(), withBackground),
+    };
   }, [stepTiming, selected, queue, lines, focusedGroup, groups, collapsedInstances, withBackground]);
 }
 

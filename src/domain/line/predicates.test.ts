@@ -5,11 +5,12 @@ import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "@/domai
 import { backgroundTrack } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function line(extras: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras }, DEFAULT_SPLIT_CHARACTER);
 }
 
 // -- isLineSynced -------------------------------------------------------------
@@ -124,35 +125,43 @@ describe("hasAnyTiming", () => {
 });
 
 describe("hasMainLyrics", () => {
-  const line = (text: string): LyricLine => lineFromFields({ id: "l", text, agentId: "v1" });
+  const line = (text: string): LyricLine => lineFromFields({ id: "l", text, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
 
   it("is true for a line with words in its text", () => {
-    expect(hasMainLyrics(line("hello world"))).toBe(true);
+    expect(hasMainLyrics(line("hello world"), DEFAULT_SPLIT_CHARACTER)).toBe(true);
   });
 
   it("is false for an empty line", () => {
-    expect(hasMainLyrics(line(""))).toBe(false);
+    expect(hasMainLyrics(line(""), DEFAULT_SPLIT_CHARACTER)).toBe(false);
   });
 
   describe("edge cases", () => {
     it("is false for whitespace-only text", () => {
-      expect(hasMainLyrics(line("   \t "))).toBe(false);
+      expect(hasMainLyrics(line("   \t "), DEFAULT_SPLIT_CHARACTER)).toBe(false);
     });
 
     it("is false for text that is only split characters", () => {
-      expect(hasMainLyrics(line("|"))).toBe(false);
+      expect(hasMainLyrics(line("|"), DEFAULT_SPLIT_CHARACTER)).toBe(false);
     });
 
     it("is true for a single syllable split with the split character", () => {
-      expect(hasMainLyrics(line("hel|lo"))).toBe(true);
+      expect(hasMainLyrics(line("hel|lo"), DEFAULT_SPLIT_CHARACTER)).toBe(true);
     });
 
     it("is true for non-latin text", () => {
-      expect(hasMainLyrics(line("愛してる"))).toBe(true);
+      expect(hasMainLyrics(line("愛してる"), DEFAULT_SPLIT_CHARACTER)).toBe(true);
     });
 
     it("ignores background text", () => {
-      expect(hasMainLyrics(lineFromFields({ ...fieldsOfLine(line("")), backgroundText: "ooh" }))).toBe(false);
+      expect(
+        hasMainLyrics(
+          lineFromFields(
+            { ...fieldsOfLine(line(""), DEFAULT_SPLIT_CHARACTER), backgroundText: "ooh" },
+            DEFAULT_SPLIT_CHARACTER,
+          ),
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+      ).toBe(false);
     });
   });
 });

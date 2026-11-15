@@ -10,8 +10,10 @@ const TRACKS = ["word", "bg"] as const;
 
 // -- Functions ----------------------------------------------------------------
 
-function lineWordSelections(line: LyricLine): SyllableAddress[] {
-  return TRACKS.flatMap((type) => drawnSyllables(line, trackRole(type)).map((word) => addressOf(line, type, word)));
+function lineWordSelections(line: LyricLine, splitChar: string): SyllableAddress[] {
+  return TRACKS.flatMap((type) =>
+    drawnSyllables(line, trackRole(type), splitChar).map((word) => addressOf(line, type, word)),
+  );
 }
 
 // -- Exports ------------------------------------------------------------------

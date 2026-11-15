@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { chainedNext, nextInQueue, queueOrder } from "@/domain/step-timing/step-queue";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const main = (lineId: string, _lineIndex: number, wordIndex: number): SyllableAddress => ({
   lineId,
@@ -32,7 +33,12 @@ const lines = [
 describe("queueOrder", () => {
   it("orders by line, main before background, then word, whatever order the words were picked in", () => {
     const picked = [echo("a", 0, 1), main("b", 1, 0), echo("a", 0, 0), main("a", 0, 2), main("a", 0, 2)];
-    expect(queueOrder(lines, picked)).toEqual([main("a", 0, 2), echo("a", 0, 0), echo("a", 0, 1), main("b", 1, 0)]);
+    expect(queueOrder(lines, picked, DEFAULT_SPLIT_CHARACTER)).toEqual([
+      main("a", 0, 2),
+      echo("a", 0, 0),
+      echo("a", 0, 1),
+      main("b", 1, 0),
+    ]);
   });
 });
 

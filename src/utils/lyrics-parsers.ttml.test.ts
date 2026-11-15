@@ -4,6 +4,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import type { ProjectMetadata } from "insync/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
   it("parses an AMLL export that uses <amll:meta> without declaring xmlns:amll", () => {
@@ -20,7 +21,7 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     expect(timedSyllables(mainTrack(firstLine))[0].begin).toBeCloseTo(1.277, 3);
     expect(timedSyllables(mainTrack(firstLine))[6].text).toBe("man");
     expect(timedSyllables(mainTrack(firstLine))[6].end).toBeCloseTo(2.621, 3);
-    expect(lineText(firstLine)).toBe("Hell no, I can't be your man");
+    expect(lineText(firstLine, DEFAULT_SPLIT_CHARACTER)).toBe("Hell no, I can't be your man");
     expect(result.metadata).toMatchObject({
       title: "It Aint Nun",
       artists: ["CHRIST DILLINGER, Acid Souljah"],
@@ -34,9 +35,9 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const result = parseLyricsFile("song.ttml", content);
 
     expect(result.lines).toHaveLength(1);
-    expect(lineText(result.lines[0])).toBe("Hello");
-    expect(lineText(result.lines[0])).not.toContain("LEAKED_TITLE");
-    expect(lineText(result.lines[0])).not.toContain("LEAKED_ARTIST");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).not.toContain("LEAKED_TITLE");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).not.toContain("LEAKED_ARTIST");
   });
 
   it("parses well-formed TTML identically (regression guard)", () => {
@@ -44,7 +45,7 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const result = parseLyricsFile("song.ttml", content);
 
     expect(result.lines).toHaveLength(1);
-    expect(lineText(result.lines[0])).toBe("Hello world");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello world");
     expect(timedSyllables(mainTrack(result.lines[0]))).toHaveLength(2);
     expect(timedSyllables(mainTrack(result.lines[0]))[0].begin).toBeCloseTo(1.0, 3);
     expect(timedSyllables(mainTrack(result.lines[0]))[1].end).toBeCloseTo(2.0, 3);
@@ -56,7 +57,7 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const result = parseLyricsFile("song.ttml", content);
 
     expect(result.lines).toHaveLength(1);
-    expect(lineText(result.lines[0])).toBe("Hello");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
   });
 });
 
@@ -117,22 +118,22 @@ describe("parseLyricsFile - TTML background provenance", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:03.000" ttm:agent="v1">main line<span ttm:role="x-bg">backing vocal</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
     const line = result.lines[0];
-    expect(lineText(line)).toBe("main line");
-    expect(backgroundText(line)).toBe("backing vocal");
+    expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("main line");
+    expect(backgroundText(line, DEFAULT_SPLIT_CHARACTER)).toBe("backing vocal");
     expect(backgroundTrack(line)?.source).toBe("manual");
   });
 
   it("leaves backgroundTextSource undefined on a line with no x-bg content", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">Hello</span> <span begin="00:01.500" end="00:02.000">world</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    expect(backgroundText(result.lines[0])).toBeUndefined();
+    expect(backgroundText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     expect(backgroundTrack(result.lines[0])?.source).toBeUndefined();
   });
 
   it("leaves backgroundTextSource undefined on a line-synced line with no x-bg content", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:03.000" ttm:agent="v1">just a plain line</p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    expect(backgroundText(result.lines[0])).toBeUndefined();
+    expect(backgroundText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     expect(backgroundTrack(result.lines[0])?.source).toBeUndefined();
   });
 });
@@ -182,7 +183,7 @@ describe("parseLyricsFile - TTML language", () => {
     it("survives a parse, export and re-parse cycle", () => {
       const first = parseLyricsFile("song.ttml", ttmlWith("pt-BR"));
       const metadata: ProjectMetadata = { title: "", artists: [], album: "", duration: 0, ...first.metadata };
-      const exported = generateTTML({ metadata, agents: [], lines: first.lines });
+      const exported = generateTTML({ metadata, agents: [], lines: first.lines, splitChar: DEFAULT_SPLIT_CHARACTER });
       expect(parseLyricsFile("song.ttml", exported).metadata.language).toBe("pt-BR");
     });
   });

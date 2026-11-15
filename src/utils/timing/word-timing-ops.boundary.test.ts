@@ -7,6 +7,7 @@ import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
 import { bgWordBoundaryEdit, bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("createWordTimingOps: setBoundary", () => {
   interface BoundaryCase {
@@ -25,6 +26,7 @@ describe("createWordTimingOps: setBoundary", () => {
       line: boundaryCase.line ?? makeLine(),
       wordIdx: boundaryCase.wordIdx,
       edge: boundaryCase.edge,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
       time: boundaryCase.time,
       minDuration: boundaryCase.minDuration ?? 0.05,
       rolling: boundaryCase.rolling,
@@ -186,6 +188,7 @@ describe("createWordTimingOps: setBoundary", () => {
         minDuration: 0.05,
         rolling: true,
         syllablesFollowRolling: false,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
       expect(edit).toBeNull();
     });
@@ -277,6 +280,7 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
       minDuration: 0.05,
       rolling: false,
       syllablesFollowRolling: false,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     return edit ? [edit] : [];
   }
@@ -288,7 +292,7 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
   });
 
   it("setBoundary leaves backgroundText unchanged for a timing-only edit", () => {
-    expect(backgroundText(updatedLine(runBgBoundary()[0].updates))).toBe("ooh aah");
+    expect(backgroundText(updatedLine(runBgBoundary()[0].updates), DEFAULT_SPLIT_CHARACTER)).toBe("ooh aah");
   });
 
   it("setBgWordBegin still writes raw, leaving background provenance untouched", () => {

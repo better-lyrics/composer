@@ -9,6 +9,7 @@ import { addressOf } from "@/domain/selection/resolve";
 import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,7 +28,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, syllableId, t
   const clearEditingWord = useTimelineStore((s) => s.clearEditingWord);
 
   const line = lines.find((l) => l.id === lineId);
-  const wordsArray = line ? drawnSyllables(line, trackRole(type)) : undefined;
+  const wordsArray = line ? drawnSyllables(line, trackRole(type), getSplitCharacter()) : undefined;
   const wordIndex = wordsArray?.findIndex((candidate) => candidate.id === syllableId) ?? -1;
   const word = wordsArray?.[wordIndex];
 

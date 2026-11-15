@@ -70,7 +70,7 @@ function mappedPiecesFromSpans(words: WordTiming[] | undefined, text: string, sp
   );
 }
 
-function parseTranslations(root: Element, lines: LyricLine[], lineIndexByKey: Map<string, number>) {
+function parseTranslations(root: Element, lines: LyricLine[], lineIndexByKey: Map<string, number>, splitChar: string) {
   const translations = directChildren(root, "translations")[0];
   if (!translations) return;
   for (const container of directChildren(translations, "translation")) {
@@ -89,7 +89,11 @@ function parseTranslations(root: Element, lines: LyricLine[], lineIndexByKey: Ma
         main: { text: textWithoutBackground(textElement) },
         ...(translatedBackground !== undefined && { bg: { text: translatedBackground } }),
         origin: "import",
-        sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
+        sourceFingerprint: languageSourceFingerprint(
+          splitChar,
+          lineText(line, splitChar),
+          backgroundText(line, splitChar),
+        ),
       };
       lines[index] = {
         ...line,
@@ -106,8 +110,9 @@ function withTransliteration(
   text: string,
   romanBackground: string | undefined,
   spans: { main: Element[]; bg: Element[] },
+  splitChar: string,
 ): LyricLine {
-  const sourceBackground = backgroundText(line);
+  const sourceBackground = backgroundText(line, splitChar);
   const mainPieces = mappedPiecesFromSpans(roleWords(line, "main"), text, spans.main);
   const backgroundPieces = romanBackground
     ? mappedPiecesFromSpans(roleWords(line, "bg"), romanBackground, spans.bg)
@@ -116,12 +121,12 @@ function withTransliteration(
     romanBackground && sourceBackground ? wholeLineSegments(sourceBackground, romanBackground) : undefined;
   const track: LineLanguage = {
     language,
-    main: { text, segments: wholeLineSegments(lineText(line), text) },
+    main: { text, segments: wholeLineSegments(lineText(line, splitChar), text) },
     ...(romanBackground !== undefined && {
       bg: { text: romanBackground, ...(backgroundSegments && { segments: backgroundSegments }) },
     }),
     origin: "import",
-    sourceFingerprint: languageSourceFingerprint(lineText(line), sourceBackground),
+    sourceFingerprint: languageSourceFingerprint(splitChar, lineText(line, splitChar), sourceBackground),
   };
   const mapped: LineLanguage = {
     ...track,
@@ -129,10 +134,15 @@ function withTransliteration(
     ...(track.bg && { bg: { ...track.bg, ...(backgroundPieces && { pieces: backgroundPieces }) } }),
   };
   const mappedLine = { ...line, ...withLanguages(line, { transliteration: mapped }) };
-  return { ...mappedLine, ...alignTrackToLine(mappedLine, track) };
+  return { ...mappedLine, ...alignTrackToLine(mappedLine, track, splitChar) };
 }
 
-function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey: Map<string, number>) {
+function parseTransliterations(
+  root: Element,
+  lines: LyricLine[],
+  lineIndexByKey: Map<string, number>,
+  splitChar: string,
+) {
   const transliterations = directChildren(root, "transliterations")[0];
   if (!transliterations) return;
   for (const container of directChildren(transliterations, "transliteration")) {
@@ -147,10 +157,17 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
       const romanBackground = background
         ? decodeTransliterationText(background.textContent ?? "") || undefined
         : undefined;
-      lines[index] = withTransliteration(lines[index], language, text, romanBackground, {
-        main: directTimedSpans(textElement),
-        bg: background ? directTimedSpans(background) : [],
-      });
+      lines[index] = withTransliteration(
+        lines[index],
+        language,
+        text,
+        romanBackground,
+        {
+          main: directTimedSpans(textElement),
+          bg: background ? directTimedSpans(background) : [],
+        },
+        splitChar,
+      );
     }
   }
 }
@@ -168,7 +185,12 @@ function inlineTexts(container: Element | null, wantedRole: string): Map<string,
 }
 
 // Inline translations and romanization of a `<p>` and its x-bg container; a `<head>` entry read later wins.
-function withInlineAlternates(line: LyricLine, paragraph: Element, background: Element | null): LyricLine {
+function withInlineAlternates(
+  line: LyricLine,
+  paragraph: Element,
+  background: Element | null,
+  splitChar: string,
+): LyricLine {
   const main = inlineTexts(paragraph, "x-translation");
   const bg = inlineTexts(background, "x-translation");
   const translations: LineTranslations = {};
@@ -179,7 +201,11 @@ function withInlineAlternates(line: LyricLine, paragraph: Element, background: E
       main: { text: main.get(language) ?? "" },
       ...(bgText !== undefined && { bg: { text: bgText } }),
       origin: "import",
-      sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
+      sourceFingerprint: languageSourceFingerprint(
+        splitChar,
+        lineText(line, splitChar),
+        backgroundText(line, splitChar),
+      ),
     };
   }
   const withTranslations = main.size + bg.size > 0 ? { ...line, ...withLanguages(line, { translations }) } : line;
@@ -191,15 +217,20 @@ function withInlineAlternates(line: LyricLine, paragraph: Element, background: E
   const romanBackground = romanBg.has(romanLanguage)
     ? decodeTransliterationText(romanBg.get(romanLanguage) ?? "") || undefined
     : undefined;
-  return withTransliteration(withTranslations, romanLanguage, text, romanBackground, { main: [], bg: [] });
+  return withTransliteration(withTranslations, romanLanguage, text, romanBackground, { main: [], bg: [] }, splitChar);
 }
 
-function parseTtmlAlternates(doc: Document, lines: LyricLine[], lineIndexByKey: Map<string, number>): void {
+function parseTtmlAlternates(
+  doc: Document,
+  lines: LyricLine[],
+  lineIndexByKey: Map<string, number>,
+  splitChar: string,
+): void {
   const root =
     doc.getElementsByTagName("iTunesMetadata")[0] ?? doc.getElementsByTagNameNS(ITUNES_NS, "iTunesMetadata")[0];
   if (!root) return;
-  parseTranslations(root, lines, lineIndexByKey);
-  parseTransliterations(root, lines, lineIndexByKey);
+  parseTranslations(root, lines, lineIndexByKey, splitChar);
+  parseTransliterations(root, lines, lineIndexByKey, splitChar);
 }
 
 export { parseTtmlAlternates, withInlineAlternates };

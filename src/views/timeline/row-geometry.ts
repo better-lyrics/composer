@@ -1,5 +1,6 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -14,7 +15,7 @@ const WORD_INSET_PX: Record<WordTrackType, number> = { word: 5, bg: 5 };
 // -- Functions -----------------------------------------------------------------
 
 function bgTrackHeight(line: LyricLine, mainHeight: number): number {
-  return drawnSyllables(line, "bg").length ? mainHeight : BG_DROP_ZONE_HEIGHT;
+  return drawnSyllables(line, "bg", getSplitCharacter()).length ? mainHeight : BG_DROP_ZONE_HEIGHT;
 }
 
 function lineRowHeight(line: LyricLine, mainHeight: number): number {

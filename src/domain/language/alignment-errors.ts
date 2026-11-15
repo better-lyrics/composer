@@ -18,18 +18,18 @@ interface LanguageAlignmentErrorItem {
   errors: LanguageAlignmentError[];
 }
 
-function getLanguageAlignmentErrors(line: LyricLine): LanguageAlignmentError[] {
+function getLanguageAlignmentErrors(line: LyricLine, splitChar: string): LanguageAlignmentError[] {
   const errors: LanguageAlignmentError[] = [];
   const track = lineTransliteration(line);
   const transliteration = validateTransliterationAlignment(
-    lineText(line),
+    lineText(line, splitChar),
     track?.main.text ?? "",
     roleWords(line, "main"),
     track?.main.pieces,
   );
   if (transliteration) errors.push({ field: "transliteration", message: transliteration });
 
-  const background = backgroundText(line);
+  const background = backgroundText(line, splitChar);
   if (background) {
     const backgroundError = validateTransliterationAlignment(
       background,
@@ -42,10 +42,10 @@ function getLanguageAlignmentErrors(line: LyricLine): LanguageAlignmentError[] {
   return errors;
 }
 
-function getLanguageAlignmentErrorItems(lines: LyricLine[]): LanguageAlignmentErrorItem[] {
+function getLanguageAlignmentErrorItems(lines: LyricLine[], splitChar: string): LanguageAlignmentErrorItem[] {
   return lines.flatMap((line, lineIndex) => {
-    const errors = getLanguageAlignmentErrors(line);
-    return errors.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line), errors }] : [];
+    const errors = getLanguageAlignmentErrors(line, splitChar);
+    return errors.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line, splitChar), errors }] : [];
   });
 }
 

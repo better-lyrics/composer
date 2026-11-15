@@ -11,12 +11,13 @@ import { createProjectSaveInput } from "@/test/factories";
 import { deleteDatabase, openAndCloseAtVersion, seedAudioFile, seedProject } from "@/test/idb";
 import { loadOpenProjectAudio, loadOpenProjectRecord } from "@/test/projects";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 function save(title: string): Promise<void> {
   return saveCurrentProject(
     createProjectSaveInput({
       metadata: { title, artists: [], album: "", duration: 0 },
-      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id })],
+      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }, getSplitCharacter())],
       audioSource: { kind: "file", name: "a.mp3" },
     }),
   );

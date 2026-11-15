@@ -8,6 +8,7 @@ import { bgTrackHeight, wordBlockWidth } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 import type { RowLayout } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -60,7 +61,7 @@ function computeGhosts(
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {
-      const existingWords = drawnSyllables(targetLine, trackRole(isBg ? "bg" : "word"));
+      const existingWords = drawnSyllables(targetLine, trackRole(isBg ? "bg" : "word"), getSplitCharacter());
       overlaps = existingWords.some((existing) => boundsOverlap(pasted, existing));
     }
 

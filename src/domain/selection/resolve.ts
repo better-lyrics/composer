@@ -50,9 +50,10 @@ function resolvedAt(
   lineIndex: number,
   type: WordTrack,
   wordIndex: number,
+  splitChar: string,
 ): ResolvedAddress | null {
   const line = lines[lineIndex];
-  const word = line ? drawnSyllables(line, trackRole(type))[wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(type), splitChar)[wordIndex] : undefined;
   return word ? { lineId: line.id, type, syllableId: word.id, lineIndex, wordIndex } : null;
 }
 
@@ -62,36 +63,47 @@ function addressAt(
   lineId: string,
   type: WordTrack,
   wordIndex: number,
+  splitChar: string,
 ): ResolvedAddress | null {
   const lineIndex = lineIndexById(lines).get(lineId);
-  return lineIndex === undefined ? null : resolvedAt(lines, lineIndex, type, wordIndex);
+  return lineIndex === undefined ? null : resolvedAt(lines, lineIndex, type, wordIndex, splitChar);
 }
 
-function resolveAddress(lines: readonly LyricLine[], address: SyllableAddress): ResolvedAddress | null {
+function resolveAddress(
+  lines: readonly LyricLine[],
+  address: SyllableAddress,
+  splitChar: string,
+): ResolvedAddress | null {
   const lineIndex = lineIndexById(lines).get(address.lineId);
   if (lineIndex === undefined) return null;
-  const words = drawnSyllables(lines[lineIndex], trackRole(address.type));
+  const words = drawnSyllables(lines[lineIndex], trackRole(address.type), splitChar);
   const wordIndex = words && wordIndexById(words).get(address.syllableId);
   if (wordIndex === undefined) return null;
   const { lineId, type, syllableId } = address;
   return { lineId, type, syllableId, lineIndex, wordIndex };
 }
 
-function resolveAddresses(lines: readonly LyricLine[], addresses: readonly SyllableAddress[]): ResolvedAddress[] {
-  return addresses.flatMap((address) => resolveAddress(lines, address) ?? []);
+function resolveAddresses(
+  lines: readonly LyricLine[],
+  addresses: readonly SyllableAddress[],
+  splitChar: string,
+): ResolvedAddress[] {
+  return addresses.flatMap((address) => resolveAddress(lines, address, splitChar) ?? []);
 }
 
-function wordAt(lines: readonly LyricLine[], address: SyllableAddress): WordTiming | null {
+function wordAt(lines: readonly LyricLine[], address: SyllableAddress, splitChar: string): WordTiming | null {
   const lineIndex = lineIndexById(lines).get(address.lineId);
   if (lineIndex === undefined) return null;
   return (
-    drawnSyllables(lines[lineIndex], trackRole(address.type)).find((word) => word.id === address.syllableId) ?? null
+    drawnSyllables(lines[lineIndex], trackRole(address.type), splitChar).find(
+      (word) => word.id === address.syllableId,
+    ) ?? null
   );
 }
 
 // The same array when every address still resolves, so subscribers see no change.
-function liveAddresses<A extends SyllableAddress>(lines: readonly LyricLine[], addresses: A[]): A[] {
-  const live = addresses.filter((address) => resolveAddress(lines, address) !== null);
+function liveAddresses<A extends SyllableAddress>(lines: readonly LyricLine[], addresses: A[], splitChar: string): A[] {
+  const live = addresses.filter((address) => resolveAddress(lines, address, splitChar) !== null);
   return live.length === addresses.length ? addresses : live;
 }
 

@@ -12,6 +12,7 @@ import { pitchSession } from "@/views/timeline/pitch/pitch-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconMicrophone2 } from "@tabler/icons-react";
 import { m, useReducedMotion } from "motion/react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -31,7 +32,7 @@ const LOUPE_CARD_SURFACE =
 function editedWordText(lines: readonly LyricLine[], target: LoupeTarget): string {
   const line = lines.find((candidate) => candidate.id === target.lineId);
   if (!line) return "";
-  return wordAt([line], target)?.text.trim() ?? "";
+  return wordAt([line], target, getSplitCharacter())?.text.trim() ?? "";
 }
 
 function deltaLabel(deltaMs: number): string {

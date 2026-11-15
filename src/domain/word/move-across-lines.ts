@@ -43,7 +43,7 @@ interface TargetInserts {
 
 // -- Validation ---------------------------------------------------------------
 
-function validateMoves(moves: WordMove[], linesById: Map<string, LyricLine>): MoveResult | null {
+function validateMoves(moves: WordMove[], linesById: Map<string, LyricLine>, splitChar: string): MoveResult | null {
   for (const move of moves) {
     const source = linesById.get(move.sourceLineId);
     const target = linesById.get(move.targetLineId);
@@ -51,7 +51,7 @@ function validateMoves(moves: WordMove[], linesById: Map<string, LyricLine>): Mo
     if (move.targetTrack === "word" && isLineSynced(target) && target.id !== source.id) {
       return { ok: false, reject: "line-synced-target" };
     }
-    for (const existing of drawnSyllables(target, trackRole(move.targetTrack))) {
+    for (const existing of drawnSyllables(target, trackRole(move.targetTrack), splitChar)) {
       if (boundsOverlap(move.word, existing)) return { ok: false, reject: "overlap" };
     }
   }
@@ -109,9 +109,10 @@ function lineUpdateFor(
   removals: SourceRemovals | undefined,
   inserts: TargetInserts | undefined,
   rangeEnd: number,
+  splitChar: string,
 ): Partial<LyricLine> | null {
-  let words = nonEmpty(drawnSyllables(line, "main"));
-  let backgroundWords = nonEmpty(drawnSyllables(line, "bg"));
+  let words = nonEmpty(drawnSyllables(line, "main", splitChar));
+  let backgroundWords = nonEmpty(drawnSyllables(line, "bg", splitChar));
   let mainChanged = false;
   let bgChanged = false;
   if (removals?.word.size && words) {
@@ -145,7 +146,7 @@ function lineUpdateFor(
   }
   if (bgChanged) {
     updates = backgroundWords?.length
-      ? manualBackgroundWordEdit(line, backgroundWords, updates)
+      ? manualBackgroundWordEdit(line, backgroundWords, splitChar, updates)
       : { ...updates, tracks: withoutBackground({ ...line, ...updates }).tracks };
   }
   return updates;
@@ -170,13 +171,14 @@ function applyWordMoveAcrossLines(
   lines: readonly LyricLine[],
   moves: WordMove[],
   rangeOf: (line: LyricLine) => TimeRange,
+  splitChar: string,
 ): MoveResult {
   if (moves.length === 0) return { ok: true, updates: [], detachedIds: [] };
 
   const linesById = new Map<string, LyricLine>();
   for (const line of lines) linesById.set(line.id, line);
 
-  const validation = validateMoves(moves, linesById);
+  const validation = validateMoves(moves, linesById, splitChar);
   if (validation) return validation;
   const selfOverlap = detectIncomingSelfOverlap(moves);
   if (selfOverlap) return selfOverlap;
@@ -190,7 +192,7 @@ function applyWordMoveAcrossLines(
     const removals = removeByLine.get(line.id);
     const inserts = insertByLine.get(line.id);
     if (!removals && !inserts) continue;
-    const lineUpdates = lineUpdateFor(line, removals, inserts, rangeOf(line).max);
+    const lineUpdates = lineUpdateFor(line, removals, inserts, rangeOf(line).max, splitChar);
     if (!lineUpdates) return { ok: false, reject: "line-synced-source" };
     if (Object.keys(lineUpdates).length === 0) continue;
     updates.push({ id: line.id, updates: leaving.has(line.id) ? { ...lineUpdates, detached: true } : lineUpdates });

@@ -18,12 +18,13 @@ function completeMappedText(
   sourceText: string,
   words: WordTiming[] | undefined,
   pieces: LanguagePieces | undefined,
+  splitChar: string,
 ): string | null {
   if (!words?.length) return null;
   const coveredText = spacedText(words);
   if (
     sourceWordCount(coveredText) !== sourceWordCount(sourceText) ||
-    languageSourceText(coveredText) !== languageSourceText(sourceText)
+    languageSourceText(coveredText, splitChar) !== languageSourceText(sourceText, splitChar)
   )
     return null;
   return mappedTransliteration(words, pieces);
@@ -45,35 +46,42 @@ function legacyDisplayText(sourceText: string, value: string): { text: string; a
   };
 }
 
-function migrateLegacyTransliterationLine(line: LyricLine): LyricLine {
+function migrateLegacyTransliterationLine(line: LyricLine, splitChar: string): LyricLine {
   const track = lineTransliteration(line);
   if (!track || track.main.alignmentStatus !== undefined || track.bg?.alignmentStatus !== undefined) return line;
 
-  const mappedMain = completeMappedText(lineText(line), roleWords(line, "main"), trackPieces(line, "main"));
-  const main = mappedMain ? { text: mappedMain, ambiguous: false } : legacyDisplayText(lineText(line), track.main.text);
-  const lineBackground = backgroundText(line);
+  const mappedMain = completeMappedText(
+    lineText(line, splitChar),
+    roleWords(line, "main"),
+    trackPieces(line, "main"),
+    splitChar,
+  );
+  const main = mappedMain
+    ? { text: mappedMain, ambiguous: false }
+    : legacyDisplayText(lineText(line, splitChar), track.main.text);
+  const lineBackground = backgroundText(line, splitChar);
   const mappedBackground = lineBackground
-    ? completeMappedText(lineBackground, roleWords(line, "bg"), trackPieces(line, "bg"))
+    ? completeMappedText(lineBackground, roleWords(line, "bg"), trackPieces(line, "bg"), splitChar)
     : null;
   const background = track.bg?.text
     ? mappedBackground
       ? { text: mappedBackground, ambiguous: false }
-      : legacyDisplayText(backgroundText(line) ?? "", track.bg.text)
+      : legacyDisplayText(backgroundText(line, splitChar) ?? "", track.bg.text)
     : null;
   const migratedTrack: LineLanguage = {
     ...track,
-    main: { ...track.main, text: main.text, segments: wholeLineSegments(lineText(line), main.text) },
+    main: { ...track.main, text: main.text, segments: wholeLineSegments(lineText(line, splitChar), main.text) },
     ...(background && track.bg
       ? {
           bg: {
             ...track.bg,
             text: background.text,
-            segments: wholeLineSegments(backgroundText(line) ?? "", background.text),
+            segments: wholeLineSegments(backgroundText(line, splitChar) ?? "", background.text),
           },
         }
       : {}),
   };
-  const alignedLine = { ...line, ...alignTrackToLine(line, migratedTrack) };
+  const alignedLine = { ...line, ...alignTrackToLine(line, migratedTrack, splitChar) };
   const aligned = lineTransliteration(alignedLine);
   if (!aligned) return line;
   return {

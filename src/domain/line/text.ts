@@ -1,6 +1,5 @@
 import type { LineTrack, LyricLine, Syllable } from "insync/line";
 import { backgroundTrack, mainTrack } from "insync/line-track";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -21,7 +20,7 @@ function syllablesText(syllables: readonly Syllable[], splitChar: string): strin
 
 const textByTrack = new WeakMap<LineTrack, { splitChar: string; text: string }>();
 
-function trackText(track: LineTrack, splitChar = getSplitCharacter()): string {
+function trackText(track: LineTrack, splitChar: string): string {
   const cached = textByTrack.get(track);
   if (cached?.splitChar === splitChar) return cached.text;
   const text = syllablesText(track.syllables, splitChar);
@@ -29,13 +28,13 @@ function trackText(track: LineTrack, splitChar = getSplitCharacter()): string {
   return text;
 }
 
-function lineText(line: LyricLine): string {
-  return trackText(mainTrack(line));
+function lineText(line: LyricLine, splitChar: string): string {
+  return trackText(mainTrack(line), splitChar);
 }
 
-function backgroundText(line: LyricLine | undefined): string | undefined {
+function backgroundText(line: LyricLine | undefined, splitChar: string): string | undefined {
   const background = line && backgroundTrack(line);
-  return background && trackText(background);
+  return background && trackText(background, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

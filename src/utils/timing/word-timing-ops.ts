@@ -8,10 +8,10 @@ import type { WordTiming } from "insync/word-timing";
 // -- Types --------------------------------------------------------------------
 
 interface WordFieldConfig {
-  getWords: (line: LyricLine) => WordTiming[] | undefined;
+  getWords: (line: LyricLine, splitChar: string) => WordTiming[] | undefined;
   writeWords: (line: LyricLine, words: WordTiming[]) => Partial<LyricLine>;
   // retimeEdit deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
-  buildBoundaryUpdate?: (line: LyricLine, words: WordTiming[]) => Partial<LyricLine>;
+  buildBoundaryUpdate?: (line: LyricLine, words: WordTiming[], splitChar: string) => Partial<LyricLine>;
 }
 
 type RetimeChange = { by: number } | { to: number };
@@ -22,6 +22,7 @@ interface RetimeEditInput {
   edge: BoundaryEdge;
   change: RetimeChange;
   range: TimeRange;
+  splitChar: string;
 }
 
 interface BoundaryEditInput {
@@ -33,6 +34,7 @@ interface BoundaryEditInput {
   rolling: boolean;
   syllablesFollowRolling: boolean;
   range?: TimeRange;
+  splitChar: string;
 }
 
 interface StepEditInput {
@@ -43,6 +45,7 @@ interface StepEditInput {
   time: number;
   minDuration: number;
   range: TimeRange;
+  splitChar: string;
 }
 
 type StepEdit =
@@ -54,12 +57,12 @@ type StepEdit =
 
 function createWordTimingOps(config: WordFieldConfig) {
   const { getWords, writeWords, buildBoundaryUpdate } = config;
-  const boundaryUpdate = (line: LyricLine, words: WordTiming[]) =>
-    buildBoundaryUpdate ? buildBoundaryUpdate(line, words) : writeWords(line, words);
+  const boundaryUpdate = (line: LyricLine, words: WordTiming[], splitChar: string) =>
+    buildBoundaryUpdate ? buildBoundaryUpdate(line, words, splitChar) : writeWords(line, words);
 
   // A Sync nudge or typed time: one edge of one word, kept between its neighbours and inside the range.
-  function retimeEdit({ line, wordIdx, edge, change, range }: RetimeEditInput): LineUpdate | null {
-    const words = getWords(line);
+  function retimeEdit({ line, wordIdx, edge, change, range, splitChar }: RetimeEditInput): LineUpdate | null {
+    const words = getWords(line, splitChar);
     const word = words?.[wordIdx];
     if (!words || !word) return null;
     const updatedWords = [...words];
@@ -84,8 +87,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     rolling,
     syllablesFollowRolling,
     range,
+    splitChar,
   }: BoundaryEditInput): LineUpdate | null {
-    const words = getWords(line);
+    const words = getWords(line, splitChar);
     if (!words?.[wordIdx]) return null;
 
     const rollNeighbour = shouldRollNeighbour({
@@ -110,16 +114,16 @@ function createWordTimingOps(config: WordFieldConfig) {
       if (rollNeighbour && next) updatedWords[wordIdx + 1] = { ...next, begin: clamped };
     }
 
-    return { id: line.id, updates: boundaryUpdate(line, updatedWords) };
+    return { id: line.id, updates: boundaryUpdate(line, updatedWords, splitChar) };
   }
 
-  function stepEdit({ lines, lineIdx, wordIdx, key, time, minDuration, range }: StepEditInput): StepEdit {
+  function stepEdit({ lines, lineIdx, wordIdx, key, time, minDuration, range, splitChar }: StepEditInput): StepEdit {
     const line = lines[lineIdx];
-    const words = line ? getWords(line) : undefined;
+    const words = line ? getWords(line, splitChar) : undefined;
     if (!line || !words?.[wordIdx]) return null;
     const result = applyStepKey({ words, index: wordIdx, key, time, minDuration, range });
     if (result.kind === "refused") return result;
-    const update = { id: line.id, updates: boundaryUpdate(line, result.words) };
+    const update = { id: line.id, updates: boundaryUpdate(line, result.words, splitChar) };
     return { kind: "written", update, endedPrevious: result.endedPrevious };
   }
 

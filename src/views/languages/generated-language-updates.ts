@@ -12,6 +12,7 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { isStructurallyEqual } from "@/utils/structural-equal";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface TransliterationGeneration {
   language: string;
@@ -89,7 +90,7 @@ function generatedTransliteration(
   }
   // Re-aligning an unchanged track would reset its review status; Regenerate still re-aligns.
   if (!force && transliteration === current) return null;
-  return transliteration ? alignTrackToLine(line, transliteration) : withoutTransliteration(line);
+  return transliteration ? alignTrackToLine(line, transliteration, getSplitCharacter()) : withoutTransliteration(line);
 }
 
 function generatedTranslations(
@@ -130,7 +131,11 @@ function generatedTranslations(
 }
 
 function generatedLanguageUpdates(line: LyricLine, options: GeneratedLanguageOptions): Partial<LyricLine> {
-  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+  const fingerprint = languageSourceFingerprint(
+    getSplitCharacter(),
+    lineText(line, getSplitCharacter()),
+    backgroundText(line, getSplitCharacter()),
+  );
   const transliteration = generatedTransliteration(line, fingerprint, options);
   const translations = generatedTranslations(line, fingerprint, options);
   if (!transliteration && !translations) return {};

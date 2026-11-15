@@ -10,6 +10,7 @@ import type { Bounds } from "insync/word-bounds";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { withTrailingSpace } from "@/utils/word-spaces";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -38,9 +39,9 @@ function parenthesized(words: WordTiming[]): WordTiming[] {
 }
 
 function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
-  const timed = drawnSyllables(line, "bg");
+  const timed = drawnSyllables(line, "bg", getSplitCharacter());
   if (timed.length) return parenthesized(timed);
-  const text = backgroundText(line)?.trim();
+  const text = backgroundText(line, getSplitCharacter())?.trim();
   return text
     ? parenthesized([{ id: "background", text, sep: "", begin: bounds.begin, end: bounds.end, joinsNext: false }])
     : [];
@@ -52,7 +53,7 @@ function writableLines(lines: readonly LyricLine[]): WritableLine[] {
   return lines.flatMap((line) => {
     const bounds = effectiveBounds(line);
     if (!bounds) return [];
-    const main = drawnSyllables(line, "main").filter((word) => word.text.trim().length > 0);
+    const main = drawnSyllables(line, "main", getSplitCharacter()).filter((word) => word.text.trim().length > 0);
     const background = backgroundWordsOf(line, bounds);
     const words = background.length > 0 ? [...withTrailingSpace(main), ...background] : main;
     if (words.length === 0) return [];
@@ -62,7 +63,7 @@ function writableLines(lines: readonly LyricLine[]): WritableLine[] {
         bounds,
         words,
         text: spacedText(words).trim(),
-        hasWordTiming: isWordSynced(line) || Boolean(drawnSyllables(line, "bg").length),
+        hasWordTiming: isWordSynced(line) || Boolean(drawnSyllables(line, "bg", getSplitCharacter()).length),
       },
     ];
   });

@@ -16,6 +16,7 @@ import { firstBegin, tapAt } from "@/test/shared-timing-sync";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -397,6 +398,6 @@ describe("bg-init derivation", () => {
     await new Promise((r) => setTimeout(r, 30));
     useProjectStore.getState().undo();
     await new Promise((r) => setTimeout(r, 30));
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("a");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("a");
   });
 });

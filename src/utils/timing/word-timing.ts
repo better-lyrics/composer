@@ -4,7 +4,10 @@ import { mainTimingWrite } from "@/domain/line/track-writes";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 
 // Timeline edits read the main track as the Timeline draws it; Sync retimes only its timed syllables.
-const drawnOps = createWordTimingOps({ getWords: (line) => drawnSyllables(line, "main"), writeWords: mainTimingWrite });
+const drawnOps = createWordTimingOps({
+  getWords: (line, splitChar) => drawnSyllables(line, "main", splitChar),
+  writeWords: mainTimingWrite,
+});
 const timedOps = createWordTimingOps({
   getWords: (line) => timedSyllables(mainTrack(line)),
   writeWords: mainTimingWrite,

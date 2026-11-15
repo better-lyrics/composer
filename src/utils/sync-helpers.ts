@@ -5,11 +5,10 @@ import { trackRole, untimedSyllablesOf } from "insync/line-track";
 import type { SyncAddress } from "@/domain/sync/address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
-import { wordsFromSpaced } from "@/domain/word/spaced-words";
-import { textParts } from "@/domain/word/text-parts";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
+import { DEFAULT_BG_WORD_DURATION, distributeWordsInLine, splitIntoWords } from "@/utils/lyric-words";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
@@ -38,21 +37,6 @@ function getNudgeAmount(): number {
 
 // -- Functions ----------------------------------------------------------------
 
-function splitIntoWords(text: string): string[] {
-  return splitIntoWordsWithMeta(text).parts;
-}
-
-function splitIntoWordsWithMeta(
-  text: string,
-  char = getSplitCharacter(),
-): { parts: string[]; trailingSpace: boolean[] } {
-  const parts = textParts(text, char);
-  return {
-    parts: parts.map((part) => part.text),
-    trailingSpace: parts.map((part, index) => part.sep !== "" && index < parts.length - 1),
-  };
-}
-
 const formatTimeMs = (seconds: number) => formatTime(seconds, 3);
 
 function parseTimeMs(str: string): number | null {
@@ -67,55 +51,7 @@ function parseTimeMs(str: string): number | null {
   return mins * 60 + secs + ms / 1000;
 }
 
-// -- Conversion Functions -----------------------------------------------------
-
-// Evenly timed parts of a text, as a line-synced line's span becomes words.
-function evenlyTimedWords(text: string, begin: number, end: number): WordTiming[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
-  const wordDuration = (end - begin) / parts.length;
-  return wordsFromSpaced(
-    parts.map((part, i) => ({
-      text: trailingSpace[i] ? `${part} ` : part,
-      begin: begin + i * wordDuration,
-      end: begin + (i + 1) * wordDuration,
-    })),
-  );
-}
-
-// -- Word Distribution --------------------------------------------------------
-
-const DEFAULT_BG_WORD_DURATION = 0.3;
-
-function distributeWordsInLine(text: string, begin: number, end: number): WordTiming[] {
-  const { parts: words, trailingSpace } = splitIntoWordsWithMeta(text);
-  if (words.length === 0) return [];
-
-  const totalChars = words.reduce((sum, w) => sum + w.length, 0);
-  const duration = end - begin;
-
-  let currentTime = begin;
-  return wordsFromSpaced(
-    words.map((word, i) => {
-      const wordDuration = (word.length / totalChars) * duration;
-      const wordTiming = {
-        text: trailingSpace[i] ? `${word} ` : word,
-        begin: currentTime,
-        end: currentTime + wordDuration,
-      };
-      currentTime += wordDuration;
-      return wordTiming;
-    }),
-  );
-}
-
-// -- BG Word Creation ---------------------------------------------------------
-
-function createInitialBgWords(backgroundText: string, begin: number, end?: number): WordTiming[] {
-  const wordCount = splitIntoWords(backgroundText).length;
-  if (wordCount === 0) return [];
-  const resolvedEnd = end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION;
-  return distributeWordsInLine(backgroundText, begin, resolvedEnd);
-}
+// -- Word Creation ------------------------------------------------------------
 
 function createTrackWordsFromTextAt(
   line: LyricLine,
@@ -123,11 +59,12 @@ function createTrackWordsFromTextAt(
   begin: number,
   maxEnd: number,
 ): WordTiming[] | null {
-  const text = type === "word" ? lineText(line) : backgroundText(line);
-  if (!text || drawnSyllables(line, trackRole(type)).length > 0) return null;
+  const splitChar = getSplitCharacter();
+  const text = type === "word" ? lineText(line, splitChar) : backgroundText(line, splitChar);
+  if (!text || drawnSyllables(line, trackRole(type), splitChar).length > 0) return null;
   const partDuration = type === "word" ? useSettingsStore.getState().defaultWordDuration : DEFAULT_BG_WORD_DURATION;
-  const naturalEnd = begin + splitIntoWords(text).length * partDuration;
-  const words = distributeWordsInLine(text, begin, Math.min(maxEnd, naturalEnd));
+  const naturalEnd = begin + splitIntoWords(text, splitChar).length * partDuration;
+  const words = distributeWordsInLine(text, begin, Math.min(maxEnd, naturalEnd), splitChar);
   if (words.length === 0) return null;
   // The text's own syllables are timed in place, so they keep their ids and readings.
   const untimed = untimedSyllablesOf(line, type === "word" ? "main" : "bg");
@@ -137,15 +74,5 @@ function createTrackWordsFromTextAt(
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  createTrackWordsFromTextAt,
-  createInitialBgWords,
-  distributeWordsInLine,
-  getNudgeAmount,
-  evenlyTimedWords,
-  formatTimeMs,
-  parseTimeMs,
-  splitIntoWords,
-  splitIntoWordsWithMeta,
-};
+export { createTrackWordsFromTextAt, formatTimeMs, getNudgeAmount, parseTimeMs };
 export type { SyncReRecording, SyncState };

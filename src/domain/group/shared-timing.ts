@@ -59,13 +59,27 @@ function instanceStart(lines: readonly LyricLine[], groupId: string, instanceIdx
   return instanceBounds(attachedLinesOfInstance(lines, groupId, instanceIdx))?.begin ?? null;
 }
 
-function isInstanceFullyTimed(lines: readonly LyricLine[], groupId: string, instanceIdx: number): boolean {
-  const syncable = attachedLinesOfInstance(lines, groupId, instanceIdx).filter(isSyncableLine);
-  return syncable.length > 0 && syncable.every(isLineFullyTimed);
+function isInstanceFullyTimed(
+  lines: readonly LyricLine[],
+  groupId: string,
+  instanceIdx: number,
+  splitChar: string,
+): boolean {
+  const syncable = attachedLinesOfInstance(lines, groupId, instanceIdx).filter((value) =>
+    isSyncableLine(value, splitChar),
+  );
+  return syncable.length > 0 && syncable.every((value) => isLineFullyTimed(value, splitChar));
 }
 
-function isInstanceWordSynced(lines: readonly LyricLine[], groupId: string, instanceIdx: number): boolean {
-  return attachedLinesOfInstance(lines, groupId, instanceIdx).filter(isSyncableLine).every(isWordSynced);
+function isInstanceWordSynced(
+  lines: readonly LyricLine[],
+  groupId: string,
+  instanceIdx: number,
+  splitChar: string,
+): boolean {
+  return attachedLinesOfInstance(lines, groupId, instanceIdx)
+    .filter((value) => isSyncableLine(value, splitChar))
+    .every(isWordSynced);
 }
 
 // The instance that holds the timing to copy from: the first fully timed one among the candidates, preferring one synced
@@ -74,9 +88,12 @@ function firstFullyTimedInstance(
   lines: readonly LyricLine[],
   groupId: string,
   candidates: readonly number[],
+  splitChar: string,
 ): number | undefined {
-  const fullyTimed = candidates.filter((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx));
-  return fullyTimed.find((instanceIdx) => isInstanceWordSynced(lines, groupId, instanceIdx)) ?? fullyTimed[0];
+  const fullyTimed = candidates.filter((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx, splitChar));
+  return (
+    fullyTimed.find((instanceIdx) => isInstanceWordSynced(lines, groupId, instanceIdx, splitChar)) ?? fullyTimed[0]
+  );
 }
 
 // Offset between two instances, measured only over template lines timed in both, so a line missing from one

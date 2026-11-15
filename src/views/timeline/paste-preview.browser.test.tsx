@@ -17,6 +17,7 @@ import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -286,11 +287,14 @@ describe("PastePreview · paste an instance", () => {
     useProjectStore.setState({
       groups: [createGroup({ id: "g1" })],
       lines: [
-        lineFromFields({
-          ...fieldsOfLine(chorus),
-          templateLineIdx: 0,
-          backgroundWords: [createWord({ text: "ah", begin: 12, end: 13 })],
-        }),
+        lineFromFields(
+          {
+            ...fieldsOfLine(chorus, getSplitCharacter()),
+            templateLineIdx: 0,
+            backgroundWords: [createWord({ text: "ah", begin: 12, end: 13 })],
+          },
+          getSplitCharacter(),
+        ),
         createLine({ id: "e", text: "" }),
       ],
     });

@@ -11,6 +11,7 @@ import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const typed = (text: string) =>
   lineEditCommand({ command: "edit lines", args: ["l1"] }, () => fieldUpdates([{ id: "l1", updates: { text } }]));
@@ -30,11 +31,11 @@ describe("commit", () => {
     commit(typed("Lanterns over the river"), "pending");
 
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Lanterns");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns");
 
     useProjectStore.getState().redo();
     const { lines, history, historyIndex } = useProjectStore.getState();
-    expect(lineText(lines[0])).toBe("Lanterns over the river");
+    expect(lineText(lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns over the river");
     expect(history[historyIndex].note).toEqual({ command: "edit lines", args: ["l1"] });
   });
 

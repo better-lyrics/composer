@@ -20,23 +20,39 @@ interface SharedAnchor {
 
 // -- Functions ----------------------------------------------------------------
 
-function firstSyncableLineIndexOf(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number {
-  return lines.findIndex((line) => isAttachedToInstance(line, groupId, instanceIdx) && isSyncableLine(line));
+function firstSyncableLineIndexOf(
+  lines: readonly LyricLine[],
+  groupId: string,
+  instanceIdx: number,
+  splitChar: string,
+): number {
+  return lines.findIndex((line) => isAttachedToInstance(line, groupId, instanceIdx) && isSyncableLine(line, splitChar));
 }
 
-function resumeLineIndexAfter(lines: readonly LyricLine[], anchorIndex: number, groupId: string, instanceIdx: number) {
+function resumeLineIndexAfter(
+  lines: readonly LyricLine[],
+  anchorIndex: number,
+  groupId: string,
+  instanceIdx: number,
+  splitChar: string,
+) {
   for (let i = anchorIndex + 1; i < lines.length; i++) {
-    if (isSyncableLine(lines[i]) && !isAttachedToInstance(lines[i], groupId, instanceIdx)) return i;
+    if (isSyncableLine(lines[i], splitChar) && !isAttachedToInstance(lines[i], groupId, instanceIdx)) return i;
   }
   return lines.length;
 }
 
-function hasTimedReference(lines: readonly LyricLine[], group: LinkGroup, instanceIdx: number): boolean {
+function hasTimedReference(
+  lines: readonly LyricLine[],
+  group: LinkGroup,
+  instanceIdx: number,
+  splitChar: string,
+): boolean {
   const order = sharedInstancesInLineOrder(lines, group);
   const unplaced = instanceStart(lines, group.id, instanceIdx) === null;
   const candidates = unplaced ? order : order.slice(0, Math.max(order.indexOf(instanceIdx), 0));
   const others = candidates.filter((otherIdx) => otherIdx !== instanceIdx);
-  return firstFullyTimedInstance(lines, group.id, others) !== undefined;
+  return firstFullyTimedInstance(lines, group.id, others, splitChar) !== undefined;
 }
 
 // The first word of a shared instance places the whole instance when another shared instance already holds the timing.
@@ -44,6 +60,7 @@ function sharedAnchorAt(
   lines: readonly LyricLine[],
   groups: readonly LinkGroup[],
   cursor: SyncCursor,
+  splitChar: string,
 ): SharedAnchor | null {
   const line = lines[cursor.lineIndex];
   if (cursor.wordIndex !== 0 || !line || !isLinked(line)) return null;
@@ -51,9 +68,13 @@ function sharedAnchorAt(
   const group = groupsById.get(line.groupId);
   if (!group || !isSharedLine(line, groupsById)) return null;
   const { groupId, instanceIdx } = line;
-  if (firstSyncableLineIndexOf(lines, groupId, instanceIdx) !== cursor.lineIndex) return null;
-  if (!hasTimedReference(lines, group, instanceIdx)) return null;
-  return { groupId, instanceIdx, resumeLineIndex: resumeLineIndexAfter(lines, cursor.lineIndex, groupId, instanceIdx) };
+  if (firstSyncableLineIndexOf(lines, groupId, instanceIdx, splitChar) !== cursor.lineIndex) return null;
+  if (!hasTimedReference(lines, group, instanceIdx, splitChar)) return null;
+  return {
+    groupId,
+    instanceIdx,
+    resumeLineIndex: resumeLineIndexAfter(lines, cursor.lineIndex, groupId, instanceIdx, splitChar),
+  };
 }
 
 // -- Exports ------------------------------------------------------------------

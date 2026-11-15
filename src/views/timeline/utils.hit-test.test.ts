@@ -3,14 +3,18 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import type { WordTiming } from "insync/word-timing";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const line = (id: string, words?: WordTiming[] | undefined): LyricLine =>
-  lineFromFields({
-    id,
-    agentId: "a",
-    text: id,
-    words: words ?? [{ id: `${id}-w`, text: id, sep: "", joinsNext: false, begin: 0, end: 1 }],
-  });
+  lineFromFields(
+    {
+      id,
+      agentId: "a",
+      text: id,
+      words: words ?? [{ id: `${id}-w`, text: id, sep: "", joinsNext: false, begin: 0, end: 1 }],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
 describe("getLineAndTrackAtY", () => {
   const layout = computeRowLayout({

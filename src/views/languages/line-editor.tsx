@@ -28,6 +28,7 @@ import { cn } from "@/utils/cn";
 import { AlignButton, BackgroundLanguageFields } from "@/views/languages/background-language-fields";
 import { LanguageField as Field } from "@/views/languages/language-field";
 import { type AlignmentField, TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -49,9 +50,13 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   sourceLanguage,
 }) => {
   const [alignmentField, setAlignmentField] = useState<AlignmentField | null>(null);
-  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
-  const needsReview = getLanguageReviewTracks(line).length > 0;
-  const alignmentErrors = getLanguageAlignmentErrors(line);
+  const fingerprint = languageSourceFingerprint(
+    getSplitCharacter(),
+    lineText(line, getSplitCharacter()),
+    backgroundText(line, getSplitCharacter()),
+  );
+  const needsReview = getLanguageReviewTracks(line, getSplitCharacter()).length > 0;
+  const alignmentErrors = getLanguageAlignmentErrors(line, getSplitCharacter());
   const transliterationError = alignmentErrors.find((error) => error.field === "transliteration")?.message;
   const backgroundTransliterationError = alignmentErrors.find(
     (error) => error.field === "background-transliteration",
@@ -59,7 +64,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   const hasAlignmentError = alignmentErrors.length > 0;
   const transliteration = lineTransliteration(line);
   const transliterationStale = transliteration
-    ? isTransliterationSourceStale(line, "words") || alignmentNeedsReview(transliteration, "main")
+    ? isTransliterationSourceStale(line, "words", getSplitCharacter()) || alignmentNeedsReview(transliteration, "main")
     : false;
   const canAlignMain = Boolean(
     timedSyllables(mainTrack(line)).length && transliteration?.main.text && !transliterationError,
@@ -83,10 +88,12 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
         <span className="flex h-12 items-center justify-center">{index + 1}</span>
       </span>
       <div className="flex min-w-0 flex-col items-start gap-1.5 py-3.5 px-4">
-        <span className="max-w-full text-sm leading-5 wrap-anywhere select-text">{lineText(line)}</span>
-        {backgroundText(line) && (
+        <span className="max-w-full text-sm leading-5 wrap-anywhere select-text">
+          {lineText(line, getSplitCharacter())}
+        </span>
+        {backgroundText(line, getSplitCharacter()) && (
           <span className="max-w-full text-[13px] italic text-(--muted) wrap-anywhere select-text">
-            {backgroundText(line)}
+            {backgroundText(line, getSplitCharacter())}
           </span>
         )}
         {hasAlignmentError && (
@@ -124,13 +131,17 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
               return;
             }
             update(
-              alignTrackToLine(line, {
-                language: transliteration?.language ?? `${sourceLanguage || "und"}-Latn`,
-                main: { text: value, segments: manualSegments(line, value) },
-                ...(bg && { bg: { text: bg.text, ...(bg.segments && { segments: bg.segments }) } }),
-                origin: "manual",
-                sourceFingerprint: fingerprint,
-              }),
+              alignTrackToLine(
+                line,
+                {
+                  language: transliteration?.language ?? `${sourceLanguage || "und"}-Latn`,
+                  main: { text: value, segments: manualSegments(line, value, getSplitCharacter()) },
+                  ...(bg && { bg: { text: bg.text, ...(bg.segments && { segments: bg.segments }) } }),
+                  origin: "manual",
+                  sourceFingerprint: fingerprint,
+                },
+                getSplitCharacter(),
+              ),
             );
           }}
         />
@@ -160,7 +171,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
             />
           );
         })}
-        {backgroundText(line) && (
+        {backgroundText(line, getSplitCharacter()) && (
           <BackgroundLanguageFields
             line={line}
             targets={targets}

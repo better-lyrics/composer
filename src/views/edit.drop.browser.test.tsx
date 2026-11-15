@@ -9,6 +9,7 @@ import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { EditPanel } from "@/views/edit";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE } from "@/views/lyrics-import-modal/accepted-files";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -68,7 +69,9 @@ describe("EditPanel file drop", () => {
 
     dropFile(getEditPanel(), new File(["[00:01.00]Hello\n[00:03.00]World"], "song.lrc", { type: "text/plain" }));
 
-    await expect.poll(() => useProjectStore.getState().lines.map((l) => lineText(l))).toEqual(["Hello", "World"]);
+    await expect
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
+      .toEqual(["Hello", "World"]);
   });
 
   it("ignores a dropped file whose extension the app cannot parse", async () => {

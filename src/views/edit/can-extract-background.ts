@@ -3,6 +3,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -23,7 +24,7 @@ const verdicts = new WeakMap<LyricLine, WindowVerdict>();
 
 function windowChanges(previous: LyricLine | undefined, line: LyricLine, options: ExtractOptions): boolean {
   const window = previous ? [previous, line] : [line];
-  const extracted = extractBackgroundVocals(window, options);
+  const extracted = extractBackgroundVocals(window, options, getSplitCharacter());
   return extracted.length !== window.length || extracted.some((extractedLine, i) => extractedLine !== window[i]);
 }
 
@@ -56,7 +57,11 @@ function canExtractBackgroundVocals(
 ): boolean {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (lineText(line).includes("(") && lineStartsChange(lines[i - 1], line, options, splitCharacter)) return true;
+    if (
+      lineText(line, getSplitCharacter()).includes("(") &&
+      lineStartsChange(lines[i - 1], line, options, splitCharacter)
+    )
+      return true;
   }
   return false;
 }

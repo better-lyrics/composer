@@ -26,8 +26,10 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showPlacementBlockedToast } from "@/utils/group-toast";
-import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
+import { type SyncState, formatTimeMs } from "@/utils/sync-helpers";
+import { splitIntoWords } from "@/utils/lyric-words";
 import type { RetimeChange } from "@/utils/timing/word-timing-ops";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -115,7 +117,11 @@ function useSyncHandlers({
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
         skippedInstances,
       };
-      const anchor = anchorGesture(lines, gesture, { ...ctx, groups: useProjectStore.getState().groups });
+      const anchor = anchorGesture(lines, gesture, {
+        ...ctx,
+        groups: useProjectStore.getState().groups,
+        splitChar: getSplitCharacter(),
+      });
       const { duration } = useAudioStore.getState();
       const placing =
         anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates);
@@ -217,7 +223,9 @@ function useSyncHandlers({
 
   const handleStartSync = useCallback(() => {
     const { lineIndex: cursorLine, wordIndex: cursorWord } = cursor;
-    const startLine = isSyncableLine(lines[cursorLine]) ? cursorLine : nextSyncableLineIndex(lines, -1);
+    const startLine = isSyncableLine(lines[cursorLine], getSplitCharacter())
+      ? cursorLine
+      : nextSyncableLineIndex(lines, -1, getSplitCharacter());
     const startWord = startLine === cursorLine ? cursorWord : 0;
     // Pressing play is how a re-record actually starts, so it has to carry the
     // jump forward. Only a cursor that had to be relocated counts as a fresh
@@ -289,7 +297,7 @@ function useSyncHandlers({
   const handleJumpToBgWord = useCallback(
     (lineIdx: number, wordIdx: number) => {
       const line = lines[lineIdx];
-      const word = line && drawnSyllables(line, "bg")[wordIdx];
+      const word = line && drawnSyllables(line, "bg", getSplitCharacter())[wordIdx];
       if (!word) return;
       seekForRedo(word.begin);
     },
@@ -317,7 +325,7 @@ function useSyncHandlers({
 
   const handleNudgeLastSynced = useCallback(
     (delta: number) => {
-      const slot = previousSlot(lines, cursor, granularity);
+      const slot = previousSlot(lines, cursor, granularity, getSplitCharacter());
       if (!slot) return;
       noteGuideSignal("sync.fixTap");
       if (slot.wordIndex !== null) {
@@ -356,7 +364,9 @@ function useSyncHandlers({
     isComplete,
     currentLine,
     skippedInstances,
-    currentWord: currentLine ? splitIntoWords(lineText(currentLine))[wordIndex] : undefined,
+    currentWord: currentLine
+      ? splitIntoWords(lineText(currentLine, getSplitCharacter()), getSplitCharacter())[wordIndex]
+      : undefined,
   };
 }
 

@@ -4,6 +4,7 @@ import type { LanguageContentOrigin } from "insync/language";
 import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 function lineWithTracks(
   id: string,
@@ -18,43 +19,50 @@ function lineWithTracks(
     translations?: Record<string, LanguageContentOrigin>;
   } = {},
 ): LyricLine {
-  const sourceFingerprint = languageSourceFingerprint(sourceText);
-  return lineFromFields({
-    id,
-    agentId: "v1",
-    text,
-    languages: {
-      ...(transliteration
-        ? {
-            transliteration: {
-              language: "ru-Latn",
-              main: { text: "privet", segments: [] },
-              origin: transliteration,
-              sourceFingerprint,
-            },
-          }
-        : {}),
-      translations: Object.fromEntries(
-        Object.entries(translations).map(([language, origin]) => [
-          language,
-          { language, main: { text: "hello" }, origin, sourceFingerprint },
-        ]),
-      ),
+  const sourceFingerprint = languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, sourceText);
+  return lineFromFields(
+    {
+      id,
+      agentId: "v1",
+      text,
+      languages: {
+        ...(transliteration
+          ? {
+              transliteration: {
+                language: "ru-Latn",
+                main: { text: "privet", segments: [] },
+                origin: transliteration,
+                sourceFingerprint,
+              },
+            }
+          : {}),
+        translations: Object.fromEntries(
+          Object.entries(translations).map(([language, origin]) => [
+            language,
+            { language, main: { text: "hello" }, origin, sourceFingerprint },
+          ]),
+        ),
+      },
     },
-  });
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 describe("staleGeneratedLanguages", () => {
   it("finds a line whose generated transliteration was made for other text", () => {
     const lines = [lineWithTracks("a", "Здравствуй", { sourceText: "Привет", transliteration: "google" })];
 
-    expect(staleGeneratedLanguages(lines)).toEqual([{ lineIds: ["a"], transliteration: true, translations: [] }]);
+    expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
+      { lineIds: ["a"], transliteration: true, translations: [] },
+    ]);
   });
 
   it("finds a line whose generated translation was made for other text", () => {
     const lines = [lineWithTracks("a", "Здравствуй", { sourceText: "Привет", translations: { en: "google" } })];
 
-    expect(staleGeneratedLanguages(lines)).toEqual([{ lineIds: ["a"], transliteration: false, translations: ["en"] }]);
+    expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
+      { lineIds: ["a"], transliteration: false, translations: ["en"] },
+    ]);
   });
 
   it("groups stale lines that need the same tracks", () => {
@@ -69,7 +77,7 @@ describe("staleGeneratedLanguages", () => {
       lineWithTracks("d", "Ночь", { sourceText: "День", transliteration: "google", translations: { en: "google" } }),
     ];
 
-    expect(staleGeneratedLanguages(lines)).toEqual([
+    expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
       { lineIds: ["a", "d"], transliteration: true, translations: ["en"] },
       { lineIds: ["c"], transliteration: false, translations: ["de", "en"] },
     ]);
@@ -77,31 +85,44 @@ describe("staleGeneratedLanguages", () => {
 
   describe("edge cases", () => {
     it("finds nothing in no lines", () => {
-      expect(staleGeneratedLanguages([])).toEqual([]);
+      expect(staleGeneratedLanguages([], DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("finds nothing when every generated track matches its line", () => {
       const lines = [lineWithTracks("a", "Привет", { transliteration: "google", translations: { en: "google" } })];
 
-      expect(staleGeneratedLanguages(lines)).toEqual([]);
+      expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("finds nothing in lines without language tracks", () => {
-      expect(staleGeneratedLanguages([lineFromFields({ id: "a", agentId: "v1", text: "Привет" })])).toEqual([]);
+      expect(
+        staleGeneratedLanguages(
+          [lineFromFields({ id: "a", agentId: "v1", text: "Привет" }, DEFAULT_SPLIT_CHARACTER)],
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+      ).toEqual([]);
     });
 
     it("does not count a syllable split as a text change", () => {
       const lines = [lineWithTracks("a", "При|вет", { sourceText: "Привет", transliteration: "google" })];
 
-      expect(staleGeneratedLanguages(lines)).toEqual([]);
+      expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("counts a background vocal change as a text change", () => {
       const line = lineWithTracks("a", "Привет", { transliteration: "google" });
 
-      expect(staleGeneratedLanguages([lineFromFields({ ...fieldsOfLine(line), backgroundText: "эй" })])).toEqual([
-        { lineIds: ["a"], transliteration: true, translations: [] },
-      ]);
+      expect(
+        staleGeneratedLanguages(
+          [
+            lineFromFields(
+              { ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER), backgroundText: "эй" },
+              DEFAULT_SPLIT_CHARACTER,
+            ),
+          ],
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+      ).toEqual([{ lineIds: ["a"], transliteration: true, translations: [] }]);
     });
 
     it.each(["manual", "import"] as const)("never refreshes %s tracks", (origin) => {
@@ -113,7 +134,7 @@ describe("staleGeneratedLanguages", () => {
         }),
       ];
 
-      expect(staleGeneratedLanguages(lines)).toEqual([]);
+      expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("refreshes only the generated side when a line mixes origins", () => {
@@ -125,7 +146,7 @@ describe("staleGeneratedLanguages", () => {
         }),
       ];
 
-      expect(staleGeneratedLanguages(lines)).toEqual([
+      expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
         { lineIds: ["a"], transliteration: false, translations: ["en"] },
       ]);
     });
@@ -138,7 +159,7 @@ describe("staleGeneratedLanguages", () => {
         lineWithTracks("b", "Пока", { sourceText: "До встречи", translations: { en: "google" } }),
       ];
 
-      expect(staleGeneratedLanguages(lines)).toEqual([
+      expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
         { lineIds: ["a"], transliteration: true, translations: [] },
         { lineIds: ["b"], transliteration: false, translations: ["en"] },
       ]);
@@ -150,7 +171,7 @@ describe("staleGeneratedLanguages", () => {
       const lines = [lineWithTracks("a", "Здравствуй", { sourceText: "Привет", transliteration: "google" })];
       const before = structuredClone(lines);
 
-      staleGeneratedLanguages(lines);
+      staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER);
 
       expect(lines).toEqual(before);
     });
@@ -161,7 +182,7 @@ describe("staleGeneratedLanguages", () => {
         lineWithTracks("b", "Два", { sourceText: "y", translations: { en: "google", fr: "google" } }),
       ];
 
-      expect(staleGeneratedLanguages(lines)).toEqual([
+      expect(staleGeneratedLanguages(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
         { lineIds: ["a", "b"], transliteration: false, translations: ["en", "fr"] },
       ]);
     });

@@ -16,6 +16,7 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type SyncLineListHandlers, useRowCallbacks } from "@/views/sync/use-row-callbacks";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -151,15 +152,15 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           {...rowCallbacks(index)}
           lineId={line.id}
           lineNumber={index + 1}
-          text={lineText(line)}
+          text={lineText(line, getSplitCharacter())}
           displayText={displayLine.text}
           displayWordTexts={displayLine.wordTexts}
           isCurrent={index === currentLineIndex}
           agentId={mainTrack(line).agentId}
-          backgroundText={backgroundText(line)}
+          backgroundText={backgroundText(line, getSplitCharacter())}
           displayBackgroundText={displayLine.backgroundText}
           displayBackgroundWordTexts={displayLine.backgroundWordTexts}
-          backgroundWords={displayLine.backgroundWords ?? drawnSyllables(line, "bg")}
+          backgroundWords={displayLine.backgroundWords ?? drawnSyllables(line, "bg", getSplitCharacter())}
           words={displayLine.words ?? timedSyllables(mainTrack(line))}
           lineBegin={timing?.begin}
           lineEnd={timing?.end}

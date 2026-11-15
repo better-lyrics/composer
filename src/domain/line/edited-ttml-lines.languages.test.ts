@@ -4,6 +4,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -102,19 +103,19 @@ describe("mergeEditedTtmlLines · language tracks", () => {
     it("regression: holds a line whose last translation field was cleared", () => {
       const stored = [clearedTranslationField(withSpanish("a", "Hello", 1), "es"), withSpanish("b", "World", 2)];
       expect(stored[0]?.languages?.translations).toEqual({});
-      expect(holdsEveryLine(stored, ownExportLines(stored))).toBe(true);
+      expect(holdsEveryLine(stored, ownExportLines(stored), DEFAULT_SPLIT_CHARACTER)).toBe(true);
     });
 
     it("regression: holds lines after their only target language was removed", () => {
       const stored = removedTargetLanguage([withSpanish("a", "Hello", 1), withSpanish("b", "World", 2)], "es");
       expect(stored.map((line) => line.languages?.translations)).toEqual([{}, {}]);
-      expect(holdsEveryLine(stored, ownExportLines(stored))).toBe(true);
+      expect(holdsEveryLine(stored, ownExportLines(stored), DEFAULT_SPLIT_CHARACTER)).toBe(true);
     });
 
     it("regression: an edited line keeps its empty translations as stored", () => {
       const stored = [clearedTranslationField(withSpanish("a", "Hello", 1), "es")];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
-      expect(lineText(merged[0]!)).toBe("Hello there");
+      expect(lineText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello there");
       expect(merged[0]?.languages?.translations).toEqual({});
     });
   });

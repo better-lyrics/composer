@@ -7,6 +7,7 @@ import { pasteLyrics } from "@/domain/commands/edit-text";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { mainTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // These pin the Task 1.4 contract: gutter add/delete operations on a project
 // containing line-synced rows must NOT flip those rows to word-synced.
@@ -26,12 +27,12 @@ describe("gutter add/delete preserves line-sync granularity", () => {
 
   it("inserting a line above a line-synced row leaves the row line-synced", () => {
     useProjectStore.setState({
-      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })],
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
     });
     // Simulating what the FIXED handler does: read raw lines, splice, write.
     const raw = useProjectStore.getState().lines;
     const targetIdx = raw.findIndex((l) => l.id === "L1");
-    const newLine = lineFromFields({ id: "X", text: "", agentId: "v1" });
+    const newLine = lineFromFields({ id: "X", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
     const newLines = [...raw];
     newLines.splice(targetIdx, 0, newLine);
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
@@ -47,14 +48,17 @@ describe("gutter add/delete preserves line-sync granularity", () => {
   it("deleting a line by id (not effective index) does not perturb other rows", () => {
     useProjectStore.setState({
       lines: [
-        lineFromFields({ id: "A", text: "synced", agentId: "v1", begin: 0, end: 2 }),
-        lineFromFields({
-          id: "B",
-          text: "with words",
-          agentId: "v1",
-          words: [{ id: "w1", text: "with words", sep: "", begin: 2, end: 4, joinsNext: false }],
-        }),
-        lineFromFields({ id: "C", text: "another synced", agentId: "v1", begin: 4, end: 6 }),
+        lineFromFields({ id: "A", text: "synced", agentId: "v1", begin: 0, end: 2 }, DEFAULT_SPLIT_CHARACTER),
+        lineFromFields(
+          {
+            id: "B",
+            text: "with words",
+            agentId: "v1",
+            words: [{ id: "w1", text: "with words", sep: "", begin: 2, end: 4, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields({ id: "C", text: "another synced", agentId: "v1", begin: 4, end: 6 }, DEFAULT_SPLIT_CHARACTER),
       ],
     });
     // Simulating the fixed delete: filter raw by id
@@ -80,33 +84,39 @@ describe("gutter add/delete preserves line-sync granularity", () => {
   it("inserting between a grouped instance's lines does not detach the instance", () => {
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "A",
-          text: "x",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          begin: 0,
-          end: 1,
-        }),
-        lineFromFields({
-          id: "B",
-          text: "y",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 1,
-          begin: 1,
-          end: 2,
-        }),
+        lineFromFields(
+          {
+            id: "A",
+            text: "x",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            begin: 0,
+            end: 1,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "B",
+            text: "y",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 1,
+            begin: 1,
+            end: 2,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
     // The handler doesn't strip group attrs on adjacent rows
     const raw = useProjectStore.getState().lines;
     const newLines = [...raw];
-    newLines.splice(1, 0, lineFromFields({ id: "X", text: "", agentId: "v1" }));
+    newLines.splice(1, 0, lineFromFields({ id: "X", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER));
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
 
     const after = useProjectStore.getState().lines;

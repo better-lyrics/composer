@@ -6,6 +6,7 @@ import { liveAddresses, resolveAddress, type ResolvedAddress, toAddress } from "
 import { toggleAddress } from "@/domain/selection/set-ops";
 import { queueOrder } from "@/domain/step-timing/step-queue";
 import { useProjectStore } from "@/stores/project";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ function selectionPatch(state: StepSelectionState, picked: SyllableAddress[], as
     const inQueue = state.stepQueue?.some((queued) => sameAddress(queued, selections[0]));
     return { selectedWords: selections, stepQueue: inQueue ? state.stepQueue : null, ...cleared };
   }
-  const queue = queueOrder(useProjectStore.getState().lines, selections);
+  const queue = queueOrder(useProjectStore.getState().lines, selections, getSplitCharacter());
   if (queue.length === 0) return { selectedWords: [], stepQueue: null, ...cleared };
   const current = state.selectedWords[0];
   const cursor = current && queue.find((queued) => sameAddress(queued, current));
@@ -80,8 +81,8 @@ function liveStepSelection(
   selectedWords: readonly SyllableAddress[],
   stepQueue: SyllableAddress[] | null,
 ): { cursor: ResolvedAddress | null; queue: SyllableAddress[] | null } {
-  const cursor = selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null;
-  const queue = stepQueue ? liveAddresses(lines, stepQueue) : [];
+  const cursor = selectedWords[0] ? resolveAddress(lines, selectedWords[0], getSplitCharacter()) : null;
+  const queue = stepQueue ? liveAddresses(lines, stepQueue, getSplitCharacter()) : [];
   return { cursor, queue: queue.length > 0 ? queue : null };
 }
 

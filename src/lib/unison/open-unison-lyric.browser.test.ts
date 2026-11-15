@@ -11,6 +11,7 @@ import { useProjectStore } from "@/stores/project";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -72,7 +73,7 @@ describe("openUnisonLyric", () => {
 
     const project = useProjectStore.getState();
     expect(openProjectIdSnapshot()).not.toBe("a");
-    expect(project.lines.map((line) => lineText(line))).toEqual([
+    expect(project.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
       "Paper lanterns over the bay",
       "Quiet bells along the pier",
     ]);

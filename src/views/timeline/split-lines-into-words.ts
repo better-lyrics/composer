@@ -8,8 +8,9 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
-import { evenlyTimedWords } from "@/utils/sync-helpers";
+import { evenlyTimedWords } from "@/utils/lyric-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -23,7 +24,7 @@ interface LineWordsUpdate {
 type SplitTarget = Pick<SyllableAddress, "lineId" | "type">;
 
 function splitMultiWordWord(word: WordTiming): WordTiming[] {
-  const parts = evenlyTimedWords(word.text, word.begin, word.end);
+  const parts = evenlyTimedWords(word.text, word.begin, word.end, getSplitCharacter());
   if (parts.length < 2) return [word];
   const { joinsNext, ...base } = word;
   const lastIndex = parts.length - 1;
@@ -63,7 +64,7 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
     const bgWords = timedSyllables(backgroundTrack(realLine));
     const splitBg = tracks.has("bg") ? splitMultiWordBgWords(bgWords) : null;
     if (splitBg) {
-      lineUpdates = manualBackgroundWordEdit(realLine, splitBg, {
+      lineUpdates = manualBackgroundWordEdit(realLine, splitBg, getSplitCharacter(), {
         ...lineUpdates,
         languages: withKeptSyllablePieces(realLine, "bg", bgWords, splitBg),
       });

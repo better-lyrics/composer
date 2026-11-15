@@ -6,6 +6,7 @@ import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { useProjectStore } from "@/stores/project";
 import { isStructurallyEqual } from "@/utils/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -32,8 +33,11 @@ function withFields(line: LyricLine, patch: FieldPatch): LyricLine {
     ...(!writesMain && "words" in patch && { words }),
     ...(!writesBackground && "backgroundWords" in patch && { backgroundWords }),
   };
-  let next = withUntimedIdsOf(lineFromFields({ ...fieldsOfLine(line), ...fields }), line);
-  if (typesMain) next = withMainTrack(next, withTrackText(mainTrack(next), text ?? ""));
+  let next = withUntimedIdsOf(
+    lineFromFields({ ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER), ...fields }, DEFAULT_SPLIT_CHARACTER),
+    line,
+  );
+  if (typesMain) next = withMainTrack(next, withTrackText(mainTrack(next), text ?? "", DEFAULT_SPLIT_CHARACTER));
   if (writesMain && words) next = withRoleWords(next, "main", words);
   if (writesBackground && backgroundWords) next = withRoleWords(next, "bg", backgroundWords);
   return next;
@@ -61,7 +65,7 @@ function updatedLine(updates: Partial<LyricLine> | undefined): LyricLine | undef
 function fieldsAfter(update: LineUpdate, lines: readonly LyricLine[]): LineFields {
   const line = lines.find((candidate) => candidate.id === update.id);
   if (!line) throw new Error(`fieldsAfter: no line ${update.id}`);
-  return fieldsOfLine({ ...line, ...update.updates });
+  return fieldsOfLine({ ...line, ...update.updates }, DEFAULT_SPLIT_CHARACTER);
 }
 
 // Line updates read back as the flat fields they change, the way version 3 writers spelled their patches.
@@ -69,7 +73,7 @@ function changedFields(updates: readonly LineUpdate[], lines: readonly LyricLine
   return updates.map((update) => {
     const line = lines.find((candidate) => candidate.id === update.id);
     if (!line) throw new Error(`changedFields: no line ${update.id}`);
-    const before: Record<string, unknown> = { ...fieldsOfLine(line) };
+    const before: Record<string, unknown> = { ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER) };
     const after: Record<string, unknown> = { ...fieldsAfter(update, lines) };
     const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
     const changed = [...keys].filter((key) => !isStructurallyEqual(before[key], after[key]));

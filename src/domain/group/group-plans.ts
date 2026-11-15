@@ -88,15 +88,16 @@ function planRepeatingSections(
     updatedLines,
     { id: groupId, label: groupLabel, color: groupColor, templateVersion: 1 },
     shareTimingInNewGroups,
+    splitChar,
     songEndOrUnbounded(duration ?? 0),
   );
   return { sharing: { keptOwnTiming, replaced }, next: { ...root, groups: [...root.groups, group], lines } };
 }
 
-function planGroupSharing(root: LyricRoot, groupId: string, duration: number): GroupPlan {
+function planGroupSharing(root: LyricRoot, groupId: string, duration: number, splitChar: string): GroupPlan {
   const group = root.groups.find((candidate) => candidate.id === groupId);
   if (!group) return UNCHANGED;
-  const shared = initialGroupSharing(root.lines, group, true, songEndOrUnbounded(duration));
+  const shared = initialGroupSharing(root.lines, group, true, splitChar, songEndOrUnbounded(duration));
   if (shared.lines === root.lines && isStructurallyEqual(shared.group, group)) {
     return { sharing: { keptOwnTiming: shared.keptOwnTiming, replaced: [] }, next: null };
   }

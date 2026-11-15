@@ -5,22 +5,25 @@ import { newWordId } from "@/domain/word/id";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { textParts } from "@/domain/word/text-parts";
 import type { WordTiming } from "insync/word-timing";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Tokens -------------------------------------------------------------------
 
 // Text split the way Edit splits it, keeping each separator as typed.
-function textSyllables(text: string, splitChar = getSplitCharacter()): UntimedSyllable[] {
+function textSyllables(text: string, splitChar: string): UntimedSyllable[] {
   return textParts(text, splitChar).map((part) => ({ id: newWordId(), ...part }));
 }
 
 // -- Matching -----------------------------------------------------------------
 
-function matchedOldIndices(old: readonly Syllable[], next: readonly UntimedSyllable[]): (number | undefined)[] {
+function matchedOldIndices(
+  old: readonly Syllable[],
+  next: readonly UntimedSyllable[],
+  splitChar: string,
+): (number | undefined)[] {
   const oldIndexOf = new Array<number | undefined>(next.length);
   const pairs = lcsPairs(
-    old.map((syllable) => wordKey(syllable.text)),
-    next.map((syllable) => wordKey(syllable.text)),
+    old.map((syllable) => wordKey(syllable.text, splitChar)),
+    next.map((syllable) => wordKey(syllable.text, splitChar)),
   );
   for (const [oldIndex, nextIndex] of pairs) oldIndexOf[nextIndex] = oldIndex;
   return oldIndexOf;
@@ -52,12 +55,12 @@ function timedLength(remapped: readonly WordTiming[], timedIds: ReadonlySet<stri
 
 // The timed syllables take the typed text the way timed words always have; the parts they never reach stay an untimed
 // tail, keeping the ids of the untimed syllables they match.
-function syllablesFromText(text: string, track: LineTrack | undefined, splitChar = getSplitCharacter()): Syllable[] {
+function syllablesFromText(text: string, track: LineTrack | undefined, splitChar: string): Syllable[] {
   const next = textSyllables(text, splitChar);
   const old = track?.syllables ?? [];
   const timed = timedSyllables(track);
   if (timed.length === old.length && timed.length > 0) return remapWordTextsPreservingTiming(timed, text, splitChar);
-  const oldIndexOf = matchedOldIndices(old, next);
+  const oldIndexOf = matchedOldIndices(old, next, splitChar);
   const untimed = untimedKeepingIds(next, old, oldIndexOf);
   if (timed.length === 0) return untimed;
   const remapped = remapWordTextsPreservingTiming(timed, text, splitChar);

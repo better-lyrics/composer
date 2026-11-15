@@ -12,6 +12,7 @@ import type { WordTiming } from "insync/word-timing";
 import { createLine } from "@/test/factories";
 import { updatedLine } from "@/test/field-updates";
 import { applyWordMoveAcrossLines } from "./move-across-lines";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -63,6 +64,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -102,6 +104,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -145,6 +148,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -184,6 +188,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -230,6 +235,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -282,6 +288,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -325,6 +332,7 @@ describe("applyWordMoveAcrossLines: across instances", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     if (!result.ok) throw new Error(`expected a move, got ${result.reject}`);
     expect(result.detachedIds).toEqual(["A", "B"]);
@@ -361,6 +369,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -393,6 +402,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -434,6 +444,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -471,12 +482,13 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
-    expect(lineText(a)).toBe("alpha gamma");
+    expect(lineText(a, DEFAULT_SPLIT_CHARACTER)).toBe("alpha gamma");
   });
 
   it("re-derives target-line text after merge", () => {
@@ -505,11 +517,12 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(lineText(b)).toBe("foo world");
+    expect(lineText(b, DEFAULT_SPLIT_CHARACTER)).toBe("foo world");
   });
 
   it("keeps syllables joined on inserted words", () => {
@@ -547,6 +560,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -584,6 +598,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(JSON.stringify(input)).toBe(snapshot);
   });
@@ -614,6 +629,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -643,6 +659,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -679,6 +696,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -710,6 +728,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -739,6 +758,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
   });
@@ -749,7 +769,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
       words: [{ text: "only", begin: 0, end: 0.5 }],
     });
     const input = [lineA];
-    const result = applyWordMoveAcrossLines(input, [], wholeSong);
+    const result = applyWordMoveAcrossLines(input, [], wholeSong, DEFAULT_SPLIT_CHARACTER);
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates).toEqual([]);
@@ -780,7 +800,7 @@ describe("applyWordMoveAcrossLines: drawn lines", () => {
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "U", text: "untouched", words: [{ text: "untouched", begin: 9, end: 10 }] }),
     ];
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.map((u) => u.id)).toEqual(["A", "B"]);
   });
@@ -797,7 +817,7 @@ describe("applyWordMoveAcrossLines: drawn lines", () => {
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "C", text: "Line synced only", begin: 17, end: 20 }),
     ];
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.some((u) => u.id === "C")).toBe(false);
   });
@@ -813,7 +833,7 @@ describe("applyWordMoveAcrossLines: drawn lines", () => {
       }),
       createLine({ id: "B", text: "delta", begin: 5, end: 5.4 }),
     ];
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     expect(result).toEqual({ ok: false, reject: "line-synced-target" });
   });
 
@@ -822,7 +842,7 @@ describe("applyWordMoveAcrossLines: drawn lines", () => {
       createLine({ id: "A", text: "Line synced only", begin: 1, end: 2 }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
     ];
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     expect(result).toEqual({ ok: false, reject: "line-synced-source" });
   });
 
@@ -844,6 +864,7 @@ describe("applyWordMoveAcrossLines: drawn lines", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     if (!result.ok) throw new Error("expected ok");
     const toB = result.updates.find((u) => u.id === "B")?.updates;
@@ -874,6 +895,7 @@ describe("applyWordMoveAcrossLines: partly synced lines", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");

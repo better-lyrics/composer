@@ -10,6 +10,7 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -43,7 +44,9 @@ function lineWithoutPieces(): LyricLine {
 }
 
 function drawnReadings(line: LyricLine): LegacyWord[] {
-  return legacyWords(drawnSyllables(line, "main"), drawnLanguages(line)) ?? [];
+  return (
+    legacyWords(drawnSyllables(line, "main", getSplitCharacter()), drawnLanguages(line, getSplitCharacter())) ?? []
+  );
 }
 
 function readings(line: LyricLine, side: "main" | "bg" = "main"): LegacyWord[] {

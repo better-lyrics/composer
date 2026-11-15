@@ -30,6 +30,7 @@ import {
 } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
 import { distributeLinesTiming } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -130,14 +131,20 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   if (!(await confirmReplace(ctx.confirm))) return false;
 
   let workingLines = ctx.applyBackgroundExtraction
-    ? extractBackgroundVocals(parsed.lines, {
-        mergeStandaloneLines: ctx.backgroundExtractionMergeStandalone,
-        preserveBrackets: ctx.backgroundExtractionPreserveBrackets,
-      })
+    ? extractBackgroundVocals(
+        parsed.lines,
+        {
+          mergeStandaloneLines: ctx.backgroundExtractionMergeStandalone,
+          preserveBrackets: ctx.backgroundExtractionPreserveBrackets,
+        },
+        getSplitCharacter(),
+      )
     : parsed.lines;
 
   if (!parsed.hasTimingData && ctx.audioDuration > 0) {
-    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map(withSeededBackground);
+    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map((value) =>
+      withSeededBackground(value, getSplitCharacter()),
+    );
   }
 
   const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));
@@ -146,7 +153,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
   if (input.searchResult) noteGuideSignal("edit.search");
-  if (detectNonLatinLanguage(workingLines.map((line) => lineText(line)).join("\n")))
+  if (detectNonLatinLanguage(workingLines.map((line) => lineText(line, getSplitCharacter())).join("\n")))
     noteGuideSignal("edit.nonLatinLyrics");
   ctx.onResult?.(reported, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;

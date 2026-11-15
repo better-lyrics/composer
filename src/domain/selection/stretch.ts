@@ -24,7 +24,12 @@ interface StretchResult {
 // Applies the affine map newX = anchorTime + (x - anchorTime) * k to already
 // resolved targets. Pure geometry, no resolve and no clamp, so a drag can call
 // it every frame with only k changing.
-function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: number): StretchResult["updates"] {
+function mapStretchTargets(
+  targets: StretchTargets,
+  k: number,
+  anchorTime: number,
+  splitChar: string,
+): StretchResult["updates"] {
   const mapTime = (x: number) => anchorTime + (x - anchorTime) * k;
 
   // Merge all track updates of one line into a single entry so
@@ -40,14 +45,16 @@ function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: numbe
   };
 
   for (const track of targets.tracks.values()) {
-    const words = drawnSyllables(track.line, trackRole(track.type));
+    const words = drawnSyllables(track.line, trackRole(track.type), splitChar);
     if (words.length === 0) continue;
     const updatedWords = words.map((word, i) =>
       track.indices.has(i) ? { ...word, begin: mapTime(word.begin), end: mapTime(word.end) } : word,
     );
     const entry = entryFor(track.line.id);
-    const write = track.type === "word" ? mainWordsEdit : manualBackgroundWordEdit;
-    entry.updates = write(track.line, updatedWords, entry.updates);
+    entry.updates =
+      track.type === "word"
+        ? mainWordsEdit(track.line, updatedWords, entry.updates)
+        : manualBackgroundWordEdit(track.line, updatedWords, splitChar, entry.updates);
   }
   for (const target of targets.lineSynced) {
     const entry = entryFor(target.id);
@@ -69,19 +76,20 @@ function stretchSelections(
   selections: ReadonlyArray<StretchSelectionRef>,
   requestedFactor: number,
   options: StretchClampOptions,
+  splitChar: string,
 ): StretchResult {
   const noop: StretchResult = { appliedFactor: 1, updates: [] };
   if (!Number.isFinite(requestedFactor) || requestedFactor <= 0) return noop;
 
-  const targets = resolveStretchTargets(rawLines, selections);
+  const targets = resolveStretchTargets(rawLines, selections, splitChar);
   if (!targets) return noop;
-  const bounds = deriveBounds(targets, options);
+  const bounds = deriveBounds(targets, options, splitChar);
   if (!bounds) return noop;
 
   const k = Math.min(Math.max(requestedFactor, bounds.kLo), bounds.kHi);
   if (!Number.isFinite(k) || Math.abs(k - 1) < STRETCH_EPS) return noop;
 
-  return { appliedFactor: k, updates: mapStretchTargets(targets, k, bounds.anchorTime) };
+  return { appliedFactor: k, updates: mapStretchTargets(targets, k, bounds.anchorTime, splitChar) };
 }
 
 // -- Exports -------------------------------------------------------------------

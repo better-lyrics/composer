@@ -26,6 +26,7 @@ import {
   IconWand,
 } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -126,7 +127,9 @@ const AutoAlignSetup: React.FC<{ run: (realign: boolean) => void }> = ({ run }) 
   const hasVocals = useSeparationStore((s) => !!s.stemUrls.vocals);
   const counts = useMemo<LineCounts>(() => {
     const { lineTimed, wordTimed } = countAlignableLines(lines);
-    const untimed = lines.filter((l) => hasMainLyrics(l) && !isWordSynced(l) && !isLineSynced(l)).length;
+    const untimed = lines.filter(
+      (l) => hasMainLyrics(l, getSplitCharacter()) && !isWordSynced(l) && !isLineSynced(l),
+    ).length;
     return { lineTimed, wordTimed, untimed };
   }, [lines]);
   const timed = counts.lineTimed + counts.wordTimed;

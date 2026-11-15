@@ -7,6 +7,7 @@ import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -38,7 +39,14 @@ describe("placeSharedInstance", () => {
   };
 
   it("fills an instance with no timing from the reference instance", () => {
-    const updates = placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, 40);
+    const updates = placeSharedInstance(
+      [chorus(0, 0, 10), chorus(1, 0)],
+      sharing,
+      "g1",
+      1,
+      40,
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(updates.map((update) => update.id)).toEqual(["c1-0"]);
     expectTimes(wordTimes(updates[0]?.updates), [
       [40, 40.4],
@@ -47,8 +55,15 @@ describe("placeSharedInstance", () => {
   });
 
   it("moves an instance that is already timed", () => {
-    const filled = placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, 40);
-    const moved = placeSharedInstance([chorus(0, 0, 10), chorus(1, 0, 20)], sharing, "g1", 1, 40);
+    const filled = placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER);
+    const moved = placeSharedInstance(
+      [chorus(0, 0, 10), chorus(1, 0, 20)],
+      sharing,
+      "g1",
+      1,
+      40,
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(moved).toEqual(filled);
   });
 
@@ -69,7 +84,7 @@ describe("placeSharedInstance", () => {
       chorus(1, 0),
       createLine({ id: "c1-1", text: "Oh", backgroundText: "ah", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 }),
     ];
-    const updates = placeSharedInstance(lines, sharing, "g1", 1, 40);
+    const updates = placeSharedInstance(lines, sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER);
     const lineSynced = updates.find((update) => update.id === "c1-1")?.updates;
     expect(mainBounds(updatedLine(lineSynced)!)?.begin).toBeCloseTo(42, 6);
     expect(mainBounds(updatedLine(lineSynced)!)?.end).toBeCloseTo(44, 6);
@@ -82,7 +97,7 @@ describe("placeSharedInstance", () => {
 
   it("puts the first line's main vocal at the anchor time, even when a later line starts earlier", () => {
     const lines = [chorus(0, 0, 11), chorus(0, 1, 10), chorus(1, 0), chorus(1, 1)];
-    const updates = placeSharedInstance(lines, sharing, "g1", 1, 40);
+    const updates = placeSharedInstance(lines, sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER);
     expectTimes(wordTimes(updates.find((update) => update.id === "c1-0")?.updates), [
       [40, 40.4],
       [40.5, 41],
@@ -115,7 +130,8 @@ describe("placeSharedInstance", () => {
       instanceIdx: 1,
       templateLineIdx: 0,
     });
-    const updates = placeSharedInstance([reference, target], sharing, "g1", 1, 100)[0]?.updates;
+    const updates = placeSharedInstance([reference, target], sharing, "g1", 1, 100, DEFAULT_SPLIT_CHARACTER)[0]
+      ?.updates;
     expect(roleWords(updatedLine(updates), "main")?.[0]?.begin).toBeCloseTo(100, 6);
     expect(roleWords(updatedLine(updates), "bg")?.[0]?.begin).toBeCloseTo(99.6, 6);
   });
@@ -130,29 +146,33 @@ describe("placeSharedInstance", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
       });
-      expect(placeSharedInstance([partial, chorus(1, 0)], sharing, "g1", 1, 40)).toEqual([]);
+      expect(placeSharedInstance([partial, chorus(1, 0)], sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("returns nothing for an own-timing target", () => {
       const groups = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })];
-      expect(placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], groups, "g1", 1, 40)).toEqual([]);
+      expect(
+        placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], groups, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER),
+      ).toEqual([]);
     });
 
     it("returns nothing for an old group or a missing group", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0)];
-      expect(placeSharedInstance(lines, [createGroup({ id: "g1" })], "g1", 1, 40)).toEqual([]);
-      expect(placeSharedInstance(lines, sharing, "missing", 1, 40)).toEqual([]);
+      expect(placeSharedInstance(lines, [createGroup({ id: "g1" })], "g1", 1, 40, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
+      expect(placeSharedInstance(lines, sharing, "missing", 1, 40, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("skips detached lines of the target", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 11), chorus(1, 0), { ...chorus(1, 1), detached: true }];
-      expect(placeSharedInstance(lines, sharing, "g1", 1, 40).map((update) => update.id)).toEqual(["c1-0"]);
+      expect(
+        placeSharedInstance(lines, sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER).map((update) => update.id),
+      ).toEqual(["c1-0"]);
     });
 
     it("never uses an own-timing instance as the reference", () => {
       const groups = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [0] })];
       const lines = [chorus(0, 0, 10), chorus(1, 0), chorus(2, 0)];
-      expect(placeSharedInstance(lines, groups, "g1", 2, 40)).toEqual([]);
+      expect(placeSharedInstance(lines, groups, "g1", 2, 40, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("uses the first fully timed shared instance in line order", () => {
@@ -167,7 +187,14 @@ describe("placeSharedInstance", () => {
         instanceIdx: 3,
         templateLineIdx: 0,
       });
-      const updates = placeSharedInstance([reference, chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, 40);
+      const updates = placeSharedInstance(
+        [reference, chorus(0, 0, 10), chorus(1, 0)],
+        sharing,
+        "g1",
+        1,
+        40,
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expectTimes(wordTimes(updates[0]?.updates), [
         [40, 40.2],
         [40.3, 41],
@@ -179,14 +206,14 @@ describe("placeSharedInstance", () => {
     it("does not mutate its input", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0, 20)];
       const snapshot = structuredClone(lines);
-      placeSharedInstance(lines, sharing, "g1", 1, 40);
+      placeSharedInstance(lines, sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER);
       expect(lines).toEqual(snapshot);
     });
 
     it("gives equal updates when placed twice at the same start", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0)];
-      expect(placeSharedInstance(lines, sharing, "g1", 1, 40)).toEqual(
-        placeSharedInstance(lines, sharing, "g1", 1, 40),
+      expect(placeSharedInstance(lines, sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER)).toEqual(
+        placeSharedInstance(lines, sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER),
       );
     });
 
@@ -204,7 +231,9 @@ describe("placeSharedInstance", () => {
       });
       const target = createLine({ id: "c1-0", text: "a|way", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 });
       const words = roleWords(
-        updatedLine(placeSharedInstance([reference, target], sharing, "g1", 1, 40)[0]?.updates),
+        updatedLine(
+          placeSharedInstance([reference, target], sharing, "g1", 1, 40, DEFAULT_SPLIT_CHARACTER)[0]?.updates,
+        ),
         "main",
       );
       expect(words?.map((word) => [word.text, word.joinsNext])).toEqual([
@@ -233,7 +262,10 @@ describe("realignSharedInstance", () => {
       templateLineIdx: 0,
     });
     const words = roleWords(
-      updatedLine(updatesOf(realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1))[0]?.updates),
+      updatedLine(
+        updatesOf(realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER))[0]
+          ?.updates,
+      ),
       "main",
     );
     expect(words?.map((word) => word.begin)).toEqual([40, 40.5]);
@@ -241,49 +273,64 @@ describe("realignSharedInstance", () => {
 
   describe("edge cases", () => {
     it("leaves an instance with no timing alone", () => {
-      expect(realignSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1)).toEqual({ updates: [] });
+      expect(
+        realignSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER),
+      ).toEqual({ updates: [] });
     });
 
     it("refuses a timed instance when no other instance is fully timed", () => {
-      expect(realignSharedInstance([chorus(0, 0), chorus(1, 0, 40)], sharing, "g1", 1)).toEqual({
+      expect(
+        realignSharedInstance([chorus(0, 0), chorus(1, 0, 40)], sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER),
+      ).toEqual({
         refusal: "no-fully-synced-instance",
       });
     });
 
     it("refuses a timed instance whose shared copy would start before zero", () => {
       const lines = [chorus(0, 0, 30), chorus(0, 1, 10), chorus(1, 0, 5), chorus(1, 1)];
-      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "before-song-start" });
+      expect(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER)).toEqual({
+        refusal: "before-song-start",
+      });
     });
 
     it("refuses a timed instance whose shared copy would run past the song end", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
-      expect(realignSharedInstance(lines, sharing, "g1", 1, 300)).toEqual({ refusal: "past-song-end" });
+      expect(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER, 300)).toEqual({
+        refusal: "past-song-end",
+      });
     });
 
     it("realigns an instance that ends exactly at the song end", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 249), chorus(1, 1)];
-      expect(updatesOf(realignSharedInstance(lines, sharing, "g1", 1, 300))).toHaveLength(2);
+      expect(updatesOf(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER, 300))).toHaveLength(2);
     });
 
     it("realigns without an end limit when no song end is given", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
-      expect(updatesOf(realignSharedInstance(lines, sharing, "g1", 1))).toHaveLength(2);
+      expect(updatesOf(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER))).toHaveLength(2);
     });
 
     it("refuses an instance whose timed background vocals the reference has no timing for", () => {
       const withBackground = createLine({
-        ...fieldsOfLine(chorus(1, 0, 40)),
+        ...fieldsOfLine(chorus(1, 0, 40), DEFAULT_SPLIT_CHARACTER),
         backgroundText: "oh",
         backgroundWords: [{ text: "oh", begin: 40.2, end: 40.6 }],
       });
-      const lines = [createLine({ ...fieldsOfLine(chorus(0, 0, 10)), backgroundText: "oh" }), withBackground];
-      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "would-lose-word-timing" });
+      const lines = [
+        createLine({ ...fieldsOfLine(chorus(0, 0, 10), DEFAULT_SPLIT_CHARACTER), backgroundText: "oh" }),
+        withBackground,
+      ];
+      expect(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER)).toEqual({
+        refusal: "would-lose-word-timing",
+      });
     });
 
     it("refuses a word-synced instance when the reference mixes word and line timing", () => {
-      const lineSynced = createLine({ ...fieldsOfLine(chorus(0, 1)), begin: 13, end: 14 });
+      const lineSynced = createLine({ ...fieldsOfLine(chorus(0, 1), DEFAULT_SPLIT_CHARACTER), begin: 13, end: 14 });
       const lines = [chorus(0, 0, 10), lineSynced, chorus(1, 0, 40), chorus(1, 1, 43.2)];
-      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "would-lose-word-timing" });
+      expect(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER)).toEqual({
+        refusal: "would-lose-word-timing",
+      });
     });
 
     it("realigns background vocals the reference has timing for", () => {
@@ -293,18 +340,25 @@ describe("realignSharedInstance", () => {
       });
       const lines = [withFields(chorus(0, 0, 10), background(10.2)), withFields(chorus(1, 0, 40), background(40.5))];
       expect(
-        roleWords(updatedLine(updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates), "bg")?.[0]?.begin,
+        roleWords(
+          updatedLine(updatesOf(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER))[0]?.updates),
+          "bg",
+        )?.[0]?.begin,
       ).toBeCloseTo(40.2, 6);
     });
 
     it("refuses a timed instance with no synced line in common with the reference", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 0), chorus(1, 1), chorus(1, 2, 60)];
-      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "no-common-timed-line" });
+      expect(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER)).toEqual({
+        refusal: "no-common-timed-line",
+      });
     });
 
     it("refuses a timed instance of a group that does not share it", () => {
       const own = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })];
-      expect(realignSharedInstance([chorus(0, 0, 10), chorus(1, 0, 40)], own, "g1", 1)).toEqual({
+      expect(
+        realignSharedInstance([chorus(0, 0, 10), chorus(1, 0, 40)], own, "g1", 1, DEFAULT_SPLIT_CHARACTER),
+      ).toEqual({
         refusal: "no-fully-synced-instance",
       });
     });
@@ -312,7 +366,7 @@ describe("realignSharedInstance", () => {
     it("anchors on lines both instances have", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
       const words = roleWords(
-        updatedLine(updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates),
+        updatedLine(updatesOf(realignSharedInstance(lines, sharing, "g1", 1, DEFAULT_SPLIT_CHARACTER))[0]?.updates),
         "main",
       );
       expect(words?.[0]?.begin).toBeCloseTo(54, 6);
@@ -330,7 +384,7 @@ describe("realignSharedInstances", () => {
 
   it("realigns every listed instance and keeps none on its own timing", () => {
     const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1), chorus(2, 0, 70), chorus(2, 1)];
-    const result = realignSharedInstances(lines, sharing, "g1", [1, 2]);
+    const result = realignSharedInstances(lines, sharing, "g1", [1, 2], DEFAULT_SPLIT_CHARACTER);
     expect(result.keptOwnTiming).toEqual([]);
     expect(result.replaced).toEqual([]);
     expect(firstBegin(result.lines, "c1-1")).toBeCloseTo(43, 6);
@@ -340,7 +394,7 @@ describe("realignSharedInstances", () => {
   describe("edge cases", () => {
     it("keeps an instance that cannot be placed and realigns the rest", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 1), chorus(2, 0, 70), chorus(2, 1)];
-      const result = realignSharedInstances(lines, sharing, "g1", [1, 2]);
+      const result = realignSharedInstances(lines, sharing, "g1", [1, 2], DEFAULT_SPLIT_CHARACTER);
       expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "before-song-start" }]);
       expect(result.lines.slice(0, 4)).toEqual(lines.slice(0, 4));
       expect(firstBegin(result.lines, "c2-1")).toBeCloseTo(73, 6);
@@ -355,23 +409,27 @@ describe("realignSharedInstances", () => {
         chorus(2, 0, 70),
         chorus(2, 1),
       ];
-      expect(realignSharedInstances(lines, sharing, "g1", [1, 2]).replaced).toEqual([1]);
+      expect(realignSharedInstances(lines, sharing, "g1", [1, 2], DEFAULT_SPLIT_CHARACTER).replaced).toEqual([1]);
     });
 
     it("keeps an instance that would run past the song end", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
-      const result = realignSharedInstances(lines, sharing, "g1", [1], 300);
+      const result = realignSharedInstances(lines, sharing, "g1", [1], DEFAULT_SPLIT_CHARACTER, 300);
       expect(result).toEqual({ lines, keptOwnTiming: [{ instanceIdx: 1, refusal: "past-song-end" }], replaced: [] });
     });
 
     it("returns the same lines when nothing is listed", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0, 40)];
-      expect(realignSharedInstances(lines, sharing, "g1", [])).toEqual({ lines, keptOwnTiming: [], replaced: [] });
+      expect(realignSharedInstances(lines, sharing, "g1", [], DEFAULT_SPLIT_CHARACTER)).toEqual({
+        lines,
+        keptOwnTiming: [],
+        replaced: [],
+      });
     });
 
     it("leaves an unplaced instance unplaced", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0)];
-      const result = realignSharedInstances(lines, sharing, "g1", [1]);
+      const result = realignSharedInstances(lines, sharing, "g1", [1], DEFAULT_SPLIT_CHARACTER);
       expect(result).toEqual({ lines, keptOwnTiming: [], replaced: [] });
     });
   });
@@ -380,7 +438,7 @@ describe("realignSharedInstances", () => {
     it("never mutates its input", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1)];
       const snapshot = structuredClone(lines);
-      realignSharedInstances(lines, sharing, "g1", [1]);
+      realignSharedInstances(lines, sharing, "g1", [1], DEFAULT_SPLIT_CHARACTER);
       expect(lines).toEqual(snapshot);
     });
   });
@@ -389,6 +447,15 @@ describe("realignSharedInstances", () => {
 describe("placing near the song start", () => {
   it("places nothing when a line would start before zero", () => {
     const lines = [chorus(0, 0, 11), chorus(0, 1, 10), chorus(1, 0), chorus(1, 1)];
-    expect(placeSharedInstance(lines, [createGroup({ id: "g1", sharesTiming: true })], "g1", 1, 0.5)).toEqual([]);
+    expect(
+      placeSharedInstance(
+        lines,
+        [createGroup({ id: "g1", sharesTiming: true })],
+        "g1",
+        1,
+        0.5,
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+    ).toEqual([]);
   });
 });

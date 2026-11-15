@@ -77,7 +77,7 @@ function shareGroupTiming(groupId: string, duration: number, report?: (sharing: 
   return {
     note: { command: "share group timing", args: [groupId] },
     copiesSharedTiming: false,
-    run: (root) => appliedPlan(root, reported(planGroupSharing(root, groupId, duration), report)),
+    run: (root, ctx) => appliedPlan(root, reported(planGroupSharing(root, groupId, duration, ctx.splitChar), report)),
   };
 }
 

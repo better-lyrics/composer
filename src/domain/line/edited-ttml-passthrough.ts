@@ -38,12 +38,18 @@ function withTimedPassthroughOf<T extends LineTrack>(track: T, source: LineTrack
 
 // A background with no timed syllables exports as one timed span holding its kept spans, or carrying the attributes
 // of the one kept span that held all of it; an edited file reads them back as that span's markup or attributes.
-function withSpanMarkupOf(track: BackgroundTrack, edited: BackgroundTrack | undefined): BackgroundTrack {
+function withSpanMarkupOf(
+  track: BackgroundTrack,
+  edited: BackgroundTrack | undefined,
+  splitChar: string,
+): BackgroundTrack {
   const [span, ...rest] = timedSyllables(edited);
   if (!span || rest.length > 0 || timedSyllables(track).length > 0) return track;
   const { markup, attrs } = span.passthrough ?? {};
-  if (markup) return withSpansFromMarkup(track, markup);
-  return attrs ? withSpansFromMarkup(track, [{ name: "span", attrs, children: [{ text: span.text }] }]) : track;
+  if (markup) return withSpansFromMarkup(track, markup, splitChar);
+  return attrs
+    ? withSpansFromMarkup(track, [{ name: "span", attrs, children: [{ text: span.text }] }], splitChar)
+    : track;
 }
 
 // Kept elements follow syllables by id; an edited track's timed syllables pair with the merged one's by position.
@@ -71,7 +77,7 @@ function withAnchorsOn(kept: LinePassthrough | undefined, edited: LyricLine, mer
 // -- Functions ----------------------------------------------------------------
 
 // The edited file decides what a merged line keeps from TTML: everything the line had is replaced, node by node.
-function withKeptDataOf(line: LyricLine, edited: LyricLine): LyricLine {
+function withKeptDataOf(line: LyricLine, edited: LyricLine, splitChar: string): LyricLine {
   if (!hasKeptData(line) && !hasKeptData(edited)) return line;
   const bare = withoutKeptData(line);
   const background = backgroundTrack(bare);
@@ -81,7 +87,9 @@ function withKeptDataOf(line: LyricLine, edited: LyricLine): LyricLine {
   );
   const kept = withLinePassthrough(timed, withAnchorsOn(linePassthroughOf(edited), edited, timed));
   const keptBackground = backgroundTrack(kept);
-  return keptBackground ? withBackgroundTrack(kept, withSpanMarkupOf(keptBackground, backgroundTrack(edited))) : kept;
+  return keptBackground
+    ? withBackgroundTrack(kept, withSpanMarkupOf(keptBackground, backgroundTrack(edited), splitChar))
+    : kept;
 }
 
 // -- Exports ------------------------------------------------------------------

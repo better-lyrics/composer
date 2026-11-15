@@ -19,6 +19,7 @@ import type { SnapPoint } from "@/domain/snap-point/model";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -127,9 +128,9 @@ function rekeyedAlignedTimings(value: unknown, before: readonly LyricLine[], aft
   if (Object.keys(aligned).length === 0) return value;
   const rekeyed = { ...aligned };
   before.forEach((line, index) => {
-    const opened = withSeededBackgroundWords(line);
+    const opened = withSeededBackgroundWords(line, getSplitCharacter());
     if (aligned[line.id] === v3TimingFingerprint(opened)) {
-      rekeyed[line.id] = timingFingerprint(withSeededBackground(after[index]));
+      rekeyed[line.id] = timingFingerprint(withSeededBackground(after[index], getSplitCharacter()));
     }
   });
   return rekeyed;
@@ -141,7 +142,8 @@ function upgradeSavedProject(project: StoredProject): SavedProject {
   if (!Array.isArray(project.lines)) return project as SavedProject;
   if (project.version === SAVED_PROJECT_VERSION) return project;
   const loaded = linesFromSavedV3(project.lines);
-  const before = project.version < 3 ? loaded.map(migrateLegacyTransliterationLine) : loaded;
+  const before =
+    project.version < 3 ? loaded.map((value) => migrateLegacyTransliterationLine(value, getSplitCharacter())) : loaded;
   const lines = savedLines(before);
   const alignedTimings = rekeyedAlignedTimings(project.alignedTimings, before, linesFromSaved(lines));
   return {

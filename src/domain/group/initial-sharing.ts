@@ -31,7 +31,13 @@ function sameWords(a: readonly WordTiming[] | undefined, b: readonly WordTiming[
   );
 }
 
-function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source: number, other: number): boolean {
+function sameRelativeTiming(
+  lines: readonly LyricLine[],
+  groupId: string,
+  source: number,
+  other: number,
+  splitChar: string,
+): boolean {
   const offset = instanceOffset(lines, groupId, source, other);
   if (offset === null) return false;
   const sourceByTemplateLine = new Map(
@@ -44,23 +50,23 @@ function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source
       sameTime(mainTrack(match).begin, mainTrack(line).begin, offset) &&
       sameTime(mainTrack(match).end, mainTrack(line).end, offset) &&
       sameWords(roleWords(match, "main"), roleWords(line, "main"), offset) &&
-      sameWords(drawnSyllables(match, "bg"), drawnSyllables(line, "bg"), offset)
+      sameWords(drawnSyllables(match, "bg", splitChar), drawnSyllables(line, "bg", splitChar), offset)
     );
   });
 }
 
 // -- Sharing ------------------------------------------------------------------
 
-function instancesWithDifferentTiming(lines: readonly LyricLine[], groupId: string): number[] {
+function instancesWithDifferentTiming(lines: readonly LyricLine[], groupId: string, splitChar: string): number[] {
   const order = instancesInLineOrder(lines, groupId);
   const timed = order.filter((instanceIdx) => instanceStart(lines, groupId, instanceIdx) !== null);
-  const source = firstFullyTimedInstance(lines, groupId, timed) ?? timed[0];
+  const source = firstFullyTimedInstance(lines, groupId, timed, splitChar) ?? timed[0];
   if (source === undefined) return [];
   return order.filter(
     (instanceIdx) =>
       instanceIdx !== source &&
       instanceStart(lines, groupId, instanceIdx) !== null &&
-      !sameRelativeTiming(lines, groupId, source, instanceIdx),
+      !sameRelativeTiming(lines, groupId, source, instanceIdx, splitChar),
   );
 }
 
@@ -68,12 +74,13 @@ function initialGroupSharing(
   lines: LyricLine[],
   group: LinkGroup,
   settingOn: boolean,
+  splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): InitialGroupSharing {
   if (!settingOn) return { group, lines, keptOwnTiming: [], replaced: [] };
   const shared = withSharing(group, { sharesTiming: true });
-  const differing = instancesWithDifferentTiming(lines, group.id);
-  const realigned = realignSharedInstances(lines, [shared], group.id, differing, songEnd);
+  const differing = instancesWithDifferentTiming(lines, group.id, splitChar);
+  const realigned = realignSharedInstances(lines, [shared], group.id, differing, splitChar, songEnd);
   const ownTimingInstances = realigned.keptOwnTiming.map((kept) => kept.instanceIdx);
   return {
     ...realigned,

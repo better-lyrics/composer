@@ -2,13 +2,14 @@ import { drawnLine, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
+import { getSplitCharacter } from "@/utils/split-character";
 
 function buildCandidateLines(
   lines: readonly LyricLine[],
   addresses: ReadonlyArray<SyllableAddress>,
 ): LyricLine[] | undefined {
   if (addresses.length === 0) return undefined;
-  const selectedWords = resolveAddresses(lines, addresses);
+  const selectedWords = resolveAddresses(lines, addresses, getSplitCharacter());
   if (selectedWords.length !== addresses.length) return undefined;
 
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number>; lineIndex: number }>();
@@ -29,15 +30,15 @@ function buildCandidateLines(
   for (const [lineId, { mainIdxs, bgIdxs, lineIndex }] of byLine) {
     const line = linesById.get(lineId);
     if (!line) return undefined;
-    const totalMain = drawnSyllables(line, "main").length;
-    const totalBg = drawnSyllables(line, "bg").length;
+    const totalMain = drawnSyllables(line, "main", getSplitCharacter()).length;
+    const totalBg = drawnSyllables(line, "bg", getSplitCharacter()).length;
     if (mainIdxs.size !== totalMain) return undefined;
     if (bgIdxs.size !== totalBg) return undefined;
     candidates.push({ line, lineIndex });
   }
 
   candidates.sort((a, b) => a.lineIndex - b.lineIndex);
-  return candidates.map((c) => drawnLine(c.line));
+  return candidates.map((c) => drawnLine(c.line, getSplitCharacter()));
 }
 
 export { buildCandidateLines };

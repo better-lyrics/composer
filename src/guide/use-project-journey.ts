@@ -8,6 +8,7 @@ import { useProjectStore } from "@/stores/project";
 import type { ProjectTab } from "@/domain/project/tab";
 import { noteGuideProjectFact } from "@/lib/guide-signals";
 import { useEffect, useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -15,7 +16,7 @@ function useProjectJourney(): Journey {
   const projectId = useOpenProjectId();
   const hasAudio = useAudioStore((state) => state.expectedAudio !== null || playableFile(state.source) !== null);
   const hasLyrics = useProjectStore((state) => hasLyricLines(state.lines));
-  const syncComplete = useProjectStore((state) => isProjectFullySynced(state.lines));
+  const syncComplete = useProjectStore((state) => isProjectFullySynced(state.lines, getSplitCharacter()));
   const facts = useGuideStore((state) => (projectId ? state.projects[projectId] : undefined)) ?? NO_PROJECT_FACTS;
   return useMemo(
     () => projectJourney({ hasAudio, hasLyrics, syncComplete, ...facts }),

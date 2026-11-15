@@ -4,31 +4,48 @@ import type { LyricLine } from "insync/line";
 import type { ProjectMetadata } from "insync/metadata";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
-const wordLine: LyricLine = lineFromFields({
-  id: "a",
-  text: "hello world",
-  agentId: "v1",
-  words: [
-    { id: "w1", text: "hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
-    { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
-  ],
-});
+const wordLine: LyricLine = lineFromFields(
+  {
+    id: "a",
+    text: "hello world",
+    agentId: "v1",
+    words: [
+      { id: "w1", text: "hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+      { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
+    ],
+  },
+  DEFAULT_SPLIT_CHARACTER,
+);
 
-const lineSyncedLine: LyricLine = lineFromFields({ id: "b", text: "hello world", agentId: "v1", begin: 1, end: 2 });
+const lineSyncedLine: LyricLine = lineFromFields(
+  { id: "b", text: "hello world", agentId: "v1", begin: 1, end: 2 },
+  DEFAULT_SPLIT_CHARACTER,
+);
 
 describe("ttml export · itunes namespace signal", () => {
   it("declares the itunes namespace on the root element", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [wordLine] });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [wordLine],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain(`xmlns:itunes="${ITUNES_NS}"`);
   });
 
   it('emits itunes:timing="Word" when any line has word timing', () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [wordLine] });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [wordLine],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain('itunes:timing="Word"');
   });
 
@@ -37,13 +54,19 @@ describe("ttml export · itunes namespace signal", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [lineSyncedLine],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(ttml).toContain('itunes:timing="Line"');
     expect(ttml).not.toContain('itunes:timing="Word"');
   });
 
   it("keeps itunes:timing equal to composer:timing (both are durable detection signals)", () => {
-    const word = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [wordLine] });
+    const word = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [wordLine],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(word).toContain('itunes:timing="Word"');
     expect(word).toContain('composer:timing="Word"');
 
@@ -51,6 +74,7 @@ describe("ttml export · itunes namespace signal", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [lineSyncedLine],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(line).toContain('itunes:timing="Line"');
     expect(line).toContain('composer:timing="Line"');
@@ -62,13 +86,19 @@ describe("ttml export · itunes namespace signal", () => {
         metadata: baseMetadata,
         agents: baseAgents,
         lines: [lineSyncedLine],
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
       expect(ttml).toContain('itunes:timing="Line"');
       expect(ttml).not.toContain('itunes:timing="Word"');
     });
 
     it("emits both the namespace and the timing attribute together on an empty project", () => {
-      const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [] });
+      const ttml = generateTTML({
+        metadata: baseMetadata,
+        agents: baseAgents,
+        lines: [],
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
       expect(ttml).toContain(`xmlns:itunes="${ITUNES_NS}"`);
       expect(ttml).toContain('itunes:timing="Line"');
     });
@@ -81,16 +111,20 @@ describe("ttml export · Apple Music dialect regressions", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        lineFromFields({
-          id: "a",
-          text: "hi there",
-          agentId: "v1",
-          words: [
-            { id: "w3", text: "hi", sep: " ", begin: 65.5, end: 66, joinsNext: false },
-            { id: "w4", text: "there", sep: "", begin: 66, end: 66.75, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "a",
+            text: "hi there",
+            agentId: "v1",
+            words: [
+              { id: "w3", text: "hi", sep: " ", begin: 65.5, end: 66, joinsNext: false },
+              { id: "w4", text: "there", sep: "", begin: 66, end: 66.75, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     // spans carry absolute media times, not offsets measured from the line begin
     expect(ttml).toContain('<span begin="1:05.500"');
@@ -100,13 +134,23 @@ describe("ttml export · Apple Music dialect regressions", () => {
   });
 
   it("marks the Apple dialect with itunes:timing and the itunes namespace", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [wordLine] });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [wordLine],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain(`xmlns:itunes="${ITUNES_NS}"`);
     expect(ttml).toContain('itunes:timing="Word"');
   });
 
   it("keeps composer:timing alongside itunes:timing", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [wordLine] });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [wordLine],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain('composer:timing="Word"');
     expect(ttml).toContain('itunes:timing="Word"');
   });
@@ -116,19 +160,26 @@ describe("ttml export · Apple Music dialect regressions", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        lineFromFields({
-          id: "a",
-          text: "hi",
-          agentId: "v1",
-          words: [{ id: "w5", text: "hi", sep: "", begin: 65.25, end: 66, joinsNext: false }],
-        }),
-        lineFromFields({
-          id: "b",
-          text: "yo",
-          agentId: "v1",
-          words: [{ id: "w6", text: "yo", sep: "", begin: 3665.25, end: 3666, joinsNext: false }],
-        }),
+        lineFromFields(
+          {
+            id: "a",
+            text: "hi",
+            agentId: "v1",
+            words: [{ id: "w5", text: "hi", sep: "", begin: 65.25, end: 66, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "b",
+            text: "yo",
+            agentId: "v1",
+            words: [{ id: "w6", text: "yo", sep: "", begin: 3665.25, end: 3666, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     // single-digit minutes stay unpadded (1:05.250, never 01:05.250)
     expect(ttml).toContain('begin="1:05.250"');

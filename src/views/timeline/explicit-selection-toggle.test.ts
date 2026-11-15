@@ -17,26 +17,30 @@ import { useProjectStore } from "@/stores/project";
 import { createLine, createWords } from "@/test/factories";
 import { generateLineTtml } from "@/utils/ttml";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
   const line = lines.find((candidate) => candidate.id === lineId);
-  const word = line ? drawnSyllables(line, trackRole(type))[wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(type), DEFAULT_SPLIT_CHARACTER)[wordIndex] : undefined;
   return { lineId, type, syllableId: word?.id ?? `missing-${wordIndex}` };
 }
 
 describe("resolveExplicitSelectionToggle", () => {
   it("marks the whole word when a partially-marked syllable group is selected via one syllable", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "fu|cking yeah",
-        agentId: "v1",
-        words: [
-          { id: "w1", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true, joinsNext: true },
-          { id: "w2", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
-          { id: "w3", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "fu|cking yeah",
+          agentId: "v1",
+          words: [
+            { id: "w1", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true, joinsNext: true },
+            { id: "w2", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
+            { id: "w3", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 0)]);
     expect(result.value).toBe(true);
@@ -45,16 +49,19 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("unmarks when every syllable of the selected word is already marked", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "fu|cking yeah",
-        agentId: "v1",
-        words: [
-          { id: "w4", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true, joinsNext: true },
-          { id: "w5", text: "cking", sep: " ", begin: 0.2, end: 0.5, explicit: true, joinsNext: false },
-          { id: "w6", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "fu|cking yeah",
+          agentId: "v1",
+          words: [
+            { id: "w4", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true, joinsNext: true },
+            { id: "w5", text: "cking", sep: " ", begin: 0.2, end: 0.5, explicit: true, joinsNext: false },
+            { id: "w6", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 1)]);
     expect(result.value).toBe(false);
@@ -63,15 +70,18 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("marks when the selected word is fully unmarked", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "fuck this",
-        agentId: "v1",
-        words: [
-          { id: "w7", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-          { id: "w8", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "fuck this",
+          agentId: "v1",
+          words: [
+            { id: "w7", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+            { id: "w8", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 0)]);
     expect(result.value).toBe(true);
@@ -80,24 +90,30 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("treats a multi-line selection as marked-only-if every expanded index is marked", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "A",
-        text: "fuck this",
-        agentId: "v1",
-        words: [
-          { id: "w9", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true, joinsNext: false },
-          { id: "w10", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
-        ],
-      }),
-      lineFromFields({
-        id: "B",
-        text: "shit happens",
-        agentId: "v1",
-        words: [
-          { id: "w11", text: "shit", sep: " ", begin: 1, end: 1.5, joinsNext: false },
-          { id: "w12", text: "happens", sep: "", begin: 1.5, end: 2, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "A",
+          text: "fuck this",
+          agentId: "v1",
+          words: [
+            { id: "w9", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true, joinsNext: false },
+            { id: "w10", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "B",
+          text: "shit happens",
+          agentId: "v1",
+          words: [
+            { id: "w11", text: "shit", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+            { id: "w12", text: "happens", sep: "", begin: 1.5, end: 2, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel(lines, "A", 0), sel(lines, "B", 0)]);
     expect(result.value).toBe(true);
@@ -109,17 +125,20 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("maps a bg-type selection to the backgroundWords field", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w13", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-        backgroundText: "oh shit",
-        backgroundWords: [
-          { id: "w14", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
-          { id: "w15", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w13", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+          backgroundText: "oh shit",
+          backgroundWords: [
+            { id: "w14", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+            { id: "w15", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 1, "bg")]);
     expect(result.value).toBe(true);
@@ -128,15 +147,18 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("drops out-of-range and unknown-line selections", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "fuck this",
-        agentId: "v1",
-        words: [
-          { id: "w16", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-          { id: "w17", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "fuck this",
+          agentId: "v1",
+          words: [
+            { id: "w16", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+            { id: "w17", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = resolveExplicitSelectionToggle(lines, [
       sel(lines, "L1", 9),
@@ -163,25 +185,28 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
     useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().restoreLyrics({
       lines: [0, 1, 2].map((idx) =>
-        lineFromFields({
-          id: `inst-${idx}`,
-          text: "fuck this",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: idx,
-          templateLineIdx: 0,
-          words: createWords([
-            {
-              id: newWordId(),
-              text: "fuck",
-              sep: " ",
-              begin: idx * 30,
-              end: idx * 30 + 0.5,
-              ...(explicit ? { explicit: true as const } : {}),
-            },
-            { id: newWordId(), text: "this", sep: "", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
-          ]),
-        }),
+        lineFromFields(
+          {
+            id: `inst-${idx}`,
+            text: "fuck this",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: idx,
+            templateLineIdx: 0,
+            words: createWords([
+              {
+                id: newWordId(),
+                text: "fuck",
+                sep: " ",
+                begin: idx * 30,
+                end: idx * 30 + 0.5,
+                ...(explicit ? { explicit: true as const } : {}),
+              },
+              { id: newWordId(), text: "this", sep: "", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
+            ]),
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ),
     });
   }
@@ -222,6 +247,7 @@ describe("explicit marks on a line-synced background", () => {
   it("regression: marks the block of a line-synced background explicit and exports it marked", () => {
     const line = withSeededBackground(
       createLine({ id: "l1", text: "Low tide", begin: 2, end: 6, backgroundText: "damn it" }),
+      DEFAULT_SPLIT_CHARACTER,
     );
     useProjectStore.setState({ lines: [line] });
 
@@ -231,8 +257,8 @@ describe("explicit marks on a line-synced background", () => {
 
     const [marked] = useProjectStore.getState().lines;
     expect(backgroundTrack(marked)).toMatchObject({ begin: 4, end: 6 });
-    expect(drawnSyllables(marked, "bg")[0].explicit).toBe(true);
-    expect(generateLineTtml(marked)).toContain(
+    expect(drawnSyllables(marked, "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBe(true);
+    expect(generateLineTtml(marked, DEFAULT_SPLIT_CHARACTER)).toContain(
       '<span begin="0:04.000" end="0:06.000" composer:explicit="true">damn it</span>',
     );
   });
@@ -241,6 +267,7 @@ describe("explicit marks on a line-synced background", () => {
     const linked = { groupId: "g1", templateLineIdx: 0 };
     const source = withSeededBackground(
       createLine({ id: "a0", text: "Low tide", begin: 2, end: 6, backgroundText: "oh no", ...linked, instanceIdx: 0 }),
+      DEFAULT_SPLIT_CHARACTER,
     );
     const copy = createLine({
       id: "a1",
@@ -271,6 +298,7 @@ describe("explicit marks on a line-synced background", () => {
     const linked = { groupId: "g1", templateLineIdx: 0 };
     const seeded = withSeededBackground(
       createLine({ id: "a0", text: "Low tide", begin: 2, end: 6, backgroundText: "oh no", ...linked, instanceIdx: 0 }),
+      DEFAULT_SPLIT_CHARACTER,
     );
     const source = withBackgroundTrack(seeded, withTrackExplicit(backgroundTrack(seeded)!, true));
     const copy = createLine({

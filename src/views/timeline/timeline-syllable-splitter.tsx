@@ -16,6 +16,7 @@ import {
   useTimelineSyllableSplitterState,
 } from "@/views/timeline/use-timeline-syllable-splitter-state";
 import { useCallback, useEffect, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -41,10 +42,10 @@ const TimelineSyllableSplitter: React.FC = () => {
       const line = useProjectStore.getState().lines.find((l) => l.id === sel.lineId);
       if (!line) return;
 
-      const word: WordTiming | null = wordAt([line], sel);
+      const word: WordTiming | null = wordAt([line], sel, getSplitCharacter());
       if (!word || word.text.length < 2) return;
 
-      const piece = pieceOf(drawnPieces(line, languageSide(sel.type)), word);
+      const piece = pieceOf(drawnPieces(line, languageSide(sel.type), getSplitCharacter()), word);
       setTarget({ ...toAddress(sel), word, piece, mode });
       setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       setIsOpen(true);

@@ -6,9 +6,10 @@ import { mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
-import { distributeWordsInLine } from "@/utils/sync-helpers";
+import { distributeWordsInLine } from "@/utils/lyric-words";
 import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 import { lineRowHeight } from "@/views/timeline/row-geometry";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -21,7 +22,7 @@ function distributeLinesTiming(lines: readonly LyricLine[], duration: number): L
   return lines.map((line, index) => {
     const begin = index * lineDuration;
     const end = (index + 1) * lineDuration;
-    const distributed = distributeWordsInLine(lineText(line), begin, end);
+    const distributed = distributeWordsInLine(lineText(line, getSplitCharacter()), begin, end, getSplitCharacter());
     const syllables = mainTrack(line).syllables;
     const words =
       distributed.length === syllables.length
@@ -39,7 +40,7 @@ function getWordsInInstance(lines: readonly LyricLine[], groupId: string, instan
     const line = lines[lineIndex];
     if (line.groupId !== groupId || line.instanceIdx !== instanceIdx) continue;
     for (const type of ["word", "bg"] as const) {
-      drawnSyllables(line, trackRole(type)).forEach((word, wordIndex) => {
+      drawnSyllables(line, trackRole(type), getSplitCharacter()).forEach((word, wordIndex) => {
         out.push({ lineId: line.id, type, syllableId: word.id, lineIndex, wordIndex });
       });
     }

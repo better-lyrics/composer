@@ -67,7 +67,7 @@ function withoutTrackTiming<T extends LineTrack>(track: T): T {
 }
 
 // Typed text replaces a track's syllables; a span stays when there is still text to time.
-function withTrackText<T extends LineTrack>(track: T, text: string, splitChar?: string): T {
+function withTrackText<T extends LineTrack>(track: T, text: string, splitChar: string): T {
   const syllables = syllablesFromText(text, track, splitChar);
   if (isSpanTimed(track) && syllables.length > 0) {
     return { ...track, syllables: syllables.map(untimedSyllable) };

@@ -29,10 +29,11 @@ function trackIssue(
   track: SyncGapTrack,
   text: string,
   words: readonly WordTiming[],
+  splitChar: string,
 ): ZeroLengthWordIssue | null {
   const zeroLength = words.flatMap((timed, wordIndex) => (hasNoLengthInFile(timed) ? [wordIndex] : []));
   if (zeroLength.length === 0) return null;
-  const ranges = timedWordSlotRanges(text, words);
+  const ranges = timedWordSlotRanges(text, words, splitChar);
   const problemSlots = zeroLength.flatMap((wordIndex) => {
     const range = ranges[wordIndex];
     return range ? Array.from({ length: range.end - range.start }, (_, offset) => range.start + offset) : [];
@@ -40,11 +41,18 @@ function trackIssue(
   return { lineId: line.id, lineIndex, track, kind: "zero-length", count: zeroLength.length, problemSlots };
 }
 
-function zeroLengthWordIssues(lines: readonly LyricLine[]): ZeroLengthWordIssue[] {
+function zeroLengthWordIssues(lines: readonly LyricLine[], splitChar: string): ZeroLengthWordIssue[] {
   return lines.flatMap((line, lineIndex) =>
     [
-      trackIssue(line, lineIndex, "main", lineText(line), timedSyllables(mainTrack(line))),
-      trackIssue(line, lineIndex, "background", backgroundText(line) ?? "", drawnSyllables(line, "bg")),
+      trackIssue(line, lineIndex, "main", lineText(line, splitChar), timedSyllables(mainTrack(line)), splitChar),
+      trackIssue(
+        line,
+        lineIndex,
+        "background",
+        backgroundText(line, splitChar) ?? "",
+        drawnSyllables(line, "bg", splitChar),
+        splitChar,
+      ),
     ].filter((issue) => issue !== null),
   );
 }

@@ -19,6 +19,7 @@ interface StepKeyWriteInput {
   time: number;
   minDuration: number;
   rangeOf: (line: LyricLine) => TimeRange;
+  splitChar: string;
 }
 
 type StepKeyPlan =
@@ -38,6 +39,7 @@ function editAt(input: StepKeyWriteInput, slot: ResolvedAddress, key: StepKey): 
     key,
     time: input.time,
     minDuration: input.minDuration,
+    splitChar: input.splitChar,
     range: input.rangeOf(line),
   });
 }

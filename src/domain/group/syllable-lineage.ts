@@ -207,12 +207,13 @@ function lineageByText(
   after: readonly Syllable[],
   own: readonly Syllable[],
   counterpart: LineageCounterpart,
+  splitChar: string,
   room: LineRoom = WHOLE_SONG,
 ): Syllable[] {
   const matched = new Map(
     lcsPairs(
-      own.map((syllable) => wordKey(syllable.text)),
-      after.map((syllable) => wordKey(syllable.text)),
+      own.map((syllable) => wordKey(syllable.text, splitChar)),
+      after.map((syllable) => wordKey(syllable.text, splitChar)),
     ).map(([ownIndex, afterIndex]) => [afterIndex, own[ownIndex]]),
   );
   const times = withGapsFilled(

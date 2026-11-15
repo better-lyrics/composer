@@ -22,7 +22,12 @@ function replaceWordsAt(track: WordTiming[], wordIndex: number, replacement: Wor
   return [...track.slice(0, wordIndex), ...replacement, ...track.slice(wordIndex + 1)];
 }
 
-function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints: number[]): LyricLine {
+function applyTargetsToLine(
+  line: LyricLine,
+  targets: SplitTarget[],
+  splitPoints: number[],
+  splitChar: string,
+): LyricLine {
   const originalMain = roleWords(line, "main");
   const originalBg = roleWords(line, "bg");
   let mainWords = originalMain;
@@ -52,7 +57,8 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
       ? withKeptSyllablePieces(mainLanguages, "bg", originalBg, bgWords)
       : mainLanguages.languages;
   const withMain = mainWords && mainWords !== originalMain ? withRoleWords(line, "main", mainWords) : line;
-  const withBackground = bgWords && bgWords !== originalBg ? withManualBackgroundWords(withMain, bgWords) : withMain;
+  const withBackground =
+    bgWords && bgWords !== originalBg ? withManualBackgroundWords(withMain, bgWords, splitChar) : withMain;
   return languages !== line.languages ? { ...withBackground, languages } : withBackground;
 }
 
@@ -70,6 +76,7 @@ function applySyllableSplitToLines(
   source: IdenticalMatchSource,
   splitPoints: number[],
   caseInsensitive: boolean,
+  splitChar: string,
 ): LyricLine[] {
   const sourceTarget = findSourceTarget(lines, source);
   if (!sourceTarget) return lines;
@@ -100,7 +107,7 @@ function applySyllableSplitToLines(
   return lines.map((line) => {
     const targets = targetsByLine.get(line.id);
     if (!targets) return line;
-    return applyTargetsToLine(line, targets, splitPoints);
+    return applyTargetsToLine(line, targets, splitPoints, splitChar);
   });
 }
 

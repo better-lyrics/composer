@@ -13,6 +13,7 @@ import { legacyLine } from "@/test/legacy-languages";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineKeyboard", () => {
   it("toggles snap when the snap shortcut is pressed in the timeline scope", async () => {
@@ -120,7 +121,7 @@ describe("useTimelineKeyboard", () => {
 
   it("toggles original and transliteration labels when L is pressed", async () => {
     const line = legacyLine({
-      ...fieldsOfLine(createLine({ text: "일단은" })),
+      ...fieldsOfLine(createLine({ text: "일단은" }), getSplitCharacter()),
       transliteration: {
         language: "ko-Latn",
         text: "ildan eun",

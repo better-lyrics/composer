@@ -8,6 +8,7 @@ import { HeaderNotices } from "@/ui/notices/header-notices";
 import { useSharedTimingNotice } from "@/views/timeline/use-shared-timing-notice";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -117,7 +118,7 @@ describe("Shared timing notice", () => {
         [
           member(0, 10),
           createLine({
-            ...fieldsOfLine(member(1, 30)),
+            ...fieldsOfLine(member(1, 30), getSplitCharacter()),
             words: [createWord({ text: "go", sep: " ", begin: 30, end: 31.5 })],
           }),
           member(2),

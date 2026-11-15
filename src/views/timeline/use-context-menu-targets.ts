@@ -36,6 +36,7 @@ import {
   syllableMergeTarget,
   wordMergeTarget,
 } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -123,7 +124,7 @@ function useContextMenuTargets() {
       const template = instanceToTemplate(
         rawLines,
         group.id,
-        templateSourceInstance(rawLines, group, firstInstanceIdx),
+        templateSourceInstance(rawLines, group, firstInstanceIdx, getSplitCharacter()),
       );
       return template.length === selectedLineIds.size ? [{ group, template }] : [];
     });
@@ -138,7 +139,7 @@ function useContextMenuTargets() {
 
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
-    const resolved = resolveAddress(rawLines, contextMenu.target);
+    const resolved = resolveAddress(rawLines, contextMenu.target, getSplitCharacter());
     if (!resolved) return null;
     const { lineId, type, wordIndex } = resolved;
     if (!isInSyllableGroup(trackWords(rawLines[resolved.lineIndex], type) ?? [], wordIndex)) return null;
@@ -159,7 +160,7 @@ function useContextMenuTargets() {
     const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
     if (!targetLine) return null;
     const canPlace =
-      lineText(targetLine).trim() !== "" &&
+      lineText(targetLine, getSplitCharacter()).trim() !== "" &&
       !timedSyllables(mainTrack(targetLine)).length &&
       mainTrack(targetLine).begin === undefined;
     return canPlace ? targetLine : null;
@@ -175,7 +176,7 @@ function useContextMenuTargets() {
     const { instanceIdx } = line;
     if (instanceStart(rawLines, group.id, instanceIdx) !== null) return null;
     const hasTimedSibling = sharedInstancesInLineOrder(rawLines, group).some(
-      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other),
+      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other, getSplitCharacter()),
     );
     return hasTimedSibling ? { groupId: group.id, instanceIdx } : null;
   }, [contextMenu, rawLines]);

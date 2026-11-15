@@ -4,6 +4,7 @@ import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import { savedLinesV3 } from "@/test/saved-v3";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("linesFromSavedV3", () => {
   it("gives loaded words new ids even when the file carries some", () => {
@@ -41,10 +42,13 @@ describe("linesFromSavedV3", () => {
         ],
       },
     ]);
-    expect(lineText(line)).toBe("Pa|per lanterns");
-    expect(backgroundText(line)).toBe("drif|ting");
+    expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("Pa|per lanterns");
+    expect(backgroundText(line, DEFAULT_SPLIT_CHARACTER)).toBe("drif|ting");
     const [reloaded] = linesFromSavedV3(savedLinesV3([line]));
-    expect([lineText(reloaded), backgroundText(reloaded)]).toEqual(["Pa|per lanterns", "drif|ting"]);
+    expect([lineText(reloaded, DEFAULT_SPLIT_CHARACTER), backgroundText(reloaded, DEFAULT_SPLIT_CHARACTER)]).toEqual([
+      "Pa|per lanterns",
+      "drif|ting",
+    ]);
   });
 
   it("regression: a partly synced line's last timed syllable joins the untimed part after it", () => {

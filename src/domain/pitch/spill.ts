@@ -3,6 +3,7 @@ import type { LyricLine } from "insync/line";
 import { trackRole } from "insync/line-track";
 import type { PitchPoint } from "@/domain/pitch/track";
 import type { Bounds } from "insync/word-bounds";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -33,7 +34,7 @@ function songWordCoverage(lines: readonly LyricLine[], edited?: EditedTrack): Bo
   const wordsOf = (line: LyricLine, track: "word" | "bg") =>
     edited && edited.lineId === line.id && edited.track === track
       ? edited.words
-      : drawnSyllables(line, trackRole(track));
+      : drawnSyllables(line, trackRole(track), getSplitCharacter());
   return wordCoverage(lines.flatMap((line) => [...wordsOf(line, "word"), ...wordsOf(line, "bg")]));
 }
 

@@ -8,6 +8,7 @@ import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -18,10 +19,22 @@ function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
 
 function linkedProjectLines(): LyricLine[] {
   return [
-    lineFromFields({ id: "a0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-    lineFromFields({ id: "a1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
-    lineFromFields({ id: "b0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
-    lineFromFields({ id: "b1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 }),
+    lineFromFields(
+      { id: "a0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
+    lineFromFields(
+      { id: "a1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
+      getSplitCharacter(),
+    ),
+    lineFromFields(
+      { id: "b0", text: "Verse one", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
+    lineFromFields(
+      { id: "b1", text: "Verse two", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 },
+      getSplitCharacter(),
+    ),
   ];
 }
 
@@ -44,7 +57,7 @@ describe("editor rows of a group instance", () => {
     setTextareaValue(textarea, "Verse one\nVerse two\nVerse one");
 
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
       .toEqual(["Verse one", "Verse two", "Verse one"]);
     expect(screen.container.querySelector("[role=dialog]")).toBeNull();
     expect(useProjectStore.getState().lines.map((l) => l.instanceIdx)).toEqual([0, 0, 1]);

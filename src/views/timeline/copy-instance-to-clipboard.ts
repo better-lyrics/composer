@@ -7,6 +7,7 @@ import { mainTrack, timedSyllables } from "insync/line-track";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // Builds a ClipboardData payload covering every word and bg word of the
 // (groupId, instanceIdx) instance, then sets it as the active clipboard and
@@ -34,7 +35,7 @@ function copyInstanceToClipboardAndPreview(lines: LyricLine[], groupId: string, 
       const piece = pieceOf(trackPieces(line, "main"), word);
       entries.push({ word: { ...word }, lineOffset, trackType: "word", ...(piece && { piece }) });
     }
-    for (const word of drawnSyllables(line, "bg")) {
+    for (const word of drawnSyllables(line, "bg", getSplitCharacter())) {
       const piece = pieceOf(trackPieces(line, "bg"), word);
       entries.push({ word: { ...word }, lineOffset, trackType: "bg", ...(piece && { piece }) });
     }

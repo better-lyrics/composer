@@ -14,6 +14,7 @@ import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const tide = createWord({ text: "tide ", begin: 4, end: 4.5 });
 const tideAddress = addressOf({ id: "l1" }, "word", tide);
@@ -56,10 +57,10 @@ describe("word structure commands", () => {
     useProjectStore
       .getState()
       .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l2", text: "Old", begin: 3, end: 5 })]));
-    const [block] = drawnSyllables(useProjectStore.getState().lines[0], "main");
+    const [block] = drawnSyllables(useProjectStore.getState().lines[0], "main", DEFAULT_SPLIT_CHARACTER);
     useProjectStore.getState().commit(typeWordText(addressOf({ id: "l2" }, "word", block), "New words"));
     const [line] = useProjectStore.getState().lines;
-    expect(lineText(line)).toBe("New words");
+    expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("New words");
     expect(isLineSynced(line)).toBe(true);
     expect(mainBounds(line)).toEqual({ begin: 3, end: 5 });
   });
@@ -67,21 +68,23 @@ describe("word structure commands", () => {
   it("regression: renaming the block of a line-synced background updates its text and keeps the span", () => {
     const line = withSeededBackground(
       createLine({ id: "l3", text: "Low", begin: 2, end: 6, backgroundText: "far away" }),
+      DEFAULT_SPLIT_CHARACTER,
     );
     useProjectStore.setState({ lines: [line] });
-    const [block] = drawnSyllables(line, "bg");
+    const [block] = drawnSyllables(line, "bg", DEFAULT_SPLIT_CHARACTER);
     useProjectStore.getState().commit(typeWordText(addressOf(line, "bg", block), "so near"));
     const [renamed] = useProjectStore.getState().lines;
-    expect(backgroundText(renamed)).toBe("so near");
+    expect(backgroundText(renamed, DEFAULT_SPLIT_CHARACTER)).toBe("so near");
     expect(backgroundTrack(renamed)).toMatchObject({ begin: 4, end: 6, source: "manual" });
   });
 
   it("regression: deleting the block of a line-synced background deletes it, as deleting all its words does", () => {
     const line = withSeededBackground(
       createLine({ id: "l4", text: "Low", begin: 2, end: 6, backgroundText: "far away" }),
+      DEFAULT_SPLIT_CHARACTER,
     );
     useProjectStore.setState({ lines: [line] });
-    const [block] = drawnSyllables(line, "bg");
+    const [block] = drawnSyllables(line, "bg", DEFAULT_SPLIT_CHARACTER);
     useProjectStore.getState().commit(deleteWords([addressOf(line, "bg", block)]));
     expect(backgroundTrack(useProjectStore.getState().lines[0])).toBeUndefined();
   });

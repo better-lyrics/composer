@@ -6,6 +6,7 @@ import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 import { decidePasteInstanceAction } from "./decide-paste-instance-action";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const template: LineTemplate[] = [
   {
@@ -26,7 +27,7 @@ const template: LineTemplate[] = [
 
 describe("decidePasteInstanceAction · invariants both paste flows must respect", () => {
   it("returns no-target when dropped in midair (negative hoveredLineIndex)", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "1", text: "x", agentId: "v1" })];
+    const lines: LyricLine[] = [lineFromFields({ id: "1", text: "x", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)];
     const result = decidePasteInstanceAction({
       lines,
       groupId: "g1",
@@ -39,14 +40,17 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
 
   it("fills in place when destination has N consecutive empty rows", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "intro",
-        text: "intro",
-        agentId: "v1",
-        words: [{ id: "w1", text: "intro", sep: "", begin: 0, end: 5, joinsNext: false }],
-      }),
-      lineFromFields({ id: "empty1", text: "chorus a", agentId: "v1" }),
-      lineFromFields({ id: "empty2", text: "chorus b", agentId: "v1" }),
+      lineFromFields(
+        {
+          id: "intro",
+          text: "intro",
+          agentId: "v1",
+          words: [{ id: "w1", text: "intro", sep: "", begin: 0, end: 5, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "empty1", text: "chorus a", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "empty2", text: "chorus b", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const result = decidePasteInstanceAction({
       lines,
@@ -64,13 +68,16 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
 
   it("requests confirmation to insert when destination row is occupied (no destructive default)", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "synced",
-        text: "chorus a",
-        agentId: "v1",
-        words: [{ id: "w2", text: "chorus a", sep: "", begin: 0, end: 1, joinsNext: false }],
-      }),
-      lineFromFields({ id: "empty", text: "chorus b", agentId: "v1" }),
+      lineFromFields(
+        {
+          id: "synced",
+          text: "chorus a",
+          agentId: "v1",
+          words: [{ id: "w2", text: "chorus a", sep: "", begin: 0, end: 1, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "empty", text: "chorus b", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const result = decidePasteInstanceAction({
       lines,
@@ -87,15 +94,18 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
 
   it("requests confirmation to insert when destination is partially empty (some rows already grouped)", () => {
     const lines: LyricLine[] = [
-      lineFromFields({ id: "empty", text: "chorus a", agentId: "v1" }),
-      lineFromFields({
-        id: "grouped",
-        text: "chorus b",
-        agentId: "v1",
-        groupId: "other",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-      }),
+      lineFromFields({ id: "empty", text: "chorus a", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields(
+        {
+          id: "grouped",
+          text: "chorus b",
+          agentId: "v1",
+          groupId: "other",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = decidePasteInstanceAction({
       lines,
@@ -108,7 +118,9 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
   });
 
   it("clamps negative cursorTime to 0 in the instanceStart it returns", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "x", text: "synced", agentId: "v1", begin: 0, end: 1 })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "x", text: "synced", agentId: "v1", begin: 0, end: 1 }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const result = decidePasteInstanceAction({
       lines,
       groupId: "g1",
@@ -122,7 +134,9 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
   });
 
   it("requests confirmation when destination range overflows the project", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "empty1", text: "chorus a", agentId: "v1" })];
+    const lines: LyricLine[] = [
+      lineFromFields({ id: "empty1", text: "chorus a", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const result = decidePasteInstanceAction({
       lines,
       groupId: "g1",

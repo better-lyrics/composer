@@ -12,6 +12,7 @@ import { LocationProbe } from "@/test/location-probe";
 import { linesOfRecord, seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -45,13 +46,13 @@ async function openEditTab(screen: Awaited<ReturnType<typeof renderApp>>): Promi
   const lyrics = screen.getByRole("textbox", { name: "Paste or type lyrics" });
   await lyrics.fill("Typed before the delay");
   await expect
-    .poll(() => useProjectStore.getState().lines.map((line) => lineText(line)))
+    .poll(() => useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter())))
     .toContain("Typed before the delay");
   return lyrics.element() as HTMLTextAreaElement;
 }
 
 async function storedLineTexts(): Promise<string[]> {
-  return linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line));
+  return linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line, getSplitCharacter()));
 }
 
 beforeEach(async () => {

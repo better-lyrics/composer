@@ -8,6 +8,7 @@ import type { TranslationLineResult, TransliterationLineResult } from "@/service
 import { type LegacyLine, legacyLanguages, legacyLine, legacyView, legacyWords } from "@/test/legacy-languages";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 function sourceLine(): LyricLine {
   return legacyLine({
@@ -108,7 +109,11 @@ describe("generated language updates", () => {
       text: "",
       backgroundText: "an nyeong",
       origin: "google",
-      sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
+      sourceFingerprint: languageSourceFingerprint(
+        DEFAULT_SPLIT_CHARACTER,
+        lineText(line, DEFAULT_SPLIT_CHARACTER),
+        backgroundText(line, DEFAULT_SPLIT_CHARACTER),
+      ),
     });
     expect(legacyWords(roleWords(line, "main"), updates.languages)?.[0]).not.toHaveProperty("transliteration");
     expect(legacyWords(roleWords(line, "bg"), updates.languages, "bg")?.[0].transliteration).toBe("an nyeong");

@@ -25,6 +25,7 @@ import {
   piecesOfLegacyWords,
 } from "@/test/legacy-languages";
 import { isStructurallyEqual } from "@/utils/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -50,7 +51,14 @@ function splitKeeping(line: LyricLine, type: WordTrack, index: number, replaceme
   return asLegacySplit(
     line,
     type,
-    splitWordsKeepingTransliteration(line, type, index, words, positionalPieces(words, pieces)),
+    splitWordsKeepingTransliteration(
+      line,
+      type,
+      index,
+      words,
+      DEFAULT_SPLIT_CHARACTER,
+      positionalPieces(words, pieces),
+    ),
   );
 }
 
@@ -141,7 +149,7 @@ describe("splitWordsKeepingTransliteration", () => {
 
     expect(result?.transliteration?.text).toBe("Uh  ildan eun  na");
     expect(result?.transliteration?.segments).toEqual([
-      { original: lineText(line), transliteration: "Uh  ildan eun  na" },
+      { original: lineText(line, DEFAULT_SPLIT_CHARACTER), transliteration: "Uh  ildan eun  na" },
     ]);
     expect(result?.transliteration?.origin).toBe("manual");
     expect(result?.words.map((word) => word.text + word.sep)).toEqual(["Uh ", "일", "단", "은 ", "나"]);
@@ -255,7 +263,10 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("drops the stale flag and keeps the rest of the track", () => {
-      const line = legacyLine({ ...fieldsOfLine(koreanLine()), transliteration: { ...track, stale: true } });
+      const line = legacyLine({
+        ...fieldsOfLine(koreanLine(), DEFAULT_SPLIT_CHARACTER),
+        transliteration: { ...track, stale: true },
+      });
       const result = splitKeeping(line, "word", 1, ILDAN_SPLIT);
       expect(result?.transliteration).not.toHaveProperty("stale");
       expect(result?.transliteration?.language).toBe("ko-Latn");
@@ -346,9 +357,12 @@ describe("splitWordsKeepingTransliteration", () => {
         transliteration: { ...track, text: "ildan eun  na" },
       });
 
-      expect(legacyWords(drawnSyllables(line, "main"), drawnLanguages(line))?.[0].transliteration).toBe(
-        "ildan eun  na",
-      );
+      expect(
+        legacyWords(
+          drawnSyllables(line, "main", DEFAULT_SPLIT_CHARACTER),
+          drawnLanguages(line, DEFAULT_SPLIT_CHARACTER),
+        )?.[0].transliteration,
+      ).toBe("ildan eun  na");
 
       const result = splitKeeping(line, "word", 0, [
         {
@@ -378,7 +392,7 @@ describe("splitWordsKeepingTransliteration", () => {
 
     it("splits the background track and writes backgroundText", () => {
       const line: LyricLine = legacyLine({
-        ...fieldsOfLine(koreanLine()),
+        ...fieldsOfLine(koreanLine(), DEFAULT_SPLIT_CHARACTER),
         backgroundText: "그래 yeah",
         backgroundWords: [
           { id: "w28", text: "그래", sep: " ", begin: 2, end: 2.5, joinsNext: false },
@@ -459,19 +473,28 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
   ];
 
   it("re-stamps the track against the split text", () => {
-    const result = splitIntoWordsKeeping(line(languageSourceFingerprint("хорошо")), "word", 0, pieces)?.transliteration;
+    const result = splitIntoWordsKeeping(
+      line(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "хорошо")),
+      "word",
+      0,
+      pieces,
+    )?.transliteration;
 
     expect(result?.text).toBe("khorosho");
     expect(result?.segments).toEqual([{ original: "хор ошо", transliteration: "khorosho" }]);
-    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "хор ошо"));
   });
 
   it("re-stamps the track of a line-timed line, whose words are derived", () => {
-    const lineTimed = withFields(line(languageSourceFingerprint("хорошо")), { words: undefined, begin: 0, end: 1 });
+    const lineTimed = withFields(line(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "хорошо")), {
+      words: undefined,
+      begin: 0,
+      end: 1,
+    });
     const result = splitIntoWordsKeeping(lineTimed, "word", 0, pieces)?.transliteration;
 
     expect(result?.text).toBe("khorosho");
-    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "хор ошо"));
   });
 
   it("keeps the other words' transliteration when one word of a line is split", () => {
@@ -488,7 +511,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
         text: "da  khorosho",
         segments: [],
         origin: "manual",
-        sourceFingerprint: languageSourceFingerprint("да хорошо"),
+        sourceFingerprint: languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "да хорошо"),
       },
     });
     const result = splitIntoWordsKeeping(multiWord, "word", 1, [
@@ -506,11 +529,11 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
     ])?.transliteration;
 
     expect(result?.text).toBe("da  khorosho");
-    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("да хор ошо"));
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "да хор ошо"));
   });
 
   it("keeps the track's origin", () => {
-    const google = line(languageSourceFingerprint("хорошо"));
+    const google = line(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "хорошо"));
     const googleTrack = google.languages?.transliteration;
     if (googleTrack) googleTrack.origin = "google";
 
@@ -530,7 +553,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
         backgroundText: "privet",
         segments: [],
         origin: "manual",
-        sourceFingerprint: languageSourceFingerprint("everyday", "привет"),
+        sourceFingerprint: languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "everyday", "привет"),
       },
     });
     const result = splitIntoWordsKeeping(backgroundOnly, "word", 0, [
@@ -539,7 +562,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
     ])?.transliteration;
 
     expect(result).toMatchObject({ text: "", backgroundText: "privet", origin: "manual" });
-    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("every day", "привет"));
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "every day", "привет"));
   });
 
   it("rewrites the background side when a background word is split", () => {
@@ -557,14 +580,14 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
         backgroundText: "khorosho",
         segments: [],
         origin: "manual",
-        sourceFingerprint: languageSourceFingerprint("da", "хорошо"),
+        sourceFingerprint: languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "da", "хорошо"),
       },
     });
     const result = splitIntoWordsKeeping(background, "bg", 0, pieces)?.transliteration;
 
     expect(result).toMatchObject({ text: "da", backgroundText: "khorosho" });
     expect(result?.backgroundSegments).toEqual([{ original: "хор ошо", transliteration: "khorosho" }]);
-    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("da", "хор ошо"));
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "da", "хор ошо"));
   });
 
   it("keeps an already out-of-date track flagged for review", () => {

@@ -2,7 +2,6 @@ import { alternateBackgroundPlacement } from "@/domain/language/background-place
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText, syllableJoint } from "@/domain/line/text";
 import { mainTrack } from "insync/line-track";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -55,8 +54,8 @@ function rowWithToken(before: string, token: string, after: string, bracketed: b
 
 // The background goes where the export places it among the main words; an untimed one goes at the end.
 function computeShownRow(line: LyricLine, splitChar: string): ShownRow {
-  const main = lineText(line);
-  const background = backgroundText(line)?.trim();
+  const main = lineText(line, splitChar);
+  const background = backgroundText(line, splitChar)?.trim();
   if (!background) return { text: main, background: null };
   const bracketed = isBracketed(background);
   const token = bracketed ? background : `(${background})`;
@@ -67,7 +66,7 @@ function computeShownRow(line: LyricLine, splitChar: string): ShownRow {
   return rowWithToken(main.slice(0, offset).trimEnd(), token, main.slice(offset), bracketed);
 }
 
-function shownRow(line: LyricLine, splitChar = getSplitCharacter()): ShownRow {
+function shownRow(line: LyricLine, splitChar: string): ShownRow {
   const cached = rowByLine.get(line);
   if (cached?.splitChar === splitChar) return cached.row;
   const row = computeShownRow(line, splitChar);
@@ -80,8 +79,7 @@ function shiftedRange(range: BackgroundRange, by: number): BackgroundRange {
 }
 
 // The Edit text: one row per line, each showing its background track inline.
-function shownEditText(lines: readonly LyricLine[]): ShownEditText {
-  const splitChar = getSplitCharacter();
+function shownEditText(lines: readonly LyricLine[], splitChar: string): ShownEditText {
   const rows: string[] = [];
   const ranges: BackgroundRange[] = [];
   let offset = 0;

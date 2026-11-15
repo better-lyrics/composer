@@ -6,6 +6,7 @@ import { newWordId } from "@/domain/word/id";
 import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const metadata: ProjectMetadata = { title: "Languages", artists: [], album: "", duration: 10, language: "ja" };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
@@ -74,20 +75,25 @@ describe("TTML alternate-language sidecars", () => {
     line.transliteration!.segments = [];
     line.translations!.en.text = "";
 
-    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)] });
+    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)], splitChar: DEFAULT_SPLIT_CHARACTER });
 
     expect(ttml).toContain('<text for="L1"><span ttm:role="x-bg">Sky</span></text>');
     expect(ttml).not.toContain("stale");
     const parsedLine = parseLyricsFile("song.ttml", ttml).lines[0];
     const parsed = legacyView(parsedLine);
-    expect(lineText(parsedLine)).toBe("Hello");
+    expect(lineText(parsedLine, DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
     expect(parsed.translations?.en).toMatchObject({ text: "", backgroundText: "Sky" });
     expect(parsed.transliteration).toMatchObject({ text: "", backgroundText: "sora" });
     expect((parsed.backgroundWords ?? [])[0].transliteration).toBe("sora");
   });
 
   it("emits line keys, translations, timed transliterations, and untimed spaces", () => {
-    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(languageLine())] });
+    const ttml = generateTTML({
+      metadata,
+      agents,
+      lines: [legacyLine(languageLine())],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain('itunes:key="L1"');
     expect(ttml).toContain('<translation xml:lang="en" type="subtitle">');
     expect(ttml).toContain('<transliteration xml:lang="ja-Latn">');
@@ -102,7 +108,7 @@ describe("TTML alternate-language sidecars", () => {
       { id: "w4", text: "空", sep: "", begin: 0.5, end: 0.9, transliteration: "sora", joinsNext: false },
     ];
 
-    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)] });
+    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)], splitChar: DEFAULT_SPLIT_CHARACTER });
 
     expect(ttml).toContain('<text for="L1"><span ttm:role="x-bg">Sky </span>Today</text>');
     expect(ttml).toMatch(
@@ -124,7 +130,7 @@ describe("TTML alternate-language sidecars", () => {
     line.transliteration!.text = "kyou hi";
     line.transliteration!.segments = [{ original: "今 日", transliteration: "kyou hi" }];
 
-    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)] });
+    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)], splitChar: DEFAULT_SPLIT_CHARACTER });
 
     expect(ttml).toContain('<text for="L1">Right <span ttm:role="x-bg">Sky </span>now</text>');
     expect(ttml).toMatch(
@@ -137,7 +143,12 @@ describe("TTML alternate-language sidecars", () => {
   });
 
   it("round-trips main and background alternate text", () => {
-    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(languageLine())] });
+    const ttml = generateTTML({
+      metadata,
+      agents,
+      lines: [legacyLine(languageLine())],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     const parsedLine = parseLyricsFile("song.ttml", ttml).lines[0];
     const parsed = legacyView(parsedLine);
     expect(parsed.translations?.en.text).toBe("Today");
@@ -175,7 +186,7 @@ describe("TTML alternate-language sidecars", () => {
     ];
     line.transliteration!.text = "kyou hi  wa";
     line.transliteration!.segments = [{ original: "今日 は", transliteration: "kyou hi  wa" }];
-    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)] });
+    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)], splitChar: DEFAULT_SPLIT_CHARACTER });
     expect(ttml).toContain(">kyou</span> <span begin=");
     expect(ttml).toMatch(/>hi<\/span> {2}<span[^>]*>wa<\/span>/);
     expect(ttml).not.toMatch(/<span[^>]*>kyou hi<\/span>/);
@@ -202,7 +213,7 @@ describe("TTML alternate-language sidecars", () => {
     line.transliteration!.text = "kyouhi";
     line.transliteration!.segments = [{ original: "今日", transliteration: "kyouhi" }];
 
-    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)] });
+    const ttml = generateTTML({ metadata, agents, lines: [legacyLine(line)], splitChar: DEFAULT_SPLIT_CHARACTER });
     expect(ttml).toMatch(/>kyou<\/span><span[^>]*>hi<\/span>/);
     const parsedLine = parseLyricsFile("song.ttml", ttml).lines[0];
     const parsed = legacyView(parsedLine);
@@ -233,7 +244,7 @@ describe("TTML alternate-language sidecars", () => {
     const stored = legacyLine(line);
     const before = structuredClone(stored);
 
-    const ttml = generateTTML({ metadata, agents, lines: [stored] });
+    const ttml = generateTTML({ metadata, agents, lines: [stored], splitChar: DEFAULT_SPLIT_CHARACTER });
     expect(ttml).toContain(
       '<text for="L1"><span begin="0:01.000" end="0:01.500">to-</span><span begin="0:01.500" end="0:02.000">do</span>',
     );
@@ -267,7 +278,7 @@ describe("TTML alternate-language sidecars", () => {
     const stored = legacyLine(line);
     const before = structuredClone(stored);
 
-    const ttml = generateTTML({ metadata, agents, lines: [stored] });
+    const ttml = generateTTML({ metadata, agents, lines: [stored], splitChar: DEFAULT_SPLIT_CHARACTER });
     expect(ttml).toContain(
       `<span begin="0:01.250" end="0:01.500">sora${joiner.trimEnd()}</span>${joiner.slice(joiner.trimEnd().length)}<span begin="0:01.500" end="0:01.750">kaze</span>`,
     );
@@ -280,7 +291,7 @@ describe("TTML alternate-language sidecars", () => {
       { begin: 1.5, end: 1.75 },
     ]);
     // Re-exporting the imported, timed punctuation must not add or drop a dash.
-    const roundTrip = generateTTML({ metadata, agents, lines: [parsedLine] });
+    const roundTrip = generateTTML({ metadata, agents, lines: [parsedLine], splitChar: DEFAULT_SPLIT_CHARACTER });
     expect(legacyView(parseLyricsFile("song.ttml", roundTrip).lines[0]).transliteration?.backgroundText).toBe(
       `sora${joiner}kaze`,
     );
@@ -298,6 +309,7 @@ describe("TTML alternate-language sidecars", () => {
       metadata,
       agents,
       lines: [legacyLine(line)],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     const parsedLine = parseLyricsFile("song.ttml", ttml).lines[0];
@@ -318,6 +330,7 @@ describe("TTML alternate-language sidecars", () => {
       metadata,
       agents,
       lines: [legacyLine(line)],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     const parsedLine = parseLyricsFile("song.ttml", ttml).lines[0];

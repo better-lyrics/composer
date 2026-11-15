@@ -32,13 +32,21 @@ function keepsTimedMain(before: LyricLine, after: LyricLine): boolean {
 }
 
 // An instance is replaced only when timing it already had changes; filling its untimed slots is sync progress.
-function replacedInstances(before: readonly LyricLine[], after: readonly LyricLine[]): ReplacedInstance[] {
+function replacedInstances(
+  before: readonly LyricLine[],
+  after: readonly LyricLine[],
+  splitChar: string,
+): ReplacedInstance[] {
   const afterById = new Map(after.map((line) => [line.id, line]));
   const replaced = new Map<string, ReplacedInstance>();
   for (const line of before) {
     const next = afterById.get(line.id);
     if (!next || next === line || !isLinked(next)) continue;
-    if (keepsTimedMain(line, next) && keepsTimedWords(drawnSyllables(line, "bg"), drawnSyllables(next, "bg"))) continue;
+    if (
+      keepsTimedMain(line, next) &&
+      keepsTimedWords(drawnSyllables(line, "bg", splitChar), drawnSyllables(next, "bg", splitChar))
+    )
+      continue;
     replaced.set(instanceKey(next.groupId, next.instanceIdx), { groupId: next.groupId, instanceIdx: next.instanceIdx });
   }
   return [...replaced.values()];

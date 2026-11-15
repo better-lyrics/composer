@@ -4,8 +4,9 @@ import { backgroundText, lineText } from "@/domain/line/text";
 import type { LineIssue } from "@/domain/unison/submit-checks";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 import { revealLineInTimeline } from "@/views/timeline/line-reveal-request";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -43,12 +44,14 @@ function issueLabel(issue: LineIssue): string {
 
 function issueText(line: LyricLine | undefined, issue: LineIssue): string {
   if (!line) return "";
-  return issue.track === "main" ? lineText(line) : (backgroundText(line) ?? "");
+  return issue.track === "main"
+    ? lineText(line, getSplitCharacter())
+    : (backgroundText(line, getSplitCharacter()) ?? "");
 }
 
 // Neighbouring problem words share one mark, so the underline runs across the space between them.
 function lyricSegments(text: string, problemSlots: readonly number[]): LyricSegment[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text, getSplitCharacter());
   const problems = new Set(problemSlots);
   const segments: LyricSegment[] = [];
   let offset = 0;

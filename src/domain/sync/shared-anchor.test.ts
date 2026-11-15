@@ -3,6 +3,7 @@ import { placeSharedInstance } from "@/domain/group/shared-placement";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -34,7 +35,7 @@ const song = (secondBegin?: number) => [
 
 describe("sharedAnchorAt", () => {
   it("finds the first word of a later shared instance", () => {
-    expect(sharedAnchorAt(song(), sharing, { lineIndex: 3, wordIndex: 0 })).toEqual({
+    expect(sharedAnchorAt(song(), sharing, { lineIndex: 3, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)).toEqual({
       groupId: "g1",
       instanceIdx: 1,
       resumeLineIndex: 5,
@@ -42,63 +43,75 @@ describe("sharedAnchorAt", () => {
   });
 
   it("finds an instance that is already placed, so one tap moves it", () => {
-    expect(sharedAnchorAt(song(40), sharing, { lineIndex: 3, wordIndex: 0 })?.instanceIdx).toBe(1);
+    expect(
+      sharedAnchorAt(song(40), sharing, { lineIndex: 3, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)?.instanceIdx,
+    ).toBe(1);
   });
 
   it("finds an unplaced first instance when a later one holds the timing", () => {
     const lines = [chorus(0, 0), chorus(0, 1), verse("v1"), chorus(1, 0, 40), chorus(1, 1, 41)];
-    expect(sharedAnchorAt(lines, sharing, { lineIndex: 0, wordIndex: 0 })?.resumeLineIndex).toBe(2);
+    expect(
+      sharedAnchorAt(lines, sharing, { lineIndex: 0, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)?.resumeLineIndex,
+    ).toBe(2);
   });
 
   describe("edge cases", () => {
     it("is null past the first word", () => {
-      expect(sharedAnchorAt(song(), sharing, { lineIndex: 3, wordIndex: 1 })).toBeNull();
+      expect(sharedAnchorAt(song(), sharing, { lineIndex: 3, wordIndex: 1 }, DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("is null on a later line of the instance", () => {
-      expect(sharedAnchorAt(song(), sharing, { lineIndex: 4, wordIndex: 0 })).toBeNull();
+      expect(sharedAnchorAt(song(), sharing, { lineIndex: 4, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("is null on a line outside any group", () => {
-      expect(sharedAnchorAt(song(), sharing, { lineIndex: 2, wordIndex: 0 })).toBeNull();
+      expect(sharedAnchorAt(song(), sharing, { lineIndex: 2, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("is null for an old group", () => {
-      expect(sharedAnchorAt(song(), [createGroup({ id: "g1" })], { lineIndex: 3, wordIndex: 0 })).toBeNull();
+      expect(
+        sharedAnchorAt(song(), [createGroup({ id: "g1" })], { lineIndex: 3, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER),
+      ).toBeNull();
     });
 
     it("is null for an own-timing instance", () => {
       const groups = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })];
-      expect(sharedAnchorAt(song(), groups, { lineIndex: 3, wordIndex: 0 })).toBeNull();
+      expect(sharedAnchorAt(song(), groups, { lineIndex: 3, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("is null when no other shared instance is fully timed", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1), chorus(1, 0), chorus(1, 1)];
-      expect(sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 })).toBeNull();
+      expect(sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("is null for the first instance in the song once it has timing", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1), chorus(1, 0, 40), chorus(1, 1, 41)];
-      expect(sharedAnchorAt(lines, sharing, { lineIndex: 0, wordIndex: 0 })).toBeNull();
+      expect(sharedAnchorAt(lines, sharing, { lineIndex: 0, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("is null past the end of the song", () => {
-      expect(sharedAnchorAt(song(), sharing, { lineIndex: 6, wordIndex: 0 })).toBeNull();
+      expect(sharedAnchorAt(song(), sharing, { lineIndex: 6, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("gives the song length when the instance ends the song", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0)];
-      expect(sharedAnchorAt(lines, sharing, { lineIndex: 1, wordIndex: 0 })?.resumeLineIndex).toBe(2);
+      expect(
+        sharedAnchorAt(lines, sharing, { lineIndex: 1, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)?.resumeLineIndex,
+      ).toBe(2);
     });
 
     it("resumes at a detached line inside the instance", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 11), chorus(1, 0), { ...chorus(1, 1), detached: true }];
-      expect(sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 })?.resumeLineIndex).toBe(3);
+      expect(
+        sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)?.resumeLineIndex,
+      ).toBe(3);
     });
 
     it("skips blank lines inside the instance when finding its first line", () => {
       const lines = [chorus(0, 0, 10), withFields(chorus(1, 0), { text: "" }), chorus(1, 1)];
-      expect(sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 })?.instanceIdx).toBe(1);
+      expect(sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER)?.instanceIdx).toBe(
+        1,
+      );
     });
   });
 
@@ -107,9 +120,11 @@ describe("sharedAnchorAt", () => {
       const songs = [song(), song(30), [chorus(0, 0), chorus(0, 1), chorus(1, 0, 30), chorus(1, 1, 31)]];
       for (const lines of songs) {
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-          const anchor = sharedAnchorAt(lines, sharing, { lineIndex, wordIndex: 0 });
+          const anchor = sharedAnchorAt(lines, sharing, { lineIndex, wordIndex: 0 }, DEFAULT_SPLIT_CHARACTER);
           if (!anchor) continue;
-          expect(placeSharedInstance(lines, sharing, anchor.groupId, anchor.instanceIdx, 50)).not.toEqual([]);
+          expect(
+            placeSharedInstance(lines, sharing, anchor.groupId, anchor.instanceIdx, 50, DEFAULT_SPLIT_CHARACTER),
+          ).not.toEqual([]);
         }
       }
     });

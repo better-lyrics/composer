@@ -29,6 +29,7 @@ import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useSharedTimingMenuActions } from "@/views/timeline/use-shared-timing-menu-actions";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { WordEditMenuItems } from "@/views/timeline/word-edit-menu-items";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Grouping section ---------------------------------------------------------
 
@@ -133,7 +134,7 @@ function PlaybackMenuItems({
   select?: () => void;
   clearContextMenu: () => void;
 }) {
-  if (!selectionBounds(lines, selections)) return null;
+  if (!selectionBounds(lines, selections, getSplitCharacter())) return null;
   const selectAndRun = (start: () => boolean) => {
     select?.();
     start();
@@ -289,7 +290,7 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
   );
   const { lineId, lineIndex } = target;
   const line = targets.lines.find((candidate) => candidate.id === lineId);
-  const lineSelections = line ? lineWordSelections(line) : [];
+  const lineSelections = line ? lineWordSelections(line, getSplitCharacter()) : [];
 
   return (
     <>

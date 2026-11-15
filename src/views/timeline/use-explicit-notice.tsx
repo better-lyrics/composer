@@ -7,6 +7,7 @@ import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
 import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
 import { getExplicitSnippet } from "@/utils/explicit-snippet";
 import { pluralize } from "@/utils/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const INLINE_WORD_MAX = 32;
 const MODAL_LINE_MAX = 80;
@@ -36,7 +37,11 @@ function useExplicitNotice(): NoticeKind | null {
     singleAction: only && { label: "Mark explicit", icon: IconAlertTriangle, run: () => markOne(only) },
     rows: visible.map((suggestion) => {
       const line = lineMap.get(suggestion.lineId);
-      const source = line ? ((suggestion.field === "words" ? lineText(line) : backgroundText(line)) ?? "") : "";
+      const source = line
+        ? ((suggestion.field === "words"
+            ? lineText(line, getSplitCharacter())
+            : backgroundText(line, getSplitCharacter())) ?? "")
+        : "";
       return {
         key: suggestion.fingerprint,
         fingerprints: [suggestion.fingerprint],

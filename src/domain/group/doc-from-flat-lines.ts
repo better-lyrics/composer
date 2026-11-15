@@ -85,22 +85,26 @@ function readBody(lines: readonly LyricLine[]): BodyRead {
 
 const attachedLines = (run: InstanceRun) => run.lines.filter((line) => !line.detached);
 
-function isFullyTimed(run: InstanceRun): boolean {
-  const syncable = attachedLines(run).filter(isSyncableLine);
-  return syncable.length > 0 && syncable.every(isLineFullyTimed);
+function isFullyTimed(run: InstanceRun, splitChar: string): boolean {
+  const syncable = attachedLines(run).filter((value) => isSyncableLine(value, splitChar));
+  return syncable.length > 0 && syncable.every((value) => isLineFullyTimed(value, splitChar));
 }
 
 // The instance the template is read from: the first fully timed one, preferring word timing so none is dropped.
-function templateRun(runs: readonly InstanceRun[], preferredIdx?: number): InstanceRun {
+function templateRun(runs: readonly InstanceRun[], splitChar: string, preferredIdx?: number): InstanceRun {
   const preferred = runs.find((run) => run.idx === preferredIdx);
   if (preferred) return preferred;
-  const fullyTimed = runs.filter(isFullyTimed);
-  const wordSynced = fullyTimed.find((run) => attachedLines(run).filter(isSyncableLine).every(isWordSynced));
+  const fullyTimed = runs.filter((value) => isFullyTimed(value, splitChar));
+  const wordSynced = fullyTimed.find((run) =>
+    attachedLines(run)
+      .filter((value) => isSyncableLine(value, splitChar))
+      .every(isWordSynced),
+  );
   return wordSynced ?? fullyTimed[0] ?? runs[0];
 }
 
-function templateFromRuns(runs: readonly InstanceRun[], preferredIdx?: number): TemplateLine[] {
-  const ordered = [templateRun(runs, preferredIdx), ...runs];
+function templateFromRuns(runs: readonly InstanceRun[], splitChar: string, preferredIdx?: number): TemplateLine[] {
+  const ordered = [templateRun(runs, splitChar, preferredIdx), ...runs];
   const bySlot = new Map<number, TemplateLine>();
   for (const run of ordered) {
     const at = instanceBounds(attachedLines(run))?.begin;
@@ -141,12 +145,12 @@ function isStale(template: readonly TemplateLine[], instances: readonly Instance
   return [...attached].some(unfollowed) || template.some((line) => unfollowed(line.slot));
 }
 
-function readGroup(runs: readonly InstanceRun[], hint: GroupHint = {}): GroupRead {
+function readGroup(runs: readonly InstanceRun[], splitChar: string, hint: GroupHint = {}): GroupRead {
   if (hint.template) {
     const instances = readRuns(runs, hint.template, hint);
     if (!isStale(hint.template, instances)) return { template: hint.template, instances };
   }
-  const template = templateFromRuns(runs, hint.preferredIdx);
+  const template = templateFromRuns(runs, splitChar, hint.preferredIdx);
   return { template, instances: readRuns(runs, template, hint) };
 }
 
@@ -159,6 +163,7 @@ function docFromBody(
   reread: (groupId: string) => boolean,
   previous: LyricDoc | null,
   hints: ReadonlyMap<string, GroupHint>,
+  splitChar: string,
 ): LyricDoc {
   const instances: Record<string, Instance> = {};
   const templates: Record<string, readonly TemplateLine[]> = {};
@@ -172,7 +177,7 @@ function docFromBody(
       }
       continue;
     }
-    const read = readGroup(runs, hints.get(groupId));
+    const read = readGroup(runs, splitChar, hints.get(groupId));
     templates[groupId] = read.template;
     runs.forEach((run, order) => {
       instances[instanceKey(groupId, run.idx)] = read.instances[order];
@@ -183,8 +188,12 @@ function docFromBody(
 
 // The one reader of flat lines into a doc: loads, imports and lines written without their doc. The doc flattens back
 // to these lines, to the millisecond, and is kept with these very lines.
-function docFromFlatLines(lines: LyricLine[], hints: ReadonlyMap<string, GroupHint> = new Map()): LyricDoc {
-  return docFromBody(readBody(lines), lines, () => true, null, hints);
+function docFromFlatLines(
+  lines: LyricLine[],
+  splitChar: string,
+  hints: ReadonlyMap<string, GroupHint> = new Map(),
+): LyricDoc {
+  return docFromBody(readBody(lines), lines, () => true, null, hints, splitChar);
 }
 
 // The doc of new lines that keeps the instances and templates of every group whose lines did not change.
@@ -193,8 +202,9 @@ function docAfterLines(
   lines: LyricLine[],
   changedGroups: ReadonlySet<string>,
   hints: ReadonlyMap<string, GroupHint>,
+  splitChar: string,
 ): LyricDoc {
-  return docFromBody(readBody(lines), lines, (groupId) => changedGroups.has(groupId), previous, hints);
+  return docFromBody(readBody(lines), lines, (groupId) => changedGroups.has(groupId), previous, hints, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

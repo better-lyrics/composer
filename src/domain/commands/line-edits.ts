@@ -79,7 +79,10 @@ function insertEmptyLine({
     run: (root, ctx) => {
       const anchorIndex = root.lines.findIndex((line) => line.id === anchorLineId);
       if (anchorIndex === -1) return refused({ reason: "line-gone", lineId: anchorLineId });
-      const newLine = lineFromFields({ id: ctx.newId(), text: "", agentId: root.agents?.[0]?.id ?? "v1" });
+      const newLine = lineFromFields(
+        { id: ctx.newId(), text: "", agentId: root.agents?.[0]?.id ?? "v1" },
+        ctx.splitChar,
+      );
       const lines = root.lines.toSpliced(position === "above" ? anchorIndex : anchorIndex + 1, 0, newLine);
       return applied({ ...root, lines }, [newLine.id]);
     },

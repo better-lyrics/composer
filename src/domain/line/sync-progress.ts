@@ -4,8 +4,7 @@ import { hasMainLyrics, isLineSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { getSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 
 // -- Types --------------------------------------------------------------------
 
@@ -41,7 +40,7 @@ interface SlotRange {
 type TrackGap = Omit<SyncGap, "lineIndex">;
 
 interface LineSyncFacts {
-  splitCharacter: string;
+  splitChar: string;
   syncable: boolean;
   timed: boolean;
   slots: number;
@@ -53,34 +52,34 @@ interface LineSyncFacts {
 
 // -- Gaps ---------------------------------------------------------------------
 
-function lettersOf(text: string, splitCharacter: string): string {
-  return [...text].filter((char) => char.trim() !== "" && char !== splitCharacter).join("");
+function lettersOf(text: string, splitChar: string): string {
+  return [...text].filter((char) => char.trim() !== "" && char !== splitChar).join("");
 }
 
 // A timed word spans several slots only when its letters are exactly those slots joined, so stale word text never merges slots.
-function slotsCoveredBy(parts: readonly string[], slot: number, timed: WordTiming, splitCharacter: string): number {
-  const letters = lettersOf(timed.text, splitCharacter);
+function slotsCoveredBy(parts: readonly string[], slot: number, timed: WordTiming, splitChar: string): number {
+  const letters = lettersOf(timed.text, splitChar);
   let joined = parts[slot];
   let end = slot + 1;
   while (joined.length < letters.length && end < parts.length && letters.startsWith(joined)) joined += parts[end++];
   return joined === letters ? end - slot : 1;
 }
 
-function slotRangesOf(parts: readonly string[], words: readonly WordTiming[], splitCharacter: string): SlotRange[] {
+function slotRangesOf(parts: readonly string[], words: readonly WordTiming[], splitChar: string): SlotRange[] {
   const ranges: SlotRange[] = [];
   let slot = 0;
   for (const timed of words) {
     if (slot >= parts.length) break;
-    const end = slot + slotsCoveredBy(parts, slot, timed, splitCharacter);
+    const end = slot + slotsCoveredBy(parts, slot, timed, splitChar);
     ranges.push({ start: slot, end });
     slot = end;
   }
   return ranges;
 }
 
-function problemSlotsOf(parts: readonly string[], words: readonly WordTiming[], splitCharacter: string): number[] {
+function problemSlotsOf(parts: readonly string[], words: readonly WordTiming[], splitChar: string): number[] {
   const problems: number[] = [];
-  const ranges = slotRangesOf(parts, words, splitCharacter);
+  const ranges = slotRangesOf(parts, words, splitChar);
   for (const { start, end } of ranges) {
     if (end - start > 1) for (let index = start; index < end; index++) problems.push(index);
   }
@@ -88,8 +87,8 @@ function problemSlotsOf(parts: readonly string[], words: readonly WordTiming[], 
   return problems;
 }
 
-function timedWordSlotRanges(text: string, words: readonly WordTiming[]): SlotRange[] {
-  return slotRangesOf(splitIntoWordsWithMeta(text).parts, words, getSplitCharacter());
+function timedWordSlotRanges(text: string, words: readonly WordTiming[], splitChar: string): SlotRange[] {
+  return slotRangesOf(splitIntoWordsWithMeta(text, splitChar).parts, words, splitChar);
 }
 
 function trackGap(
@@ -97,21 +96,21 @@ function trackGap(
   track: SyncGapTrack,
   parts: readonly string[],
   words: readonly WordTiming[],
-  splitCharacter: string,
+  splitChar: string,
 ): TrackGap | null {
   const slotCount = parts.length;
   if (words.length === 0) return { lineId, track, kind: "untimed", timedSlots: 0, slotCount, problemSlots: [] };
-  const problemSlots = problemSlotsOf(parts, words, splitCharacter);
+  const problemSlots = problemSlotsOf(parts, words, splitChar);
   if (problemSlots.length === 0) return null;
   return { lineId, track, kind: "partial", timedSlots: slotCount - problemSlots.length, slotCount, problemSlots };
 }
 
-function backgroundGap(line: LyricLine, splitCharacter: string): TrackGap | null {
-  const bgText = backgroundText(line) ?? "";
+function backgroundGap(line: LyricLine, splitChar: string): TrackGap | null {
+  const bgText = backgroundText(line, splitChar) ?? "";
   if (!bgText.trim()) return null;
-  const parts = splitIntoWordsWithMeta(bgText).parts;
+  const parts = splitIntoWordsWithMeta(bgText, splitChar).parts;
   const backgroundWords = timedSyllables(backgroundTrack(line));
-  if (!hasMainLyrics(line)) {
+  if (!hasMainLyrics(line, splitChar)) {
     return {
       lineId: line.id,
       track: "background",
@@ -123,12 +122,12 @@ function backgroundGap(line: LyricLine, splitCharacter: string): TrackGap | null
   }
   // A line-synced line times its background with the line itself.
   if (isLineSynced(line) && backgroundWords.length === 0) return null;
-  return trackGap(line.id, "background", parts, backgroundWords, splitCharacter);
+  return trackGap(line.id, "background", parts, backgroundWords, splitChar);
 }
 
-function mainGap(line: LyricLine, parts: readonly string[], splitCharacter: string): TrackGap | null {
-  if (!hasMainLyrics(line) || isLineSynced(line)) return null;
-  return trackGap(line.id, "main", parts, timedSyllables(mainTrack(line)), splitCharacter);
+function mainGap(line: LyricLine, parts: readonly string[], splitChar: string): TrackGap | null {
+  if (!hasMainLyrics(line, splitChar) || isLineSynced(line)) return null;
+  return trackGap(line.id, "main", parts, timedSyllables(mainTrack(line)), splitChar);
 }
 
 // -- Cache --------------------------------------------------------------------
@@ -136,19 +135,18 @@ function mainGap(line: LyricLine, parts: readonly string[], splitCharacter: stri
 // A tap replaces one line object, so every other line answers from here and a whole-song pass stays cheap.
 const factsByLine = new WeakMap<LyricLine, LineSyncFacts>();
 
-function lineSyncFacts(line: LyricLine): LineSyncFacts {
-  const splitCharacter = getSplitCharacter();
+function lineSyncFacts(line: LyricLine, splitChar: string): LineSyncFacts {
   const cached = factsByLine.get(line);
-  if (cached?.splitCharacter === splitCharacter) return cached;
-  const parts = splitIntoWordsWithMeta(lineText(line)).parts;
+  if (cached?.splitChar === splitChar) return cached;
+  const parts = splitIntoWordsWithMeta(lineText(line, splitChar), splitChar).parts;
   const slots = parts.length;
-  const main = mainGap(line, parts, splitCharacter);
-  const background = backgroundGap(line, splitCharacter);
+  const main = mainGap(line, parts, splitChar);
+  const background = backgroundGap(line, splitChar);
   const trackGaps = [main, background].filter((gap) => gap !== null);
   const lineSynced = isLineSynced(line);
   const facts: LineSyncFacts = {
-    splitCharacter,
-    syncable: hasMainLyrics(line),
+    splitChar,
+    syncable: hasMainLyrics(line, splitChar),
     timed: effectiveBounds(line) !== null,
     slots,
     timedWords: lineSynced ? slots : (main?.timedSlots ?? slots),
@@ -162,29 +160,29 @@ function lineSyncFacts(line: LyricLine): LineSyncFacts {
 
 // -- Predicates ---------------------------------------------------------------
 
-function isSyncableLine(line: LyricLine | undefined): line is LyricLine {
-  return !!line && lineSyncFacts(line).syncable;
+function isSyncableLine(line: LyricLine | undefined, splitChar: string): line is LyricLine {
+  return !!line && lineSyncFacts(line, splitChar).syncable;
 }
 
-function isLineTimed(line: LyricLine): boolean {
-  return lineSyncFacts(line).timed;
+function isLineTimed(line: LyricLine, splitChar: string): boolean {
+  return lineSyncFacts(line, splitChar).timed;
 }
 
-function wordSlotCount(line: LyricLine): number {
-  return lineSyncFacts(line).slots;
+function wordSlotCount(line: LyricLine, splitChar: string): number {
+  return lineSyncFacts(line, splitChar).slots;
 }
 
-function isLineFullyTimed(line: LyricLine): boolean {
-  return lineSyncFacts(line).fullyTimed;
+function isLineFullyTimed(line: LyricLine, splitChar: string): boolean {
+  return lineSyncFacts(line, splitChar).fullyTimed;
 }
 
 // -- Aggregates ---------------------------------------------------------------
 
-function syncProgress(lines: readonly LyricLine[], granularity: SyncGranularity): SyncProgress {
+function syncProgress(lines: readonly LyricLine[], granularity: SyncGranularity, splitChar: string): SyncProgress {
   let done = 0;
   let total = 0;
   for (const line of lines) {
-    const facts = lineSyncFacts(line);
+    const facts = lineSyncFacts(line, splitChar);
     if (!facts.syncable) continue;
     total += granularity === "line" ? 1 : facts.slots;
     if (granularity === "word") done += facts.timedWords;
@@ -193,18 +191,24 @@ function syncProgress(lines: readonly LyricLine[], granularity: SyncGranularity)
   return { done, total };
 }
 
-function fullySyncedLineCount(lines: readonly LyricLine[]): number {
+function fullySyncedLineCount(lines: readonly LyricLine[], splitChar: string): number {
   let count = 0;
-  for (const line of lines) if (isSyncableLine(line) && lineSyncFacts(line).trackGaps.length === 0) count += 1;
+  for (const line of lines)
+    if (isSyncableLine(line, splitChar) && lineSyncFacts(line, splitChar).trackGaps.length === 0) count += 1;
   return count;
 }
 
-function syncGaps(lines: readonly LyricLine[]): SyncGap[] {
-  return lines.flatMap((line, lineIndex) => lineSyncFacts(line).trackGaps.map((gap) => ({ ...gap, lineIndex })));
+function syncGaps(lines: readonly LyricLine[], splitChar: string): SyncGap[] {
+  return lines.flatMap((line, lineIndex) =>
+    lineSyncFacts(line, splitChar).trackGaps.map((gap) => ({ ...gap, lineIndex })),
+  );
 }
 
-function isProjectFullySynced(lines: readonly LyricLine[]): boolean {
-  return lines.some(isSyncableLine) && lines.every((line) => lineSyncFacts(line).trackGaps.length === 0);
+function isProjectFullySynced(lines: readonly LyricLine[], splitChar: string): boolean {
+  return (
+    lines.some((value) => isSyncableLine(value, splitChar)) &&
+    lines.every((line) => lineSyncFacts(line, splitChar).trackGaps.length === 0)
+  );
 }
 
 // -- Exports ------------------------------------------------------------------

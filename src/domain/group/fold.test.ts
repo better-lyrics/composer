@@ -9,6 +9,7 @@ import { withMainTrack, withTrackWords } from "@/domain/line/track-writes";
 import { EDITED_TTML_PROJECTS } from "@/test/edited-ttml-projects";
 import { createGroup, createLine } from "@/test/factories";
 import { song } from "@/test/shared-timing-sync";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const chorus = createGroup({ id: "chorus", sharesTiming: true });
 
@@ -26,7 +27,11 @@ const glowLine = (instanceIdx: number, begin: number, words = ["We", "glow", "to
     })),
   });
 
-const FOLD_DEFAULTS = { carriesTemplateEdits: true, songEnd: Number.POSITIVE_INFINITY } as const;
+const FOLD_DEFAULTS = {
+  carriesTemplateEdits: true,
+  songEnd: Number.POSITIVE_INFINITY,
+  splitChar: DEFAULT_SPLIT_CHARACTER,
+} as const;
 
 const instances = (doc: LyricDoc) => Object.values(doc.instances);
 
@@ -48,13 +53,13 @@ describe("foldLines", () => {
       song({ first: "word" }),
     ];
     for (const lines of projects) {
-      expect(flattenBody(structuredClone(docFromFlatLines(lines)))).toEqual(lines);
+      expect(flattenBody(structuredClone(docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER)))).toEqual(lines);
     }
   });
 
   it("a timing edit in one shared instance moves the same syllable in every shared instance", () => {
     const lines = [glowLine(0, 10), glowLine(1, 40), glowLine(2, 70)];
-    const doc = docFromFlatLines(lines);
+    const doc = docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER);
     const after = lines.with(1, nudged(lines[1], 1, 0.125));
     const folded = foldLines({
       doc,
@@ -63,6 +68,7 @@ describe("foldLines", () => {
       groups: [chorus],
       copiesSharedTiming: true,
       ...FOLD_DEFAULTS,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(folded.lines.map(glowBegin)).toEqual([10.625, 40.625, 70.625]);
     expect(folded.copiedGroupIds).toEqual(["chorus"]);
@@ -75,19 +81,20 @@ describe("foldLines", () => {
     const group = createGroup({ id: "chorus", sharesTiming: true, ownTimingInstances: [1] });
     const after = lines.with(0, nudged(lines[0], 1, 0.25));
     const folded = foldLines({
-      doc: docFromFlatLines(lines),
+      doc: docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER),
       after,
       touched: ["glow-0"],
       groups: [group],
       copiesSharedTiming: true,
       ...FOLD_DEFAULTS,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(folded.lines[1]).toBe(lines[1]);
   });
 
   it("a structure that the template cannot hold falls back to a replaced line", () => {
     const lines = [glowLine(0, 10), glowLine(1, 40, ["We", "glow"])];
-    const second = instances(docFromFlatLines(lines))[1] as Instance;
+    const second = instances(docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER))[1] as Instance;
     expect(second.replaced?.[0]).toBe(lines[1]);
   });
 
@@ -95,12 +102,13 @@ describe("foldLines", () => {
     const lines = [glowLine(0, 10), glowLine(1, 0.25)];
     const after = lines.with(0, nudged(lines[0], 0, -0.5));
     const folded = foldLines({
-      doc: docFromFlatLines(lines),
+      doc: docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER),
       after,
       touched: ["glow-0"],
       groups: [chorus],
       copiesSharedTiming: true,
       ...FOLD_DEFAULTS,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(folded.lines.map((line) => timedSyllables(mainTrack(line))[0].begin)).toEqual([9.5, 0]);
   });
@@ -109,13 +117,14 @@ describe("foldLines", () => {
     const lines = [glowLine(0, 10), glowLine(1, 40), glowLine(2, 70)];
     const after = lines.with(0, nudged(lines[0], 2, 0.25));
     const folded = foldLines({
-      doc: docFromFlatLines(lines),
+      doc: docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER),
       after,
       touched: ["glow-0"],
       groups: [chorus],
       copiesSharedTiming: true,
       carriesTemplateEdits: true,
       songEnd: 71.6,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     const begins = (index: number) => folded.lines.map((line) => timedSyllables(mainTrack(line))[index].begin);
     begins(2).forEach((begin, index) => expect(begin).toBeCloseTo([11.25, 41.25, 71.1][index], 9));
@@ -130,12 +139,13 @@ describe("foldLines", () => {
     };
     const after = lines.with(0, renamed(lines[0], "shine")).with(2, renamed(lines[2], "burn"));
     const folded = foldLines({
-      doc: docFromFlatLines(lines),
+      doc: docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER),
       after,
       touched: ["glow-0", "glow-2"],
       groups: [chorus],
       copiesSharedTiming: true,
       ...FOLD_DEFAULTS,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(folded.lines.map((line) => timedSyllables(mainTrack(line))[1].text)).toEqual(["shine", "shine", "burn"]);
     expect(flattenBody(structuredClone(folded.doc))).toEqual(folded.lines);
@@ -163,12 +173,13 @@ describe("foldLines", () => {
     ];
     const inserted = lines.toSpliced(4, 0, createLine({ id: "between", text: "Drifting slow" }));
     const afterInsert = foldLines({
-      doc: docFromFlatLines(lines),
+      doc: docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER),
       after: inserted,
       touched: ["between"],
       groups: [chorus],
       copiesSharedTiming: false,
       ...FOLD_DEFAULTS,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     const nudgedLines = afterInsert.lines.with(1, nudged(afterInsert.lines[1], 1, 0.25));
     const folded = foldLines({
@@ -178,6 +189,7 @@ describe("foldLines", () => {
       groups: [chorus],
       copiesSharedTiming: true,
       ...FOLD_DEFAULTS,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(glowBegin(folded.lines[5])).toBe(42.75);
     expect(flattenBody(structuredClone(folded.doc))).toEqual(folded.lines);
@@ -186,16 +198,16 @@ describe("foldLines", () => {
   it("an instance within a millisecond of its template at its anchor reads as placed", () => {
     const oneMsLate = nudged(glowLine(1, 40), 1, 0.001);
     const tooLate = nudged(glowLine(2, 70), 1, 0.002);
-    expect(instances(docFromFlatLines([glowLine(0, 10), oneMsLate, tooLate])).map((instance) => instance.at)).toEqual([
-      10,
-      40,
-      undefined,
-    ]);
+    expect(
+      instances(docFromFlatLines([glowLine(0, 10), oneMsLate, tooLate], DEFAULT_SPLIT_CHARACTER)).map(
+        (instance) => instance.at,
+      ),
+    ).toEqual([10, 40, undefined]);
   });
 
   it("a shared copy writes timing and readings only, keeping the copy's own syllables", () => {
     const lines = [glowLine(0, 10), glowLine(1, 40)];
-    const doc = docFromFlatLines(lines);
+    const doc = docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER);
     const split = (line: LyricLine, begin: number) =>
       createLine({
         id: line.id,
@@ -218,13 +230,14 @@ describe("foldLines", () => {
       groups: [chorus],
       copiesSharedTiming: true,
       ...FOLD_DEFAULTS,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(mainTrack(folded.lines[1]).syllables.map((syllable) => syllable.id)).toEqual(ownIds);
   });
 
   it("a line edit outside a group keeps that group's instances and template", () => {
     const lines = [glowLine(0, 10), createLine({ id: "verse", text: "Lanterns over water" }), glowLine(1, 40)];
-    const doc = docFromFlatLines(lines);
+    const doc = docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER);
     const edited = createLine({ id: "verse", text: "Lanterns over the water" });
     for (const after of [lines.with(1, edited), lines.toSpliced(1, 0, createLine({ id: "new", text: "Ash" }))]) {
       const folded = foldLines({
@@ -234,6 +247,7 @@ describe("foldLines", () => {
         groups: [chorus],
         copiesSharedTiming: false,
         ...FOLD_DEFAULTS,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
       expect(folded.doc.templates.chorus).toBe(doc.templates.chorus);
       expect(instances(folded.doc)).toEqual(instances(doc));

@@ -4,12 +4,13 @@ import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { buildLaneRows } from "@/views/sync/lane-rows";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const rowFor = (text: string) => {
   const line = createLine({ id: "l0", text });
   return buildLaneRows({
     lines: [line],
-    displayLines: [getLanguageDisplayLine(line, "original")],
+    displayLines: [getLanguageDisplayLine(line, "original", getSplitCharacter())],
     agents: [],
     groupTags: new Map(),
     folded: new Set(),
@@ -57,7 +58,7 @@ describe("buildLaneRows per-line reuse", () => {
     const splitCharacter = useSettingsStore.getState().splitCharacter;
     const cached = displays.get(line);
     if (cached?.splitCharacter === splitCharacter) return cached.display;
-    const display = getLanguageDisplayLine(line, "original");
+    const display = getLanguageDisplayLine(line, "original", getSplitCharacter());
     displays.set(line, { splitCharacter, display });
     return display;
   };

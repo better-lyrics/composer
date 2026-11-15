@@ -7,6 +7,7 @@ import { splitSyncWord } from "@/domain/commands/sync";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWords } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("sync split", () => {
   it("regression: a sync split keeps the untimed rest of the line", () => {
@@ -27,6 +28,6 @@ describe("sync split", () => {
     useProjectStore.getState().commit(splitSyncWord("l1", 1, split));
 
     const [after] = useProjectStore.getState().lines;
-    expect(lineText(after)).toBe("Paper lan|terns drifting over the water");
+    expect(lineText(after, DEFAULT_SPLIT_CHARACTER)).toBe("Paper lan|terns drifting over the water");
   });
 });

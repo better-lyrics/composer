@@ -5,18 +5,22 @@ import { alternateBackgroundPlacement } from "@/domain/language/background-place
 import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 function timedLine(backgroundBegin: number, mainWords: WordTiming[]): LyricLine {
-  return lineFromFields({
-    id: "line",
-    agentId: "v1",
-    text: "one two three",
-    words: mainWords,
-    backgroundText: "ooh",
-    backgroundWords: [
-      { id: newWordId(), text: "ooh", sep: "", begin: backgroundBegin, end: backgroundBegin + 0.4, joinsNext: false },
-    ],
-  });
+  return lineFromFields(
+    {
+      id: "line",
+      agentId: "v1",
+      text: "one two three",
+      words: mainWords,
+      backgroundText: "ooh",
+      backgroundWords: [
+        { id: newWordId(), text: "ooh", sep: "", begin: backgroundBegin, end: backgroundBegin + 0.4, joinsNext: false },
+      ],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 describe("alternateBackgroundPlacement", () => {

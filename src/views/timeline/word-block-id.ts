@@ -2,6 +2,7 @@ import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddress } from "@/domain/selection/resolve";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -11,7 +12,7 @@ function wordBlockId(lineId: string, type: WordTrack, wordIndex: number): string
 }
 
 function addressedBlockId(lines: readonly LyricLine[], address: SyllableAddress): string | null {
-  const resolved = resolveAddress(lines, address);
+  const resolved = resolveAddress(lines, address, getSplitCharacter());
   return resolved ? wordBlockId(resolved.lineId, resolved.type, resolved.wordIndex) : null;
 }
 

@@ -2,29 +2,32 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
 
 import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "@/domain/edit-text/edit-text";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
-const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" });
+const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
 
 describe("linesToEditText", () => {
   it("joins line texts with newlines", () => {
-    expect(linesToEditText([line("a", "One"), line("b", ""), line("c", "Two")])).toBe("One\n\nTwo");
+    expect(linesToEditText([line("a", "One"), line("b", ""), line("c", "Two")], DEFAULT_SPLIT_CHARACTER)).toBe(
+      "One\n\nTwo",
+    );
   });
 
   it("returns an empty string for no lines", () => {
-    expect(linesToEditText([])).toBe("");
+    expect(linesToEditText([], DEFAULT_SPLIT_CHARACTER)).toBe("");
   });
 });
 
 describe("editTextWithRewrittenRows", () => {
   it("keeps every typed row when nothing was rewritten", () => {
     const typedLines = [line("a", "One"), line("b", "Two")];
-    expect(editTextWithRewrittenRows("One  \nTwo", typedLines, typedLines)).toBe("One  \nTwo");
+    expect(editTextWithRewrittenRows("One  \nTwo", typedLines, typedLines, DEFAULT_SPLIT_CHARACTER)).toBe("One  \nTwo");
   });
 
   it("replaces only the rows another line rewrote", () => {
     const typedLines = [line("a", "Chorus x"), line("b", "Verse"), line("c", "Chorus")];
     const finalLines = [typedLines[0], typedLines[1], line("c", "Chorus x")];
-    expect(editTextWithRewrittenRows("Chorus x \nVerse\nChorus", typedLines, finalLines)).toBe(
+    expect(editTextWithRewrittenRows("Chorus x \nVerse\nChorus", typedLines, finalLines, DEFAULT_SPLIT_CHARACTER)).toBe(
       "Chorus x \nVerse\nChorus x",
     );
   });

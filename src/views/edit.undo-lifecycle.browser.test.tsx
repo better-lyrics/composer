@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -29,12 +30,12 @@ describe("editor undo run finalization lifecycle", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
 
     await expect.poll(() => useProjectStore.getState().canUndo(), { timeout: 2000 }).toBe(true);
 
     useProjectStore.getState().undo();
-    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello"]);
   });
@@ -45,13 +46,13 @@ describe("editor undo run finalization lifecycle", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello there");
-    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello there");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello there");
 
     await screen.unmount();
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
 
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello");
   });
 });

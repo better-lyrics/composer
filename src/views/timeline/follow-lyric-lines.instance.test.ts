@@ -7,6 +7,7 @@ import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const chorusLine = (instanceIdx: number, begin: number) =>
   createLine({
@@ -54,6 +55,6 @@ describe("selection after a template edit", () => {
 
     const { lines } = useProjectStore.getState();
     expect(useTimelineStore.getState().selectedWords).toEqual([tonight]);
-    expect(wordAt(lines, tonight)?.text).toBe("tonight");
+    expect(wordAt(lines, tonight, DEFAULT_SPLIT_CHARACTER)?.text).toBe("tonight");
   });
 });

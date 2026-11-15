@@ -6,7 +6,6 @@ import { trackText } from "@/domain/line/text";
 import { backgroundTrack, isExplicitBlock, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withTrackExplicit } from "@/domain/line/track-writes";
 import type { WordTiming } from "insync/word-timing";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -140,7 +139,7 @@ function backgroundTrackFromFields(fields: LineFields, splitChar: string): Backg
 // -- Functions ----------------------------------------------------------------
 
 // A line from flat fields: timed words first, then the untimed rest of the text. Words win over a line span.
-function lineFromFields(fields: LineFields, splitChar = getSplitCharacter()): LyricLine {
+function lineFromFields(fields: LineFields, splitChar: string): LyricLine {
   const main = mainTrackFromFields(fields, splitChar);
   const background = backgroundTrackFromFields(fields, splitChar);
   return {
@@ -152,19 +151,19 @@ function lineFromFields(fields: LineFields, splitChar = getSplitCharacter()): Ly
 }
 
 // The line spelled as flat fields again: the text read from the syllables, the timed ones as words.
-function fieldsOfLine(line: LyricLine): LineFields {
+function fieldsOfLine(line: LyricLine, splitChar: string): LineFields {
   const main = mainTrack(line);
   const background = backgroundTrack(line);
   const words = timedSyllables(main);
   const backgroundWords = timedSyllables(background);
   return {
     id: line.id,
-    text: trackText(main),
+    text: trackText(main, splitChar),
     agentId: main.agentId,
     ...(words.length > 0 && { words }),
     ...(isSpanTimed(main) && { begin: main.begin, end: main.end }),
     ...(background && {
-      backgroundText: trackText(background),
+      backgroundText: trackText(background, splitChar),
       ...(backgroundWords.length > 0 && { backgroundWords }),
       ...(background.source && { backgroundTextSource: background.source }),
       ...(isSpanTimed(background) && { backgroundBegin: background.begin, backgroundEnd: background.end }),

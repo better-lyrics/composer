@@ -204,19 +204,20 @@ interface SideSource {
   words: WordTiming[] | undefined;
 }
 
-function sideSource(line: LyricLine, side: LanguageSide): SideSource {
+function sideSource(line: LyricLine, side: LanguageSide, splitChar: string): SideSource {
   return side === "main"
-    ? { text: lineText(line), words: roleWords(line, "main") }
-    : { text: backgroundText(line) ?? "", words: roleWords(line, "bg") };
+    ? { text: lineText(line, splitChar), words: roleWords(line, "main") }
+    : { text: backgroundText(line, splitChar) ?? "", words: roleWords(line, "bg") };
 }
 
 function sidePlan(
   line: LyricLine,
   side: LanguageSide,
   track: BackgroundLanguage | undefined,
+  splitChar: string,
   status?: TransliterationAlignmentStatus,
 ): TransliterationAlignmentPlan | null {
-  const { text, words } = sideSource(line, side);
+  const { text, words } = sideSource(line, side, splitChar);
   if (!words?.length) return null;
   const pieces = trackPieces(line, side);
   return planTransliterationAlignment(words, pieces, timedPrefixText(text, words, track?.text ?? ""), status);
@@ -230,11 +231,11 @@ function withPlannedPieces(
   return plan ? withTrackPieces(language, side, plan.pieces) : language;
 }
 
-function withAlignedTransliteration(line: LyricLine): LyricLine {
+function withAlignedTransliteration(line: LyricLine, splitChar: string): LyricLine {
   const track = lineTransliteration(line);
   if (!track) return line;
-  const main = withPlannedPieces(track, "main", sidePlan(line, "main", track.main));
-  const aligned = withPlannedPieces(main, "bg", sidePlan(line, "bg", track.bg));
+  const main = withPlannedPieces(track, "main", sidePlan(line, "main", track.main, splitChar));
+  const aligned = withPlannedPieces(main, "bg", sidePlan(line, "bg", track.bg, splitChar));
   return aligned === track ? line : { ...line, ...withLanguages(line, { transliteration: aligned }) };
 }
 
@@ -249,10 +250,11 @@ function sidePlanKeepingReview(
   line: LyricLine,
   sideTrack: BackgroundLanguage | undefined,
   side: LanguageSide,
+  splitChar: string,
 ): TransliterationAlignmentPlan | null {
   const current = lineTransliteration(line)?.[side];
   const status = sideTrack?.alignmentStatus ?? (sameReading(current, sideTrack) ? current?.alignmentStatus : undefined);
-  return sidePlan(line, side, sideTrack, status);
+  return sidePlan(line, side, sideTrack, splitChar, status);
 }
 
 function alignedSide<T extends BackgroundLanguage>(
@@ -263,10 +265,10 @@ function alignedSide<T extends BackgroundLanguage>(
   return { ...withSidePieces(sideTrack, plan ? plan.pieces : sideTrack.pieces), alignmentStatus };
 }
 
-function alignTrackToLine(line: LyricLine, track: LineLanguage): Pick<LyricLine, "languages"> {
-  const mainPlan = sidePlanKeepingReview(line, track.main, "main");
+function alignTrackToLine(line: LyricLine, track: LineLanguage, splitChar: string): Pick<LyricLine, "languages"> {
+  const mainPlan = sidePlanKeepingReview(line, track.main, "main", splitChar);
   const main = alignedSide(track.main, mainPlan, mainPlan?.status ?? "inferred");
-  const bgPlan = sidePlanKeepingReview(line, track.bg, "bg");
+  const bgPlan = sidePlanKeepingReview(line, track.bg, "bg", splitChar);
   const bg = track.bg && alignedSide(track.bg, bgPlan, track.bg.text ? (bgPlan?.status ?? "inferred") : undefined);
   const { bg: _bg, ...rest } = track;
   const { languages } = withLanguages(line, { transliteration: { ...rest, main, ...(bg && { bg }) } });
@@ -274,9 +276,9 @@ function alignTrackToLine(line: LyricLine, track: LineLanguage): Pick<LyricLine,
   return { languages: bgPlan && !bg ? withPiecesOn(planned, "bg", bgPlan.pieces) : planned };
 }
 
-function withAlignedWords(line: LyricLine): LyricLine {
+function withAlignedWords(line: LyricLine, splitChar: string): LyricLine {
   const track = lineTransliteration(line);
-  return track ? { ...line, ...alignTrackToLine(line, track) } : line;
+  return track ? { ...line, ...alignTrackToLine(line, track, splitChar) } : line;
 }
 
 export {

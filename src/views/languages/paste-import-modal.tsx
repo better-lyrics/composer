@@ -21,6 +21,7 @@ import { Select } from "@/ui/select";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -70,7 +71,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     () =>
       alignPastedLanguageLines(
         pastedText,
-        lines.map((line) => lineText(line)),
+        lines.map((line) => lineText(line, getSplitCharacter())),
       ),
     [lines, pastedText],
   );
@@ -81,7 +82,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       kind === "transliteration"
         ? lines.map((line, index) =>
             validateTransliterationAlignment(
-              lineText(line),
+              lineText(line, getSplitCharacter()),
               mappedLines[index] ?? "",
               timedSyllables(mainTrack(line)),
               lineTransliteration(line)?.main.pieces,
@@ -107,15 +108,19 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     lines.forEach((line, index) => {
       const text = mappedLines[index]?.trim();
       if (!text) return;
-      const sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+      const sourceFingerprint = languageSourceFingerprint(
+        getSplitCharacter(),
+        lineText(line, getSplitCharacter()),
+        backgroundText(line, getSplitCharacter()),
+      );
       if (kind === "transliteration") {
         const transliteration: LineLanguage = {
           language: `${sourceLanguage || "und"}-Latn`,
-          main: { text, segments: wholeLineSegments(lineText(line), text) },
+          main: { text, segments: wholeLineSegments(lineText(line, getSplitCharacter()), text) },
           origin: "import",
           sourceFingerprint,
         };
-        updates.push({ id: line.id, updates: alignTrackToLine(line, transliteration) });
+        updates.push({ id: line.id, updates: alignTrackToLine(line, transliteration, getSplitCharacter()) });
         return;
       }
       const translations = {
@@ -211,7 +216,9 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                   {index + 1}
                 </span>
                 <p className="pt-1.5 text-sm leading-5 break-words text-composer-text-secondary select-text">
-                  {lineText(line) || <span className="italic text-composer-text-muted">Blank line</span>}
+                  {lineText(line, getSplitCharacter()) || (
+                    <span className="italic text-composer-text-muted">Blank line</span>
+                  )}
                 </p>
                 <IconArrowRight aria-hidden="true" className="mt-2.5 size-3.5 text-composer-text-faint" />
                 <div>

@@ -6,6 +6,7 @@ import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import type { ProjectSaveInput } from "@/lib/persistence";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 interface FactoryLineOptions {
   id?: string;
@@ -61,20 +62,23 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
   const id = opts.id ?? `line-${++lineCounter}`;
   const text = opts.text ?? (opts.words ? "" : "Test lyric line");
   const agentId = opts.agentId ?? DEFAULT_AGENTS[0]?.id ?? "v1";
-  return lineFromFields({
-    id,
-    text,
-    agentId,
-    ...(opts.begin !== undefined ? { begin: opts.begin } : {}),
-    ...(opts.end !== undefined ? { end: opts.end } : {}),
-    ...(opts.words ? { words: createWords(opts.words) } : {}),
-    ...(opts.backgroundText ? { backgroundText: opts.backgroundText } : {}),
-    ...(opts.backgroundWords ? { backgroundWords: createWords(opts.backgroundWords) } : {}),
-    ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
-    ...(opts.groupId ? { groupId: opts.groupId } : {}),
-    ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
-    ...(opts.templateLineIdx !== undefined ? { templateLineIdx: opts.templateLineIdx } : {}),
-  });
+  return lineFromFields(
+    {
+      id,
+      text,
+      agentId,
+      ...(opts.begin !== undefined ? { begin: opts.begin } : {}),
+      ...(opts.end !== undefined ? { end: opts.end } : {}),
+      ...(opts.words ? { words: createWords(opts.words) } : {}),
+      ...(opts.backgroundText ? { backgroundText: opts.backgroundText } : {}),
+      ...(opts.backgroundWords ? { backgroundWords: createWords(opts.backgroundWords) } : {}),
+      ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
+      ...(opts.groupId ? { groupId: opts.groupId } : {}),
+      ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
+      ...(opts.templateLineIdx !== undefined ? { templateLineIdx: opts.templateLineIdx } : {}),
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 function snapPoints(times: number[]): SnapPoint[] {

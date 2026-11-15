@@ -3,6 +3,7 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML, withoutAudioIdentity } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -15,6 +16,7 @@ function exported(duration?: number, youtubeVideoId?: string): string {
     lines: LINES,
     duration,
     youtubeVideoId,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
 }
 

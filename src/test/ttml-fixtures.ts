@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -53,7 +54,14 @@ function threeSyncedLines(): LyricLine[] {
  */
 function buildSyncedTtml(durationSeconds?: number): string {
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines: threeSyncedLines(), groups: [], duration: durationSeconds });
+  return generateTTML({
+    metadata,
+    agents,
+    lines: threeSyncedLines(),
+    groups: [],
+    duration: durationSeconds,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
+  });
 }
 
 /** One word-synced line 2-6s carrying a background vocal over its second half. */
@@ -75,7 +83,7 @@ function buildBackgroundVocalTtml(): string {
     }),
   ];
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [] });
+  return generateTTML({ metadata, agents, lines, groups: [], splitChar: DEFAULT_SPLIT_CHARACTER });
 }
 
 /** One synced Korean line with a timed transliteration and an English translation. */
@@ -91,7 +99,7 @@ function buildAlternateLanguageTtml(): string {
     }),
   ];
   lines[0] = legacyLine({
-    ...fieldsOfLine(lines[0]),
+    ...fieldsOfLine(lines[0], DEFAULT_SPLIT_CHARACTER),
     words: roleWords(lines[0], "main")?.map((word, index) => ({
       ...word,
       transliteration: index === 0 ? "annyeong" : "sesang",
@@ -114,7 +122,7 @@ function buildAlternateLanguageTtml(): string {
   });
 
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [] });
+  return generateTTML({ metadata, agents, lines, groups: [], splitChar: DEFAULT_SPLIT_CHARACTER });
 }
 
 /** One synced Korean line whose alternate-language background vocal falls in a foreground pause. */
@@ -134,7 +142,7 @@ function buildAlternateBackgroundLanguageTtml(): string {
   const [annyeong, sesang] = timedSyllables(mainTrack(lines[0]));
   const [oh] = timedSyllables(backgroundTrack(lines[0]));
   lines[0] = legacyLine({
-    ...fieldsOfLine(lines[0]),
+    ...fieldsOfLine(lines[0], DEFAULT_SPLIT_CHARACTER),
     words: [
       { ...annyeong, transliteration: "annyeong" },
       { ...sesang, transliteration: "sesang" },
@@ -161,7 +169,7 @@ function buildAlternateBackgroundLanguageTtml(): string {
   });
 
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [] });
+  return generateTTML({ metadata, agents, lines, groups: [], splitChar: DEFAULT_SPLIT_CHARACTER });
 }
 
 /** One synced line whose alternate tracks are identical to the main text. */
@@ -177,7 +185,7 @@ function buildMatchingAlternateLanguageTtml(): string {
     }),
   ];
   lines[0] = legacyLine({
-    ...fieldsOfLine(lines[0]),
+    ...fieldsOfLine(lines[0], DEFAULT_SPLIT_CHARACTER),
     words: timedSyllables(mainTrack(lines[0])).map((word, index) => ({
       ...word,
       transliteration: index === 0 ? "Same," : "LINE!",
@@ -205,6 +213,7 @@ function buildMatchingAlternateLanguageTtml(): string {
     agents,
     lines,
     groups: [],
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
 }
 

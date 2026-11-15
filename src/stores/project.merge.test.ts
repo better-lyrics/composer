@@ -18,6 +18,7 @@ import { createWords } from "@/test/factories";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";
 import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -25,34 +26,40 @@ beforeEach(() => {
 });
 
 function seedMainLine(overrides: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({
-    id: "line-1",
-    text: "ev er y world",
-    agentId: "v1",
-    words: [
-      { id: newWordId(), text: "ev", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-      { id: newWordId(), text: "er", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
-      { id: newWordId(), text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
-      { id: newWordId(), text: "world", sep: "", begin: 0.9, end: 1.5, joinsNext: false },
-    ],
-    ...overrides,
-  });
+  return lineFromFields(
+    {
+      id: "line-1",
+      text: "ev er y world",
+      agentId: "v1",
+      words: [
+        { id: newWordId(), text: "ev", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: newWordId(), text: "er", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+        { id: newWordId(), text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
+        { id: newWordId(), text: "world", sep: "", begin: 0.9, end: 1.5, joinsNext: false },
+      ],
+      ...overrides,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 // -- mergeSyllableGroupIntoWord ------------------------------------------------
 
 describe("mergeSyllableGroupIntoWord", () => {
   function seedGroupedLine(): LyricLine {
-    return lineFromFields({
-      id: "line-1",
-      text: "beautiful",
-      agentId: "v1",
-      words: [
-        { id: "w1", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-        { id: "w2", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-        { id: "w3", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
-      ],
-    });
+    return lineFromFields(
+      {
+        id: "line-1",
+        text: "beautiful",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+          { id: "w2", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+          { id: "w3", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
   }
 
   it("collapses a syllable group into one word", () => {
@@ -110,7 +117,7 @@ describe("mergeSyllableGroupIntoWord", () => {
     expect(legacyWords(timedSyllables(mainTrack(merged)), merged.languages)).toEqual([
       { text: "일단은", sep: "", transliteration: "ildan eun", begin: 0, end: 0.9, joinsNext: false },
     ]);
-    expect(lineText(merged)).toBe("일단은");
+    expect(lineText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("일단은");
     expect(merged.languages?.transliteration?.main.text).toBe("ildan eun");
   });
 
@@ -148,7 +155,7 @@ describe("mergeSyllableGroupIntoWord", () => {
     const [beau, ti, ful] = timedSyllables(mainTrack(seeded));
     // A reading the syllables cannot be aligned to leaves the partial stored pieces as they are.
     const line = legacyLine({
-      ...fieldsOfLine(seeded),
+      ...fieldsOfLine(seeded, DEFAULT_SPLIT_CHARACTER),
       words: [{ ...beau, transliteration: "beau" }, ti, { ...ful, transliteration: "ful" }],
       transliteration: { language: "en-Latn", text: "x", segments: [], origin: "manual", sourceFingerprint: "test" },
     });
@@ -170,7 +177,7 @@ describe("mergeSyllableGroupIntoWord", () => {
   it("syncs line.text to the collapsed words", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("beautiful");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("beautiful");
   });
 
   it("leaves non-grouped words untouched and is a no-op on a non-grouped selection", () => {
@@ -183,17 +190,20 @@ describe("mergeSyllableGroupIntoWord", () => {
   it("collapses two groups touched by one multi-selection", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "abcd",
-          agentId: "v1",
-          words: [
-            { id: "w8", text: "a", sep: "", begin: 0, end: 0.1, joinsNext: true },
-            { id: "w9", text: "b", sep: "", begin: 0.1, end: 0.2, joinsNext: false },
-            { id: "w10", text: "c", sep: "", begin: 0.2, end: 0.3, joinsNext: true },
-            { id: "w11", text: "d", sep: "", begin: 0.3, end: 0.4, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "abcd",
+            agentId: "v1",
+            words: [
+              { id: "w8", text: "a", sep: "", begin: 0, end: 0.1, joinsNext: true },
+              { id: "w9", text: "b", sep: "", begin: 0.1, end: 0.2, joinsNext: false },
+              { id: "w10", text: "c", sep: "", begin: 0.2, end: 0.3, joinsNext: true },
+              { id: "w11", text: "d", sep: "", begin: 0.3, end: 0.4, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 3]));
@@ -203,23 +213,26 @@ describe("mergeSyllableGroupIntoWord", () => {
   it("works on the background track and syncs backgroundText", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "main",
-          agentId: "v1",
-          words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-          backgroundWords: [
-            { id: "w13", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
-            { id: "w14", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
-          ],
-          backgroundText: "oo|oh",
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+            backgroundWords: [
+              { id: "w13", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+              { id: "w14", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
+            ],
+            backgroundText: "oo|oh",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
     const line = useProjectStore.getState().lines[0];
     expect(timedSyllables(backgroundTrack(line)).map((w) => w.text)).toEqual(["oooh"]);
-    expect(backgroundText(line)).toBe("oooh");
+    expect(backgroundText(line, DEFAULT_SPLIT_CHARACTER)).toBe("oooh");
   });
 
   it("is undoable", () => {
@@ -236,32 +249,38 @@ describe("mergeSyllableGroupIntoWord · linked propagation", () => {
     useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "a0",
-          text: "every",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: [
-            { id: "w15", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
-            { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-            { id: "w17", text: "y", sep: "", begin: 0.6, end: 1, joinsNext: false },
-          ],
-        }),
-        lineFromFields({
-          id: "a1",
-          text: "every",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          words: [
-            { id: "w18", text: "ev", sep: "", begin: 10, end: 10.3, joinsNext: true },
-            { id: "w19", text: "er", sep: "", begin: 10.3, end: 10.6, joinsNext: true },
-            { id: "w20", text: "y", sep: "", begin: 10.6, end: 11, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "every",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: [
+              { id: "w15", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+              { id: "w17", text: "y", sep: "", begin: 0.6, end: 1, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "a1",
+            text: "every",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            words: [
+              { id: "w18", text: "ev", sep: "", begin: 10, end: 10.3, joinsNext: true },
+              { id: "w19", text: "er", sep: "", begin: 10.3, end: 10.6, joinsNext: true },
+              { id: "w20", text: "y", sep: "", begin: 10.6, end: 11, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
   }
@@ -282,18 +301,21 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
   it("flips backgroundTextSource to manual after a background-track merge", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "main",
-          agentId: "v1",
-          words: [{ id: "w21", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-          backgroundWords: [
-            { id: "w22", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
-            { id: "w23", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
-          ],
-          backgroundText: "ooh",
-          backgroundTextSource: "extraction",
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w21", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+            backgroundWords: [
+              { id: "w22", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+              { id: "w23", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
+            ],
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
@@ -305,19 +327,22 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
   it("leaves backgroundTextSource untouched when merging the main track", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "beautiful",
-          agentId: "v1",
-          words: [
-            { id: "w24", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-            { id: "w25", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-            { id: "w26", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
-          ],
-          backgroundWords: [{ id: "w27", text: "ooh", sep: "", begin: 1, end: 1.5, joinsNext: false }],
-          backgroundText: "ooh",
-          backgroundTextSource: "extraction",
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "beautiful",
+            agentId: "v1",
+            words: [
+              { id: "w24", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w25", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+              { id: "w26", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
+            ],
+            backgroundWords: [{ id: "w27", text: "ooh", sep: "", begin: 1, end: 1.5, joinsNext: false }],
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1, 2]));
@@ -328,36 +353,42 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
     useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "a0",
-          text: "main",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: [{ id: "w28", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-          backgroundWords: [
-            { id: "w29", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
-            { id: "w30", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
-          ],
-          backgroundText: "ooh",
-          backgroundTextSource: "extraction",
-        }),
-        lineFromFields({
-          id: "a1",
-          text: "main",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          words: [{ id: "w31", text: "main", sep: "", begin: 10, end: 11, joinsNext: false }],
-          backgroundWords: [
-            { id: "w32", text: "oo", sep: "", begin: 11, end: 11.2, joinsNext: true },
-            { id: "w33", text: "oh", sep: "", begin: 11.2, end: 11.5, joinsNext: false },
-          ],
-          backgroundText: "ooh",
-          backgroundTextSource: "extraction",
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "main",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: [{ id: "w28", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+            backgroundWords: [
+              { id: "w29", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+              { id: "w30", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
+            ],
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "a1",
+            text: "main",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            words: [{ id: "w31", text: "main", sep: "", begin: 10, end: 11, joinsNext: false }],
+            backgroundWords: [
+              { id: "w32", text: "oo", sep: "", begin: 11, end: 11.2, joinsNext: true },
+              { id: "w33", text: "oh", sep: "", begin: 11.2, end: 11.5, joinsNext: false },
+            ],
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     useProjectStore.getState().commit(mergeSyllableGroup("a0", "backgroundWords", [0, 1]));
@@ -370,18 +401,21 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
   it("undo restores the prior extraction provenance", () => {
     useProjectStore.getState().commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        lineFromFields({
-          id: "line-1",
-          text: "main",
-          agentId: "v1",
-          words: [{ id: "w34", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-          backgroundWords: [
-            { id: "w35", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
-            { id: "w36", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
-          ],
-          backgroundText: "ooh",
-          backgroundTextSource: "extraction",
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w34", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+            backgroundWords: [
+              { id: "w35", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+              { id: "w36", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
+            ],
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ]),
     );
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
@@ -395,16 +429,19 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
 
 describe("snapSyllablesFlush", () => {
   function seedGappedGroupLine(): LyricLine {
-    return lineFromFields({
-      id: "line-1",
-      text: "beautiful",
-      agentId: "v1",
-      words: [
-        { id: "w37", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-        { id: "w38", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
-        { id: "w39", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
-      ],
-    });
+    return lineFromFields(
+      {
+        id: "line-1",
+        text: "beautiful",
+        agentId: "v1",
+        words: [
+          { id: "w37", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+          { id: "w38", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+          { id: "w39", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
   }
 
   it("closes internal gaps by extending each earlier syllable's end to the next begin", () => {
@@ -433,16 +470,19 @@ describe("snapSyllablesFlush", () => {
   it("is a no-op when the syllable group is already flush", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "beautiful",
-          agentId: "v1",
-          words: [
-            { id: "w40", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-            { id: "w41", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-            { id: "w42", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "beautiful",
+            agentId: "v1",
+            words: [
+              { id: "w40", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w41", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+              { id: "w42", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     const before = useProjectStore.getState().lines[0];
@@ -455,17 +495,20 @@ describe("snapSyllablesFlush", () => {
   it("works on the background track", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "main",
-          agentId: "v1",
-          words: [{ id: "w43", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-          backgroundWords: [
-            { id: "w44", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
-            { id: "w45", text: "oh", sep: "", begin: 1.5, end: 1.7, joinsNext: false },
-          ],
-          backgroundText: "oooh",
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w43", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+            backgroundWords: [
+              { id: "w44", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+              { id: "w45", text: "oh", sep: "", begin: 1.5, end: 1.7, joinsNext: false },
+            ],
+            backgroundText: "oooh",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
 
@@ -481,32 +524,38 @@ describe("snapSyllablesFlush", () => {
     useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "a0",
-          text: "beau|ti|ful",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: [
-            { id: "w46", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-            { id: "w47", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
-            { id: "w48", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
-          ],
-        }),
-        lineFromFields({
-          id: "a1",
-          text: "beau|ti|ful",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          words: [
-            { id: "w49", text: "beau", sep: "", begin: 10, end: 10.3, joinsNext: true },
-            { id: "w50", text: "ti", sep: "", begin: 10.5, end: 10.8, joinsNext: true },
-            { id: "w51", text: "ful", sep: "", begin: 11.0, end: 11.3, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "beau|ti|ful",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: [
+              { id: "w46", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w47", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+              { id: "w48", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "a1",
+            text: "beau|ti|ful",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            words: [
+              { id: "w49", text: "beau", sep: "", begin: 10, end: 10.3, joinsNext: true },
+              { id: "w50", text: "ti", sep: "", begin: 10.5, end: 10.8, joinsNext: true },
+              { id: "w51", text: "ful", sep: "", begin: 11.0, end: 11.3, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     const a1Before = useProjectStore.getState().lines.find((l) => l.id === "a1");
@@ -542,18 +591,21 @@ describe("snapSyllablesFlush · background provenance", () => {
   function seedGappedBgLine() {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "main",
-          agentId: "v1",
-          words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-          backgroundWords: [
-            { id: "w53", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
-            { id: "w54", text: "oh", sep: "", begin: 1.5, end: 1.7, joinsNext: false },
-          ],
-          backgroundText: "oooh",
-          backgroundTextSource: "extraction",
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+            backgroundWords: [
+              { id: "w53", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+              { id: "w54", text: "oh", sep: "", begin: 1.5, end: 1.7, joinsNext: false },
+            ],
+            backgroundText: "oooh",
+            backgroundTextSource: "extraction",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
   }
@@ -564,25 +616,28 @@ describe("snapSyllablesFlush · background provenance", () => {
     const line = useProjectStore.getState().lines[0];
     expect(backgroundTrack(line)?.source).toBe("manual");
     expect(timedSyllables(backgroundTrack(line))[0].end).toBe(roleWords(line, "bg")?.[1].begin);
-    expect(backgroundText(line)).toBe("oo|oh");
+    expect(backgroundText(line, DEFAULT_SPLIT_CHARACTER)).toBe("oo|oh");
   });
 
   it("leaves backgroundTextSource untouched when snapping the main track", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "beautiful",
-          agentId: "v1",
-          words: [
-            { id: "w55", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-            { id: "w56", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
-            { id: "w57", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
-          ],
-          backgroundWords: [{ id: "w58", text: "ooh", sep: "", begin: 2, end: 2.5, joinsNext: false }],
-          backgroundText: "ooh",
-          backgroundTextSource: "extraction",
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "beautiful",
+            agentId: "v1",
+            words: [
+              { id: "w55", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w56", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+              { id: "w57", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
+            ],
+            backgroundWords: [{ id: "w58", text: "ooh", sep: "", begin: 2, end: 2.5, joinsNext: false }],
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
     useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
@@ -603,16 +658,19 @@ describe("mergeSelectedWords", () => {
   it("merges part of a split word into one syllable, undone in one step", async () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        lineFromFields({
-          id: "line-1",
-          text: "beautiful",
-          agentId: "v1",
-          words: [
-            { id: "w59", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-            { id: "w60", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-            { id: "w61", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "line-1",
+            text: "beautiful",
+            agentId: "v1",
+            words: [
+              { id: "w59", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w60", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+              { id: "w61", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
 
@@ -633,19 +691,29 @@ describe("mergeSelectedWords", () => {
   it("carries the merge to linked siblings with the same rhythm without asking", async () => {
     useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, offset: number): LyricLine =>
-      lineFromFields({
-        id,
-        text: "every",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx,
-        templateLineIdx: 0,
-        words: createWords([
-          { id: newWordId(), text: "ev", sep: "", begin: offset, end: offset + 0.3, syllableGroupId: `g_${id}` },
-          { id: newWordId(), text: "er", sep: "", begin: offset + 0.3, end: offset + 0.6, syllableGroupId: `g_${id}` },
-          { id: newWordId(), text: "y", sep: "", begin: offset + 0.6, end: offset + 1, syllableGroupId: `g_${id}` },
-        ]),
-      });
+      lineFromFields(
+        {
+          id,
+          text: "every",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          words: createWords([
+            { id: newWordId(), text: "ev", sep: "", begin: offset, end: offset + 0.3, syllableGroupId: `g_${id}` },
+            {
+              id: newWordId(),
+              text: "er",
+              sep: "",
+              begin: offset + 0.3,
+              end: offset + 0.6,
+              syllableGroupId: `g_${id}`,
+            },
+            { id: newWordId(), text: "y", sep: "", begin: offset + 0.6, end: offset + 1, syllableGroupId: `g_${id}` },
+          ]),
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     useProjectStore.getState().restoreLyrics({ lines: [linked("a0", 0, 0), linked("a1", 1, 10)] });
 
     await mergeSelectedWords("a0", "word", [1, 2]);
@@ -660,27 +728,44 @@ describe("mergeSelectedWords", () => {
   it("regression: a linked sibling keeps its syllable group after a partial merge", async () => {
     useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, offset: number): LyricLine =>
-      lineFromFields({
-        id,
-        text: "so beautiful",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx,
-        templateLineIdx: 0,
-        words: createWords([
-          { id: newWordId(), text: "so", sep: " ", begin: offset, end: offset + 0.5 },
-          {
-            id: newWordId(),
-            text: "beau",
-            sep: "",
-            begin: offset + 0.5,
-            end: offset + 0.8,
-            syllableGroupId: `g_${id}`,
-          },
-          { id: newWordId(), text: "ti", sep: "", begin: offset + 0.8, end: offset + 1.1, syllableGroupId: `g_${id}` },
-          { id: newWordId(), text: "ful", sep: "", begin: offset + 1.1, end: offset + 1.6, syllableGroupId: `g_${id}` },
-        ]),
-      });
+      lineFromFields(
+        {
+          id,
+          text: "so beautiful",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          words: createWords([
+            { id: newWordId(), text: "so", sep: " ", begin: offset, end: offset + 0.5 },
+            {
+              id: newWordId(),
+              text: "beau",
+              sep: "",
+              begin: offset + 0.5,
+              end: offset + 0.8,
+              syllableGroupId: `g_${id}`,
+            },
+            {
+              id: newWordId(),
+              text: "ti",
+              sep: "",
+              begin: offset + 0.8,
+              end: offset + 1.1,
+              syllableGroupId: `g_${id}`,
+            },
+            {
+              id: newWordId(),
+              text: "ful",
+              sep: "",
+              begin: offset + 1.1,
+              end: offset + 1.6,
+              syllableGroupId: `g_${id}`,
+            },
+          ]),
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     useProjectStore.getState().restoreLyrics({ lines: [linked("a0", 0, 0), linked("a1", 1, 10)] });
 
     await mergeSelectedWords("a0", "word", [1, 2]);
@@ -699,15 +784,18 @@ describe("mergeSelectedWords", () => {
   it("regression: a linked copy split differently follows the merge", async () => {
     useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, words: WordTiming[]): LyricLine =>
-      lineFromFields({
-        id,
-        text: "every day",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx,
-        templateLineIdx: 0,
-        words,
-      });
+      lineFromFields(
+        {
+          id,
+          text: "every day",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          words,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     useProjectStore.getState().restoreLyrics({
       lines: [
         linked("a0", 0, [
@@ -737,15 +825,18 @@ describe("mergeSelectedWords", () => {
   it("regression: a merge leaves the other words of a differently split copy untouched", async () => {
     useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
     const linked = (id: string, instanceIdx: number, words: WordTiming[]): LyricLine =>
-      lineFromFields({
-        id,
-        text: "one two three",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx,
-        templateLineIdx: 0,
-        words,
-      });
+      lineFromFields(
+        {
+          id,
+          text: "one two three",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          words,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     useProjectStore.getState().restoreLyrics({
       lines: [
         linked("a0", 0, [
@@ -774,15 +865,18 @@ describe("mergeSelectedWords", () => {
     function seedCrossingCopies(): void {
       useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
       const linked = (id: string, instanceIdx: number, words: WordTiming[]): LyricLine =>
-        lineFromFields({
-          id,
-          text: "beautiful",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx,
-          templateLineIdx: 0,
-          words,
-        });
+        lineFromFields(
+          {
+            id,
+            text: "beautiful",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx,
+            templateLineIdx: 0,
+            words,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        );
       useProjectStore.getState().restoreLyrics({
         lines: [
           linked("a0", 0, [

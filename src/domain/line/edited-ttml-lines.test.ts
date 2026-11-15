@@ -6,6 +6,7 @@ import { mainTrack, timedSyllables } from "insync/line-track";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -35,7 +36,7 @@ describe("mergeEditedTtmlLines", () => {
       createLine({ id: "b", text: "World", begin: 2, end: 3 }),
     ];
     const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
-    expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
+    expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
       ["a", "Hello there"],
       ["b", "World"],
     ]);
@@ -56,14 +57,16 @@ describe("mergeEditedTtmlLines", () => {
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Added</p></div>'),
       );
-      expect(merged.map((line) => lineText(line))).toEqual(["Hello", "World", "Added"]);
+      expect(merged.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Hello", "World", "Added"]);
       expect(merged[0]?.id).toBe("a");
       expect(merged[1]?.id).toBe("b");
       expect(["a", "b"]).not.toContain(merged[2]?.id);
     });
 
     it("returns nothing for an empty edit", () => {
-      expect(mergeEditedTtmlLines([createLine({ text: "Hello", begin: 1, end: 2 })], { lines: [] })).toEqual([]);
+      expect(
+        mergeEditedTtmlLines([createLine({ text: "Hello", begin: 1, end: 2 })], { lines: [] }, DEFAULT_SPLIT_CHARACTER),
+      ).toEqual([]);
     });
   });
 
@@ -97,6 +100,7 @@ describe("holdsEveryLine", () => {
               { text: "rld", begin: 3.5, end: 4, syllableGroupId: "g1" },
             ],
           }),
+          DEFAULT_SPLIT_CHARACTER,
         ),
         translations: {
           es: SPANISH,
@@ -104,7 +108,7 @@ describe("holdsEveryLine", () => {
         },
       }),
     ];
-    expect(holdsEveryLine(stored, ownExportLines(stored))).toBe(true);
+    expect(holdsEveryLine(stored, ownExportLines(stored), DEFAULT_SPLIT_CHARACTER)).toBe(true);
   });
 
   describe("regressions", () => {
@@ -113,15 +117,17 @@ describe("holdsEveryLine", () => {
         { ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }), detached: true },
         createLine({ id: "b", text: "World", begin: 2, end: 3 }),
       ];
-      expect(holdsEveryLine(stored, ownExportLines(stored))).toBe(false);
+      expect(holdsEveryLine(stored, ownExportLines(stored), DEFAULT_SPLIT_CHARACTER)).toBe(false);
     });
   });
 
   describe("error paths", () => {
     it("does not hold when the export has a different number of lines", () => {
       const stored = [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })];
-      expect(holdsEveryLine(stored, [])).toBe(false);
-      expect(holdsEveryLine(stored, [...ownExportLines(stored), ...ownExportLines(stored)])).toBe(false);
+      expect(holdsEveryLine(stored, [], DEFAULT_SPLIT_CHARACTER)).toBe(false);
+      expect(
+        holdsEveryLine(stored, [...ownExportLines(stored), ...ownExportLines(stored)], DEFAULT_SPLIT_CHARACTER),
+      ).toBe(false);
     });
   });
 });

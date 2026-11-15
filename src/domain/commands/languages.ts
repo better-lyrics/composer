@@ -39,10 +39,10 @@ function saveTransliterationAlignment(
 ): LyricCommand {
   return lineEditCommand(
     { command: ALIGN_TRANSLITERATION, args: [lineId, field] },
-    (root) => {
+    (root, ctx) => {
       const line = root.lines.find((candidate) => candidate.id === lineId);
       if (!line) return refused({ reason: "line-gone", lineId });
-      const confirmed = confirmTransliterationAlignment(line, field);
+      const confirmed = confirmTransliterationAlignment(line, field, ctx.splitChar);
       const side = field === "words" ? "main" : "bg";
       const transliteration = confirmed && withTrackPieces(confirmed, side, pieces);
       return [{ id: lineId, updates: withLanguages(line, { transliteration }) }];

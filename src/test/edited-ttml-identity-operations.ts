@@ -17,22 +17,27 @@ import {
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { createLine } from "@/test/factories";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function repeatedPair(project: EditedTtmlProject): [LyricLine, LyricLine] {
-  const timed = project.lines.filter(isLineTimed);
+  const timed = project.lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER));
   for (const [index, line] of timed.entries()) {
     const copy = timed
       .slice(index + 1)
-      .find((other) => stripSplitCharacter(lineText(other)) === stripSplitCharacter(lineText(line)));
+      .find(
+        (other) =>
+          stripSplitCharacter(lineText(other, DEFAULT_SPLIT_CHARACTER)) ===
+          stripSplitCharacter(lineText(line, DEFAULT_SPLIT_CHARACTER)),
+      );
     if (copy) return [line, copy];
   }
   throw new Error("fixture has no repeated line");
 }
 
 function groupInstancePair(project: EditedTtmlProject): [LyricLine, LyricLine] {
-  const timed = project.lines.filter(isLineTimed);
+  const timed = project.lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER));
   for (const line of timed) {
     const other = timed.find(
       (candidate) => candidate.groupId === line.groupId && candidate.instanceIdx !== line.instanceIdx,
@@ -43,13 +48,16 @@ function groupInstancePair(project: EditedTtmlProject): [LyricLine, LyricLine] {
 }
 
 function untimed(line: LyricLine): LyricLine {
-  return lineFromFields({
-    ...fieldsOfLine(line),
-    words: undefined,
-    begin: undefined,
-    end: undefined,
-    backgroundWords: undefined,
-  });
+  return lineFromFields(
+    {
+      ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER),
+      words: undefined,
+      begin: undefined,
+      end: undefined,
+      backgroundWords: undefined,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 // -- Operations ---------------------------------------------------------------
@@ -78,7 +86,7 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
         "translated line",
       );
       const original = paragraphOf(ttml, project, line);
-      const text = stripSplitCharacter(lineText(line));
+      const text = stripSplitCharacter(lineText(line, DEFAULT_SPLIT_CHARACTER));
       const openTag = original.slice(0, original.indexOf(">") + 1);
       const copy = original.replace(`${openTag}${text}`, `${openTag}${text} again`);
       return {
@@ -87,7 +95,7 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
         lossless: true,
         expectTaken: (lines) => {
           const added = required(
-            lines.find((candidate) => lineText(candidate) === `${text} again`),
+            lines.find((candidate) => lineText(candidate, DEFAULT_SPLIT_CHARACTER) === `${text} again`),
             "copied line",
           );
           expect(added.id).not.toBe(line.id);

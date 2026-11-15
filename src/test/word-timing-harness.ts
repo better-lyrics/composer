@@ -6,6 +6,7 @@ import type { LineUpdate, LyricLine } from "insync/line";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { type RetimeChange, createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Retime seam --------------------------------------------------------------
 
@@ -22,13 +23,18 @@ function retimeInto(
   wordIdx: number,
 ): void {
   const line = lines[lineIdx];
-  const update = line ? retimeEdit({ line, wordIdx, edge, change, range: UNBOUNDED_TIME_RANGE }) : null;
+  const update = line
+    ? retimeEdit({ line, wordIdx, edge, change, range: UNBOUNDED_TIME_RANGE, splitChar: DEFAULT_SPLIT_CHARACTER })
+    : null;
   if (update) calls.push(update);
 }
 
 // -- Factory instances --------------------------------------------------------
 
-const wordsOps = createWordTimingOps({ getWords: (line) => drawnSyllables(line, "main"), writeWords: mainTimingWrite });
+const wordsOps = createWordTimingOps({
+  getWords: (line) => drawnSyllables(line, "main", DEFAULT_SPLIT_CHARACTER),
+  writeWords: mainTimingWrite,
+});
 const bgOps = createWordTimingOps({
   getWords: (line) => roleWords(line, "bg"),
   writeWords: (line, words) => ({ tracks: withRoleWords(line, "bg", words).tracks }),

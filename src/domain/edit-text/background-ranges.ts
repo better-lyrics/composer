@@ -176,6 +176,7 @@ function shownWithRewrittenRows(
   typed: ShownEditText,
   typedLines: readonly LyricLine[],
   finalLines: readonly LyricLine[],
+  splitChar: string,
 ): ShownEditText {
   const rows: string[] = [];
   const ranges: BackgroundRange[] = [];
@@ -184,7 +185,7 @@ function shownWithRewrittenRows(
   let oldStart = 0;
   let newStart = 0;
   typed.text.split("\n").forEach((row, index) => {
-    const rewritten = finalLines[index] !== typedLines[index] ? shownRow(finalLines[index]) : null;
+    const rewritten = finalLines[index] !== typedLines[index] ? shownRow(finalLines[index], splitChar) : null;
     const shown = rewritten?.text ?? row;
     if (rewritten?.background) ranges.push(shiftedRange(rewritten.background, newStart));
     const rowEnd = oldStart + row.length;

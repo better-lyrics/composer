@@ -31,7 +31,7 @@ function withShownBackground(line: LyricLine, shown: string | null, splitChar: s
   }
   if (!track) {
     const created = withTrackText(newBackgroundTrack(line.id, "manual"), shown, splitChar);
-    return withSeededBackground(withBackgroundTrack(line, created));
+    return withSeededBackground(withBackgroundTrack(line, created), splitChar);
   }
   return withBackgroundTrack(line, { ...withTrackText(track, shown, splitChar), source: "manual" });
 }

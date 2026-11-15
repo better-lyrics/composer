@@ -9,6 +9,7 @@ import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -19,7 +20,7 @@ function namedLines(untimed: string[] = []): LyricLine[] {
     const id = name[0]?.toLowerCase() ?? String(index);
     const timing = untimed.includes(name) ? {} : { begin: index, end: index + 1 };
     return legacyLine({
-      ...fieldsOfLine(createLine({ id, text: name, ...timing })),
+      ...fieldsOfLine(createLine({ id, text: name, ...timing }), getSplitCharacter()),
       translations: {
         es: {
           language: "es",
@@ -107,7 +108,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await doneShowsLyricsChanged(screen);
 
       expect(useProjectStore.getState().lines).toBe(synced);
-      expect(fieldsOfLine(byId("b")!)).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
+      expect(fieldsOfLine(byId("b")!, getSplitCharacter())).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
     });
 
     it("regression: a clean change after Keep my edits still leaves the synced line in place on Done", async () => {
@@ -126,7 +127,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await editText(screen, "Echo", "Echo!");
       await doneShowsLyricsChanged(screen);
 
-      expect(fieldsOfLine(byId("b")!)).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
+      expect(fieldsOfLine(byId("b")!, getSplitCharacter())).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
       expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "b", "c", "d", "e"]);
     });
 
@@ -184,8 +185,8 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await screen.getByRole("button", { name: "Done" }).click();
 
       await expect.element(screen.getByText(APPLIED)).toBeInTheDocument();
-      expect(lineText(byId("c")!)).toBe("Charlie!");
-      expect(lineText(byId("e")!)).toBe("Echo!");
+      expect(lineText(byId("c")!, getSplitCharacter())).toBe("Charlie!");
+      expect(lineText(byId("e")!, getSplitCharacter())).toBe("Echo!");
       expect(useProjectStore.getState().ttmlEditState).toBeNull();
     });
   });

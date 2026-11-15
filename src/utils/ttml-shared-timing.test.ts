@@ -4,12 +4,13 @@ import { createGroup } from "@/test/factories";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const metadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
 function exportGroups(groups: ReturnType<typeof createGroup>[]) {
-  return generateTTML({ metadata, agents, lines: [], groups });
+  return generateTTML({ metadata, agents, lines: [], groups, splitChar: DEFAULT_SPLIT_CHARACTER });
 }
 
 describe("ttml · shared group timing", () => {

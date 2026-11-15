@@ -3,6 +3,7 @@ import type { LyricLine } from "insync/line";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { groupRepeatingSections } from "@/domain/commands/group-edits";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("setAgents", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
@@ -37,7 +38,7 @@ describe("groupRepeatingSections", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
 
   function plain(id: string, text: string): LyricLine {
-    return lineFromFields({ id, text, agentId: "v1" });
+    return lineFromFields({ id, text, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
   }
 
   it("creates one group with one instance per start", () => {
@@ -92,7 +93,10 @@ describe("groupRepeatingSections", () => {
 
   it("does nothing if any covered line is already grouped", () => {
     const lines: LyricLine[] = [
-      lineFromFields({ id: "a", text: "x", agentId: "v1", groupId: "gExisting", instanceIdx: 0, templateLineIdx: 0 }),
+      lineFromFields(
+        { id: "a", text: "x", agentId: "v1", groupId: "gExisting", instanceIdx: 0, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       plain("b", "y"),
       plain("c", "x"),
       plain("d", "y"),

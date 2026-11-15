@@ -3,11 +3,12 @@ import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linki
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function line(extras: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras }, DEFAULT_SPLIT_CHARACTER);
 }
 
 // -- getLinkScope -------------------------------------------------------------
@@ -81,7 +82,7 @@ describe("unlinkLines", () => {
       line({ id: "b", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
     ];
     const result = unlinkLines(lines, (l) => l.id === "a");
-    expect(fieldsOfLine(result[0])).toMatchObject({ id: "a", text: "Hello" });
+    expect(fieldsOfLine(result[0], DEFAULT_SPLIT_CHARACTER)).toMatchObject({ id: "a", text: "Hello" });
     for (const field of ["groupId", "instanceIdx", "templateLineIdx", "detached"] as const) {
       expect(result[0][field]).toBeUndefined();
     }

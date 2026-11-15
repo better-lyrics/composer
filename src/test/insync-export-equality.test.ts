@@ -27,6 +27,7 @@ import {
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { generateProjectTtml } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -44,7 +45,7 @@ const TTML_FIXTURES: readonly (() => string)[] = [
 
 function projectFromTtml(ttml: string): EditedTtmlProject {
   const { metadata, agents } = useProjectStore.getState();
-  const parsed = parseTtml(ttml);
+  const parsed = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER);
   return { name: "ttml fixture", lines: parsed.lines, groups: parsed.groups ?? [], agents, metadata };
 }
 
@@ -164,8 +165,8 @@ function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: Sav
     expect(stripSplitCharacter(line.backgroundText ?? ""), record.name).toBe(
       stripSplitCharacter(saved.backgroundText ?? ""),
     );
-    expect(languageSourceFingerprint(line.text, line.backgroundText), record.name).toBe(
-      languageSourceFingerprint(saved.text, saved.backgroundText),
+    expect(languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, line.text, line.backgroundText), record.name).toBe(
+      languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, saved.text, saved.backgroundText),
     );
     if (line.text !== saved.text || line.backgroundText !== saved.backgroundText) repaired++;
   });
@@ -178,7 +179,7 @@ function v3Record({ metadata, agents, groups }: EditedTtmlProject): SavedProject
 }
 
 function exportOf(project: EditedTtmlProject): string {
-  return generateProjectTtml(project, EXPORT_DURATION_SECONDS);
+  return generateProjectTtml(project, EXPORT_DURATION_SECONDS, DEFAULT_SPLIT_CHARACTER);
 }
 
 // -- Tests --------------------------------------------------------------------

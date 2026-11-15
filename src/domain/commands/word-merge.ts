@@ -12,13 +12,18 @@ import { mergeWordRun } from "@/domain/word/merge-run";
 
 // -- Helpers ------------------------------------------------------------------
 
-function mergedFieldUpdate(line: LyricLine, field: TrackField, indices: number[]): LineUpdate | null {
-  const aligned = withAlignedWords(line);
+function mergedFieldUpdate(
+  line: LyricLine,
+  field: TrackField,
+  indices: number[],
+  splitChar: string,
+): LineUpdate | null {
+  const aligned = withAlignedWords(line, splitChar);
   const words = fieldWords(aligned, field);
   const merged = words && mergeWordRun(words, indices);
   if (!merged) return null;
   const languages = regroupedLanguages(line, aligned, fieldRole(field), words, merged);
-  const { tracks } = withFieldWords(line, field, merged);
+  const { tracks } = withFieldWords(line, field, merged, splitChar);
   return { id: line.id, updates: { tracks, languages } };
 }
 
@@ -30,8 +35,8 @@ function mergeWords(addresses: readonly SyllableAddress[]): LyricCommand {
   return {
     note: { command: "merge words", args: addresses.map((address) => address.syllableId) },
     copiesSharedTiming: true,
-    run: (root) => {
-      const resolved = resolveAddresses(root.lines, addresses);
+    run: (root, ctx) => {
+      const resolved = resolveAddresses(root.lines, addresses, ctx.splitChar);
       if (resolved.length === 0 || resolved.length !== addresses.length) {
         return addresses[0] ? refused({ reason: "word-gone", address: addresses[0] }) : applied(root, []);
       }
@@ -40,6 +45,7 @@ function mergeWords(addresses: readonly SyllableAddress[]): LyricCommand {
         source,
         trackField(resolved[0].type),
         resolved.map((word) => word.wordIndex),
+        ctx.splitChar,
       );
       return update ? withLineUpdates(root, [update]) : refused({ reason: "word-gone", address: addresses[0] });
     },

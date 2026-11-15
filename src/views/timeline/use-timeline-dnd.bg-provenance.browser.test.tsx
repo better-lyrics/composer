@@ -11,6 +11,7 @@ import {
   makeBgReorderDragEndEvent,
   makeBgReorderDragStartEvent,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineDnd · background-word drag provenance", () => {
   let scrollHost: HTMLDivElement;
@@ -20,18 +21,21 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "l1",
-          text: "main",
-          agentId: "v1",
-          words: [{ id: "w1", text: "main", sep: "", begin: 0, end: 0.5, joinsNext: false }],
-          backgroundText: "ooh aah",
-          backgroundWords: [
-            { id: "w2", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-            { id: "w3", text: "aah", sep: "", begin: 1, end: 1.5, joinsNext: false },
-          ],
-          backgroundTextSource: "extraction",
-        }),
+        lineFromFields(
+          {
+            id: "l1",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w1", text: "main", sep: "", begin: 0, end: 0.5, joinsNext: false }],
+            backgroundText: "ooh aah",
+            backgroundWords: [
+              { id: "w2", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+              { id: "w3", text: "aah", sep: "", begin: 1, end: 1.5, joinsNext: false },
+            ],
+            backgroundTextSource: "extraction",
+          },
+          getSplitCharacter(),
+        ),
       ],
     });
     scrollHost = installScrollHost();

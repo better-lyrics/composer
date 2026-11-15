@@ -18,22 +18,27 @@ interface SyncSlot {
 
 // -- Navigation ---------------------------------------------------------------
 
-function nextSyncableLineIndex(lines: readonly LyricLine[], fromIndex: number): number {
-  for (let i = fromIndex + 1; i < lines.length; i++) if (isSyncableLine(lines[i])) return i;
+function nextSyncableLineIndex(lines: readonly LyricLine[], fromIndex: number, splitChar: string): number {
+  for (let i = fromIndex + 1; i < lines.length; i++) if (isSyncableLine(lines[i], splitChar)) return i;
   return lines.length;
 }
 
-function prevSyncableLineIndex(lines: readonly LyricLine[], fromIndex: number): number {
-  for (let i = Math.min(fromIndex, lines.length) - 1; i >= 0; i--) if (isSyncableLine(lines[i])) return i;
+function prevSyncableLineIndex(lines: readonly LyricLine[], fromIndex: number, splitChar: string): number {
+  for (let i = Math.min(fromIndex, lines.length) - 1; i >= 0; i--) if (isSyncableLine(lines[i], splitChar)) return i;
   return -1;
 }
 
-function advanceCursor(lines: readonly LyricLine[], cursor: SyncCursor, granularity: SyncGranularity): SyncCursor {
+function advanceCursor(
+  lines: readonly LyricLine[],
+  cursor: SyncCursor,
+  granularity: SyncGranularity,
+  splitChar: string,
+): SyncCursor {
   const line = lines[cursor.lineIndex];
   if (granularity === "word" && line && cursor.wordIndex + 1 < mainTrack(line).syllables.length) {
     return { lineIndex: cursor.lineIndex, wordIndex: cursor.wordIndex + 1 };
   }
-  return { lineIndex: nextSyncableLineIndex(lines, cursor.lineIndex), wordIndex: 0 };
+  return { lineIndex: nextSyncableLineIndex(lines, cursor.lineIndex, splitChar), wordIndex: 0 };
 }
 
 function isCursorPastEnd(lines: readonly LyricLine[], cursor: SyncCursor): boolean {
@@ -49,10 +54,15 @@ function firstUntimedSlot(line: LyricLine, granularity: SyncGranularity): number
   return timed < mainTrack(line).syllables.length ? timed : null;
 }
 
-function clampCursor(lines: readonly LyricLine[], stored: SyncCursor, granularity: SyncGranularity): SyncCursor {
+function clampCursor(
+  lines: readonly LyricLine[],
+  stored: SyncCursor,
+  granularity: SyncGranularity,
+  splitChar: string,
+): SyncCursor {
   const lineIndex = Math.max(0, Math.min(stored.lineIndex, lines.length));
-  if (lineIndex < lines.length && !isSyncableLine(lines[lineIndex])) {
-    return { lineIndex: nextSyncableLineIndex(lines, lineIndex), wordIndex: 0 };
+  if (lineIndex < lines.length && !isSyncableLine(lines[lineIndex], splitChar)) {
+    return { lineIndex: nextSyncableLineIndex(lines, lineIndex, splitChar), wordIndex: 0 };
   }
   const line = lines[lineIndex];
   if (!line || granularity === "line") return { lineIndex, wordIndex: 0 };
@@ -65,11 +75,12 @@ function resolveSyncCursor(
   stored: SyncCursor,
   jumped: boolean,
   granularity: SyncGranularity,
+  splitChar: string,
 ): SyncCursor {
-  let cursor = clampCursor(lines, stored, granularity);
+  let cursor = clampCursor(lines, stored, granularity, splitChar);
   if (jumped) return cursor;
   while (cursor.wordIndex === 0) {
-    const prev = prevSyncableLineIndex(lines, cursor.lineIndex);
+    const prev = prevSyncableLineIndex(lines, cursor.lineIndex, splitChar);
     if (prev < 0) break;
     const gap = firstUntimedSlot(lines[prev], granularity);
     if (gap === null) break;
@@ -87,13 +98,18 @@ function lastSlotOf(lines: readonly LyricLine[], lineIndex: number, granularity:
   return mainBounds(line) ? { lineIndex, wordIndex: null } : null;
 }
 
-function previousSlot(lines: readonly LyricLine[], cursor: SyncCursor, granularity: SyncGranularity): SyncSlot | null {
+function previousSlot(
+  lines: readonly LyricLine[],
+  cursor: SyncCursor,
+  granularity: SyncGranularity,
+  splitChar: string,
+): SyncSlot | null {
   const line = lines[cursor.lineIndex];
   const words = line ? timedSyllables(mainTrack(line)) : [];
   if (granularity === "word" && words.length && cursor.wordIndex > 0) {
     return { lineIndex: cursor.lineIndex, wordIndex: Math.min(cursor.wordIndex, words.length) - 1 };
   }
-  const prev = prevSyncableLineIndex(lines, cursor.lineIndex);
+  const prev = prevSyncableLineIndex(lines, cursor.lineIndex, splitChar);
   return prev < 0 ? null : lastSlotOf(lines, prev, granularity);
 }
 

@@ -8,6 +8,7 @@ import { roleWords } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 function wordsAt(texts: string[], begin: number, end: number): WordTiming[] {
   const step = (end - begin) / texts.length;
@@ -26,15 +27,18 @@ function linkedLine(
   instanceIdx: number,
   timing: { words: WordTiming[] } | { begin: number; end: number; detached?: boolean },
 ): LyricLine {
-  return lineFromFields({
-    id,
-    text: "hold me (ooh yeah)",
-    agentId: "v1",
-    groupId: "g1",
-    instanceIdx,
-    templateLineIdx: 0,
-    ...timing,
-  });
+  return lineFromFields(
+    {
+      id,
+      text: "hold me (ooh yeah)",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      ...timing,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 describe("extracting a background on one instance", () => {
@@ -57,8 +61,8 @@ describe("extracting a background on one instance", () => {
 
     const [a0, a1, a2, a3] = useProjectStore.getState().lines;
     for (const line of [a0, a1, a2]) {
-      expect(lineText(line)).toBe("hold me");
-      expect(backgroundText(line)).toBe("ooh yeah");
+      expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("hold me");
+      expect(backgroundText(line, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah");
     }
     expect(roleWords(a2, "bg")?.map((w) => [w.begin, w.end])).toEqual([
       [111, 111.5],

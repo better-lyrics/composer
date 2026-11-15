@@ -63,6 +63,7 @@ const STRETCH_EPS = 1e-6;
 function resolveStretchTargets(
   rawLines: LyricLine[],
   selections: ReadonlyArray<StretchSelectionRef>,
+  splitChar: string,
 ): StretchTargets | null {
   const linesById = new Map<string, LyricLine>();
   for (const l of rawLines) linesById.set(l.id, l);
@@ -73,7 +74,7 @@ function resolveStretchTargets(
   const seenLineSynced = new Set<string>();
 
   const pushWord = (sel: StretchSelectionRef, line: LyricLine) => {
-    const words = drawnSyllables(line, trackRole(sel.type));
+    const words = drawnSyllables(line, trackRole(sel.type), splitChar);
     if (words[sel.wordIndex] === undefined) return;
     const key = `${sel.lineId}:${sel.type}:${sel.wordIndex}`;
     if (seenWord.has(key)) return;
@@ -114,9 +115,10 @@ function isFiniteWord(word: WordTiming | undefined): word is WordTiming {
 // traversal shared by selectionExtremes, deriveBounds and selectionGripEdges.
 function* selectedFiniteWords(
   targets: StretchTargets,
+  splitChar: string,
 ): Generator<{ track: StretchTrack; words: WordTiming[]; idx: number; word: WordTiming }> {
   for (const track of targets.tracks.values()) {
-    const words = drawnSyllables(track.line, trackRole(track.type));
+    const words = drawnSyllables(track.line, trackRole(track.type), splitChar);
     for (const idx of track.indices) {
       const word = words[idx];
       if (!isFiniteWord(word)) continue;
@@ -129,7 +131,10 @@ function* selectedFiniteWords(
 // the finite selected word blocks (count of them). Word blocks define the grips;
 // a purely line-synced selection (no word blocks) falls back to its rows so the
 // plain mapping API still has extremes.
-function selectionExtremes(targets: StretchTargets): {
+function selectionExtremes(
+  targets: StretchTargets,
+  splitChar: string,
+): {
   t0: number;
   t1: number;
   count: number;
@@ -138,7 +143,7 @@ function selectionExtremes(targets: StretchTargets): {
   let t0 = Number.POSITIVE_INFINITY;
   let t1 = Number.NEGATIVE_INFINITY;
   let count = 0;
-  for (const { word } of selectedFiniteWords(targets)) {
+  for (const { word } of selectedFiniteWords(targets, splitChar)) {
     count++;
     if (word.begin < t0) t0 = word.begin;
     if (word.end > t1) t1 = word.end;
@@ -195,12 +200,13 @@ function limitFactor(bounds: FactorBounds, anchorTime: number, minWordDuration: 
 function deriveBounds(
   targets: StretchTargets,
   options: StretchClampOptions,
+  splitChar: string,
 ): { t0: number; t1: number; anchorTime: number; kLo: number; kHi: number } | null {
   // Non-finite range ends (streams without metadata) or corrupt timings must not
   // leak NaN into the factor: every bound below is checked before use.
   if (!Number.isFinite(options.minWordDuration)) return null;
 
-  const { t0, t1 } = selectionExtremes(targets);
+  const { t0, t1 } = selectionExtremes(targets, splitChar);
 
   const span = t1 - t0;
   if (!Number.isFinite(t0) || !Number.isFinite(t1) || span <= STRETCH_EPS) return null;
@@ -208,7 +214,7 @@ function deriveBounds(
 
   const bounds: FactorBounds = { kLo: 0, kHi: Number.POSITIVE_INFINITY };
 
-  for (const { track, words, idx, word } of selectedFiniteWords(targets)) {
+  for (const { track, words, idx, word } of selectedFiniteWords(targets, splitChar)) {
     const range = options.rangeOf(track.line);
     if (!Number.isFinite(range.max)) return null;
     // Nearest non-selected neighbours, skipping selected indices.

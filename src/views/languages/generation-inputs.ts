@@ -2,14 +2,15 @@ import { languageSourceText } from "@/domain/language/source-text";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { LanguageLineInput } from "@/services/language-provider";
+import { getSplitCharacter } from "@/utils/split-character";
 
 function languageGenerationInputs(lines: readonly LyricLine[]) {
   const mainInputs: LanguageLineInput[] = [];
   const bgInputs: LanguageLineInput[] = [];
   for (const line of lines) {
-    const text = languageSourceText(lineText(line));
-    const bgText = backgroundText(line);
-    const bgSource = bgText ? languageSourceText(bgText) : undefined;
+    const text = languageSourceText(lineText(line, getSplitCharacter()), getSplitCharacter());
+    const bgText = backgroundText(line, getSplitCharacter());
+    const bgSource = bgText ? languageSourceText(bgText, getSplitCharacter()) : undefined;
     if (text) mainInputs.push({ id: line.id, text });
     if (bgSource) bgInputs.push({ id: line.id, text: bgSource });
   }

@@ -1,12 +1,12 @@
 import { splitTrailingWhitespace } from "insync/from-words";
 import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 import { synthesizeBracketedWord } from "@/utils/word-timing";
 
 // -- Helpers ------------------------------------------------------------------
 
-function tokenizeWordTexts(text: string, splitChar?: string): string[] {
+function tokenizeWordTexts(text: string, splitChar: string): string[] {
   const { parts, trailingSpace } = splitIntoWordsWithMeta(text, splitChar);
   return parts.map((part, i) => part + (trailingSpace[i] ? " " : ""));
 }
@@ -38,7 +38,7 @@ function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: n
   return { begin: prevEnd, end: Math.max(prevEnd, nextBegin) };
 }
 
-function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar?: string): WordTiming[] {
+function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar: string): WordTiming[] {
   const texts = tokenizeWordTexts(newText, splitChar);
   if (texts.length === oldWords.length) {
     const remapped = oldWords.map((oldWord, i) => ({ ...oldWord, ...splitTrailingWhitespace(texts[i]) }));
@@ -52,8 +52,8 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
 
   const oldIndexOf: Array<number | undefined> = new Array(texts.length);
   const pairs = lcsPairs(
-    oldWords.map((w) => wordKey(w.text)),
-    texts.map(wordKey),
+    oldWords.map((w) => wordKey(w.text, splitChar)),
+    texts.map((value) => wordKey(value, splitChar)),
   );
   for (const [oldIdx, newIdx] of pairs) oldIndexOf[newIdx] = oldIdx;
 

@@ -9,6 +9,7 @@ import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { useCallback } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
       return;
     }
     const after = useProjectStore.getState().lines;
-    const replaced = replacedInstances(store.lines, after).length > 0;
+    const replaced = replacedInstances(store.lines, after, getSplitCharacter()).length > 0;
     showGroupActionToast(
       replaced ? `${name} shares timing again. Its own timing was replaced.` : `${name} shares timing again`,
     );

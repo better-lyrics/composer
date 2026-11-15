@@ -6,13 +6,14 @@ import { useProjectStore } from "@/stores/project";
 import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
 import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Tests --------------------------------------------------------------------
 
 describe("outgoingTtml", () => {
   it("sends a ttml file's unknown data and song parts back out", () => {
     for (const [, source] of FOREIGN_TTML_FIXTURES) {
-      const parsed = parseTtml(source);
+      const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
       useProjectStore.getState().reset();
       useProjectStore.setState({
         lines: parsed.lines,

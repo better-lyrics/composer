@@ -29,6 +29,7 @@ import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Components ---------------------------------------------------------------
 
@@ -111,7 +112,7 @@ const SyncPanel: React.FC = () => {
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
     setSyncState((prev) => ({ ...prev, isActive: false }));
-    const slot = previousSlot(lines, cursor, granularity);
+    const slot = previousSlot(lines, cursor, granularity, getSplitCharacter());
     const bounds = slot ? slotBounds(lines, slot) : null;
     if (bounds) seekTo(Math.max(0, bounds.begin - useSettingsStore.getState().redoPreroll));
   });
@@ -172,8 +173,8 @@ const SyncPanel: React.FC = () => {
     editMode,
   );
 
-  const progress = useMemo(() => syncProgress(lines, granularity), [lines, granularity]);
-  const syncComplete = useMemo(() => isProjectFullySynced(lines), [lines]);
+  const progress = useMemo(() => syncProgress(lines, granularity, getSplitCharacter()), [lines, granularity]);
+  const syncComplete = useMemo(() => isProjectFullySynced(lines, getSplitCharacter()), [lines]);
 
   const handleGranularityChange = useCallback(
     (newGranularity: "line" | "word") => {
@@ -203,7 +204,7 @@ const SyncPanel: React.FC = () => {
   const noteSyncUndo = useEffectEvent(() => noteGuideSignal("sync.undoTap", lines[lineIndex]?.id));
 
   const lastSyncedTime = useMemo(() => {
-    const slot = previousSlot(lines, cursor, granularity);
+    const slot = previousSlot(lines, cursor, granularity, getSplitCharacter());
     return slot ? slotBounds(lines, slot)?.begin : undefined;
   }, [lines, cursor, granularity]);
 

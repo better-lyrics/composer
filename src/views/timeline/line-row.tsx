@@ -14,6 +14,7 @@ import { PitchLane } from "@/views/timeline/pitch/pitch-lane";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -68,8 +69,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 
   // A line-synced block is drawn by the split character, so a new one redraws the row.
   useSettingsStore((s) => s.splitCharacter);
-  const timedMain = drawnSyllables(line, "main");
-  const timedBackground = drawnSyllables(line, "bg");
+  const timedMain = drawnSyllables(line, "main", getSplitCharacter());
+  const timedBackground = drawnSyllables(line, "bg", getSplitCharacter());
   const mainWords = timedMain.length ? timedMain : null;
   const bgWords = timedBackground.length ? timedBackground : null;
 
@@ -112,7 +113,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={mainWords}
-              pieces={drawnPieces(line, "main")}
+              pieces={drawnPieces(line, "main", getSplitCharacter())}
               color={color}
               trackType="word"
               duration={duration}
@@ -141,7 +142,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={bgWords}
-              pieces={drawnPieces(line, "bg")}
+              pieces={drawnPieces(line, "bg", getSplitCharacter())}
               color={color}
               trackType="bg"
               duration={duration}

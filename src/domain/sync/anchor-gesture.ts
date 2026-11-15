@@ -41,15 +41,20 @@ interface StoredSyncPosition {
 
 // -- Functions ----------------------------------------------------------------
 
-function anchorSlotOf(lines: readonly LyricLine[], gesture: SyncGesture, cursor: SyncCursor): SyncCursor | null {
+function anchorSlotOf(
+  lines: readonly LyricLine[],
+  gesture: SyncGesture,
+  cursor: SyncCursor,
+  splitChar: string,
+): SyncCursor | null {
   if (gesture === "hold-end") return null;
-  return gesture === "hold-tap" ? advanceCursor(lines, cursor, "word") : cursor;
+  return gesture === "hold-tap" ? advanceCursor(lines, cursor, "word", splitChar) : cursor;
 }
 
 // The anchor instance is written as if it had its own timing, so the shared range of its old position does not floor the tap.
 function anchorGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: GestureContext): AnchorGesture | null {
-  const anchorCursor = anchorSlotOf(lines, gesture, ctx.cursor);
-  const anchor = anchorCursor ? sharedAnchorAt(lines, ctx.groups ?? [], anchorCursor) : null;
+  const anchorCursor = anchorSlotOf(lines, gesture, ctx.cursor, ctx.splitChar);
+  const anchor = anchorCursor ? sharedAnchorAt(lines, ctx.groups ?? [], anchorCursor, ctx.splitChar) : null;
   if (!anchorCursor || !anchor) return null;
   const { groupId, instanceIdx } = anchor;
   const groups = (ctx.groups ?? []).map((group) =>

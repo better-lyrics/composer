@@ -72,6 +72,7 @@ import {
   syllableMergeTarget,
   wordMergeTarget,
 } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -88,7 +89,7 @@ function useTimelineKeyboard(
       const currentTime = playheadTime();
 
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
-      const selectedWord = selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null;
+      const selectedWord = selectedWords[0] ? resolveAddress(lines, selectedWords[0], getSplitCharacter()) : null;
       const fromPlayhead = !selectedWord;
       const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge, currentEffectiveFocus());
       if (!targetWord) {
@@ -99,7 +100,7 @@ function useTimelineKeyboard(
       const line = lines[targetWord.lineIndex];
       if (!line) return;
 
-      const wordsArray = drawnSyllables(line, trackRole(targetWord.type));
+      const wordsArray = drawnSyllables(line, trackRole(targetWord.type), getSplitCharacter());
       if (!wordsArray) return;
 
       const wordIndex = targetWord.wordIndex;
@@ -197,7 +198,9 @@ function useTimelineKeyboard(
           e.preventDefault();
           const focus = currentEffectiveFocus();
           const inFocus = lines.filter((line) => isInFocus(line, focus));
-          useTimelineStore.getState().setSelectedWords(inFocus.flatMap(lineWordSelections));
+          useTimelineStore
+            .getState()
+            .setSelectedWords(inFocus.flatMap((value) => lineWordSelections(value, getSplitCharacter())));
           return;
         }
 
@@ -468,7 +471,7 @@ function useTimelineKeyboard(
           const template = instanceToTemplate(
             projectState.lines,
             groupId,
-            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx),
+            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx, getSplitCharacter()),
           );
           if (template.length === 0) {
             toast.error("Could not derive instance template");

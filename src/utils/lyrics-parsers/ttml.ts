@@ -17,7 +17,6 @@ import { extractTimedWords, parseTtmlDocument, parseTtmlTimestamp } from "@/util
 import { partsFromDivs } from "@/utils/lyrics-parsers/ttml-parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { type UntimedLyric, untimedLyric, withUntimedSpans } from "@/utils/lyrics-parsers/ttml-untimed-read";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -35,7 +34,7 @@ const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 
 // -- TTML Parser --------------------------------------------------------------
 
-function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
+function parseTtml(content: string, splitChar: string, _fallbackDuration?: number): ParseResult {
   const metadata: Partial<ProjectMetadata> = {};
   const lines: LyricLine[] = [];
   const lineIndexByKey = new Map<string, number>();
@@ -171,7 +170,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     if (bgContainer) {
       backgroundWords = extractTimedWords(bgContainer, null);
       if (backgroundWords.length > 0) {
-        backgroundText = syllablesText(backgroundWords, getSplitCharacter());
+        backgroundText = syllablesText(backgroundWords, splitChar);
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
@@ -189,16 +188,19 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
     if (words.length > 0) {
       lines.push(
-        lineFromFields({
-          id: generateLineId(),
-          text: syllablesText(words, getSplitCharacter()),
-          agentId,
-          words,
-          backgroundText,
-          backgroundWords,
-          backgroundTextSource,
-          ...groupFields,
-        }),
+        lineFromFields(
+          {
+            id: generateLineId(),
+            text: syllablesText(words, splitChar),
+            agentId,
+            words,
+            backgroundText,
+            backgroundWords,
+            backgroundTextSource,
+            ...groupFields,
+          },
+          splitChar,
+        ),
       );
     } else {
       untimedMain = untimedLyric(p);
@@ -206,23 +208,31 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
       if (text) {
         lines.push(
-          lineFromFields({
-            id: generateLineId(),
-            text,
-            agentId,
-            begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
-            end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
-            backgroundText,
-            backgroundWords,
-            backgroundTextSource,
-            ...groupFields,
-          }),
+          lineFromFields(
+            {
+              id: generateLineId(),
+              text,
+              agentId,
+              begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
+              end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
+              backgroundText,
+              backgroundWords,
+              backgroundTextSource,
+              ...groupFields,
+            },
+            splitChar,
+          ),
         );
       }
     }
     if (lines.length > lineCountBefore) {
-      const captured = withUntimedSpans(lines[lines.length - 1], untimedMain, untimedBackground);
-      lines[lines.length - 1] = withInlineAlternates(withParagraphCapture(captured, p, bgContainer), p, bgContainer);
+      const captured = withUntimedSpans(lines[lines.length - 1], untimedMain, untimedBackground, splitChar);
+      lines[lines.length - 1] = withInlineAlternates(
+        withParagraphCapture(captured, p, bgContainer),
+        p,
+        bgContainer,
+        splitChar,
+      );
       lineByParagraph.set(p, lines[lines.length - 1]);
       lineKeys.push(lineKey ?? undefined);
     }
@@ -231,8 +241,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     }
   }
 
-  parseTtmlAlternates(doc, lines, lineIndexByKey);
-  const parts = partsFromDivs(doc, lineByParagraph);
+  parseTtmlAlternates(doc, lines, lineIndexByKey, splitChar);
+  const parts = partsFromDivs(doc, lineByParagraph, splitChar);
   const passthrough = docPassthrough(doc, lineByParagraph);
 
   return {

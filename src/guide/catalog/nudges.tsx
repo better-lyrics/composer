@@ -21,6 +21,7 @@ import {
   IconUsers,
   IconZoomIn,
 } from "@tabler/icons-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Copy ---------------------------------------------------------------------
 
@@ -120,7 +121,7 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
     title: "Pulling them out one line at a time?",
     body: <>Extract background vocals moves the words in parentheses on every line in one go.</>,
     peek: <>Extract every line at once with this button</>,
-    available: () => useProjectStore.getState().lines.some(lineHasInlineParens),
+    available: () => useProjectStore.getState().lines.some((value) => lineHasInlineParens(value, getSplitCharacter())),
   },
   singerForRange: {
     icon: IconUsers,

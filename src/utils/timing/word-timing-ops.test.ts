@@ -5,6 +5,7 @@ import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
 import type { LineUpdate } from "insync/line";
 import { wordBoundaryEdit, wordRetimeEdit } from "@/utils/timing/word-timing";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("createWordTimingOps: early returns", () => {
   it("nudgeBegin no-ops when line missing", () => {
@@ -141,6 +142,7 @@ describe("main-track ops on drawn lines", () => {
       minDuration: 0.05,
       rolling: false,
       syllablesFollowRolling: false,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(patchOf(edit?.updates, line)).toEqual({ begin: 18 });
   });
@@ -155,6 +157,7 @@ describe("main-track ops on drawn lines", () => {
       minDuration: 0.05,
       rolling: false,
       syllablesFollowRolling: false,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(patchOf(edit?.updates, line)).toEqual({ end: 21 });
   });

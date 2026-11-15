@@ -11,6 +11,7 @@ import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sy
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const DUR = 0.3;
@@ -21,6 +22,7 @@ function run(lines: LyricLine[], gesture: SyncGesture, cursor: [number, number],
     jumped,
     time,
     defaultWordDuration: DUR,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
 }
 
@@ -35,7 +37,10 @@ function apply(lines: LyricLine[], commit: GestureCommit | null): LyricLine[] {
 function flatTimings(lines: LyricLine[]) {
   return lines.flatMap((l) => {
     const span = mainBounds(l);
-    return roleWords(l, "main") ?? (span ? [{ text: lineText(l), begin: span.begin, end: span.end }] : []);
+    return (
+      roleWords(l, "main") ??
+      (span ? [{ text: lineText(l, DEFAULT_SPLIT_CHARACTER), begin: span.begin, end: span.end }] : [])
+    );
   });
 }
 
@@ -251,25 +256,37 @@ describe("tap-line", () => {
       }),
     ];
     const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
-    expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
+    expect(fieldsOfLine(after[0], DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+      begin: 4,
+      end: 6,
+      backgroundWords: [word("oh", 5, 6)],
+    });
   });
 
   it("regression: moving a line-synced line seeds a background span it never stored", () => {
     const lines = [createLine({ id: "l0", text: "a", begin: 10, end: 12, backgroundText: "oh" })];
     const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
-    expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundText: "oh" });
+    expect(fieldsOfLine(after[0], DEFAULT_SPLIT_CHARACTER)).toMatchObject({ begin: 4, end: 6, backgroundText: "oh" });
     expect(backgroundTrack(after[0])).toMatchObject({ begin: 5, end: 6 });
   });
 
   it("regression: a word-mode tap never moves a background span before zero", () => {
-    const seeded = withSeededBackground(createLine({ id: "l0", text: "a", begin: 10, end: 14, backgroundText: "oh" }));
+    const seeded = withSeededBackground(
+      createLine({ id: "l0", text: "a", begin: 10, end: 14, backgroundText: "oh" }),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const lines = [withBackgroundTrack(seeded, withTrackSpan(backgroundTrack(seeded)!, 6, 8))];
     const after = apply(lines, run(lines, "tap-word", [0, 0], 1));
     expect(backgroundTrack(after[0])).toMatchObject({ begin: 0, end: 2 });
   });
 
   it("a word-mode tap moves a line-synced background span with its line", () => {
-    const lines = [withSeededBackground(createLine({ id: "l0", text: "a", begin: 10, end: 12, backgroundText: "oh" }))];
+    const lines = [
+      withSeededBackground(
+        createLine({ id: "l0", text: "a", begin: 10, end: 12, backgroundText: "oh" }),
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+    ];
     const after = apply(lines, run(lines, "tap-word", [0, 0], 4));
     expect(backgroundTrack(after[0])).toMatchObject({ begin: 5, end: 6 });
   });

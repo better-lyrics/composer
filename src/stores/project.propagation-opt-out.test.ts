@@ -14,6 +14,7 @@ import { commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // Regression coverage for issue #96: resyncing one instance of a group must not retime the other instances. Timing
 // edits never change a group line's content, so they never reach other instances through the template.
@@ -45,24 +46,30 @@ function seedTwoWordSyncedInstances() {
   useProjectStore.setState({
     groups: [seedGroup("g1")],
     lines: [
-      lineFromFields({
-        id: "a0",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-      }),
-      lineFromFields({
-        id: "a1",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
-      }),
+      lineFromFields(
+        {
+          id: "a0",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "a1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ],
     isDirtySinceHistory: true,
   });
@@ -104,7 +111,9 @@ describe("line edits on one instance", () => {
   });
 
   it("works for a non-grouped line (regression)", () => {
-    useProjectStore.setState({ lines: [lineFromFields({ id: "s", text: "standalone", agentId: "v1" })] });
+    useProjectStore.setState({
+      lines: [lineFromFields({ id: "s", text: "standalone", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)],
+    });
 
     useProjectStore.getState().commit(
       lineEditCommand({ command: "edit lines", args: [] }, () =>
@@ -162,6 +171,7 @@ describe("instance resync · issue #96 reproduction", () => {
       jumped: false,
       time: begin,
       defaultWordDuration: 0.3,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!commit) throw new Error("expected a commit");
     useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
@@ -200,33 +210,42 @@ describe("instance resync · issue #96 reproduction", () => {
     ];
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "a0",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        }),
-        lineFromFields({
-          id: "a1",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
-        }),
-        lineFromFields({
-          id: "a2",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 2,
-          templateLineIdx: 0,
-          words: cWords.map((w) => ({ ...w })),
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "a1",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "a2",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 2,
+            templateLineIdx: 0,
+            words: cWords.map((w) => ({ ...w })),
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
 
@@ -259,6 +278,7 @@ describe("instance resync · issue #96 reproduction", () => {
       jumped: false,
       time: 0.5,
       defaultWordDuration: 0.3,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!commit) throw new Error("expected a commit");
     useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
@@ -297,7 +317,10 @@ describe("line edits on one instance · edge cases", () => {
         lineEditCommand({ command: "edit lines", args: [] }, () => [
           {
             id: "nope",
-            updates: { tracks: lineFromFields({ id: "nope", text: "", agentId: "v1", words: [] }).tracks },
+            updates: {
+              tracks: lineFromFields({ id: "nope", text: "", agentId: "v1", words: [] }, DEFAULT_SPLIT_CHARACTER)
+                .tracks,
+            },
           },
         ]),
       ),
@@ -310,15 +333,18 @@ describe("line edits on one instance · edge cases", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "solo",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        }),
+        lineFromFields(
+          {
+            id: "solo",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     });
 
@@ -345,15 +371,18 @@ describe("line edits on one instance · edge cases", () => {
     useProjectStore.setState((s) => ({
       lines: [
         ...s.lines,
-        lineFromFields({
-          id: "x",
-          text: "other",
-          agentId: "v1",
-          groupId: "g2",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: otherWords.map((w) => ({ ...w })),
-        }),
+        lineFromFields(
+          {
+            id: "x",
+            text: "other",
+            agentId: "v1",
+            groupId: "g2",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: otherWords.map((w) => ({ ...w })),
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
     }));
 
@@ -397,28 +426,34 @@ describe("timing nudges · do not propagate to siblings", () => {
     useProjectStore.setState({
       groups: [seedGroup("g1")],
       lines: [
-        lineFromFields({
-          id: "a0",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        }),
-        lineFromFields({
-          id: "a1",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          words: [
-            { id: "w34", text: "I", sep: " ", begin: 10, end: 10.5, joinsNext: false },
-            { id: "w35", text: "LOVE", sep: " ", begin: 10.5, end: 11.0, joinsNext: false },
-            { id: "w36", text: "you", sep: "", begin: 11.0, end: 11.5, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "a1",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            words: [
+              { id: "w34", text: "I", sep: " ", begin: 10, end: 10.5, joinsNext: false },
+              { id: "w35", text: "LOVE", sep: " ", begin: 10.5, end: 11.0, joinsNext: false },
+              { id: "w36", text: "you", sep: "", begin: 11.0, end: 11.5, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       isDirtySinceHistory: true,
     });
@@ -441,26 +476,32 @@ describe("timing nudges · do not propagate to siblings", () => {
     useProjectStore.setState({
       groups: [seedGroup("g1")],
       lines: [
-        lineFromFields({
-          id: "a0",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          begin: 30,
-          end: 32,
-        }),
-        lineFromFields({
-          id: "a1",
-          text: "I love you",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          begin: 60,
-          end: 62,
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            begin: 30,
+            end: 32,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "a1",
+            text: "I love you",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            begin: 60,
+            end: 62,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       isDirtySinceHistory: true,
     });

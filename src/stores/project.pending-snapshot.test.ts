@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const DUET_TTML = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Duet</ttm:title><ttm:agent type="person" xml:id="v1"><ttm:name type="full">Alice</ttm:name></ttm:agent><ttm:agent type="person" xml:id="v2"><ttm:name type="full">Bob</ttm:name></ttm:agent></metadata></head><body><div><p begin="1.0" end="2.0" ttm:agent="v1">Line one</p><p begin="2.0" end="3.0" ttm:agent="v2">Line two</p></div></body></tt>`;
 
@@ -35,7 +36,10 @@ describe("writes outside history leave a pending snapshot", () => {
       useProjectStore.getState().undo();
 
       expect(agentNames()).toEqual(["Lead", undefined]);
-      expect(fieldsOfLine(useProjectStore.getState().lines[0])).toMatchObject({ begin: 1, end: 2 });
+      expect(fieldsOfLine(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+        begin: 1,
+        end: 2,
+      });
     });
 
     it("regression: undo after restoring a song identity and a timeline edit keeps the restored names", () => {

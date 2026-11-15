@@ -8,6 +8,7 @@ import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import { createLine } from "@/test/factories";
 import { withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -31,7 +32,11 @@ function fingerprintsOf(lines: LyricLine[]): Record<string, string> {
 
 function nudged(line: LyricLine, by: number): LyricLine {
   const [first, ...rest] = timedSyllables(mainTrack(line));
-  return createLine({ id: line.id, text: lineText(line), words: [{ ...first, begin: first.begin + by }, ...rest] });
+  return createLine({
+    id: line.id,
+    text: lineText(line, DEFAULT_SPLIT_CHARACTER),
+    words: [{ ...first, begin: first.begin + by }, ...rest],
+  });
 }
 
 const SONG = Array.from({ length: 8 }, (_, i) => alignedLine(`L${i + 1}`, i * 4));
@@ -71,7 +76,7 @@ describe("alignmentReview", () => {
   it("counts a background vocal timing edit as review", () => {
     const withBackground = SONG.map((line) =>
       createLine({
-        ...fieldsOfLine(line),
+        ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER),
         words: roleWords(line, "main"),
         backgroundText: "ooh",
         backgroundWords: [{ text: "ooh", begin: 15, end: 15.5 }],
@@ -121,9 +126,15 @@ describe("fingerprintChanged", () => {
 
   it("regression: a linked sibling replaced with the same timing is not recorded as aligned", () => {
     const line = SONG[0];
-    expect(fingerprintChanged(line, lineFromFields({ ...fieldsOfLine(line), text: "Is this the real life?" }))).toBe(
-      false,
-    );
+    expect(
+      fingerprintChanged(
+        line,
+        lineFromFields(
+          { ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER), text: "Is this the real life?" },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+      ),
+    ).toBe(false);
   });
 });
 

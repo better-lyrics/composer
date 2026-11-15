@@ -26,6 +26,7 @@ import {
 import { useTimelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Components ----------------------------------------------------------------
 
@@ -92,7 +93,7 @@ const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, 
       <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
     </div>
 
-    <BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />
+    <BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line, getSplitCharacter())} />
 
     <div className="flex items-center gap-2 ml-auto">
       <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin} title="Set begin to cursor ([)">
@@ -114,7 +115,7 @@ const TimelineInfoPanel: React.FC = () => {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const lines = useTimelineDrawnLines(rawLines);
   const selectedWord = useMemo(
-    () => (selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null),
+    () => (selectedWords[0] ? resolveAddress(lines, selectedWords[0], getSplitCharacter()) : null),
     [selectedWords, lines],
   );
   const highlight = useMemo(

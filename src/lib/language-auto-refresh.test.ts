@@ -16,6 +16,7 @@ import {
 } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -47,7 +48,9 @@ describe("createLanguageAutoRefresh", () => {
 
     const line = lineById("a");
     expect(line.languages?.transliteration?.main.text).toBe("Zdravstvuy  moy  drug");
-    expect(line.languages?.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(lineText(line)));
+    expect(line.languages?.transliteration?.sourceFingerprint).toBe(
+      languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, lineText(line, DEFAULT_SPLIT_CHARACTER)),
+    );
     expect(line.languages?.translations?.en.main.text).toBe("Hello my friend");
     expect(romanizedWords("a")).toEqual(["Zdravstvuy", "moy", "drug"]);
   });
@@ -253,7 +256,7 @@ describe("createLanguageAutoRefresh", () => {
       });
       useProjectStore.setState({ lines: [timedLine("a", ["Привет,", "мир"], ["Privet,", "mir"])] });
       const edited = legacyLine({
-        ...fieldsOfLine(lineById("a")),
+        ...fieldsOfLine(lineById("a"), DEFAULT_SPLIT_CHARACTER),
         text: "Здравствуй, мир",
         words: [
           { id: "w1", text: "Здравствуй,", sep: " ", begin: 1, end: 2, transliteration: "Privet,", joinsNext: false },

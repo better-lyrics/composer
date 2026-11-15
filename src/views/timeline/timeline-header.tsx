@@ -40,6 +40,7 @@ import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls"
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCueShortcuts } from "@/views/timeline/use-cue-shortcuts";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface TimelineHeaderProps {
   onImportLyrics?: () => void;
@@ -56,7 +57,9 @@ interface LineFacts {
 const lineFacts = memoByIdentity(
   (lines: readonly LyricLine[]): LineFacts => ({
     hasTransliteration: hasTransliteration(lines),
-    hasUnexpandedLines: lines.some((l) => !timedSyllables(mainTrack(l)).length && lineText(l).trim().length > 0),
+    hasUnexpandedLines: lines.some(
+      (l) => !timedSyllables(mainTrack(l)).length && lineText(l, getSplitCharacter()).trim().length > 0,
+    ),
     instanceKeys: [...new Set(lines.flatMap((l) => (isLinked(l) ? [instanceKey(l.groupId, l.instanceIdx)] : [])))],
   }),
 );
@@ -100,7 +103,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     for (const line of lines) {
       const main = mainTrack(line);
       if (timedSyllables(main).length) continue;
-      if (!lineText(line).trim()) continue;
+      if (!lineText(line, getSplitCharacter()).trim()) continue;
       const written = isLineSynced(line)
         ? convertLineToWord(line)
         : withRoleWords(

@@ -4,15 +4,25 @@ import type { LyricLine } from "insync/line";
 
 // -- Functions ----------------------------------------------------------------
 
-function templateSourceInstance(lines: readonly LyricLine[], group: LinkGroup | undefined, fallback: number): number {
+function templateSourceInstance(
+  lines: readonly LyricLine[],
+  group: LinkGroup | undefined,
+  fallback: number,
+  splitChar: string,
+): number {
   if (!group?.sharesTiming) return fallback;
   const shared = sharedInstancesInLineOrder(lines, group);
-  return firstFullyTimedInstance(lines, group.id, shared) ?? shared[0] ?? fallback;
+  return firstFullyTimedInstance(lines, group.id, shared, splitChar) ?? shared[0] ?? fallback;
 }
 
-function pickedTemplateSource(lines: readonly LyricLine[], group: LinkGroup | undefined, picked: number): number {
+function pickedTemplateSource(
+  lines: readonly LyricLine[],
+  group: LinkGroup | undefined,
+  picked: number,
+  splitChar: string,
+): number {
   if (!group?.sharesTiming || sharesTiming(group, picked)) return picked;
-  return templateSourceInstance(lines, group, picked);
+  return templateSourceInstance(lines, group, picked, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

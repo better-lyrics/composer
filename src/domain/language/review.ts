@@ -13,21 +13,22 @@ function fieldSide(field: "words" | "backgroundWords"): LanguageSide {
   return field === "words" ? "main" : "bg";
 }
 
-function isTransliterationSourceStale(line: LyricLine, field: "words" | "backgroundWords"): boolean {
+function isTransliterationSourceStale(line: LyricLine, field: "words" | "backgroundWords", splitChar: string): boolean {
   const track = lineTransliteration(line);
   const side = track?.[fieldSide(field)];
   if (!track || !side?.text) return false;
-  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+  const fingerprint = languageSourceFingerprint(splitChar, lineText(line, splitChar), backgroundText(line, splitChar));
   return track.sourceFingerprint !== fingerprint && side.reviewedSourceFingerprint !== fingerprint;
 }
 
 function confirmTransliterationAlignment(
   line: LyricLine,
   field: "words" | "backgroundWords",
+  splitChar: string,
 ): LineLanguage | undefined {
   const current = lineTransliteration(line);
   if (!current) return undefined;
-  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+  const fingerprint = languageSourceFingerprint(splitChar, lineText(line, splitChar), backgroundText(line, splitChar));
   const side = fieldSide(field);
   const track: LineLanguage = {
     ...current,
@@ -35,8 +36,8 @@ function confirmTransliterationAlignment(
   };
   const reviewedLine = { ...line, ...withLanguages(line, { transliteration: track }) };
   if (
-    !isTransliterationSourceStale(reviewedLine, "words") &&
-    !isTransliterationSourceStale(reviewedLine, "backgroundWords")
+    !isTransliterationSourceStale(reviewedLine, "words", splitChar) &&
+    !isTransliterationSourceStale(reviewedLine, "backgroundWords", splitChar)
   ) {
     return {
       ...track,
@@ -61,14 +62,17 @@ function alignmentNeedsReview(track: LineLanguage | undefined, part: "main" | "b
   return status === "needs-review";
 }
 
-function getLanguageReviewTracks(line: LyricLine): LanguageReviewTrack[] {
-  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+function getLanguageReviewTracks(line: LyricLine, splitChar: string): LanguageReviewTrack[] {
+  const fingerprint = languageSourceFingerprint(splitChar, lineText(line, splitChar), backgroundText(line, splitChar));
   const tracks: LanguageReviewTrack[] = [];
 
   const transliteration = lineTransliteration(line);
   if (transliteration) {
     const reasons: LanguageReviewReason[] = [];
-    if (isTransliterationSourceStale(line, "words") || isTransliterationSourceStale(line, "backgroundWords")) {
+    if (
+      isTransliterationSourceStale(line, "words", splitChar) ||
+      isTransliterationSourceStale(line, "backgroundWords", splitChar)
+    ) {
       reasons.push("source-changed");
     }
     if (alignmentNeedsReview(transliteration, "main") || alignmentNeedsReview(transliteration, "background")) {
@@ -85,10 +89,10 @@ function getLanguageReviewTracks(line: LyricLine): LanguageReviewTrack[] {
   return tracks;
 }
 
-function getLanguageReviewItems(lines: LyricLine[]): LanguageReviewItem[] {
+function getLanguageReviewItems(lines: LyricLine[], splitChar: string): LanguageReviewItem[] {
   return lines.flatMap((line, lineIndex) => {
-    const tracks = getLanguageReviewTracks(line);
-    return tracks.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line), tracks }] : [];
+    const tracks = getLanguageReviewTracks(line, splitChar);
+    return tracks.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line, splitChar), tracks }] : [];
   });
 }
 

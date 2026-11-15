@@ -3,6 +3,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText, trackText } from "@/domain/line/text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { createLine, createWords } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("tracksFromFields", () => {
   it("timed syllables are today's words and the text reads back", () => {
@@ -20,22 +21,22 @@ describe("tracksFromFields", () => {
         .syllables.slice(3)
         .map((syllable) => syllable.text),
     ).toEqual(["drifting", "slow"]);
-    expect(lineText(line)).toBe("Paper lan|terns drifting slow");
+    expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("Paper lan|terns drifting slow");
   });
 });
 
 describe("lineFromFields on a partly synced line", () => {
   it("reads the join after the last text part a timed word covers, not the word's index", () => {
     const words = createWords([{ text: "oh yeah", sep: "", begin: 1, end: 2, joinsNext: false }]);
-    const line = lineFromFields({ id: "l1", agentId: "v1", text: "oh yeah|ba by", words });
+    const line = lineFromFields({ id: "l1", agentId: "v1", text: "oh yeah|ba by", words }, DEFAULT_SPLIT_CHARACTER);
     expect(timedSyllables(mainTrack(line)).map((word) => word.joinsNext)).toEqual([true]);
   });
 });
 
 describe("text joints", () => {
   it("regression: an ideographic space between untimed words gets no split mark", () => {
-    const line = lineFromFields({ id: "cjk", agentId: "v1", text: "你好\u3000世界" });
-    expect(lineText(line)).toBe("你好\u3000世界");
+    const line = lineFromFields({ id: "cjk", agentId: "v1", text: "你好\u3000世界" }, DEFAULT_SPLIT_CHARACTER);
+    expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("你好\u3000世界");
   });
 });
 
@@ -96,10 +97,10 @@ describe("a load never drops the untimed rest", () => {
 
 describe("syllable ids", () => {
   it("regression: untimed syllables never take the id of a timed syllable rebuilt with them", () => {
-    const loaded = lineFromFields({ id: "l1", agentId: "v1", text: "a b" });
+    const loaded = lineFromFields({ id: "l1", agentId: "v1", text: "a b" }, DEFAULT_SPLIT_CHARACTER);
     const [first] = mainTrack(loaded).syllables;
     const words = [{ ...first, begin: 1, end: 2 }];
-    const rebuilt = lineFromFields({ id: "l1", agentId: "v1", text: "a b c d", words });
+    const rebuilt = lineFromFields({ id: "l1", agentId: "v1", text: "a b c d", words }, DEFAULT_SPLIT_CHARACTER);
     const ids = mainTrack(rebuilt).syllables.map((syllable) => syllable.id);
     expect(mainTrack(rebuilt).syllables.map((syllable) => syllable.text)).toEqual(["a", "b", "c", "d"]);
     expect(new Set(ids).size).toBe(ids.length);

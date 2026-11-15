@@ -9,6 +9,7 @@ import { render } from "@/test/render";
 import { firstBegin, jumpToRow, key, lineById, load, song, tapAt, undo } from "@/test/shared-timing-sync";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -118,8 +119,8 @@ describe("SyncPanel · shared instance anchor", () => {
     const screen = await render(<SyncPanel />);
     await jumpToRow(screen, 3);
     await tapAt(40, () => firstBegin("c1-0"));
-    expect(fieldsOfLine(lineById("c1-0")!)).toMatchObject({ begin: 40, end: 41 });
-    expect(fieldsOfLine(lineById("c1-1")!)).toMatchObject({ begin: 41, end: 42 });
+    expect(fieldsOfLine(lineById("c1-0")!, getSplitCharacter())).toMatchObject({ begin: 40, end: 41 });
+    expect(fieldsOfLine(lineById("c1-1")!, getSplitCharacter())).toMatchObject({ begin: 41, end: 42 });
     await tapAt(50, () => firstBegin("v2"));
     expect(firstBegin("v2")).toBe(50);
   });

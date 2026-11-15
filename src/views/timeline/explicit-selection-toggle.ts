@@ -4,6 +4,7 @@ import { trackField } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -27,10 +28,10 @@ function resolveExplicitSelectionToggle(
   const linesById = new Map(lines.map((l) => [l.id, l]));
   const groups = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
 
-  for (const w of resolveAddresses(lines, selection)) {
+  for (const w of resolveAddresses(lines, selection, getSplitCharacter())) {
     const field = trackField(w.type);
     const line = linesById.get(w.lineId);
-    const wordsArr = line ? explicitFieldWords(line, field) : undefined;
+    const wordsArr = line ? explicitFieldWords(line, field, getSplitCharacter()) : undefined;
     if (!wordsArr || w.wordIndex < 0 || w.wordIndex >= wordsArr.length) continue;
     const key = `${w.lineId}:${field}`;
     const existing = groups.get(key);
@@ -43,7 +44,7 @@ function resolveExplicitSelectionToggle(
 
   for (const group of groups.values()) {
     const groupLine = linesById.get(group.lineId);
-    const wordsArr = groupLine && explicitFieldWords(groupLine, group.field);
+    const wordsArr = groupLine && explicitFieldWords(groupLine, group.field, getSplitCharacter());
     if (!wordsArr) continue;
     const expanded = expandSelectionToGroupmates(wordsArr, group.indices).filter((i) => i >= 0 && i < wordsArr.length);
     for (const idx of expanded) {

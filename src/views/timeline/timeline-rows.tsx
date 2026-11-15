@@ -16,6 +16,7 @@ import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store"
 import { type DrawnRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -39,10 +40,12 @@ function retimeWordAt(
   adjacentUpdates?: Partial<WordTiming>,
 ): void {
   const project = useProjectStore.getState();
-  const address = addressAt(project.lines, lineId, type, wordIndex);
+  const address = addressAt(project.lines, lineId, type, wordIndex, getSplitCharacter());
   if (!address) return;
   const neighbour =
-    adjacentIndex !== undefined && adjacentUpdates ? addressAt(project.lines, lineId, type, adjacentIndex) : null;
+    adjacentIndex !== undefined && adjacentUpdates
+      ? addressAt(project.lines, lineId, type, adjacentIndex, getSplitCharacter())
+      : null;
   if (adjacentIndex !== undefined && adjacentUpdates && !neighbour) return;
   project.commit(
     retimeWord({ address, updates }, neighbour ? { address: neighbour, updates: adjacentUpdates ?? {} } : undefined),

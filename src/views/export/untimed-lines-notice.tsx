@@ -3,13 +3,16 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { pluralize } from "@/utils/pluralize";
 import { IconClockExclamation, IconHandClick } from "@tabler/icons-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Component ----------------------------------------------------------------
 
 // A blocking check, not a tip: lines with no timing never show for listeners, so it sits where you export.
 const UntimedLinesNotice: React.FC = () => {
   const untimedCount = useProjectStore(
-    (state) => state.lines.filter((line) => isSyncableLine(line) && !isLineTimed(line)).length,
+    (state) =>
+      state.lines.filter((line) => isSyncableLine(line, getSplitCharacter()) && !isLineTimed(line, getSplitCharacter()))
+        .length,
   );
   if (untimedCount === 0) return null;
   return (

@@ -10,6 +10,7 @@ import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { LanguageField as Field } from "@/views/languages/language-field";
 import type { AlignmentField } from "@/views/languages/transliteration-alignment-modal";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -69,7 +70,8 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
         mono
         value={transliteration?.bg?.text ?? ""}
         status={
-          isTransliterationSourceStale(line, "backgroundWords") || alignmentNeedsReview(transliteration, "background")
+          isTransliterationSourceStale(line, "backgroundWords", getSplitCharacter()) ||
+          alignmentNeedsReview(transliteration, "background")
             ? "review"
             : undefined
         }
@@ -92,19 +94,25 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
           }
           const main = current?.main ?? { text: "", segments: [] };
           update(
-            alignTrackToLine(line, {
-              language: `${sourceLanguage || "und"}-Latn`,
-              ...current,
-              main: { ...main, reviewedSourceFingerprint: undefined },
-              bg: {
-                ...current?.bg,
-                text: value,
-                segments: value.trim() ? [{ original: backgroundText(line) ?? "", transliteration: value.trim() }] : [],
-                reviewedSourceFingerprint: undefined,
+            alignTrackToLine(
+              line,
+              {
+                language: `${sourceLanguage || "und"}-Latn`,
+                ...current,
+                main: { ...main, reviewedSourceFingerprint: undefined },
+                bg: {
+                  ...current?.bg,
+                  text: value,
+                  segments: value.trim()
+                    ? [{ original: backgroundText(line, getSplitCharacter()) ?? "", transliteration: value.trim() }]
+                    : [],
+                  reviewedSourceFingerprint: undefined,
+                },
+                origin: "manual",
+                sourceFingerprint: fingerprint,
               },
-              origin: "manual",
-              sourceFingerprint: fingerprint,
-            }),
+              getSplitCharacter(),
+            ),
           );
         }}
       />

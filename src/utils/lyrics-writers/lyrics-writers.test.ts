@@ -12,6 +12,7 @@ import { parseSrt } from "@/utils/lyrics-parsers/srt";
 import { writeLrc } from "@/utils/lyrics-writers/lrc";
 import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -58,7 +59,10 @@ describe("writeLrc", () => {
   });
 
   it("regression: times a line-synced background by its own span", () => {
-    const line = withSeededBackground(createLine({ text: "Low tide", begin: 10, end: 14, backgroundText: "ooh" }));
+    const line = withSeededBackground(
+      createLine({ text: "Low tide", begin: 10, end: 14, backgroundText: "ooh" }),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(writeQrc(doc([line]))).toContain("(ooh)(12000,2000)");
   });
 
@@ -71,7 +75,9 @@ describe("writeLrc", () => {
   it("round-trips line timing through the LRC parser", () => {
     const parsed = parseLrc(writeLrc(doc([lineSynced("Hello", 1, 2), lineSynced("World", 5, 7.5)])));
 
-    expect(parsed.lines.map((line) => [lineText(line), mainTrack(line).begin, mainTrack(line).end])).toEqual([
+    expect(
+      parsed.lines.map((line) => [lineText(line, DEFAULT_SPLIT_CHARACTER), mainTrack(line).begin, mainTrack(line).end]),
+    ).toEqual([
       ["Hello", 1, 2],
       ["World", 5, 7.5],
     ]);
@@ -186,7 +192,9 @@ describe("writeSrt", () => {
   it("round-trips through the SRT parser", () => {
     const parsed = parseSrt(writeSrt(doc([lineSynced("Hello", 1, 2.5), wordLine("a")])));
 
-    expect(parsed.lines.map((line) => [lineText(line), mainTrack(line).begin, mainTrack(line).end])).toEqual([
+    expect(
+      parsed.lines.map((line) => [lineText(line, DEFAULT_SPLIT_CHARACTER), mainTrack(line).begin, mainTrack(line).end]),
+    ).toEqual([
       ["Hello", 1, 2.5],
       ["Is it so", 34.059, 34.413],
     ]);

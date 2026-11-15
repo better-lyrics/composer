@@ -9,12 +9,16 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const ownTiming: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
 const shared: LinkGroup = { ...ownTiming, sharesTiming: true };
 
 const groupLine = (id: string, instanceIdx: number, fields: Partial<LineFields>) =>
-  lineFromFields({ id, text: "", agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx: 0, ...fields });
+  lineFromFields(
+    { id, text: "", agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx: 0, ...fields },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
 const words = (begin: number, texts: readonly string[], step = 0.5) =>
   texts.map((text, index) => ({
@@ -29,12 +33,15 @@ const words = (begin: number, texts: readonly string[], step = 0.5) =>
 const spans = (line: LyricLine) => timedSyllables(mainTrack(line)).map((word) => [word.text, word.begin, word.end]);
 
 function carried(before: LyricLine[], after: LyricLine[], groups: LinkGroup[] = [ownTiming]): LyricLine[] {
-  return carryTemplateEdits({ before, after, groups }).lines;
+  return carryTemplateEdits({ before, after, groups, splitChar: DEFAULT_SPLIT_CHARACTER }).lines;
 }
 
 describe("carryTemplateEdits", () => {
   it("keeps the lines when no group line's content changed", () => {
-    const lines = [groupLine("L1", 0, { text: "glow" }), lineFromFields({ id: "L2", text: "plain", agentId: "v1" })];
+    const lines = [
+      groupLine("L1", 0, { text: "glow" }),
+      lineFromFields({ id: "L2", text: "plain", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const after = lines.with(1, withFields(lines[1], { text: "edited" }));
     expect(carried(lines, after)).toBe(after);
   });
@@ -43,7 +50,7 @@ describe("carryTemplateEdits", () => {
     const before = [groupLine("L1", 0, { text: "stale" }), groupLine("L2", 1, { text: "stale" })];
     const after = before.with(0, withFields(before[0], { text: "edited" }));
     const out = carried(before, after);
-    expect(out.map(lineText)).toEqual(["edited", "edited"]);
+    expect(out.map((value) => lineText(value, DEFAULT_SPLIT_CHARACTER))).toEqual(["edited", "edited"]);
     expect(out[0]).toBe(after[0]);
   });
 
@@ -94,12 +101,12 @@ describe("carryTemplateEdits", () => {
       }),
     );
     const out = carried(before, after)[1];
-    expect([lineText(out), mainTrack(out).agentId, backgroundText(out), backgroundTrack(out)?.source]).toEqual([
-      "Hello",
-      "v2",
-      "ooh",
-      "extraction",
-    ]);
+    expect([
+      lineText(out, DEFAULT_SPLIT_CHARACTER),
+      mainTrack(out).agentId,
+      backgroundText(out, DEFAULT_SPLIT_CHARACTER),
+      backgroundTrack(out)?.source,
+    ]).toEqual(["Hello", "v2", "ooh", "extraction"]);
     expect(spans(out)).toEqual([["Hello", 9, 10]]);
   });
 
@@ -125,7 +132,7 @@ describe("carryTemplateEdits", () => {
     const before = [groupLine("L1", 0, withBackground), groupLine("L2", 1, withBackground)];
     const after = before.with(0, groupLine("L1", 0, { text: "main" }));
     const out = carried(before, after);
-    expect(backgroundText(out[1])).toBeUndefined();
+    expect(backgroundText(out[1], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     expect(backgroundTrack(out[1])).toBeUndefined();
   });
 
@@ -133,7 +140,10 @@ describe("carryTemplateEdits", () => {
     const before = [
       groupLine("L1", 0, { text: "stale" }),
       groupLine("L2", 1, { text: "stale", detached: true }),
-      lineFromFields({ id: "L3", text: "stale", agentId: "v1", groupId: "g2", instanceIdx: 0, templateLineIdx: 0 }),
+      lineFromFields(
+        { id: "L3", text: "stale", agentId: "v1", groupId: "g2", instanceIdx: 0, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       groupLine("L4", 1, { text: "stale", templateLineIdx: 1 }),
     ];
     const after = before.with(0, withFields(before[0], { text: "edited" }));
@@ -151,7 +161,11 @@ describe("carryTemplateEdits · two instances edited at once", () => {
     const after = before
       .with(0, withFields(before[0], { text: "first" }))
       .with(2, withFields(before[2], { text: "second" }));
-    expect(carried(before, after).map(lineText)).toEqual(["first", "first", "second"]);
+    expect(carried(before, after).map((value) => lineText(value, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "first",
+      "first",
+      "second",
+    ]);
   });
 });
 
@@ -172,7 +186,7 @@ describe("carryTemplateEdits · syllable ids", () => {
   it("regression: an untimed copy that already differed never takes the edited instance's syllable ids", () => {
     const before = [groupLine("L1", 0, { text: "We glow tonight" }), groupLine("L2", 1, { text: "We glow" })];
     const out = carried(before, before.with(0, withFields(before[0], { text: "We glow so bright" })));
-    expect(lineText(out[1])).toBe("We glow so bright");
+    expect(lineText(out[1], DEFAULT_SPLIT_CHARACTER)).toBe("We glow so bright");
     expect(ids(out[1]).filter((id) => ids(out[0]).includes(id))).toEqual([]);
   });
 
@@ -199,7 +213,7 @@ describe("carryTemplateEdits · a line-synced edit on a word-synced instance", (
     ];
     for (const text of ["We glow tonight now", "So we glow tonight"]) {
       const out = carried(before, before.with(0, withFields(before[0], { text })))[1];
-      expect(lineText(out)).toBe(text);
+      expect(lineText(out, DEFAULT_SPLIT_CHARACTER)).toBe(text);
       expect(spans(out).filter(([word]) => word === "glow" || word === "tonight")).toEqual([
         ["glow", 40.5, 41],
         ["tonight", 41, 41.5],
@@ -209,7 +223,10 @@ describe("carryTemplateEdits · a line-synced edit on a word-synced instance", (
 });
 
 describe("carryTemplateEdits · a word added at the front", () => {
-  const earlierLine = lineFromFields({ id: "P", text: "Low tide", agentId: "v1", begin: 36, end: 38 });
+  const earlierLine = lineFromFields(
+    { id: "P", text: "Low tide", agentId: "v1", begin: 36, end: 38 },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
   it("regression: a line-synced edit puts the new first word in the instance's own room, never back to zero", () => {
     const before = [

@@ -3,6 +3,7 @@ import type { ProjectTab } from "@/domain/project/tab";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -31,7 +32,7 @@ const CARD_ROOM: Record<string, string> = {
 function useOrbPlacement(activeTab: ProjectTab): OrbPlacement {
   // Export opens its side panel only once there is synced content to export.
   const exportPanel = useProjectStore(
-    (state) => state.activeTab === "export" && syncProgress(state.lines, "line").done > 0,
+    (state) => state.activeTab === "export" && syncProgress(state.lines, "line", getSplitCharacter()).done > 0,
   );
   // The footer stops short of the Timeline preview sidebar, so with the sidebar open the orb stays in its corner.
   const previewSidebar = useSettingsStore((state) => state.previewSidebar);

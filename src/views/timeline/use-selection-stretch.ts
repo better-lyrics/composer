@@ -19,6 +19,7 @@ import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -122,7 +123,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
 
       const { lines: snapshotLines, groups } = useProjectStore.getState();
       const selectedAddresses = useTimelineStore.getState().selectedWords;
-      const selection = resolveAddresses(snapshotLines, selectedAddresses);
+      const selection = resolveAddresses(snapshotLines, selectedAddresses, getSplitCharacter());
       const duration = useAudioStore.getState().duration;
       const options = {
         rangeOf: timeRangeResolver(snapshotLines, groups, duration),
@@ -171,7 +172,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
           finish(false);
           return;
         }
-        const updates = mapStretchTargets(targets, k, anchorTime);
+        const updates = mapStretchTargets(targets, k, anchorTime, getSplitCharacter());
         lastWritten = applyStretchUpdates(snapshotLines, updates);
         writePreviewLines(lastWritten);
       }

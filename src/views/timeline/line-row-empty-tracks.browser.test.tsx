@@ -11,6 +11,7 @@ import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const TRACK_OFFSET_PX = 137;
 
@@ -68,7 +69,7 @@ describe("EmptyWordTrack", () => {
     const after = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(after)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(timedSyllables(mainTrack(after))[0].begin).toBeLessThanOrEqual(3);
-    expect(lineText(after)).toBe("hello world");
+    expect(lineText(after, getSplitCharacter())).toBe("hello world");
     expect(useTimelineStore.getState().editingWord).toBeNull();
   });
 
@@ -95,7 +96,7 @@ describe("EmptyWordTrack", () => {
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 1) }));
       const after = useProjectStore.getState().lines[0];
       expect(timedSyllables(mainTrack(after)).map((w) => w.text + w.sep)).toEqual(["hel", "lo"]);
-      expect(lineText(after)).toBe("hel|lo");
+      expect(lineText(after, getSplitCharacter())).toBe("hel|lo");
     });
 
     it("truncates labels longer than 60 characters but keeps the created word text whole", async () => {
@@ -172,13 +173,18 @@ describe("EmptyBgTrack", () => {
   describe("regressions", () => {
     it("regression: times existing untimed bg text instead of replacing it with a placeholder", async () => {
       useAudioStore.setState({ duration: 30 });
-      const zone = await renderBgTrack(lineFromFields({ ...fieldsOfLine(syncedLine()), backgroundText: "ooh ah" }));
+      const zone = await renderBgTrack(
+        lineFromFields(
+          { ...fieldsOfLine(syncedLine(), getSplitCharacter()), backgroundText: "ooh ah" },
+          getSplitCharacter(),
+        ),
+      );
 
       zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
       const after = useProjectStore.getState().lines[0];
       expect(timedSyllables(backgroundTrack(after)).map((w) => w.text + w.sep)).toEqual(["ooh ", "ah"]);
-      expect(backgroundText(after)).toBe("ooh ah");
+      expect(backgroundText(after, getSplitCharacter())).toBe("ooh ah");
       expect(useTimelineStore.getState().editingWord).toBeNull();
     });
   });
@@ -186,14 +192,20 @@ describe("EmptyBgTrack", () => {
   describe("edge cases", () => {
     it("truncates background text longer than 40 characters", async () => {
       const zone = await renderBgTrack(
-        lineFromFields({ ...fieldsOfLine(syncedLine()), backgroundText: "b".repeat(41) }),
+        lineFromFields(
+          { ...fieldsOfLine(syncedLine(), getSplitCharacter()), backgroundText: "b".repeat(41) },
+          getSplitCharacter(),
+        ),
       );
       expect(zone.textContent).toBe(`${"b".repeat(40)}...`);
     });
 
     it("keeps background text of exactly 40 characters whole", async () => {
       const zone = await renderBgTrack(
-        lineFromFields({ ...fieldsOfLine(syncedLine()), backgroundText: "c".repeat(40) }),
+        lineFromFields(
+          { ...fieldsOfLine(syncedLine(), getSplitCharacter()), backgroundText: "c".repeat(40) },
+          getSplitCharacter(),
+        ),
       );
       expect(zone.textContent).toBe("c".repeat(40));
     });

@@ -32,6 +32,7 @@ interface TTMLOptions {
   duration?: number;
   timing?: TimingGranularity;
   youtubeVideoId?: string;
+  splitChar: string;
 }
 
 function generateTTML({
@@ -45,6 +46,7 @@ function generateTTML({
   duration,
   timing,
   youtubeVideoId,
+  splitChar,
 }: TTMLOptions): string {
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
@@ -53,7 +55,7 @@ function generateTTML({
   const timingValue = writesWords && timingGranularityOf(lines) === "word" ? "Word" : "Line";
 
   const parts: string[] = [];
-  const keyedLines = keyedExportLines(lines);
+  const keyedLines = keyedExportLines(lines, splitChar);
   const keyById = new Map(keyedLines.map(({ line, key }) => [line.id, key]));
 
   const language = normalizeLanguageTag(metadata.language ?? "");
@@ -65,8 +67,12 @@ function generateTTML({
     `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${ITUNES_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media"${langAttr} itunes:timing="${timingValue}" composer:timing="${timingValue}"${keptAttributes(passthrough?.tt)}${keptPrefixDeclarations({ passthrough, parts: songParts, agents, lines })}>`,
   );
 
-  const head = headLines({ metadata, agents, groups, keyedLines, writesWords, youtubeVideoId, passthrough }, ind);
-  const body = bodyLines({ lines, keyById, writesWords, duration, parts: songParts, passthrough }, ind);
+  const head = headLines(
+    { metadata, agents, groups, keyedLines, writesWords, youtubeVideoId, passthrough },
+    ind,
+    splitChar,
+  );
+  const body = bodyLines({ lines, keyById, writesWords, duration, parts: songParts, passthrough }, ind, splitChar);
   const units = [
     { out: head, anchors: [HEAD_ANCHOR] },
     { out: body, anchors: [BODY_ANCHOR] },
@@ -81,11 +87,12 @@ type ProjectTtmlSource = Pick<TTMLOptions, "metadata" | "agents" | "lines" | "gr
 function generateProjectTtml(
   { metadata, agents, lines, groups, parts, passthrough }: ProjectTtmlSource,
   duration: number,
+  splitChar: string,
   timing?: TimingGranularity,
   youtubeVideoId?: string,
 ): string {
-  return syncProgress(lines, "line").done > 0
-    ? generateTTML({ metadata, agents, lines, groups, parts, passthrough, duration, timing, youtubeVideoId })
+  return syncProgress(lines, "line", splitChar).done > 0
+    ? generateTTML({ metadata, agents, lines, groups, parts, passthrough, duration, timing, youtubeVideoId, splitChar })
     : "";
 }
 
@@ -97,8 +104,8 @@ function withoutAudioIdentity(ttml: string): string {
   return ttml.replace(BODY_DURATION, "<body").replace(YOUTUBE_VIDEO_ID_META, "");
 }
 
-function generateLineTtml(line: LyricLine): string {
-  return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines: [line], minify: true });
+function generateLineTtml(line: LyricLine, splitChar: string): string {
+  return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines: [line], minify: true, splitChar });
 }
 
 // -- Exports ------------------------------------------------------------------

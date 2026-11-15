@@ -15,6 +15,7 @@ import {
   findSnapShift,
   selfKey,
 } from "@/views/timeline/snap";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const ALL_SOURCES = {
   timelineSnap: true,
@@ -28,31 +29,37 @@ const ALL_SOURCES = {
 // -- Fixtures ------------------------------------------------------------------
 
 function wordTimedLine(): LyricLine {
-  return lineFromFields({
-    id: "l1",
-    text: "I love you",
-    agentId: "v1",
-    words: [
-      { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
-      { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
-      { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
-    ],
-    backgroundText: "oh yeah",
-    backgroundWords: [
-      { id: "w4", text: "oh", sep: " ", begin: 0.4, end: 0.55, joinsNext: false },
-      { id: "w5", text: "yeah", sep: "", begin: 0.55, end: 0.8, joinsNext: false },
-    ],
-  });
+  return lineFromFields(
+    {
+      id: "l1",
+      text: "I love you",
+      agentId: "v1",
+      words: [
+        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+      ],
+      backgroundText: "oh yeah",
+      backgroundWords: [
+        { id: "w4", text: "oh", sep: " ", begin: 0.4, end: 0.55, joinsNext: false },
+        { id: "w5", text: "yeah", sep: "", begin: 0.55, end: 0.8, joinsNext: false },
+      ],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 function lineSyncedLine(): LyricLine {
-  return lineFromFields({
-    id: "l2",
-    text: "another line",
-    agentId: "v1",
-    begin: 2,
-    end: 3,
-  });
+  return lineFromFields(
+    {
+      id: "l2",
+      text: "another line",
+      agentId: "v1",
+      begin: 2,
+      end: 3,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 // -- collectSnapAnchors --------------------------------------------------------
@@ -60,7 +67,11 @@ function lineSyncedLine(): LyricLine {
 describe("collectSnapAnchors", () => {
   it("regression: snaps to the edges of a line-synced background", () => {
     const line = withSeededBackground(
-      lineFromFields({ id: "s", text: "a", agentId: "v1", begin: 2, end: 6, backgroundText: "ooh" }),
+      lineFromFields(
+        { id: "s", text: "a", agentId: "v1", begin: 2, end: 6, backgroundText: "ooh" },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
     );
     const background = collectSnapAnchors([line], new Set(), null).filter((anchor) => anchor.track === "bg");
     expect(background.map((anchor) => anchor.t)).toEqual([4, 6]);
@@ -217,7 +228,7 @@ describe("collectSnapAnchors", () => {
   });
 
   it("contributes nothing for a line with neither words nor begin/end", () => {
-    const empty: LyricLine = lineFromFields({ id: "lx", text: "no timing", agentId: "v1" });
+    const empty: LyricLine = lineFromFields({ id: "lx", text: "no timing", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
     const anchors = collectSnapAnchors([empty], new Set(), null);
     expect(anchors).toEqual([]);
   });

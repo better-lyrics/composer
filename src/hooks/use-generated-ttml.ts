@@ -6,6 +6,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { generateProjectTtml } from "@/utils/ttml";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -47,6 +48,7 @@ function sharedGeneratedTtml(inputs: GeneratedTtmlInputs): string {
     lastContent = generateProjectTtml(
       { metadata, agents, lines, groups, parts, passthrough },
       duration,
+      getSplitCharacter(),
       timing,
       youtubeVideoId,
     );
@@ -71,7 +73,7 @@ function useGeneratedTtml(timing: TimingGranularity) {
   });
   const splitCharacter = useSettingsStore((state) => state.splitCharacter);
 
-  const progress = useMemo(() => syncProgress(lines, "line"), [lines]);
+  const progress = useMemo(() => syncProgress(lines, "line", getSplitCharacter()), [lines]);
   const content = sharedGeneratedTtml({
     metadata,
     agents,

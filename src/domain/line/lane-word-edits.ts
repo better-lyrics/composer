@@ -17,9 +17,10 @@ function mainWordsEdit(
 function manualBackgroundWordEdit(
   line: LyricLine,
   words: readonly WordTiming[],
+  splitChar: string,
   updates: Partial<LyricLine> = {},
 ): Partial<LyricLine> {
-  return { ...updates, tracks: withManualBackgroundWords({ ...line, ...updates }, words).tracks };
+  return { ...updates, tracks: withManualBackgroundWords({ ...line, ...updates }, words, splitChar).tracks };
 }
 
 // -- Exports ------------------------------------------------------------------

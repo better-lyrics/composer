@@ -19,6 +19,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const chorus = (instanceIdx: number, begin?: number, secondWordShift = 0) =>
   createLine({
@@ -175,7 +176,7 @@ describe("groupRepeatingSections", () => {
       seed([], [whole("a", 10), split("b", 40)]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
       const a = lineById("a");
-      expect(lineText(a!)).toBe("fal|ling too");
+      expect(lineText(a!, DEFAULT_SPLIT_CHARACTER)).toBe("fal|ling too");
       expect(timedSyllables(mainTrack(a!)).map((word) => word.text + word.sep)).toEqual(["fal", "ling ", "too"]);
       expect(timedSyllables(mainTrack(a!))[0]?.begin).toBe(10);
       expect(timedSyllables(mainTrack(a!))[1]?.end).toBe(10.6);
@@ -187,7 +188,7 @@ describe("groupRepeatingSections", () => {
       seed([], [whole("a", 10), split("b", 40)]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
       store().undo();
-      expect(lineText(lineById("a")!)).toBe("falling too");
+      expect(lineText(lineById("a")!, DEFAULT_SPLIT_CHARACTER)).toBe("falling too");
       expect(timedSyllables(mainTrack(lineById("a")!)).map((word) => word.text + word.sep)).toEqual([
         "falling ",
         "too",
@@ -225,7 +226,7 @@ describe("groupRepeatingSections", () => {
       });
       seed([], [partial, createLine({ id: "b", text: "fal|ling t|oo" })]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
-      expect(lineText(lineById("a")!)).toBe("fal|ling t|oo");
+      expect(lineText(lineById("a")!, DEFAULT_SPLIT_CHARACTER)).toBe("fal|ling t|oo");
       expect(timedSyllables(mainTrack(lineById("a")!)).map((word) => word.text + word.sep)).toEqual(["fal", "ling "]);
       expect(timedSyllables(mainTrack(lineById("a")!))[0]?.begin).toBe(10);
       expect(timedSyllables(mainTrack(lineById("a")!))[1]?.end).toBe(10.3);
@@ -250,7 +251,7 @@ describe("groupRepeatingSections", () => {
       });
       seed([], [plain("a", 10), plain("b", 40), current]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
-      expect(lineText(lineById("v")!)).toBe("walking home");
+      expect(lineText(lineById("v")!, DEFAULT_SPLIT_CHARACTER)).toBe("walking home");
     });
   });
 });
@@ -373,7 +374,10 @@ describe("shareGroupTiming", () => {
 
     it("reports why an instance kept its own timing", () => {
       const firstWordOnly = (instanceIdx: number, begin: number, end: number) =>
-        createLine({ ...fieldsOfLine(chorus(instanceIdx)), words: [{ text: "I", sep: " ", begin, end }] });
+        createLine({
+          ...fieldsOfLine(chorus(instanceIdx), DEFAULT_SPLIT_CHARACTER),
+          words: [{ text: "I", sep: " ", begin, end }],
+        });
       seed([createGroup({ id: "g1" })], [chorus(0), firstWordOnly(1, 40, 40.4), firstWordOnly(2, 70, 70.6)]);
       expect(sharedGroup("g1", SONG_LENGTH).keptOwnTiming).toEqual([
         { instanceIdx: 2, refusal: "no-fully-synced-instance" },
@@ -467,7 +471,7 @@ describe("placeInstance", () => {
     });
     seed([createGroup({ id: "g1", sharesTiming: true })], [partial, chorus(0, 10), chorus(1)]);
     store().commit(placeInstance("g1", 1, 40, SONG_LENGTH));
-    expect(lineText(lineById("p")!)).toBe("one two three");
+    expect(lineText(lineById("p")!, DEFAULT_SPLIT_CHARACTER)).toBe("one two three");
   });
 
   describe("edge cases", () => {

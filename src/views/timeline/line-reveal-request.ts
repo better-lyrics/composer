@@ -10,6 +10,7 @@ import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useSyncExternalStore } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -80,7 +81,7 @@ function revealLine(
     const track = request.track;
     useTimelineStore
       .getState()
-      .setSelectedWords(lineWordSelections(line).filter((selection) => selection.type === track));
+      .setSelectedWords(lineWordSelections(line, getSplitCharacter()).filter((selection) => selection.type === track));
   }
   return true;
 }

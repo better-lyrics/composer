@@ -11,6 +11,7 @@ import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "insync/word-timing";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -53,7 +54,7 @@ function pasteOverlaps(
     const pasted = pastedWordBounds(entry.word, timeDelta, rangeOf(lines[lineIdx]));
     if (pasted.end <= pasted.begin) return true;
 
-    const existingWords = drawnSyllables(lines[lineIdx], trackRole(entry.trackType));
+    const existingWords = drawnSyllables(lines[lineIdx], trackRole(entry.trackType), getSplitCharacter());
     if (existingWords.some((existing) => boundsOverlap(pasted, existing))) return true;
   }
   return false;
@@ -94,12 +95,20 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
 
     let lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      const merged = mergeWordsIntoTrack(drawnSyllables(line, "main"), newWords, untimedSyllablesOf(line, "main"));
+      const merged = mergeWordsIntoTrack(
+        drawnSyllables(line, "main", getSplitCharacter()),
+        newWords,
+        untimedSyllablesOf(line, "main"),
+      );
       lineUpdates = { tracks: withMainTrack(line, convertedMainTrack(line, merged)).tracks };
     }
     if (newBgWords.length > 0) {
-      const merged = mergeWordsIntoTrack(drawnSyllables(line, "bg"), newBgWords, untimedSyllablesOf(line, "bg"));
-      lineUpdates = manualBackgroundWordEdit(line, merged, lineUpdates);
+      const merged = mergeWordsIntoTrack(
+        drawnSyllables(line, "bg", getSplitCharacter()),
+        newBgWords,
+        untimedSyllablesOf(line, "bg"),
+      );
+      lineUpdates = manualBackgroundWordEdit(line, merged, getSplitCharacter(), lineUpdates);
     }
 
     const languages = withAddedPieces(withAddedPieces(line.languages, "main", mainPieces), "bg", bgPieces);

@@ -13,7 +13,7 @@ import {
 import { withRoleTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
 import type { WordTiming } from "insync/word-timing";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
-import { withoutSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -200,7 +200,7 @@ function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<n
   for (let index = words.length - 1; index >= 0; index--) {
     if (points[index].length === 0) continue;
     const syllables = splitWordIntoSyllables({ word: words[index], splitPoints: points[index] });
-    const split = splitWordsKeepingTransliteration(current, track.type, index, syllables);
+    const split = splitWordsKeepingTransliteration(current, track.type, index, syllables, splitChar);
     const currentWords = track.words(current) ?? words;
     current = track.writeWords(current, split?.words ?? currentWords.toSpliced(index, 1, ...syllables));
     if (split) current = { ...current, languages: split.languages };

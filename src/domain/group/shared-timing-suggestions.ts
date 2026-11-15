@@ -22,14 +22,19 @@ interface SharedTimingSuggestion {
 
 // -- Functions ----------------------------------------------------------------
 
-function sharedTimingSuggestion(lines: LyricLine[], group: LinkGroup, songEnd: number): SharedTimingSuggestion | null {
+function sharedTimingSuggestion(
+  lines: LyricLine[],
+  group: LinkGroup,
+  songEnd: number,
+  splitChar: string,
+): SharedTimingSuggestion | null {
   if (group.sharesTiming) return null;
   const order = instancesInLineOrder(lines, group.id);
-  const source = firstFullyTimedInstance(lines, group.id, order);
+  const source = firstFullyTimedInstance(lines, group.id, order, splitChar);
   if (source === undefined) return null;
   const untimedCount = order.filter((instanceIdx) => instanceStart(lines, group.id, instanceIdx) === null).length;
   if (untimedCount === 0) return null;
-  const sharing = initialGroupSharing(lines, group, true, songEnd);
+  const sharing = initialGroupSharing(lines, group, true, splitChar, songEnd);
   const changedIds = new Set(sharing.lines.filter((line, index) => line !== lines[index]).map((line) => line.id));
   const writtenCount = order.filter((instanceIdx) =>
     attachedLinesOfInstance(lines, group.id, instanceIdx).some((line) => changedIds.has(line.id)),
@@ -48,9 +53,10 @@ function sharedTimingSuggestion(lines: LyricLine[], group: LinkGroup, songEnd: n
 function sharedTimingSuggestions(
   lines: LyricLine[],
   groups: readonly LinkGroup[],
+  splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): SharedTimingSuggestion[] {
-  return groups.flatMap((group) => sharedTimingSuggestion(lines, group, songEnd) ?? []);
+  return groups.flatMap((group) => sharedTimingSuggestion(lines, group, songEnd, splitChar) ?? []);
 }
 
 // -- Exports ------------------------------------------------------------------

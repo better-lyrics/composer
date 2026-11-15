@@ -13,10 +13,10 @@ import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import type { WordTiming } from "insync/word-timing";
 import { formatTime } from "@/utils/format-time";
-import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
 import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
+import { withoutSplitCharacter } from "@/utils/split-character-text";
 
 // -- Types ------------------------------------------------------------------
 
@@ -123,10 +123,13 @@ function mergedBackground(stored: LineFields, edited: LineFields): Partial<LineF
   };
 }
 
-function withoutSeededBackground(line: LyricLine): LyricLine {
+function withoutSeededBackground(line: LyricLine, splitChar: string): LyricLine {
   const background = backgroundTrack(line);
-  if (!background || !hasSeededBackgroundWords(undefined, fieldsOfLine(line))) return line;
-  return withBackgroundTrack(line, withTrackText(withoutTrackTiming(background), trackText(background)));
+  if (!background || !hasSeededBackgroundWords(undefined, fieldsOfLine(line, splitChar))) return line;
+  return withBackgroundTrack(
+    line,
+    withTrackText(withoutTrackTiming(background), trackText(background, splitChar), splitChar),
+  );
 }
 
 function mergedTiming(stored: LineFields, edited: LineFields): Pick<LineFields, "words" | "begin" | "end"> {
@@ -143,9 +146,9 @@ function withStoredRest(
   edited: string,
   words: readonly WordTiming[],
   stored: string,
+  splitChar: string,
   storedWords: WordTiming[] = [],
 ): string {
-  const splitChar = getSplitCharacter();
   if (untimedRest(edited, words, splitChar) !== "") return edited;
   const afterEdited = untimedRest(stored, words, splitChar);
   const untimed = untimedRest(stored, storedWords, splitChar);
@@ -153,20 +156,20 @@ function withStoredRest(
   return rest === "" ? edited : edited.trimEnd() + rest;
 }
 
-function mergedText(stored: LineFields, edited: LineFields): string {
-  if (edited.words) return withStoredRest(edited.text, edited.words, stored.text, stored.words);
-  return edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
+function mergedText(stored: LineFields, edited: LineFields, splitChar: string): string {
+  if (edited.words) return withStoredRest(edited.text, edited.words, stored.text, splitChar, stored.words);
+  return edited.text === withoutSplitCharacter(stored.text, splitChar) ? stored.text : edited.text;
 }
 
-function mergedBackgroundText(stored: LineFields, edited: LineFields): string | undefined {
+function mergedBackgroundText(stored: LineFields, edited: LineFields, splitChar: string): string | undefined {
   const { backgroundText, backgroundWords } = edited;
   if (backgroundText === undefined || !backgroundWords || stored.backgroundText === undefined) return backgroundText;
-  return withStoredRest(backgroundText, backgroundWords, stored.backgroundText, stored.backgroundWords);
+  return withStoredRest(backgroundText, backgroundWords, stored.backgroundText, splitChar, stored.backgroundWords);
 }
 
-function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLine {
-  const stored = fieldsOfLine(storedLine);
-  const edited = fieldsOfLine(editedLine);
+function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine, splitChar: string): LyricLine {
+  const stored = fieldsOfLine(storedLine, splitChar);
+  const edited = fieldsOfLine(editedLine, splitChar);
   const { languages: _languages, ...editedFields } = edited;
   const background = mergedBackground(stored, edited);
   const timing = mergedTiming(stored, edited);
@@ -174,25 +177,28 @@ function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLin
     words: timing.words,
     backgroundWords: background.backgroundWords,
   });
-  const merged = lineFromFields({
-    ...editedFields,
-    text: mergedText(stored, edited),
-    backgroundText: mergedBackgroundText(stored, edited),
-    ...background,
-    ...timing,
-    id: stored.id,
-    ...(languages ? { languages } : {}),
-  });
-  return withKeptDataOf(withUntimedIdsOf(merged, storedLine), editedLine);
+  const merged = lineFromFields(
+    {
+      ...editedFields,
+      text: mergedText(stored, edited, splitChar),
+      backgroundText: mergedBackgroundText(stored, edited, splitChar),
+      ...background,
+      ...timing,
+      id: stored.id,
+      ...(languages ? { languages } : {}),
+    },
+    splitChar,
+  );
+  return withKeptDataOf(withUntimedIdsOf(merged, storedLine), editedLine, splitChar);
 }
 
 // A line whose only change is its kept TTML data keeps everything else as stored.
-function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
-  if (generateLineTtml(stored) === generateLineTtml(edited)) return stored;
-  if (!hasKeptData(stored) && !hasKeptData(edited)) return fieldMergedLine(stored, edited);
-  return generateLineTtml(withoutKeptData(stored)) === generateLineTtml(withoutKeptData(edited))
-    ? withKeptDataOf(stored, edited)
-    : fieldMergedLine(stored, edited);
+function mergedLine(stored: LyricLine, edited: LyricLine, splitChar: string): LyricLine {
+  if (generateLineTtml(stored, splitChar) === generateLineTtml(edited, splitChar)) return stored;
+  if (!hasKeptData(stored) && !hasKeptData(edited)) return fieldMergedLine(stored, edited, splitChar);
+  return generateLineTtml(withoutKeptData(stored), splitChar) === generateLineTtml(withoutKeptData(edited), splitChar)
+    ? withKeptDataOf(stored, edited, splitChar)
+    : fieldMergedLine(stored, edited, splitChar);
 }
 
 // -- Merge --------------------------------------------------------------------
@@ -200,38 +206,43 @@ function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
 function skippedLinesAfter(
   stored: readonly LyricLine[],
   kept: ReadonlySet<LyricLine>,
+  splitChar: string,
 ): Map<LyricLine | undefined, LyricLine[]> {
   const skippedAfter = new Map<LyricLine | undefined, LyricLine[]>();
   let anchor: LyricLine | undefined;
   for (const line of stored) {
     if (kept.has(line)) anchor = line;
-    else if (!isSyncableLine(line)) skippedAfter.set(anchor, [...(skippedAfter.get(anchor) ?? []), line]);
+    else if (!isSyncableLine(line, splitChar)) skippedAfter.set(anchor, [...(skippedAfter.get(anchor) ?? []), line]);
   }
   return skippedAfter;
 }
 
-function pairedWithStored(stored: readonly LyricLine[], edit: EditedTtmlLines) {
-  return pairEditedLines(stored, edit.lines, editedKeys(edit), lineKeyIds(stored));
+function pairedWithStored(stored: readonly LyricLine[], edit: EditedTtmlLines, splitChar: string) {
+  return pairEditedLines(stored, edit.lines, editedKeys(edit), lineKeyIds(stored, splitChar), splitChar);
 }
 
 function editedKeys(edit: EditedTtmlLines): (string | undefined)[] {
   return edit.lines.map((_, index) => edit.lineKeys?.[index]);
 }
 
-function mergeEditedTtmlLines(stored: readonly LyricLine[], edit: EditedTtmlLines): LyricLine[] {
-  const { lines: edited, partners } = pairedWithStored(stored, edit);
-  const skippedAfter = skippedLinesAfter(stored, new Set(partners.filter((partner) => partner !== undefined)));
+function mergeEditedTtmlLines(stored: readonly LyricLine[], edit: EditedTtmlLines, splitChar: string): LyricLine[] {
+  const { lines: edited, partners } = pairedWithStored(stored, edit, splitChar);
+  const skippedAfter = skippedLinesAfter(
+    stored,
+    new Set(partners.filter((partner) => partner !== undefined)),
+    splitChar,
+  );
   const merged = [...(skippedAfter.get(undefined) ?? [])];
   edited.forEach((line, index) => {
     const partner = partners[index];
-    merged.push(partner ? mergedLine(partner, line) : withoutSeededBackground(line));
+    merged.push(partner ? mergedLine(partner, line, splitChar) : withoutSeededBackground(line, splitChar));
     if (partner) merged.push(...(skippedAfter.get(partner) ?? []));
   });
   return merged;
 }
 
-function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines): LineKeyIds {
-  const { lines, partners } = pairedWithStored(stored, edit);
+function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines, splitChar: string): LineKeyIds {
+  const { lines, partners } = pairedWithStored(stored, edit, splitChar);
   const keys = editedKeys(edit);
   const ids: Record<string, string> = {};
   lines.forEach((line, index) => {
@@ -245,20 +256,21 @@ function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines)
 }
 
 // Each edited line's id, and the id it has after the merge: its stored partner's, or its own when it has none.
-function mergedLineIds(stored: readonly LyricLine[], edit: EditedTtmlLines): Map<string, string> {
-  const { partners } = pairedWithStored(stored, edit);
+function mergedLineIds(stored: readonly LyricLine[], edit: EditedTtmlLines, splitChar: string): Map<string, string> {
+  const { partners } = pairedWithStored(stored, edit, splitChar);
   return new Map(edit.lines.map((line, index) => [line.id, partners[index]?.id ?? line.id] as const));
 }
 
 // Kept times go stale once a line moves and the export writes derived ones instead, so kept data never decides.
-function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricLine[]): boolean {
-  const exported = stored.filter(isSyncableLine);
+function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricLine[], splitChar: string): boolean {
+  const exported = stored.filter((value) => isSyncableLine(value, splitChar));
   return (
     exported.length === ownExport.length &&
     exported.every((line, index) => {
       const form = ownExport[index];
       return (
-        form !== undefined && isStructurallyEqual(withoutKeptData(fieldMergedLine(line, form)), withoutKeptData(line))
+        form !== undefined &&
+        isStructurallyEqual(withoutKeptData(fieldMergedLine(line, form, splitChar)), withoutKeptData(line))
       );
     })
   );

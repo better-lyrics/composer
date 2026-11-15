@@ -5,6 +5,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const line: LyricLine = legacyLine({
   id: "mixed",
@@ -41,7 +42,7 @@ describe("language display alignment", () => {
       { id: "w6", text: "風", sep: "", begin: 1, end: 2, transliteration: "ra", joinsNext: false },
     ];
     const dashed: LyricLine = legacyLine({
-      ...fieldsOfLine(line),
+      ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER),
       text: "空|風",
       words,
       backgroundText: "空|風",
@@ -49,8 +50,14 @@ describe("language display alignment", () => {
       transliteration: { ...legacyLanguages(line.languages).transliteration!, text: "so-ra", backgroundText: "so-ra" },
     });
     const before = structuredClone(dashed);
-    for (const candidate of [dashed, lineFromFields({ ...fieldsOfLine(dashed), words: [], backgroundWords: [] })]) {
-      const display = getLanguageDisplayLine(candidate, "transliteration");
+    for (const candidate of [
+      dashed,
+      lineFromFields(
+        { ...fieldsOfLine(dashed, DEFAULT_SPLIT_CHARACTER), words: [], backgroundWords: [] },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+    ]) {
+      const display = getLanguageDisplayLine(candidate, "transliteration", DEFAULT_SPLIT_CHARACTER);
       expect(display.wordTexts).toEqual(["so-", "ra"]);
       expect(display.backgroundWordTexts).toEqual(["so-", "ra"]);
     }
@@ -59,7 +66,7 @@ describe("language display alignment", () => {
 
   it("displays a background-only alternate while retaining the original foreground", () => {
     const backgroundOnly: LyricLine = legacyLine({
-      ...fieldsOfLine(line),
+      ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER),
       text: "Hello",
       words: [{ id: "w7", text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale", joinsNext: false }],
       backgroundText: "空",
@@ -71,7 +78,7 @@ describe("language display alignment", () => {
         segments: [],
       },
     });
-    const display = getLanguageDisplayLine(backgroundOnly, "transliteration");
+    const display = getLanguageDisplayLine(backgroundOnly, "transliteration", DEFAULT_SPLIT_CHARACTER);
     expect(display.text).toBe("Hello");
     expect(display.wordTexts).toBeUndefined();
     expect(legacyWords(display.words, display.languages)?.[0].transliteration).toBeUndefined();
@@ -80,22 +87,25 @@ describe("language display alignment", () => {
   });
 
   it("keeps romanized syllables on their canonical source-word timing slot", () => {
-    const display = getLanguageDisplayLine(line, "transliteration");
+    const display = getLanguageDisplayLine(line, "transliteration", DEFAULT_SPLIT_CHARACTER);
     expect(display.text).toBe("geol eum eun  Like  a  dance");
     expect(display.wordTexts).toEqual(["geol eum eun  ", "Like  ", "a  ", "dance"]);
     expect(display.words?.map((word) => word.text)).toEqual(timedSyllables(mainTrack(line)).map((word) => word.text));
   });
 
   it("returns canonical content in original mode", () => {
-    expect(getLanguageDisplayLine(line, "original")).toMatchObject({
-      text: lineText(line),
+    expect(getLanguageDisplayLine(line, "original", DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+      text: lineText(line, DEFAULT_SPLIT_CHARACTER),
       words: timedSyllables(mainTrack(line)),
     });
   });
 
   it("keeps all labels visible while only the timed prefix has timing", () => {
-    const partial = lineFromFields({ ...fieldsOfLine(line), words: timedSyllables(mainTrack(line)).slice(0, 1) });
-    const display = getLanguageDisplayLine(partial, "transliteration");
+    const partial = lineFromFields(
+      { ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER), words: timedSyllables(mainTrack(line)).slice(0, 1) },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const display = getLanguageDisplayLine(partial, "transliteration", DEFAULT_SPLIT_CHARACTER);
     expect(display.wordTexts).toEqual(["geol eum eun", "Like", "a", "dance"]);
     expect(display.words).toHaveLength(1);
     expect(legacyWords(display.words, display.languages)?.[0].transliteration).toBe("geol eum eun");
@@ -119,7 +129,7 @@ describe("language display alignment", () => {
       },
     });
 
-    const display = getLanguageDisplayLine(mismatched, "transliteration");
+    const display = getLanguageDisplayLine(mismatched, "transliteration", DEFAULT_SPLIT_CHARACTER);
 
     expect(display.wordTexts).toEqual(["hanguk", "norae"]);
     expect(legacyWords(display.words, display.languages)?.map((word) => word.transliteration)).toEqual([

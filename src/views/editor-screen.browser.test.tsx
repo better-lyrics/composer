@@ -9,6 +9,7 @@ import { render } from "@/test/render";
 import { TabBar } from "@/ui/tab-bar";
 import { isMac } from "@/utils/platform";
 import { EditorScreen } from "@/views/editor-screen";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -25,7 +26,7 @@ function pressUndo(target: EventTarget): KeyboardEvent {
   return event;
 }
 
-const firstLineText = () => lineText(useProjectStore.getState().lines[0]);
+const firstLineText = () => lineText(useProjectStore.getState().lines[0], getSplitCharacter());
 
 // -- Tests --------------------------------------------------------------------
 

@@ -78,7 +78,7 @@ function useTimelineSyllableSplitterState({
   const confirm = useConfirm();
 
   const identicalCount = useMemo(() => {
-    const source = target?.mode === "syllable" ? resolveAddress(lines, target) : null;
+    const source = target?.mode === "syllable" ? resolveAddress(lines, target, getSplitCharacter()) : null;
     if (!source) return 0;
     return findIdenticalWords(
       lines,
@@ -137,7 +137,7 @@ function useTimelineSyllableSplitterState({
     }
 
     const currentLines = useProjectStore.getState().lines;
-    const source = resolveAddress(currentLines, target);
+    const source = resolveAddress(currentLines, target, getSplitCharacter());
     if (!source) return;
     const line = currentLines[source.lineIndex];
     const { wordIndex } = source;
@@ -145,7 +145,7 @@ function useTimelineSyllableSplitterState({
     const split =
       mode === "word"
         ? splitWordIntoWordsKeepingTransliteration(line, type, wordIndex, newWords, getSplitCharacter(), newPieces)
-        : splitWordsKeepingTransliteration(line, type, wordIndex, newWords, newPieces);
+        : splitWordsKeepingTransliteration(line, type, wordIndex, newWords, getSplitCharacter(), newPieces);
     if (!split) return;
     const extraUpdates = { languages: split.languages };
 
@@ -168,7 +168,7 @@ function useTimelineSyllableSplitterState({
     if (target.mode === "syllable" && !target.piece?.text && applyToAll && identicalCount > 0) {
       const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
       if (!ok) return;
-      const source = resolveAddress(useProjectStore.getState().lines, target);
+      const source = resolveAddress(useProjectStore.getState().lines, target, getSplitCharacter());
       if (!source) return;
       useProjectStore.getState().commit(
         splitIdenticalSyllables({

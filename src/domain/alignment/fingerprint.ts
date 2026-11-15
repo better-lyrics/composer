@@ -2,6 +2,7 @@ import { msFromSeconds } from "insync/time";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import type { WordTiming } from "insync/word-timing";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -21,7 +22,7 @@ function trackFingerprint(words: readonly WordTiming[] | undefined, key: TimeKey
 }
 
 function fingerprintBy(line: LyricLine, key: TimeKey): string {
-  return `${trackFingerprint(drawnSyllables(line, "main"), key)}|${trackFingerprint(drawnSyllables(line, "bg"), key)}`;
+  return `${trackFingerprint(drawnSyllables(line, "main", getSplitCharacter()), key)}|${trackFingerprint(drawnSyllables(line, "bg", getSplitCharacter()), key)}`;
 }
 
 function timingFingerprint(line: LyricLine): string {

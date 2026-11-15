@@ -14,6 +14,7 @@ import { type LegacyWord, legacyLine, legacyWords, piecesOfLegacyWords } from "@
 import { render } from "@/test/render";
 import { at, mountSyncHandlers, positionOf } from "@/test/sync-handlers-harness";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -33,12 +34,12 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await act(() => {
         result.current.handleTap();
       });
-      expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
+      expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(ORIGINAL_TEXT);
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
     expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(5);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(ORIGINAL_TEXT);
   });
 
   it("preserves both lines' text across a cross-line tap transition", async () => {
@@ -53,15 +54,15 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await act(() => {
         result.current.handleTap();
       });
-      expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
-      expect(lineText(useProjectStore.getState().lines[1])).toBe("Foo bar");
+      expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
+      expect(lineText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("Foo bar");
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
     expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     expect(roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
-    expect(lineText(useProjectStore.getState().lines[1])).toBe("Foo bar");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
+    expect(lineText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("Foo bar");
   });
 
   it("re-syncing mid-line overwrites in place and preserves the line's later words", async () => {
@@ -91,7 +92,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     });
 
     const words = roleWords(useProjectStore.getState().lines[0], "main");
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(ORIGINAL_TEXT);
     expect(words?.length).toBe(5);
     expect(words?.[1].begin).toBe(5.0);
     expect(words?.[0].end).toBe(5.0);
@@ -158,9 +159,9 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     const lines = useProjectStore.getState().lines;
     expect(timedSyllables(mainTrack(lines[0]))).toHaveLength(2);
     expect(timedSyllables(mainTrack(lines[0]))[1].end).toBe(1.25);
-    expect(lineText(lines[1])).toBe("");
+    expect(lineText(lines[1], getSplitCharacter())).toBe("");
     expect(roleWords(lines[1], "main")).toBeUndefined();
-    expect(lineText(lines[2])).toBe("Foo bar");
+    expect(lineText(lines[2], getSplitCharacter())).toBe("Foo bar");
     expect(timedSyllables(mainTrack(lines[2]))).toHaveLength(1);
   });
 });
@@ -354,10 +355,10 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
     });
 
     const lines = useProjectStore.getState().lines;
-    expect(lineText(lines[0])).toBe(ORIGINAL_TEXT);
+    expect(lineText(lines[0], getSplitCharacter())).toBe(ORIGINAL_TEXT);
     expect(timedSyllables(mainTrack(lines[0]))).toHaveLength(1);
     expect(timedSyllables(mainTrack(lines[0]))[0].end).toBe(TAP_TIME);
-    expect(lineText(lines[1])).toBe("Next line");
+    expect(lineText(lines[1], getSplitCharacter())).toBe("Next line");
     expect(timedSyllables(mainTrack(lines[1]))).toHaveLength(1);
   });
 
@@ -371,16 +372,16 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
     await act(() => {
       result.current.handleTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
-    expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Verse start");
+    expect(lineText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("Verse two");
     expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBe(0);
     await rerender({ syncState: getSyncState(), currentTime: 1.0 });
 
     await act(() => {
       result.current.handleTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
-    expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Verse start");
+    expect(lineText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("Verse two");
     expect(mainTrack(useProjectStore.getState().lines[1]).begin).toBe(1.0);
   });
 });
@@ -395,13 +396,13 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     await act(() => {
       result.current.handleHoldStart();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(HOLD_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.5 });
 
     await act(() => {
       result.current.handleHoldEnd();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(HOLD_TEXT);
     expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
   });
 
@@ -414,19 +415,19 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     await act(() => {
       result.current.handleHoldStart();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(HOLD_TAP_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.4 });
 
     await act(() => {
       result.current.handleHoldTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(HOLD_TAP_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.8 });
 
     await act(() => {
       result.current.handleHoldTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(HOLD_TAP_TEXT);
   });
 
   it("preserves text when handleHoldStart re-enters a line that already has words", async () => {
@@ -451,7 +452,7 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(lineText(line)).toBe(TEXT);
+    expect(lineText(line, getSplitCharacter())).toBe(TEXT);
     expect(timedSyllables(mainTrack(line))).toHaveLength(2);
   });
 
@@ -481,7 +482,7 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(lineText(line)).toBe(TEXT);
+    expect(lineText(line, getSplitCharacter())).toBe(TEXT);
     expect(timedSyllables(mainTrack(line))[1].end).toBe(END_TIME);
   });
 });
@@ -579,7 +580,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(lineText(line)).toBe(REDO_TEXT);
+    expect(lineText(line, getSplitCharacter())).toBe(REDO_TEXT);
     expect(timedSyllables(mainTrack(line))).toHaveLength(3);
     expect(timedSyllables(mainTrack(line)).filter((word) => word.text.trim() === "three")).toHaveLength(1);
   });
@@ -748,7 +749,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
     await act(() => result.current.handleTap());
 
     const line = useProjectStore.getState().lines[1];
-    expect(lineText(line)).toBe("Second line");
+    expect(lineText(line, getSplitCharacter())).toBe("Second line");
     expect(timedSyllables(mainTrack(line))[0].begin).toBe(5.0);
   });
 });
@@ -1133,8 +1134,8 @@ describe("sync-panel bg-init contract", () => {
 
     expect(screen.container.querySelector('button[title="Jump to this word"]')).toBeNull();
 
-    expect(backgroundText(useProjectStore.getState().lines[0])).toBe(BG_TEXT);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_LINE_TEXT);
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(BG_TEXT);
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(ORIGINAL_LINE_TEXT);
     expect(roleWords(useProjectStore.getState().lines[0], "bg")).toBeUndefined();
   });
 });
@@ -1162,8 +1163,8 @@ describe("useSyncHandlers with shared timing", () => {
       result.current.handleNudgeLastSynced(-5);
     });
 
-    expect(fieldsOfLine(lineById("c1")!)).toMatchObject({ begin: 7, end: 9 });
-    expect(fieldsOfLine(lineById("c0")!)).toMatchObject({ begin: 0, end: 2 });
+    expect(fieldsOfLine(lineById("c1")!, getSplitCharacter())).toMatchObject({ begin: 7, end: 9 });
+    expect(fieldsOfLine(lineById("c0")!, getSplitCharacter())).toMatchObject({ begin: 0, end: 2 });
   });
 
   it("stops a first word nudge where the earliest instance reaches zero", async () => {
@@ -1242,7 +1243,7 @@ describe("useSyncHandlers with shared timing", () => {
       result.current.handleNudgeLastSynced(-5);
     });
 
-    expect(fieldsOfLine(lineById("c1")!)).toMatchObject({ begin: 5, end: 7 });
-    expect(fieldsOfLine(lineById("c0")!)).toMatchObject({ begin: 3, end: 5 });
+    expect(fieldsOfLine(lineById("c1")!, getSplitCharacter())).toMatchObject({ begin: 5, end: 7 });
+    expect(fieldsOfLine(lineById("c0")!, getSplitCharacter())).toMatchObject({ begin: 3, end: 5 });
   });
 });

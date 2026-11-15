@@ -12,7 +12,6 @@ import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { joinBackgroundText } from "@/utils/background-vocal-brackets";
 import { mergeStandaloneInto } from "@/utils/background-vocal-standalone-merge";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -98,12 +97,16 @@ function hasSungContent(text: string, splitChar: string): boolean {
   return [...text].some((char) => !"() ".includes(char) && char !== splitChar);
 }
 
-function extractInlineWordSynced(line: LyricLine, classified: LineClassification, options: ExtractOptions): LyricLine {
+function extractInlineWordSynced(
+  line: LyricLine,
+  classified: LineClassification,
+  options: ExtractOptions,
+  splitChar: string,
+): LyricLine {
   const words = roleWords(line, "main");
   if (!words || words.length === 0) return line;
   if (bgBounds(line)) return line;
-  const splitChar = getSplitCharacter();
-  if (syllablesText(words, splitChar) !== lineText(line)) return line;
+  if (syllablesText(words, splitChar) !== lineText(line, splitChar)) return line;
   const spans = wordContentSpans(words, splitChar);
   const survivors: WordTiming[] = [];
   const bracketed: WordTiming[] = [];
@@ -126,49 +129,62 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
   const trimmedSurvivors = survivors.map((word, i) =>
     i === survivors.length - 1 ? wordFromSpaced({ ...word, text: (word.text + word.sep).replace(/ +$/, "") }) : word,
   );
-  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line);
+  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
   const joined = joinBackgroundText(base, classified.bgText, options.preserveBrackets, false);
-  return withBackground(withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)), {
-    text: joined,
-    words: base ? undefined : remapWordTextsPreservingTiming(bracketed, joined),
-    source: base ? "manual" : "extraction",
-  });
+  return withBackground(
+    withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)),
+    {
+      text: joined,
+      words: base ? undefined : remapWordTextsPreservingTiming(bracketed, joined, splitChar),
+      source: base ? "manual" : "extraction",
+    },
+    splitChar,
+  );
 }
 
-function extractInline(line: LyricLine, options: ExtractOptions): LyricLine {
-  const classified = classifyLine(lineText(line));
+function extractInline(line: LyricLine, options: ExtractOptions, splitChar: string): LyricLine {
+  const classified = classifyLine(lineText(line, splitChar));
   if (classified.kind !== "inline") return line;
-  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options);
+  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar);
   if (bgBounds(line)) return line;
-  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line);
-  return withBackground(withMainTrack(line, withTrackText(mainTrack(line), classified.mainText)), {
-    text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
-    source: base ? "manual" : "extraction",
-  });
+  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
+  return withBackground(
+    withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar)),
+    {
+      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
+      source: base ? "manual" : "extraction",
+    },
+    splitChar,
+  );
 }
 
-function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricLine {
-  const extracted = extractInline(line, options);
-  return extracted === line ? line : withSeededBackground(extracted);
+function extractInlineFromLine(line: LyricLine, options: ExtractOptions, splitChar: string): LyricLine {
+  const extracted = extractInline(line, options, splitChar);
+  return extracted === line ? line : withSeededBackground(extracted, splitChar);
 }
 
 // Other instances of a group line take the extraction from its template.
-function extractInlineOnLine(lines: LyricLine[], lineId: string, options: ExtractOptions): LineUpdate[] {
+function extractInlineOnLine(
+  lines: LyricLine[],
+  lineId: string,
+  options: ExtractOptions,
+  splitChar: string,
+): LineUpdate[] {
   const target = lines.find((line) => line.id === lineId);
   if (!target) return [];
-  const extracted = extractInlineFromLine(target, options);
+  const extracted = extractInlineFromLine(target, options, splitChar);
   return extracted === target ? [] : [{ id: lineId, updates: { tracks: extracted.tracks } }];
 }
 
 // -- Whole-list transform -----------------------------------------------------
 
-function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): LyricLine[] {
+function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions, splitChar: string): LyricLine[] {
   const result: LyricLine[] = [];
   const sameSessionWriteIndices = new Set<number>();
   for (const line of lines) {
-    const classified = classifyLine(lineText(line));
+    const classified = classifyLine(lineText(line, splitChar));
     if (classified.kind === "inline") {
-      const extracted = extractInline(line, options);
+      const extracted = extractInline(line, options, splitChar);
       result.push(extracted);
       if (extracted !== line) sameSessionWriteIndices.add(result.length - 1);
       continue;
@@ -178,8 +194,8 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
       const prev = result[prevIndex];
       if (
         prev &&
-        lineText(prev).trim().length > 0 &&
-        classifyLine(lineText(prev)).kind === "none" &&
+        lineText(prev, splitChar).trim().length > 0 &&
+        classifyLine(lineText(prev, splitChar)).kind === "none" &&
         !isLinked(prev) &&
         !isLinked(line)
       ) {
@@ -189,6 +205,7 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
           classified.bgText,
           sameSessionWriteIndices.has(prevIndex),
           options.preserveBrackets,
+          splitChar,
         );
         if (merged) {
           result[prevIndex] = merged;
@@ -199,11 +216,13 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
     }
     result.push(line);
   }
-  return result.map((line, index) => (sameSessionWriteIndices.has(index) ? withSeededBackground(line) : line));
+  return result.map((line, index) =>
+    sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar) : line,
+  );
 }
 
-function lineHasInlineParens(line: LyricLine): boolean {
-  return classifyLine(lineText(line)).kind === "inline";
+function lineHasInlineParens(line: LyricLine, splitChar: string): boolean {
+  return classifyLine(lineText(line, splitChar)).kind === "inline";
 }
 
 // -- Exports ------------------------------------------------------------------

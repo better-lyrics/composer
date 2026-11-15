@@ -4,6 +4,7 @@ import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { emptyBody, withBody } from "@/stores/project/with-body";
 import type { StateCreator } from "zustand";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Initial State ------------------------------------------------------------
 
@@ -23,7 +24,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
   restoreLyrics: (root) =>
     writingLyrics(get, "restore", () =>
       set({
-        ...(root.lines && withBody(docFromFlatLines(root.lines))),
+        ...(root.lines && withBody(docFromFlatLines(root.lines, getSplitCharacter()))),
         ...("groups" in root && { groups: Array.isArray(root.groups) ? root.groups : [] }),
         ...(root.agents && { agents: root.agents }),
         ...(root.parts && { parts: root.parts }),

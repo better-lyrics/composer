@@ -11,6 +11,7 @@ import { generateProjectTtml } from "@/utils/ttml";
 import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -127,7 +128,7 @@ function copiedTtml(): string {
   const project = useProjectStore.getState();
   return outgoingTtml({
     editedContent: null,
-    generatedContent: generateProjectTtml(project, SONG_SECONDS, project.exportTiming, VIDEO_ID),
+    generatedContent: generateProjectTtml(project, SONG_SECONDS, getSplitCharacter(), project.exportTiming, VIDEO_ID),
     duration: SONG_SECONDS,
     exportTiming: project.exportTiming,
     youtubeVideoId: VIDEO_ID,

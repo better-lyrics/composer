@@ -10,9 +10,13 @@ import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("createTrackWordsFromTextAt", () => {
-  const base: LyricLine = lineFromFields({ id: "l", agentId: "v1", text: "main", backgroundText: "ooh yeah" });
+  const base: LyricLine = lineFromFields(
+    { id: "l", agentId: "v1", text: "main", backgroundText: "ooh yeah" },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
   it("times untimed bg text from the given start", () => {
     const words = createTrackWordsFromTextAt(base, "bg", 5, 100);
@@ -22,22 +26,41 @@ describe("createTrackWordsFromTextAt", () => {
 
   describe("edge cases", () => {
     it("returns null when the bg track already has words", () => {
-      const timed: LyricLine = lineFromFields({
-        ...fieldsOfLine(base),
-        backgroundWords: [{ id: "w1", text: "ooh yeah", sep: "", begin: 1, end: 2, joinsNext: false }],
-      });
+      const timed: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER),
+          backgroundWords: [{ id: "w1", text: "ooh yeah", sep: "", begin: 1, end: 2, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(createTrackWordsFromTextAt(timed, "bg", 5, 100)).toBeNull();
     });
 
     it("returns null when there is no bg text", () => {
       expect(
-        createTrackWordsFromTextAt(lineFromFields({ ...fieldsOfLine(base), backgroundText: undefined }), "bg", 5, 100),
+        createTrackWordsFromTextAt(
+          lineFromFields(
+            { ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER), backgroundText: undefined },
+            DEFAULT_SPLIT_CHARACTER,
+          ),
+          "bg",
+          5,
+          100,
+        ),
       ).toBeNull();
     });
 
     it("returns null for whitespace-only bg text", () => {
       expect(
-        createTrackWordsFromTextAt(lineFromFields({ ...fieldsOfLine(base), backgroundText: "   " }), "bg", 5, 100),
+        createTrackWordsFromTextAt(
+          lineFromFields(
+            { ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER), backgroundText: "   " },
+            DEFAULT_SPLIT_CHARACTER,
+          ),
+          "bg",
+          5,
+          100,
+        ),
       ).toBeNull();
     });
 
@@ -51,7 +74,10 @@ describe("createTrackWordsFromTextAt", () => {
     it("keeps the bg text unchanged word for word", () => {
       const words =
         createTrackWordsFromTextAt(
-          lineFromFields({ ...fieldsOfLine(base), backgroundText: "la la la" }),
+          lineFromFields(
+            { ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER), backgroundText: "la la la" },
+            DEFAULT_SPLIT_CHARACTER,
+          ),
           "bg",
           0,
           100,
@@ -62,7 +88,10 @@ describe("createTrackWordsFromTextAt", () => {
 
   describe("main track", () => {
     const split = getSplitCharacter();
-    const untimed: LyricLine = lineFromFields({ id: "m", agentId: "v1", text: `hel${split}lo world` });
+    const untimed: LyricLine = lineFromFields(
+      { id: "m", agentId: "v1", text: `hel${split}lo world` },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     it("lays out one block per syllable from the given start", () => {
       const words = createTrackWordsFromTextAt(untimed, "word", 5, 100) ?? [];
@@ -83,16 +112,24 @@ describe("createTrackWordsFromTextAt", () => {
 
     describe("edge cases", () => {
       it("returns null when the line already has words", () => {
-        const timed: LyricLine = lineFromFields({
-          ...fieldsOfLine(untimed),
-          words: [{ id: "w2", text: "hello world", sep: "", begin: 1, end: 2, joinsNext: false }],
-        });
+        const timed: LyricLine = lineFromFields(
+          {
+            ...fieldsOfLine(untimed, DEFAULT_SPLIT_CHARACTER),
+            words: [{ id: "w2", text: "hello world", sep: "", begin: 1, end: 2, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        );
         expect(createTrackWordsFromTextAt(timed, "word", 5, 100)).toBeNull();
       });
 
       it("returns null for an empty line", () => {
         expect(
-          createTrackWordsFromTextAt(lineFromFields({ ...fieldsOfLine(untimed), text: "" }), "word", 5, 100),
+          createTrackWordsFromTextAt(
+            lineFromFields({ ...fieldsOfLine(untimed, DEFAULT_SPLIT_CHARACTER), text: "" }, DEFAULT_SPLIT_CHARACTER),
+            "word",
+            5,
+            100,
+          ),
         ).toBeNull();
       });
 
@@ -105,7 +142,7 @@ describe("createTrackWordsFromTextAt", () => {
     describe("invariants", () => {
       it("rebuilds the exact line text, split characters included", () => {
         const words = createTrackWordsFromTextAt(untimed, "word", 0, 100) ?? [];
-        expect(syllablesText(words, split)).toBe(lineText(untimed));
+        expect(syllablesText(words, split)).toBe(lineText(untimed, DEFAULT_SPLIT_CHARACTER));
       });
     });
   });

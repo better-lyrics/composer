@@ -4,6 +4,7 @@ import { lineText } from "@/domain/line/text";
 import { backgroundTrack } from "insync/line-track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -33,7 +34,7 @@ function paragraphs(ttml: string): string[] {
 }
 
 function expectBravoKeptItsData(merged: LyricLine[]): void {
-  const line = merged.find((candidate) => lineText(candidate) === "Bravo!");
+  const line = merged.find((candidate) => lineText(candidate, DEFAULT_SPLIT_CHARACTER) === "Bravo!");
   expect(line?.id).toBe("b");
   expect(line?.languages?.translations?.es).toEqual(BRAVO_SPANISH);
   expect(backgroundTrack(line!)?.source).toBe("extraction");
@@ -71,7 +72,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
           .replace(paragraphs(ttml)[0] ?? "", `${paragraphs(ttml)[0]}<p begin="0:02.000" end="0:03.000">New</p>`)
           .replace(">Bravo<", ">Bravo!<"),
       );
-      expect(merged.map((line) => lineText(line))).toEqual(["Alpha", "New", "Bravo!", "Zulu"]);
+      expect(merged.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Alpha", "New", "Bravo!", "Zulu"]);
       expect(["a", "b", "z"]).not.toContain(merged[1]?.id);
       expectBravoKeptItsData(merged);
     });
@@ -97,7 +98,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
           .replace("\u0000", second)
           .replace(">Hello<", ">Hello!<");
       });
-      expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
         ["w", "Wor|ld"],
         ["h", "Hello!"],
         ["e", "End"],
@@ -117,7 +118,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace(paragraphs(ttml)[1] ?? "", "").replace(">Quebec<", ">Totally different<"),
       );
-      expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
         ["a", "Alpha"],
         ["q", "Totally different"],
         ["z", "Zulu"],

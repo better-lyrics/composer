@@ -12,14 +12,18 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
-const line: LyricLine = lineFromFields({ id: "a", text: "hello", agentId: "v1" });
+const line: LyricLine = lineFromFields({ id: "a", text: "hello", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
 
 const bgWord: WordTiming = { id: "w1", text: "ooh", sep: "", begin: 1.2, end: 1.8, joinsNext: true };
 
 // The background of a line written through the funnel, read back as flat fields.
 function backgroundFields(params: BackgroundParams) {
-  const { backgroundText, backgroundWords, backgroundTextSource } = fieldsOfLine(withBackground(line, params));
+  const { backgroundText, backgroundWords, backgroundTextSource } = fieldsOfLine(
+    withBackground(line, params, DEFAULT_SPLIT_CHARACTER),
+    DEFAULT_SPLIT_CHARACTER,
+  );
   return { backgroundText, backgroundWords, backgroundTextSource };
 }
 
@@ -75,23 +79,29 @@ describe("withBackground edge cases", () => {
 
 describe("withoutBackground", () => {
   it("equals an empty write", () => {
-    const withBg = withBackground(line, { text: "ooh", source: "manual" });
-    expect(withoutBackground(withBg)).toEqual(withBackground(withBg, { text: "", source: "manual" }));
+    const withBg = withBackground(line, { text: "ooh", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
+    expect(withoutBackground(withBg)).toEqual(
+      withBackground(withBg, { text: "", source: "manual" }, DEFAULT_SPLIT_CHARACTER),
+    );
   });
 
   it("leaves no background at all", () => {
-    expect(backgroundTrack(withoutBackground(withBackground(line, { text: "ooh", source: "manual" })))).toBeUndefined();
+    expect(
+      backgroundTrack(
+        withoutBackground(withBackground(line, { text: "ooh", source: "manual" }, DEFAULT_SPLIT_CHARACTER)),
+      ),
+    ).toBeUndefined();
   });
 });
 
 describe("withBackground on a line", () => {
   it("sets then clears a line's background coherently", () => {
-    const withBg = withBackground(line, { text: "ooh", source: "manual" });
-    expect(backgroundText(withBg)).toBe("ooh");
+    const withBg = withBackground(line, { text: "ooh", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(withBg, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
     expect(backgroundTrack(withBg)?.source).toBe("manual");
 
-    const cleared = withBackground(withBg, { text: "", source: "manual" });
-    expect(backgroundText(cleared)).toBeUndefined();
+    const cleared = withBackground(withBg, { text: "", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(cleared, DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     expect(roleWords(cleared, "bg")).toBeUndefined();
     expect(backgroundTrack(cleared)?.source).toBeUndefined();
   });
@@ -100,23 +110,26 @@ describe("withBackground on a line", () => {
 describe("withBackground immutability and field preservation", () => {
   it("does not mutate the input line and returns a new reference", () => {
     const snapshot = structuredClone(line);
-    const result = withBackground(line, { text: "ooh", source: "manual" });
+    const result = withBackground(line, { text: "ooh", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
     expect(line).toEqual(snapshot);
     expect(result).not.toBe(line);
   });
 
   it("preserves unrelated fields on an untimed line", () => {
-    const source: LyricLine = lineFromFields({
-      id: "u1",
-      text: "verse one",
-      agentId: "v2",
-      groupId: "g1",
-      instanceIdx: 0,
-      templateLineIdx: 3,
-      detached: true,
-    });
-    const result = withBackground(source, { text: "ooh", source: "extraction" });
-    expect(fieldsOfLine(result)).toMatchObject({
+    const source: LyricLine = lineFromFields(
+      {
+        id: "u1",
+        text: "verse one",
+        agentId: "v2",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 3,
+        detached: true,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = withBackground(source, { text: "ooh", source: "extraction" }, DEFAULT_SPLIT_CHARACTER);
+    expect(fieldsOfLine(result, DEFAULT_SPLIT_CHARACTER)).toMatchObject({
       id: "u1",
       text: "verse one",
       agentId: "v2",
@@ -128,30 +141,36 @@ describe("withBackground immutability and field preservation", () => {
   });
 
   it("preserves the word-synced timing variant", () => {
-    const wordSynced: LyricLine = lineFromFields({
-      id: "w1",
-      text: "hello world",
-      agentId: "v1",
-      words: [
-        { id: "w2", text: "hello", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-        { id: "w3", text: "world", sep: "", begin: 0.5, end: 1, joinsNext: false },
-      ],
-    });
-    const result = withBackground(wordSynced, { text: "ooh", source: "manual" });
+    const wordSynced: LyricLine = lineFromFields(
+      {
+        id: "w1",
+        text: "hello world",
+        agentId: "v1",
+        words: [
+          { id: "w2", text: "hello", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+          { id: "w3", text: "world", sep: "", begin: 0.5, end: 1, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = withBackground(wordSynced, { text: "ooh", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
     expect(timedSyllables(mainTrack(result))).toEqual(timedSyllables(mainTrack(wordSynced)));
     expect(mainTrack(result).begin).toBeUndefined();
     expect(mainTrack(result).end).toBeUndefined();
   });
 
   it("preserves the line-synced timing variant", () => {
-    const lineSynced: LyricLine = lineFromFields({
-      id: "l1",
-      text: "hello world",
-      agentId: "v1",
-      begin: 2.5,
-      end: 6.75,
-    });
-    const result = withBackground(lineSynced, { text: "ooh", source: "extraction" });
+    const lineSynced: LyricLine = lineFromFields(
+      {
+        id: "l1",
+        text: "hello world",
+        agentId: "v1",
+        begin: 2.5,
+        end: 6.75,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = withBackground(lineSynced, { text: "ooh", source: "extraction" }, DEFAULT_SPLIT_CHARACTER);
     expect(mainTrack(result).begin).toBe(2.5);
     expect(mainTrack(result).end).toBe(6.75);
     expect(roleWords(result, "main")).toBeUndefined();
@@ -160,25 +179,25 @@ describe("withBackground immutability and field preservation", () => {
 
 describe("withBackground overwriting", () => {
   it("flips an existing manual provenance to extraction", () => {
-    const manual = withBackground(line, { text: "ooh", source: "manual" });
-    const overwritten = withBackground(manual, { text: "aah", source: "extraction" });
-    expect(backgroundText(overwritten)).toBe("aah");
+    const manual = withBackground(line, { text: "ooh", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
+    const overwritten = withBackground(manual, { text: "aah", source: "extraction" }, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(overwritten, DEFAULT_SPLIT_CHARACTER)).toBe("aah");
     expect(backgroundTrack(overwritten)?.source).toBe("extraction");
   });
 
   it("flips an existing extraction provenance to manual", () => {
-    const extracted = withBackground(line, { text: "ooh", source: "extraction" });
-    const overwritten = withBackground(extracted, { text: "aah", source: "manual" });
-    expect(backgroundText(overwritten)).toBe("aah");
+    const extracted = withBackground(line, { text: "ooh", source: "extraction" }, DEFAULT_SPLIT_CHARACTER);
+    const overwritten = withBackground(extracted, { text: "aah", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(overwritten, DEFAULT_SPLIT_CHARACTER)).toBe("aah");
     expect(backgroundTrack(overwritten)?.source).toBe("manual");
   });
 
   it("clears background words when clearing a line that had words-based background", () => {
-    const withWords = withBackground(line, { words: [bgWord], source: "extraction" });
+    const withWords = withBackground(line, { words: [bgWord], source: "extraction" }, DEFAULT_SPLIT_CHARACTER);
     expect(timedSyllables(backgroundTrack(withWords))).toEqual([bgWord]);
-    const cleared = withBackground(withWords, { text: "", source: "manual" });
+    const cleared = withBackground(withWords, { text: "", source: "manual" }, DEFAULT_SPLIT_CHARACTER);
     expect(roleWords(cleared, "bg")).toBeUndefined();
-    expect(backgroundText(cleared)).toBeUndefined();
+    expect(backgroundText(cleared, DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     expect(backgroundTrack(cleared)?.source).toBeUndefined();
   });
 });
@@ -189,41 +208,57 @@ describe("withManualBackgroundWords", () => {
       { id: "w4", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
       { id: "w5", text: "aah", sep: "", begin: 0.5, end: 1, joinsNext: false },
     ];
-    const fields = fieldsOfLine(withManualBackgroundWords(line, words));
+    const fields = fieldsOfLine(
+      withManualBackgroundWords(line, words, DEFAULT_SPLIT_CHARACTER),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(fields.backgroundWords).toEqual(words);
     expect(fields.backgroundTextSource).toBe("manual");
   });
 
   it("derives backgroundText coherently from the word array", () => {
     const fields = fieldsOfLine(
-      withManualBackgroundWords(line, [
-        { id: "w6", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-        { id: "w7", text: "aah", sep: "", begin: 0.5, end: 1, joinsNext: false },
-      ]),
+      withManualBackgroundWords(
+        line,
+        [
+          { id: "w6", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+          { id: "w7", text: "aah", sep: "", begin: 0.5, end: 1, joinsNext: false },
+        ],
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(fields.backgroundText).toBe("ooh aah");
   });
 
   it("reinserts the split character between syllables with no trailing space", () => {
     const fields = fieldsOfLine(
-      withManualBackgroundWords(line, [
-        { id: "w8", text: "oh", sep: "", begin: 0, end: 0.5, joinsNext: true },
-        { id: "w9", text: "oh", sep: "", begin: 0.5, end: 1, joinsNext: false },
-      ]),
+      withManualBackgroundWords(
+        line,
+        [
+          { id: "w8", text: "oh", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w9", text: "oh", sep: "", begin: 0.5, end: 1, joinsNext: false },
+        ],
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(fields.backgroundText).toBe("oh|oh");
   });
 });
 
 describe("withSeededBackground", () => {
-  const timed: LyricLine = lineFromFields({
-    id: "t",
-    text: "hello",
-    agentId: "v1",
-    begin: 10,
-    end: 14,
-    backgroundText: "ooh ah",
-  });
+  const timed: LyricLine = lineFromFields(
+    {
+      id: "t",
+      text: "hello",
+      agentId: "v1",
+      begin: 10,
+      end: 14,
+      backgroundText: "ooh ah",
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
   it("seeds background words over the second half of a word-synced line", () => {
     const wordSynced = withFields(timed, {
@@ -231,17 +266,19 @@ describe("withSeededBackground", () => {
       end: undefined,
       words: [{ id: "h", text: "hello", sep: "", begin: 10, end: 14, joinsNext: false }],
     });
-    const seeded = withSeededBackground(wordSynced);
+    const seeded = withSeededBackground(wordSynced, DEFAULT_SPLIT_CHARACTER);
     expect(timedSyllables(backgroundTrack(seeded)).map((word) => word.text.trim())).toEqual(["ooh", "ah"]);
     expect(timedSyllables(backgroundTrack(seeded))[0].begin).toBe(12);
     expect(timedSyllables(backgroundTrack(seeded)).at(-1)?.end).toBe(14);
   });
 
   it("regression: a line-synced main gets a line-synced background", () => {
-    const bg = backgroundTrack(withSeededBackground(timed));
+    const bg = backgroundTrack(withSeededBackground(timed, DEFAULT_SPLIT_CHARACTER));
     expect(bg).toMatchObject({ begin: 12, end: 14 });
     expect(timedSyllables(bg)).toEqual([]);
-    expect(backgroundText(withSeededBackground(timed))).toBe("ooh ah");
+    expect(backgroundText(withSeededBackground(timed, DEFAULT_SPLIT_CHARACTER), DEFAULT_SPLIT_CHARACTER)).toBe(
+      "ooh ah",
+    );
   });
 
   it("returns the same line when there is nothing to seed", () => {
@@ -251,24 +288,27 @@ describe("withSeededBackground", () => {
     const zeroLength = withFields(timed, { begin: 10, end: 10 });
     const inverted = withFields(timed, { begin: 14, end: 10 });
     for (const candidate of [withWords, untimed, noText, zeroLength, inverted])
-      expect(withSeededBackground(candidate)).toBe(candidate);
+      expect(withSeededBackground(candidate, DEFAULT_SPLIT_CHARACTER)).toBe(candidate);
   });
 });
 
 describe("withManualBackgroundWords on a partly synced background", () => {
   it("regression: retiming the timed background words keeps the untimed rest", () => {
-    const line = lineFromFields({
-      id: "l1",
-      text: "Main",
-      agentId: "v1",
-      begin: 1,
-      end: 4,
-      backgroundText: "ooh yeah baby",
-      backgroundWords: [{ id: "b1", text: "ooh", sep: " ", begin: 1, end: 1.5, joinsNext: false }],
-    });
+    const line = lineFromFields(
+      {
+        id: "l1",
+        text: "Main",
+        agentId: "v1",
+        begin: 1,
+        end: 4,
+        backgroundText: "ooh yeah baby",
+        backgroundWords: [{ id: "b1", text: "ooh", sep: " ", begin: 1, end: 1.5, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const [ooh] = timedSyllables(backgroundTrack(line));
-    const edited = withManualBackgroundWords(line, [{ ...ooh, end: 1.8 }]);
-    expect(backgroundText(edited)).toBe("ooh yeah baby");
+    const edited = withManualBackgroundWords(line, [{ ...ooh, end: 1.8 }], DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(edited, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah baby");
     expect(timedSyllables(backgroundTrack(edited))[0].end).toBe(1.8);
   });
 });

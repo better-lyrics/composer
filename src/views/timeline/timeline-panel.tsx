@@ -63,6 +63,7 @@ import { IconMusic } from "@tabler/icons-react";
 import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Components ----------------------------------------------------------------
 
@@ -221,10 +222,10 @@ const TimelinePanel: React.FC = () => {
         if (!data?.snap) return;
         const { selectedWords } = useTimelineStore.getState();
         const lines = useProjectStore.getState().lines;
-        const leader = addressAt(lines, data.lineId, data.trackType, data.wordIndex);
+        const leader = addressAt(lines, data.lineId, data.trackType, data.wordIndex, getSplitCharacter());
         const isLeaderInSelection = leader !== null && selectedWords.some((selected) => sameAddress(selected, leader));
         const draggedSet = isLeaderInSelection
-          ? resolveAddresses(lines, selectedWords)
+          ? resolveAddresses(lines, selectedWords, getSplitCharacter())
           : [{ lineId: data.lineId, wordIndex: data.wordIndex, type: data.trackType }];
         const selfIds = new Set(draggedSet.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
         const leaderKey = selfKey(data.lineId, data.wordIndex, data.trackType);

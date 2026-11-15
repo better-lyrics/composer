@@ -33,12 +33,14 @@ function sortedTextItems(items: string): string {
 
 // -- Functions ----------------------------------------------------------------
 
-function isExportedLine(line: LyricLine): boolean {
-  return isLineTimed(line) && (hasMainLyrics(line) || !!backgroundText(line)?.trim());
+function isExportedLine(line: LyricLine, splitChar: string): boolean {
+  return isLineTimed(line, splitChar) && (hasMainLyrics(line, splitChar) || !!backgroundText(line, splitChar)?.trim());
 }
 
-function keyedExportLines(lines: readonly LyricLine[]): KeyedLine[] {
-  return lines.filter(isExportedLine).map((line, index) => ({ line, key: `L${index + 1}` }));
+function keyedExportLines(lines: readonly LyricLine[], splitChar: string): KeyedLine[] {
+  return lines
+    .filter((value) => isExportedLine(value, splitChar))
+    .map((line, index) => ({ line, key: `L${index + 1}` }));
 }
 
 function canonicalLineKeys(ttml: string): string {
@@ -60,8 +62,8 @@ function canonicalLineKeys(ttml: string): string {
   );
 }
 
-function lineKeyIds(lines: readonly LyricLine[]): LineKeyIds {
-  return Object.fromEntries(keyedExportLines(lines).map(({ line, key }) => [key, line.id]));
+function lineKeyIds(lines: readonly LyricLine[], splitChar: string): LineKeyIds {
+  return Object.fromEntries(keyedExportLines(lines, splitChar).map(({ line, key }) => [key, line.id]));
 }
 
 function renumberLineKeys(ttml: string, from: LineKeyIds, to: LineKeyIds): string {

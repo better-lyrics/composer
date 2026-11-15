@@ -10,6 +10,7 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -105,7 +106,7 @@ describe("TimelineContextMenu · delete word", () => {
 
       const line = lineById("l1");
       expect(line && hasAnyTiming(line)).toBe(false);
-      expect(lineText(line!)).toBe("hello world");
+      expect(lineText(line!, getSplitCharacter())).toBe("hello world");
     });
 
     const threeWords = () =>

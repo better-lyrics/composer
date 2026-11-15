@@ -45,6 +45,7 @@ import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -241,7 +242,7 @@ const EditPanel: React.FC = () => {
     const current = useProjectStore.getState().lines;
     if (detectNonLatinLanguage(lyricsText(current))) noteGuideSignal("edit.nonLatinLyrics");
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) {
-      if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
+      if (current.some((value) => lineHasInlineParens(value, getSplitCharacter()))) noteGuideSignal("edit.parenInLine");
       return;
     }
     const extracted = extractBackground({
@@ -300,10 +301,14 @@ const EditPanel: React.FC = () => {
       if (wasPaste) {
         const pastedLines = finalLines;
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
-          finalLines = extractBackgroundVocals(finalLines, {
-            mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
-            preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
-          });
+          finalLines = extractBackgroundVocals(
+            finalLines,
+            {
+              mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+              preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
+            },
+            getSplitCharacter(),
+          );
         }
         finalizeRun();
         commitAndShow(pasteLyrics(lines, finalLines));

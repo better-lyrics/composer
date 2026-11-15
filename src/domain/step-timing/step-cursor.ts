@@ -10,8 +10,8 @@ type LineFilter = (line: LyricLine) => boolean;
 
 // -- Helpers ------------------------------------------------------------------
 
-function mainBlocks(line: LyricLine): number {
-  return drawnSyllables(line, "main").length;
+function mainBlocks(line: LyricLine, splitChar: string): number {
+  return drawnSyllables(line, "main", splitChar).length;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -20,11 +20,12 @@ function nextStepSlot(
   lines: readonly LyricLine[],
   cursor: ResolvedAddress,
   include: LineFilter,
+  splitChar: string,
 ): ResolvedAddress | null {
-  const sameTrack = resolvedAt(lines, cursor.lineIndex, cursor.type, cursor.wordIndex + 1);
+  const sameTrack = resolvedAt(lines, cursor.lineIndex, cursor.type, cursor.wordIndex + 1, splitChar);
   if (sameTrack) return sameTrack;
   for (let i = cursor.lineIndex + 1; i < lines.length; i++) {
-    if (include(lines[i]) && mainBlocks(lines[i]) > 0) return resolvedAt(lines, i, "word", 0);
+    if (include(lines[i]) && mainBlocks(lines[i], splitChar) > 0) return resolvedAt(lines, i, "word", 0, splitChar);
   }
   return null;
 }
@@ -34,12 +35,13 @@ function nextSlotWithBackground(
   lines: readonly LyricLine[],
   cursor: ResolvedAddress,
   include: LineFilter,
+  splitChar: string,
 ): ResolvedAddress | null {
   const line = lines[cursor.lineIndex];
-  const leadWords = line ? drawnSyllables(line, "main") : undefined;
+  const leadWords = line ? drawnSyllables(line, "main", splitChar) : undefined;
   const leadEnds = cursor.type === "word" && cursor.wordIndex + 1 === leadWords?.length;
-  const firstBackground = leadEnds ? resolvedAt(lines, cursor.lineIndex, "bg", 0) : null;
-  return firstBackground ?? nextStepSlot(lines, cursor, include);
+  const firstBackground = leadEnds ? resolvedAt(lines, cursor.lineIndex, "bg", 0, splitChar) : null;
+  return firstBackground ?? nextStepSlot(lines, cursor, include, splitChar);
 }
 
 function nextCursorSlot(
@@ -47,13 +49,16 @@ function nextCursorSlot(
   cursor: ResolvedAddress,
   queue: readonly SyllableAddress[] | null,
   include: LineFilter,
+  splitChar: string,
   withBackground = false,
 ): ResolvedAddress | null {
   if (queue) {
     const next = nextInQueue(queue, cursor);
-    return next && resolveAddress(lines, next);
+    return next && resolveAddress(lines, next, splitChar);
   }
-  return withBackground ? nextSlotWithBackground(lines, cursor, include) : nextStepSlot(lines, cursor, include);
+  return withBackground
+    ? nextSlotWithBackground(lines, cursor, include, splitChar)
+    : nextStepSlot(lines, cursor, include, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

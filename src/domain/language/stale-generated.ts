@@ -19,10 +19,14 @@ function isStaleGenerated(track: LanguageContentMeta | undefined, fingerprint: s
 }
 
 // Lines are grouped by the exact tracks they hold, so a refresh never adds a track a line does not have.
-function staleGeneratedLanguages(lines: readonly LyricLine[]): StaleGeneratedLanguages[] {
+function staleGeneratedLanguages(lines: readonly LyricLine[], splitChar: string): StaleGeneratedLanguages[] {
   const groups = new Map<string, StaleGeneratedLanguages>();
   for (const line of lines) {
-    const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+    const fingerprint = languageSourceFingerprint(
+      splitChar,
+      lineText(line, splitChar),
+      backgroundText(line, splitChar),
+    );
     const transliteration = isStaleGenerated(lineTransliteration(line), fingerprint);
     const translations = Object.entries(lineTranslations(line) ?? {})
       .flatMap(([language, track]) => (isStaleGenerated(track, fingerprint) ? [language] : []))

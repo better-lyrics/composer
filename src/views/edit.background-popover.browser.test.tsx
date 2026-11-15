@@ -9,6 +9,7 @@ import { createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -44,10 +45,10 @@ describe("background vocals popover", () => {
     await input.fill("yeah");
     await userEvent.keyboard("{Enter}");
     await expect.element(input).not.toBeInTheDocument();
-    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("yeah");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("yeah");
 
     useProjectStore.getState().undo();
-    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("yea");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("yea");
   });
 
   it("opens from the keyboard and returns focus to its trigger on close", async () => {
@@ -88,7 +89,7 @@ describe("regressions", () => {
     await screen.getByRole("textbox", { name: "Background vocals text" }).click();
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("yeah");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("yeah");
   });
 
   it("regression: blurring without an edit leaves the line and history untouched", async () => {

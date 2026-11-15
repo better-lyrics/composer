@@ -8,6 +8,7 @@ import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { makeAltDuplicateEvent } from "@/views/timeline/use-timeline-dnd.test-helpers";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineDnd · alt-drag duplicate", () => {
   beforeEach(() => {
@@ -15,15 +16,18 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
     useTimelineStore.setState({ zoom: 100 });
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "l1",
-          text: "Hello world",
-          agentId: "v1",
-          words: [
-            { id: "w1", text: "Hello", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-            { id: "w2", text: "world", sep: "", begin: 2, end: 2.5, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "l1",
+            text: "Hello world",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "Hello", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+              { id: "w2", text: "world", sep: "", begin: 2, end: 2.5, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
       ],
     });
   });

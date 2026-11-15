@@ -42,8 +42,8 @@ interface PiecedSplit {
 
 // -- Functions ----------------------------------------------------------------
 
-function sideSourceText(line: LyricLine, side: LanguageSide): string {
-  return side === "main" ? lineText(line) : (backgroundText(line) ?? "");
+function sideSourceText(line: LyricLine, side: LanguageSide, splitChar: string): string {
+  return side === "main" ? lineText(line, splitChar) : (backgroundText(line, splitChar) ?? "");
 }
 
 function trackWithText(
@@ -52,12 +52,13 @@ function trackWithText(
   side: LanguageSide,
   text: string,
   status: TransliterationAlignmentStatus | undefined,
+  splitChar: string,
 ): LineLanguage {
   const { stale: _stale, ...current } = track;
   const segments =
     side === "main"
-      ? wholeLineSegments(lineText(line), text)
-      : [{ original: sideSourceText(line, side), transliteration: text }];
+      ? wholeLineSegments(lineText(line, splitChar), text)
+      : [{ original: sideSourceText(line, side, splitChar), transliteration: text }];
   return { ...current, origin: "manual", [side]: { ...current[side], text, segments, alignmentStatus: status } };
 }
 
@@ -83,11 +84,12 @@ function splitKeepingPieces(
   wordIndex: number,
   replacementWords: WordTiming[],
   replacementPieces: PositionalPieces | undefined,
+  splitChar: string,
 ): PiecedSplit | null {
-  const effective = drawnSyllables(line, trackRole(type));
+  const effective = drawnSyllables(line, trackRole(type), splitChar);
   if (!effective?.length) return null;
   const side = languageSide(type);
-  const aligned = withAlignedWords(withRoleWords(line, trackRole(type), effective));
+  const aligned = withAlignedWords(withRoleWords(line, trackRole(type), effective), splitChar);
   const base = trackWords(aligned, type) ?? effective;
   const basePieces = trackPieces(aligned, side);
 
@@ -104,7 +106,11 @@ function splitKeepingPieces(
   const track = lineTransliteration(aligned);
   const text = track ? mappedTransliteration(words, pieces) : null;
   if (!track || text === null) return { words, pieces, transliteration: null };
-  return { words, pieces, transliteration: trackWithText(line, track, side, text, track[side]?.alignmentStatus) };
+  return {
+    words,
+    pieces,
+    transliteration: trackWithText(line, track, side, text, track[side]?.alignmentStatus, splitChar),
+  };
 }
 
 // The written track carries the split side's new pieces; the other side keeps the pieces the line stored.
@@ -127,9 +133,10 @@ function splitWordsKeepingTransliteration(
   type: WordTrack,
   wordIndex: number,
   replacementWords: WordTiming[],
+  splitChar: string,
   replacementPieces?: PositionalPieces,
 ): WordSplitResult | null {
-  const split = splitKeepingPieces(line, type, wordIndex, replacementWords, replacementPieces);
+  const split = splitKeepingPieces(line, type, wordIndex, replacementWords, replacementPieces, splitChar);
   return split && { words: split.words, languages: splitLanguages(line, type, split, split.transliteration) };
 }
 
@@ -145,21 +152,23 @@ function splitWordIntoWordsKeepingTransliteration(
   splitChar: string,
   replacementPieces?: PositionalPieces,
 ): WordSplitResult | null {
-  const split = splitKeepingPieces(line, type, wordIndex, replacementWords, replacementPieces);
+  const split = splitKeepingPieces(line, type, wordIndex, replacementWords, replacementPieces, splitChar);
   const track = lineTransliteration(line);
   if (!split || !track) return split && { words: split.words, languages: splitLanguages(line, type, split, null) };
 
   const side = languageSide(type);
   const hasEditedSide = Boolean(track[side]?.text?.trim());
-  const wasCurrent = track.sourceFingerprint === languageSourceFingerprint(lineText(line), backgroundText(line));
+  const wasCurrent =
+    track.sourceFingerprint ===
+    languageSourceFingerprint(splitChar, lineText(line, splitChar), backgroundText(line, splitChar));
   // Only the other side has a transliteration: nothing to rewrite, but the
   // fingerprint still has to follow the new source text.
   const reconciled = split.transliteration ?? (hasEditedSide || !wasCurrent ? null : track);
   if (!reconciled) return { words: split.words, languages: splitLanguages(line, type, split, null) };
 
   const splitText = syllablesText(split.words, splitChar);
-  const text = type === "word" ? splitText : lineText(line);
-  const background = type === "bg" ? splitText : backgroundText(line);
+  const text = type === "word" ? splitText : lineText(line, splitChar);
+  const background = type === "bg" ? splitText : backgroundText(line, splitChar);
   const { stale: _stale, ...fresh } = reconciled;
   const sideTrack = fresh[side];
   const segments =
@@ -179,7 +188,7 @@ function splitWordIntoWordsKeepingTransliteration(
     ...fresh,
     ...segments,
     origin: track.origin,
-    sourceFingerprint: wasCurrent ? languageSourceFingerprint(text, background) : track.sourceFingerprint,
+    sourceFingerprint: wasCurrent ? languageSourceFingerprint(splitChar, text, background) : track.sourceFingerprint,
   };
   return { words: split.words, languages: splitLanguages(line, type, split, written) };
 }

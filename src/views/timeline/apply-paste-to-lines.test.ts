@@ -13,11 +13,12 @@ import { createGroup, createLine, createWords } from "@/test/factories";
 import { patchOf, updatedLine } from "@/test/field-updates";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import type { ClipboardData } from "@/views/timeline/selection-types";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 const line = (id: string, words: WordTiming[] | undefined, text: string): LyricLine =>
-  lineFromFields({ id, agentId: "a", text, words }) as LyricLine;
+  lineFromFields({ id, agentId: "a", text, words }, DEFAULT_SPLIT_CHARACTER) as LyricLine;
 
 const wholeSong = (duration: number) => timeRangeResolver([], [], duration);
 
@@ -77,9 +78,9 @@ describe("applyPasteToLines", () => {
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates).not.toBeNull();
-      expect(lineText(updatedLine(updates?.[0].updates)!)).toBeDefined();
-      expect(lineText(updatedLine(updates?.[0].updates)!)).not.toBe("a b");
-      expect(lineText(updatedLine(updates?.[0].updates)!)).toContain("z");
+      expect(lineText(updatedLine(updates?.[0].updates)!, DEFAULT_SPLIT_CHARACTER)).toBeDefined();
+      expect(lineText(updatedLine(updates?.[0].updates)!, DEFAULT_SPLIT_CHARACTER)).not.toBe("a b");
+      expect(lineText(updatedLine(updates?.[0].updates)!, DEFAULT_SPLIT_CHARACTER)).toContain("z");
     });
 
     it("re-derives bg text on bg paste", () => {
@@ -95,7 +96,7 @@ describe("applyPasteToLines", () => {
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates).not.toBeNull();
-      expect(backgroundText(updatedLine(updates?.[0].updates))).toBeDefined();
+      expect(backgroundText(updatedLine(updates?.[0].updates), DEFAULT_SPLIT_CHARACTER)).toBeDefined();
     });
 
     it("distributes entries across multiple destination lines via lineOffset", () => {
@@ -237,7 +238,10 @@ describe("applyPasteToLines", () => {
 });
 
 describe("pasting onto a line-synced row", () => {
-  const lineSynced: LyricLine = lineFromFields({ id: "ls", agentId: "a", text: "It hurts for me", begin: 10, end: 12 });
+  const lineSynced: LyricLine = lineFromFields(
+    { id: "ls", agentId: "a", text: "It hurts for me", begin: 10, end: 12 },
+    DEFAULT_SPLIT_CHARACTER,
+  );
   const clipboardAt = (begin: number, end: number): ClipboardData => ({
     entries: [
       {
@@ -250,7 +254,10 @@ describe("pasting onto a line-synced row", () => {
 
   it("regression: pasting onto a line-synced line of several words writes each word once", () => {
     // A line converted to words once and back to a line span keeps the id its drawn word had on syllable 0.
-    const fresh = lineFromFields({ id: "s3", agentId: "a", text: "one two three", begin: 10, end: 12 });
+    const fresh = lineFromFields(
+      { id: "s3", agentId: "a", text: "one two three", begin: 10, end: 12 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const main = mainTrack(fresh);
     const renamed = main.syllables.map((syllable, index) =>
       index === 0 ? { ...syllable, id: lineTimingWordId("s3") } : syllable,
@@ -271,7 +278,7 @@ describe("pasting onto a line-synced row", () => {
       timeDelta: 0,
       rangeOf: wholeSong(60),
     });
-    expect(lineText(updatedLine(updates?.[0].updates)!)).toBe("one two three yeah");
+    expect(lineText(updatedLine(updates?.[0].updates)!, DEFAULT_SPLIT_CHARACTER)).toBe("one two three yeah");
   });
 
   it("regression: pasting after the line's span keeps its text and timing as the first word", () => {
@@ -286,8 +293,8 @@ describe("pasting onto a line-synced row", () => {
       { text: "It hurts for me", sep: " ", begin: 10, end: 12, joinsNext: false },
       { text: "never", sep: "", begin: 13, end: 13.5, joinsNext: false },
     ]);
-    expect(lineText(updatedLine(updates?.[0].updates)!)).toContain("It hurts for me");
-    expect(lineText(updatedLine(updates?.[0].updates)!)).toContain("never");
+    expect(lineText(updatedLine(updates?.[0].updates)!, DEFAULT_SPLIT_CHARACTER)).toContain("It hurts for me");
+    expect(lineText(updatedLine(updates?.[0].updates)!, DEFAULT_SPLIT_CHARACTER)).toContain("never");
   });
 
   it("regression: a paste inside the line's span counts as an overlap", () => {
@@ -300,15 +307,18 @@ describe("pasting onto a line-synced row", () => {
 });
 
 describe("pasteOverlaps", () => {
-  const wordLine: LyricLine = lineFromFields({
-    id: "w",
-    agentId: "a",
-    text: "a b",
-    words: [
-      { id: "w21", text: "a", sep: " ", begin: 0, end: 1, joinsNext: false },
-      { id: "w22", text: "b", sep: "", begin: 1, end: 2, joinsNext: false },
-    ],
-  });
+  const wordLine: LyricLine = lineFromFields(
+    {
+      id: "w",
+      agentId: "a",
+      text: "a b",
+      words: [
+        { id: "w21", text: "a", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w22", text: "b", sep: "", begin: 1, end: 2, joinsNext: false },
+      ],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
   it("reports an overlap with an existing word", () => {
     const clipboard: ClipboardData = {
@@ -364,7 +374,7 @@ describe("pasteOverlaps", () => {
     });
 
     it("ignores an untimed target line", () => {
-      const untimed: LyricLine = lineFromFields({ id: "u", agentId: "a", text: "free text" });
+      const untimed: LyricLine = lineFromFields({ id: "u", agentId: "a", text: "free text" }, DEFAULT_SPLIT_CHARACTER);
       const clipboard: ClipboardData = {
         entries: [
           {

@@ -3,17 +3,18 @@ import { lcsPairs, wordKey } from "@/domain/word/alignment";
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("wordKey", () => {
   it("strips trailing whitespace", () => {
-    expect(wordKey("love ")).toBe("love");
+    expect(wordKey("love ", DEFAULT_SPLIT_CHARACTER)).toBe("love");
   });
   it("returns the bare word when no surrounding chars", () => {
-    expect(wordKey("you")).toBe("you");
+    expect(wordKey("you", DEFAULT_SPLIT_CHARACTER)).toBe("you");
   });
   it("treats split-character variants as the same key", () => {
     // stripSplitCharacter removes the syllable split marker
-    expect(wordKey("li ght")).toBe(wordKey("li ght "));
+    expect(wordKey("li ght", DEFAULT_SPLIT_CHARACTER)).toBe(wordKey("li ght ", DEFAULT_SPLIT_CHARACTER));
   });
 });
 

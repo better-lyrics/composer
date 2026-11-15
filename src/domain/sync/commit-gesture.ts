@@ -26,6 +26,7 @@ interface GestureContext {
   defaultWordDuration: number;
   groups?: readonly LinkGroup[];
   skippedInstances?: readonly SkippedInstance[];
+  splitChar: string;
 }
 
 interface GestureCommit {
@@ -56,7 +57,7 @@ function closableSlot(lines: readonly LyricLine[], slot: SyncSlot): SyncSlot {
 
 // A re-record may start inside the previous slot; one that lands before that slot begins is early and snaps to its end.
 function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word"): Anchor {
-  const previous = previousSlot(lines, ctx.cursor, granularity);
+  const previous = previousSlot(lines, ctx.cursor, granularity, ctx.splitChar);
   if (!previous) return { slot: null, floor: 0 };
   const slot = closableSlot(lines, previous);
   const bounds = slotBounds(lines, slot);
@@ -70,10 +71,10 @@ function followsSkippedInstance(
   ctx: GestureContext,
   granularity: "line" | "word",
 ): boolean {
-  const previous = previousSlot(lines, ctx.cursor, granularity);
+  const previous = previousSlot(lines, ctx.cursor, granularity, ctx.splitChar);
   if (!previous || !ctx.groups?.some((group) => group.sharesTiming)) return false;
   const previousId = lines[previous.lineIndex].id;
-  const skippedInstances = ctx.skippedInstances ?? skippedSharedInstances(lines, ctx.groups);
+  const skippedInstances = ctx.skippedInstances ?? skippedSharedInstances(lines, ctx.groups, ctx.splitChar);
   return skippedInstances.some((skipped) => skipped.lineIds.includes(previousId));
 }
 
@@ -123,9 +124,9 @@ function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: 
 
 // -- Background -----------------------------------------------------------------
 
-function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null): LyricLine {
+function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null, splitChar: string): LyricLine {
   const background = backgroundTrack(line);
-  if (!background || !bgBounds(line)) return withBackgroundSeededFrom(line, begin);
+  if (!background || !bgBounds(line)) return withBackgroundSeededFrom(line, begin, splitChar);
   return oldMain ? withBackgroundTrack(line, shiftTrack(background, begin - oldMain.begin)) : line;
 }
 
@@ -135,7 +136,7 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   const ctx = withJumpPastSkipped(lines, gestureCtx, "word");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
-  if (!isSyncableLine(line)) return null;
+  if (!isSyncableLine(line, ctx.splitChar)) return null;
   const slots = mainTrack(line).syllables;
   const existing = timedSyllables(mainTrack(line));
   if (!slots[cursor.wordIndex]?.text || cursor.wordIndex > existing.length) return null;
@@ -156,7 +157,7 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   words = enforceOrderAround(words, cursor.wordIndex);
 
   const timed = withRoleWords(line, "main", words);
-  const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line)) : timed;
+  const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line), ctx.splitChar) : timed;
   const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
 
   return {
@@ -172,7 +173,7 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   const ctx = withJumpPastSkipped(lines, gestureCtx, "line");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
-  if (!isSyncableLine(line)) return null;
+  if (!isSyncableLine(line, ctx.splitChar)) return null;
 
   const anchor = anchorBefore(lines, ctx, "line");
   const { slot } = anchor;
@@ -182,8 +183,8 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   const delta = oldMain ? clampShiftDelta([line], Math.max(ctx.time, floor) - oldMain.begin, range) : 0;
   const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
   const written = oldMain
-    ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) })
-    : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null);
+    ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) }, ctx.splitChar)
+    : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null, ctx.splitChar);
 
   return {
     update: { id: line.id, updates: { tracks: written.tracks } },
@@ -239,7 +240,7 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
     if (!write) return null;
     return {
       lineUpdates: slotWriteToUpdates(write),
-      nextCursor: open ? ctx.cursor : advanceCursor(lines, ctx.cursor, "word"),
+      nextCursor: open ? ctx.cursor : advanceCursor(lines, ctx.cursor, "word", ctx.splitChar),
       nextJumped: open ? ctx.jumped : false,
       clampedTo: write.clampedTo,
     };
@@ -250,7 +251,7 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
     if (!write) return null;
     return {
       lineUpdates: slotWriteToUpdates(write),
-      nextCursor: advanceCursor(lines, ctx.cursor, "line"),
+      nextCursor: advanceCursor(lines, ctx.cursor, "line", ctx.splitChar),
       nextJumped: false,
       clampedTo: write.clampedTo,
     };
@@ -258,7 +259,7 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 
   const closed = closeHeld(lines, ctx.cursor, ctx.time);
   if (!closed) return null;
-  const nextCursor = advanceCursor(lines, ctx.cursor, "word");
+  const nextCursor = advanceCursor(lines, ctx.cursor, "word", ctx.splitChar);
 
   if (gesture === "hold-end") {
     return { lineUpdates: [closed.update], nextCursor, nextJumped: false, clampedTo: closed.clampedTo };

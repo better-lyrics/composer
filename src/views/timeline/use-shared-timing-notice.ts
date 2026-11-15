@@ -11,6 +11,7 @@ import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -49,7 +50,7 @@ function useSharedTimingNotice(): NoticeKind | null {
   const duration = useAudioStore((s) => s.duration);
 
   const suggestions = useMemo(
-    () => sharedTimingSuggestions(lines, groups, songEndOrUnbounded(duration)),
+    () => sharedTimingSuggestions(lines, groups, getSplitCharacter(), songEndOrUnbounded(duration)),
     [lines, groups, duration],
   );
   const { visible, dismissedFingerprints } = useMemo(

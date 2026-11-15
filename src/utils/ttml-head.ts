@@ -75,7 +75,12 @@ function translationLines(keyedLines: readonly KeyedLine[], ind: Indent): string
   return parts;
 }
 
-function transliterationLines(keyedLines: readonly KeyedLine[], writesWords: boolean, ind: Indent): string[] {
+function transliterationLines(
+  keyedLines: readonly KeyedLine[],
+  writesWords: boolean,
+  ind: Indent,
+  splitChar: string,
+): string[] {
   const transliterated = keyedLines.flatMap(({ line, key }) => {
     const transliteration = lineTransliteration(line);
     return transliteration && hasAlternateText(transliteration) ? [{ line, key, transliteration }] : [];
@@ -90,7 +95,7 @@ function transliterationLines(keyedLines: readonly KeyedLine[], writesWords: boo
   for (const [language, languageLines] of byLanguage) {
     parts.push(`${ind(5)}<transliteration xml:lang="${escapeXmlText(language)}">`);
     for (const { line, key } of languageLines) {
-      parts.push(`${ind(6)}<text for="${key}">${renderTransliterationContent(line, writesWords)}</text>`);
+      parts.push(`${ind(6)}<text for="${key}">${renderTransliterationContent(line, splitChar, writesWords)}</text>`);
     }
     parts.push(`${ind(5)}</transliteration>`);
   }
@@ -98,11 +103,11 @@ function transliterationLines(keyedLines: readonly KeyedLine[], writesWords: boo
   return parts;
 }
 
-function iTunesMetadataLines(source: HeadSource, ind: Indent): string[] {
+function iTunesMetadataLines(source: HeadSource, ind: Indent, splitChar: string): string[] {
   const kept = source.passthrough?.iTunesMetadata;
   const children = [
     ...translationLines(source.keyedLines, ind),
-    ...transliterationLines(source.keyedLines, source.writesWords, ind),
+    ...transliterationLines(source.keyedLines, source.writesWords, ind, splitChar),
     ...keptElementLines(kept, ind(4)),
   ];
   if (children.length === 0 && !kept) return [];
@@ -115,7 +120,7 @@ function iTunesMetadataLines(source: HeadSource, ind: Indent): string[] {
 
 // -- Head ---------------------------------------------------------------------
 
-function headLines(source: HeadSource, ind: Indent): string[] {
+function headLines(source: HeadSource, ind: Indent, splitChar: string): string[] {
   const { metadata, agents, groups, youtubeVideoId, passthrough } = source;
   const parts = [
     `${ind(1)}<head${keptAttributes(passthrough?.head)}>`,
@@ -142,7 +147,7 @@ function headLines(source: HeadSource, ind: Indent): string[] {
     }
     parts.push(`${ind(3)}</composer:groups>`);
   }
-  parts.push(...iTunesMetadataLines(source, ind));
+  parts.push(...iTunesMetadataLines(source, ind, splitChar));
   parts.push(...keptElementLines(passthrough?.metadata, ind(3)));
   parts.push(`${ind(2)}</metadata>`);
   parts.push(...keptElementLines(passthrough?.head, ind(2)));

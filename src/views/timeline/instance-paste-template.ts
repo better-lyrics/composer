@@ -6,6 +6,7 @@ import type { WordTrack } from "insync/line-track";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -19,7 +20,7 @@ function instancePasteTemplate(
   { groupId, instanceIdx }: SourceInstance,
 ): LineTemplate[] {
   const group = groups.find((candidate) => candidate.id === groupId);
-  return instanceToTemplate(lines, groupId, pickedTemplateSource(lines, group, instanceIdx));
+  return instanceToTemplate(lines, groupId, pickedTemplateSource(lines, group, instanceIdx, getSplitCharacter()));
 }
 
 function trackEntries(words: WordTemplate[] | undefined, lineOffset: number, trackType: WordTrack): ClipboardEntry[] {

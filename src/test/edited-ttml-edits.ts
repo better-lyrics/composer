@@ -7,6 +7,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { keyedExportLines } from "@/utils/ttml-line-keys";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -34,7 +35,10 @@ function required<T>(value: T | undefined, what: string): T {
 }
 
 function keyOf(project: EditedTtmlProject, line: LyricLine): string {
-  return required(keyedExportLines(project.lines).find((keyed) => keyed.line === line)?.key, `key for ${line.id}`);
+  return required(
+    keyedExportLines(project.lines, DEFAULT_SPLIT_CHARACTER).find((keyed) => keyed.line === line)?.key,
+    `key for ${line.id}`,
+  );
 }
 
 function paragraphOf(ttml: string, project: EditedTtmlProject, line: LyricLine): string {
@@ -57,7 +61,7 @@ function lineById(lines: readonly LyricLine[], id: string): LyricLine {
 }
 
 function timedAt(project: EditedTtmlProject, index: number): LyricLine {
-  return required(keyedExportLines(project.lines)[index]?.line, `exported line ${index}`);
+  return required(keyedExportLines(project.lines, DEFAULT_SPLIT_CHARACTER)[index]?.line, `exported line ${index}`);
 }
 
 function withoutElement(ttml: string, element: string): string {
@@ -102,7 +106,7 @@ function editLineText(
       },
     };
   }
-  const text = stripSplitCharacter(lineText(line));
+  const text = stripSplitCharacter(lineText(line, DEFAULT_SPLIT_CHARACTER));
   return {
     edited: editParagraph(ttml, project, line, (p) => {
       const openTag = p.slice(0, p.indexOf(">") + 1);
@@ -110,7 +114,7 @@ function editLineText(
     }),
     expectTaken: (lines) => {
       const after = lineById(lines, line.id);
-      expect(lineText(after)).toBe(`${text}!`);
+      expect(lineText(after, DEFAULT_SPLIT_CHARACTER)).toBe(`${text}!`);
       expectStoredDataKept(after);
     },
   };

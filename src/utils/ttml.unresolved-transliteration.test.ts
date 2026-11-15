@@ -3,6 +3,7 @@ import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { renderTransliterationContent } from "@/utils/ttml-alternate-content";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 function lineWithMappings(): LegacyLine {
   return {
@@ -61,7 +62,7 @@ describe("TTML unresolved transliteration", () => {
       const stored = legacyLine(line);
       const before = structuredClone(stored);
 
-      const content = renderTransliterationContent(stored);
+      const content = renderTransliterationContent(stored, DEFAULT_SPLIT_CHARACTER);
 
       if (side === "main") {
         expect(content).toMatch(/^x <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/);
@@ -76,6 +77,7 @@ describe("TTML unresolved transliteration", () => {
         metadata: { title: "Unresolved", artists: [], album: "", duration: 4, language: "ja" },
         agents: [{ id: "v1", type: "person", name: "Lead" }],
         lines: [stored],
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
       const parsed = legacyView(parseLyricsFile("song.ttml", ttml).lines[0]);
       expect(parsed.transliteration?.text).toBe(line.transliteration!.text);
@@ -115,7 +117,9 @@ describe("TTML unresolved transliteration", () => {
       );
     }
 
-    expect(renderTransliterationContent(legacyLine(line))).toBe('&amp; <span ttm:role="x-bg">&lt;</span>');
+    expect(renderTransliterationContent(legacyLine(line), DEFAULT_SPLIT_CHARACTER)).toBe(
+      '&amp; <span ttm:role="x-bg">&lt;</span>',
+    );
   });
 
   it("retains valid timing and visible punctuation even when persisted status is unresolved", () => {
@@ -123,7 +127,7 @@ describe("TTML unresolved transliteration", () => {
     line.transliteration!.alignmentStatus = "unresolved";
     line.transliteration!.backgroundAlignmentStatus = "unresolved";
 
-    expect(renderTransliterationContent(legacyLine(line))).toMatch(
+    expect(renderTransliterationContent(legacyLine(line), DEFAULT_SPLIT_CHARACTER)).toMatch(
       /^<span[^>]+>kyou-<\/span><span[^>]+>hi<\/span> <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/,
     );
   });

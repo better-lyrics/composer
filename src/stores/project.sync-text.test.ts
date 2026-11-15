@@ -6,6 +6,7 @@ import { commitGesture } from "@/domain/sync/commit-gesture";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 describe("sync incremental tap preserves line.text", () => {
   beforeEach(() => {
@@ -27,11 +28,12 @@ describe("sync incremental tap preserves line.text", () => {
       jumped: false,
       time: 0,
       defaultWordDuration: 1,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!commit) throw new Error("expected a commit");
     useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
 
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world how are you");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello world how are you");
   });
 
   it("preserves text across a full word-by-word tap sequence", () => {
@@ -43,10 +45,11 @@ describe("sync incremental tap preserves line.text", () => {
         jumped: false,
         time: i * 0.5,
         defaultWordDuration: 0.4,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
       if (!commit) throw new Error("expected a commit");
       useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
-      expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world how are you");
+      expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello world how are you");
     }
   });
 
@@ -60,6 +63,7 @@ describe("sync incremental tap preserves line.text", () => {
       jumped: false,
       time: 0,
       defaultWordDuration: 1,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!commit) throw new Error("expected a commit");
     useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
@@ -77,6 +81,6 @@ describe("sync incremental tap preserves line.text", () => {
       "pending",
     );
 
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello world");
   });
 });

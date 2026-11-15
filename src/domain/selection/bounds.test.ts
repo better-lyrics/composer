@@ -4,12 +4,13 @@ import { selectionBounds } from "@/domain/selection/bounds";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function sel(lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
   const line = [wordLine, nextLine, lineSynced].find((candidate) => candidate.id === lineId);
-  const word = line ? drawnSyllables(line, trackRole(type))[wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(type), DEFAULT_SPLIT_CHARACTER)[wordIndex] : undefined;
   return { lineId, type, syllableId: word?.id ?? `missing-${wordIndex}` };
 }
 
@@ -40,37 +41,49 @@ const lineSynced = createLine({ id: "c", text: "Whole line", begin: 6, end: 8 })
 
 describe("selectionBounds", () => {
   it("returns a single word's bounds", () => {
-    expect(selectionBounds([wordLine], [sel("a", 2)])).toEqual({ begin: 1.7, end: 2.3 });
+    expect(selectionBounds([wordLine], [sel("a", 2)], DEFAULT_SPLIT_CHARACTER)).toEqual({ begin: 1.7, end: 2.3 });
   });
 
   it("spans words across lines regardless of selection order", () => {
-    expect(selectionBounds([wordLine, nextLine], [sel("b", 1), sel("a", 0)])).toEqual({ begin: 1, end: 4.8 });
+    expect(selectionBounds([wordLine, nextLine], [sel("b", 1), sel("a", 0)], DEFAULT_SPLIT_CHARACTER)).toEqual({
+      begin: 1,
+      end: 4.8,
+    });
   });
 
   it("includes background words", () => {
-    expect(selectionBounds([wordLine], [sel("a", 2), sel("a", 0, "bg")])).toEqual({ begin: 1.7, end: 3 });
+    expect(selectionBounds([wordLine], [sel("a", 2), sel("a", 0, "bg")], DEFAULT_SPLIT_CHARACTER)).toEqual({
+      begin: 1.7,
+      end: 3,
+    });
   });
 
   it("reads a line-synced row through its effective word", () => {
-    expect(selectionBounds([lineSynced], [sel("c", 0)])).toEqual({ begin: 6, end: 8 });
+    expect(selectionBounds([lineSynced], [sel("c", 0)], DEFAULT_SPLIT_CHARACTER)).toEqual({ begin: 6, end: 8 });
   });
 
   describe("edge cases", () => {
     it("returns null for an empty selection", () => {
-      expect(selectionBounds([wordLine], [])).toBeNull();
+      expect(selectionBounds([wordLine], [], DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("skips selections that point past the timed words", () => {
-      expect(selectionBounds([wordLine], [sel("a", 1), sel("a", 9)])).toEqual({ begin: 1.4, end: 1.7 });
+      expect(selectionBounds([wordLine], [sel("a", 1), sel("a", 9)], DEFAULT_SPLIT_CHARACTER)).toEqual({
+        begin: 1.4,
+        end: 1.7,
+      });
     });
 
     it("returns null when nothing selected is timed", () => {
       const untimed = createLine({ id: "u", text: "No timing" });
-      expect(selectionBounds([untimed], [sel("u", 0)])).toBeNull();
+      expect(selectionBounds([untimed], [sel("u", 0)], DEFAULT_SPLIT_CHARACTER)).toBeNull();
     });
 
     it("skips selections whose line no longer exists", () => {
-      expect(selectionBounds([wordLine], [sel("gone", 0), sel("a", 0)])).toEqual({ begin: 1, end: 1.4 });
+      expect(selectionBounds([wordLine], [sel("gone", 0), sel("a", 0)], DEFAULT_SPLIT_CHARACTER)).toEqual({
+        begin: 1,
+        end: 1.4,
+      });
     });
   });
 });

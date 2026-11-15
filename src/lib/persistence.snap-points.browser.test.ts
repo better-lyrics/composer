@@ -7,6 +7,7 @@ import type { SavedProjectV3 } from "@/lib/saved-project";
 import { createProjectSaveInput, snapPoints } from "@/test/factories";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -14,7 +15,7 @@ function saveWithSnapPoints(customSnapPoints: SnapPoint[]): Promise<void> {
   return saveCurrentProject(
     createProjectSaveInput({
       metadata: { title: "snap", artists: [], album: "", duration: 0 },
-      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id })],
+      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }, getSplitCharacter())],
       customSnapPoints,
     }),
   );

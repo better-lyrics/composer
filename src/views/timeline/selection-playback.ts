@@ -14,6 +14,7 @@ import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { focusBounds } from "@/views/timeline/group-focus";
 import { soloPlayStart } from "@/views/timeline/solo-playback";
 import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- State --------------------------------------------------------------------
 
@@ -27,7 +28,11 @@ useAudioStore.subscribe((state, previous) => {
 // -- Reads --------------------------------------------------------------------
 
 function currentSelectionBounds(): Bounds | null {
-  return selectionBounds(useProjectStore.getState().lines, useTimelineStore.getState().selectedWords);
+  return selectionBounds(
+    useProjectStore.getState().lines,
+    useTimelineStore.getState().selectedWords,
+    getSplitCharacter(),
+  );
 }
 
 function currentPlaybackRange(): Bounds | null {
@@ -192,7 +197,7 @@ function selectWordUnlessSelected(target: SyllableAddress): void {
 
 function selectLine(lineId: string): void {
   const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
-  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line));
+  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line, getSplitCharacter()));
 }
 
 // -- Exports ------------------------------------------------------------------

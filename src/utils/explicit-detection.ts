@@ -5,7 +5,7 @@ import type { WordTiming } from "insync/word-timing";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ interface WordRange {
 }
 
 function buildWordRanges(text: string): { canonical: string; ranges: WordRange[] } {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text, getSplitCharacter());
   if (parts.length === 0) return { canonical: "", ranges: [] };
 
   const ranges: WordRange[] = [];
@@ -199,14 +199,14 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const mainText = lineText(line);
+    const mainText = lineText(line, getSplitCharacter());
     if (mainText && mainText.trim().length > 0) {
       fieldsInRun++;
       for (const hit of fieldHits(mainText, timedSyllables(mainTrack(line)))) {
         raw.push({ ...hit, line, lineIndex: i, field: "words" });
       }
     }
-    const bgText = backgroundText(line);
+    const bgText = backgroundText(line, getSplitCharacter());
     if (bgText && bgText.trim().length > 0) {
       fieldsInRun++;
       for (const hit of fieldHits(bgText, timedSyllables(backgroundTrack(line)))) {

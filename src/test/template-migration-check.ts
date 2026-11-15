@@ -7,6 +7,7 @@ import { linesFromSaved, type StoredProject, upgradeSavedProject } from "@/lib/s
 import { compareExports, type ExportDifference } from "@/test/export-equality";
 import { type InstanceDrift, sharedInstanceDrift } from "@/test/shared-instance-drift";
 import { isStructurallyEqual } from "@/utils/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -72,7 +73,7 @@ function fallbacksOf(doc: LyricDoc, lossy: number): MigrationFallbacks {
 // cloned before flattening so no line object is handed back from the read.
 function checkTemplateMigration(name: string, record: StoredProject): TemplateMigrationReport {
   const flat: LyricLine[] = linesFromSaved(upgradeSavedProject(structuredClone(record)).lines);
-  const doc = docFromFlatLines(flat);
+  const doc = docFromFlatLines(flat, DEFAULT_SPLIT_CHARACTER);
   const fromTemplate = flattenBody(structuredClone(doc));
   const lossyLines = flat.flatMap((line, index) => (sameToTheMs(fromTemplate[index], line) ? [] : [line.id]));
   if (fromTemplate.length !== flat.length) lossyLines.push(`line count ${flat.length} to ${fromTemplate.length}`);

@@ -20,6 +20,7 @@ interface FoldInput {
   copiesSharedTiming: boolean;
   carriesTemplateEdits: boolean;
   songEnd: number;
+  splitChar: string;
 }
 
 interface Folded {
@@ -79,11 +80,11 @@ function hintsOf(
 // reach every shared instance, and only the groups whose lines changed are read again. Work grows with the lines and
 // groups a command touched.
 function foldLines(input: FoldInput): Folded {
-  const { doc, after, touched, groups, copiesSharedTiming, carriesTemplateEdits, songEnd } = input;
+  const { doc, after, touched, groups, copiesSharedTiming, carriesTemplateEdits, songEnd, splitChar } = input;
   const before = flattenBody(doc);
   const anchors = instanceAnchors(doc);
   const edited = carriesTemplateEdits
-    ? carryTemplateEdits({ before, after, groups, anchors })
+    ? carryTemplateEdits({ before, after, groups, anchors, splitChar })
     : { lines: after, splits: [] };
   const copy = copiesSharedTiming
     ? copyThroughTemplate({ doc, before, after: edited.lines, groups, touched, anchors, songEnd })
@@ -92,7 +93,7 @@ function foldLines(input: FoldInput): Folded {
   const lines = sameElements(output, before) ? before : output;
   if (lines === before) return { lines, doc, copiedGroupIds: [], splits: [] };
   const changed = changedGroupIds(before, lines);
-  const folded = docAfterLines(doc, lines, changed, hintsOf(doc, changed, copy, anchors));
+  const folded = docAfterLines(doc, lines, changed, hintsOf(doc, changed, copy, anchors), splitChar);
   return { lines, doc: folded, copiedGroupIds: copy?.copiedGroupIds ?? [], splits: edited.splits };
 }
 

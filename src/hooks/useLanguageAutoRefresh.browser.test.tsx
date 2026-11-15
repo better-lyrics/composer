@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -37,7 +38,7 @@ describe("useLanguageAutoRefresh", () => {
     expect(requests).toEqual([]);
 
     const pasted = legacyLine({
-      ...fieldsOfLine(lineById("a")),
+      ...fieldsOfLine(lineById("a"), getSplitCharacter()),
       text: "Где ты сейчас",
       words: [
         { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde", joinsNext: false },
@@ -51,7 +52,11 @@ describe("useLanguageAutoRefresh", () => {
         fieldUpdates([
           {
             id: "a",
-            updates: { text: lineText(pasted), words: roleWords(pasted, "main"), languages: pasted.languages },
+            updates: {
+              text: lineText(pasted, getSplitCharacter()),
+              words: roleWords(pasted, "main"),
+              languages: pasted.languages,
+            },
           },
         ]),
       ),

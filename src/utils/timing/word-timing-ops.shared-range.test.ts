@@ -6,6 +6,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { addressAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -32,7 +33,7 @@ function seed(sharesTiming: boolean): void {
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
 const wordAddress = (lineIdx: number, wordIdx: number) => {
-  const address = addressAt(store().lines, store().lines[lineIdx].id, "word", wordIdx);
+  const address = addressAt(store().lines, store().lines[lineIdx].id, "word", wordIdx, DEFAULT_SPLIT_CHARACTER);
   if (!address) throw new Error("no word there");
   return address;
 };

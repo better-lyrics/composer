@@ -12,6 +12,7 @@ import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -33,7 +34,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   const state = useProjectStore.getState();
   state.setMetadata(normalizeLoadedMetadata(project.metadata));
   state.restoreLyrics({
-    lines: linesFromSaved(project.lines ?? []).map(withSeededBackground),
+    lines: linesFromSaved(project.lines ?? []).map((value) => withSeededBackground(value, getSplitCharacter())),
     groups: project.groups ?? [],
     parts: project.parts ?? [],
     passthrough: project.passthrough ?? {},

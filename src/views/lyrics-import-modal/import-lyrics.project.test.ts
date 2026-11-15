@@ -13,6 +13,7 @@ import {
   type ImportSourceInfo,
   importProjectLyrics,
 } from "@/views/lyrics-import-modal/import-lyrics";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -78,7 +79,7 @@ describe("importProjectLyrics", () => {
     const { ctx } = recordingContext();
     expect(importProjectLyrics(projectFile(), "lust.ttml-project.json", ctx)).toBe(true);
     const state = useProjectStore.getState();
-    expect(state.lines.map((line) => lineText(line))).toEqual([
+    expect(state.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
       "Climb up the H of the Hollywood sign",
       "In these stolen moments",
     ]);
@@ -102,7 +103,9 @@ describe("importProjectLyrics", () => {
     const { ctx } = recordingContext();
     importProjectLyrics(projectFile(), "lust.ttml-project.json", ctx);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Old line"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "Old line",
+    ]);
   });
 
   describe("invariants", () => {
@@ -152,7 +155,7 @@ describe("importProjectLyrics", () => {
       const file = projectFile({ lines: savedLines([createLine({ id: "p", text: "Hello (ooh)" })]) });
       importProjectLyrics(file, "song.json", { ...ctx, audioDuration: 200 });
       const [line] = useProjectStore.getState().lines;
-      expect(lineText(line)).toBe("Hello (ooh)");
+      expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh)");
       expect(mainTrack(line).begin).toBeUndefined();
     });
 
@@ -195,7 +198,9 @@ describe("importProjectLyrics", () => {
       const { ctx, results } = recordingContext();
       const file = projectFile({ lines: savedLines([createLine({ id: "blank", text: "" })]) });
       expect(importProjectLyrics(file, "empty.json", ctx)).toBe(false);
-      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Old line"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "Old line",
+      ]);
       expect(results).toEqual([]);
     });
 

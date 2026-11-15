@@ -12,6 +12,7 @@ import {
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 type Opts = Parameters<typeof makeCursorTargetingEvent>[0];
 
@@ -39,22 +40,28 @@ describe("drag timing kind on drawn lines", () => {
   it("D6: cross-line word drag leaves an unrelated line-synced line line-synced", async () => {
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "lA",
-          text: "alpha beta",
-          agentId: "v1",
-          words: [
-            { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
-            { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
-          ],
-        }),
-        lineFromFields({
-          id: "lB",
-          text: "delta",
-          agentId: "v1",
-          words: [{ id: "w3", text: "delta", sep: "", begin: 5.0, end: 5.4, joinsNext: false }],
-        }),
-        lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 17, end: 20 }),
+        lineFromFields(
+          {
+            id: "lA",
+            text: "alpha beta",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
+              { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields(
+          {
+            id: "lB",
+            text: "delta",
+            agentId: "v1",
+            words: [{ id: "w3", text: "delta", sep: "", begin: 5.0, end: 5.4, joinsNext: false }],
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 17, end: 20 }, getSplitCharacter()),
       ],
     });
     const { lines } = useProjectStore.getState();
@@ -79,7 +86,7 @@ describe("drag timing kind on drawn lines", () => {
         "main",
       )?.some((w) => w.text.trim() === "alpha"),
     ).toBe(true);
-    expect(fieldsOfLine(after.find((l) => l.id === "lC")!)).toEqual({
+    expect(fieldsOfLine(after.find((l) => l.id === "lC")!, getSplitCharacter())).toEqual({
       id: "lC",
       text: "Line synced only",
       agentId: "v1",
@@ -91,16 +98,19 @@ describe("drag timing kind on drawn lines", () => {
   it("D6 sibling: dropping onto a line-synced target is rejected (validateMoves isLineSynced guard)", async () => {
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "lA",
-          text: "alpha beta",
-          agentId: "v1",
-          words: [
-            { id: "w5", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
-            { id: "w6", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
-          ],
-        }),
-        lineFromFields({ id: "lB", text: "delta", agentId: "v1", begin: 5.0, end: 5.4 }),
+        lineFromFields(
+          {
+            id: "lA",
+            text: "alpha beta",
+            agentId: "v1",
+            words: [
+              { id: "w5", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
+              { id: "w6", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields({ id: "lB", text: "delta", agentId: "v1", begin: 5.0, end: 5.4 }, getSplitCharacter()),
       ],
     });
     const { lines } = useProjectStore.getState();
@@ -135,7 +145,9 @@ describe("drag timing kind on drawn lines", () => {
 
   it("D7: same-line drag of a line-synced block keeps it line-synced and shifts begin/end", async () => {
     useProjectStore.setState({
-      lines: [lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 5, end: 8 })],
+      lines: [
+        lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 5, end: 8 }, getSplitCharacter()),
+      ],
     });
     const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));

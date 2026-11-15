@@ -11,6 +11,7 @@ import type { ProjectTab } from "@/domain/project/tab";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -104,13 +105,16 @@ function normalizeStoredLines(lines: unknown): LyricLine[] {
   const format4 = entries.filter(isFormat4Line).map(format4Line);
   const records = entries.filter(isStoredLyricLine) as unknown as LineFields[];
   const format3 = records.map((record) =>
-    lineFromFields({
-      ...record,
-      words: storedWords(record.words),
-      backgroundWords: storedWords(record.backgroundWords),
-    }),
+    lineFromFields(
+      {
+        ...record,
+        words: storedWords(record.words),
+        backgroundWords: storedWords(record.backgroundWords),
+      },
+      getSplitCharacter(),
+    ),
   );
-  return [...format4, ...format3].filter(hasMainLyrics);
+  return [...format4, ...format3].filter((value) => hasMainLyrics(value, getSplitCharacter()));
 }
 
 function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {

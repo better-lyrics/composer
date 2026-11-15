@@ -5,6 +5,7 @@ import type { Instance, LyricDoc } from "insync/group";
 import { instanceKey } from "insync/instance-key";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const glow = (id: string, instanceIdx: number, begin: number, groupId = "chorus") =>
   createLine({
@@ -34,7 +35,7 @@ const spans = (doc: LyricDoc, lineId: string) =>
 
 describe("flattenBody", () => {
   it("a shared instance is its template at its anchor, with its own line ids", () => {
-    const doc = docFromFlatLines([glow("first", 0, 12), glow("second", 1, 44)]);
+    const doc = docFromFlatLines([glow("first", 0, 12), glow("second", 1, 44)], DEFAULT_SPLIT_CHARACTER);
     const second = instanceOf(doc, 1);
     expect(second).toMatchObject({ at: 44, lineIds: { 0: "second" } });
     expect(second?.ownTiming).toBeUndefined();
@@ -46,7 +47,7 @@ describe("flattenBody", () => {
   });
 
   it("an own-timing instance reads its own spans and leaves missing syllables untimed", () => {
-    const doc = docFromFlatLines([glow("first", 0, 12), glow("second", 1, 44)]);
+    const doc = docFromFlatLines([glow("first", 0, 12), glow("second", 1, 44)], DEFAULT_SPLIT_CHARACTER);
     const [we, glowWord] = timedSyllables(mainTrack(flattenBody(doc)[0]));
     const own: Instance = {
       ...instanceOf(doc, 1),
@@ -63,7 +64,7 @@ describe("flattenBody", () => {
 
   it("an unchanged instance keeps its line objects after another group's template changes", () => {
     const lines = [glow("a0", 0, 12, "a"), glow("b0", 0, 30, "b"), glow("b1", 1, 50, "b")];
-    const doc = docFromFlatLines(lines);
+    const doc = docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER);
     const templateB = doc.templates.b.map((line) => ({ ...line }));
     const flat = flattenBody({ ...doc, templates: { ...doc.templates, b: templateB } });
     expect(flat[0]).toBe(lines[0]);
@@ -79,7 +80,7 @@ describe("flattenBody", () => {
       createLine({ id: "odd", text: "Ash and ember", groupId: "chorus", instanceIdx: 2, templateLineIdx: 0 }),
       glow("late", 0, 80),
     ];
-    expect(flattenBody(structuredClone(docFromFlatLines(lines)))).toEqual(lines);
+    expect(flattenBody(structuredClone(docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER)))).toEqual(lines);
   });
 
   it("renames ids only, never text that starts like one", () => {
@@ -95,7 +96,7 @@ describe("flattenBody", () => {
         ],
       });
     const lines = [line("intro", 0, 10), line("outro", 1, 40)];
-    const doc = docFromFlatLines(lines);
+    const doc = docFromFlatLines(lines, DEFAULT_SPLIT_CHARACTER);
     expect(instanceOf(doc, 1)?.replaced).toBeUndefined();
     expect(flattenBody(structuredClone(doc))).toEqual(lines);
   });

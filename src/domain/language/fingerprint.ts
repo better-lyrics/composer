@@ -1,8 +1,8 @@
 import { fnv1a } from "@/utils/fnv1a";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character-text";
 
-function languageSourceFingerprint(text: string, backgroundText?: string): string {
-  const value = `${stripSplitCharacter(text)}\u0000${backgroundText ? stripSplitCharacter(backgroundText) : ""}`;
+function languageSourceFingerprint(splitChar: string, text: string, backgroundText?: string): string {
+  const value = `${withoutSplitCharacter(text, splitChar)}\u0000${backgroundText ? withoutSplitCharacter(backgroundText, splitChar) : ""}`;
   return fnv1a(value).toString(36);
 }
 

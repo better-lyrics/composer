@@ -105,11 +105,12 @@ interface TrackCarry {
   counterpart: LineageCounterpart;
   // Syllables the edit added before or after the instance's own stay in this room.
   room: LineRoom;
+  splitChar: string;
 }
 
 // The edited track's content on the other instance's track: on the shared timing when the two share it, else on that
 // instance's own timing through the syllables' lineage. A line-synced track keeps its span.
-function carriedTrackTiming({ before, after, own, offset, counterpart, room }: TrackCarry) {
+function carriedTrackTiming({ before, after, own, offset, counterpart, room, splitChar }: TrackCarry) {
   if (offset !== null) {
     const span = isSpanTimed(after) ? ([after.begin + offset, after.end + offset] as const) : undefined;
     return { syllables: shifted(after.syllables, offset, counterpart), span };
@@ -119,7 +120,7 @@ function carriedTrackTiming({ before, after, own, offset, counterpart, room }: T
   if (isSpanTimed(after)) {
     const timed = own && timedSyllables(own).length > 0;
     const syllables = timed
-      ? lineageByText(after.syllables, own.syllables, counterpart, room)
+      ? lineageByText(after.syllables, own.syllables, counterpart, splitChar, room)
       : inPlace(after.syllables, counterpart);
     return { syllables, span: undefined };
   }
@@ -145,11 +146,11 @@ function withTiming<T extends LineTrack>(track: T, timing: ReturnType<typeof car
 
 // The edit's language fields when it changed them; each instance's own readings, regrouped the way its syllables
 // were, so a merge joins that instance's readings and a split keeps them on the syllables they were on.
-function carriedLanguages(before: LyricLine, after: LyricLine, own: LyricLine, tracks: LineTracks) {
+function carriedLanguages(before: LyricLine, after: LyricLine, own: LyricLine, tracks: LineTracks, splitChar: string) {
   const fieldsChanged = !isStructurallyEqual(withOwnPieces(before.languages, own), withOwnPieces(after.languages, own));
   let languages = fieldsChanged ? withOwnPieces(after.languages, own) : own.languages;
   if (!languages) return undefined;
-  const aligned = withAlignedWords(own);
+  const aligned = withAlignedWords(own, splitChar);
   for (const [index, track] of tracks.entries()) {
     const was = timedSyllables(own.tracks[index]);
     const now = timedSyllables(track);
@@ -168,16 +169,25 @@ interface LineCarry {
   offset: number | null;
   counterpart: LineageCounterpart;
   room: LineRoom;
+  splitChar: string;
 }
 
 // Another instance's line after an edit to its template line: the edit's content, that instance's own timing and
 // ids, and its readings unless the edit rewrote them.
-function carriedLine({ before, after, own, offset, counterpart, room }: LineCarry): LyricLine {
+function carriedLine({ before, after, own, offset, counterpart, room, splitChar }: LineCarry): LyricLine {
   const ownMain = mainTrack(own);
   const afterMain = mainTrack(after);
   const main: MainTrack = withTiming(
     { ...ownMain, agentId: afterMain.agentId },
-    carriedTrackTiming({ before: mainTrack(before), after: afterMain, own: ownMain, offset, counterpart, room }),
+    carriedTrackTiming({
+      before: mainTrack(before),
+      after: afterMain,
+      own: ownMain,
+      offset,
+      counterpart,
+      room,
+      splitChar,
+    }),
   );
   const afterBackground = backgroundTrack(after);
   const ownBackground = backgroundTrack(own);
@@ -193,12 +203,13 @@ function carriedLine({ before, after, own, offset, counterpart, room }: LineCarr
         offset,
         counterpart,
         room,
+        splitChar,
       }),
     );
   const tracks: LineTracks = background ? [main, background] : [main];
-  const languages = carriedLanguages(before, after, own, tracks);
+  const languages = carriedLanguages(before, after, own, tracks, splitChar);
   const { languages: _languages, ...rest } = own;
-  return withSeededBackground({ ...rest, tracks, ...(languages && { languages }) });
+  return withSeededBackground({ ...rest, tracks, ...(languages && { languages }) }, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

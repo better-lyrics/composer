@@ -17,6 +17,7 @@ import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { runExplicitToggle, runSyllableMerge, runWordMerge } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -69,7 +70,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!line) return;
 
     const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-    const existingWords = drawnSyllables(line, trackRole(type));
+    const existingWords = drawnSyllables(line, trackRole(type), getSplitCharacter());
     const range = storedLineTimeRange(lineId, duration);
     const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, range, minWordDuration);
     if (!slot) {

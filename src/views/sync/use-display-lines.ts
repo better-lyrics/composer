@@ -2,6 +2,7 @@ import { type LanguageDisplayLine, type LanguageTextVariant, getLanguageDisplayL
 import type { LyricLine } from "insync/line";
 import { useSettingsStore } from "@/stores/settings";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -18,7 +19,7 @@ interface DisplayLineCache {
 function displayLineFor(cache: DisplayLineCache, line: LyricLine): SyncDisplayLine {
   const cached = cache.byLine.get(line);
   if (cached) return cached;
-  const displayLine = { ...line, ...getLanguageDisplayLine(line, cache.textVariant) };
+  const displayLine = { ...line, ...getLanguageDisplayLine(line, cache.textVariant, getSplitCharacter()) };
   cache.byLine.set(line, displayLine);
   return displayLine;
 }

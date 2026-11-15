@@ -13,8 +13,9 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
-import { stripSplitCharacter } from "@/utils/split-character";
-import { createTrackWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
+import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
 import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
@@ -122,7 +123,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
 
 const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, duration, rowHeight }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const displayText = stripSplitCharacter(lineText(line));
+  const displayText = stripSplitCharacter(lineText(line, getSplitCharacter()));
 
   return (
     <div
@@ -137,7 +138,10 @@ const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, durati
       >
         <span className="truncate pr-0.5">{truncateLabel(displayText, MAIN_LABEL_MAX_CHARS)}</span>
         {displayText.length > 0 && (
-          <SyncLineButton lineId={line.id} wordCount={splitIntoWordsWithMeta(lineText(line)).parts.length} />
+          <SyncLineButton
+            lineId={line.id}
+            wordCount={splitIntoWordsWithMeta(lineText(line, getSplitCharacter()), getSplitCharacter()).parts.length}
+          />
         )}
       </div>
     </div>
@@ -158,7 +162,7 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
-    {truncateLabel(backgroundText(line) ?? "", BG_LABEL_MAX_CHARS) || "BG"}
+    {truncateLabel(backgroundText(line, getSplitCharacter()) ?? "", BG_LABEL_MAX_CHARS) || "BG"}
   </div>
 );
 

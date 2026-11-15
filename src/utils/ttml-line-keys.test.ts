@@ -2,6 +2,7 @@ import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
 import { canonicalLineKeys, keyedExportLines } from "@/utils/ttml-line-keys";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -11,7 +12,7 @@ const SPANISH = (text: string) => ({
 });
 
 function exported(lines: Parameters<typeof generateTTML>[0]["lines"]): string {
-  return generateTTML({ metadata: METADATA, agents: [], lines });
+  return generateTTML({ metadata: METADATA, agents: [], lines, splitChar: DEFAULT_SPLIT_CHARACTER });
 }
 
 const ALPHA = {
@@ -32,7 +33,9 @@ const CHARLIE = {
 describe("keyedExportLines", () => {
   it("numbers the timed lines in order, skipping lines without timing", () => {
     const blank = createLine({ id: "blank", text: "" });
-    expect(keyedExportLines([ALPHA, blank, BRAVO]).map(({ line, key }) => [line.id, key])).toEqual([
+    expect(
+      keyedExportLines([ALPHA, blank, BRAVO], DEFAULT_SPLIT_CHARACTER).map(({ line, key }) => [line.id, key]),
+    ).toEqual([
       ["a", "L1"],
       ["b", "L2"],
     ]);
@@ -42,7 +45,9 @@ describe("keyedExportLines", () => {
 describe("keyedExportLines · the keys the export writes", () => {
   it("regression: numbers only the lines the export writes, so the keys have no gaps", () => {
     const timedBlank = createLine({ id: "timed-blank", text: "", begin: 1.5, end: 1.8 });
-    expect(keyedExportLines([ALPHA, timedBlank, BRAVO]).map(({ line, key }) => [line.id, key])).toEqual([
+    expect(
+      keyedExportLines([ALPHA, timedBlank, BRAVO], DEFAULT_SPLIT_CHARACTER).map(({ line, key }) => [line.id, key]),
+    ).toEqual([
       ["a", "L1"],
       ["b", "L2"],
     ]);
@@ -52,7 +57,7 @@ describe("keyedExportLines · the keys the export writes", () => {
 
   it("numbers a line with only a background text", () => {
     const background = createLine({ id: "bg", text: "", begin: 1, end: 2, backgroundText: "ooh" });
-    expect(keyedExportLines([background]).map(({ key }) => key)).toEqual(["L1"]);
+    expect(keyedExportLines([background], DEFAULT_SPLIT_CHARACTER).map(({ key }) => key)).toEqual(["L1"]);
   });
 });
 

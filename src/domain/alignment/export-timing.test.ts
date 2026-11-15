@@ -6,6 +6,7 @@ import { withRoleWords } from "@/domain/line/track-writes";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -47,7 +48,12 @@ function withVendorData(line: LyricLine): LyricLine {
 }
 
 function ttmlOf(lines: LyricLine[]): string {
-  return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines });
+  return generateTTML({
+    metadata: normalizeLoadedMetadata(null),
+    agents: [],
+    lines,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
+  });
 }
 
 // -- Tests --------------------------------------------------------------------

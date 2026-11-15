@@ -36,6 +36,7 @@ import { resolveSpectrumPalette } from "@/views/timeline/spectrum/theme-palette"
 import { drawTiles } from "@/views/timeline/spectrum/tile-cache";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -121,8 +122,8 @@ function drawLoupe(
     const span = effectiveBounds(line);
     if (inputs.pitchTrack && span) drawLoupePitch(frame, inputs.pitchTrack, span);
     drawLoupeLanes(frame, {
-      main: withLiveEdge(drawnSyllables(line, "main"), target, "word"),
-      background: withLiveEdge(drawnSyllables(line, "bg"), target, "bg"),
+      main: withLiveEdge(drawnSyllables(line, "main", getSplitCharacter()), target, "word"),
+      background: withLiveEdge(drawnSyllables(line, "bg", getSplitCharacter()), target, "bg"),
       edited: { track: target.type, syllableId: target.syllableId },
       agentColour: getAgentColor(mainTrack(line).agentId),
       playheadSeconds: inputs.playhead,

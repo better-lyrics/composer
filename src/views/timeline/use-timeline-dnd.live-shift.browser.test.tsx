@@ -14,6 +14,7 @@ import {
   POINTER_Y_BG,
   POINTER_Y_MAIN,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineDnd · live shift state", () => {
   let scrollHost: HTMLDivElement;
@@ -23,16 +24,19 @@ describe("useTimelineDnd · live shift state", () => {
     useTimelineStore.setState({ rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "l1",
-          text: "every",
-          agentId: "v1",
-          words: [
-            { id: "w1", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
-            { id: "w2", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-            { id: "w3", text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "l1",
+            text: "every",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w2", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+              { id: "w3", text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
       ],
     });
     scrollHost = installScrollHost();

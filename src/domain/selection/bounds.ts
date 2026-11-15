@@ -5,11 +5,15 @@ import type { Bounds } from "insync/word-bounds";
 
 // -- Functions ----------------------------------------------------------------
 
-function selectionBounds(lines: readonly LyricLine[], selections: readonly SyllableAddress[]): Bounds | null {
+function selectionBounds(
+  lines: readonly LyricLine[],
+  selections: readonly SyllableAddress[],
+  splitChar: string,
+): Bounds | null {
   let begin = Number.POSITIVE_INFINITY;
   let end = Number.NEGATIVE_INFINITY;
   for (const selection of selections) {
-    const word = wordAt(lines, selection);
+    const word = wordAt(lines, selection, splitChar);
     if (!word) continue;
     begin = Math.min(begin, word.begin);
     end = Math.max(end, word.end);

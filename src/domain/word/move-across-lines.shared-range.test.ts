@@ -5,6 +5,7 @@ import type { LyricLine } from "insync/line";
 import { applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 const DURATION = 20;
 
@@ -42,6 +43,7 @@ function moveIntoChorus(sharesTiming: boolean) {
       },
     ],
     timeRangeResolver(lines, groups, DURATION),
+    DEFAULT_SPLIT_CHARACTER,
   );
 }
 

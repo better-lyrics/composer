@@ -1,8 +1,8 @@
 import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 
-function linesToEditText(lines: readonly LyricLine[]): string {
-  return lines.map((line) => lineText(line)).join("\n");
+function linesToEditText(lines: readonly LyricLine[], splitChar: string): string {
+  return lines.map((line) => lineText(line, splitChar)).join("\n");
 }
 
 // Rows the user typed stay verbatim (spaces mid-typing survive); only rows a linked edit rewrote show the committed text.
@@ -10,10 +10,11 @@ function editTextWithRewrittenRows(
   typedText: string,
   typedLines: readonly LyricLine[],
   finalLines: readonly LyricLine[],
+  splitChar: string,
 ): string {
   return typedText
     .split("\n")
-    .map((row, i) => (finalLines[i] === typedLines[i] ? row : lineText(finalLines[i])))
+    .map((row, i) => (finalLines[i] === typedLines[i] ? row : lineText(finalLines[i], splitChar)))
     .join("\n");
 }
 

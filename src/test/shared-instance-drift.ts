@@ -7,6 +7,7 @@ import {
 import type { LinkGroup } from "insync/group";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine, TrackRole } from "insync/line";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -25,8 +26,8 @@ const ROLES: readonly TrackRole[] = ["main", "bg"];
 function lineDriftMs(template: LyricLine, line: LyricLine, offset: number): number {
   let drift = 0;
   for (const role of ROLES) {
-    const expected = drawnSyllables(template, role);
-    const actual = drawnSyllables(line, role);
+    const expected = drawnSyllables(template, role, DEFAULT_SPLIT_CHARACTER);
+    const actual = drawnSyllables(line, role, DEFAULT_SPLIT_CHARACTER);
     if (expected.length !== actual.length) continue;
     expected.forEach((syllable, index) => {
       const begin = Math.abs(syllable.begin + offset - actual[index].begin);
@@ -56,7 +57,7 @@ function sharedInstanceDrift(lines: readonly LyricLine[], groups: readonly LinkG
   for (const group of groups) {
     if (!group.sharesTiming) continue;
     const order = sharedInstancesInLineOrder(lines, group);
-    const template = firstFullyTimedInstance(lines, group.id, order);
+    const template = firstFullyTimedInstance(lines, group.id, order, DEFAULT_SPLIT_CHARACTER);
     if (template === undefined) continue;
     for (const instance of order) {
       if (instance === template) continue;

@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -18,7 +19,7 @@ const TWO_LINES = ttml(
 );
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => lineText(line));
+  return useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -54,7 +55,7 @@ describe("applyEditedTtml", () => {
   it("round-trips Composer's own export unchanged", () => {
     applyEditedTtml(TWO_LINES, 0);
     const before = useProjectStore.getState().lines;
-    const result = applyEditedTtml(generateProjectTtml(useProjectStore.getState(), 0), 0);
+    const result = applyEditedTtml(generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER), 0);
     expect(result).toEqual({ status: "applied", skipped: 0, keptInExport: false });
     expect(useProjectStore.getState().lines).toEqual(before);
     expect(useProjectStore.getState().ttmlEditState).toBeNull();
@@ -103,7 +104,7 @@ describe("applyEditedTtml", () => {
   describe("edits that change nothing in the project", () => {
     it("regression: adds no undo step and keeps the edit in the export", () => {
       useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const generated = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
       const edited = generated.replace("<div>", "<div><!-- note -->");
       const editState = { source: generated, content: edited };
       useProjectStore.setState({ ttmlEditState: editState, isDirty: false });
@@ -122,12 +123,12 @@ describe("applyEditedTtml", () => {
         lines: [createLine({ text: "Hello", begin: 1, end: 2 })],
         metadata: { title: "Kept title", artists: [], album: "", duration: 0 },
       });
-      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const generated = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
       const edited = generated.replace(/<ttm:title>[^<]*<\/ttm:title>/, "").replace(">Hello<", ">Hello there<");
       expect(applyEditedTtml(edited, 0)).toEqual({ status: "applied", skipped: 0, keptInExport: true });
       expect(lineTexts()).toEqual(["Hello there"]);
       expect(useProjectStore.getState().metadata.title).toBe("Kept title");
-      const regenerated = generateProjectTtml(useProjectStore.getState(), 0);
+      const regenerated = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
       expect(useProjectStore.getState().ttmlEditState).toEqual({ source: regenerated, content: edited });
     });
   });
@@ -139,23 +140,32 @@ describe("applyEditedTtml", () => {
           createLine({ text: "Hello", begin: 1, end: 2, backgroundText: "ooh yeah", backgroundTextSource: "manual" }),
         ],
       });
-      const first = generateProjectTtml(useProjectStore.getState(), 0).replace(">ooh yeah<", ">ooh no<");
+      const first = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">ooh yeah<",
+        ">ooh no<",
+      );
       expect(applyEditedTtml(first, 0)).toMatchObject({ status: "applied" });
       expect(roleWords(useProjectStore.getState().lines[0], "bg")).toBeUndefined();
-      const second = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      const second = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">Hello<",
+        ">Hello there<",
+      );
       expect(applyEditedTtml(second, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello there"]);
     });
 
     it("regression: a second Done still applies after adding a line with a background text", () => {
       useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
-      const first = generateProjectTtml(useProjectStore.getState(), 0).replace(
+      const first = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
         "</div>",
         '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Added<span ttm:role="x-bg"><span begin="0:04.000" end="0:05.000">ooh</span></span></p></div>',
       );
       expect(applyEditedTtml(first, 0)).toMatchObject({ status: "applied" });
       expect(roleWords(useProjectStore.getState().lines[1], "bg")).toBeUndefined();
-      const second = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      const second = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">Hello<",
+        ">Hello there<",
+      );
       expect(applyEditedTtml(second, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello there", "Added"]);
     });
@@ -164,7 +174,10 @@ describe("applyEditedTtml", () => {
   describe("song details", () => {
     it("regression: leaves the imported song detail flags as they were", () => {
       useProjectStore.setState({ importedMetadataKeys: [], hasUnexportedImport: false });
-      applyEditedTtml(generateProjectTtml(useProjectStore.getState(), 0).replace(">Old line<", ">New line<"), 0);
+      applyEditedTtml(
+        generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(">Old line<", ">New line<"),
+        0,
+      );
       expect(lineTexts()).toEqual(["New line"]);
       expect(useProjectStore.getState().importedMetadataKeys).toEqual([]);
       expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
@@ -180,7 +193,7 @@ describe("applyEditedTtml", () => {
           createLine({ id: "c", text: "Charlie", begin: 3, end: 4 }),
         ],
       });
-      return generateProjectTtml(useProjectStore.getState(), 0);
+      return generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
     }
 
     it("regression: deleting a line keeps nothing in the export only", () => {

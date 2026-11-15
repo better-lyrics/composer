@@ -3,6 +3,7 @@ import { pieceOf } from "@/domain/language/pieces";
 import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "insync/line-track";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -28,7 +29,7 @@ function sungTransliteration(line: LyricLine): string | null {
       .map((word) => pieceOf(track.main.pieces, word)?.text ?? "")
       .join(" ")
       .trim();
-  if (!text || comparable(text) === comparable(lineText(line))) return null;
+  if (!text || comparable(text) === comparable(lineText(line, getSplitCharacter()))) return null;
   return text;
 }
 

@@ -16,6 +16,7 @@ import { pingGroup } from "@/views/timeline/ping-group";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -44,7 +45,11 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     const playheadTime = livePlaybackTime();
     const { lines: projectLines, groups } = useProjectStore.getState();
     const group = groups.find((candidate) => candidate.id === groupId);
-    const template = instanceToTemplate(projectLines, groupId, pickedTemplateSource(projectLines, group, instanceIdx));
+    const template = instanceToTemplate(
+      projectLines,
+      groupId,
+      pickedTemplateSource(projectLines, group, instanceIdx, getSplitCharacter()),
+    );
     if (template.length === 0) {
       toast.error("Could not derive instance template");
       return;

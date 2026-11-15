@@ -204,7 +204,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
 
   fillLineEnds(lines, gapMarkers, metadata.duration ?? fallbackDuration);
 
-  const reconciledLines = lines.map((line) => lineFromFields(line));
+  const reconciledLines = lines.map((line) => lineFromFields(line, getSplitCharacter()));
   return {
     lines: reconciledLines,
     metadata,

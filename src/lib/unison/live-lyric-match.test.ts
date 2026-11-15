@@ -9,6 +9,7 @@ import { createLine } from "@/test/factories";
 import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
 import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -36,7 +37,7 @@ function liveLyric(lines: LyricLine[], artists = ["Marisol Vega"]): UnisonLyric 
     artist: artists.join(", "),
     album: "Harbor Songs",
     language: "en",
-    lyrics: generateTTML({ metadata, agents, lines, groups: [] }),
+    lyrics: generateTTML({ metadata, agents, lines, groups: [], splitChar: DEFAULT_SPLIT_CHARACTER }),
     format: "ttml",
     syncType: "syllable",
     score: 2,
@@ -97,7 +98,11 @@ describe("unisonLyricProject", () => {
   it("keeps a lyric's unknown ttml data and song parts in the saved project", () => {
     for (const [, source] of FOREIGN_TTML_FIXTURES) {
       const project = savedFrom({ ...liveLyric(harborLines()), lyrics: source });
-      const opened = generateTTML({ ...project, lines: linesFromSaved(project.lines) });
+      const opened = generateTTML({
+        ...project,
+        lines: linesFromSaved(project.lines),
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
 
       expect(missingUnmodelledNodes(source, opened)).toEqual([]);
     }
