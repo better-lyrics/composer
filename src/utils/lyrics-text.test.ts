@@ -678,6 +678,15 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
       DEFAULT_SPLIT_CHARACTER,
     );
 
+  it("regression: joining two timed rows keeps the timing of both", () => {
+    const lanterns = timedLine("lanterns", ["Lanterns", "drift", "away"], 1);
+    const paper = timedLine("paper", ["Paper", "wings", "tonight"], 5);
+    const result = textToLyricLines("Lanterns drift awayPaper wings tonight", "v1", [lanterns, paper]);
+    expect(result.map((l) => l.id)).toEqual(["lanterns"]);
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns drift awayPaper wings tonight");
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.begin)).toEqual([1, 2, 3, 5, 6, 7]);
+  });
+
   it("regression: a repeated row keeps the timing of the line nearest its place, not the first one", () => {
     const lines = [
       timedLine("lanterns", ["Lanterns", "drift", "away"], 1),

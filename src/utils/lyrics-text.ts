@@ -1,10 +1,12 @@
 import { withShownBackground } from "insync/edit-text-shown-background";
 import { withoutBackground } from "insync/line-background";
 import { lineFromFields } from "insync/line-from-fields";
+import { joinedLines } from "insync/line-joined-lines";
 import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { joinedRowRun } from "@/utils/lyrics-text-joined-rows";
 import { getSplitCharacter } from "@/utils/split-character";
 import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 import { memoBySplitCharacter } from "insync/memo-by-identity";
@@ -108,10 +110,11 @@ function textToLyricLines(
   });
 
   const existingIndex = new Map(existingLines.map((line, index) => [line.id, index]));
+  const joinedCounts = new Map<number, number>();
   const expectedIndex = (row: number): number => {
     for (let before = row - 1; before >= 0; before--) {
       const line = claimed[before];
-      if (line) return (existingIndex.get(line.id) ?? before) + row - before;
+      if (line) return (existingIndex.get(line.id) ?? before) + (joinedCounts.get(before) ?? 1) - 1 + row - before;
     }
     for (let after = row + 1; after < claimed.length; after++) {
       const line = claimed[after];
@@ -119,6 +122,21 @@ function textToLyricLines(
     }
     return row;
   };
+  // Rows joined in Edit spell the text of adjacent lines with no line of their own, so they keep those lines' timing.
+  if (newLines.length < existingLines.length) {
+    const lineTexts = existingTrackKeys.map((keys) => keys.text.trim());
+    const isFree = (lineIndex: number) => !usedExistingIds.has(existingLines[lineIndex].id);
+    cleanedTexts.forEach((row, index) => {
+      if (claimed[index] || textToCandidates.has(cleanedKeys[index])) return;
+      const run = joinedRowRun(row, lineTexts, isFree, expectedIndex(index));
+      const joined = run && joinedLines(existingLines.slice(run.start, run.end + 1), run.seams);
+      if (!run || !joined) return;
+      claim(index, joined);
+      for (const line of existingLines.slice(run.start + 1, run.end + 1)) usedExistingIds.add(line.id);
+      joinedCounts.set(index, run.end - run.start + 1);
+    });
+  }
+
   cleanedKeys.forEach((key, index) => {
     if (claimed[index]) return;
     const candidates = textToCandidates.get(key)?.filter((line) => !usedExistingIds.has(line.id));
