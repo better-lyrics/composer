@@ -1,10 +1,21 @@
-import type { LineLanguage, LineLanguages } from "./language";
+import type { LanguageContentOrigin, LineLanguage, LineLanguages, TransliterationAlignmentStatus } from "./language";
 import { languagesWith, lineTranslations, lineTransliteration } from "./language-line-languages";
 import { withAddedPieces } from "./language-pieces";
 import { sidePieces } from "./language-side-pieces";
 import type { LyricLine, MainTrack, Syllable } from "./line";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "./line-track";
 import { withMainTrack, withTrackSpan, withTrackSyllables } from "./line-track-writes";
+
+// -- Constants ----------------------------------------------------------------
+
+// Weakest first: a joined track is only as aligned as its least aligned part.
+const ALIGNMENT_STRENGTH: readonly (TransliterationAlignmentStatus | undefined)[] = [
+  "unresolved",
+  "needs-review",
+  "inferred",
+  "confirmed",
+  undefined,
+];
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -31,7 +42,19 @@ function joinedTrack(tracks: readonly MainTrack[], seams: readonly string[]): Ma
   return timedAfterUntimed ? null : withTrackSyllables(first, syllables);
 }
 
-// One language of the joined line: the first line's, its text every line's text in order.
+// Generated only when every part was: a refresh would overwrite any hand text, which is reviewed instead.
+function joinedOrigin(present: readonly LineLanguage[]): LanguageContentOrigin {
+  if (present.every((language) => language.origin === "google")) return "google";
+  return present.some((language) => language.origin === "manual") ? "manual" : "import";
+}
+
+function joinedAlignment(present: readonly LineLanguage[], origin: LanguageContentOrigin) {
+  if (origin !== "google" && present.some((language) => language.origin === "google")) return "needs-review";
+  const ranks = present.map((language) => ALIGNMENT_STRENGTH.indexOf(language.main.alignmentStatus));
+  return ALIGNMENT_STRENGTH[Math.min(...ranks)];
+}
+
+// One language of the joined line: the first line's, its text every line's text in order, stale when sources differ.
 function joinedLanguage(languages: readonly (LineLanguage | undefined)[]): LineLanguage | undefined {
   const present = languages.filter((language) => language !== undefined);
   const [first] = present;
@@ -41,8 +64,17 @@ function joinedLanguage(languages: readonly (LineLanguage | undefined)[]): LineL
     .filter(Boolean)
     .join(" ");
   if (text === first.main.text) return first;
-  const { segments: _segments, ...main } = first.main;
-  return { ...first, main: { ...main, text } };
+  const origin = joinedOrigin(present);
+  const alignmentStatus = joinedAlignment(present, origin);
+  const sameSource = present.every((language) => language.sourceFingerprint === first.sourceFingerprint);
+  const sourceFingerprint = sameSource ? first.sourceFingerprint : "";
+  const { segments: _segments, alignmentStatus: _status, ...main } = first.main;
+  return {
+    ...first,
+    origin,
+    sourceFingerprint,
+    main: { ...main, text, ...(alignmentStatus !== undefined && { alignmentStatus }) },
+  };
 }
 
 function joinedTexts(lines: readonly LyricLine[]): LineLanguages | undefined {
