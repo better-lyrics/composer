@@ -14,7 +14,7 @@ import { commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // Regression coverage for issue #96: resyncing one instance of a group must not retime the other instances. Timing
 // edits never change a group line's content, so they never reach other instances through the template.

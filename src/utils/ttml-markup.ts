@@ -1,6 +1,6 @@
 import type { Passthrough } from "insync/passthrough";
 import { escapeXmlText, writeXmlAttrs, writeXmlChild, type XmlChild } from "insync/xml-node";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Constants ----------------------------------------------------------------
 

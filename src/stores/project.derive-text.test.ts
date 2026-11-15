@@ -16,7 +16,7 @@ import type { WordTiming } from "insync/word-timing";
  */
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // text/words single source of truth. Whenever a store mutation writes
 // a words/backgroundWords array, the paired text/backgroundText is re-derived

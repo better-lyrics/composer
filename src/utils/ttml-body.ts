@@ -8,7 +8,7 @@ import { isWordSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { BACKGROUND_ANCHOR, TEXT_ANCHOR } from "@/utils/lyrics-parsers/ttml-anchors";
 import type { Indent } from "@/utils/ttml-head";
 import { backgroundEnvelope, lineEnvelope, partEnvelope, writtenTimes } from "@/utils/ttml-kept-times";

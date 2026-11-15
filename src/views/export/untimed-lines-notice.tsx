@@ -1,7 +1,7 @@
 import { isLineTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconClockExclamation, IconHandClick } from "@tabler/icons-react";
 import { getSplitCharacter } from "@/utils/split-character";
 

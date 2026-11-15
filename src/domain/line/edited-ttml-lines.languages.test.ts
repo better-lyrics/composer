@@ -4,7 +4,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 

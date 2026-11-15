@@ -5,7 +5,7 @@ import { alternateBackgroundPlacement } from "@/domain/language/background-place
 import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function timedLine(backgroundBegin: number, mainWords: WordTiming[]): LyricLine {
   return lineFromFields(

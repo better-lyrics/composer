@@ -5,7 +5,7 @@ import { sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { replacedOwnTimingNote, showGroupActionToast, showKeptOwnTimingToast } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Functions ----------------------------------------------------------------
 

@@ -2,7 +2,7 @@ import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "insync/metadata";
 import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

@@ -10,7 +10,7 @@ import { mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { linePassthroughOf } from "@/domain/line/passthrough";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { GROUP_COLORS, pickNextGroupColor } from "insync/group-colors";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import { getSplitCharacter } from "@/utils/split-character";
 

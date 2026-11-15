@@ -14,7 +14,7 @@ import { withAgent } from "@/domain/line/track-writes";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { type FieldPatch, withFields } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // The copy as a commit runs it: the doc read from the lines before the edit, each instance at its anchor.
 function copiedThroughTemplate(before: LyricLine[], after: LyricLine[], groups: LinkGroup[], touched: string[]) {

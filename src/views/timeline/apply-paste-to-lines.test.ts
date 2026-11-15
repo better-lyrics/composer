@@ -13,7 +13,7 @@ import { createGroup, createLine, createWords } from "@/test/factories";
 import { patchOf, updatedLine } from "@/test/field-updates";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import type { ClipboardData } from "@/views/timeline/selection-types";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

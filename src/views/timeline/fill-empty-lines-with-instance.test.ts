@@ -9,7 +9,7 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { fillEmptyLinesWithInstance, isEmptyFillable } from "./fill-empty-lines-with-instance";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const template: LineTemplate[] = [
   {

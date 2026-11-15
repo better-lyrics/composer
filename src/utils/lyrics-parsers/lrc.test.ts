@@ -6,7 +6,7 @@ import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { parseLrcClock } from "@/utils/lyrics-parsers/lrc";
 import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const RUMORS_LRC = `[ti:Rumors]
 [ar:Test Artist]

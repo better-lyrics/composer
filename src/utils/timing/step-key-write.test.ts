@@ -7,7 +7,7 @@ import { type ResolvedAddress, resolvedAt, toAddress } from "@/domain/selection/
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { planStepKey } from "@/utils/timing/step-key-write";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const chorus = (id: string, instanceIdx: number, begin: number): LyricLine =>

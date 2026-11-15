@@ -4,7 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 

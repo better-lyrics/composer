@@ -3,7 +3,7 @@ import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-erro
 import type { LyricLine } from "insync/line";
 import { legacyLine } from "@/test/legacy-languages";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("getLanguageAlignmentErrorItems", () => {
   it("reports main and background transliteration errors by line", () => {

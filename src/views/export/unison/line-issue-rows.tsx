@@ -3,7 +3,7 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { LineIssue } from "@/domain/unison/submit-checks";
 import { useProjectStore } from "@/stores/project";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 import { revealLineInTimeline } from "@/views/timeline/line-reveal-request";
 import { getSplitCharacter } from "@/utils/split-character";

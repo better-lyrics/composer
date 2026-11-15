@@ -4,7 +4,7 @@ import type { LanguageContentOrigin } from "insync/language";
 import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function lineWithTracks(
   id: string,

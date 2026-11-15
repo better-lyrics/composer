@@ -7,7 +7,7 @@ import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { changedMetadata } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "insync/metadata";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

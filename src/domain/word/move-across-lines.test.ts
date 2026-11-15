@@ -12,7 +12,7 @@ import type { WordTiming } from "insync/word-timing";
 import { createLine } from "@/test/factories";
 import { updatedLine } from "@/test/field-updates";
 import { applyWordMoveAcrossLines } from "./move-across-lines";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

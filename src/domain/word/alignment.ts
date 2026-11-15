@@ -1,4 +1,4 @@
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 
 // -- Functions ----------------------------------------------------------------
 

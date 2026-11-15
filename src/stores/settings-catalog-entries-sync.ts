@@ -1,5 +1,5 @@
 import type { SettingEntry } from "@/stores/settings-catalog";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Helpers ------------------------------------------------------------------
 

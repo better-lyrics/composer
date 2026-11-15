@@ -3,7 +3,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import type { WordTiming } from "insync/word-timing";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const line = (id: string, words?: WordTiming[] | undefined): LyricLine =>
   lineFromFields(

@@ -9,7 +9,7 @@ import { wordKey } from "@/domain/word/alignment";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

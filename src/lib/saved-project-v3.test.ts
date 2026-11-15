@@ -4,7 +4,7 @@ import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import { savedLinesV3 } from "@/test/saved-v3";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("linesFromSavedV3", () => {
   it("gives loaded words new ids even when the file carries some", () => {

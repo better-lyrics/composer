@@ -2,7 +2,7 @@ import { bgBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 
 // -- Predicates ---------------------------------------------------------------
 

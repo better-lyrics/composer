@@ -18,7 +18,7 @@ import type { WordTiming } from "insync/word-timing";
 import { bgWordBoundaryEdit } from "@/utils/timing/bg-word-timing";
 import { type StepKeyPlan, planStepKey } from "@/utils/timing/step-key-write";
 import { wordBoundaryEdit } from "@/utils/timing/word-timing";
-import { applyWordPatch } from "@/utils/word-patch";
+import { applyWordPatch } from "insync/word-patch";
 
 // -- Types --------------------------------------------------------------------
 

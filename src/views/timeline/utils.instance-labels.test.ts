@@ -6,7 +6,7 @@ import { resetAllStores } from "@/test/stores";
 import { getDrawnRows } from "@/views/timeline/drawn-rows";
 import { beforeEach, describe, expect, it } from "vitest";
 import { detachLine, removeInstance } from "@/domain/commands/instance-edits";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function linked(id: string, text: string, instanceIdx: number, templateLineIdx: number, begin: number): LyricLine {
   return lineFromFields(

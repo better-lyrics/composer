@@ -5,7 +5,7 @@ import type { LyricLine } from "insync/line";
 import { newBackgroundTrack, withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

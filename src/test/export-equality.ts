@@ -8,7 +8,7 @@ import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import type { LyricsWriterInput } from "@/utils/lyrics-writers/shared";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
 import { generateProjectTtml } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

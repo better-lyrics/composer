@@ -6,7 +6,7 @@ import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } 
 import { DragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { LineRow } from "@/views/timeline/line-row";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants -----------------------------------------------------------------
 

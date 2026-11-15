@@ -10,7 +10,7 @@ import { lineText } from "@/domain/line/text";
 import type { ProjectMetadata } from "insync/metadata";
 import { createGroup, createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

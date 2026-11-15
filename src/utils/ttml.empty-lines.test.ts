@@ -4,7 +4,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import type { ProjectMetadata } from "insync/metadata";
 import { generateTTML } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];

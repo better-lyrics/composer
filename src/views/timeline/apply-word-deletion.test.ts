@@ -13,7 +13,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("applyWordDeletion", () => {
   it("regression: deleting a timed word on a partly synced line keeps the untimed lyrics", () => {

@@ -5,7 +5,7 @@ import { newWordId } from "@/domain/word/id";
 import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers -----------------------------------------------------------------
 

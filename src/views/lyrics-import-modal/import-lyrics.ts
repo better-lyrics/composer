@@ -28,7 +28,7 @@ import {
   skippedLineCount,
   skippedLinesMessage,
 } from "@/utils/lyrics-parsers/shared";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { getSplitCharacter } from "@/utils/split-character";
 

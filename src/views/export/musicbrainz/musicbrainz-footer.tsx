@@ -1,6 +1,6 @@
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { recordingPageUrl } from "@/views/export/musicbrainz/musicbrainz-links";
 import { IconCheck, IconExternalLink } from "@tabler/icons-react";
 

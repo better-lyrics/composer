@@ -6,7 +6,7 @@ import { newWordId } from "@/domain/word/id";
 import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = { title: "Languages", artists: [], album: "", duration: 10, language: "ja" };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];

@@ -12,7 +12,7 @@ import { parseSrt } from "@/utils/lyrics-parsers/srt";
 import { writeLrc } from "@/utils/lyrics-writers/lrc";
 import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

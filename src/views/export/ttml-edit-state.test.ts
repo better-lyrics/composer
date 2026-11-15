@@ -3,7 +3,7 @@ import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { crossedProjectChange, keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

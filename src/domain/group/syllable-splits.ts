@@ -13,7 +13,7 @@ import {
 import { withRoleTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
 import type { WordTiming } from "insync/word-timing";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

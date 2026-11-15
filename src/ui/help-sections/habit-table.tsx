@@ -6,7 +6,7 @@ import { HelpTable } from "@/ui/help-table";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { PROSE } from "@/ui/typography";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 import { IconKeyboard } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------

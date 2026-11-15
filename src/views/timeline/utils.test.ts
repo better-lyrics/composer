@@ -21,7 +21,7 @@ import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
 

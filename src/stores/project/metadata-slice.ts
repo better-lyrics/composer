@@ -15,7 +15,7 @@ import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from 
 import { createUiInitialState } from "@/stores/project/ui-slice";
 import { createUnisonLinkInitialState } from "@/stores/project/unison-link-slice";
 import { writingLyrics } from "@/stores/project/lyric-change-listeners";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------

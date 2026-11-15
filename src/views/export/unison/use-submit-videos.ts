@@ -14,7 +14,7 @@ import type { SongForSuggestions, SuggestedVideo } from "@/lib/unison/api-types"
 import { useProjectStore } from "@/stores/project";
 import type { MainVideo } from "@/ui/unison/video-picker";
 import { PENDING_NOTE } from "@/ui/unison/video-row";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Types ---------------------------------------------------------------------
 

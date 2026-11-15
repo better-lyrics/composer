@@ -6,7 +6,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { addressAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 

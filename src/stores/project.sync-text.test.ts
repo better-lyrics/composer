@@ -6,7 +6,7 @@ import { commitGesture } from "@/domain/sync/commit-gesture";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("sync incremental tap preserves line.text", () => {
   beforeEach(() => {

@@ -5,7 +5,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 import { wouldDropCrossInstance } from "insync/cross-instance";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const grouped = (id: string, gid: string, inst: number): LyricLine =>
   lineFromFields(

@@ -1,6 +1,6 @@
 import { type MetadataKey, isEmptyMetadataValue } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "insync/metadata";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

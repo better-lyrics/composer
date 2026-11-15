@@ -1,4 +1,4 @@
-import { escapeRegex } from "@/utils/escape-regex";
+import { escapeRegex } from "./escape-regex";
 
 // -- Constants ----------------------------------------------------------------
 

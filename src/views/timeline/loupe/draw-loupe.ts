@@ -5,7 +5,7 @@ import { LOUPE_FIXED, type LoupeSize } from "@/domain/spectrum/loupe-size";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { type GridLines, gridPoints } from "@/domain/tempo/grid-points";
 import type { Bounds } from "insync/word-bounds";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
 
 // -- Types --------------------------------------------------------------------

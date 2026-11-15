@@ -19,7 +19,7 @@ import {
   untimedSyllable,
 } from "insync/line-track";
 import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Content ------------------------------------------------------------------
 

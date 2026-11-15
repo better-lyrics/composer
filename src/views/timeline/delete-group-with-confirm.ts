@@ -2,7 +2,7 @@ import { removeGroup } from "@/domain/commands/group-edits";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 

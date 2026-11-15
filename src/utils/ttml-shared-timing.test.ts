@@ -4,7 +4,7 @@ import { createGroup } from "@/test/factories";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];

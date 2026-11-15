@@ -24,8 +24,8 @@ import {
   legacyWords,
   piecesOfLegacyWords,
 } from "@/test/legacy-languages";
-import { isStructurallyEqual } from "@/utils/structural-equal";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { isStructurallyEqual } from "insync/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

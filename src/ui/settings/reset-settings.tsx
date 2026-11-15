@@ -6,7 +6,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconCompass, IconRefresh } from "@tabler/icons-react";
 
 // -- Rows ---------------------------------------------------------------------

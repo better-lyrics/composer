@@ -18,7 +18,7 @@ import { useProjectStore } from "@/stores/project";
 import type { ProjectState } from "@/stores/project/types";
 import { createGroup, createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // Pins the contract that history entries round-trip exactly and are never
 // changed by later edits. Entries share the store's immutable objects, so a

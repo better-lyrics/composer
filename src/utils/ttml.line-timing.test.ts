@@ -8,7 +8,7 @@ import type { ProjectMetadata } from "insync/metadata";
 import { legacyLine } from "@/test/legacy-languages";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateProjectTtml, generateTTML } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = { title: "One Step Closer", artists: [], album: "", duration: 60 };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Frankie" }];

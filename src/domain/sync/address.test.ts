@@ -4,7 +4,7 @@ import { withRoleWords } from "@/domain/line/track-writes";
 import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const SLOW = { id: "y1", text: "Slow ", begin: 1, end: 2 };
 const TIDE = { id: "y2", text: "tide ", begin: 2, end: 3 };

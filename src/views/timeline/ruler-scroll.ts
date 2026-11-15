@@ -1,4 +1,4 @@
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { type RulerWindow, rulerLabelsInWindow, rulerStep, rulerWindow } from "@/views/timeline/ruler-labels";
 
 // -- Interfaces ----------------------------------------------------------------

@@ -13,7 +13,7 @@ import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { patchOf, updatedLine } from "@/test/field-updates";
 import { planStretchDrag } from "./stretch-drag";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers --------------------------------------------------------------------
 

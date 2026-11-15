@@ -29,7 +29,7 @@ import { Button } from "@/ui/button";
 import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
-import { pluralWord } from "@/utils/pluralize";
+import { pluralWord } from "insync/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
 import { EditNotices } from "@/views/edit/edit-notices";

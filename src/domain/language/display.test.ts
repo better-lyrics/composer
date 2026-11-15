@@ -5,7 +5,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const line: LyricLine = legacyLine({
   id: "mixed",

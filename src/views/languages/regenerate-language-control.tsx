@@ -2,7 +2,7 @@ import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconCheck, IconChevronDown, IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
 

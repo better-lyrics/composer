@@ -12,11 +12,11 @@ import { backgroundTrack } from "insync/line-track";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import type { WordTiming } from "insync/word-timing";
-import { formatTime } from "@/utils/format-time";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { formatTime } from "insync/format-time";
+import { isStructurallyEqual } from "insync/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
 import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 
 // -- Types ------------------------------------------------------------------
 

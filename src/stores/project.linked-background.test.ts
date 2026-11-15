@@ -17,7 +17,7 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();

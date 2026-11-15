@@ -18,7 +18,7 @@ import { createWords } from "@/test/factories";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";
 import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();

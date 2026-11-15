@@ -12,8 +12,8 @@ import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Menu, type MenuAnchor, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator } from "@/ui/menu";
 import { SingerTag } from "@/ui/singer-tag";
-import { GROUP_COLORS } from "@/utils/group-colors";
-import { pluralize } from "@/utils/pluralize";
+import { GROUP_COLORS } from "insync/group-colors";
+import { pluralize } from "insync/pluralize";
 import { CopyCutMenuItems, PasteHereMenuItem } from "@/views/timeline/clipboard-menu-items";
 import {
   loopSelection,

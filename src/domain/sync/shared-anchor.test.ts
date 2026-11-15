@@ -3,7 +3,7 @@ import { placeSharedInstance } from "@/domain/group/shared-placement";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({

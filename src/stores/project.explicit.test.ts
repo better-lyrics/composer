@@ -11,7 +11,7 @@ import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markWordsExplicit, toggleWordExplicit } from "@/domain/commands/word-edits";
 import { addInstance } from "@/domain/commands/instance-edits";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();

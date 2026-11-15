@@ -2,7 +2,7 @@ import { getAgentColor } from "@/domain/agent/colors";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 import { splitIntoWords } from "@/utils/lyric-words";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";

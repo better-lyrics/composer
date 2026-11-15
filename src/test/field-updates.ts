@@ -5,8 +5,8 @@ import { mainTrack } from "insync/line-track";
 import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { useProjectStore } from "@/stores/project";
-import { isStructurallyEqual } from "@/utils/structural-equal";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { isStructurallyEqual } from "insync/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

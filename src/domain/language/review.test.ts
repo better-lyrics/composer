@@ -13,7 +13,7 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { withFields } from "@/test/field-updates";
 import { legacyLine, legacyTrack } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("getLanguageReviewItems", () => {
   it("reports stale alternate-language tracks by line", () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { exportOfImport, missingUnmodelledNodes, readTtmlDocument, unmodelledNodes } from "@/test/ttml-unmodelled";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { parseXmlDocument } from "@/utils/xml-document";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 

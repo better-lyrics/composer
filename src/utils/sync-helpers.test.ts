@@ -10,7 +10,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("createTrackWordsFromTextAt", () => {
   const base: LyricLine = lineFromFields(

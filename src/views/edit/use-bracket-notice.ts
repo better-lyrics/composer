@@ -2,7 +2,7 @@ import { removeSectionTagLines } from "@/domain/commands/edit-text";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
 import { useProjectStore } from "@/stores/project";
 import type { NoticeAction, NoticeKind } from "@/ui/notices/notice-model";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconTrash } from "@tabler/icons-react";
 import { useMemo } from "react";

@@ -5,7 +5,7 @@ import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
 import type { LineUpdate } from "insync/line";
 import { wordBoundaryEdit, wordRetimeEdit } from "@/utils/timing/word-timing";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("createWordTimingOps: early returns", () => {
   it("nudgeBegin no-ops when line missing", () => {

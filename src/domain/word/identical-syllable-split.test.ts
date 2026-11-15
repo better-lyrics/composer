@@ -3,7 +3,7 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("applySyllableSplitToLines", () => {
   it("splits the source word", () => {

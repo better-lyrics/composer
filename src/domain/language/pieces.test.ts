@@ -11,7 +11,7 @@ import {
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { mergeWordRun } from "@/domain/word/merge-run";
 import type { WordTiming } from "insync/word-timing";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (id: string, text: string, sep: string, begin: number): WordTiming => ({
   id,

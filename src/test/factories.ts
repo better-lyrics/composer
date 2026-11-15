@@ -6,7 +6,7 @@ import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import type { ProjectSaveInput } from "@/lib/persistence";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 interface FactoryLineOptions {
   id?: string;

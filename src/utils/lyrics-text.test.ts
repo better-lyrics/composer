@@ -9,7 +9,7 @@ import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("textToLyricLines · group attrs preservation", () => {
   it("keeps groupId/instanceIdx/templateLineIdx on exact-text match", () => {

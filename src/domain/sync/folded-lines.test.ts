@@ -4,7 +4,7 @@ import type { LyricLine } from "insync/line";
 import { foldedLineIds } from "@/domain/sync/folded-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({

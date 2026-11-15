@@ -6,7 +6,7 @@ import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 import { decidePasteInstanceAction } from "./decide-paste-instance-action";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const template: LineTemplate[] = [
   {

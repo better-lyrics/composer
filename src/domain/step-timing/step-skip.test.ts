@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { stepSkippedLineIds } from "@/domain/step-timing/step-skip";
 import { createGroup, createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, begin: number) =>
   createLine({

@@ -2,7 +2,7 @@ import { Button } from "@/ui/button";
 import { Checkbox } from "@/ui/checkbox";
 import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
 import { separatorKinds } from "@/utils/split-separators";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------

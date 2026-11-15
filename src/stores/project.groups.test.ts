@@ -17,7 +17,7 @@ import { addGroup, addGroupWithLines, removeGroup, updateGroup } from "@/domain/
 import { addInstance, detachLine, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { splitWord } from "@/domain/commands/word-structure";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const SONG_LENGTH = 300;
 

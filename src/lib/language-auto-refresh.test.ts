@@ -16,7 +16,7 @@ import {
 } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Setup --------------------------------------------------------------------
 

@@ -9,7 +9,7 @@ import { withMainTrack, withTrackWords } from "@/domain/line/track-writes";
 import { EDITED_TTML_PROJECTS } from "@/test/edited-ttml-projects";
 import { createGroup, createLine } from "@/test/factories";
 import { song } from "@/test/shared-timing-sync";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = createGroup({ id: "chorus", sharesTiming: true });
 

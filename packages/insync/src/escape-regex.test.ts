@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escapeRegex } from "@/utils/escape-regex";
+import { escapeRegex } from "./escape-regex";
 
 describe("escapeRegex", () => {
   it("matches the input literally once compiled", () => {

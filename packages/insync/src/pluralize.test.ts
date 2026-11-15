@@ -1,4 +1,4 @@
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "./pluralize";
 import { describe, expect, it } from "vitest";
 
 describe("pluralize", () => {

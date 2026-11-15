@@ -6,7 +6,7 @@ import { INITIAL_STATE, useProjectStore } from "@/stores/project";
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { insertEmptyLine } from "@/domain/commands/line-edits";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const LINE_SYNCED = lineFromFields(
   { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 },

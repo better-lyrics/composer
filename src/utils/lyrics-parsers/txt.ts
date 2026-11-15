@@ -2,7 +2,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import { readGeniusLyrics, readsAsGeniusLyrics } from "@/domain/lyrics-file/genius-text";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
-import { cleanSplitCharacters } from "@/utils/split-character-text";
+import { cleanSplitCharacters } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -3,7 +3,7 @@ import type { LinkGroup } from "insync/group";
 import { instanceName } from "@/domain/instance/name";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
 import { toast } from "sonner";
 import { getSplitCharacter } from "@/utils/split-character";
 

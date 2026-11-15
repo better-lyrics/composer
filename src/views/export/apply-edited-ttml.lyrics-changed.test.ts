@@ -5,7 +5,7 @@ import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Tests --------------------------------------------------------------------
 

@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function seedLine(id: string, overrides: Partial<LineFields> = {}): LyricLine {
   return lineFromFields({ id, text: "hello world", agentId: "v1", ...overrides }, DEFAULT_SPLIT_CHARACTER);

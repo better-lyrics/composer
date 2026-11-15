@@ -6,7 +6,7 @@ import { lineText } from "@/domain/line/text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { shiftAllTimings } from "@/lib/priming-migration";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "./structural-equal";
 import { describe, expect, it } from "vitest";
 
 describe("isStructurallyEqual", () => {

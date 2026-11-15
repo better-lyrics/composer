@@ -12,7 +12,7 @@ import {
   showKeptOwnTimingToast,
   showReplacedOwnTimingToast,
 } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import type { RepeatingSection } from "@/views/grouping/repeating-sections";
 import { IconBulb, IconLink } from "@tabler/icons-react";

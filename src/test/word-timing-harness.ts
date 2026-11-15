@@ -6,7 +6,7 @@ import type { LineUpdate, LyricLine } from "insync/line";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { type RetimeChange, createWordTimingOps } from "@/utils/timing/word-timing-ops";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Retime seam --------------------------------------------------------------
 

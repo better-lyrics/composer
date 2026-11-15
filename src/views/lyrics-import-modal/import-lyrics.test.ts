@@ -11,7 +11,7 @@ import { useProjectStore } from "@/stores/project";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { generateTTML } from "@/utils/ttml";
 import { type ImportContext, importLyrics } from "@/views/lyrics-import-modal/import-lyrics";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

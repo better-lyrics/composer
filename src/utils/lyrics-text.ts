@@ -6,7 +6,7 @@ import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { backgroundText, lineText, trackText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
-import { cleanSplitCharacters, withoutSplitCharacter } from "@/utils/split-character-text";
+import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

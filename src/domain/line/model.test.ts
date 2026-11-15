@@ -1,7 +1,7 @@
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import { mainTrack } from "insync/line-track";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const base = { id: "line", text: "hold me close", agentId: "v1" };
 const word = { id: "w1", text: "hold", sep: " ", begin: 1, end: 1.4, joinsNext: false };

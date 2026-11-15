@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("parseLyricsFile - plain LRC", () => {
   it("parses line-level timing without word timing", () => {

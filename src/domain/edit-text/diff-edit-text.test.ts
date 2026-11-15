@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { diffEditTextChange } from "./diff-edit-text";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("diffEditTextChange", () => {
   it("returns no updates and no structural change when nothing differs", () => {

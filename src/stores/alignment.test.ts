@@ -12,7 +12,7 @@ import { useAlignmentStore } from "@/stores/alignment";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { createGroup, createWords } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const cached = vi.hoisted(() => ({ value: true }));
 const seen = vi.hoisted(() => ({

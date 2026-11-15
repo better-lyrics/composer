@@ -8,7 +8,7 @@ import { newWordId } from "@/domain/word/id";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function line(id: string, text: string, opts: Partial<LineFields> = {}): LyricLine {
   return lineFromFields({ id, text, agentId: "v1", ...opts }, DEFAULT_SPLIT_CHARACTER);

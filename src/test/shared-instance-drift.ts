@@ -7,7 +7,7 @@ import {
 import type { LinkGroup } from "insync/group";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine, TrackRole } from "insync/line";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

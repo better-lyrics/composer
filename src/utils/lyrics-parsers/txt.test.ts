@@ -3,7 +3,7 @@ import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { GENIUS_PAGE_COPY } from "@/test/genius-fixtures";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const texts = (content: string) => parseTxt(content).lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER));
 

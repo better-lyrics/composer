@@ -20,7 +20,7 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { Select } from "@/ui/select";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------

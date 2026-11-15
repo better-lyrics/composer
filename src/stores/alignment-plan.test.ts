@@ -4,7 +4,7 @@ import { commitGesture } from "@/domain/sync/commit-gesture";
 import { planLines, plainWindow } from "@/stores/alignment-plan";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // Line mode tap scenarios from hubertfa-posttrain's parity fixtures
 // (tests/composer_parity), which pin the behaviour hfapt/linemode.py

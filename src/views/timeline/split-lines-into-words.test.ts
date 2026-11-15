@@ -17,7 +17,7 @@ import {
   splitLinesIntoWords,
   splitTargetsForMenu,
 } from "./split-lines-into-words";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const lineSynced: LyricLine = lineFromFields(
   { id: "L1", text: "one two three", agentId: "v1", begin: 1, end: 4 },

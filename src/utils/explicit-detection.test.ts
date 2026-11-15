@@ -6,7 +6,7 @@ import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { findExplicitWords } from "@/utils/explicit-detection";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function lineWithText(id: string, text: string, words?: LineFields["words"]): LyricLine {
   return lineFromFields(

@@ -10,7 +10,7 @@ import { IconButton } from "@/ui/icon-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { adjacentHeardInstance, focusBounds, heardInstances } from "@/views/timeline/group-focus";
 import { hearInstance } from "@/views/timeline/hear-instance";

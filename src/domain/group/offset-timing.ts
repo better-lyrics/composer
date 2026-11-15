@@ -11,7 +11,7 @@ import {
 import type { Bounds } from "insync/word-bounds";
 import { withIdsOf } from "@/domain/word/id";
 import type { WordTiming } from "insync/word-timing";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Timing fields ------------------------------------------------------------
 

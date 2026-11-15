@@ -10,7 +10,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { getSplitCharacter } from "@/utils/split-character";
 
 beforeEach(() => useProjectStore.getState().reset());

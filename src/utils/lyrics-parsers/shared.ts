@@ -4,7 +4,7 @@ import type { Agent } from "insync/agent";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { ProjectMetadata } from "insync/metadata";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 

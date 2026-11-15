@@ -12,7 +12,7 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { withFields } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const line: LyricLine = lineFromFields({ id: "a", text: "hello", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
 

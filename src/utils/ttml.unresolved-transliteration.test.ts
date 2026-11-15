@@ -3,7 +3,7 @@ import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { renderTransliterationContent } from "@/utils/ttml-alternate-content";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function lineWithMappings(): LegacyLine {
   return {

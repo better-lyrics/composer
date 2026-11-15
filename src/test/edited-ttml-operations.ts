@@ -21,9 +21,9 @@ import {
   timedAt,
 } from "@/test/edited-ttml-edits";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { keyedExportLines } from "@/utils/ttml-line-keys";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Operations ---------------------------------------------------------------
 

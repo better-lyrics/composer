@@ -3,7 +3,7 @@ import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/uniso
 import { useProjectStore } from "@/stores/project";
 import { settingEntry } from "@/stores/settings-catalog";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 

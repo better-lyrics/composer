@@ -4,7 +4,7 @@ import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
 import { trackRole } from "insync/line-track";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { copiedSyllable } from "@/domain/word/syllable-groups";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { selectedBannerInstance } from "@/views/timeline/selected-banner";

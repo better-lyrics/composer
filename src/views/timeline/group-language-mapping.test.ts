@@ -13,7 +13,7 @@ import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/tes
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function mappedWords(fragments: string[], start: number): LegacyWord[] {
   const joiners = ["", "-", "", "  "];

@@ -12,7 +12,7 @@ import type { WordTiming } from "insync/word-timing";
 import { createWords } from "@/test/factories";
 import type { FieldPatch } from "@/test/field-updates";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function line(id: string, text: string, words?: Partial<WordTiming>[], extra: FieldPatch = {}): LyricLine {
   return lineFromFields(

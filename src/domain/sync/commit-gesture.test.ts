@@ -11,7 +11,7 @@ import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sy
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const DUR = 0.3;

@@ -11,7 +11,7 @@ import {
 } from "@/domain/group/shared-timing";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("keepsOwnTiming", () => {
   it("is true only for an own-timing instance of a sharing group", () => {

@@ -5,7 +5,7 @@ import { lineText } from "@/domain/line/text";
 import { exportedTtml, mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { PARSERS } from "@/utils/lyrics-parsers";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

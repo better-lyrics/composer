@@ -2,7 +2,7 @@ import { lineStarts, startedLineIndex } from "@/domain/line/line-at-time";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { useLayoutEffect, useMemo, useRef } from "react";
 

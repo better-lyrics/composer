@@ -1,4 +1,4 @@
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 
 function comparableLyricText(text: string, splitChar: string): string {
   return withoutSplitCharacter(text, splitChar).toLocaleLowerCase().replace(/\p{P}/gu, "").replace(/\s+/g, " ").trim();

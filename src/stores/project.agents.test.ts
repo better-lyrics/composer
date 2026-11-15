@@ -3,7 +3,7 @@ import type { LyricLine } from "insync/line";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { groupRepeatingSections } from "@/domain/commands/group-edits";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("setAgents", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));

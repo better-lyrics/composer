@@ -17,7 +17,7 @@ import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain
 import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

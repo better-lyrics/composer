@@ -11,7 +11,7 @@ import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const typed = (text: string) =>
   lineEditCommand({ command: "edit lines", args: ["l1"] }, () => fieldUpdates([{ id: "l1", updates: { text } }]));

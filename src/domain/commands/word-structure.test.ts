@@ -14,7 +14,7 @@ import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const tide = createWord({ text: "tide ", begin: 4, end: 4.5 });
 const tideAddress = addressOf({ id: "l1" }, "word", tide);

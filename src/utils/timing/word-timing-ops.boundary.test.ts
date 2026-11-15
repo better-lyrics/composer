@@ -7,7 +7,7 @@ import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
 import { bgWordBoundaryEdit, bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("createWordTimingOps: setBoundary", () => {
   interface BoundaryCase {

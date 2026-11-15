@@ -1,6 +1,6 @@
 import { DEFAULTS, type SettingsState } from "@/stores/settings";
 import { SETTINGS_CATALOG } from "@/stores/settings-catalog-entries";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

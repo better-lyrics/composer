@@ -27,7 +27,7 @@ import {
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { generateProjectTtml } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 

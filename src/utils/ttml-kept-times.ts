@@ -1,7 +1,7 @@
 import { type KeptTimes, keptTimes } from "insync/passthrough";
 import { bgBounds, effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Types --------------------------------------------------------------------
 

@@ -13,7 +13,7 @@ import { SNAP_DEFAULTS, type SnapSettings } from "@/stores/settings-snap";
 import { UNISON_SETTING_DEFAULTS, type UnisonSettings } from "@/stores/settings-unison";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";

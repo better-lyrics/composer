@@ -5,7 +5,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("parseLyrics", () => {
   it("matches non-empty input lines to non-empty stored lines in order", () => {

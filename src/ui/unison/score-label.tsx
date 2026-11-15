@@ -1,6 +1,6 @@
 import { formatScore } from "@/domain/unison/lyric-status";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types ---------------------------------------------------------------------
 

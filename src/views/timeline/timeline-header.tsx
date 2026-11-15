@@ -30,7 +30,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { TooltipGroup } from "@/ui/tooltip";
-import { memoByIdentity } from "@/utils/memo-by-identity";
+import { memoByIdentity } from "insync/memo-by-identity";
 import { HeaderAction } from "@/views/timeline/header-action";
 import { SnapLatch } from "@/views/timeline/snap-latch";
 import { SpectrumLatch } from "@/views/timeline/spectrum/spectrum-latch";

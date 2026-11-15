@@ -9,7 +9,7 @@ import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
 import { parseXmlDocument } from "@/utils/xml-document";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

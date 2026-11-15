@@ -15,7 +15,7 @@ import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const FILE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "File Lead" },

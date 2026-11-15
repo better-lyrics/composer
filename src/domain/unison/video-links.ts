@@ -1,5 +1,5 @@
 import type { SuggestedVideo, VideoLink } from "@/lib/unison/api-types";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Types ---------------------------------------------------------------------
 

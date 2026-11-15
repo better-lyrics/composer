@@ -1,6 +1,6 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { cn } from "@/utils/cn";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 import { LinePreviewActions } from "@/views/edit/line-preview-actions";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconLink } from "@tabler/icons-react";

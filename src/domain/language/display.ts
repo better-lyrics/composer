@@ -13,7 +13,7 @@ import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
+import { withoutSplitCharacter } from "insync/split-character-text";
 import { splitIntoWordsWithMeta } from "@/utils/lyric-words";
 
 type LanguageTextVariant = "original" | "transliteration";

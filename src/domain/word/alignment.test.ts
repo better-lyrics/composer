@@ -3,7 +3,7 @@ import { lcsPairs, wordKey } from "@/domain/word/alignment";
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("wordKey", () => {
   it("strips trailing whitespace", () => {

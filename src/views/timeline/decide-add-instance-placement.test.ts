@@ -9,7 +9,7 @@ import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { describe, expect, it } from "vitest";
 import { decideAddInstancePlacement, templateDuration } from "./decide-add-instance-placement";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const wt = (text: string, relativeBegin: number, relativeEnd: number) => ({
   ...splitTrailingWhitespace(text),

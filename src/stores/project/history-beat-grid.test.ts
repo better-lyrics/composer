@@ -5,7 +5,7 @@ import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { resetGrid, withBarOneAt, withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const beats = Array.from({ length: 17 }, (_, i) => i * 0.5);
 const grid = detectedGrid({ beats, downbeats: beats.filter((_, i) => i % 4 === 0) });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { liveAddresses, resolveAddresses } from "@/domain/selection/resolve";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const afterSplit = createLine({
   id: "a",

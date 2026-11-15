@@ -7,7 +7,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { keyedExportLines } from "@/utils/ttml-line-keys";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

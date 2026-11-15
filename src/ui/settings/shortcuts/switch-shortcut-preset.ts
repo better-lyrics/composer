@@ -7,7 +7,7 @@ import { clashingOverrides, overridesAfterSwitch } from "@/stores/shortcut-prese
 import { presetBinding, type ShortcutPresetId, shortcutPreset } from "@/stores/shortcut-presets";
 import { getShortcutById, type ShortcutBinding } from "@/stores/shortcut-registry";
 import { formatShortcut } from "@/utils/format-key";
-import { pluralize, pluralWord } from "@/utils/pluralize";
+import { pluralize, pluralWord } from "insync/pluralize";
 import { toast } from "sonner";
 
 // -- Constants -----------------------------------------------------------------

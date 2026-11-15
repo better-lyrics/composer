@@ -7,7 +7,7 @@ import { Menu, type MenuAnchor, MenuHeader, MenuItem } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { STEM_LABELS } from "@/ui/stem-labels";
 import { formatFileSize } from "@/utils/format-file-size";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { IconDots, IconReplace, IconTrash, IconUpload } from "@tabler/icons-react";
 import { useState } from "react";
 

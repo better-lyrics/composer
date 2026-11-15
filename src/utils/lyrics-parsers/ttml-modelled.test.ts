@@ -9,7 +9,7 @@ import {
 } from "@/test/ttml-fixtures";
 import { readTtmlDocument, unmodelledNodes } from "@/test/ttml-unmodelled";
 import { generateProjectTtml } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("ttml modelled", () => {
   it("a Composer export has nothing to keep", () => {

@@ -5,7 +5,7 @@ import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { backupText, projectFileText } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { classifyPastedText } from "@/views/edit/smart-paste";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

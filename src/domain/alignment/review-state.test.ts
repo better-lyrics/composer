@@ -8,7 +8,7 @@ import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import { createLine } from "@/test/factories";
 import { withFields } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

@@ -7,7 +7,7 @@ import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { DEFAULT_BG_WORD_DURATION, distributeWordsInLine, splitIntoWords } from "@/utils/lyric-words";
 import { getSplitCharacter } from "@/utils/split-character";
 

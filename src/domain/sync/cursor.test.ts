@@ -9,7 +9,7 @@ import {
 } from "@/domain/sync/cursor";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const blank = () => createLine({ text: "" });

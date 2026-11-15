@@ -13,7 +13,7 @@ import type { DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

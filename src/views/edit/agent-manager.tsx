@@ -16,7 +16,7 @@ import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
 import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
 import { focusOnMount } from "@/utils/focus-on-mount";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconChevronDown, IconChevronLeft, IconMicrophone2, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 

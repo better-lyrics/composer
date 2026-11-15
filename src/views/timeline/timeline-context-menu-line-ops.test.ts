@@ -7,7 +7,7 @@ import { pasteLyrics } from "@/domain/commands/edit-text";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { mainTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // These pin the Task 1.4 contract: gutter add/delete operations on a project
 // containing line-synced rows must NOT flip those rows to word-synced.

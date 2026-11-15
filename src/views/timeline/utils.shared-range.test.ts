@@ -8,7 +8,7 @@ import {
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 } from "@/domain/selection/nudge";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

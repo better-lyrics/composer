@@ -4,7 +4,7 @@ import { legacyLine } from "@/test/legacy-languages";
 import { generateTTML } from "@/utils/ttml";
 import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

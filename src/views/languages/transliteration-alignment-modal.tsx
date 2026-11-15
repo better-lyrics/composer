@@ -14,9 +14,9 @@ import { Modal } from "@/ui/modal";
 import { Select } from "@/ui/select";
 import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
 import { separatorKinds } from "@/utils/split-separators";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { TransliterationTimingMap } from "@/views/languages/transliteration-timing-map";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconCheck } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 

@@ -10,7 +10,7 @@ import {
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

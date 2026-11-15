@@ -11,7 +11,7 @@ import {
   untimedLine,
 } from "@/domain/group/template-line";
 import type { LyricLine } from "insync/line";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

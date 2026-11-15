@@ -4,7 +4,7 @@ import { trackRole, type WordTrack } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Functions ----------------------------------------------------------------
 

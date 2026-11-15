@@ -4,7 +4,7 @@ import type { WordTrack } from "insync/line-track";
 import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const everyLine = () => true;
 

@@ -5,7 +5,7 @@ import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "@/domai
 import { backgroundTrack } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

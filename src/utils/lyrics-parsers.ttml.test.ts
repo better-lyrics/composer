@@ -4,7 +4,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import type { ProjectMetadata } from "insync/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
   it("parses an AMLL export that uses <amll:meta> without declaring xmlns:amll", () => {

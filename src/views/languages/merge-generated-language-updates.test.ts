@@ -13,7 +13,7 @@ import { createGroup } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
 import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
 import { mergeGeneratedLanguageUpdates } from "@/views/languages/merge-generated-language-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function chorusLine(id: string, instanceIdx: number, begin: number, reading: string) {
   return legacyLine({

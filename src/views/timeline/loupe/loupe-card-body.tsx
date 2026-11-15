@@ -4,7 +4,7 @@ import type { LoupeSize } from "@/domain/spectrum/loupe-size";
 import { useProjectStore } from "@/stores/project";
 import { loupeDeltaPopVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { LOUPE_ZOOM } from "@/views/timeline/loupe/draw-loupe";
 import { LoupeSpectrum } from "@/views/timeline/loupe/loupe-spectrum";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";

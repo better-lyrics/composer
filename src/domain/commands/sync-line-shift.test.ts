@@ -6,7 +6,7 @@ import { lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function seedLine(begin: number, end: number): void {
   useProjectStore.setState({

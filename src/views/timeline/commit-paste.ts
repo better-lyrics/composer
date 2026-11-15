@@ -11,7 +11,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { instanceToTemplate } from "@/views/timeline/group-ops";

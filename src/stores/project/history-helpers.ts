@@ -9,7 +9,7 @@ import { deepFreeze } from "@/stores/project/deep-freeze";
 import type { HistoryEntry, LyricBurst } from "@/stores/project/history-types";
 import type { ProjectState } from "@/stores/project/types";
 import { type DocLines, docOfLines } from "@/stores/project/with-body";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Constants ----------------------------------------------------------------
 

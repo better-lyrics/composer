@@ -5,7 +5,7 @@ import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
 import { isInQueueOrder, queueOrder } from "@/domain/step-timing/step-queue";
 import { onLyricsChanged } from "@/stores/project/lyric-change-listeners";
-import { memoByIdentity } from "@/utils/memo-by-identity";
+import { memoByIdentity } from "insync/memo-by-identity";
 import { selectionPatch } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getSplitCharacter } from "@/utils/split-character";

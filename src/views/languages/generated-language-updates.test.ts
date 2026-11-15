@@ -6,9 +6,9 @@ import { backgroundText, lineText } from "@/domain/line/text";
 import { roleWords } from "insync/line-track";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { type LegacyLine, legacyLanguages, legacyLine, legacyView, legacyWords } from "@/test/legacy-languages";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function sourceLine(): LyricLine {
   return legacyLine({

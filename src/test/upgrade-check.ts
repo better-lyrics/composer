@@ -11,8 +11,8 @@ import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { compareExports, type ExportDifference } from "@/test/export-equality";
 import { withPositionIds, withTimesInWholeMs } from "@/test/saved-format-equality";
 import { type InstanceDrift, sharedInstanceDrift } from "@/test/shared-instance-drift";
-import { isStructurallyEqual } from "@/utils/structural-equal";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { isStructurallyEqual } from "insync/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

@@ -4,7 +4,7 @@ import { lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords } from "insync/line-track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
-import type { WordTiming } from "insync/word-timing";
-import { applyWordPatch } from "@/utils/word-patch";
+import type { WordTiming } from "./word-timing";
+import { applyWordPatch } from "./word-patch";
 import { describe, expect, it } from "vitest";
 
 // -- Raw-pattern bug demonstration --------------------------------------------

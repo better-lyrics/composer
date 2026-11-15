@@ -17,7 +17,7 @@ import { RegenerateLanguageControl } from "@/views/languages/regenerate-language
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";

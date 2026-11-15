@@ -17,7 +17,7 @@ import {
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { createLine } from "@/test/factories";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -4,7 +4,7 @@ import { getLanguageReviewItems } from "@/domain/language/review";
 import type { LanguageReviewTrack } from "@/domain/language/review";
 import type { LyricLine } from "insync/line";
 import { LanguageStatusBanner } from "@/views/languages/status-banner";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------

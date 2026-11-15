@@ -16,8 +16,8 @@ import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/lin
 import type { LyricLine } from "insync/line";
 import { roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { isStructurallyEqual } from "@/utils/structural-equal";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { isStructurallyEqual } from "insync/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

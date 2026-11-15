@@ -1,5 +1,5 @@
 import type { RevisionDiffRow } from "@/lib/unison/revision-types";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types ---------------------------------------------------------------------
 

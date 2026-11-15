@@ -5,7 +5,7 @@ import type { LyricLine } from "insync/line";
 import { spacedFromWords } from "@/domain/word/spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import type { SavedLineV3 } from "@/lib/saved-project-v3";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Writing ------------------------------------------------------------------
 

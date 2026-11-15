@@ -19,7 +19,7 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "./group-ops";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const lines = (overrides: Partial<LineFields>[]): LyricLine[] =>
   overrides.map((o, i) => lineFromFields({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }, DEFAULT_SPLIT_CHARACTER));

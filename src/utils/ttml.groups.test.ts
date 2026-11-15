@@ -7,7 +7,7 @@ import { mainTrack, timedSyllables } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];

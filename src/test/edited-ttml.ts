@@ -4,7 +4,7 @@ import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "insync/line";
 import { PARSERS } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 

@@ -4,7 +4,7 @@ import type { LyricLine } from "insync/line";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
 import { stretchSelections } from "@/domain/selection/stretch";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

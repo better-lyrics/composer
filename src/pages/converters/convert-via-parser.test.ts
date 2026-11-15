@@ -11,7 +11,7 @@ import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
 import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 

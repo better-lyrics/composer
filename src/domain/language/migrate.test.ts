@@ -3,7 +3,7 @@ import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { type LegacyLine, legacyLine, legacyWords } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function oldLine(overrides: Partial<LegacyLine> = {}): LyricLine {
   return legacyLine({

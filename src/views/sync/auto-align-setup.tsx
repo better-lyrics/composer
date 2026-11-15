@@ -16,7 +16,7 @@ import { PopActions, PopButton, PopGroup, PopHead, PopRow, PopText } from "@/ui/
 import { StatusChip } from "@/ui/status-chip";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
 import { percent } from "@/utils/percent";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import {
   IconCheck,
   IconLanguage,

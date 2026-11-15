@@ -5,7 +5,7 @@ import type { Instance, LyricDoc } from "insync/group";
 import { instanceKey } from "insync/instance-key";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const glow = (id: string, instanceIdx: number, begin: number, groupId = "chorus") =>
   createLine({

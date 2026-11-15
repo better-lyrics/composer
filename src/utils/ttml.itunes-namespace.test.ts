@@ -4,7 +4,7 @@ import type { LyricLine } from "insync/line";
 import type { ProjectMetadata } from "insync/metadata";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };

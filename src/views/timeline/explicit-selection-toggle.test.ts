@@ -17,7 +17,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine, createWords } from "@/test/factories";
 import { generateLineTtml } from "@/utils/ttml";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
   const line = lines.find((candidate) => candidate.id === lineId);

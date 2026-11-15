@@ -3,7 +3,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText, trackText } from "@/domain/line/text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { createLine, createWords } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("tracksFromFields", () => {
   it("timed syllables are today's words and the text reads back", () => {

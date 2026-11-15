@@ -6,7 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
 import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
 import { getExplicitSnippet } from "@/utils/explicit-snippet";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { getSplitCharacter } from "@/utils/split-character";
 
 const INLINE_WORD_MAX = 32;

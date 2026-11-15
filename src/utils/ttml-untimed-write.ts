@@ -3,8 +3,8 @@ import { escapeXmlText, writeXmlAttrs, type XmlAttr } from "insync/xml-node";
 import type { LineTrack, Syllable } from "insync/line";
 import { syllableJoint } from "@/domain/line/text";
 import { isTimedSyllable } from "insync/line-track";
-import { withoutSplitCharacter } from "@/utils/split-character-text";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { withoutSplitCharacter } from "insync/split-character-text";
+import { isStructurallyEqual } from "insync/structural-equal";
 import { spanContent, timedSpan } from "@/utils/ttml-markup";
 
 // -- Helpers ------------------------------------------------------------------

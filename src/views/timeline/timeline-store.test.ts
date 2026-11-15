@@ -8,7 +8,7 @@ import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("markerMode", () => {
   beforeEach(() => {

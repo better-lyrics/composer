@@ -15,7 +15,7 @@ import {
   piecesOfLegacyWords,
   wordsWithPieces,
 } from "@/test/legacy-languages";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function planned(words: LegacyWord[], text: string, status?: TransliterationAlignmentStatus) {
   const { words: plain, pieces } = piecesOfLegacyWords(words);

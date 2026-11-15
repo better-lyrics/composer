@@ -6,7 +6,7 @@ import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
 import { withFields } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({

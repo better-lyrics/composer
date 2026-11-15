@@ -4,7 +4,7 @@ import { selectionBounds } from "@/domain/selection/bounds";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "@/utils/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

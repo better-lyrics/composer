@@ -6,7 +6,7 @@ import { Popover } from "@/ui/popover";
 import { CARD_BASE, CARD_INACTIVE } from "@/ui/settings/preset-card-styles";
 import { applyShortcutsWithUndo } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconDownload } from "@tabler/icons-react";
 import { useState } from "react";
 
