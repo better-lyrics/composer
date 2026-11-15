@@ -5,13 +5,11 @@ import type { LinkGroup } from "./group";
 import type { InstanceAnchors } from "./group-template-copy";
 import { instanceBounds } from "./instance-bounds";
 import { instanceKey } from "./instance-key";
-import { isLinked, type LinkedLine } from "./instance-predicates";
+import { isSlotLine, type SlotLine } from "./instance-predicates";
 import type { LyricLine } from "./line";
 import { nextLineStart, previousLineEnd } from "./line-neighbour-bounds";
 
 // -- Types --------------------------------------------------------------------
-
-type SlotLine = LinkedLine & { templateLineIdx: number };
 
 interface TemplateEditInput {
   before: readonly LyricLine[];
@@ -43,10 +41,6 @@ interface Edit {
 const DETACHED_SLOT = -1;
 
 // -- Helpers ------------------------------------------------------------------
-
-function isSlotLine(line: LyricLine | undefined): line is SlotLine {
-  return !!line && isLinked(line) && line.templateLineIdx !== undefined && !line.detached;
-}
 
 const slotKey = (groupId: string, slot: number) => `${groupId}\u0000${slot}`;
 

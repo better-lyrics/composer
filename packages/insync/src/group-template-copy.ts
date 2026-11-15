@@ -15,7 +15,7 @@ import { sharesTiming, timingChanged } from "./group-shared-timing";
 import { fittedAnchor, lineContent, toTemplateLine } from "./group-template-line";
 import { instanceBounds } from "./instance-bounds";
 import { instanceKey } from "./instance-key";
-import { isLinked, type LinkedLine } from "./instance-predicates";
+import { isSlotLine, type SlotLine } from "./instance-predicates";
 import type { LyricLine } from "./line";
 
 // -- Types --------------------------------------------------------------------
@@ -42,8 +42,6 @@ interface TemplateCopy {
   // A copy had to move onto another instance to stay in the song, so the edit cannot be copied.
   blocked?: true;
 }
-
-type SlotLine = LinkedLine & { templateLineIdx: number };
 
 // -- Anchors ------------------------------------------------------------------
 
@@ -92,10 +90,6 @@ function instanceAnchors(doc: LyricDoc): InstanceAnchors {
 }
 
 // -- Helpers ------------------------------------------------------------------
-
-function isSlotLine(line: LyricLine | undefined): line is SlotLine {
-  return !!line && isLinked(line) && line.templateLineIdx !== undefined && !line.detached;
-}
 
 const slotKey = (groupId: string, idx: number, slot: number) => `${instanceKey(groupId, idx)}\u0000${slot}`;
 
