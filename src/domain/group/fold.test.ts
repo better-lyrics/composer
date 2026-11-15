@@ -91,7 +91,7 @@ describe("foldLines", () => {
     expect(second.replaced?.[0]).toBe(lines[1]);
   });
 
-  it("a shared edit that would take an instance below zero moves every instance by the room there is", () => {
+  it("a shared edit that would take a copy below zero keeps the edit and moves that copy alone", () => {
     const lines = [glowLine(0, 10), glowLine(1, 0.25)];
     const after = lines.with(0, nudged(lines[0], 0, -0.5));
     const folded = foldLines({
@@ -102,10 +102,10 @@ describe("foldLines", () => {
       copiesSharedTiming: true,
       ...FOLD_DEFAULTS,
     });
-    expect(folded.lines.map((line) => timedSyllables(mainTrack(line))[0].begin)).toEqual([9.75, 0]);
+    expect(folded.lines.map((line) => timedSyllables(mainTrack(line))[0].begin)).toEqual([9.5, 0]);
   });
 
-  it("a nudge that would put an instance past the song end moves every instance by the clamped amount", () => {
+  it("a nudge that would put a copy past the song end keeps the nudge and moves that copy alone, whole", () => {
     const lines = [glowLine(0, 10), glowLine(1, 40), glowLine(2, 70)];
     const after = lines.with(0, nudged(lines[0], 2, 0.25));
     const folded = foldLines({
@@ -117,8 +117,9 @@ describe("foldLines", () => {
       carriesTemplateEdits: true,
       songEnd: 71.6,
     });
-    const tonight = folded.lines.map((line) => timedSyllables(mainTrack(line))[2].begin - 1);
-    tonight.forEach((begin, index) => expect(begin).toBeCloseTo([10.1, 40.1, 70.1][index], 9));
+    const begins = (index: number) => folded.lines.map((line) => timedSyllables(mainTrack(line))[index].begin);
+    begins(2).forEach((begin, index) => expect(begin).toBeCloseTo([11.25, 41.25, 71.1][index], 9));
+    begins(0).forEach((begin, index) => expect(begin).toBeCloseTo([10, 40, 69.85][index], 9));
   });
 
   it("regression: two shared instances edited differently in one command each keep their own edit", () => {
