@@ -64,8 +64,8 @@ function addInstance(
     copiesSharedTiming: false,
     run: (root, ctx) => {
       const instanceIdx = nextInstanceIdx(root.lines, groupId);
-      const newLines = structure.map((template, templateLineIdx) =>
-        instanceLine(template, ctx.newId(), groupId, instanceIdx, templateLineIdx, instanceStart, ctx.splitChar),
+      const newLines = structure.map((template, index) =>
+        instanceLine(template, ctx.newId(), groupId, instanceIdx, template.slot ?? index, instanceStart, ctx.splitChar),
       );
       const lines =
         insertAtIndex === undefined || insertAtIndex >= root.lines.length || insertAtIndex < 0
