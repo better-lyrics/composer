@@ -162,11 +162,11 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const merged = mergeEditedExport([partlySynced()], (ttml) =>
         ttml
           .replace(
-            '<span begin="0:01.000" end="0:02.000">a</span>',
+            '<span begin="0:01.000" end="0:02.000">a</span> b c d',
             '<span begin="0:01.000" end="0:02.000">a </span><span begin="0:02.000" end="0:02.500">b </span><span begin="0:02.500" end="0:03.000">c </span><span begin="0:03.000" end="0:03.500">d</span>',
           )
           .replace(
-            '<span begin="0:01.000" end="0:01.500">ooh</span>',
+            '<span begin="0:01.000" end="0:01.500">ooh</span> ah',
             '<span begin="0:01.000" end="0:01.500">ooh </span><span begin="0:01.500" end="0:02.000">ah</span>',
           ),
       )[0]!;
@@ -176,17 +176,10 @@ describe("mergeEditedTtmlLines · word timing", () => {
     });
 
     it("an edited file that holds the rest as untimed text does not repeat it", () => {
-      const merged = mergeEditedExport([partlySynced()], (ttml) =>
-        ttml
-          .replace(
-            '<span begin="0:01.000" end="0:02.000">a</span>',
-            '<span begin="0:01.000" end="0:02.000">a</span> b c d',
-          )
-          .replace(
-            '<span begin="0:01.000" end="0:01.500">ooh</span>',
-            '<span begin="0:01.000" end="0:01.500">ooh</span> ah',
-          ),
-      )[0]!;
+      const merged = mergeEditedExport([partlySynced()], (ttml) => {
+        expect(ttml).toContain('<span begin="0:01.000" end="0:02.000">a</span> b c d');
+        return ttml;
+      })[0]!;
 
       expect(lineText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("a b c d");
       expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh ah");

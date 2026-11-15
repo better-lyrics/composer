@@ -10,7 +10,7 @@ import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from
 import { isSyncableLine } from "./line-sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
-import { closeSlotWords, closingUpdate, previousSlotEnd, tapEnd } from "./sync-slot-close";
+import { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd } from "./sync-slot-close";
 import { withSlotWord } from "./sync-slot-words";
 import type { Bounds } from "./word-bounds";
 import { enforceOrderAround } from "./word-order";
@@ -27,6 +27,8 @@ interface GestureContext {
   groups?: readonly LinkGroup[];
   skippedInstances?: readonly SkippedInstance[];
   splitChar: string;
+  // Where the song ends; unbounded when not given.
+  songEnd?: number;
 }
 
 interface GestureCommit {
@@ -88,9 +90,11 @@ function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureC
 
 // -- Background -----------------------------------------------------------------
 
-function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null, splitChar: string): LyricLine {
+function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null, ctx: GestureContext): LyricLine {
   const background = backgroundTrack(line);
-  if (!background || !bgBounds(line)) return withBackgroundSeededFrom(line, begin, splitChar);
+  if (!background || !bgBounds(line)) {
+    return withBackgroundSeededFrom(line, begin, ctx.songEnd ?? Number.POSITIVE_INFINITY, ctx.splitChar);
+  }
   return oldMain ? withBackgroundTrack(line, shiftTrack(background, begin - oldMain.begin)) : line;
 }
 
@@ -132,7 +136,7 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   words = enforceOrderAround(words, cursor.wordIndex);
 
   const timed = withRoleWords(line, "main", words);
-  const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line), ctx.splitChar) : timed;
+  const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line), ctx) : timed;
 
   return {
     update: { id: line.id, updates: { tracks: written.tracks } },
@@ -158,7 +162,7 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
   const written = oldMain
     ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) }, ctx.splitChar)
-    : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null, ctx.splitChar);
+    : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null, ctx);
 
   return {
     update: { id: line.id, updates: { tracks: written.tracks } },
@@ -235,7 +239,10 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 
   if (gesture === "tap-line") {
     const write = writeLine(lines, ctx);
-    if (!write) return null;
+    if (!write) {
+      const closed = lastLineClose(lines, ctx.cursor, ctx.time, ctx.splitChar);
+      return closed && { lineUpdates: [closed], nextCursor: ctx.cursor, nextJumped: false, clampedTo: null };
+    }
     return {
       lineUpdates: slotWriteToUpdates(write),
       nextCursor: advanceCursor(lines, ctx.cursor, "line", ctx.splitChar),

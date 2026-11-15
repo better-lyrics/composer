@@ -1,7 +1,7 @@
 import type { LanguagePieces, LineLanguages } from "./language";
 import { withAlignedTransliteration } from "./language-align";
 import { trackPieces } from "./language-pieces";
-import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "./line";
+import type { LineTrack, LyricLine, SpanTimedTrack, Syllable, TrackRole } from "./line";
 import { trackText } from "./line-text";
 import {
   backgroundTrack,
@@ -12,6 +12,7 @@ import {
   type TrackField,
   timedSyllables,
   trackOf,
+  untimedSyllablesOf,
 } from "./line-track";
 import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "./line-track-writes";
 import { memoBySplitCharacter } from "./memo-by-identity";
@@ -29,6 +30,9 @@ interface CachedSpanBlock {
 }
 
 // -- Caches -------------------------------------------------------------------
+
+const NO_SYLLABLES: Syllable[] = [];
+Object.freeze(NO_SYLLABLES);
 
 const spanBlockByTrack = new WeakMap<LineTrack, CachedSpanBlock>();
 
@@ -51,6 +55,12 @@ function drawnSyllables(line: LyricLine, role: TrackRole, splitChar: string): Wo
   const track = trackOf(line, role);
   if (!track) return timedSyllables(track);
   return isSpanTimed(track) ? spanBlock(line.id, track, splitChar) : timedSyllables(track);
+}
+
+// The untimed rest drawn after a track's timed syllables: none under a span block, which already covers the text.
+function drawnUntimedSyllables(line: LyricLine, role: TrackRole): Syllable[] {
+  const track = trackOf(line, role);
+  return track && isSpanTimed(track) ? NO_SYLLABLES : untimedSyllablesOf(line, role);
 }
 
 // The words an explicit mark acts on: a main track's timed syllables, or the background as the Timeline draws it.
@@ -92,4 +102,4 @@ function drawnPieces(line: LyricLine, role: TrackRole, splitChar: string): Langu
 
 // -- Exports ------------------------------------------------------------------
 
-export { drawnLanguages, drawnLine, drawnPieces, drawnSyllables, explicitFieldWords };
+export { drawnLanguages, drawnLine, drawnPieces, drawnSyllables, drawnUntimedSyllables, explicitFieldWords };

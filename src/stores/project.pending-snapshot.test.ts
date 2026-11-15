@@ -18,9 +18,9 @@ function importDuet(): void {
   });
 }
 
-function timelineEdit(): void {
+function timelineEdit(begin = 1.5): void {
   const [first] = useProjectStore.getState().lines;
-  useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: first.id, updates: { begin: 1.5, end: 2 } }])));
+  useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: first.id, updates: { begin, end: 2 } }])));
 }
 
 const agentNames = () => useProjectStore.getState().agents.map((agent) => agent.name);
@@ -48,7 +48,7 @@ describe("writes outside history leave a pending snapshot", () => {
       useProjectStore.getState().resetSongIdentity("New song");
       timelineEdit();
       useProjectStore.getState().restoreSongIdentity({ metadata, agents, hasUnexportedImport, importedMetadataKeys });
-      timelineEdit();
+      timelineEdit(1.6);
 
       useProjectStore.getState().undo();
 

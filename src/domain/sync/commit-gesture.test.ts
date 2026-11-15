@@ -197,6 +197,21 @@ describe("tap-word", () => {
     expect(roleWords(updatedLine(updates), "bg")?.[0].begin).toBe(1);
   });
 
+  it("regression: a tap near the song end seeds the background no later than the song end", () => {
+    const lines = [createLine({ id: "l0", text: "Over the river", backgroundText: "oh oh yeah" })];
+    const commit = commitGesture(lines, "tap-word", {
+      cursor: { lineIndex: 0, wordIndex: 0 },
+      jumped: false,
+      time: 29.6,
+      defaultWordDuration: DUR,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+      songEnd: 30,
+    });
+    const background = roleWords(updatedLine(commit?.lineUpdates[0].updates), "bg") ?? [];
+    expect(background).toHaveLength(3);
+    expect(Math.max(...background.map((syllable) => syllable.end))).toBeCloseTo(30, 9);
+  });
+
   it("regression: re-writing slot 0 of a timed line seeds background words it never stored", () => {
     const lines = [createLine({ id: "l0", text: "a", words: [word("a", 20, 21)], backgroundText: "oh" })];
     const updates = run(lines, "tap-word", [0, 0], 5)?.lineUpdates[0].updates;
@@ -245,6 +260,14 @@ describe("tap-line", () => {
     const commit = run(lines, "tap-line", [1, 0], 7);
     expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "l0", updates: { end: 7 } });
     expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "l1", updates: { begin: 7, end: 7 } });
+    expect(commit?.nextCursor).toEqual({ lineIndex: 2, wordIndex: 0 });
+  });
+
+  it("regression: a tap after the song's last line ends that line instead of leaving it zero length", () => {
+    const lines = [createLine({ id: "l0", text: "first", begin: 2, end: 5 }), createLine({ id: "l1", text: "last" })];
+    const opened = apply(lines, run(lines, "tap-line", [1, 0], 5));
+    const commit = run(opened, "tap-line", [2, 0], 7.2);
+    expect(changedFields(commit!.lineUpdates, opened)).toEqual([{ id: "l1", updates: { end: 7.2 } }]);
     expect(commit?.nextCursor).toEqual({ lineIndex: 2, wordIndex: 0 });
   });
 

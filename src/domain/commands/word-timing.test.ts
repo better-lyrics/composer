@@ -3,7 +3,7 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "insync/commands/edit-text";
-import { retimeWord, setWordBoundary, stretchSelection } from "insync/commands/word-timing";
+import { pressStepKey, retimeWord, setWordBoundary, stretchSelection } from "insync/commands/word-timing";
 import { commitGesture } from "insync/sync-commit-gesture";
 import { withSeededBackground } from "insync/line-background";
 import { drawnSyllables } from "insync/line-drawn-track";
@@ -22,16 +22,17 @@ const verse = (id: string) =>
     words: [ember, createWord({ text: "glow", begin: 1.7, end: 2.4 })],
   });
 
-const boundary = (lineId: string, word = ember) =>
-  setWordBoundary({
-    address: addressOf({ id: lineId }, "word", word),
-    edge: "end",
-    time: 1.5,
-    minDuration: 0.05,
-    rolling: false,
-    syllablesFollowRolling: false,
-    duration: 60,
-  });
+const boundaryArgs = (lineId: string, word = ember) => ({
+  address: addressOf({ id: lineId }, "word", word),
+  edge: "end" as const,
+  time: 1.5,
+  minDuration: 0.05,
+  rolling: false,
+  syllablesFollowRolling: false,
+  duration: 60,
+});
+
+const boundary = (lineId: string, word = ember) => setWordBoundary(boundaryArgs(lineId, word));
 
 const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
 
@@ -61,6 +62,18 @@ describe("word timing commands", () => {
     useProjectStore.getState().commit(boundary("p0", ash));
 
     expect(lineText(lineById("p0")!, DEFAULT_SPLIT_CHARACTER)).toBe("Ash-fall drifting slow");
+  });
+
+  it("regression: setting a word's end exactly at its start leaves it alone and writes no step", () => {
+    const before = useProjectStore.getState();
+    const atStart = { ...boundaryArgs("v0"), time: ember.begin };
+    useProjectStore.getState().commit(setWordBoundary(atStart));
+    useProjectStore
+      .getState()
+      .commit(pressStepKey({ ...atStart, cursor: atStart.address, startNext: null, key: "end" }));
+
+    expect(useProjectStore.getState().lines).toBe(before.lines);
+    expect(useProjectStore.getState().history).toBe(before.history);
   });
 
   it("retimes one copy of a linked line and leaves the other copy alone", () => {

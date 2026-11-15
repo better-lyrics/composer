@@ -2,7 +2,6 @@ import { restorePlayedRanges } from "@/audio/playback-ranges";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { readAlignedTimings } from "@/domain/alignment/fingerprint";
 import { readPlayedRanges } from "@/domain/alignment/played-ranges";
-import { withSeededBackground } from "insync/line-background";
 import { savedExportTiming } from "@/domain/project/export-timing";
 import { isMetadataKey } from "insync/project-imported-metadata";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
@@ -12,7 +11,6 @@ import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -34,7 +32,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   const state = useProjectStore.getState();
   state.setMetadata(normalizeLoadedMetadata(project.metadata));
   state.restoreLyrics({
-    lines: linesFromSaved(project.lines ?? []).map((value) => withSeededBackground(value, getSplitCharacter())),
+    lines: linesFromSaved(project.lines ?? []),
     groups: project.groups ?? [],
     parts: project.parts ?? [],
     passthrough: project.passthrough ?? {},

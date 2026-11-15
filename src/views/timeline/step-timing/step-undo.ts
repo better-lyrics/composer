@@ -17,10 +17,10 @@ const pressSpots = new WeakMap<HistoryEntry, { before: StepSpot; after: StepSpot
 
 // -- Functions ----------------------------------------------------------------
 
-function rememberStepPress(before: StepSpot): void {
+function rememberStepPress(before: StepSpot, entryBeforePress?: HistoryEntry): void {
   const { history, historyIndex } = useProjectStore.getState();
   const entry = history[historyIndex];
-  if (!entry) return;
+  if (!entry || entry === entryBeforePress) return;
   const { selectedWords, stepQueue } = useTimelineStore.getState();
   pressSpots.set(entry, { before, after: { selectedWords, stepQueue } });
 }

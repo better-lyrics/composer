@@ -1,7 +1,7 @@
 import type { TimeRange } from "./group-shared-timing";
 import type { LineUpdate, LyricLine } from "./line";
 import { applyStepKey, type StepKey, type StepRefusal } from "./step-timing-step-write";
-import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "./word-boundary";
+import { type BoundaryEdge, clampBoundaryTime, endsAtOwnStart, shouldRollNeighbour } from "./word-boundary";
 import { getSyllablePositions } from "./word-syllable-groups";
 import type { WordTiming } from "./word-timing";
 
@@ -90,7 +90,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     splitChar,
   }: BoundaryEditInput): LineUpdate | null {
     const words = getWords(line, splitChar);
-    if (!words?.[wordIdx]) return null;
+    if (!words?.[wordIdx] || endsAtOwnStart(words[wordIdx], edge, time)) return null;
 
     const rollNeighbour = shouldRollNeighbour({
       words,
@@ -121,6 +121,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     const line = lines[lineIdx];
     const words = line ? getWords(line, splitChar) : undefined;
     if (!line || !words?.[wordIdx]) return null;
+    if (key !== "start" && endsAtOwnStart(words[wordIdx], "end", time)) return null;
     const result = applyStepKey({ words, index: wordIdx, key, time, minDuration, range });
     if (result.kind === "refused") return result;
     const update = { id: line.id, updates: boundaryUpdate(line, result.words, splitChar) };
