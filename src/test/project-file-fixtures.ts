@@ -1,5 +1,5 @@
 import { buildProjectBundle } from "@/lib/project-bundle";
-import { type ProjectFile, projectFileFrom } from "@/lib/project-file";
+import { type StoredProjectFile, projectFileFrom } from "@/lib/project-file";
 import { type SavedProject, savedLines } from "@/lib/saved-project";
 import { createGroup, createLine } from "@/test/factories";
 import { storedProject } from "@/test/projects";
@@ -8,7 +8,7 @@ import { storedProject } from "@/test/projects";
 
 const PROJECT_FILE_NAME = "Lust for Life-2026-10-01.ttml-project.json";
 
-function lustForLifeProject(overrides: Partial<SavedProject> = {}): ProjectFile {
+function lustForLifeProject(overrides: Partial<SavedProject> = {}): StoredProjectFile {
   return projectFileFrom(
     "lust",
     storedProject({

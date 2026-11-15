@@ -1,4 +1,4 @@
-import { savedLines } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import type { ProjectFile } from "@/lib/project-file";
 import { findImportConflict, projectFileSummary } from "@/lib/project-import";
 import { createLine } from "@/test/factories";
@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 
 function file(overrides: Partial<ProjectFile> = {}): ProjectFile {
   return {
-    version: 3,
+    version: SAVED_PROJECT_VERSION,
     savedAt: 100,
     metadata: { title: "Song", artists: [], album: "", duration: 0 },
     agents: [],

@@ -7,6 +7,7 @@ import type {
   Syllable,
   TrackTiming,
 } from "@/domain/line/model";
+import { groupFieldsOf } from "@/domain/line/group-fields";
 import { textSyllables } from "@/domain/line/syllables-from-text";
 import { trackText } from "@/domain/line/text";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
@@ -141,10 +142,7 @@ function lineFromFields(fields: LineFields, splitChar = getSplitCharacter()): Ly
     id: fields.id,
     tracks: background ? [main, background] : [main],
     ...(fields.languages && { languages: fields.languages }),
-    ...(fields.groupId !== undefined && { groupId: fields.groupId }),
-    ...(fields.instanceIdx !== undefined && { instanceIdx: fields.instanceIdx }),
-    ...(fields.templateLineIdx !== undefined && { templateLineIdx: fields.templateLineIdx }),
-    ...(fields.detached !== undefined && { detached: fields.detached }),
+    ...groupFieldsOf(fields),
   };
 }
 
@@ -166,10 +164,7 @@ function fieldsOfLine(line: LyricLine): LineFields {
       ...(background.source && { backgroundTextSource: background.source }),
     }),
     ...(line.languages && { languages: line.languages }),
-    ...(line.groupId !== undefined && { groupId: line.groupId }),
-    ...(line.instanceIdx !== undefined && { instanceIdx: line.instanceIdx }),
-    ...(line.templateLineIdx !== undefined && { templateLineIdx: line.templateLineIdx }),
-    ...(line.detached !== undefined && { detached: line.detached }),
+    ...groupFieldsOf(line),
   };
 }
 

@@ -1,12 +1,12 @@
 import { APP_STATE_STORE_NAME, getFromStore, runTransaction } from "@/lib/persistence-idb";
-import type { ProjectFile } from "@/lib/project-file";
-import type { SavedProject } from "@/lib/saved-project";
+import type { StoredProjectFile } from "@/lib/project-file";
+import type { StoredProject } from "@/lib/saved-project";
 
 // -- Types --------------------------------------------------------------------
 
 interface PreV4Record {
   id: string;
-  project: SavedProject;
+  project: StoredProject;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -30,7 +30,7 @@ function preV4KeyRange(): IDBKeyRange {
 
 // -- Writes -------------------------------------------------------------------
 
-function putPreV4RecordIfAbsent(tx: IDBTransaction, id: string, project: SavedProject): void {
+function putPreV4RecordIfAbsent(tx: IDBTransaction, id: string, project: StoredProject): void {
   const store = tx.objectStore(APP_STATE_STORE_NAME);
   const existing = store.getKey(preV4Key(id));
   existing.onsuccess = () => {
@@ -38,8 +38,8 @@ function putPreV4RecordIfAbsent(tx: IDBTransaction, id: string, project: SavedPr
   };
 }
 
-function keepPreV4Record(tx: IDBTransaction, id: string, stored: SavedProject | undefined, next: SavedProject): void {
-  if (stored?.version !== PRE_V4_VERSION || next.version <= PRE_V4_VERSION) return;
+function keepPreV4Record(tx: IDBTransaction, id: string, stored: StoredProject | undefined, next: StoredProject): void {
+  if (!stored || stored.version > PRE_V4_VERSION || next.version <= PRE_V4_VERSION) return;
   putPreV4RecordIfAbsent(tx, id, stored);
 }
 
@@ -51,7 +51,7 @@ function removeAllPreV4Records(tx: IDBTransaction): void {
   tx.objectStore(APP_STATE_STORE_NAME).delete(preV4KeyRange());
 }
 
-function previousVersionsById(files: readonly ProjectFile[]): Map<string, SavedProject> {
+function previousVersionsById(files: readonly StoredProjectFile[]): Map<string, StoredProject> {
   return new Map(files.flatMap(({ projectId, ...project }) => (projectId ? [[projectId, project] as const] : [])));
 }
 
@@ -65,15 +65,15 @@ async function listPreV4Records(): Promise<PreV4Record[]> {
       const cursor = request.result;
       if (!cursor) return;
       const id = preV4IdOf(String(cursor.key));
-      if (id !== undefined) records.push({ id, project: cursor.value as SavedProject });
+      if (id !== undefined) records.push({ id, project: cursor.value as StoredProject });
       cursor.continue();
     };
   });
   return records;
 }
 
-function loadPreV4Record(id: string): Promise<SavedProject | undefined> {
-  return getFromStore<SavedProject>(APP_STATE_STORE_NAME, preV4Key(id));
+function loadPreV4Record(id: string): Promise<StoredProject | undefined> {
+  return getFromStore<StoredProject>(APP_STATE_STORE_NAME, preV4Key(id));
 }
 
 // -- Exports ------------------------------------------------------------------

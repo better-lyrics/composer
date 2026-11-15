@@ -1,20 +1,12 @@
+import type { SavedLine } from "insync/saved-line";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
+import { readAlignedTimings, timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
 import type { LinkGroup } from "@/domain/group/template";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
-import {
-  type V3LanguageFields,
-  type V3Piece,
-  languagesFromV3,
-  v3Languages,
-  v3PiecesOf,
-  v3WordPieces,
-  withoutV3Piece,
-} from "@/domain/language/v3-languages";
-import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { withSeededBackground } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
-import { withSplitMarksFromWords } from "@/domain/line/reconstruct-text";
+import { lineFromSaved, savedLine } from "@/domain/line/saved-line";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -22,31 +14,16 @@ import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defa
 import type { StoredData } from "@/domain/storage/stored-data";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
-import { type SpacedWord, spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
-type SavedWord = SpacedWord & V3Piece;
-
-// A line as saved in a version 3 record or link: words keep their separator inside `text` and their reading.
-type SavedLine = Omit<LineFields, "words" | "backgroundWords" | "languages"> &
-  V3LanguageFields & {
-    words?: SavedWord[];
-    backgroundWords?: SavedWord[];
-    begin?: number;
-    end?: number;
-  };
-
-interface SavedProject {
-  version: 1 | 2 | 3;
+interface SavedProjectFields {
   savedAt: number;
   metadata: ProjectMetadata;
   agents: Agent[];
-  lines: SavedLine[];
   groups?: LinkGroup[];
   granularity: GranularityMode;
   exportTiming?: TimingGranularity;
@@ -70,6 +47,19 @@ interface SavedProject {
   playedRanges?: unknown;
 }
 
+interface SavedProject extends SavedProjectFields {
+  version: typeof SAVED_PROJECT_VERSION;
+  lines: SavedLine[];
+}
+
+// A record or file saved before format 4.
+interface SavedProjectV3 extends SavedProjectFields {
+  version: 1 | 2 | 3;
+  lines: SavedLineV3[];
+}
+
+type StoredProject = SavedProject | SavedProjectV3;
+
 interface SavedAudioFile {
   name: string;
   type: string;
@@ -78,7 +68,7 @@ interface SavedAudioFile {
 
 // -- Constants ----------------------------------------------------------------
 
-const SAVED_PROJECT_VERSION = 3;
+const SAVED_PROJECT_VERSION = 4;
 
 // -- Errors -------------------------------------------------------------------
 
@@ -94,61 +84,23 @@ class NewerProjectError extends Error {
 
 // -- Lines ----------------------------------------------------------------------
 
-// Ids are session-only: anything already on saved words came from outside and is never trusted.
-function wordsFromSaved(words: readonly SavedWord[]): WordTiming[] {
-  return wordsFromSpaced(words.map(({ id: _id, ...word }) => withoutV3Piece(word)));
-}
-
-function savedWords(words: readonly WordTiming[], pieces: readonly V3Piece[] | undefined): SavedWord[] {
-  return spacedFromWords(words).map((word, index) => ({ ...word, ...pieces?.[index] }));
-}
-
-function storeLine(line: SavedLine, splitChar: string): LyricLine {
-  const { words, backgroundWords, translations, transliteration, ...fields } = line;
-  const storeWords = words && wordsFromSaved(words);
-  const storeBackgroundWords = backgroundWords && wordsFromSaved(backgroundWords);
-  const text = storeWords?.length ? withSplitMarksFromWords(fields.text, storeWords, splitChar) : fields.text;
-  const backgroundText =
-    storeBackgroundWords?.length && fields.backgroundText !== undefined
-      ? withSplitMarksFromWords(fields.backgroundText, storeBackgroundWords, splitChar)
-      : fields.backgroundText;
-  const stored = lineFromFields(
-    {
-      ...fields,
-      text,
-      ...(backgroundText !== undefined && { backgroundText }),
-      ...(storeWords && { words: storeWords }),
-      ...(storeBackgroundWords && { backgroundWords: storeBackgroundWords }),
-    },
-    splitChar,
-  );
-  const languages = languagesFromV3(
-    { translations, transliteration },
-    { main: v3PiecesOf(words), bg: v3PiecesOf(backgroundWords) },
-    { words: timedSyllables(mainTrack(stored)), backgroundWords: timedSyllables(backgroundTrack(stored)) },
-  );
-  return languages ? { ...stored, languages } : stored;
-}
-
-function savedLine(line: LyricLine): SavedLine {
-  const { languages, words, backgroundWords, ...fields } = fieldsOfLine(line);
-  return {
-    ...fields,
-    ...(words && { words: savedWords(words, v3WordPieces(words, languages, "main")) }),
-    ...(backgroundWords && {
-      backgroundWords: savedWords(backgroundWords, v3WordPieces(backgroundWords, languages, "bg")),
-    }),
-    ...v3Languages(languages),
-  };
-}
-
 function linesFromSaved(lines: readonly SavedLine[]): LyricLine[] {
-  const splitChar = getSplitCharacter();
-  return lines.map((line) => storeLine(line, splitChar));
+  return lines.map(lineFromSaved);
 }
 
 function savedLines(lines: readonly LyricLine[]): SavedLine[] {
-  return lines.map(savedLine);
+  return lines.map((line) => savedLine(line, { withIds: true }));
+}
+
+function savedLinesForLink(lines: readonly LyricLine[]): SavedLine[] {
+  return lines.map((line) => savedLine(line, { withIds: false }));
+}
+
+// Links made before format 4 carry no version or an older one.
+function linesFromLink(link: { version?: unknown; lines: readonly unknown[] }): LyricLine[] {
+  return link.version === SAVED_PROJECT_VERSION
+    ? linesFromSaved(link.lines as SavedLine[])
+    : linesFromSavedV3(link.lines as SavedLineV3[]);
 }
 
 // -- Upgrade ------------------------------------------------------------------
@@ -157,23 +109,47 @@ function isFromNewerComposer(saved: { version?: unknown } | undefined): boolean 
   return typeof saved?.version === "number" && saved.version > SAVED_PROJECT_VERSION;
 }
 
-function upgradeSavedProject(project: SavedProject): boolean {
-  if (project.version >= SAVED_PROJECT_VERSION) return false;
-  if (Array.isArray(project.lines)) {
-    project.lines = savedLines(linesFromSaved(project.lines).map(migrateLegacyTransliterationLine));
-  }
-  project.version = SAVED_PROJECT_VERSION;
-  return true;
+// A line marked aligned stays aligned: its fingerprint moves to the whole-ms timing only where it matched before.
+function rekeyedAlignedTimings(value: unknown, before: readonly LyricLine[], after: readonly LyricLine[]): unknown {
+  const aligned = readAlignedTimings(value);
+  if (Object.keys(aligned).length === 0) return value;
+  const rekeyed = { ...aligned };
+  before.forEach((line, index) => {
+    const opened = withSeededBackground(line);
+    if (aligned[line.id] === v3TimingFingerprint(opened)) {
+      rekeyed[line.id] = timingFingerprint(withSeededBackground(after[index]));
+    }
+  });
+  return rekeyed;
+}
+
+function upgradeSavedProject(project: StoredProject): SavedProject {
+  if (isFromNewerComposer(project)) throw new Error(`Unsupported project version: ${project.version}`);
+  // A corrupt record without lines is never stamped format 4: it stays as stored and opens empty, as before.
+  if (!Array.isArray(project.lines)) return project as SavedProject;
+  if (project.version === SAVED_PROJECT_VERSION) return project;
+  const loaded = linesFromSavedV3(project.lines);
+  const before = project.version < 3 ? loaded.map(migrateLegacyTransliterationLine) : loaded;
+  const lines = savedLines(before);
+  const alignedTimings = rekeyedAlignedTimings(project.alignedTimings, before, linesFromSaved(lines));
+  return {
+    ...project,
+    version: SAVED_PROJECT_VERSION,
+    lines,
+    ...(project.alignedTimings !== undefined && { alignedTimings }),
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export type { SavedAudioFile, SavedLine, SavedProject };
+export type { SavedAudioFile, SavedLine, SavedProject, SavedProjectV3, StoredProject };
 export {
   NewerProjectError,
   SAVED_PROJECT_VERSION,
   isFromNewerComposer,
+  linesFromLink,
   linesFromSaved,
   savedLines,
+  savedLinesForLink,
   upgradeSavedProject,
 };

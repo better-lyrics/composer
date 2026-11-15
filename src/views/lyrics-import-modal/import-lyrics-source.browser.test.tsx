@@ -14,7 +14,7 @@ import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { PROJECT_FILE_NAME, backupFileNamed, projectFileNamed, projectFileText } from "@/test/project-file-fixtures";
-import { seedStoredProject } from "@/test/projects";
+import { linesOfRecord, seedStoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -105,7 +105,7 @@ describe("importLyricsFile with a project file", () => {
     await expect(pending).resolves.toBe(true);
     expect(openProjectIdSnapshot()).not.toBe("alpha");
     expect(useProjectStore.getState().metadata.title).toBe("Lust for Life");
-    expect((await loadProjectRecord("alpha"))?.lines.map((line) => line.text)).toEqual([
+    expect(linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line))).toEqual([
       "Alpha line one",
       "Alpha line two",
     ]);

@@ -5,7 +5,7 @@ import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import type { LinkSuggestion, UnsureLink } from "@/domain/unison/link-suggestions";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
+import { isFromNewerComposer, linesFromSaved, type StoredProject, upgradeSavedProject } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
 
@@ -26,10 +26,12 @@ const TIME_TOLERANCE_SECONDS = 0.01;
 // -- Matching ------------------------------------------------------------------
 
 // The same check Export's Done runs before it applies a TTML, read both ways for song details.
-function matchesLiveLyric(project: SavedProject, lyric: UnisonLyric): boolean {
+function matchesLiveLyric(stored: StoredProject, lyric: UnisonLyric): boolean {
   const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") return false;
   const parsed = withUnisonDetails(read.parsed, lyric);
+  if (isFromNewerComposer(stored)) return false;
+  const project = upgradeSavedProject(stored);
   const lines = linesFromSaved(project.lines);
   const current: ProjectLyrics = {
     lines,

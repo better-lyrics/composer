@@ -1,6 +1,8 @@
+import type { SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import type { LanguageTextVariant } from "@/domain/language/display";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
+import { lineFromSaved } from "@/domain/line/saved-line";
 import { hasAnyTiming, hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
@@ -63,6 +65,10 @@ function isStoredLyricLine(line: Record<string, unknown>): boolean {
   return typeof line.text === "string";
 }
 
+function isFormat4Line(line: Record<string, unknown>): line is Record<string, unknown> & { tracks: unknown[] } {
+  return typeof line.id === "string" && Array.isArray(line.tracks);
+}
+
 // Saved words spell their trailing space in the text, so they are read the way a load reads them.
 function isStoredWord(word: unknown): word is SpacedWord {
   return typeof word === "object" && word !== null && typeof (word as { text?: unknown }).text === "string";
@@ -73,18 +79,38 @@ function storedWords(words: unknown): WordTiming[] | undefined {
   return Array.isArray(words) ? wordsFromSpaced(words.filter(isStoredWord)) : undefined;
 }
 
+const isSpan = (value: unknown): value is SavedSpan =>
+  Array.isArray(value) && value.length === 2 && value.every((time) => typeof time === "number");
+
+function isSavedSyllable(value: unknown): value is SavedSyllable {
+  if (!isStoredLine(value)) return false;
+  return (
+    typeof value.text === "string" && typeof value.sep === "string" && (value.span === undefined || isSpan(value.span))
+  );
+}
+
+// Only what the counts read: a malformed format 4 track or syllable counts as none, as a malformed saved word does.
+function format4Line(line: Record<string, unknown> & { tracks: unknown[] }): LyricLine {
+  const tracks = line.tracks.filter(isStoredLine).flatMap((track): SavedTrack[] => {
+    const { role, syllables, span } = track;
+    if (!Array.isArray(syllables) || (role !== "main" && role !== "bg")) return [];
+    return [{ role, syllables: syllables.filter(isSavedSyllable), ...(isSpan(span) && { span }) }];
+  });
+  return lineFromSaved({ id: String(line.id), tracks });
+}
+
 function normalizeStoredLines(lines: unknown): LyricLine[] {
-  const entries = Array.isArray(lines) ? lines : [];
-  const records = entries.filter(isStoredLine).filter(isStoredLyricLine) as unknown as LineFields[];
-  return records
-    .map((record) =>
-      lineFromFields({
-        ...record,
-        words: storedWords(record.words),
-        backgroundWords: storedWords(record.backgroundWords),
-      }),
-    )
-    .filter(hasMainLyrics);
+  const entries = (Array.isArray(lines) ? lines : []).filter(isStoredLine);
+  const format4 = entries.filter(isFormat4Line).map(format4Line);
+  const records = entries.filter(isStoredLyricLine) as unknown as LineFields[];
+  const format3 = records.map((record) =>
+    lineFromFields({
+      ...record,
+      words: storedWords(record.words),
+      backgroundWords: storedWords(record.backgroundWords),
+    }),
+  );
+  return [...format4, ...format3].filter(hasMainLyrics);
 }
 
 function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {
