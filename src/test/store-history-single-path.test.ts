@@ -15,6 +15,8 @@ const TYPE_DECLARATION_BEFORE = /(?:interface\s+\w+|type\s+\w+\s*=)\s*$/;
 const ENTRY_CAST = /\bas\s+HistoryEntry\b|\bsatisfies\s+HistoryEntry\b/;
 const HISTORY_WRITE_CALL = /\b(?:commitHistory|amendCurrentStep)\(/;
 const LYRIC_FIELD = /\b(?:lines|groups|agents)\b/;
+const GENERIC_LINE_SETTER =
+  /\b(?:setLines|setLinesWithHistory|updateLine|updateLineWithHistory|updateLinesWithHistory|editLines|patchLines|replaceLines)\b/;
 const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);
 const NON_LYRIC_HISTORY_WRITERS = new Map<string, string>([
   ["stores/project/beat-grid-slice.ts", "writes the beat grid only"],
@@ -65,6 +67,15 @@ describe("lyric edits reach history only through commit", () => {
 
   it("keeps the non-lyric history writers away from lines, groups and agents", () => {
     const offenders = [...NON_LYRIC_HISTORY_WRITERS.keys()].filter((relPath) => LYRIC_FIELD.test(sourceOf(relPath)));
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("the Timeline changes lyrics only through named commands", () => {
+  it("never calls the generic line setters", () => {
+    const offenders = productionSources("views/timeline").flatMap(({ relPath, code }) =>
+      matchLines(code, GENERIC_LINE_SETTER).map((line) => `${relPath}:${line}`),
+    );
     expect(offenders).toEqual([]);
   });
 });

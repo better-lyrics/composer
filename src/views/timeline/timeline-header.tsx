@@ -1,3 +1,4 @@
+import { convertToWordTiming } from "@/domain/commands/line-timing";
 import {
   IconArrowBackUp,
   IconArrowBarBoth,
@@ -89,7 +90,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const handleExpandAll = useCallback(() => {
     const currentTime = useAudioStore.getState().currentTime;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const { lines, updateLinesWithHistory } = useProjectStore.getState();
+    const { lines, commit } = useProjectStore.getState();
 
     const updates: Array<{ id: string; updates: { words?: WordTiming[]; begin?: undefined; end?: undefined } }> = [];
 
@@ -117,7 +118,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     }
 
     if (updates.length > 0) {
-      updateLinesWithHistory(updates);
+      commit(convertToWordTiming(updates));
 
       const newSelections = updates.flatMap((u) =>
         (u.updates.words ?? []).map((word) => addressOf({ id: u.id }, "word", word)),

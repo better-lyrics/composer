@@ -1,3 +1,6 @@
+import { deleteLine } from "@/domain/commands/instance-rows";
+import { placeLineAt } from "@/domain/commands/line-timing";
+import { assignSinger } from "@/domain/commands/singer";
 import { isSharedLine } from "@/domain/group/shared-timing";
 import { instanceName } from "@/domain/instance/name";
 import { isLinked } from "@/domain/instance/predicates";
@@ -33,8 +36,6 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-  const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
 
   const handlePlaceLineHere = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return;
@@ -44,12 +45,9 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
     const wordCount = splitIntoWordsWithMeta(line.text).parts.length;
     const lineDuration = Math.max(wordCount, 1) * wordDuration;
-    updateLineWithHistory(lineId, {
-      begin: time,
-      end: time + lineDuration,
-    });
+    useProjectStore.getState().commit(placeLineAt(lineId, time, time + lineDuration));
     clearContextMenu();
-  }, [contextMenu, rawLines, updateLineWithHistory, clearContextMenu]);
+  }, [contextMenu, rawLines, clearContextMenu]);
 
   const handlePlaceAtPlayhead = useCallback(() => {
     if (!placeAtPlayheadInfo) return;
@@ -75,11 +73,10 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!contextMenu || contextMenu.target.kind !== "gutter") return;
     const lineId = contextMenu.target.lineId;
     const sharedName = sharedInstanceNameOf(rawLines, lineId);
-    const newLines = rawLines.filter((l) => l.id !== lineId);
-    setLinesWithHistory(newLines);
+    useProjectStore.getState().commit(deleteLine(lineId));
     if (sharedName) showGroupActionToast(`Line deleted from ${sharedName}. Its timing no longer copies there.`);
     clearContextMenu();
-  }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
+  }, [contextMenu, rawLines, clearContextMenu]);
 
   const handleDetachLine = useCallback(() => {
     if (!gutterLineGroupInfo) return;
@@ -93,12 +90,12 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
       const { lineId } = contextMenu.target;
       if (rawLines.find((line) => line.id === lineId)?.agentId !== agentId) {
-        updateLineWithHistory(lineId, { agentId });
+        useProjectStore.getState().commit(assignSinger(lineId, agentId));
         noteGuideSignal("edit.singer");
       }
       clearContextMenu();
     },
-    [contextMenu, rawLines, updateLineWithHistory, clearContextMenu],
+    [contextMenu, rawLines, clearContextMenu],
   );
 
   const handleSplitIntoWords = useCallback(() => {

@@ -16,7 +16,7 @@ import type { WordTiming } from "@/domain/word/timing";
 //                    consumed when the complete syllable group is merged
 //
 //   id               identity: kept by every transform (spread); the first split piece keeps it,
-//                    other pieces and copies into the same track take newWordId()
+//                    other pieces and copies into the same track take a new id
 //
 // When adding a new WordTiming field, decide its policy and update the relevant
 // factory below. Default policy ("rides along via spread") requires no factory
@@ -45,11 +45,6 @@ interface SubPartition {
 
 function cloneWord(source: WordTiming, overrides: Partial<WordTiming>): WordTiming {
   return { ...source, ...overrides };
-}
-
-// A copy placed in the same track is a new word.
-function duplicateWord(source: WordTiming, overrides: Partial<WordTiming>): WordTiming {
-  return { ...source, ...overrides, id: newWordId() };
 }
 
 function synthesizeBracketedWord(input: BracketedSynthesisInput): WordTiming {
@@ -81,5 +76,5 @@ function splitSourceWord(source: WordTiming, subPartitions: SubPartition[]): Wor
 
 // -- Exports ------------------------------------------------------------------
 
-export { cloneWord, duplicateWord, splitSourceWord, synthesizeBracketedWord };
+export { cloneWord, splitSourceWord, synthesizeBracketedWord };
 export type { SubPartition };

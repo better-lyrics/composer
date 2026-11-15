@@ -10,15 +10,12 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { type GroupHeaderRow, getEffectiveRows } from "@/views/timeline/effective-rows";
 import {
-  distributeLinesTiming,
-  distributeWordsInLine,
-  formatTime,
   nudgeSelectedWords,
-  getWordsInInstance,
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
-} from "./utils";
+} from "@/domain/selection/nudge";
+import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
 

@@ -1,7 +1,7 @@
 import { getAgentColor } from "@/domain/agent/colors";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { setWordBoundary } from "@/domain/commands/word-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import { type ResolvedAddress, resolveAddress } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -12,8 +12,6 @@ import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortc
 import { Button } from "@/ui/button";
 import { SingerTag } from "@/ui/singer-tag";
 import { formatShortcut } from "@/utils/format-key";
-import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
-import { setWordBoundary } from "@/utils/timing/word-timing";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
 import {
   type GroupHighlight,
@@ -116,7 +114,6 @@ const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, 
 const TimelineInfoPanel: React.FC = () => {
   const rawLines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const lines = useTimelineEffectiveLines(rawLines);
@@ -138,22 +135,21 @@ const TimelineInfoPanel: React.FC = () => {
     (edge: BoundaryEdge) => {
       if (!selectedWord) return;
       const currentTime = livePlaybackTime();
-      const setBoundaryOp = selectedWord.type === "word" ? setWordBoundary : setBgWordBoundary;
-      setBoundaryOp({
-        lines,
-        lineIdx: selectedWord.lineIndex,
-        wordIdx: selectedWord.wordIndex,
-        edge,
-        time: currentTime,
-        minDuration: useSettingsStore.getState().minWordDuration,
-        range: timeRangeResolver(rawLines, groups, duration)(lines[selectedWord.lineIndex]),
-        rolling: useSettingsStore.getState().rollingEdit,
-        syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
-        updateLineWithHistory,
-      });
+      const settings = useSettingsStore.getState();
+      useProjectStore.getState().commit(
+        setWordBoundary({
+          address: toAddress(selectedWord),
+          edge,
+          time: currentTime,
+          minDuration: settings.minWordDuration,
+          rolling: settings.rollingEdit,
+          syllablesFollowRolling: settings.syllablesFollowRolling,
+          duration,
+        }),
+      );
       noteGuideSignal("timeline.resize");
     },
-    [selectedWord, lines, rawLines, groups, duration, updateLineWithHistory],
+    [selectedWord, duration],
   );
 
   const handleSetBeginToCursor = useCallback(() => setSelectedWordBoundary("begin"), [setSelectedWordBoundary]);
