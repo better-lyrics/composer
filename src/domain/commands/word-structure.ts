@@ -20,8 +20,8 @@ import { withBackgroundTrack, withMainTrack, withTrackText } from "insync/line-t
 import { withFieldWords } from "insync/line-word-track-edits";
 import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "insync/selection-resolve";
-import { applyWordDeletion } from "@/domain/word/apply-word-deletion";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
+import { applyWordDeletion } from "insync/word-apply-word-deletion";
+import { mergeWordsIntoTrack } from "insync/word-merge-track";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------

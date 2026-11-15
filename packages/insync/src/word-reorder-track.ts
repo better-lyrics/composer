@@ -1,7 +1,7 @@
-import type { TimeRange } from "insync/group-shared-timing";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import type { WordTiming } from "insync/word-timing";
-import { resolveOverlapsForward } from "insync/word-spaces";
+import type { TimeRange } from "./group-shared-timing";
+import { mergeWordsIntoTrack } from "./word-merge-track";
+import type { WordTiming } from "./word-timing";
+import { resolveOverlapsForward } from "./word-spaces";
 
 // -- Functions ----------------------------------------------------------------
 

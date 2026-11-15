@@ -1,17 +1,17 @@
-import type { TimeRange } from "insync/group-shared-timing";
-import { wouldDropCrossInstance } from "insync/cross-instance";
-import { isLinked } from "insync/instance-predicates";
-import { withoutBackground } from "insync/line-background";
-import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
-import { drawnSyllables } from "insync/line-drawn-track";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { isLineSynced } from "insync/line-predicates";
-import { trackRole, untimedSyllablesOf } from "insync/line-track";
-import { mainTimingEdit } from "insync/line-track-writes";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { boundsOverlap } from "insync/word-overlap";
-import type { WordTiming } from "insync/word-timing";
-import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "insync/word-spaces";
+import type { TimeRange } from "./group-shared-timing";
+import { wouldDropCrossInstance } from "./cross-instance";
+import { isLinked } from "./instance-predicates";
+import { withoutBackground } from "./line-background";
+import { manualBackgroundWordEdit } from "./line-lane-word-edits";
+import { drawnSyllables } from "./line-drawn-track";
+import type { LineUpdate, LyricLine } from "./line";
+import { isLineSynced } from "./line-predicates";
+import { trackRole, untimedSyllablesOf } from "./line-track";
+import { mainTimingEdit } from "./line-track-writes";
+import { mergeWordsIntoTrack } from "./word-merge-track";
+import { boundsOverlap } from "./word-overlap";
+import type { WordTiming } from "./word-timing";
+import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "./word-spaces";
 
 // -- Types --------------------------------------------------------------------
 

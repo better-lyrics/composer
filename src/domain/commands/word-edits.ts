@@ -9,7 +9,7 @@ import {
   applyMergeSyllableGroup,
   withFieldWords,
 } from "insync/line-word-track-edits";
-import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
+import { applySyllableSplitToLines } from "insync/word-identical-syllable-split";
 import type { IdenticalMatchSource } from "insync/identical-word-matcher";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";

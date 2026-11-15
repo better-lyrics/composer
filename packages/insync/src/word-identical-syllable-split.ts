@@ -1,11 +1,11 @@
-import { withKeptSyllablePieces } from "insync/language-pieces";
-import { withManualBackgroundWords } from "insync/line-background";
-import type { LyricLine } from "insync/line";
-import { withRoleWords } from "insync/line-track-writes";
-import { roleWords, trackWords } from "insync/line-track";
-import type { WordTiming } from "insync/word-timing";
-import { type IdenticalMatchSource, findIdenticalWords } from "insync/identical-word-matcher";
-import { splitWordIntoSyllables } from "insync/single-word-syllable-split";
+import { withKeptSyllablePieces } from "./language-pieces";
+import { withManualBackgroundWords } from "./line-background";
+import type { LyricLine } from "./line";
+import { withRoleWords } from "./line-track-writes";
+import { roleWords, trackWords } from "./line-track";
+import type { WordTiming } from "./word-timing";
+import { type IdenticalMatchSource, findIdenticalWords } from "./identical-word-matcher";
+import { splitWordIntoSyllables } from "./single-word-syllable-split";
 
 // -- Types --------------------------------------------------------------------
 

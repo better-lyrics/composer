@@ -7,7 +7,7 @@ import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { nudgeSelectedWords } from "@/domain/selection/nudge";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { commitGesture } from "@/domain/sync/commit-gesture";
-import { clampBoundaryTime } from "@/domain/word/boundary";
+import { clampBoundaryTime } from "insync/word-boundary";
 import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";

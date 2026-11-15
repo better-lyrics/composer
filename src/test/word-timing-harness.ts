@@ -3,7 +3,7 @@ import { roleWords } from "insync/line-track";
 import { mainTimingWrite, withRoleWords } from "insync/line-track-writes";
 import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
-import type { BoundaryEdge } from "@/domain/word/boundary";
+import type { BoundaryEdge } from "insync/word-boundary";
 import { createLine } from "@/test/factories";
 import { type RetimeChange, createWordTimingOps } from "@/utils/timing/word-timing-ops";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

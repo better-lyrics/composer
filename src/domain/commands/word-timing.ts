@@ -13,7 +13,7 @@ import { resolveAddress, resolveAddresses, resolveLineIndex } from "insync/selec
 import { stretchSelections } from "@/domain/selection/stretch";
 import type { StretchAnchor } from "@/domain/selection/stretch-targets";
 import type { StepKey } from "@/domain/step-timing/step-write";
-import type { BoundaryEdge } from "@/domain/word/boundary";
+import type { BoundaryEdge } from "insync/word-boundary";
 import type { WordTiming } from "insync/word-timing";
 import { bgWordBoundaryEdit } from "@/utils/timing/bg-word-timing";
 import { type StepKeyPlan, planStepKey } from "@/utils/timing/step-key-write";

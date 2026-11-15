@@ -11,10 +11,10 @@ import { trackRole, type WordTrack, untimedSyllablesOf } from "insync/line-track
 import { mainTimingEdit } from "insync/line-track-writes";
 import type { SyllableAddress } from "insync/selection-model";
 import { type ResolvedAddress, resolveAddresses } from "insync/selection-resolve";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
+import { mergeWordsIntoTrack } from "insync/word-merge-track";
+import { type WordMove, applyWordMoveAcrossLines } from "insync/word-move-across-lines";
 import { boundsOverlap } from "insync/word-overlap";
-import { reorderWordTrack } from "@/domain/word/reorder-track";
+import { reorderWordTrack } from "insync/word-reorder-track";
 import type { WordTiming } from "insync/word-timing";
 import { cloneWord } from "insync/word-clone";
 

@@ -7,7 +7,7 @@ import type { LyricLine, MainTrack } from "insync/line";
 import { type WordTrack, isSpanTimed, mainTrack, trackRole, untimedSyllablesOf } from "insync/line-track";
 import { withMainTrack, withTrackSyllables, withTrackWords } from "insync/line-track-writes";
 import { withNewId } from "insync/word-id";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
+import { mergeWordsIntoTrack } from "insync/word-merge-track";
 import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";

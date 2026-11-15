@@ -10,7 +10,7 @@ import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
+import { applyWordDeletion, type DeletionSelection } from "insync/word-apply-word-deletion";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

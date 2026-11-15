@@ -1,4 +1,4 @@
-import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
+import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "insync/word-boundary";
 import { boundsOverlap } from "insync/word-overlap";
 import type { SyllablePosition } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";

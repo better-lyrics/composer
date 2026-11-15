@@ -1,6 +1,6 @@
-import { type TimeRange, UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
-import type { SyllablePosition } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import { type TimeRange, UNBOUNDED_TIME_RANGE } from "./group-shared-timing";
+import type { SyllablePosition } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

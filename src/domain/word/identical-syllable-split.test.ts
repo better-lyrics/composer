@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { backgroundText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
+import { applySyllableSplitToLines } from "insync/word-identical-syllable-split";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

@@ -3,7 +3,7 @@ import { backgroundText } from "insync/line-text";
 import { updatedLine, patchOf } from "@/test/field-updates";
 import { describe, expect, it } from "vitest";
 import type { LineUpdate, LyricLine } from "insync/line";
-import type { BoundaryEdge } from "@/domain/word/boundary";
+import type { BoundaryEdge } from "insync/word-boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
 import { bgWordBoundaryEdit, bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";

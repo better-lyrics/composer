@@ -6,7 +6,7 @@ import { trackRole } from "insync/line-track";
 import { sameAddress } from "insync/selection-identity";
 import type { SyllableAddress } from "insync/selection-model";
 import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "insync/selection-resolve";
-import type { MoveRejectReason } from "@/domain/word/move-across-lines";
+import type { MoveRejectReason } from "insync/word-move-across-lines";
 import { expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import { useProjectStore } from "@/stores/project";
 import { showLineDiffersToast } from "@/utils/group-toast";

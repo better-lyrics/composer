@@ -1,12 +1,12 @@
-import { getLinkScope, isLinkedSibling, unlinkLines } from "insync/group-linking";
-import { lineInstanceKey } from "insync/instance-key";
-import { withManualBackgroundWords } from "insync/line-background";
-import { drawnSyllables } from "insync/line-drawn-track";
-import type { LyricLine } from "insync/line";
-import { hasAnyTiming, isLineSynced } from "insync/line-predicates";
-import { mainTrack, roleWords } from "insync/line-track";
-import { withMainTrack, withoutTrackTiming, withTrackWords } from "insync/line-track-writes";
-import { absorbDeletedSyllablesIntoNeighbors } from "insync/word-syllable-groups";
+import { getLinkScope, isLinkedSibling, unlinkLines } from "./group-linking";
+import { lineInstanceKey } from "./instance-key";
+import { withManualBackgroundWords } from "./line-background";
+import { drawnSyllables } from "./line-drawn-track";
+import type { LyricLine } from "./line";
+import { hasAnyTiming, isLineSynced } from "./line-predicates";
+import { mainTrack, roleWords } from "./line-track";
+import { withMainTrack, withoutTrackTiming, withTrackWords } from "./line-track-writes";
+import { absorbDeletedSyllablesIntoNeighbors } from "./word-syllable-groups";
 
 interface DeletionSelection {
   lineId: string;

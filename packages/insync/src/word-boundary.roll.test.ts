@@ -1,7 +1,7 @@
-import { shouldRollNeighbour } from "@/domain/word/boundary";
-import { wordFromSpaced } from "insync/word-spaced-words";
-import type { SyllablePosition } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import { shouldRollNeighbour } from "./word-boundary";
+import { wordFromSpaced } from "./word-spaced-words";
+import type { SyllablePosition } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
 
 const w = (text: string, begin: number, end: number): WordTiming => wordFromSpaced({ text, begin, end });

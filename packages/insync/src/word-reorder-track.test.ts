@@ -1,11 +1,11 @@
 /**
  * @vitest-environment node
  */
-import { syllablesText } from "insync/line-text";
-import { computeSyllableGroups, expandSelectionToGroupmates } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import { syllablesText } from "./line-text";
+import { computeSyllableGroups, expandSelectionToGroupmates } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
-import { reorderWordTrack } from "./reorder-track";
+import { reorderWordTrack } from "./word-reorder-track";
 
 describe("reorderWordTrack", () => {
   it("keeps three separate words separate when the last word is dragged before the middle word", () => {

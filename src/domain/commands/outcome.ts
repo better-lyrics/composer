@@ -6,7 +6,7 @@ import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "insync/selection-model";
 import type { StepRefusal } from "@/domain/step-timing/step-write";
-import type { MoveRejectReason } from "@/domain/word/move-across-lines";
+import type { MoveRejectReason } from "insync/word-move-across-lines";
 
 // -- Types --------------------------------------------------------------------
 

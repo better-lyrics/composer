@@ -1,11 +1,11 @@
 /**
  * @vitest-environment node
  */
-import { syllablesText } from "insync/line-text";
-import { computeSyllableGroups } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import { syllablesText } from "./line-text";
+import { computeSyllableGroups } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
-import { mergeWordsIntoTrack } from "./merge-track";
+import { mergeWordsIntoTrack } from "./word-merge-track";
 
 describe("mergeWordsIntoTrack", () => {
   it("inserts a word boundary so an incoming word after the last existing word is not grouped with it", () => {

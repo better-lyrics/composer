@@ -9,7 +9,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { addressAt } from "insync/selection-resolve";
-import type { DeletionSelection } from "@/domain/word/apply-word-deletion";
+import type { DeletionSelection } from "insync/word-apply-word-deletion";
 import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";

@@ -11,7 +11,7 @@ import { withRoleWords, withoutLineTiming } from "insync/line-track-writes";
 import { roleWords, type WordTrack } from "insync/line-track";
 import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "insync/word-timing";
-import type { BoundaryEdge } from "@/domain/word/boundary";
+import type { BoundaryEdge } from "insync/word-boundary";
 import { bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";
 import type { RetimeChange } from "@/utils/timing/word-timing-ops";
 import { wordRetimeEdit } from "@/utils/timing/word-timing";
