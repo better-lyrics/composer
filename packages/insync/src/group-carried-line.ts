@@ -90,6 +90,25 @@ function proportional(
   });
 }
 
+// An edit made where nothing was timed, on an instance whose syllables are timed: that instance keeps its times and
+// takes only the text, syllable by syllable when the count held, else through the letters or the words they share.
+function onOwnTiming(
+  after: readonly Syllable[],
+  own: readonly Syllable[],
+  counterpart: LineageCounterpart,
+  room: LineRoom,
+  splitChar: string,
+): Syllable[] {
+  if (after.length !== own.length) {
+    return lineageByLetters(after, own, counterpart) ?? lineageByText(after, own, counterpart, splitChar, room);
+  }
+  return after.map((syllable, index) => {
+    const kept = own[index];
+    const text = { ...untimedSyllable(syllable), id: kept.id };
+    return isTimedSyllable(kept) ? { ...text, begin: kept.begin, end: kept.end } : text;
+  });
+}
+
 function boundsOf(track: LineTrack | undefined): readonly [number, number] | undefined {
   if (!track) return undefined;
   if (isSpanTimed(track)) return [track.begin, track.end];
@@ -126,6 +145,9 @@ function carriedTrackTiming({ before, after, own, offset, counterpart, room, spl
   }
   if (!own || timedSyllables(own).length === 0) {
     return { syllables: inPlace(after.syllables, counterpart).map(untimedSyllable), span: undefined };
+  }
+  if (before && timedSyllables(before).length === 0) {
+    return { syllables: onOwnTiming(after.syllables, own.syllables, counterpart, room, splitChar), span: undefined };
   }
   if (before && !sameSyllableContent(before.syllables, own.syllables)) {
     const syllables =
