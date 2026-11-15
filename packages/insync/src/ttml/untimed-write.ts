@@ -6,6 +6,7 @@ import { isTimedSyllable } from "../line-track";
 import { withoutSplitCharacter } from "../split-character-text";
 import { isStructurallyEqual } from "../structural-equal";
 import { spanContent, timedSpan } from "./markup";
+import type { Placed } from "./passthrough-write";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -14,19 +15,20 @@ const keptOf = (syllable: Syllable): Passthrough | undefined =>
 
 // -- Functions ----------------------------------------------------------------
 
-// A track's text as written without syllable times. Each run of untimed syllables read from one kept span is
-// written inside that span again; the space after the run stays outside it.
-function untimedTrackContent(track: LineTrack | undefined, text: string, splitChar: string): string {
+// A track's text as written without syllable times, one piece per syllable, each standing for its syllable. Each run
+// of untimed syllables read from one kept span is one piece written inside that span again; the space after the run
+// stays outside it.
+function untimedTrackPieces(track: LineTrack | undefined, text: string, splitChar: string): Placed<string>[] {
   const syllables = track?.syllables ?? [];
-  if (!syllables.some(keptOf)) return escapeXmlText(withoutSplitCharacter(text, splitChar));
+  if (syllables.length === 0) return [{ out: escapeXmlText(withoutSplitCharacter(text, splitChar)), anchors: [] }];
   const joint = (index: number) => withoutSplitCharacter(syllableJoint(syllables, index, splitChar), splitChar);
   const word = (index: number) => withoutSplitCharacter(syllables[index].text, splitChar);
-  let content = "";
+  const pieces: Placed<string>[] = [];
   let index = 0;
   while (index < syllables.length) {
     const kept = keptOf(syllables[index]);
     if (!kept) {
-      content += escapeXmlText(word(index) + joint(index));
+      pieces.push({ out: escapeXmlText(word(index) + joint(index)), anchors: [syllables[index].id] });
       index++;
       continue;
     }
@@ -35,10 +37,19 @@ function untimedTrackContent(track: LineTrack | undefined, text: string, splitCh
     let inner = "";
     for (let at = index; at < last; at++) inner += word(at) + joint(at);
     inner += word(last);
-    content += `<span${writeXmlAttrs(kept.attrs ?? [])}>${spanContent(inner, kept.markup)}</span>${escapeXmlText(joint(last))}`;
+    pieces.push({
+      out: `<span${writeXmlAttrs(kept.attrs ?? [])}>${spanContent(inner, kept.markup)}</span>${escapeXmlText(joint(last))}`,
+      anchors: syllables.slice(index, last + 1).map((syllable) => syllable.id),
+    });
     index = last + 1;
   }
-  return content;
+  return pieces;
+}
+
+function untimedTrackContent(track: LineTrack | undefined, text: string, splitChar: string): string {
+  return untimedTrackPieces(track, text, splitChar)
+    .map((piece) => piece.out)
+    .join("");
 }
 
 // The attributes of one kept span holding a whole untimed track, when none clash with what a timed span writes.
@@ -67,4 +78,4 @@ function untimedTrackSpan(
 
 // -- Exports ------------------------------------------------------------------
 
-export { untimedTrackContent, untimedTrackSpan };
+export { untimedTrackPieces, untimedTrackSpan };

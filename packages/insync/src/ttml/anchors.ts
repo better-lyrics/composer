@@ -45,18 +45,28 @@ function sectionAnchors(lineByParagraph: ReadonlyMap<XmlReadElement, LyricLine>)
   };
 }
 
-// Timed spans stand for the syllables read from them; without any, the lyric text stands for the track as a whole.
-function trackAnchors(container: XmlReadElement, timed: readonly { id: string }[], holdsBackground: boolean): AnchorOf {
+// Timed spans stand for the syllables read from them; without any, each piece of lyric text stands for the untimed
+// syllable it reaches into (`untimed`), else the lyric text stands for the track as a whole.
+function trackAnchors(
+  container: XmlReadElement,
+  timed: readonly { id: string }[],
+  holdsBackground: boolean,
+  untimed: ReadonlyMap<XmlReadNode, string>,
+): AnchorOf {
   const spans = Array.from(container.children).filter(isTimedWordSpan);
   const syllableOf = new Map(spans.length === timed.length ? spans.map((span, index) => [span, timed[index].id]) : []);
   return (child) => {
     const element = asElement(child);
     if (!element)
-      return spans.length === 0 && ("text" in child ? child.text : "").trim() !== "" ? TEXT_ANCHOR : undefined;
+      return spans.length === 0 && ("text" in child ? child.text : "").trim() !== ""
+        ? (untimed.get(child) ?? TEXT_ANCHOR)
+        : undefined;
     const role = elementRole(element);
     if (holdsBackground && role === BACKGROUND_ANCHOR) return BACKGROUND_ANCHOR;
     if (spans.length > 0) return syllableOf.get(element);
-    return isLyricTextElement(element) && !LYRIC_ROLES.has(role ?? "") ? TEXT_ANCHOR : undefined;
+    return isLyricTextElement(element) && !LYRIC_ROLES.has(role ?? "")
+      ? (untimed.get(element) ?? TEXT_ANCHOR)
+      : undefined;
   };
 }
 

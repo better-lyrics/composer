@@ -22,7 +22,7 @@ import {
   keptTimesAttributes,
   type Placed,
 } from "./passthrough-write";
-import { untimedTrackContent, untimedTrackSpan } from "./untimed-write";
+import { untimedTrackPieces, untimedTrackSpan } from "./untimed-write";
 
 // -- Types --------------------------------------------------------------------
 
@@ -94,7 +94,9 @@ function paragraph(line: LyricLine, source: BodySource, indent: string, splitCha
   const content =
     source.writesWords && isWordSynced(line)
       ? spanPieces(timedSyllables(main))
-      : [wholeTrack(untimedTrackContent(main, lineText(line, splitChar), splitChar), main)];
+      : untimedTrackPieces(main, lineText(line, splitChar), splitChar).map((piece, index, pieces) =>
+          index === pieces.length - 1 ? { ...piece, anchors: [...piece.anchors, TEXT_ANCHOR] } : piece,
+        );
   const background = backgroundSpan(line, source.writesWords, splitChar);
   const units = background ? [...content, { out: background, anchors: [BACKGROUND_ANCHOR] }] : content;
   const written = keptAmongInline(units, line.passthrough, [...trackOrder(main), BACKGROUND_ANCHOR]);

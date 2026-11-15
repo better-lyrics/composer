@@ -71,6 +71,12 @@ describe("ttml kept data edges", () => {
     expect(exported()).toContain("<x-vendor:note>aside</x-vendor:note>");
   });
 
+  it("regression: a kept element in the middle of a line-synced line stays between the words it sat between", () => {
+    expect(exported()).toContain(
+      'Quiet <x-vendor:note>aside</x-vendor:note>harbour <span tts:color="red">bright</span></p>',
+    );
+  });
+
   it("kept ruby that ends in a space is not followed by a second one", () => {
     expect(exported()).toContain("</ruby> </span><span");
   });
@@ -126,7 +132,7 @@ describe("ttml kept data edges", () => {
 
   it("untimed spans of a line-synced line and background keep their attributes", () => {
     const ttml = exported();
-    expect(ttml).toContain('Quiet harbour <span tts:color="red">bright</span>');
+    expect(ttml).toContain('harbour <span tts:color="red">bright</span>');
     expect(ttml).toContain(
       '<span ttm:role="x-bg"><span begin="0:10.000" end="0:12.000" x-vendor:echo="2">(far)</span></span>',
     );

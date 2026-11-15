@@ -1,4 +1,11 @@
-import { storedAttrs, storedChildren, storedElement, type XmlReadDocument, type XmlReadElement } from "./xml-read-tree";
+import {
+  storedAttrs,
+  storedChildren,
+  storedElement,
+  type XmlReadDocument,
+  type XmlReadElement,
+  type XmlReadNode,
+} from "./xml-read-tree";
 import { type DocPassthrough, isEmptyPassthrough, type Passthrough } from "../passthrough";
 import type { XmlElement } from "../xml-node";
 import type { Agent } from "../agent";
@@ -100,12 +107,13 @@ function withParagraphCapture(
   line: LyricLine,
   paragraph: XmlReadElement,
   background: XmlReadElement | null,
+  untimedMain: ReadonlyMap<XmlReadNode, string>,
 ): LyricLine {
   const kept = nodePassthrough(
     "p",
     paragraph,
     withTimes(capturedTimes(paragraph, lineEnvelope(line), true)),
-    trackAnchors(paragraph, timedSyllables(mainTrack(line)), true),
+    trackAnchors(paragraph, timedSyllables(mainTrack(line)), true, untimedMain),
   );
   const keptBackground =
     background &&
@@ -113,7 +121,7 @@ function withParagraphCapture(
       "background",
       background,
       withTimes(capturedTimes(background, backgroundEnvelope(line), false)),
-      trackAnchors(background, timedSyllables(backgroundTrack(line)), false),
+      trackAnchors(background, timedSyllables(backgroundTrack(line)), false, new Map()),
     );
   if (!kept && !keptBackground) return line;
   return withLinePassthrough(line, {
