@@ -2,6 +2,8 @@ import type { XmlReadElement, XmlReadNode } from "./xml-read-tree";
 import type { Passthrough } from "../passthrough";
 import type { XmlChild } from "../xml-node";
 import type { LineTrack, LyricLine, Syllable } from "../line";
+import type { LineFields } from "../line-from-fields";
+import { splitIntoWordsWithMeta } from "../lyric-words";
 import { syllableJoint, syllablesText } from "../line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
 import { withBackgroundTrack, withMainTrack } from "../line-track-writes";
@@ -19,6 +21,8 @@ interface KeptSpan {
   readonly end: number;
   readonly passthrough: Passthrough;
 }
+
+type BackgroundSpan = Pick<LineFields, "backgroundBegin" | "backgroundEnd" | "backgroundExplicit">;
 
 interface UntimedLyric {
   readonly text: string;
@@ -103,9 +107,27 @@ function timedTrackText(
   return { text: syllablesText(read, splitChar) + rest.text, words: read, rest };
 }
 
+// A background written as one timed span of more than one word is line synced, its syllables read from its text as a
+// line-synced `<p>`'s are. One word stays a timed word.
+function lineSyncedBackground(
+  container: XmlReadElement,
+  timed: { words: readonly WordTiming[]; rest: UntimedLyric },
+  splitChar: string,
+): { lyric: UntimedLyric; span: BackgroundSpan } | null {
+  const [span, ...others] = timed.words;
+  if (!span || others.length > 0 || timed.rest.text !== "" || container.children.length !== 1) return null;
+  const { trailingSpace } = splitIntoWordsWithMeta(span.text, splitChar);
+  if (!trailingSpace.slice(0, -1).some(Boolean)) return null;
+  const { markup, attrs = [] } = span.passthrough ?? {};
+  return {
+    lyric: untimedLyricOfMarkup(markup ?? [{ name: "span", attrs, children: [{ text: span.text }] }]),
+    span: { backgroundBegin: span.begin, backgroundEnd: span.end, ...(span.explicit && { backgroundExplicit: true }) },
+  };
+}
+
 // An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`; one that
 // wrote none takes the time of a line-synced `<p>`, as TTML times it.
-function untimedBackgroundSpan(bg: XmlReadElement, begin: number, end: number, lineSynced: boolean) {
+function untimedBackgroundSpan(bg: XmlReadElement, begin: number, end: number, lineSynced: boolean): BackgroundSpan {
   if (!bg.hasAttribute("begin") && !bg.hasAttribute("end")) {
     return lineSynced && Number.isFinite(begin) && Number.isFinite(end) && begin <= end
       ? { backgroundBegin: begin, backgroundEnd: end }
@@ -184,5 +206,13 @@ function untimedAnchors(
 
 // -- Exports ------------------------------------------------------------------
 
-export type { UntimedLyric };
-export { timedTrackText, untimedAnchors, untimedBackgroundSpan, untimedLyric, withSpansFromMarkup, withUntimedSpans };
+export type { BackgroundSpan, UntimedLyric };
+export {
+  lineSyncedBackground,
+  timedTrackText,
+  untimedAnchors,
+  untimedBackgroundSpan,
+  untimedLyric,
+  withSpansFromMarkup,
+  withUntimedSpans,
+};
