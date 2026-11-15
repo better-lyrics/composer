@@ -2,7 +2,6 @@ import type { TimeRange } from "./group-shared-timing";
 import { wouldDropCrossInstance } from "./cross-instance";
 import { instanceKey } from "./instance-key";
 import { isLinked, isSlotLine, type SlotLine } from "./instance-predicates";
-import { withoutBackground } from "./line-background";
 import { manualBackgroundWordEdit } from "./line-lane-word-edits";
 import { drawnSyllables } from "./line-drawn-track";
 import type { LineUpdate, LyricLine } from "./line";
@@ -145,11 +144,7 @@ function lineUpdateFor(
     if (!mainEdit) return null;
     updates = mainEdit;
   }
-  if (bgChanged) {
-    updates = backgroundWords?.length
-      ? manualBackgroundWordEdit(line, backgroundWords, splitChar, updates)
-      : { ...updates, tracks: withoutBackground({ ...line, ...updates }).tracks };
-  }
+  if (bgChanged) updates = manualBackgroundWordEdit(line, backgroundWords ?? [], splitChar, updates);
   return updates;
 }
 
