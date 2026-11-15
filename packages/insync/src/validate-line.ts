@@ -1,5 +1,5 @@
 import type { SavedLine, SavedTrack } from "./saved-line";
-import { type TrackRule, validateTrack } from "./validate-track";
+import { isWarningRule, type TrackRule, validateTrack } from "./validate-track";
 
 // -- Types --------------------------------------------------------------------
 
@@ -57,12 +57,13 @@ function trackOrderFindings(line: SavedLine): LineFinding[] {
 }
 
 // A line's ids are unique, the main track comes first with at most one background after it, and a track is timed
-// by a span or by its syllables, never both. Imported spans out of order stay as warnings.
+// by a span or by its syllables, never both. Imported spans reversed or out of order stay as warnings.
 function validateLine(line: SavedLine): LineReport {
   const errors: LineFinding[] = [...duplicateIdFindings(line), ...trackOrderFindings(line)];
   const warnings: LineFinding[] = [];
   line.tracks.forEach((track, index) => {
-    errors.push(...trackSpanFindings(track, index));
+    for (const finding of trackSpanFindings(track, index))
+      (isWarningRule(finding.rule) ? warnings : errors).push(finding);
     const report = validateTrack(
       track.syllables.map(({ text, sep, joinsNext, span }) => ({ text, sep, joinsNext: joinsNext === true, span })),
     );
