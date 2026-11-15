@@ -1,3 +1,5 @@
+import type { Passthrough } from "insync/passthrough";
+
 // -- Types --------------------------------------------------------------------
 
 interface WordTiming {
@@ -11,6 +13,8 @@ interface WordTiming {
   explicit?: true;
   /** This syllable and the next one form one word. Set by whoever creates the syllables. */
   joinsNext: boolean;
+  /** What its TTML span carried that Composer does not model. */
+  passthrough?: Passthrough;
 }
 
 // -- Exports ------------------------------------------------------------------

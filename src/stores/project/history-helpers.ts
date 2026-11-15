@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "@/domain/agent/model";
 import type { HistoryNote } from "@/domain/commands/command";
 import type { LinkGroup } from "@/domain/group/template";
@@ -5,7 +7,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { deepFreeze } from "@/stores/project/deep-freeze";
-import type { HistoryEntry } from "@/stores/project/history-types";
+import type { HistoryEntry, LyricBurst } from "@/stores/project/history-types";
 import type { ProjectState } from "@/stores/project/types";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
@@ -15,13 +17,18 @@ const MAX_HISTORY_SIZE = 100;
 
 // -- Snapshots ----------------------------------------------------------------
 
-type SnapshotFields = Pick<HistoryEntry, "lines" | "groups" | "agents" | "customSnapPoints" | "beatGrid">;
+type SnapshotFields = Pick<
+  HistoryEntry,
+  "lines" | "groups" | "agents" | "parts" | "passthrough" | "customSnapPoints" | "beatGrid"
+>;
 
 function snapshotEntry(fields: SnapshotFields, note: HistoryNote | null): HistoryEntry {
   return deepFreeze({
     lines: fields.lines,
     groups: fields.groups,
     agents: fields.agents,
+    parts: fields.parts,
+    passthrough: fields.passthrough,
     customSnapPoints: fields.customSnapPoints,
     beatGrid: fields.beatGrid,
     timestamp: Date.now(),
@@ -34,6 +41,8 @@ function restoreEntry(entry: HistoryEntry): SnapshotFields {
     lines: entry.lines,
     groups: entry.groups,
     agents: entry.agents,
+    parts: entry.parts,
+    passthrough: entry.passthrough,
     customSnapPoints: entry.customSnapPoints,
     beatGrid: entry.beatGrid,
   };
@@ -52,6 +61,8 @@ function commitHistory(
     lines?: LyricLine[];
     groups?: LinkGroup[];
     agents?: Agent[];
+    parts?: readonly Part[];
+    passthrough?: DocPassthrough;
     customSnapPoints?: SnapPoint[];
     beatGrid?: BeatGrid | null;
   },
@@ -61,6 +72,8 @@ function commitHistory(
     lines: changes.lines ?? state.lines,
     groups: changes.groups ?? state.groups,
     agents: changes.agents ?? state.agents,
+    parts: changes.parts ?? state.parts,
+    passthrough: changes.passthrough ?? state.passthrough,
     customSnapPoints: changes.customSnapPoints ?? state.customSnapPoints,
     beatGrid: changes.beatGrid === undefined ? state.beatGrid : changes.beatGrid,
   };
@@ -110,12 +123,14 @@ function commitBeatGridOffset(state: ProjectState, grid: BeatGrid) {
   return { beatGrid: grid, isDirty: true, history: state.history.with(index, joined) };
 }
 
-function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineWasDirty = false) {
+function commitPendingEdit(state: ProjectState, burst: LyricBurst) {
   if (!state.isDirtySinceHistory) return {};
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   // Seed the pre-run baseline when a non-history mutation dirtied the store
   // before the run, otherwise undo would skip straight past it.
-  if (newHistory.length === 0 || baselineWasDirty) newHistory.push(snapshotEntry({ ...state, lines: baseline }, null));
+  const { lines, parts, passthrough } = burst;
+  if (newHistory.length === 0 || burst.wasPending)
+    newHistory.push(snapshotEntry({ ...state, lines, parts, passthrough }, null));
   newHistory.push(snapshotEntry(state, state.pendingNote));
   capHistory(newHistory);
   return {
