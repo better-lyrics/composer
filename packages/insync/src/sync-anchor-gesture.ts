@@ -94,6 +94,16 @@ function isPlacingUndone(undo: AnchorUndo, { history, historyIndex }: HistoryPos
   return undo.previousEntry !== undefined && history.includes(undo.previousEntry);
 }
 
+// The step a placing wrote and the one before it; none when the placing changed nothing and wrote no step.
+function placingEntries(
+  entryBefore: object | undefined,
+  { history, historyIndex }: HistoryPosition,
+): Pick<AnchorUndo, "placedEntry" | "previousEntry"> | null {
+  const placedEntry = history[historyIndex];
+  if (!placedEntry || placedEntry === entryBefore) return null;
+  return { placedEntry, previousEntry: history[historyIndex - 1] };
+}
+
 function storedSyncPosition(
   state: StoredSyncPosition,
   lines: readonly LyricLine[],
@@ -108,5 +118,5 @@ function storedSyncPosition(
 
 // -- Exports ------------------------------------------------------------------
 
-export { anchorGesture, storedSyncPosition };
+export { anchorGesture, placingEntries, storedSyncPosition };
 export type { AnchorUndo };

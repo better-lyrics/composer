@@ -1,6 +1,6 @@
 import type { LyricLine } from "insync/line";
 import { type SyncAddress, syncAddressAt } from "insync/sync-address";
-import { type AnchorUndo, anchorGesture, storedSyncPosition } from "insync/sync-anchor-gesture";
+import { type AnchorUndo, anchorGesture, placingEntries, storedSyncPosition } from "insync/sync-anchor-gesture";
 import { type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
 import type { SyncCursor } from "insync/sync-cursor";
 import { createGroup, createLine } from "@/test/factories";
@@ -207,6 +207,11 @@ describe("storedSyncPosition", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a placing that changed nothing and wrote no step has nothing to undo", () => {
+      expect(placingEntries(placed, at([before, placed], 1))).toBeNull();
+      expect(placingEntries(before, at([before, placed], 1))).toEqual({ placedEntry: placed, previousEntry: before });
+    });
+
     it("regression: returns the anchor slot when an edit follows the undo", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
       expect(storedSyncPosition(state, lines, at([before, { name: "edit" }], 1)).position).toBe(anchorSlot);
