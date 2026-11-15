@@ -103,7 +103,11 @@ function decideEditTextAction({
 
   if (diff.contentUpdates.length === 0) return { kind: "noop" };
   // The rows of other instances show the edit as the commit will write it.
-  const { lines: finalLines, splits, detachedIds } = carryTemplateEdits({
+  const {
+    lines: finalLines,
+    splits,
+    detachedIds,
+  } = carryTemplateEdits({
     before: lines,
     after: lyricLines,
     groups,
