@@ -248,12 +248,12 @@ describe("copyThroughTemplate", () => {
   });
 
   describe("song start guard", () => {
-    it("clamps a batch that would move a copy below zero, moving every instance as far as there is room", () => {
+    it("keeps a batch that would move a copy below zero and moves that copy alone", () => {
       const before = [chorus(0, 0, 10), chorus(1, 0, 0.05)];
       const after = edit(before, "c0-0", nudgeWord(0, -0.2));
       const result = copiedThroughTemplate(before, after, sharing, ["c0-0"]);
       const firstBegins = result.lines.map((line) => roleWords(line, "main")?.[0].begin ?? Number.NaN);
-      expect(firstBegins[0]).toBeCloseTo(9.95, 9);
+      expect(firstBegins[0]).toBeCloseTo(9.8, 9);
       expect(firstBegins[1]).toBeCloseTo(0, 9);
       expect(result.touchedGroupIds).toEqual(["g1"]);
     });
