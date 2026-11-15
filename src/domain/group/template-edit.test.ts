@@ -129,6 +129,13 @@ describe("carryTemplateEdits · syllable ids", () => {
     expect(ids(out[1]).filter((id) => ids(out[0]).includes(id))).toEqual([]);
   });
 
+  it("regression: an untimed copy that already differed never takes the edited instance's syllable ids", () => {
+    const before = [groupLine("L1", 0, { text: "We glow tonight" }), groupLine("L2", 1, { text: "We glow" })];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "We glow so bright" })));
+    expect(lineText(out[1])).toBe("We glow so bright");
+    expect(ids(out[1]).filter((id) => ids(out[0]).includes(id))).toEqual([]);
+  });
+
   it("regression: a split never gives two instances the same new syllable id", () => {
     const before = [
       groupLine("L1", 0, { text: "lantern", words: words(10, ["lantern"], 1) }),
@@ -158,5 +165,34 @@ describe("carryTemplateEdits · a line-synced edit on a word-synced instance", (
         ["tonight", 41, 41.5],
       ]);
     }
+  });
+});
+
+describe("carryTemplateEdits · a word added at the front", () => {
+  const earlierLine = lineFromFields({ id: "P", text: "Low tide", agentId: "v1", begin: 36, end: 38 });
+
+  it("regression: a line-synced edit puts the new first word in the instance's own room, never back to zero", () => {
+    const before = [
+      groupLine("L1", 0, { text: "We glow tonight", begin: 10, end: 12 }),
+      earlierLine,
+      groupLine("L2", 1, { text: "We glow tonight", words: words(40, ["We", "glow", "tonight"]) }),
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "So We glow tonight" })))[2];
+    const [so] = timedSyllables(mainTrack(out));
+    expect(so.text).toBe("So");
+    expect(so.begin).toBeGreaterThanOrEqual(38);
+    expect(so.end).toBeLessThanOrEqual(40);
+  });
+
+  it("regression: a timed new first word keeps its lead before the instance's first word", () => {
+    const before = [
+      groupLine("L1", 0, { text: "We glow", words: words(10, ["We", "glow"]) }),
+      earlierLine,
+      groupLine("L2", 1, { text: "We glow", words: words(40, ["We", "glow"]) }),
+    ];
+    const [we, glow] = timedSyllables(mainTrack(before[0]));
+    const added = [{ ...we, id: "so", text: "So", begin: 9.5, end: 10 }, we, glow];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "So We glow", words: added })))[2];
+    expect(spans(out)[0]).toEqual(["So", 39.5, 40]);
   });
 });

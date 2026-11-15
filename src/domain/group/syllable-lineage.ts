@@ -14,6 +14,16 @@ interface LineagePair {
 
 type LineageCounterpart = (sourceId: string) => LineagePair | undefined;
 
+// Where the instance's line has room: after the line before it ends, before the line after it starts.
+interface LineRoom {
+  floor: number;
+  limit: number;
+}
+
+// -- Constants ----------------------------------------------------------------
+
+const WHOLE_SONG: LineRoom = { floor: 0, limit: Number.POSITIVE_INFINITY };
+
 // -- Helpers ------------------------------------------------------------------
 
 // The other instance's id for a syllable it already had; a syllable the edit added gets an id of its own there.
@@ -109,10 +119,33 @@ function timeScale(after: readonly Syllable[], times: readonly CarriedTimes[]): 
   return sourceLength > 0 && targetLength > 0 ? targetLength / sourceLength : 1;
 }
 
+// Syllables the edit added before the instance's first one, at the edit's lead before it, never before `floor`. False
+// when the edit gives them no times to keep.
+function leadsIn(
+  after: readonly Syllable[],
+  filled: CarriedTimes[],
+  start: number,
+  end: number,
+  scale: number,
+  floor: number,
+): boolean {
+  for (let index = end; index >= start; index--) {
+    const syllable = after[index];
+    const later = after[index + 1];
+    const reached = filled[index + 1];
+    if (!isTimedSyllable(syllable) || !isTimedSyllable(later) || !Array.isArray(reached)) return false;
+    const begin = Math.max(floor, reached[0] - (later.begin - syllable.begin) * scale);
+    const finish = Math.max(begin, reached[0] - (later.begin - syllable.end) * scale);
+    filled[index] = [tidy(begin), tidy(finish)];
+  }
+  return true;
+}
+
 // Timed syllables the edit added with no source under them fill the gap the instance has where they sit, split evenly.
-// Added after the last syllable the instance has, they keep the edit's gaps and lengths at the instance's scale, up to
-// `limit`.
-function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes[], limit: number): CarriedTimes[] {
+// Added before the first or after the last syllable the instance has, they keep the edit's gaps and lengths at the
+// instance's scale, inside the instance's room: after the line before it ends, before the line after it starts.
+function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes[], room: LineRoom): CarriedTimes[] {
+  const { floor, limit } = room;
   const filled = [...times];
   const scale = timeScale(after, times);
   const spanAt = (index: number) => {
@@ -137,7 +170,11 @@ function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes
       start = end;
       continue;
     }
-    const from = previous?.[1] ?? 0;
+    if (!previous && next && leadsIn(after, filled, start, end, scale, floor)) {
+      start = end;
+      continue;
+    }
+    const from = previous?.[1] ?? floor;
     const to = Math.max(from, next?.[0] ?? from);
     const step = (to - from) / (end - start + 1);
     for (let index = start; index <= end; index++) {
@@ -156,10 +193,10 @@ function syllableLineage(
   before: readonly Syllable[],
   after: readonly Syllable[],
   counterpart: LineageCounterpart,
-  limit = Number.POSITIVE_INFINITY,
+  room: LineRoom = WHOLE_SONG,
 ): Syllable[] {
   const carried = after.map((syllable) => carriedTimes(syllable, before, counterpart));
-  const times = withGapsFilled(after, carried, limit);
+  const times = withGapsFilled(after, carried, room);
   return withTimes(after, times, (syllable) => targetId(counterpart, syllable.id));
 }
 
@@ -170,6 +207,7 @@ function lineageByText(
   after: readonly Syllable[],
   own: readonly Syllable[],
   counterpart: LineageCounterpart,
+  room: LineRoom = WHOLE_SONG,
 ): Syllable[] {
   const matched = new Map(
     lcsPairs(
@@ -184,7 +222,7 @@ function lineageByText(
       if (!same) return null;
       return isTimedSyllable(same) ? [same.begin, same.end] : "untimed";
     }),
-    Number.POSITIVE_INFINITY,
+    room,
   );
   return withTimes(after, times, (syllable, index) => matched.get(index)?.id ?? targetId(counterpart, syllable.id));
 }
@@ -233,5 +271,5 @@ function lineageByLetters(
 
 // -- Exports ------------------------------------------------------------------
 
-export type { LineageCounterpart, LineagePair };
+export type { LineageCounterpart, LineagePair, LineRoom };
 export { lineageByLetters, lineageByText, syllableLineage, targetId };
