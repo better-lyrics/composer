@@ -1,6 +1,16 @@
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { LineTrack, LyricLine, TrackRole } from "@/domain/line/model";
+import { syllablesFromText } from "@/domain/line/syllables-from-text";
+import { trackText } from "@/domain/line/text";
+import {
+  backgroundTrack,
+  isTimedSyllable,
+  mainTrack,
+  roleWords,
+  untimedSyllable,
+  type WordTrack,
+} from "@/domain/line/track";
+import { withRoleTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { withoutSplitCharacter } from "@/utils/split-character";
@@ -9,25 +19,60 @@ import { withoutSplitCharacter } from "@/utils/split-character";
 
 interface TrackFields {
   type: WordTrack;
-  text: (line: LyricLine) => string | undefined;
+  text: (line: LyricLine, splitChar: string) => string | undefined;
   words: (line: LyricLine) => WordTiming[] | undefined;
-  write: (line: LyricLine, text: string, words: WordTiming[] | undefined) => LyricLine;
+  writeWords: (line: LyricLine, words: WordTiming[]) => LyricLine;
+  write: (line: LyricLine, text: string, words: WordTiming[] | undefined, splitChar: string) => LyricLine;
 }
 
 // -- Constants ----------------------------------------------------------------
 
+// The timed words lead the track; the untimed syllables after them stay as they are.
+function wordsWriter(role: TrackRole): TrackFields["writeWords"] {
+  return (line, words) =>
+    withRoleTrack(line, role, (track) =>
+      withTrackSyllables(track, [...words, ...track.syllables.filter((syllable) => !isTimedSyllable(syllable))]),
+    );
+}
+
+// The timed words keep their own text; the text gives the joint after them and the untimed syllables that follow.
+function textedSyllables(track: LineTrack, text: string, words: readonly WordTiming[], splitChar: string) {
+  const parts = syllablesFromText(text, { ...track, syllables: track.syllables.map(untimedSyllable) }, splitChar);
+  const last = words.length - 1;
+  const closing = {
+    ...words[last],
+    sep: parts[last]?.sep ?? words[last].sep,
+    joinsNext: parts[last]?.joinsNext ?? false,
+  };
+  return [...words.with(last, closing), ...parts.slice(words.length)];
+}
+
+function textAndWordsWriter(role: TrackRole): TrackFields["write"] {
+  return (line, text, words, splitChar) =>
+    withRoleTrack(line, role, (track) =>
+      words?.length
+        ? withTrackSyllables(track, textedSyllables(track, text, words, splitChar))
+        : withTrackText(track, text, splitChar),
+    );
+}
+
 const MAIN_TRACK: TrackFields = {
   type: "word",
-  text: (line) => line.text,
-  words: (line) => line.words,
-  write: (line, text, words) => reconcileLine({ ...line, text, words }),
+  text: (line, splitChar) => trackText(mainTrack(line), splitChar),
+  words: (line) => roleWords(line, "main"),
+  writeWords: wordsWriter("main"),
+  write: textAndWordsWriter("main"),
 };
 
 const BACKGROUND_TRACK: TrackFields = {
   type: "bg",
-  text: (line) => line.backgroundText,
-  words: (line) => line.backgroundWords,
-  write: (line, backgroundText, backgroundWords) => reconcileLine({ ...line, backgroundText, backgroundWords }),
+  text: (line, splitChar) => {
+    const track = backgroundTrack(line);
+    return track && trackText(track, splitChar);
+  },
+  words: (line) => roleWords(line, "bg"),
+  writeWords: wordsWriter("bg"),
+  write: textAndWordsWriter("bg"),
 };
 
 // -- Helpers ------------------------------------------------------------------
@@ -62,7 +107,7 @@ function wordSplitOffsets(words: readonly WordTiming[], plain: string): Set<numb
 }
 
 function trackSplitOffsets(line: LyricLine, track: TrackFields, splitChar: string): Set<number> | null {
-  const text = track.text(line) ?? "";
+  const text = track.text(line, splitChar) ?? "";
   const offsets = textSplitOffsets(text, splitChar);
   const words = track.words(line);
   if (!words?.length) return offsets;
@@ -100,7 +145,7 @@ function trackTargets(copies: readonly LyricLine[], track: TrackFields, splitCha
     sets.push(offsets);
   }
   const targets = new Set<number>();
-  for (const [start, end] of wordRanges(withoutSplitCharacter(track.text(copies[0]) ?? "", splitChar))) {
+  for (const [start, end] of wordRanges(withoutSplitCharacter(track.text(copies[0], splitChar) ?? "", splitChar))) {
     const inWord = sets.map((set) => new Set([...set].filter((offset) => offset > start && offset < end)));
     const finest = inWord.find((candidate) => inWord.every((other) => containsAll(candidate, other)));
     if (!finest) return null;
@@ -137,7 +182,7 @@ function wordSplitPoints(words: readonly WordTiming[], plain: string, offsets: R
 }
 
 function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<number>, splitChar: string): LyricLine {
-  const text = track.text(line);
+  const text = track.text(line, splitChar);
   if (!text) return line;
   const plain = withoutSplitCharacter(text, splitChar);
   const words = track.words(line);
@@ -147,29 +192,29 @@ function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<n
   const addedToWords = new Set([...offsets].filter((offset) => !wordSplits.has(offset)));
   if (addedToText.size === 0 && (!words?.length || addedToWords.size === 0)) return line;
   const target = withSplitsAdded(text, addedToText, splitChar);
-  if (!words?.length) return track.write(line, target, words);
+  if (!words?.length) return track.write(line, target, words, splitChar);
 
   const points = wordSplitPoints(words, plain, addedToWords);
-  if (points.every((wordPoints) => wordPoints.length === 0)) return track.write(line, target, words);
+  if (points.every((wordPoints) => wordPoints.length === 0)) return track.write(line, target, words, splitChar);
   let current = line;
   for (let index = words.length - 1; index >= 0; index--) {
     if (points[index].length === 0) continue;
     const syllables = splitWordIntoSyllables({ word: words[index], splitPoints: points[index] });
     const split = splitWordsKeepingTransliteration(current, track.type, index, syllables);
     const currentWords = track.words(current) ?? words;
-    current = track.write(current, text, split?.words ?? currentWords.toSpliced(index, 1, ...syllables));
+    current = track.writeWords(current, split?.words ?? currentWords.toSpliced(index, 1, ...syllables));
     if (split) current = { ...current, languages: split.languages };
   }
-  return track.write(current, target, track.words(current));
+  return track.write(current, target, track.words(current), splitChar);
 }
 
 // -- Functions ----------------------------------------------------------------
 
 function repeatKey(line: LyricLine, splitChar: string): string {
   return [
-    line.agentId,
-    withoutSplitCharacter(line.text, splitChar),
-    withoutSplitCharacter(line.backgroundText ?? "", splitChar),
+    mainTrack(line).agentId,
+    withoutSplitCharacter(MAIN_TRACK.text(line, splitChar) ?? "", splitChar),
+    withoutSplitCharacter(BACKGROUND_TRACK.text(line, splitChar) ?? "", splitChar),
   ].join("\u0000");
 }
 

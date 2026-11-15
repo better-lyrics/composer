@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords } from "@/domain/line/track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 
@@ -35,7 +35,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
       const stored = [createLine({ id: "a", text: "Hel|lo world", begin: 1, end: 2 })];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace('end="0:02.000"', 'end="0:02.500"'));
       expect(lineText(merged[0]!)).toBe("Hel|lo world");
-      expect(merged[0]?.end).toBe(2.5);
+      expect(merged[0] && mainTrack(merged[0]).end).toBe(2.5);
     });
 
     it("takes the edited text when the edit changed it", () => {
@@ -154,7 +154,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
       expect(merged.slice(0, 3).map((line) => line.id)).toEqual(["one", "blank", "two"]);
       expect(merged[0]?.languages?.translations?.es).toEqual(SPANISH);
       expect(backgroundTrack(merged[0]!)?.source).toBe("extraction");
-      expect(merged[0]?.backgroundWords).toBeUndefined();
+      expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
     });
 
     it("pairs an edited line with the stored line at its place between unchanged lines", () => {

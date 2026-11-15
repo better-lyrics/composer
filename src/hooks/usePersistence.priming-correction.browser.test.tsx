@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { SavedProjectStems } from "@/domain/stems/saved-stems";
@@ -31,15 +32,15 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
       primingStripped: true,
       primingCorrected: false,
       lines: [
-        {
+        lineFromFields({
           id: "L1",
           text: "hello",
           agentId: DEFAULT_AGENTS[0].id,
           words: [{ id: "w1", text: "hello", sep: "", begin: 1.0, end: 1.5, joinsNext: false }],
           backgroundText: "oh",
           backgroundWords: [{ id: "w2", text: "oh", sep: "", begin: 1.1, end: 1.4, joinsNext: false }],
-        },
-        { id: "L2", text: "line", agentId: DEFAULT_AGENTS[0].id, begin: 3, end: 4 },
+        }),
+        lineFromFields({ id: "L2", text: "line", agentId: DEFAULT_AGENTS[0].id, begin: 3, end: 4 }),
       ],
       customSnapPoints: [{ id: "m1", time: 5 }],
       beatGrid: detectedGrid({ beats: [1, 1.5, 2, 2.5], downbeats: [1] }),

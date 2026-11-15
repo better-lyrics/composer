@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { roleWords } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
+import { updatedLine } from "@/test/field-updates";
 import { extractInlineAcrossLinkedLines } from "@/utils/background-vocal-extraction";
 
 const OPTIONS = { mergeStandaloneLines: false, preserveBrackets: false };
@@ -23,7 +27,7 @@ function linkedLine(
   instanceIdx: number,
   timing: { words: WordTiming[] } | { begin: number; end: number; detached?: boolean },
 ): LyricLine {
-  return {
+  return lineFromFields({
     id,
     text: "hold me (ooh yeah)",
     agentId: "v1",
@@ -31,7 +35,7 @@ function linkedLine(
     instanceIdx,
     templateLineIdx: 0,
     ...timing,
-  };
+  });
 }
 
 describe("extractInlineAcrossLinkedLines", () => {
@@ -48,14 +52,14 @@ describe("extractInlineAcrossLinkedLines", () => {
 
     expect([...byId.keys()]).toEqual(["a0", "a1", "a2"]);
     for (const update of byId.values()) {
-      expect(update.text).toBe("hold me");
-      expect(update.backgroundText).toBe("ooh yeah");
+      expect(lineText(updatedLine(update)!)).toBe("hold me");
+      expect(backgroundText(updatedLine(update))).toBe("ooh yeah");
     }
-    expect(byId.get("a2")?.backgroundWords?.map((w) => [w.begin, w.end])).toEqual([
+    expect(roleWords(updatedLine(byId.get("a2")), "bg")?.map((w) => [w.begin, w.end])).toEqual([
       [111, 111.5],
       [111.5, 112],
     ]);
-    const lineSynced = byId.get("a1")?.backgroundWords ?? [];
+    const lineSynced = roleWords(updatedLine(byId.get("a1")), "bg") ?? [];
     expect(lineSynced.length).toBe(2);
     expect(lineSynced[0].begin).toBeGreaterThanOrEqual(60);
     expect(lineSynced.at(-1)?.end).toBeLessThanOrEqual(63);
@@ -63,11 +67,11 @@ describe("extractInlineAcrossLinkedLines", () => {
 
   it("regression: refuses the whole linked edit when one copy cannot extract its own words", () => {
     const lines: LyricLine[] = [
-      { ...linkedLine("a0", 0, { begin: 10, end: 12 }), text: "Hello(ooh) world" },
-      {
-        ...linkedLine("a1", 1, { words: wordsAt(["Hello(ooh)", "world"], 60, 62) }),
+      lineFromFields({ ...fieldsOfLine(linkedLine("a0", 0, { begin: 10, end: 12 })), text: "Hello(ooh) world" }),
+      lineFromFields({
+        ...fieldsOfLine(linkedLine("a1", 1, { words: wordsAt(["Hello(ooh)", "world"], 60, 62) })),
         text: "Hello(ooh) world",
-      },
+      }),
     ];
 
     expect(extractInlineAcrossLinkedLines(lines, "a0", OPTIONS)).toEqual([]);

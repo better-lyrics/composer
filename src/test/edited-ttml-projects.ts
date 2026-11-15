@@ -1,10 +1,11 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { alignTrackToLine } from "@/domain/language/align";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { LineLanguage } from "@/domain/language/model";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { createGroup, createLine } from "@/test/factories";
@@ -29,7 +30,7 @@ function withTransliteration(line: LyricLine, text: string): LyricLine {
     origin: "manual",
     sourceFingerprint: `fp-${line.id}`,
   };
-  return reconcileLine({ ...line, ...alignTrackToLine(line, track) });
+  return { ...line, ...alignTrackToLine(line, track) };
 }
 
 // -- Fixtures -----------------------------------------------------------------
@@ -40,7 +41,7 @@ function chorusSong(): EditedTtmlProject {
     lines: [
       createLine({ id: "lead-blank", text: "" }),
       legacyLine({
-        ...createLine({ id: "intro", text: "Hel|lo there", begin: 1, end: 2.5, agentId: "v1" }),
+        ...fieldsOfLine(createLine({ id: "intro", text: "Hel|lo there", begin: 1, end: 2.5, agentId: "v1" })),
         translations: {
           es: { language: "es", text: "Hola a todos", origin: "manual", sourceFingerprint: "fp-intro" },
           fr: { language: "fr", text: "", origin: "manual", sourceFingerprint: "fp-intro" },
@@ -60,15 +61,17 @@ function chorusSong(): EditedTtmlProject {
         backgroundWords: [{ text: "yeah", begin: 3.2, end: 3.9 }],
       }),
       legacyLine({
-        ...createLine({
-          id: "chorus-1",
-          text: "La la|la",
-          begin: 4,
-          end: 5,
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-        }),
+        ...fieldsOfLine(
+          createLine({
+            id: "chorus-1",
+            text: "La la|la",
+            begin: 4,
+            end: 5,
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+          }),
+        ),
         translations: {},
       }),
       createLine({ id: "split-only", text: "|" }),
@@ -123,7 +126,9 @@ function transliteratedSong(): EditedTtmlProject {
     name: "a transliterated song with repeated lines and mixed sync",
     lines: [
       legacyLine({
-        ...withTransliteration(createLine({ id: "greeting", text: "こんにちは", begin: 1, end: 2 }), "konnichiwa"),
+        ...fieldsOfLine(
+          withTransliteration(createLine({ id: "greeting", text: "こんにちは", begin: 1, end: 2 }), "konnichiwa"),
+        ),
         translations: {
           en: { language: "en", text: "Hello", origin: "google", sourceFingerprint: "fp-greeting", stale: true },
         },

@@ -2,7 +2,7 @@ import type { LanguagePiece, LanguagePieces, LanguageSide, LineLanguages } from 
 import { sidePieces, withPiecesOn } from "@/domain/language/side-pieces";
 import { hasLexicalBoundaryAfter, type TransliterationSlice } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -154,8 +154,8 @@ function withReadingsOf(line: LyricLine, source: LyricLine): LineLanguages | und
     words: readonly WordTiming[] | undefined,
     from: readonly WordTiming[] | undefined,
   ) => keyedPieces(words ?? [], positionalPieces(from ?? [], trackPieces(source, side)));
-  const main = withPiecesOn(line.languages, "main", copied("main", line.words, source.words));
-  return withPiecesOn(main, "bg", copied("bg", line.backgroundWords, source.backgroundWords));
+  const main = withPiecesOn(line.languages, "main", copied("main", roleWords(line, "main"), roleWords(source, "main")));
+  return withPiecesOn(main, "bg", copied("bg", roleWords(line, "bg"), roleWords(source, "bg")));
 }
 
 // -- Orphans ------------------------------------------------------------------
@@ -176,8 +176,8 @@ function ownedPieces(
 function withoutOrphanPieces<T extends LyricLine>(line: T): T {
   const main = trackPieces(line, "main");
   const bg = trackPieces(line, "bg");
-  const ownedMain = ownedPieces(main, line.words);
-  const ownedBg = ownedPieces(bg, line.backgroundWords);
+  const ownedMain = ownedPieces(main, timedSyllables(mainTrack(line)));
+  const ownedBg = ownedPieces(bg, timedSyllables(backgroundTrack(line)));
   if (ownedMain === main && ownedBg === bg) return line;
   return { ...line, languages: withPiecesOn(withPiecesOn(line.languages, "main", ownedMain), "bg", ownedBg) };
 }

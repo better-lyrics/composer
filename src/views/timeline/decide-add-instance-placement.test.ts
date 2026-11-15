@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { splitTrailingWhitespace } from "insync/from-words";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 /**
@@ -26,26 +27,28 @@ const template: LineTemplate[] = [
   },
 ];
 
-const wordSyncedLine = (id: string, begin: number, end: number): LyricLine => ({
-  id,
-  text: "x",
-  agentId: "v1",
-  words: [{ id: newWordId(), text: "x", sep: "", begin, end, joinsNext: false }],
-});
+const wordSyncedLine = (id: string, begin: number, end: number): LyricLine =>
+  lineFromFields({
+    id,
+    text: "x",
+    agentId: "v1",
+    words: [{ id: newWordId(), text: "x", sep: "", begin, end, joinsNext: false }],
+  });
 
 // A grouped + word-timed line (a "real" group instance line): never fillable
-const groupedTimedLine = (id: string, gid: string, instIdx: number, begin: number, end: number): LyricLine => ({
-  id,
-  text: "x",
-  agentId: "v1",
-  groupId: gid,
-  instanceIdx: instIdx,
-  templateLineIdx: 0,
-  words: [{ id: newWordId(), text: "x", sep: "", begin, end, joinsNext: false }],
-});
+const groupedTimedLine = (id: string, gid: string, instIdx: number, begin: number, end: number): LyricLine =>
+  lineFromFields({
+    id,
+    text: "x",
+    agentId: "v1",
+    groupId: gid,
+    instanceIdx: instIdx,
+    templateLineIdx: 0,
+    words: [{ id: newWordId(), text: "x", sep: "", begin, end, joinsNext: false }],
+  });
 
 // A standalone untimed empty placeholder (no groupId, no words, no begin/end): fillable
-const emptyPlaceholderLine = (id: string, text = ""): LyricLine => ({ id, text, agentId: "v1" });
+const emptyPlaceholderLine = (id: string, text = ""): LyricLine => lineFromFields({ id, text, agentId: "v1" });
 
 describe("templateDuration", () => {
   it("returns the span between earliest begin and latest end across all template words", () => {

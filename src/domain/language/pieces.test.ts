@@ -8,6 +8,7 @@ import {
   trackPieces,
   withReadingsOf,
 } from "@/domain/language/pieces";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { mergeWordRun } from "@/domain/word/merge-run";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -70,14 +71,14 @@ describe("language pieces", () => {
   });
 
   it("give a line the background readings of the line it copies when its romanization has no background", () => {
-    const source = {
+    const source = lineFromFields({
       id: "a",
       agentId: "v1",
       text: "",
       backgroundWords: [word("s1", "sora", "", 1)],
       languages: { heldReadings: { bg: { s1: { text: "sora" } } } },
-    };
-    const target = {
+    });
+    const target = lineFromFields({
       id: "b",
       agentId: "v1",
       text: "",
@@ -85,7 +86,7 @@ describe("language pieces", () => {
       languages: {
         transliteration: { language: "ja-Latn", origin: "manual" as const, sourceFingerprint: "", main: { text: "" } },
       },
-    };
+    });
     expect(trackPieces({ ...target, languages: withReadingsOf(target, source) }, "bg")).toEqual({
       t1: { text: "sora" },
     });

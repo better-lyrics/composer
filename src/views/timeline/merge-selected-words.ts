@@ -1,7 +1,7 @@
 import { mergeWords, planMerge } from "@/domain/commands/word-merge";
 import { withAlignedWords } from "@/domain/language/align";
 import type { LyricLine } from "@/domain/line/model";
-import { type WordTrack, trackField } from "@/domain/line/tracks";
+import { trackWords, type WordTrack } from "@/domain/line/track";
 import type { SelectionRun } from "@/domain/selection/contiguous";
 import { addressAt, toAddress } from "@/domain/selection/resolve";
 import { isPartialSyllableRun, isWholeSyllableGroupRun } from "@/domain/word/merge-run";
@@ -16,12 +16,12 @@ type MergeRunKind = "syllables" | "words";
 // -- Functions -----------------------------------------------------------------
 
 function isPartialSyllableSelection(line: LyricLine, run: SelectionRun): boolean {
-  const words = withAlignedWords(line)[trackField(run.type)];
+  const words = trackWords(withAlignedWords(line), run.type);
   return !!words && isPartialSyllableRun(words, run.indices);
 }
 
 function mergeRunKind(line: LyricLine, run: SelectionRun): MergeRunKind {
-  const words = withAlignedWords(line)[trackField(run.type)];
+  const words = trackWords(withAlignedWords(line), run.type);
   if (!words) return "words";
   return isPartialSyllableRun(words, run.indices) || isWholeSyllableGroupRun(words, run.indices)
     ? "syllables"

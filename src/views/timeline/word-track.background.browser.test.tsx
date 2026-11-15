@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -47,7 +47,7 @@ describe("WordTrack background provenance", () => {
       new MouseEvent("dblclick", { bubbles: true, clientX: rect.left + 250, clientY: rect.top + 10 }),
     );
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.length).toBe(2);
     expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
@@ -70,8 +70,8 @@ describe("WordTrack background provenance", () => {
       new MouseEvent("dblclick", { bubbles: true, clientX: rect.left + 250, clientY: rect.top + 10 }),
     );
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(2);
-    const bg = useProjectStore.getState().lines[0].backgroundWords;
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.length).toBe(2);
+    const bg = roleWords(useProjectStore.getState().lines[0], "bg");
     expect(bg?.some((w) => w.text.trim() === "ooh")).toBe(true);
   });
 });

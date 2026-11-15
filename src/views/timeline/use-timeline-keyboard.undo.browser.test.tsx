@@ -1,3 +1,5 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { mainTrack } from "@/domain/line/track";
 import { createRef } from "react";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -25,12 +27,12 @@ async function renderWithTwoAgentChanges(): Promise<void> {
   useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })], activeTab: "timeline" });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
-  useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
-  useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v3" } }]));
+  useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+  useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v3" } }])));
 }
 
 function agentId(): string | undefined {
-  return useProjectStore.getState().lines[0].agentId;
+  return mainTrack(useProjectStore.getState().lines[0]).agentId;
 }
 
 // -- Tests --------------------------------------------------------------------

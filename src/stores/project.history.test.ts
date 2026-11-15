@@ -1,7 +1,9 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { LinkGroup } from "@/domain/group/template";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 /**
  * @vitest-environment node
  */
@@ -12,8 +14,8 @@ import { pasteLyrics } from "@/domain/commands/edit-text";
 import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
 import { pasteLines } from "@/domain/commands/instance-rows";
 
-function seedLine(id: string, overrides: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({ id, text: "hello world", agentId: "v1", ...overrides });
+function seedLine(id: string, overrides: Partial<LineFields> = {}): LyricLine {
+  return lineFromFields({ id, text: "hello world", agentId: "v1", ...overrides });
 }
 
 function seedGroup(id: string, overrides: Partial<LinkGroup> = {}): LinkGroup {
@@ -35,7 +37,7 @@ describe("setLinesWithHistory", () => {
     useProjectStore
       .getState()
       .commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { agentId: "v2" }), seedLine("b")]));
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
     expect(useProjectStore.getState().canUndo()).toBe(true);
 
     useProjectStore.getState().undo();
@@ -61,7 +63,7 @@ describe("setLinesWithHistory groups", () => {
       .getState()
       .commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { agentId: "v2" })]));
 
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
     expect(useProjectStore.getState().groups).toEqual([seedGroup("g1")]);
     expect(useProjectStore.getState().canUndo()).toBe(true);
 
@@ -99,12 +101,12 @@ describe("setLinesWithHistory groups", () => {
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines).toHaveLength(1);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
     expect(useProjectStore.getState().groups).toEqual([seedGroup("g1")]);
 
     useProjectStore.getState().redo();
     expect(useProjectStore.getState().lines).toHaveLength(2);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
     expect(useProjectStore.getState().groups).toEqual([seedGroup("g2")]);
   });
 
@@ -131,10 +133,10 @@ describe("setLinesWithHistory groups", () => {
     useProjectStore
       .getState()
       .commit(replaceLyrics([seedLine("a", { agentId: "v2" })], [seedGroup("g1")], useProjectStore.getState().agents));
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
   });
 });
 
@@ -143,19 +145,21 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a"), seedLine("b"), seedLine("c")] });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        { id: "a", updates: { agentId: "v2" } },
-        { id: "c", updates: { agentId: "v3" } },
-      ]),
+      pasteLines(
+        fieldUpdates([
+          { id: "a", updates: { agentId: "v2" } },
+          { id: "c", updates: { agentId: "v3" } },
+        ]),
+      ),
     );
 
-    expect(useProjectStore.getState().lines.map((l) => l.agentId)).toEqual(["v2", "v1", "v3"]);
+    expect(useProjectStore.getState().lines.map((l) => mainTrack(l).agentId)).toEqual(["v2", "v1", "v3"]);
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines.map((l) => l.agentId)).toEqual(["v1", "v1", "v1"]);
+    expect(useProjectStore.getState().lines.map((l) => mainTrack(l).agentId)).toEqual(["v1", "v1", "v1"]);
 
     useProjectStore.getState().redo();
-    expect(useProjectStore.getState().lines.map((l) => l.agentId)).toEqual(["v2", "v1", "v3"]);
+    expect(useProjectStore.getState().lines.map((l) => mainTrack(l).agentId)).toEqual(["v2", "v1", "v3"]);
   });
 
   it("snapshots a pending non-history edit before a subsequent history-aware update so undo lands on the typed state", () => {
@@ -168,15 +172,15 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "our favorite song is on" })] });
     expect(lineText(useProjectStore.getState().lines[0])).toBe("our favorite song is on");
 
-    useProjectStore.getState().commit(pasteLines([{ id: "a", updates: { begin: 5, end: 7 } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a", updates: { begin: 5, end: 7 } }])));
     const placed = useProjectStore.getState().lines[0];
     expect(lineText(placed)).toBe("our favorite song is on");
-    expect(placed.begin).toBe(5);
+    expect(mainTrack(placed).begin).toBe(5);
 
     useProjectStore.getState().undo();
     const afterUndo = useProjectStore.getState().lines[0];
     expect(lineText(afterUndo)).toBe("our favorite song is on");
-    expect(afterUndo.begin).toBeUndefined();
+    expect(mainTrack(afterUndo).begin).toBeUndefined();
   });
 
   it("snapshots pending edit before updateLinesWithHistory too", () => {
@@ -184,16 +188,17 @@ describe("updateLinesWithHistory", () => {
       .getState()
       .commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { text: "alpha" })]));
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "alpha edited" })] });
-    useProjectStore.getState().commit(pasteLines([{ id: "a", updates: { begin: 1, end: 2 } }]));
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a", updates: { begin: 1, end: 2 } }])));
     useProjectStore.getState().undo();
     expect(lineText(useProjectStore.getState().lines[0])).toBe("alpha edited");
-    expect(useProjectStore.getState().lines[0].begin).toBeUndefined();
+    expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBeUndefined();
   });
 
   it("clears words and background words via undefined updates and is undoable", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
         seedLine("a", {
+          text: "hi",
           words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [{ id: "w2", text: "ah", sep: "", begin: 0, end: 0.5, joinsNext: false }],
           backgroundText: "ah",
@@ -202,17 +207,19 @@ describe("updateLinesWithHistory", () => {
     });
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a",
-          updates: { words: undefined, backgroundWords: undefined },
-        },
-      ]),
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a",
+            updates: { words: undefined, backgroundWords: undefined },
+          },
+        ]),
+      ),
     );
 
     const cleared = useProjectStore.getState().lines[0];
-    expect(cleared.words).toBeUndefined();
-    expect(cleared.backgroundWords).toBeUndefined();
+    expect(roleWords(cleared, "main")).toBeUndefined();
+    expect(roleWords(cleared, "bg")).toBeUndefined();
 
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0];
@@ -311,7 +318,7 @@ describe("closeLyricBurst", () => {
     const committedIndex = useProjectStore.getState().historyIndex;
     const live = useProjectStore.getState().lines[0];
     expect(() => {
-      live.text = "live mutation";
+      live.groupId = "live mutation";
     }).toThrow(TypeError);
 
     expect(lineText(useProjectStore.getState().history[committedIndex].lines[0])).toBe("clone me edited");
@@ -467,7 +474,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
 
     expect(() => {
-      baseline[0].text = "live mutation";
+      baseline[0].groupId = "live mutation";
     }).toThrow(TypeError);
     useProjectStore.getState().undo();
     expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
@@ -571,15 +578,15 @@ describe("agents in history", () => {
 
       useProjectStore.getState().commit(removeSinger("v3"));
       expect(agentIds()).not.toContain("v3");
-      expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+      expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
 
       useProjectStore.getState().undo();
       expect(agentIds()).toContain("v3");
-      expect(useProjectStore.getState().lines[0].agentId).toBe("v3");
+      expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v3");
 
       useProjectStore.getState().redo();
       expect(agentIds()).not.toContain("v3");
-      expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+      expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
     });
   });
 
@@ -605,7 +612,7 @@ describe("agents in history", () => {
         useProjectStore.getState()[step]();
         const { agents, lines } = useProjectStore.getState();
         const known = new Set(agents.map((agent) => agent.id));
-        expect(lines.every((line) => !line.agentId || known.has(line.agentId))).toBe(true);
+        expect(lines.every((line) => !mainTrack(line).agentId || known.has(mainTrack(line).agentId))).toBe(true);
       }
     });
 

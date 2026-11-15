@@ -1,77 +1,115 @@
-import { tracksFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type {
+  BackgroundTrack,
+  LineTrack,
+  LyricLine,
+  MainTrack,
+  SpanTimedTrack,
+  Syllable,
+  TrackRole,
+  UntimedSyllable,
+} from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
-type UntimedSyllable = Omit<WordTiming, "begin" | "end"> & { begin?: never; end?: never };
-type Syllable = WordTiming | UntimedSyllable;
-type TrackRole = "main" | "bg";
-
-interface LineTrack {
-  readonly id: string;
-  readonly role: TrackRole;
-  readonly syllables: readonly Syllable[];
-  readonly begin?: number;
-  readonly end?: number;
-  readonly source?: "extraction" | "manual";
-}
+type WordTrack = "word" | "bg";
+type TrackField = "words" | "backgroundWords";
 
 // -- Constants ----------------------------------------------------------------
 
 const NO_TIMED_SYLLABLES: WordTiming[] = [];
 Object.freeze(NO_TIMED_SYLLABLES);
 
-// -- Views --------------------------------------------------------------------
+// -- Tracks -------------------------------------------------------------------
 
-interface CachedTracks {
-  splitCharacter: string;
-  main: LineTrack;
-  background: LineTrack | undefined;
+function mainTrack(line: LyricLine): MainTrack {
+  return line.tracks[0];
 }
 
-const tracksByLine = new WeakMap<LyricLine, CachedTracks>();
-const timedByTrack = new WeakMap<LineTrack, WordTiming[]>();
-
-function cachedTracks(line: LyricLine): CachedTracks {
-  const splitCharacter = getSplitCharacter();
-  const cached = tracksByLine.get(line);
-  if (cached?.splitCharacter === splitCharacter) return cached;
-  const [main, background] = tracksFromFields(line);
-  timedByTrack.set(main, line.words ?? NO_TIMED_SYLLABLES);
-  if (background) timedByTrack.set(background, line.backgroundWords ?? NO_TIMED_SYLLABLES);
-  const tracks = { splitCharacter, main, background };
-  tracksByLine.set(line, tracks);
-  return tracks;
+function backgroundTrack(line: LyricLine): BackgroundTrack | undefined {
+  return line.tracks[1];
 }
 
-function mainTrack(line: LyricLine): LineTrack {
-  return cachedTracks(line).main;
+function trackOf(line: LyricLine, role: TrackRole): LineTrack | undefined {
+  return role === "main" ? mainTrack(line) : backgroundTrack(line);
 }
 
-function backgroundTrack(line: LyricLine): LineTrack | undefined {
-  return cachedTracks(line).background;
-}
-
-// -- Reads --------------------------------------------------------------------
+// -- Syllables ----------------------------------------------------------------
 
 function isTimedSyllable(syllable: Syllable): syllable is WordTiming {
   return syllable.begin !== undefined;
 }
 
-// The stored timed words themselves, never a copy, so identity checks and caches keyed on them still hold.
+function isSpanTimed<T extends LineTrack>(track: T): track is T & SpanTimedTrack {
+  return track.begin !== undefined;
+}
+
+const timedByTrack = new WeakMap<LineTrack, WordTiming[]>();
+
+// The timed syllables of a track, one array per track so identity checks and caches keyed on it hold.
 function timedSyllables(track: LineTrack | undefined): WordTiming[] {
   if (!track) return NO_TIMED_SYLLABLES;
   const cached = timedByTrack.get(track);
   if (cached) return cached;
-  const timed = track.syllables.filter(isTimedSyllable);
-  timedByTrack.set(track, timed);
-  return timed;
+  const syllables: readonly Syllable[] = track.syllables;
+  const timed = syllables.filter(isTimedSyllable);
+  const result = timed.length === 0 ? NO_TIMED_SYLLABLES : timed;
+  timedByTrack.set(track, result);
+  return result;
+}
+
+function untimedSyllable({ begin: _begin, end: _end, ...syllable }: Syllable): UntimedSyllable {
+  return syllable;
+}
+
+// The untimed syllables of a role's track, the ones new words must not take the ids of.
+function untimedSyllablesOf(line: LyricLine, role: TrackRole): Syllable[] {
+  return trackOf(line, role)?.syllables.filter((syllable) => !isTimedSyllable(syllable)) ?? [];
+}
+
+// -- Lanes --------------------------------------------------------------------
+
+function trackRole(type: WordTrack): TrackRole {
+  return type === "word" ? "main" : "bg";
+}
+
+function fieldRole(field: TrackField): TrackRole {
+  return field === "words" ? "main" : "bg";
+}
+
+function trackField(type: WordTrack): TrackField {
+  return type === "word" ? "words" : "backgroundWords";
+}
+
+// The timed words of a lane, or nothing when it has none (or there is no line).
+function roleWords(line: LyricLine | undefined, role: TrackRole): WordTiming[] | undefined {
+  const timed = timedSyllables(line && trackOf(line, role));
+  return timed.length > 0 ? timed : undefined;
+}
+
+function trackWords(line: LyricLine, type: WordTrack): WordTiming[] | undefined {
+  return roleWords(line, trackRole(type));
+}
+
+function fieldWords(line: LyricLine, field: TrackField): WordTiming[] | undefined {
+  return roleWords(line, fieldRole(field));
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { backgroundTrack, mainTrack, timedSyllables };
-
-export type { LineTrack, Syllable, UntimedSyllable };
+export {
+  backgroundTrack,
+  fieldRole,
+  fieldWords,
+  isSpanTimed,
+  isTimedSyllable,
+  mainTrack,
+  roleWords,
+  timedSyllables,
+  trackField,
+  trackRole,
+  trackWords,
+  untimedSyllable,
+  untimedSyllablesOf,
+};
+export type { TrackField, WordTrack };

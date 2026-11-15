@@ -1,4 +1,4 @@
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 
 // -- Types --------------------------------------------------------------------
 

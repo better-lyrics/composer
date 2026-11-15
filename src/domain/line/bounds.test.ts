@@ -1,11 +1,12 @@
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { bgBounds, effectiveBounds, mainBounds } from "@/domain/line/bounds";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LooseLine> = {}) {
-  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+function line(extras: Partial<LineFields> = {}) {
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- mainBounds ---------------------------------------------------------------

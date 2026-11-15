@@ -1,7 +1,8 @@
+import { mainTrack } from "@/domain/line/track";
 import { getAgentColor } from "@/domain/agent/colors";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import type { Agent } from "@/domain/agent/model";
-import type { LanguageDisplayLine } from "@/domain/language/display";
+import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/language/display";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -102,13 +103,13 @@ function reusedRow(previous: LaneRow | undefined, next: LaneRow): LaneRow {
 }
 
 function buildLaneRows({ lines, displayLines, agents, groupTags, folded }: LaneRowsInput): LaneRow[] {
-  const showsSingers = new Set(lines.map((line) => line.agentId)).size > 1;
+  const showsSingers = new Set(lines.map((line) => mainTrack(line).agentId)).size > 1;
   let previousAgentId: string | null = null;
   return lines.map((line, lineIndex) => {
-    const display = displayLines[lineIndex] ?? line;
+    const display = displayLines[lineIndex] ?? getLanguageDisplayLine(line, "original");
     const isFolded = folded.has(line.id);
-    const singerChanged = !isFolded && line.agentId !== previousAgentId;
-    if (!isFolded) previousAgentId = line.agentId;
+    const singerChanged = !isFolded && mainTrack(line).agentId !== previousAgentId;
+    if (!isFolded) previousAgentId = mainTrack(line).agentId;
     const { wordTexts, wordRuns } = lineWords(line, display);
     const row = reusedRow(rowByLine.get(line), {
       line,
@@ -117,7 +118,7 @@ function buildLaneRows({ lines, displayLines, agents, groupTags, folded }: LaneR
       wordTexts,
       wordRuns,
       backgroundText: display.backgroundText,
-      singer: showsSingers && singerChanged ? laneSinger(line.agentId, agents) : undefined,
+      singer: showsSingers && singerChanged ? laneSinger(mainTrack(line).agentId, agents) : undefined,
       groupTag: groupTags.get(line.id),
       folded: isFolded,
     });

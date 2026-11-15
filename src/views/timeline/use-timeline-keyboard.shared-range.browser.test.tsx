@@ -2,7 +2,7 @@ import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -70,7 +70,7 @@ describe("useTimelineKeyboard · shared time range", () => {
 
     pressKey("[");
 
-    await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(7);
+    await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(7);
     expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
@@ -83,7 +83,7 @@ describe("useTimelineKeyboard · shared time range", () => {
 
     pressKey("ArrowLeft");
 
-    await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(7);
+    await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(7);
     expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
@@ -93,7 +93,7 @@ describe("useTimelineKeyboard · shared time range", () => {
 
       pressKey("[");
 
-      await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(1);
+      await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(1);
       expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(3);
     });
 
@@ -106,7 +106,7 @@ describe("useTimelineKeyboard · shared time range", () => {
 
       pressKey("ArrowLeft");
 
-      await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(5);
+      await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(5);
       expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(3);
     });
   });

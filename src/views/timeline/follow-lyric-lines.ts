@@ -1,6 +1,6 @@
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
 import { isInQueueOrder, queueOrder } from "@/domain/step-timing/step-queue";

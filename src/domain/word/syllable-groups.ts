@@ -146,7 +146,7 @@ function boundariesHandedBack(words: WordTiming[], deleted: Set<number>): Map<nu
   return handed;
 }
 
-// A word that stops joining gets a space after it, or reconstructLineText would glue it to the next word.
+// A word that stops joining gets a space after it, or syllablesText would glue it to the next word.
 function endedWord(word: WordTiming): WordTiming {
   return { ...word, joinsNext: false, sep: word.sep.endsWith(" ") ? word.sep : `${word.sep} ` };
 }

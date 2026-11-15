@@ -1,8 +1,10 @@
 /**
  * @vitest-environment node
  */
+
 import { describe, expect, it } from "vitest";
 import type { LineTemplate } from "@/domain/group/template";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
@@ -27,34 +29,38 @@ const template: LineTemplate[] = [
 
 describe("isEmptyFillable", () => {
   it("returns true for a line with no words and no group", () => {
-    expect(isEmptyFillable({ id: "1", text: "anything", agentId: "v1" })).toBe(true);
+    expect(isEmptyFillable(lineFromFields({ id: "1", text: "anything", agentId: "v1" }))).toBe(true);
   });
 
   it("returns true for a line with empty words array and no group", () => {
-    expect(isEmptyFillable({ id: "1", text: "x", agentId: "v1", words: [] })).toBe(true);
+    expect(isEmptyFillable(lineFromFields({ id: "1", text: "x", agentId: "v1", words: [] }))).toBe(true);
   });
 
   it("returns false for a line that has words", () => {
     expect(
-      isEmptyFillable({
-        id: "1",
-        text: "x",
-        agentId: "v1",
-        words: [{ id: "w1", text: "x", sep: "", begin: 0, end: 1, joinsNext: false }],
-      }),
+      isEmptyFillable(
+        lineFromFields({
+          id: "1",
+          text: "x",
+          agentId: "v1",
+          words: [{ id: "w1", text: "x", sep: "", begin: 0, end: 1, joinsNext: false }],
+        }),
+      ),
     ).toBe(false);
   });
 
   it("returns false for a line that belongs to a group", () => {
     expect(
-      isEmptyFillable({
-        id: "1",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-      }),
+      isEmptyFillable(
+        lineFromFields({
+          id: "1",
+          text: "x",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+        }),
+      ),
     ).toBe(false);
   });
 });
@@ -62,20 +68,20 @@ describe("isEmptyFillable", () => {
 describe("fillEmptyLinesWithInstance · happy path", () => {
   it("fills exactly N consecutive empty lines and assigns group attrs", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "intro",
         text: "intro",
         agentId: "v1",
         words: [{ id: "w2", text: "intro", sep: "", begin: 0, end: 5, joinsNext: false }],
-      },
-      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
-      { id: "empty2", text: "Chorus line 2", agentId: "v1" },
-      {
+      }),
+      lineFromFields({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
+      lineFromFields({ id: "empty2", text: "Chorus line 2", agentId: "v1" }),
+      lineFromFields({
         id: "outro",
         text: "outro",
         agentId: "v1",
         words: [{ id: "w3", text: "outro", sep: "", begin: 30, end: 35, joinsNext: false }],
-      },
+      }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -98,8 +104,8 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
 
   it("preserves the original line ids (in-place fill, not replacement)", () => {
     const lines: LyricLine[] = [
-      { id: "L_a", text: "anything", agentId: "v1" },
-      { id: "L_b", text: "anything else", agentId: "v1" },
+      lineFromFields({ id: "L_a", text: "anything", agentId: "v1" }),
+      lineFromFields({ id: "L_b", text: "anything else", agentId: "v1" }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -115,8 +121,8 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
 
   it("overwrites the line text to match the template (linked instances must match)", () => {
     const lines: LyricLine[] = [
-      { id: "L_a", text: "user typed something else", agentId: "v1" },
-      { id: "L_b", text: "and something different", agentId: "v1" },
+      lineFromFields({ id: "L_a", text: "user typed something else", agentId: "v1" }),
+      lineFromFields({ id: "L_b", text: "and something different", agentId: "v1" }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -132,10 +138,10 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
 
   it("picks the next available instanceIdx for the group", () => {
     const lines: LyricLine[] = [
-      { id: "existing1", text: "x", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "existing2", text: "y", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
-      { id: "empty2", text: "Chorus line 2", agentId: "v1" },
+      lineFromFields({ id: "existing1", text: "x", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      lineFromFields({ id: "existing2", text: "y", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
+      lineFromFields({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
+      lineFromFields({ id: "empty2", text: "Chorus line 2", agentId: "v1" }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -165,7 +171,7 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
   ];
 
   it("carries backgroundTextSource from the template onto the filled line", () => {
-    const lines: LyricLine[] = [{ id: "empty1", text: "anything", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "empty1", text: "anything", agentId: "v1" })];
     const result = fillEmptyLinesWithInstance({
       lines,
       groupId: "g1",
@@ -188,7 +194,7 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
         backgroundTextSource: "manual",
       },
     ];
-    const lines: LyricLine[] = [{ id: "empty1", text: "anything", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "empty1", text: "anything", agentId: "v1" })];
     const result = fillEmptyLinesWithInstance({
       lines,
       groupId: "g1",
@@ -201,8 +207,8 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
 
   it("leaves backgroundTextSource undefined when the template has no background", () => {
     const lines: LyricLine[] = [
-      { id: "empty1", text: "a", agentId: "v1" },
-      { id: "empty2", text: "b", agentId: "v1" },
+      lineFromFields({ id: "empty1", text: "a", agentId: "v1" }),
+      lineFromFields({ id: "empty2", text: "b", agentId: "v1" }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -211,20 +217,20 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
       startIndex: 0,
       instanceStart: 0,
     });
-    expect(result.updatedLines?.[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundTrack(result.updatedLines![0])?.source).toBeUndefined();
   });
 });
 
 describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", () => {
   it("refuses when one of the target rows already has words", () => {
     const lines: LyricLine[] = [
-      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
-      {
+      lineFromFields({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
+      lineFromFields({
         id: "synced",
         text: "Chorus line 2",
         agentId: "v1",
         words: [{ id: "w4", text: "Chorus line 2", sep: "", begin: 0, end: 1, joinsNext: false }],
-      },
+      }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -240,15 +246,15 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
 
   it("refuses when one of the target rows already belongs to a group", () => {
     const lines: LyricLine[] = [
-      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
-      {
+      lineFromFields({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
+      lineFromFields({
         id: "grouped",
         text: "Chorus line 2",
         agentId: "v1",
         groupId: "other",
         instanceIdx: 0,
         templateLineIdx: 0,
-      },
+      }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -262,7 +268,7 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
   });
 
   it("refuses when the destination range extends past the end of the project", () => {
-    const lines: LyricLine[] = [{ id: "empty1", text: "Chorus line 1", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "empty1", text: "Chorus line 1", agentId: "v1" })];
     const result = fillEmptyLinesWithInstance({
       lines,
       groupId: "g1",
@@ -276,8 +282,8 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
 
   it("refuses when startIndex is negative", () => {
     const lines: LyricLine[] = [
-      { id: "empty1", text: "x", agentId: "v1" },
-      { id: "empty2", text: "y", agentId: "v1" },
+      lineFromFields({ id: "empty1", text: "x", agentId: "v1" }),
+      lineFromFields({ id: "empty2", text: "y", agentId: "v1" }),
     ];
     const result = fillEmptyLinesWithInstance({
       lines,

@@ -1,6 +1,7 @@
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -156,7 +157,7 @@ const RETAINED_EARLIER_FIELDS = 4096;
 let scannedSplitChar = "";
 const hitsByField = new Map<string, FieldHit[]>();
 
-function fieldHits(source: string, words: LyricLine["words"]): FieldHit[] {
+function fieldHits(source: string, words: readonly WordTiming[] | undefined): FieldHit[] {
   const marked = alreadyMarkedSet(words);
   const key = `${[...marked].join(",")}\u0000${source}`;
   const cached = hitsByField.get(key);
@@ -174,7 +175,7 @@ function forgetOldestFields(fieldsInRun: number): void {
   }
 }
 
-function alreadyMarkedSet(words: LyricLine["words"] | undefined): Set<number> {
+function alreadyMarkedSet(words: readonly WordTiming[] | undefined): Set<number> {
   const set = new Set<number>();
   if (!words) return set;
   for (let i = 0; i < words.length; i++) {

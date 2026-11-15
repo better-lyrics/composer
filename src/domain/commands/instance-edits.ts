@@ -8,7 +8,8 @@ import { type LineTemplate, offsetTemplateWords, templateLanguages } from "@/dom
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
@@ -29,7 +30,7 @@ function instanceLine(
   const words = template.words && offsetTemplateWords(template.words, instanceStart);
   const backgroundWords = template.backgroundWords && offsetTemplateWords(template.backgroundWords, instanceStart);
   const languages = templateLanguages(template, words, backgroundWords);
-  return reconcileLine({
+  return lineFromFields({
     id,
     text: template.text,
     agentId: template.agentId,
@@ -56,7 +57,6 @@ function addInstance(
 ): LyricCommand {
   return {
     note: { command: "add instance", args: [groupId, instanceStart] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root, ctx) => {
       const instanceIdx = nextInstanceIdx(root.lines, groupId);
@@ -78,7 +78,6 @@ function addInstance(
 function removeInstance(groupId: string, instanceIdx: number): LyricCommand {
   return {
     note: { command: "remove instance", args: [groupId, instanceIdx] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root) => {
       const lines = unlinkLines(root.lines, (line) => belongsToInstance(line, groupId, instanceIdx));
@@ -92,7 +91,6 @@ function removeInstance(groupId: string, instanceIdx: number): LyricCommand {
 function detachLine(lineId: string): LyricCommand {
   return {
     note: { command: "detach line", args: [lineId] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root) => {
       const lines = unlinkLines(root.lines, (line) => line.id === lineId);
@@ -104,7 +102,6 @@ function detachLine(lineId: string): LyricCommand {
 function shiftInstance(groupId: string, instanceIdx: number, deltaSeconds: number, duration: number): LyricCommand {
   return {
     note: { command: "shift instance", args: [groupId, instanceIdx, deltaSeconds] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root) => {
       const isMember = (line: LyricLine) => isAttachedToInstance(line, groupId, instanceIdx);
@@ -112,7 +109,7 @@ function shiftInstance(groupId: string, instanceIdx: number, deltaSeconds: numbe
       if (Math.abs(delta) < MIN_SHIFT_SECONDS) return applied(root, []);
       return withLines(
         root,
-        root.lines.map((line) => (isMember(line) ? reconcileLine({ ...line, ...shiftLineTiming(line, delta) }) : line)),
+        root.lines.map((line) => (isMember(line) ? { ...line, ...shiftLineTiming(line, delta) } : line)),
       );
     },
   };
@@ -121,7 +118,6 @@ function shiftInstance(groupId: string, instanceIdx: number, deltaSeconds: numbe
 function setInstanceOwnTiming(groupId: string, instanceIdx: number, own: boolean, duration: number): LyricCommand {
   return {
     note: { command: own ? "own timing" : "share timing", args: [groupId, instanceIdx] },
-    derivesText: false,
     copiesSharedTiming: false,
     run: (root) => {
       const groups = root.groups.map((group) =>
@@ -147,7 +143,6 @@ function placeInstance(
 ): LyricCommand {
   return {
     note: { command: "place instance", args: [groupId, instanceIdx, start] },
-    derivesText: false,
     copiesSharedTiming: true,
     run: (root) =>
       applied(

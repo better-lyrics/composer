@@ -1,3 +1,5 @@
+import { mainTrack } from "@/domain/line/track";
+import { withAgent } from "@/domain/line/track-writes";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricCommand } from "@/domain/commands/command";
@@ -12,7 +14,6 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 function replaceLyrics(lines: RawLine[], groups: LinkGroup[], agents: Agent[] | undefined): LyricCommand {
   return {
     note: { command: "replace lyrics", args: [lines.length] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root) => {
       const assignment = agentsAfterImport(root.agents, agents, lines);
@@ -28,7 +29,6 @@ function replaceLyrics(lines: RawLine[], groups: LinkGroup[], agents: Agent[] | 
 function applyEditedLyrics(edited: EditedLyrics, metadata: ProjectMetadata): LyricCommand {
   return {
     note: { command: "apply edited lyrics", args: [edited.lines.length] },
-    derivesText: true,
     copiesSharedTiming: false,
     run: (root) => {
       const current = { ...root, metadata };
@@ -45,12 +45,11 @@ function applyEditedLyrics(edited: EditedLyrics, metadata: ProjectMetadata): Lyr
 function removeSinger(id: string): LyricCommand {
   return {
     note: { command: "remove singer", args: [id] },
-    derivesText: false,
     copiesSharedTiming: false,
     run: (root) => {
       const fallback = root.agents.find((agent) => agent.id !== id);
       if (!fallback) return applied(root, []);
-      const lines = root.lines.map((line) => (line.agentId === id ? { ...line, agentId: fallback.id } : line));
+      const lines = root.lines.map((line) => (mainTrack(line).agentId === id ? withAgent(line, fallback.id) : line));
       return applied(
         { lines, groups: root.groups, agents: root.agents.filter((agent) => agent.id !== id) },
         changedLineIds(root.lines, lines),

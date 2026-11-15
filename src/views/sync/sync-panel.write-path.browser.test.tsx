@@ -1,10 +1,10 @@
 import { Toaster } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { effectiveBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -60,8 +60,10 @@ function wordTexts(i: number): string[] {
 
 function assertMonotonic(allLines: LyricLine[]): void {
   const flat = allLines.flatMap((l) => {
-    if (l.words) return l.words;
-    if (isLineSynced(l)) return [{ text: lineText(l), begin: l.begin, end: l.end }];
+    const words = roleWords(l, "main");
+    if (words) return words;
+    const span = isLineSynced(l) ? mainBounds(l) : null;
+    if (span) return [{ text: lineText(l), begin: span.begin, end: span.end }];
     return [];
   });
   for (let i = 0; i < flat.length; i++) {
@@ -181,11 +183,11 @@ describe("D5 tap behind the previous committed time", () => {
     await tapAt(6);
     await tapAt(2);
     const defaultWordDuration = useSettingsStore.getState().defaultWordDuration;
-    expect(lines()[0].words?.map((w) => [w.begin, w.end])).toEqual([
+    expect(timedSyllables(mainTrack(lines()[0])).map((w) => [w.begin, w.end])).toEqual([
       [5, 6],
       [6, 6 + defaultWordDuration],
     ]);
-    expect(lines()[1].words?.[0].begin).toBe(2);
+    expect(timedSyllables(mainTrack(lines()[1]))[0].begin).toBe(2);
     for (const line of lines()) assertMonotonic([line]);
   });
 
@@ -210,7 +212,7 @@ describe("song end keeps sync armed", () => {
     await settle();
     expect(useAudioStore.getState().isPlaying).toBe(true);
     await tapAt(0.2);
-    expect(lines()[1].words?.[0].begin).toBe(0.2);
+    expect(timedSyllables(mainTrack(lines()[1]))[0].begin).toBe(0.2);
     for (const line of lines()) assertMonotonic([line]);
   });
 });
@@ -346,7 +348,7 @@ describe("one tap = one history entry at a line boundary", () => {
     await tapAt(3);
     await undo();
     await undo();
-    expect(lines()[1].words).toBeUndefined();
+    expect(roleWords(lines()[1], "main")).toBeUndefined();
   });
 });
 
@@ -374,7 +376,7 @@ describe("U3 completion while words are unsynced", () => {
     await tapAt(2);
     await tapAt(3);
     await undo();
-    expect(lines()[0].words?.length).toBe(2);
+    expect(roleWords(lines()[0], "main")?.length).toBe(2);
     await settle();
     expect(screen.container.textContent).not.toContain("Sync complete!");
   });

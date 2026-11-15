@@ -11,7 +11,7 @@ import {
   setProjectResumePosition,
   updateProjectRecord,
 } from "@/lib/project-repository";
-import { NewerProjectError, SAVED_PROJECT_VERSION } from "@/lib/saved-project";
+import { NewerProjectError, SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { allowConsole } from "@/test/console-guard";
@@ -24,7 +24,10 @@ import { render } from "@/test/render";
 async function seedNewerProject(id: string, options: { open?: boolean } = {}): Promise<unknown> {
   await seedStoredProject(id, { project: songTitled("From a newer build"), open: options.open });
   const newer = {
-    ...storedProject({ ...songTitled("From a newer build"), lines: [createLine({ text: "Shape we cannot read" })] }),
+    ...storedProject({
+      ...songTitled("From a newer build"),
+      lines: savedLines([createLine({ text: "Shape we cannot read" })]),
+    }),
     version: SAVED_PROJECT_VERSION + 1,
     tracks: { main: ["s1", "s2"] },
   };

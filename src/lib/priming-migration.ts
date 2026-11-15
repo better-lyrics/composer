@@ -1,13 +1,13 @@
 import { decodePrimingCrop } from "@/audio/decoded-source-audio";
 import type { PrimingCrop } from "@/audio/lame-priming";
-import type { LyricLine } from "@/domain/line/model";
+import type { LineTrack, LyricLine } from "@/domain/line/model";
 import { shiftWords } from "@/domain/line/shift";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { withBackgroundTrack, withMainTrack, withTrackSpan, withTrackWords } from "@/domain/line/track-writes";
 import { type SnapPoint, shiftedSnapPoints } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { shiftedGrid } from "@/domain/tempo/grid-edits";
 import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
-import type { WordTiming } from "@/domain/word/timing";
 import {
   type SeparatedStemRepair,
   hasStemsToRepair,
@@ -24,15 +24,18 @@ const LOG_PREFIX = "[PrimingMigration]";
 
 // -- Helpers ------------------------------------------------------------------
 
-function shiftLine(line: LyricLine, deltaSec: number): LyricLine {
-  const next = { ...line } as LyricLine;
-  if (isWordSynced(next)) (next as { words: WordTiming[] }).words = shiftWords(next.words!, deltaSec);
-  if (isLineSynced(next)) {
-    (next as { begin: number; end: number }).begin = Math.max(0, next.begin + deltaSec);
-    (next as { begin: number; end: number }).end = Math.max(0, next.end + deltaSec);
+function shiftedTrack<T extends LineTrack>(track: T, deltaSec: number): T {
+  if (isSpanTimed(track)) {
+    return withTrackSpan(track, Math.max(0, track.begin + deltaSec), Math.max(0, track.end + deltaSec));
   }
-  if (next.backgroundWords) next.backgroundWords = shiftWords(next.backgroundWords, deltaSec);
-  return next;
+  const words = timedSyllables(track);
+  return words.length > 0 ? withTrackWords(track, shiftWords(words, deltaSec)) : track;
+}
+
+function shiftLine(line: LyricLine, deltaSec: number): LyricLine {
+  const background = backgroundTrack(line);
+  const shifted = withMainTrack(line, shiftedTrack(mainTrack(line), deltaSec));
+  return background ? withBackgroundTrack(shifted, shiftedTrack(background, deltaSec)) : shifted;
 }
 
 // -- Public API ---------------------------------------------------------------

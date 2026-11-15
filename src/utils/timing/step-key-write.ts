@@ -1,6 +1,7 @@
 import { isSharedLine, type TimeRange } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import type { ReadableLine } from "@/domain/line/effective-words";
+import { combinedTrackEdits } from "@/domain/line/combined-track-edits";
+import { type ReadableLine, rawLineOf } from "@/domain/line/effective-words";
 import type { LineUpdate } from "@/domain/line/model";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
@@ -51,6 +52,14 @@ function crossesSharedInstance(input: StepKeyWriteInput, startNext: ResolvedAddr
   return isSharedLine(from, groupsById) && isSharedLine(to, groupsById);
 }
 
+// A start on the cursor's own line joins the end in one update, so neither track write overwrites the other.
+function joinedUpdates(input: StepKeyWriteInput, own: LineUpdate, started: LineUpdate | undefined): LineUpdate[] {
+  if (!started) return [own];
+  if (started.id !== own.id) return [own, started];
+  const line = input.lines[input.cursor.lineIndex];
+  return [{ id: own.id, updates: combinedTrackEdits(rawLineOf(line), [own.updates, started.updates]) }];
+}
+
 // -- Functions ----------------------------------------------------------------
 
 // A step that also starts a word on another line lands both lines in one undo step.
@@ -62,13 +71,15 @@ function planStepKey(input: StepKeyWriteInput): StepKeyPlan | null {
   const own = editAt(input, cursor, ownKey);
   if (!own) return null;
   if (own.kind === "refused") return own;
-  const updates = [own.update];
-  if (key === "step" && startNext && !inTrack) {
-    const started = editAt(input, startNext, "start");
-    if (started?.kind === "refused") return started;
-    if (started) updates.push(started.update);
-  }
-  return { kind: "written", updates, endedPrevious: own.endedPrevious };
+  if (key !== "step" || !startNext || inTrack)
+    return { kind: "written", updates: [own.update], endedPrevious: own.endedPrevious };
+  const started = editAt(input, startNext, "start");
+  if (started?.kind === "refused") return started;
+  return {
+    kind: "written",
+    updates: joinedUpdates(input, own.update, started?.update),
+    endedPrevious: own.endedPrevious,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -12,7 +12,7 @@ interface WordFieldConfig {
   getWords: (line: LyricLine) => WordTiming[] | undefined;
   writeWords: (line: ReadableLine, words: WordTiming[]) => Partial<LyricLine>;
   // retimeEdit deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
-  buildBoundaryUpdate?: (words: WordTiming[]) => Partial<LyricLine>;
+  buildBoundaryUpdate?: (line: ReadableLine, words: WordTiming[]) => Partial<LyricLine>;
 }
 
 type RetimeChange = { by: number } | { to: number };
@@ -56,7 +56,7 @@ type StepEdit =
 function createWordTimingOps(config: WordFieldConfig) {
   const { getWords, writeWords, buildBoundaryUpdate } = config;
   const boundaryUpdate = (line: ReadableLine, words: WordTiming[]) =>
-    buildBoundaryUpdate ? buildBoundaryUpdate(words) : writeWords(line, words);
+    buildBoundaryUpdate ? buildBoundaryUpdate(line, words) : writeWords(line, words);
 
   // A Sync nudge or typed time: one edge of one word, kept between its neighbours and inside the range.
   function retimeEdit({ line, wordIdx, edge, change, range }: RetimeEditInput): LineUpdate | null {

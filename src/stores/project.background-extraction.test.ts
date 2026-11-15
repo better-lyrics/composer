@@ -1,13 +1,15 @@
 /**
  * @vitest-environment node
  */
+
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
+import { fieldUpdates } from "@/test/field-updates";
 import { extractInlineFromLine } from "@/utils/background-vocal-extraction";
 
 beforeEach(() => {
@@ -25,8 +27,8 @@ const CHORUS_GROUP = { id: "g1", label: "Chorus", color: "#f472b6", templateVers
 // siblings. These tests run the real mutator and assert siblings stay in sync.
 
 describe("project store · background extraction on linked lines", () => {
-  function seedLinkedChorus(lines: LooseLine[]) {
-    useProjectStore.setState({ groups: [CHORUS_GROUP], lines: lines.map(reconcileLine) });
+  function seedLinkedChorus(lines: LineFields[]) {
+    useProjectStore.setState({ groups: [CHORUS_GROUP], lines: lines.map((line) => lineFromFields(line)) });
     useProjectStore.getState().clearHistory();
   }
 
@@ -35,16 +37,18 @@ describe("project store · background extraction on linked lines", () => {
     if (!target) throw new Error(`line ${lineId} not found`);
     const extracted = extractInlineFromLine(target, { mergeStandaloneLines: false, preserveBrackets: false });
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: target.id,
-          updates: {
-            text: lineText(extracted),
-            words: extracted.words,
-            backgroundText: backgroundText(extracted),
+      pasteLines(
+        fieldUpdates([
+          {
+            id: target.id,
+            updates: {
+              text: lineText(extracted),
+              words: roleWords(extracted, "main"),
+              backgroundText: backgroundText(extracted),
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
   }
 
@@ -64,8 +68,8 @@ describe("project store · background extraction on linked lines", () => {
     expect(backgroundText(a0!)).toBe("ooh");
     expect(lineText(a1!)).toBe("Hello");
     expect(backgroundText(a1!)).toBe("ooh");
-    expect(a0?.text).not.toContain("(");
-    expect(a1?.text).not.toContain("(");
+    expect(a0 && lineText(a0)).not.toContain("(");
+    expect(a1 && lineText(a1)).not.toContain("(");
   });
 
   it("keeps link metadata on both siblings after an untimed extraction", () => {
@@ -162,16 +166,18 @@ describe("project store · background extraction on linked lines", () => {
     ]);
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            text: "Hello",
-            backgroundText: "ooh",
-            backgroundTextSource: "extraction",
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              text: "Hello",
+              backgroundText: "ooh",
+              backgroundTextSource: "extraction",
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const lines = useProjectStore.getState().lines;
@@ -209,25 +215,27 @@ describe("project store · background extraction on linked lines", () => {
     ]);
 
     useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a0",
-          updates: {
-            backgroundText: undefined,
-            backgroundTextSource: undefined,
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a0",
+            updates: {
+              backgroundText: undefined,
+              backgroundTextSource: undefined,
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.backgroundText).toBeUndefined();
-    expect(a0?.backgroundTextSource).toBeUndefined();
-    expect(a1?.backgroundText).toBeUndefined();
-    expect(a1?.backgroundTextSource).toBeUndefined();
+    expect(a0 && backgroundText(a0)).toBeUndefined();
+    expect(a0 && backgroundTrack(a0)?.source).toBeUndefined();
+    expect(a1 && backgroundText(a1)).toBeUndefined();
+    expect(a1 && backgroundTrack(a1)?.source).toBeUndefined();
   });
 
   it("flips the linked sibling's provenance to manual when bg words are edited in the timeline", () => {
@@ -268,7 +276,8 @@ describe("project store · background extraction on linked lines", () => {
       { id: "w11", text: "ooh", sep: " ", begin: 1, end: 1.5, joinsNext: false },
       { id: "w12", text: "aah", sep: "", begin: 1.5, end: 1.8, joinsNext: false },
     ];
-    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: manualBackgroundWordEdit(edited) }]));
+    const a0Before = useProjectStore.getState().lines.find((line) => line.id === "a0")!;
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: manualBackgroundWordEdit(a0Before, edited) }]));
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");

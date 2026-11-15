@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { generateTTML } from "@/utils/ttml";
@@ -7,7 +8,7 @@ import { generateTTML } from "@/utils/ttml";
 const metadata: ProjectMetadata = { title: "T", artists: [], album: "", duration: 60 };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
-const wordSynced: LyricLine = {
+const wordSynced: LyricLine = lineFromFields({
   id: "w",
   text: "Hello world",
   agentId: "v1",
@@ -15,8 +16,8 @@ const wordSynced: LyricLine = {
     { id: "w1", text: "Hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
     { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
   ],
-};
-const lineSynced: LyricLine = { id: "l", text: "Line only", agentId: "v1", begin: 3, end: 4 };
+});
+const lineSynced: LyricLine = lineFromFields({ id: "l", text: "Line only", agentId: "v1", begin: 3, end: 4 });
 
 const paragraphs = (ttml: string) => ttml.match(/<p [^>]*>.*?<\/p>/g) ?? [];
 
@@ -44,11 +45,11 @@ describe("generateTTML timing granularity", () => {
     });
 
     it("keeps background word spans on a line-synced main line", () => {
-      const withBackground: LyricLine = {
-        ...lineSynced,
+      const withBackground: LyricLine = lineFromFields({
+        ...fieldsOfLine(lineSynced),
         backgroundText: "(yeah)",
         backgroundWords: [{ id: "w3", text: "(yeah)", sep: "", begin: 3.5, end: 4, joinsNext: false }],
-      };
+      });
       const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [withBackground] }));
       expect(paragraph).toContain('<span ttm:role="x-bg"><span begin="0:03.500" end="0:04.000">(yeah)</span></span>');
     });

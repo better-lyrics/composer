@@ -3,6 +3,7 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
+import { roleWords } from "@/domain/line/track";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { type LegacyLine, legacyLanguages, legacyLine, legacyView, legacyWords } from "@/test/legacy-languages";
 import { isStructurallyEqual } from "@/utils/structural-equal";
@@ -109,8 +110,8 @@ describe("generated language updates", () => {
       origin: "google",
       sourceFingerprint: languageSourceFingerprint(lineText(line), backgroundText(line)),
     });
-    expect(legacyWords(line.words, updates.languages)?.[0]).not.toHaveProperty("transliteration");
-    expect(legacyWords(line.backgroundWords, updates.languages, "bg")?.[0].transliteration).toBe("an nyeong");
+    expect(legacyWords(roleWords(line, "main"), updates.languages)?.[0]).not.toHaveProperty("transliteration");
+    expect(legacyWords(roleWords(line, "bg"), updates.languages, "bg")?.[0].transliteration).toBe("an nyeong");
     expect(legacyLanguages(updates.languages).translations?.en).toMatchObject({ text: "", backgroundText: "Hello" });
   });
 
@@ -123,8 +124,8 @@ describe("generated language updates", () => {
     });
 
     expect(changedParts(line, updates)).toHaveProperty("transliteration", undefined);
-    expect(legacyWords(line.words, updates.languages)?.[0]).not.toHaveProperty("transliteration");
-    expect(legacyWords(line.backgroundWords, updates.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
+    expect(legacyWords(roleWords(line, "main"), updates.languages)?.[0]).not.toHaveProperty("transliteration");
+    expect(legacyWords(roleWords(line, "bg"), updates.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
   });
 
   it("removes the background readings held beside a main-only Google transliteration with it", () => {
@@ -139,7 +140,7 @@ describe("generated language updates", () => {
         sourceFingerprint: "x",
       },
     });
-    expect(legacyWords(line.backgroundWords, line.languages, "bg")?.[0]).toHaveProperty("transliteration", "old bg");
+    expect(legacyWords(roleWords(line, "bg"), line.languages, "bg")?.[0]).toHaveProperty("transliteration", "old bg");
 
     const updates = generatedLanguageUpdates(line, {
       force: false,

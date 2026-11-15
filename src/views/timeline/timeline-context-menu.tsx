@@ -258,9 +258,9 @@ function TrackMenuSection({ targets, clearContextMenu, target }: SectionProps & 
 
 function AgentAssignment({ targets, clearContextMenu, lineIndex }: SectionProps & { lineIndex: number }) {
   const agents = useProjectStore((s) => s.agents);
-  const { handleAssignAgent } = useLineMenuActions(targets, clearContextMenu);
+  const { handleAssignAgent, activeAgentIdAt } = useLineMenuActions(targets, clearContextMenu);
   if (agents.length <= 1) return null;
-  const activeAgentId = targets.lines[lineIndex]?.agentId;
+  const activeAgentId = activeAgentIdAt(lineIndex);
 
   return (
     <>

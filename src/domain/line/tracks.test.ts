@@ -1,10 +1,11 @@
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { trackField, trackWords } from "@/domain/line/tracks";
+import type { LyricLine } from "@/domain/line/model";
+import { fieldWords, roleWords, trackField, trackWords } from "@/domain/line/track";
 import { describe, expect, it } from "vitest";
 
-function line(extras: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({ id: "l1", text: "Hello world", agentId: "v1", ...extras });
+function line(extras: Partial<LineFields> = {}): LyricLine {
+  return lineFromFields({ id: "l1", text: "Hello world", agentId: "v1", ...extras });
 }
 
 const mainWords = [
@@ -21,15 +22,15 @@ describe("trackWords", () => {
 
   it("returns the background words for the bg track", () => {
     const withBg = line({ words: mainWords, backgroundText: "ooh", backgroundWords: bgWords });
-    expect(trackWords(withBg, "bg")).toBe(withBg.backgroundWords);
+    expect(trackWords(withBg, "bg")).toBe(roleWords(withBg, "bg"));
   });
 
   it("works on an effective line", () => {
     const [effective] = getEffectiveLines([
       line({ words: mainWords, backgroundText: "ooh", backgroundWords: bgWords }),
     ]);
-    expect(trackWords(effective, "word")).toBe(effective.words);
-    expect(trackWords(effective, "bg")).toBe(effective.backgroundWords);
+    expect(trackWords(effective, "word")).toBe(roleWords(effective, "main"));
+    expect(trackWords(effective, "bg")).toBe(roleWords(effective, "bg"));
   });
 
   describe("edge cases", () => {
@@ -56,7 +57,7 @@ describe("trackWords", () => {
   describe("invariants", () => {
     it("returns the stored array by reference, never a copy", () => {
       const synced = line({ words: mainWords });
-      expect(trackWords(synced, "word")).toBe(synced.words);
+      expect(trackWords(synced, "word")).toBe(roleWords(synced, "main"));
     });
   });
 });
@@ -70,8 +71,8 @@ describe("trackField", () => {
   describe("invariants", () => {
     it("reads the same words as trackWords for both tracks", () => {
       const synced = line({ words: mainWords, backgroundText: "ooh", backgroundWords: bgWords });
-      expect(synced[trackField("word")]).toBe(trackWords(synced, "word"));
-      expect(synced[trackField("bg")]).toBe(trackWords(synced, "bg"));
+      expect(fieldWords(synced, trackField("word"))).toBe(trackWords(synced, "word"));
+      expect(fieldWords(synced, trackField("bg"))).toBe(trackWords(synced, "bg"));
     });
   });
 });

@@ -1,73 +1,78 @@
 /**
  * @vitest-environment node
  */
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { findMatchingTemplate, linesStructurallyEqual, structurallyEqualLineSequences } from "./structural-match";
 
-const baseLine: LyricLine = { id: "x", text: "I love you", agentId: "v1" };
+const baseLine: LyricLine = lineFromFields({ id: "x", text: "I love you", agentId: "v1" });
 
 describe("linesStructurallyEqual", () => {
   it("equal when text/agentId/words/bg match", () => {
-    const a: LyricLine = {
-      ...baseLine,
+    const a: LyricLine = lineFromFields({
+      ...fieldsOfLine(baseLine),
       words: [
         { id: "w1", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
         { id: "w2", text: "love", sep: "", begin: 1, end: 2, joinsNext: false },
       ],
-    };
-    const b: LyricLine = {
-      ...baseLine,
+    });
+    const b: LyricLine = lineFromFields({
+      ...fieldsOfLine(baseLine),
       id: "y",
       words: [
         { id: "w3", text: "I", sep: " ", begin: 30, end: 31, joinsNext: false },
         { id: "w4", text: "love", sep: "", begin: 31, end: 32, joinsNext: false },
       ],
-    };
+    });
     expect(linesStructurallyEqual(a, b)).toBe(true);
   });
 
   it("unequal when text differs", () => {
-    expect(linesStructurallyEqual(baseLine, { ...baseLine, text: "different" })).toBe(false);
+    expect(linesStructurallyEqual(baseLine, lineFromFields({ ...fieldsOfLine(baseLine), text: "different" }))).toBe(
+      false,
+    );
   });
 
   it("unequal when agent differs", () => {
-    expect(linesStructurallyEqual(baseLine, { ...baseLine, agentId: "v2" })).toBe(false);
+    expect(linesStructurallyEqual(baseLine, lineFromFields({ ...fieldsOfLine(baseLine), agentId: "v2" }))).toBe(false);
   });
 
   it("equal when one line is synced word by word and the other is not", () => {
-    const a: LyricLine = {
-      ...baseLine,
+    const a: LyricLine = lineFromFields({
+      ...fieldsOfLine(baseLine),
       words: [
         { id: "w5", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
         { id: "w6", text: "love", sep: " ", begin: 1, end: 2, joinsNext: false },
       ],
-    };
+    });
     expect(linesStructurallyEqual(a, { ...baseLine, id: "y" })).toBe(true);
   });
 
   it("equal when one line is only partly synced word by word", () => {
-    const a: LyricLine = {
-      ...baseLine,
+    const a: LyricLine = lineFromFields({
+      ...fieldsOfLine(baseLine),
       words: [
         { id: "w7", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
         { id: "w8", text: "love", sep: "", begin: 1, end: 2, joinsNext: false },
       ],
-    };
-    const b: LyricLine = {
-      ...baseLine,
+    });
+    const b: LyricLine = lineFromFields({
+      ...fieldsOfLine(baseLine),
       words: [{ id: "w9", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false }],
-    };
+    });
     expect(linesStructurallyEqual(a, b)).toBe(true);
   });
 
   it("unequal when the syllable split of the text differs", () => {
-    expect(linesStructurallyEqual(baseLine, { ...baseLine, text: "I lo|ve you" })).toBe(false);
+    expect(linesStructurallyEqual(baseLine, lineFromFields({ ...fieldsOfLine(baseLine), text: "I lo|ve you" }))).toBe(
+      false,
+    );
   });
 
   it("unequal when background differs", () => {
-    const a: LyricLine = { ...baseLine, backgroundText: "yeah" };
-    const b: LyricLine = { ...baseLine, backgroundText: "yeah yeah" };
+    const a: LyricLine = lineFromFields({ ...fieldsOfLine(baseLine), backgroundText: "yeah" });
+    const b: LyricLine = lineFromFields({ ...fieldsOfLine(baseLine), backgroundText: "yeah yeah" });
     expect(linesStructurallyEqual(a, b)).toBe(false);
   });
 });
@@ -75,41 +80,41 @@ describe("linesStructurallyEqual", () => {
 describe("structurallyEqualLineSequences", () => {
   it("matches sequences with same structure but different timings", () => {
     const a: LyricLine[] = [
-      {
+      lineFromFields({
         id: "1",
         text: "I love",
         agentId: "v1",
         words: [{ id: "w10", text: "I", sep: "", begin: 0, end: 1, joinsNext: false }],
-      },
-      {
+      }),
+      lineFromFields({
         id: "2",
         text: "you",
         agentId: "v1",
         words: [{ id: "w11", text: "you", sep: "", begin: 1, end: 2, joinsNext: false }],
-      },
+      }),
     ];
     const b: LyricLine[] = [
-      {
+      lineFromFields({
         id: "x",
         text: "I love",
         agentId: "v1",
         words: [{ id: "w12", text: "I", sep: "", begin: 30, end: 31, joinsNext: false }],
-      },
-      {
+      }),
+      lineFromFields({
         id: "y",
         text: "you",
         agentId: "v1",
         words: [{ id: "w13", text: "you", sep: "", begin: 31, end: 32, joinsNext: false }],
-      },
+      }),
     ];
     expect(structurallyEqualLineSequences(a, b)).toBe(true);
   });
 
   it("rejects different line counts", () => {
-    const a: LyricLine[] = [{ id: "1", text: "I", agentId: "v1" }];
+    const a: LyricLine[] = [lineFromFields({ id: "1", text: "I", agentId: "v1" })];
     const b: LyricLine[] = [
-      { id: "1", text: "I", agentId: "v1" },
-      { id: "2", text: "you", agentId: "v1" },
+      lineFromFields({ id: "1", text: "I", agentId: "v1" }),
+      lineFromFields({ id: "2", text: "you", agentId: "v1" }),
     ];
     expect(structurallyEqualLineSequences(a, b)).toBe(false);
   });
@@ -118,7 +123,7 @@ describe("structurallyEqualLineSequences", () => {
 describe("findMatchingTemplate", () => {
   it("finds a matching instance template in the project", () => {
     const projectLines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "I love",
         agentId: "v1",
@@ -126,8 +131,8 @@ describe("findMatchingTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ id: "w14", text: "I love", sep: "", begin: 0, end: 2, joinsNext: false }],
-      },
-      {
+      }),
+      lineFromFields({
         id: "b",
         text: "you",
         agentId: "v1",
@@ -135,21 +140,21 @@ describe("findMatchingTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 1,
         words: [{ id: "w15", text: "you", sep: "", begin: 2, end: 3, joinsNext: false }],
-      },
+      }),
     ];
     const candidate: LyricLine[] = [
-      {
+      lineFromFields({
         id: "p",
         text: "I love",
         agentId: "v1",
         words: [{ id: "w16", text: "I love", sep: "", begin: 30, end: 32, joinsNext: false }],
-      },
-      {
+      }),
+      lineFromFields({
         id: "q",
         text: "you",
         agentId: "v1",
         words: [{ id: "w17", text: "you", sep: "", begin: 32, end: 33, joinsNext: false }],
-      },
+      }),
     ];
     const found = findMatchingTemplate(candidate, projectLines);
     expect(found).toEqual({ groupId: "g1", instanceIdx: 0 });
@@ -157,7 +162,7 @@ describe("findMatchingTemplate", () => {
 
   it("returns null when no match", () => {
     const projectLines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "I love",
         agentId: "v1",
@@ -165,9 +170,9 @@ describe("findMatchingTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ id: "w18", text: "I love", sep: "", begin: 0, end: 2, joinsNext: false }],
-      },
+      }),
     ];
-    const candidate: LyricLine[] = [{ id: "p", text: "different text", agentId: "v1" }];
+    const candidate: LyricLine[] = [lineFromFields({ id: "p", text: "different text", agentId: "v1" })];
     expect(findMatchingTemplate(candidate, projectLines)).toBeNull();
   });
 });

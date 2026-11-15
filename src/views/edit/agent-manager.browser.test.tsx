@@ -1,3 +1,4 @@
+import { mainTrack } from "@/domain/line/track";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { AgentManager } from "@/views/edit/agent-manager";
@@ -64,11 +65,11 @@ describe("AgentManager", () => {
     trash.click();
 
     await expect.poll(() => useProjectStore.getState().agents.map((agent) => agent.id)).toEqual(["v1"]);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().agents.map((agent) => agent.id)).toEqual(["v1", "v3"]);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v3");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v3");
   });
 
   it("changes an agent's type via the type select and persists on save", async () => {

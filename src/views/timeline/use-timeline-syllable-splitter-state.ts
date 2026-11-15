@@ -6,7 +6,6 @@ import {
 import type { LanguagePiece } from "@/domain/language/model";
 import type { PositionalPieces } from "@/domain/language/pieces";
 import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddress } from "@/domain/selection/resolve";
 import type { WordTiming } from "@/domain/word/timing";
@@ -152,10 +151,7 @@ function useTimelineSyllableSplitterState({
     const done = (
       type === "word"
         ? handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates)
-        : handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
-            ...manualBackgroundWordEdit(split.words),
-            ...extraUpdates,
-          })
+        : handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", extraUpdates)
     ).then((written) => {
       if (written) noteGuideSignal("timeline.split");
     });

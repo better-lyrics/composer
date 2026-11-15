@@ -5,6 +5,7 @@ import type { LineUpdate } from "@/domain/line/model";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWords } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { GroupBanner } from "@/views/timeline/group-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -15,7 +16,6 @@ import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 const GROUP_COLOR_RGB = "rgb(163, 201, 255)";
 const timingWrite = (updates: LineUpdate[]) =>
   lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
-    derivesText: false,
     propagateToSiblings: false,
   });
 
@@ -91,7 +91,7 @@ describe("GroupBanner · shared timing", () => {
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word, i) =>
       i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
     );
-    useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words } }]));
+    useProjectStore.getState().commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
 
     await expect.poll(() => useTimelineStore.getState().pingingGroupId).toBe("g1");
   });
@@ -137,7 +137,7 @@ describe("GroupBanner · shared timing", () => {
       const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word, i) =>
         i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
       );
-      useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words } }]));
+      useProjectStore.getState().commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
 
       expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].begin).toBeCloseTo(11.2, 6);
       expect(useTimelineStore.getState().pingingGroupId).toBeNull();
@@ -154,7 +154,7 @@ describe("GroupBanner · shared timing", () => {
       const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word, i) =>
         i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
       );
-      useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words } }]));
+      useProjectStore.getState().commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
 
       expect(timedSyllables(mainTrack(useProjectStore.getState().lines[1]))[1].begin).toBeCloseTo(41.2, 6);
       expect(useTimelineStore.getState().pingingGroupId).toBeNull();

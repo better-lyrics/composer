@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
@@ -21,7 +22,7 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "l1",
           text: "word1 word2 word3",
           agentId: "v1",
@@ -30,7 +31,7 @@ describe("useTimelineDnd · within-track reorder seam", () => {
             { id: "w2", text: "word2", sep: " ", begin: 1, end: 1.5, joinsNext: false },
             { id: "w3", text: "word3", sep: "", begin: 2, end: 2.5, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     scrollHost = installScrollHost();

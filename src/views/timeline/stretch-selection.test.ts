@@ -1,20 +1,23 @@
 /**
  * @vitest-environment node
  */
+
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { newWordId } from "@/domain/word/id";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
+import { patchOf, updatedLine } from "@/test/field-updates";
 import { planStretchDrag } from "./stretch-drag";
 
 // -- Helpers --------------------------------------------------------------------
 
 function makeLine(id: string, words: WordTiming[]): LyricLine {
-  return { id, text: spacedText(words), agentId: "v1", words };
+  return lineFromFields({ id, text: spacedText(words), agentId: "v1", words });
 }
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
@@ -96,7 +99,7 @@ describe("planStretchDrag", () => {
   it("counts word blocks only — line-synced rows never add a grip", () => {
     const mixed: LyricLine[] = [
       makeLine("A", [{ id: "w4", text: "a", sep: "", begin: 1, end: 2, joinsNext: false }]),
-      { id: "B", text: "y", agentId: "v1", begin: 2, end: 6 },
+      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 2, end: 6 }),
     ];
     const plan = planStretchDrag(
       mixed,
@@ -109,13 +112,13 @@ describe("planStretchDrag", () => {
 
   it("supports bg grips and mixed main+bg selections across extremes", () => {
     const mixed: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "main",
         agentId: "v1",
         words: [{ id: "w5", text: "main", sep: "", begin: 2, end: 4, joinsNext: false }],
         backgroundWords: [{ id: "w6", text: "ooh", sep: "", begin: 0, end: 1, joinsNext: false }],
-      },
+      }),
     ];
     const plan = planStretchDrag(
       mixed,
@@ -228,7 +231,7 @@ describe("stretchSelections · normal scaling", () => {
     const result = stretchSelections(lines, [word("L", 1), word("L", 2)], 2, OPTS);
     expect(result.appliedFactor).toBeCloseTo(2);
     expect(result.updates).toHaveLength(1);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     // Anchor = 1 (min begin of selection) stays fixed.
     expect(words[1].begin).toBeCloseTo(1);
     expect(words[1].end).toBeCloseTo(3);
@@ -248,7 +251,7 @@ describe("stretchSelections · normal scaling", () => {
       ]),
     ];
     const result = stretchSelections(lines, [word("L", 0), word("L", 1)], 0.5, OPTS);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[0].begin).toBeCloseTo(2);
     expect(words[0].end).toBeCloseTo(3);
     expect(words[1].begin).toBeCloseTo(3);
@@ -262,8 +265,8 @@ describe("stretchSelections · normal scaling", () => {
     ];
     const result = stretchSelections(lines, [word("A", 0), word("B", 0)], 2, OPTS);
     expect(result.updates).toHaveLength(2);
-    const lineA = result.updates.find((u) => u.id === "A")!.updates.words!;
-    const lineB = result.updates.find((u) => u.id === "B")!.updates.words!;
+    const lineA = roleWords(updatedLine(result.updates.find((u) => u.id === "A")!.updates), "main")!;
+    const lineB = roleWords(updatedLine(result.updates.find((u) => u.id === "B")!.updates), "main")!;
     expect(lineA[0].begin).toBeCloseTo(1);
     expect(lineA[0].end).toBeCloseTo(3);
     expect(lineB[0].begin).toBeCloseTo(5);
@@ -282,7 +285,7 @@ describe("stretchSelections · normal scaling", () => {
       ]),
     ];
     const result = stretchSelections(lines, [word("L", 0), word("L", 1)], 2, OPTS);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(result.appliedFactor).toBeCloseTo(2);
     expect(words[0].begin).toBeCloseTo(1);
     expect(words[0].end).toBeCloseTo(3);
@@ -324,7 +327,7 @@ describe("stretchSelections · anchor end", () => {
   it("grows leftward 2x with the right edge pinned", () => {
     const result = stretchSelections(lines, sel, 2, { ...OPTS, anchor: "end" });
     expect(result.appliedFactor).toBeCloseTo(2);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     // Anchor t1 = 10 stays fixed; distances from it double.
     expect(words[1].begin).toBeCloseTo(2);
     expect(words[1].end).toBeCloseTo(6);
@@ -335,7 +338,7 @@ describe("stretchSelections · anchor end", () => {
 
   it("shrinks toward the right anchor with k < 1", () => {
     const result = stretchSelections(lines, sel, 0.5, { ...OPTS, anchor: "end" });
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[1].begin).toBeCloseTo(8);
     expect(words[1].end).toBeCloseTo(9);
     expect(words[2].begin).toBeCloseTo(9);
@@ -353,7 +356,7 @@ describe("stretchSelections · anchor end", () => {
     // kHi = (10 - 4) / (10 - 6) = 1.5.
     const result = stretchSelections(tight, sel, 3, { ...OPTS, anchor: "end" });
     expect(result.appliedFactor).toBeCloseTo(1.5);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[1].begin).toBeCloseTo(4);
     expect(words[1].end).toBeCloseTo(7);
     expect(words[2].end).toBeCloseTo(10);
@@ -369,7 +372,7 @@ describe("stretchSelections · anchor end", () => {
     // kHi = 10 / (10 - 4) = 5/3.
     const result = stretchSelections(open, [word("L", 0), word("L", 1)], 10, { ...OPTS, anchor: "end" });
     expect(result.appliedFactor).toBeCloseTo(5 / 3);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[0].begin).toBeCloseTo(0);
     expect(words[0].end).toBeCloseTo(10 / 3);
     expect(words[1].end).toBeCloseTo(10);
@@ -378,23 +381,23 @@ describe("stretchSelections · anchor end", () => {
   it("clamps shrink at minWordDuration measured on the shortest word", () => {
     const result = stretchSelections(lines, sel, 0.01, { ...OPTS, anchor: "end" });
     expect(result.appliedFactor).toBeCloseTo(0.05);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[1].end - words[1].begin).toBeCloseTo(0.1);
   });
 
   it("maps a mixed line-synced row around the right anchor", () => {
     const mixed: LyricLine[] = [
       makeLine("A", [{ id: "w37", text: "a", sep: "", begin: 2, end: 4, joinsNext: false }]),
-      { id: "B", text: "y", agentId: "v1", begin: 0, end: 1 },
+      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 0, end: 1 }),
     ];
     const result = stretchSelections(mixed, [word("A", 0), word("B", 0)], 0.5, { ...OPTS, anchor: "end" });
     // Word anchor t1 = 4 (line A); line B maps around it.
-    const lineA = result.updates.find((u) => u.id === "A")!.updates.words!;
+    const lineA = roleWords(updatedLine(result.updates.find((u) => u.id === "A")!.updates), "main")!;
     const lineB = result.updates.find((u) => u.id === "B")!.updates;
     expect(lineA[0].begin).toBeCloseTo(3);
     expect(lineA[0].end).toBeCloseTo(4);
-    expect(lineB.begin).toBeCloseTo(2);
-    expect(lineB.end).toBeCloseTo(2.5);
+    expect(updatedLine(lineB) && mainTrack(updatedLine(lineB)!).begin).toBeCloseTo(2);
+    expect(updatedLine(lineB) && mainTrack(updatedLine(lineB)!).end).toBeCloseTo(2.5);
   });
 });
 
@@ -412,7 +415,7 @@ describe("stretchSelections · clamping", () => {
     // Right bound: k <= (3 - 1) / (2 - 1) = 2.
     const result = stretchSelections(lines, [word("L", 0)], 5, OPTS);
     expect(result.appliedFactor).toBeCloseTo(2);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[0].end).toBeCloseTo(3);
     expect(words[1].begin).toBeCloseTo(3);
   });
@@ -429,10 +432,10 @@ describe("stretchSelections · clamping", () => {
     ];
     const result = stretchSelections(lines, [word("A", 0), word("B", 1)], 0.5, OPTS);
     expect(result.appliedFactor).toBeCloseTo(0.96);
-    const lineB = result.updates.find((u) => u.id === "B")!.updates.words!;
+    const lineB = roleWords(updatedLine(result.updates.find((u) => u.id === "B")!.updates), "main")!;
     expect(lineB[1].begin).toBeCloseTo(4.8);
     expect(lineB[1].end).toBeCloseTo(5.76);
-    expect(lineB[0]).toBe((lines[1] as { words: { text: string }[] }).words[0]);
+    expect(lineB[0]).toBe(roleWords(lines[1], "main")![0]);
   });
 
   it("clamps shrink at minWordDuration so the shortest word lands exactly on the minimum", () => {
@@ -445,7 +448,7 @@ describe("stretchSelections · clamping", () => {
     // minFactor = 0.1 / 0.5 = 0.2.
     const result = stretchSelections(lines, [word("L", 0), word("L", 1)], 0.1, OPTS);
     expect(result.appliedFactor).toBeCloseTo(0.2);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[0].end - words[0].begin).toBeCloseTo(0.1);
     expect(words[1].end - words[1].begin).toBeCloseTo(0.4);
   });
@@ -455,7 +458,7 @@ describe("stretchSelections · clamping", () => {
     // Right bound from duration: k <= (60 - 50) / 5 = 2.
     const result = stretchSelections(lines, [word("L", 0)], 10, { rangeOf: wholeSong(60), minWordDuration: 0.1 });
     expect(result.appliedFactor).toBeCloseTo(2);
-    expect(result.updates[0].updates.words![0].end).toBeCloseTo(60);
+    expect(roleWords(updatedLine(result.updates[0].updates), "main")![0].end).toBeCloseTo(60);
   });
 
   it("grows to the minimum when a word already violates minWordDuration", () => {
@@ -468,7 +471,7 @@ describe("stretchSelections · clamping", () => {
     // minFactor = 0.1 / 0.05 = 2 → even a shrink request grows to exactly 2.
     const result = stretchSelections(lines, [word("L", 0), word("L", 1)], 0.5, OPTS);
     expect(result.appliedFactor).toBeCloseTo(2);
-    const words = result.updates[0].updates.words!;
+    const words = roleWords(updatedLine(result.updates[0].updates), "main")!;
     expect(words[0].end - words[0].begin).toBeCloseTo(0.1);
   });
 });
@@ -478,7 +481,7 @@ describe("stretchSelections · clamping", () => {
 describe("stretchSelections · tracks and line types", () => {
   it("scales background selections and stamps manual provenance", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "main",
         agentId: "v1",
@@ -489,7 +492,7 @@ describe("stretchSelections · tracks and line types", () => {
           { id: "w50", text: "ahh", sep: "", begin: 3, end: 5, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const result = stretchSelections(
       lines,
@@ -502,19 +505,18 @@ describe("stretchSelections · tracks and line types", () => {
     );
     expect(result.updates).toHaveLength(1);
     const update = result.updates[0].updates;
-    const bg = update.backgroundWords!;
+    const bg = roleWords(updatedLine(update), "bg")!;
     expect(bg[0].begin).toBeCloseTo(2);
     expect(bg[0].end).toBeCloseTo(4);
     expect(bg[1].begin).toBeCloseTo(4);
     expect(bg[1].end).toBeCloseTo(8);
-    expect(update.backgroundTextSource).toBe("manual");
-    // Main words untouched.
-    expect(update.words).toBeUndefined();
+    expect(updatedLine(update) && backgroundTrack(updatedLine(update)!)?.source).toBe("manual");
+    expect("words" in patchOf(update, lines[0])).toBe(false);
   });
 
   it("merges main and background selections into a single update entry per line", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "A",
         text: "main",
         agentId: "v1",
@@ -523,36 +525,38 @@ describe("stretchSelections · tracks and line types", () => {
           { id: "w52", text: "x", sep: "", begin: 2, end: 4, joinsNext: false },
         ],
         backgroundWords: [{ id: "w53", text: "ooh", sep: "", begin: 1, end: 4, joinsNext: false }],
-      },
+      }),
     ];
     const result = stretchSelections(lines, [word("A", 1), { lineId: "A", type: "bg", wordIndex: 0 }], 2, OPTS);
     expect(result.updates).toHaveLength(1);
     const update = result.updates[0].updates;
-    expect(update.words!.length).toBe(2);
-    expect(update.backgroundWords).toBeDefined();
+    expect(roleWords(updatedLine(update), "main")!.length).toBe(2);
+    expect(roleWords(updatedLine(update), "bg")).toBeDefined();
   });
 
   it("scales line-synced begin/end with the same factor as word-synced rows", () => {
     const lines: LyricLine[] = [
       makeLine("A", [{ id: "w54", text: "a", sep: "", begin: 1, end: 2, joinsNext: false }]),
-      { id: "B", text: "y", agentId: "v1", begin: 2, end: 6 },
+      lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 2, end: 6 }),
     ];
     const result = stretchSelections(lines, [word("A", 0), word("B", 0)], 2, OPTS);
     expect(result.updates).toHaveLength(2);
     const lineB = result.updates.find((u) => u.id === "B")!.updates;
     // Global anchor t0 = 1 (from line A); line B maps around it.
-    expect(lineB.begin).toBeCloseTo(3);
-    expect(lineB.end).toBeCloseTo(11);
-    const lineA = result.updates.find((u) => u.id === "A")!.updates.words!;
+    expect(updatedLine(lineB) && mainTrack(updatedLine(lineB)!).begin).toBeCloseTo(3);
+    expect(updatedLine(lineB) && mainTrack(updatedLine(lineB)!).end).toBeCloseTo(11);
+    const lineA = roleWords(updatedLine(result.updates.find((u) => u.id === "A")!.updates), "main")!;
     expect(lineA[0].end).toBeCloseTo(3);
   });
 
   it("clamps a line-synced-only selection at duration", () => {
-    const lines: LyricLine[] = [{ id: "B", text: "y", agentId: "v1", begin: 50, end: 55 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 50, end: 55 })];
     const result = stretchSelections(lines, [word("B", 0)], 10, { rangeOf: wholeSong(60), minWordDuration: 0.1 });
     // duration bound: k <= (60 - 50) / 5 = 2.
     expect(result.appliedFactor).toBeCloseTo(2);
-    expect(result.updates[0].updates.end).toBeCloseTo(60);
+    expect(
+      updatedLine(result.updates[0].updates) && mainTrack(updatedLine(result.updates[0].updates)!).end,
+    ).toBeCloseTo(60);
   });
 });
 
@@ -592,12 +596,12 @@ describe("stretchSelections · degenerate cases", () => {
     expect(nanDuration.updates).toHaveLength(0);
 
     const nanWords: LyricLine[] = [
-      {
+      lineFromFields({
         id: "L",
         text: "a b",
         agentId: "v1",
         words: [{ id: newWordId(), text: "a", sep: "", begin: Number.NaN, end: 2, joinsNext: false }],
-      },
+      }),
     ];
     const nanTiming = stretchSelections(nanWords, [word("L", 0)], 2, OPTS);
     expect(nanTiming.updates).toHaveLength(0);
