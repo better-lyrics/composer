@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { lineFromFields } from "../line-from-fields";
 import { backgroundText, lineText } from "../line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
-import { withMainTrack } from "../line-track-writes";
+import { withMainTrack, withTrackSyllables } from "../line-track-writes";
 import { DEFAULT_SPLIT_CHARACTER } from "../split-character-text";
 import { wordsFromSpaced } from "../word-spaced-words";
 import { parseTtml } from "./read";
@@ -51,7 +51,7 @@ describe("ttml · untimed rest of a partly synced line", () => {
     const syllables = main.syllables.map((syllable) =>
       syllable.text === "fly" ? { ...syllable, passthrough: { attrs: [["class", "soft"] as const] } } : syllable,
     );
-    const kept = withMainTrack(partlySynced, { ...main, syllables });
+    const kept = withMainTrack(partlySynced, withTrackSyllables(main, syllables));
     const ttml = exported(kept);
     expect(ttml).toContain('birds</span> <span class="soft">fly</span> home');
 
