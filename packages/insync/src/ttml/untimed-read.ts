@@ -3,10 +3,10 @@ import type { Passthrough } from "../passthrough";
 import type { XmlChild } from "../xml-node";
 import type { LineTrack, LyricLine, Syllable } from "../line";
 import { syllableJoint, syllablesText } from "../line-text";
-import { backgroundTrack, mainTrack } from "../line-track";
+import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
 import { withBackgroundTrack, withMainTrack } from "../line-track-writes";
 import type { WordTiming } from "../word-timing";
-import { elementRole, isLyricTextElement, isTimedWordSpan, LYRIC_ROLES } from "./modelled";
+import { elementRole, isLyricTextElement, LYRIC_ROLES, untimedRestNodes } from "./modelled";
 import { mixedContentPassthrough } from "./passthrough-read";
 import { parseTtmlTimestamp } from "./timestamp";
 import { markupBaseText } from "./markup";
@@ -29,13 +29,13 @@ interface UntimedLyric {
 
 // -- Reading ------------------------------------------------------------------
 
-// The lyric text of a line or background with no timed syllables, trimmed, and the spans in it that kept data;
-// background, translation and romanization spans are not lyric text.
-function untimedLyric(container: XmlReadElement): UntimedLyric {
+// Lyric text read from a run of nodes, untrimmed, and the spans in it that kept data; background, translation and
+// romanization spans are not lyric text.
+function lyricOfNodes(nodes: readonly XmlReadNode[]): UntimedLyric {
   let text = "";
   const spans: KeptSpan[] = [];
   const ends = new Map<XmlReadNode, number>();
-  for (const node of container.childNodes) {
+  for (const node of nodes) {
     if (node.kind === "text") {
       text += node.text;
       ends.set(node, text.length);
@@ -49,6 +49,12 @@ function untimedLyric(container: XmlReadElement): UntimedLyric {
     text += piece;
     ends.set(element, text.length);
   }
+  return { text, spans, ends };
+}
+
+// The lyric text of a line or background with no timed syllables, trimmed, and the spans in it that kept data.
+function untimedLyric(container: XmlReadElement): UntimedLyric {
+  const { text, spans, ends } = lyricOfNodes(container.childNodes);
   return trimmedLyric(text, spans, ends);
 }
 
@@ -82,27 +88,19 @@ function trimmedLyric(text: string, spans: readonly KeptSpan[], ends: ReadonlyMa
 
 // -- Untimed rest -------------------------------------------------------------
 
-// The text after a container's last timed span, as written: the untimed rest of a partly synced track.
-function untimedTail(container: XmlReadElement): string {
-  const nodes = container.childNodes;
-  const last = nodes.findLastIndex((node) => node.kind === "element" && isTimedWordSpan(node));
-  let tail = "";
-  for (const node of nodes.slice(last + 1)) if (node.kind === "text") tail += node.text;
-  return tail;
-}
-
-// A word-synced track's words and text, the text running on through the untimed rest after the last span; a rest
-// written straight after that span joins its word.
+// A word-synced track's words and text, the text running on through the untimed rest after the last span, and that
+// rest as read; a rest written straight after that span joins its word.
 function timedTrackText(
   words: WordTiming[],
   container: XmlReadElement,
   splitChar: string,
-): { text: string; words: WordTiming[] } {
-  const tail = untimedTail(container);
+): { text: string; words: WordTiming[]; rest: UntimedLyric } {
+  const tail = lyricOfNodes(untimedRestNodes(container));
+  const rest = trimmedLyric(tail.text, tail.spans, tail.ends);
   const closing = words.at(-1);
-  if (!closing || tail.trim() === "") return { text: syllablesText(words, splitChar), words };
-  const read = /^\s/.test(tail) || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
-  return { text: syllablesText(read, splitChar) + tail.trim(), words: read };
+  if (!closing || rest.text === "") return { text: syllablesText(words, splitChar), words, rest };
+  const read = /^\s/.test(tail.text) || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
+  return { text: syllablesText(read, splitChar) + rest.text, words: read, rest };
 }
 
 // An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`; one that
@@ -132,19 +130,21 @@ function syllableRanges(syllables: readonly Syllable[], splitChar: string): { st
   });
 }
 
-// Every syllable a kept span wrote whole takes its data; a track whose syllables do not spell the text takes none.
+// Every untimed syllable a kept span wrote whole takes its data; untimed syllables that do not spell the text take none.
 function withSpans<T extends LineTrack>(track: T, lyric: UntimedLyric | undefined, splitChar: string): T {
   if (!lyric || lyric.spans.length === 0) return track;
-  if (syllablesText(track.syllables, splitChar) !== lyric.text) return track;
-  const ranges = syllableRanges(track.syllables, splitChar);
+  const timed = timedSyllables(track);
+  const rest = track.syllables.slice(timed.length);
+  if (syllablesText(rest, splitChar) !== lyric.text) return track;
+  const ranges = syllableRanges(rest, splitChar);
   let spanIndex = 0;
-  const syllables = track.syllables.map((syllable, index) => {
+  const kept = rest.map((syllable, index) => {
     const { start, end } = ranges[index];
     while (spanIndex < lyric.spans.length && lyric.spans[spanIndex].end < end) spanIndex++;
     const span = lyric.spans[spanIndex];
     return span && span.start <= start && end <= span.end ? { ...syllable, passthrough: span.passthrough } : syllable;
   });
-  return { ...track, syllables };
+  return { ...track, syllables: [...timed, ...kept] };
 }
 
 function withUntimedSpans(

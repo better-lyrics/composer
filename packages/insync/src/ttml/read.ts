@@ -193,14 +193,14 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     let backgroundWords: WordTiming[] | undefined;
     let untimedBackground: UntimedLyric | undefined;
     let backgroundSpan: { backgroundBegin?: number; backgroundEnd?: number } = {};
-    let untimedMain: UntimedLyric | undefined;
-    const { words, text: timedText } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
+    const { words, text: timedText, rest } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
+    let untimedMain: UntimedLyric | undefined = rest;
 
     if (bgContainer) {
       const timedBackground = timedTrackText(extractTimedWords(bgContainer, null), bgContainer, splitChar);
       backgroundWords = timedBackground.words;
       if (backgroundWords.length > 0) {
-        backgroundText = timedBackground.text;
+        ({ text: backgroundText, rest: untimedBackground } = timedBackground);
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
