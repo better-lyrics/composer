@@ -58,6 +58,11 @@ function keptAmongInline(units: readonly Placed<string>[], kept: Passthrough | u
   return withKeptElements(units, kept, writeXmlElement, order).join("");
 }
 
+// The written children kept elements go right after.
+function keptElementAnchors(kept: Passthrough | undefined): ReadonlySet<string> {
+  return new Set(kept?.elementsAfter?.filter((after) => after !== null));
+}
+
 // Kept children among written ones, each on its own line, as between sections.
 function keptAmongLines(
   units: readonly Placed<string[]>[],
@@ -82,4 +87,12 @@ function keptTimesAttributes(kept: KeptTimes | undefined, envelopeOf: () => Enve
 // -- Exports ------------------------------------------------------------------
 
 export type { Placed };
-export { anchorResolver, keptAmongInline, keptAmongLines, keptAttributes, keptElementLines, keptTimesAttributes };
+export {
+  anchorResolver,
+  keptAmongInline,
+  keptAmongLines,
+  keptElementAnchors,
+  keptAttributes,
+  keptElementLines,
+  keptTimesAttributes,
+};

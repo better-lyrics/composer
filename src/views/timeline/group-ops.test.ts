@@ -362,6 +362,23 @@ describe("instanceToTemplate", () => {
     const added = useProjectStore.getState().lines.filter((line) => line.instanceIdx === 1);
     expect(added.map((line) => line.templateLineIdx)).toEqual([1, 2]);
   });
+
+  it("regression: a slot from an instance sharing no timed slot with the pick comes in untimed", () => {
+    const ls = [
+      slotLine("a0", 0, 0, [["Lanterns", 1, 1.5]], true),
+      slotLine("b0", 0, 1, [["Paper", 5, 5.5]]),
+      slotLine("a1", 1, 0, [["Lanterns", 60, 60.5]]),
+    ];
+    useProjectStore.setState({ lines: ls, groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(addInstance("g1", instanceToTemplate(ls, "g1", 0), 40));
+    const added = useProjectStore.getState().lines.filter((line) => line.groupId === "g1" && line.instanceIdx === 2);
+    expect(
+      added.map((line) => [line.templateLineIdx, lineText(line, DEFAULT_SPLIT_CHARACTER), mainBounds(line)]),
+    ).toEqual([
+      [0, "Lanterns", null],
+      [1, "Paper", { begin: 40, end: 40.5 }],
+    ]);
+  });
 });
 
 describe("createGroupFromSelection · group color", () => {

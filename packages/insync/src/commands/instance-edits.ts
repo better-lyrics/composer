@@ -10,7 +10,7 @@ import { belongsToInstance, isAttachedToInstance } from "../instance-predicates"
 import { applyLineUpdates } from "../line-apply-line-updates";
 import { lineFromFields } from "../line-from-fields";
 import type { LineUpdate, LyricLine } from "../line";
-import { previousLineEnd } from "../line-neighbour-bounds";
+import { previousMainEnd } from "../line-neighbour-bounds";
 import { withLinePassthrough } from "../line-passthrough";
 import { isSyncableLine } from "../line-sync-progress";
 import { clampShiftDelta, shiftLineTiming } from "../line-shift";
@@ -53,7 +53,7 @@ function instanceLine(
   return withLinePassthrough(line, template.passthrough);
 }
 
-// An instance placed before the line above it ends would sit on that line.
+// An instance placed before the main track of the line above it ends would sit on that line.
 function startsInsideLineAbove(
   lines: readonly LyricLine[],
   groupId: string,
@@ -64,7 +64,7 @@ function startsInsideLineAbove(
   const anchorIndex = lines.findIndex(
     (line) => isAttachedToInstance(line, groupId, instanceIdx) && isSyncableLine(line, splitChar),
   );
-  return anchorIndex > 0 && start < previousLineEnd(lines, anchorIndex);
+  return anchorIndex > 0 && start < previousMainEnd(lines, anchorIndex);
 }
 
 // -- Commands -----------------------------------------------------------------

@@ -4,6 +4,7 @@ import { type SpacedWord, wordsFromSpaced } from "../word-spaced-words";
 import type { WordTiming } from "../word-timing";
 import { LYRIC_ROLES, UNBOUND_NAMESPACE_PREFIX } from "./modelled";
 import { syllableCapture } from "./passthrough-read";
+import { parseTtmlTimestamp } from "./timestamp";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -48,35 +49,6 @@ function parseTtmlDocument(content: string): XmlReadResult {
   const asWritten = readXmlDocument(declareMissingNamespaces(content));
   if (asWritten.ok) return asWritten;
   return readXmlDocument(declareMissingNamespaces(content.replace(/\\"/g, '"').replace(/\\n/g, "\n")));
-}
-
-function parseTtmlTimestamp(timestamp: string): number {
-  // Format: HH:MM:SS.mmm or MM:SS.mmm or SS.mmm
-  if (!timestamp) return 0;
-
-  const parts = timestamp.split(":");
-  if (parts.length === 3) {
-    // HH:MM:SS.mmm
-    const hours = Number.parseInt(parts[0], 10);
-    const minutes = Number.parseInt(parts[1], 10);
-    const [secs, ms] = parts[2].split(".");
-    const seconds = Number.parseInt(secs, 10);
-    const millis = ms ? Number.parseInt(ms.padEnd(3, "0"), 10) : 0;
-    return hours * 3600 + minutes * 60 + seconds + millis / 1000;
-  }
-  if (parts.length === 2) {
-    // MM:SS.mmm
-    const minutes = Number.parseInt(parts[0], 10);
-    const [secs, ms] = parts[1].split(".");
-    const seconds = Number.parseInt(secs, 10);
-    const millis = ms ? Number.parseInt(ms.padEnd(3, "0"), 10) : 0;
-    return minutes * 60 + seconds + millis / 1000;
-  }
-  // SS.mmm
-  const [secs, ms] = timestamp.split(".");
-  const seconds = Number.parseInt(secs, 10);
-  const millis = ms ? Number.parseInt(ms.padEnd(3, "0"), 10) : 0;
-  return seconds + millis / 1000;
 }
 
 function readExplicitFlag(el: XmlReadElement): boolean {
@@ -130,4 +102,4 @@ function extractTimedWords(parent: XmlReadElement, excludeContainer?: XmlReadEle
 
 // -- Exports ------------------------------------------------------------------
 
-export { extractTimedWords, parseTtmlDocument, parseTtmlTimestamp, ROOT_TT_TAG_REGEX };
+export { extractTimedWords, parseTtmlDocument, ROOT_TT_TAG_REGEX };

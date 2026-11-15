@@ -123,21 +123,22 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
   const startTime = Math.min(
     ...sources.flatMap(({ line, shift }) => {
       const bounds = instanceBounds([line]);
-      return bounds ? [bounds.begin + shift] : [];
+      return bounds && shift !== null ? [bounds.begin + shift] : [];
     }),
   );
   const instanceStart = Number.isFinite(startTime) ? startTime : 0;
 
   return sources.map(({ line, slot, shift }) => {
-    const lineStart = instanceStart - shift;
-    const mainWords = roleWords(line, "main");
+    const timed = shift !== null;
+    const lineStart = instanceStart - (shift ?? 0);
+    const mainWords = timed ? roleWords(line, "main") : undefined;
     const background = backgroundTrack(line);
-    const drawnBackground = drawnSyllables(line, "bg", getSplitCharacter());
+    const drawnBackground = timed ? drawnSyllables(line, "bg", getSplitCharacter()) : [];
     const bgWords = drawnBackground.length > 0 ? drawnBackground : undefined;
     const tplWords = mainWords && wordsToTemplate(mainWords, lineStart, trackPieces(line, "main"));
     const tplBgWords = bgWords && wordsToTemplate(bgWords, lineStart, trackPieces(line, "bg"));
 
-    const lineBounds = mainBounds(line);
+    const lineBounds = timed ? mainBounds(line) : undefined;
     const passthrough = linePassthroughOf(line);
     return {
       slot,
@@ -149,7 +150,7 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       backgroundText: backgroundText(line, getSplitCharacter()),
       backgroundWords: tplBgWords,
       backgroundTextSource: background?.source,
-      ...(background && isSpanTimed(background) && { backgroundLineSynced: true }),
+      ...(timed && background && isSpanTimed(background) && { backgroundLineSynced: true }),
       languages: languagesToTemplate(line.languages),
       ...(passthrough && { passthrough }),
     };

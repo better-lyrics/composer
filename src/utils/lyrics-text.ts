@@ -1,18 +1,37 @@
 import { withShownBackground } from "insync/edit-text-shown-background";
 import { withoutBackground } from "insync/line-background";
 import { lineFromFields } from "insync/line-from-fields";
-import type { LyricLine } from "insync/line";
+import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
+import { memoBySplitCharacter } from "insync/memo-by-identity";
+
+// -- Types --------------------------------------------------------------------
+
+interface RowKeys {
+  cleaned: string;
+  key: string;
+}
 
 // -- Helpers ------------------------------------------------------------------
 
 function matchKey(text: string, splitChar: string): string {
   return withoutSplitCharacter(cleanSplitCharacters(text.trim(), splitChar), splitChar);
 }
+
+function rowKeys(row: string, splitChar: string): RowKeys {
+  const cleaned = cleanSplitCharacters(row.trim(), splitChar);
+  return { cleaned, key: matchKey(cleaned, splitChar) };
+}
+
+// A row still showing its line's text reads the same as that text, so each main track is read once, not per keystroke.
+const mainTrackKeys = memoBySplitCharacter((track: MainTrack, splitChar: string) => {
+  const text = trackText(track, splitChar);
+  return { text, ownKey: matchKey(text, splitChar), row: rowKeys(text, splitChar) };
+});
 
 function carriesBackground(line: LyricLine): boolean {
   return (
@@ -38,7 +57,8 @@ function textToLyricLines(
   shownBackgrounds?: readonly (string | null)[],
 ): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
-  const existingKeys = existingLines.map((line) => matchKey(trackText(mainTrack(line), splitChar), splitChar));
+  const existingTrackKeys = existingLines.map((line) => mainTrackKeys(mainTrack(line), splitChar));
+  const existingKeys = existingTrackKeys.map((keys) => keys.ownKey);
   existingLines.forEach((line, index) => {
     const key = existingKeys[index];
     let bucket = textToCandidates.get(key);
@@ -57,8 +77,12 @@ function textToLyricLines(
   // wrong existing line, so we generate a fresh id for any unmatched typed line.
   const allowPositionMatch = newLines.length === existingLines.length;
 
-  const cleanedTexts = newLines.map((row) => cleanSplitCharacters(row.trim(), splitChar));
-  const cleanedKeys = cleanedTexts.map((cleaned) => matchKey(cleaned, splitChar));
+  const typedKeys = newLines.map((row, index) => {
+    const existing = existingTrackKeys[index];
+    return existing?.text === row ? existing.row : rowKeys(row, splitChar);
+  });
+  const cleanedTexts = typedKeys.map((keys) => keys.cleaned);
+  const cleanedKeys = typedKeys.map((keys) => keys.key);
   const claimed: Array<LyricLine | undefined> = new Array(newLines.length);
   const claim = (index: number, line: LyricLine) => {
     claimed[index] = line;

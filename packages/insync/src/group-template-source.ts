@@ -10,11 +10,12 @@ import type { LyricLine } from "./line";
 
 // -- Types --------------------------------------------------------------------
 
-// A line that gives one slot to a template, and how far it moves to sit in the picked instance's time.
+// A line that gives one slot to a template, and how far it moves to sit in the picked instance's time; null when no
+// shared timed slot places it, so the slot goes in untimed.
 interface SlotSource {
   line: LyricLine;
   slot: number;
-  shift: number;
+  shift: number | null;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -62,7 +63,8 @@ function attachedInstances(lines: readonly LyricLine[], groupId: string): Attach
 }
 
 // Every slot of the group from the picked instance's attached lines. A slot it lost (detached or missing) comes from
-// an instance holding every slot, else from any instance holding that one, moved into the picked instance's time.
+// an instance holding every slot, else from any instance holding that one, moved into the picked instance's time; an
+// instance that shares a timed slot with the pick comes first, as only it can be moved there.
 function templateSlotSources(lines: readonly LyricLine[], groupId: string, picked: number): SlotSource[] {
   const { linesByInstance, slotsByInstance: byInstance } = attachedInstances(lines, groupId);
   const slots = [...new Set([...byInstance.values()].flatMap((held) => [...held.keys()]))].toSorted((a, b) => a - b);
@@ -80,10 +82,12 @@ function templateSlotSources(lines: readonly LyricLine[], groupId: string, picke
   return slots.flatMap((slot) => {
     const own = byInstance.get(picked)?.get(slot);
     if (own) return [{ line: own, slot, shift: 0 }];
-    const donor = donors.find((idx) => byInstance.get(idx)?.has(slot));
-    const line = donor === undefined ? undefined : byInstance.get(donor)?.get(slot);
-    if (donor === undefined || !line) return [];
-    return [{ line, slot, shift: offsetFrom(donor) ?? 0 }];
+    const holders = donors.flatMap((idx) => {
+      const line = byInstance.get(idx)?.get(slot);
+      return line ? [{ line, slot, shift: offsetFrom(idx) }] : [];
+    });
+    const placed = holders.find(({ shift }) => shift !== null);
+    return placed ? [placed] : holders.slice(0, 1);
   });
 }
 

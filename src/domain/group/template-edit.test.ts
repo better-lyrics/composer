@@ -151,6 +151,67 @@ describe("carryTemplateEdits", () => {
   });
 });
 
+describe("carryTemplateEdits · a word moved to another line", () => {
+  const slotLine = (id: string, instanceIdx: number, slot: number, texts: string[], fields = {}) =>
+    groupLine(id, instanceIdx, {
+      text: texts.join(" "),
+      templateLineIdx: slot,
+      words: words(instanceIdx * 20 + slot * 2, texts),
+      ...fields,
+    });
+  const moveGlow = (before: LyricLine[], from: number, to: number) => {
+    const [glow, rain] = timedSyllables(mainTrack(before[from]));
+    const [fire] = timedSyllables(mainTrack(before[to]));
+    const moved = { ...glow, sep: " ", begin: fire.begin - 0.4, end: fire.begin };
+    return before
+      .with(from, withFields(before[from], { text: "rain", words: [rain] }))
+      .with(to, withFields(before[to], { text: "glow fire", words: [moved, fire] }));
+  };
+
+  it("regression: an instance that lacks one of the two lines keeps its own words", () => {
+    const before = [
+      slotLine("L1", 0, 0, ["glow", "rain"]),
+      slotLine("L2", 0, 1, ["fire"]),
+      slotLine("L3", 1, 0, ["glow", "rain"]),
+      slotLine("L4", 1, 1, ["fire"], { detached: true }),
+      slotLine("L5", 2, 0, ["glow", "rain"]),
+      slotLine("L6", 2, 1, ["fire"]),
+    ];
+    const out = carried(before, moveGlow(before, 0, 1));
+    expect(out.slice(2, 4)).toEqual(before.slice(2, 4));
+    expect(out.slice(4).map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["rain", "glow fire"]);
+  });
+
+  it("regression: a word moved onto a detached line leaves the other instances alone", () => {
+    const before = [
+      slotLine("L1", 0, 0, ["glow", "rain"]),
+      slotLine("L2", 0, 1, ["fire"], { detached: true }),
+      slotLine("L3", 1, 0, ["glow", "rain"]),
+      slotLine("L4", 1, 1, ["fire"]),
+    ];
+    expect(carried(before, moveGlow(before, 0, 1)).slice(2)).toEqual(before.slice(2));
+  });
+
+  it("regression: an edit to another instance's detached line under the same ids never splits the move", () => {
+    const templateIds = (line: LyricLine, ids: readonly string[]) =>
+      withFields(line, { words: timedSyllables(mainTrack(line)).map((word, index) => ({ ...word, id: ids[index] })) });
+    const before = [
+      templateIds(slotLine("L1", 0, 0, ["glow", "rain"]), ["glow", "rain"]),
+      templateIds(slotLine("L2", 0, 1, ["fire"]), ["fire"]),
+      templateIds(slotLine("L3", 1, 0, ["glow", "rain"], { detached: true }), ["glow", "rain"]),
+      templateIds(slotLine("L4", 1, 1, ["fire"]), ["fire"]),
+      templateIds(slotLine("L5", 2, 0, ["glow", "rain"]), ["glow", "rain"]),
+      templateIds(slotLine("L6", 2, 1, ["fire"]), ["fire"]),
+    ];
+    const after = moveGlow(before, 0, 1).with(2, withFields(before[2], { text: "glow rain now" }));
+    expect(
+      carried(before, after)
+        .slice(4)
+        .map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER)),
+    ).toEqual(["rain", "glow fire"]);
+  });
+});
+
 describe("carryTemplateEdits · two instances edited at once", () => {
   it("regression: each edited instance keeps its own edit and the others take the first one", () => {
     const before = [
@@ -278,6 +339,18 @@ describe("carryTemplateEdits · untimed instances", () => {
     expect(spans(out)).toEqual([
       ["Paper", 11, 11.5],
       ["wing", 11.5, 12],
+    ]);
+  });
+
+  it("regression: a word added at the front in an untimed instance leaves the timed instance's words on their times", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Paper wings fly" }),
+      groupLine("L2", 1, { text: "Paper wings fly", words: words(11, ["Paper", "wings", "fly"]) }),
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "Red Paper wings" })), [shared])[1];
+    expect(spans(out).slice(1)).toEqual([
+      ["Paper", 11, 11.5],
+      ["wings", 11.5, 12],
     ]);
   });
 

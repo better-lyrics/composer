@@ -2,6 +2,7 @@ import { alternateBackgroundPlacement } from "./language-background-placement";
 import type { LyricLine } from "./line";
 import { backgroundText, lineText, syllableJoint } from "./line-text";
 import { mainTrack } from "./line-track";
+import { memoBySplitCharacter } from "./memo-by-identity";
 
 // -- Types --------------------------------------------------------------------
 
@@ -30,8 +31,6 @@ interface ShownEditText {
 const NO_RANGES: readonly BackgroundRange[] = [];
 
 // -- Rows ---------------------------------------------------------------------
-
-const rowByLine = new WeakMap<LyricLine, { splitChar: string; row: ShownRow }>();
 
 function isBracketed(text: string): boolean {
   return text.startsWith("(") && text.endsWith(")");
@@ -69,13 +68,7 @@ function computeShownRow(line: LyricLine, splitChar: string): ShownRow {
   return rowWithToken(main.slice(0, offset).trimEnd(), token, main.slice(offset), bracketed);
 }
 
-function shownRow(line: LyricLine, splitChar: string): ShownRow {
-  const cached = rowByLine.get(line);
-  if (cached?.splitChar === splitChar) return cached.row;
-  const row = computeShownRow(line, splitChar);
-  rowByLine.set(line, { splitChar, row });
-  return row;
-}
+const shownRow = memoBySplitCharacter(computeShownRow);
 
 function shiftedRange(range: BackgroundRange, by: number): BackgroundRange {
   return by === 0 ? range : { ...range, start: range.start + by, end: range.end + by };

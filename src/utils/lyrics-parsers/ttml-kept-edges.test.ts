@@ -1,15 +1,15 @@
-import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { agentsAfterImport } from "insync/agent-imported-agents";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingWrite } from "insync/line-track-writes";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
-import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { parseTtml } from "insync/ttml/read";
 import { generateTTML } from "insync/ttml/write";
+import { describe, expect, it } from "vitest";
+import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
 import { parseXmlDocument } from "@/utils/xml-document";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -41,12 +41,12 @@ describe("ttml kept data edges", () => {
     expect(ttml).toContain("<x-vendor:trailer/>");
   });
 
-  it("several metadata blocks keep the first value of each attribute and every element", () => {
+  it("regression: each metadata block keeps its own attributes and elements, in source order", () => {
     const ttml = exported();
-    expect(occurrences(ttml, "x-vendor:pass=")).toBe(1);
-    expect(ttml).toContain('x-vendor:pass="first"');
-    expect(ttml).toContain('x-vendor:origin="desk"');
-    expect(ttml).toContain("<x-vendor:tag>second block</x-vendor:tag>");
+    expect(ttml).toMatch(/<metadata x-vendor:pass="first">[\s\S]*<\/metadata>\s*<metadata x-vendor:pass="second"/);
+    expect(ttml).toContain(
+      '<metadata x-vendor:pass="second" x-vendor:origin="desk"><x-vendor:tag>second block</x-vendor:tag></metadata>',
+    );
   });
 
   it("a song part holding nested sections covers their lines, and an empty one is kept", () => {
@@ -71,6 +71,12 @@ describe("ttml kept data edges", () => {
     expect(exported()).toContain("<x-vendor:note>aside</x-vendor:note>");
   });
 
+  it("regression: a kept element in the middle of a line-synced line stays between the words it sat between", () => {
+    expect(exported()).toContain(
+      'Quiet <x-vendor:note>aside</x-vendor:note>harbour <span tts:color="red">bright</span></p>',
+    );
+  });
+
   it("kept ruby that ends in a space is not followed by a second one", () => {
     expect(exported()).toContain("</ruby> </span><span");
   });
@@ -81,6 +87,63 @@ describe("ttml kept data edges", () => {
     expect(ttml).not.toContain("xmlns:b=");
     expect(ttml).toContain('xmlns:amll="http://www.example.com/ns/amll"');
     expect(ttml).toContain('xmlns:y-tool="urn:composer:unbound:y-tool"');
+  });
+
+  it("regression: a prefix the source declared below the root is written with the source's namespace", () => {
+    const sources = [
+      `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="0:01.000" end="0:02.000" xmlns:v="urn:v"><span begin="0:01.000" end="0:02.000" v:x="1">Tide</span></p></div></body></tt>`,
+      `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal"><body><div itunes:songPart="Verse" xmlns:v="urn:v"><p begin="0:01.000" end="0:02.000"><span begin="0:01.000" end="0:02.000" v:x="1">Tide</span></p></div></body></tt>`,
+    ];
+    for (const source of sources) {
+      const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+      const ttml = generateTTML({
+        metadata: normalizeLoadedMetadata(parsed.metadata),
+        agents: [],
+        lines: parsed.lines,
+        parts: parsed.parts,
+        passthrough: parsed.passthrough,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      expect(ttml).not.toContain("urn:composer:unbound:v");
+      expect(ttml).toContain('xmlns:v="urn:v"');
+    }
+  });
+
+  it("regression: kept line and background times are written only while they hold the content", () => {
+    const write = (source: string) => {
+      const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+      return generateTTML({
+        metadata: normalizeLoadedMetadata(parsed.metadata),
+        agents: [],
+        lines: parsed.lines,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+    };
+    const backgroundPastLine = write(
+      `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0:01.000" end="0:05.000"><span begin="0:01.000" end="0:03.000">Tide</span><span ttm:role="x-bg"><span begin="0:04.000" end="0:05.200">(in)</span></span></p></div></body></tt>`,
+    );
+    expect(backgroundPastLine).toContain('<p begin="0:01.000" end="0:05.200"');
+    const backgroundAfterItsSpan = write(
+      `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0:01.000" end="0:03.000">Low tide<span ttm:role="x-bg" begin="0:02.000">(low)</span></p></div></body></tt>`,
+    );
+    expect(backgroundAfterItsSpan).toContain(
+      '<span ttm:role="x-bg" begin="0:02.000"><span begin="0:02.000" end="0:03.000">(low)</span></span>',
+    );
+  });
+
+  it("regression: a line-synced line's main span is written apart only when it differs in time, not in spelling", () => {
+    const parsed = parseTtml(
+      `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:12.340" end="00:14.000">Low tide</p></div></body></tt>`,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: [],
+      lines: parsed.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
+    expect(ttml).toContain('<p begin="00:12.340" end="00:14.000"');
+    expect(ttml).not.toContain("composer:main");
   });
 
   it("a second round trip changes nothing", () => {
@@ -126,7 +189,7 @@ describe("ttml kept data edges", () => {
 
   it("untimed spans of a line-synced line and background keep their attributes", () => {
     const ttml = exported();
-    expect(ttml).toContain('Quiet harbour <span tts:color="red">bright</span>');
+    expect(ttml).toContain('harbour <span tts:color="red">bright</span>');
     expect(ttml).toContain(
       '<span ttm:role="x-bg"><span begin="0:10.000" end="0:12.000" x-vendor:echo="2">(far)</span></span>',
     );
@@ -171,6 +234,18 @@ describe("ttml kept data edges", () => {
       splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(ttml).toMatch(/>comes<\/span> <k:mark\/><span [^>]*>in<\/span><\/p>/);
+  });
+
+  it("regression: a kept element between two alike untimed spans of a line-synced line stays between them", () => {
+    const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:x-vendor="https://vendor.example/x"><body><div><p begin="0:01.000" end="0:03.000"><span x-vendor:c="red">one </span><x-vendor:note/><span x-vendor:c="red">two</span></p></div></body></tt>`;
+    const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: [],
+      lines: parsed.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
+    expect(ttml).toContain('<span x-vendor:c="red">one</span> <x-vendor:note/><span x-vendor:c="red">two</span></p>');
   });
 
   it("regression: a body element between two plain sections stays between their lines", () => {

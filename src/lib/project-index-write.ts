@@ -1,6 +1,7 @@
-import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
+import { type ProjectIndexEntry, buildIndexEntry, storedLyricLines } from "@/domain/project/index-entry";
 import { estimateRecordBytes } from "@/domain/project/record-bytes";
 import type { LanguageTextVariant } from "insync/language-display";
+import type { LyricLine } from "insync/line";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
@@ -24,21 +25,31 @@ interface IndexViewFields {
   textVariant?: LanguageTextVariant;
 }
 
-interface IndexEntryWrite {
+interface IndexEntryContext {
+  // The loaded lines the record was saved from, so the entry never reads the saved lines back.
+  lines?: readonly LyricLine[];
+  view?: IndexViewFields;
+}
+
+interface IndexEntryWrite extends IndexEntryContext {
   id: string;
   project: StoredProject;
-  view?: IndexViewFields;
   onFirstEntry?: () => void;
 }
 
 type IndexPatch = Partial<IndexCarriedFields>;
 // -- Building -----------------------------------------------------------------
 
-function indexEntryForProject(id: string, project: StoredProject, carried: IndexCarriedFields): ProjectIndexEntry {
+function indexEntryForProject(
+  id: string,
+  project: StoredProject,
+  lines: readonly LyricLine[],
+  carried: IndexCarriedFields,
+): ProjectIndexEntry {
   return buildIndexEntry({
     id,
     metadata: project.metadata,
-    lines: project.lines,
+    lines,
     audioSource: project.audioSource,
     updatedAt: project.savedAt,
     recordBytes: estimateRecordBytes(project),
@@ -60,7 +71,8 @@ function carriedIndexFields(entry: ProjectIndexEntry): IndexCarriedFields {
 
 // -- Writing ------------------------------------------------------------------
 
-function writeIndexEntry(tx: IDBTransaction, { id, project, view = {}, onFirstEntry }: IndexEntryWrite): void {
+function writeIndexEntry(tx: IDBTransaction, { id, project, lines, view = {}, onFirstEntry }: IndexEntryWrite): void {
+  const lyricLines = lines ?? storedLyricLines(project.lines);
   const index = tx.objectStore(PROJECT_INDEX_STORE_NAME);
   const previous = index.get(id);
   previous.onsuccess = () => {
@@ -69,7 +81,7 @@ function writeIndexEntry(tx: IDBTransaction, { id, project, view = {}, onFirstEn
       const carried = carriedIndexFields(entry);
       const lastTab = view.lastTab ?? carried.lastTab;
       const textVariant = view.textVariant ?? carried.textVariant;
-      index.put(indexEntryForProject(id, project, { ...carried, lastTab, textVariant }), id);
+      index.put(indexEntryForProject(id, project, lyricLines, { ...carried, lastTab, textVariant }), id);
       return;
     }
     const count = index.count();
@@ -84,7 +96,7 @@ function writeIndexEntry(tx: IDBTransaction, { id, project, view = {}, onFirstEn
           openedAt: project.savedAt,
           ...view,
         };
-        index.put(indexEntryForProject(id, project, carried), id);
+        index.put(indexEntryForProject(id, project, lyricLines, carried), id);
         if (count.result === 0) onFirstEntry?.();
       };
     };
@@ -106,4 +118,4 @@ function patchIndexEntry(tx: IDBTransaction, id: string, patch: IndexPatch, onWr
 // -- Exports ------------------------------------------------------------------
 
 export { indexEntryForProject, patchIndexEntry, writeIndexEntry };
-export type { IndexPatch, IndexViewFields };
+export type { IndexEntryContext, IndexPatch, IndexViewFields };

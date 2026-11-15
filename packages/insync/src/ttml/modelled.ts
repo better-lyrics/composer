@@ -199,8 +199,6 @@ function isModelledChildOf(
   switch (node) {
     case "tt":
       return child.tagName === "head" || child.tagName === "body";
-    case "head":
-      return child.tagName === "metadata";
     case "metadata":
       return METADATA_ELEMENTS.has(child.tagName) || child.localName === "iTunesMetadata";
     case "iTunesMetadata":
@@ -224,6 +222,10 @@ function isModelledChildOf(
 
 // Whether a child of `parent` is modelled; the parent is read once, not per child.
 function modelledChildTest(node: TtmlNode, parent: XmlReadElement): (child: XmlReadElement) => boolean {
+  if (node === "head") {
+    const written = Array.from(parent.children).find((child) => child.tagName === "metadata");
+    return (child) => child === written || inComposerNamespace(child);
+  }
   const inLine = node === "p" || node === "background";
   const parentHasTimedWords = inLine && hasTimedWordSpans(parent);
   const readAlternates = inLine ? readInlineAlternates(parent) : new Map<XmlReadElement, string>();

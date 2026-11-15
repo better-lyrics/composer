@@ -1,10 +1,13 @@
 import { effectiveBounds } from "./line-bounds";
 import type { LyricLine } from "./line";
+import { memoByIdentity } from "./memo-by-identity";
 
 // -- Functions ----------------------------------------------------------------
 
+const lineStart = memoByIdentity((line: LyricLine) => effectiveBounds(line)?.begin ?? Number.NaN);
+
 function lineStarts(lines: readonly LyricLine[]): number[] {
-  return lines.map((line) => effectiveBounds(line)?.begin ?? Number.NaN);
+  return lines.map(lineStart);
 }
 
 // The last line that has started by `time`, or the first line before any has started.

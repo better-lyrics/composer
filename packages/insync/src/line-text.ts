@@ -1,5 +1,6 @@
 import type { LineTrack, LyricLine, Syllable } from "./line";
 import { backgroundTrack, mainTrack } from "./line-track";
+import { memoBySplitCharacter } from "./memo-by-identity";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -18,15 +19,9 @@ function syllablesText(syllables: readonly Syllable[], splitChar: string): strin
   return text;
 }
 
-const textByTrack = new WeakMap<LineTrack, { splitChar: string; text: string }>();
-
-function trackText(track: LineTrack, splitChar: string): string {
-  const cached = textByTrack.get(track);
-  if (cached?.splitChar === splitChar) return cached.text;
-  const text = syllablesText(track.syllables, splitChar);
-  textByTrack.set(track, { splitChar, text });
-  return text;
-}
+const trackText = memoBySplitCharacter((track: LineTrack, splitChar: string): string =>
+  syllablesText(track.syllables, splitChar),
+);
 
 function lineText(line: LyricLine, splitChar: string): string {
   return trackText(mainTrack(line), splitChar);

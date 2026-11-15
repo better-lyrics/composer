@@ -161,12 +161,15 @@ function editRows(text: string, ranges: readonly BackgroundRange[]): EditRow[] {
   let rowStart = 0;
   return text.split("\n").map((row) => {
     const rowEnd = rowStart + row.length;
-    const own: BackgroundRange[] = [];
+    let own: BackgroundRange[] | undefined;
     while (next < sorted.length && sorted[next].end <= rowEnd) {
-      if (sorted[next].start >= rowStart) own.push(sorted[next]);
+      if (sorted[next].start >= rowStart) {
+        own ??= [];
+        own.push(sorted[next]);
+      }
       next++;
     }
-    const parsed = editRow(row, rowStart, own);
+    const parsed = editRow(row, rowStart, own ?? NO_RANGES);
     rowStart = rowEnd + 1;
     return parsed;
   });
@@ -175,29 +178,36 @@ function editRows(text: string, ranges: readonly BackgroundRange[]): EditRow[] {
 // Rows the user typed stay verbatim with their tokens; only rows a linked edit rewrote show the committed line.
 function shownWithRewrittenRows(
   typed: ShownEditText,
-  typedLines: readonly LyricLine[],
+  typedLines: readonly (LyricLine | undefined)[],
   finalLines: readonly LyricLine[],
   splitChar: string,
 ): ShownEditText {
-  const rows: string[] = [];
+  const { text } = typed;
+  let shownText = "";
+  let keptFrom = 0;
   const ranges: BackgroundRange[] = [];
   const sorted = typed.ranges.toSorted((a, b) => a.start - b.start);
   let next = 0;
   let oldStart = 0;
   let newStart = 0;
-  typed.text.split("\n").forEach((row, index) => {
+  for (let index = 0; oldStart <= text.length; index++) {
+    const breakAt = text.indexOf("\n", oldStart);
+    const rowEnd = breakAt === -1 ? text.length : breakAt;
     const rewritten = finalLines[index] !== typedLines[index] ? shownRow(finalLines[index], splitChar) : null;
-    const shown = rewritten?.text ?? row;
+    if (rewritten) {
+      shownText += text.slice(keptFrom, oldStart) + rewritten.text;
+      keptFrom = rowEnd;
+    }
+    const shownLength = rewritten ? rewritten.text.length : rowEnd - oldStart;
     if (rewritten?.background) ranges.push(shiftedRange(rewritten.background, newStart));
-    const rowEnd = oldStart + row.length;
     for (; next < sorted.length && sorted[next].end <= rowEnd; next++) {
       if (!rewritten && sorted[next].start >= oldStart) ranges.push(shiftedRange(sorted[next], newStart - oldStart));
     }
-    rows.push(shown);
-    oldStart += row.length + 1;
-    newStart += shown.length + 1;
-  });
-  return { text: rows.join("\n"), ranges: ranges.length === 0 ? NO_RANGES : ranges };
+    oldStart = rowEnd + 1;
+    newStart += shownLength + 1;
+  }
+  shownText += text.slice(keptFrom);
+  return { text: shownText, ranges: ranges.length === 0 ? NO_RANGES : ranges };
 }
 
 // -- Exports ------------------------------------------------------------------

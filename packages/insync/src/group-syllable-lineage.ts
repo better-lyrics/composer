@@ -1,3 +1,4 @@
+import { type CarriedTimes, inSongOrder } from "./group-carried-times";
 import type { Syllable } from "./line";
 import { isTimedSyllable, untimedSyllable } from "./line-track";
 import { lcsPairs, wordKey } from "./word-alignment";
@@ -52,8 +53,6 @@ function timedPair(pair: LineagePair | undefined): { source: WordTiming; target:
     ? { source: pair.source, target: pair.target }
     : undefined;
 }
-
-type CarriedTimes = readonly [number, number] | "untimed" | null;
 
 // The source syllables a timed syllable of the edit came from: the ones its span covers, or the one it kept the id of.
 // "untimed" when the other instance has one of them untimed; null when the edit added the syllable.
@@ -134,7 +133,7 @@ function leadsIn(
     const later = after[index + 1];
     const reached = filled[index + 1];
     if (!isTimedSyllable(syllable) || !isTimedSyllable(later) || !Array.isArray(reached)) return false;
-    const begin = Math.max(floor, reached[0] - (later.begin - syllable.begin) * scale);
+    const begin = Math.max(Math.min(floor, reached[0]), reached[0] - (later.begin - syllable.begin) * scale);
     const finish = Math.max(begin, reached[0] - (later.begin - syllable.end) * scale);
     filled[index] = [tidy(begin), tidy(finish)];
   }
@@ -143,8 +142,8 @@ function leadsIn(
 
 // Timed syllables the edit added with no source under them fill the gap the instance has where they sit, split evenly.
 // Added before the first or after the last syllable the instance has, they keep the edit's gaps and lengths at the
-// instance's scale, inside the instance's room: after the line before it ends, before the line after it starts. With no
-// timed syllable of the instance beside them they stay untimed.
+// instance's scale, inside the instance's room: after the line before it ends, before the line after it starts, but never
+// past the instance's syllable beside them. With no timed syllable of the instance beside them they stay untimed.
 function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes[], room: LineRoom): CarriedTimes[] {
   const { floor, limit } = room;
   const filled = [...times];
@@ -165,8 +164,9 @@ function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes
         const earlier = after[index - 1];
         const reached = spanAt(index - 1);
         if (!isTimedSyllable(syllable) || !isTimedSyllable(earlier) || !reached) break;
-        const begin = Math.min(limit, reached[1] + (syllable.begin - earlier.end) * scale);
-        filled[index] = [tidy(begin), tidy(Math.min(limit, begin + (syllable.end - syllable.begin) * scale))];
+        const ceiling = Math.max(limit, reached[1]);
+        const begin = Math.min(ceiling, reached[1] + (syllable.begin - earlier.end) * scale);
+        filled[index] = [tidy(begin), tidy(Math.min(ceiling, begin + (syllable.end - syllable.begin) * scale))];
       }
       start = end;
       continue;
@@ -179,7 +179,7 @@ function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes
       start = end;
       continue;
     }
-    const from = previous?.[1] ?? floor;
+    const from = previous?.[1] ?? Math.min(floor, next?.[0] ?? floor);
     const to = Math.max(from, next?.[0] ?? from);
     const step = (to - from) / (end - start + 1);
     for (let index = start; index <= end; index++) {
@@ -200,8 +200,15 @@ function syllableLineage(
   counterpart: LineageCounterpart,
   room: LineRoom = WHOLE_SONG,
 ): Syllable[] {
-  const carried = after.map((syllable) => carriedTimes(syllable, before, counterpart));
-  const times = withGapsFilled(after, carried, room);
+  const times = withGapsFilled(
+    after,
+    inSongOrder(
+      before,
+      after,
+      after.map((syllable) => carriedTimes(syllable, before, counterpart)),
+    ),
+    room,
+  );
   return withTimes(after, times, (syllable) => targetId(counterpart, syllable.id));
 }
 

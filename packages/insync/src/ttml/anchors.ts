@@ -11,6 +11,7 @@ type AnchorOf = (child: XmlReadNode) => string | undefined;
 
 const HEAD_ANCHOR = "head";
 const BODY_ANCHOR = "body";
+const METADATA_ANCHOR = "metadata";
 // A track written whole, as the text of a line-synced line.
 const TEXT_ANCHOR = "text";
 const BACKGROUND_ANCHOR = "x-bg";
@@ -25,6 +26,9 @@ const rootAnchors: AnchorOf = (child) => {
   const tagName = asElement(child)?.tagName;
   return tagName === HEAD_ANCHOR || tagName === BODY_ANCHOR ? tagName : undefined;
 };
+
+// The one `<metadata>` Composer writes; later blocks are kept elements of the head.
+const headAnchors: AnchorOf = (child) => (asElement(child)?.tagName === METADATA_ANCHOR ? METADATA_ANCHOR : undefined);
 
 // Lines and the sections holding them stand for the line written last in them.
 function sectionAnchors(lineByParagraph: ReadonlyMap<XmlReadElement, LyricLine>): AnchorOf {
@@ -41,18 +45,28 @@ function sectionAnchors(lineByParagraph: ReadonlyMap<XmlReadElement, LyricLine>)
   };
 }
 
-// Timed spans stand for the syllables read from them; without any, the lyric text stands for the track as a whole.
-function trackAnchors(container: XmlReadElement, timed: readonly { id: string }[], holdsBackground: boolean): AnchorOf {
+// Timed spans stand for the syllables read from them; without any, each piece of lyric text stands for the untimed
+// syllable it reaches into (`untimed`), else the lyric text stands for the track as a whole.
+function trackAnchors(
+  container: XmlReadElement,
+  timed: readonly { id: string }[],
+  holdsBackground: boolean,
+  untimed: ReadonlyMap<XmlReadNode, string>,
+): AnchorOf {
   const spans = Array.from(container.children).filter(isTimedWordSpan);
   const syllableOf = new Map(spans.length === timed.length ? spans.map((span, index) => [span, timed[index].id]) : []);
   return (child) => {
     const element = asElement(child);
     if (!element)
-      return spans.length === 0 && ("text" in child ? child.text : "").trim() !== "" ? TEXT_ANCHOR : undefined;
+      return spans.length === 0 && ("text" in child ? child.text : "").trim() !== ""
+        ? (untimed.get(child) ?? TEXT_ANCHOR)
+        : undefined;
     const role = elementRole(element);
     if (holdsBackground && role === BACKGROUND_ANCHOR) return BACKGROUND_ANCHOR;
     if (spans.length > 0) return syllableOf.get(element);
-    return isLyricTextElement(element) && !LYRIC_ROLES.has(role ?? "") ? TEXT_ANCHOR : undefined;
+    return isLyricTextElement(element) && !LYRIC_ROLES.has(role ?? "")
+      ? (untimed.get(element) ?? TEXT_ANCHOR)
+      : undefined;
   };
 }
 
@@ -63,6 +77,8 @@ export {
   BACKGROUND_ANCHOR,
   BODY_ANCHOR,
   HEAD_ANCHOR,
+  headAnchors,
+  METADATA_ANCHOR,
   noAnchors,
   rootAnchors,
   sectionAnchors,

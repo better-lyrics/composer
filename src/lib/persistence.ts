@@ -69,7 +69,7 @@ function buildSavedProject(input: ProjectSaveInput): SavedProject {
 
 async function saveProjectTo(target: Promise<string>, input: ProjectSaveInput, view?: IndexViewFields): Promise<void> {
   const project = buildSavedProject(input);
-  await saveProjectRecord(await target, project, view);
+  await saveProjectRecord(await target, project, { view, lines: input.lines });
 }
 
 // -- Public API ---------------------------------------------------------------

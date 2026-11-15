@@ -15,7 +15,7 @@ import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
+import { subscribePlacementBlocked, subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -449,6 +449,18 @@ describe("placeInstance", () => {
     expect(roleWords(lineById("c1"), "main")).toBeUndefined();
   });
 
+  it("regression: places an instance over the background echo of the line above", () => {
+    const verse = createLine({
+      id: "v",
+      text: "Walking",
+      backgroundText: "(home)",
+      words: [{ text: "Walking", begin: 20, end: 21 }],
+      backgroundWords: [{ text: "(home)", begin: 20.8, end: 22 }],
+    });
+    seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
+    expect(placed("g1", 1, 21.5, SONG_LENGTH)).toBe(true);
+  });
+
   it("copies a preceding edit on a shared instance before placing, so the placed copy includes it", () => {
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
     const closeLastWord = fieldUpdates([
@@ -544,8 +556,15 @@ describe("placeInstance", () => {
         },
       ]);
       useAudioStore.setState({ duration: songLength });
-      expect(isRefused(store().commit(pasteLines(laterStart)))).toBe(true);
+      let blocked = 0;
+      const unsubscribe = subscribePlacementBlocked(() => blocked++);
+      try {
+        expect(isRefused(store().commit(pasteLines(laterStart)))).toBe(true);
+      } finally {
+        unsubscribe();
+      }
       expect(store().lines).toBe(before);
+      expect(blocked).toBe(1);
     });
 
     it("writes nothing and reports false when there is no timed reference", () => {

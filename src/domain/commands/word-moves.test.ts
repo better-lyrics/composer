@@ -4,6 +4,7 @@
 
 import { pasteLyrics } from "insync/commands/edit-text";
 import { duplicateWords, moveWords, moveWordsAcrossLines } from "insync/commands/word-moves";
+import type { LinkGroup } from "insync/group";
 import { pieceOf, trackPieces } from "insync/language-pieces";
 import type { LineLanguages } from "insync/language";
 import { lineText } from "insync/line-text";
@@ -172,6 +173,68 @@ describe("word moves inside a group instance", () => {
       const topLine = useProjectStore.getState().lines.find((line) => line.id === `top-${instanceIdx}`);
       expect(roleWords(topLine, "main")?.map((word) => word.text)).toEqual(["We", "glow"]);
     }
+  });
+
+  it.each<[string, LinkGroup]>([
+    ["on its own timing", chorusGroup],
+    ["sharing timing", { ...chorusGroup, sharesTiming: true }],
+  ])("regression: an instance missing one of the two lines keeps its words apart from the template, %s", (_, group) => {
+    const [top0, bottom0] = chorusLines(0, 10);
+    useProjectStore.getState().restoreLyrics({
+      lines: [top0, { ...bottom0, detached: true }, ...chorusLines(1, 40), ...chorusLines(2, 70)],
+      groups: [group],
+    });
+    const top = useProjectStore.getState().lines.find((line) => line.id === "top-1");
+    const tonight = top && roleWords(top, "main")?.[2];
+    if (!tonight) throw new Error("expected tonight in instance 2");
+    let detachedIds: readonly string[] = [];
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines(
+        {
+          addresses: [addressOf({ id: "top-1" }, "word", tonight)],
+          fromLineId: "top-1",
+          targetLineId: "bottom-1",
+          targetTrack: "word",
+          timeDelta: 0.5,
+          duration: 120,
+        },
+        (ids) => {
+          detachedIds = ids;
+        },
+      ),
+    );
+
+    const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
+    expect(detachedIds).toEqual(["top-0"]);
+    expect(lineById("top-0")?.detached).toBe(true);
+    expect(roleWords(lineById("top-0"), "main")?.map((word) => word.text)).toEqual(["We", "glow", "tonight"]);
+    expect(roleWords(lineById("top-2"), "main")?.map((word) => word.text)).toEqual(["We", "glow"]);
+    expect(roleWords(lineById("bottom-2"), "main")?.[0].text).toBe("tonight");
+  });
+
+  it("regression: a word moved onto its instance's detached line takes its old line out of the template", () => {
+    const [top1, bottom1] = chorusLines(1, 40);
+    useProjectStore.getState().restoreLyrics({
+      lines: [...chorusLines(0, 10), top1, { ...bottom1, detached: true }, ...chorusLines(2, 70)],
+      groups: [chorusGroup],
+    });
+    const tonight = roleWords(top1, "main")?.[2];
+    if (!tonight) throw new Error("expected tonight in instance 2");
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf({ id: "top-1" }, "word", tonight)],
+        fromLineId: "top-1",
+        targetLineId: "bottom-1",
+        targetTrack: "word",
+        timeDelta: 0.5,
+        duration: 120,
+      }),
+    );
+    const tops = useProjectStore.getState().lines.filter((line) => line.id.startsWith("top-"));
+    expect(tops.filter((line) => !line.detached).map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "We glow tonight",
+      "We glow tonight",
+    ]);
   });
 
   const wordTimes = (lineId: string) =>

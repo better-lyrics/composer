@@ -6,6 +6,7 @@ import type { LinkGroup } from "../group";
 import { lineFromFields } from "../line-from-fields";
 import type { LyricLine } from "../line";
 import { isLineSynced, isWordSynced } from "../line-predicates";
+import { mainTrack } from "../line-track";
 import { syllablesText } from "../line-text";
 import { normalizeLanguageTag } from "../project-language";
 import type { ProjectMetadata } from "../metadata";
@@ -14,10 +15,12 @@ import type { WordTiming } from "../word-timing";
 import { COMPOSER_NAMESPACES } from "./composer-namespace";
 import { type ParseResult, generateLineId } from "../parse-result";
 import { parseTtmlAlternates, withInlineAlternates } from "./alternates-read";
-import { extractTimedWords, parseTtmlDocument, parseTtmlTimestamp } from "./read-helpers";
+import { extractTimedWords, parseTtmlDocument } from "./read-helpers";
+import { MAIN_BEGIN_ATTRIBUTE, MAIN_END_ATTRIBUTE } from "./main-span";
+import { parseTtmlTimestamp } from "./timestamp";
 import { partsFromDivs } from "./parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "./passthrough-read";
-import { type UntimedLyric, untimedLyric, withUntimedSpans } from "./untimed-read";
+import { type UntimedLyric, untimedAnchors, untimedLyric, withUntimedSpans } from "./untimed-read";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -29,6 +32,32 @@ function getComposerAttribute(el: XmlReadElement, name: string): string | null {
     if (value !== null) return value;
   }
   return null;
+}
+
+// The span of a main track read as text: the one Composer wrote apart, else the `<p>` times.
+function untimedMainSpan(p: XmlReadElement, begin: number, end: number): { begin?: number; end?: number } {
+  const mainBegin = getComposerAttribute(p, MAIN_BEGIN_ATTRIBUTE);
+  const mainEnd = getComposerAttribute(p, MAIN_END_ATTRIBUTE);
+  if (mainBegin !== null && mainEnd !== null) {
+    const ownBegin = parseTtmlTimestamp(mainBegin);
+    const ownEnd = parseTtmlTimestamp(mainEnd);
+    if (Number.isFinite(ownBegin) && Number.isFinite(ownEnd) && ownBegin <= ownEnd) {
+      return { begin: ownBegin, end: ownEnd };
+    }
+  }
+  return {
+    begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
+    end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
+  };
+}
+
+// An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`.
+function untimedBackgroundSpan(bg: XmlReadElement, begin: number, end: number) {
+  if (!bg.hasAttribute("begin") && !bg.hasAttribute("end")) return {};
+  const ownBegin = bg.hasAttribute("begin") ? parseTtmlTimestamp(bg.getAttribute("begin") ?? "") : begin;
+  const ownEnd = bg.hasAttribute("end") ? parseTtmlTimestamp(bg.getAttribute("end") ?? "") : end;
+  if (!Number.isFinite(ownBegin) || !Number.isFinite(ownEnd) || ownEnd < ownBegin) return {};
+  return { backgroundBegin: ownBegin, backgroundEnd: ownEnd };
 }
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
@@ -166,6 +195,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     let backgroundText: string | undefined;
     let backgroundWords: WordTiming[] | undefined;
     let untimedBackground: UntimedLyric | undefined;
+    let backgroundSpan: { backgroundBegin?: number; backgroundEnd?: number } = {};
     let untimedMain: UntimedLyric | undefined;
 
     if (bgContainer) {
@@ -175,6 +205,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
+        backgroundSpan = untimedBackgroundSpan(bgContainer, begin, end);
       }
     }
 
@@ -198,6 +229,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
             backgroundText,
             backgroundWords,
             backgroundTextSource,
+            ...backgroundSpan,
             ...groupFields,
           },
           splitChar,
@@ -214,11 +246,11 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
               id: generateLineId(),
               text,
               agentId,
-              begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
-              end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
+              ...untimedMainSpan(p, begin, end),
               backgroundText,
               backgroundWords,
               backgroundTextSource,
+              ...backgroundSpan,
               ...groupFields,
             },
             splitChar,
@@ -229,7 +261,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     if (lines.length > lineCountBefore) {
       const captured = withUntimedSpans(lines[lines.length - 1], untimedMain, untimedBackground, splitChar);
       lines[lines.length - 1] = withInlineAlternates(
-        withParagraphCapture(captured, p, bgContainer),
+        withParagraphCapture(captured, p, bgContainer, untimedAnchors(untimedMain, mainTrack(captured), splitChar)),
         p,
         bgContainer,
         splitChar,

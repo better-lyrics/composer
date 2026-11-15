@@ -136,6 +136,12 @@ describe("format 4 lines", () => {
     expect(timingFingerprint(reloaded)).toBe(timingFingerprint(line));
   });
 
+  it("regression: a saved track writes its singer and span before its syllables", () => {
+    const [main] = savedLines(linesFromSavedV3([{ id: "L1", text: "Paper", agentId: "v1", begin: 1, end: 2 }]))[0]
+      .tracks;
+    expect(Object.keys(main)).toEqual(["id", "role", "agent", "span", "syllables"]);
+  });
+
   it("records keep syllable ids and a link leaves them out", () => {
     const lines = linesFromSavedV3(V3_LINES);
     const ids = roleWords(lines[0], "main")?.map((word) => word.id);

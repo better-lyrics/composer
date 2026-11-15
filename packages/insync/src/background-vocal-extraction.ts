@@ -127,7 +127,9 @@ function extractInlineWordSynced(
   }
   if (survivors.length === 0) return line;
   const trimmedSurvivors = survivors.map((word, i) =>
-    i === survivors.length - 1 ? wordFromSpaced({ ...word, text: (word.text + word.sep).replace(/ +$/, "") }) : word,
+    i === survivors.length - 1
+      ? wordFromSpaced({ ...word, text: (word.text + word.sep).replace(/ +$/, ""), joinsNext: false })
+      : word,
   );
   const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
   const joined = joinBackgroundText(base, classified.bgText, options.preserveBrackets, false);

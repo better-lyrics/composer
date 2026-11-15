@@ -1,8 +1,9 @@
-import type { XmlReadElement } from "./xml-read-tree";
-import { type KeptTimes, keptTimes } from "../passthrough";
-import { bgBounds, effectiveBounds } from "../line-bounds";
-import type { LyricLine } from "../line";
 import { formatTime } from "../format-time";
+import type { LyricLine } from "../line";
+import { bgBounds, effectiveBounds } from "../line-bounds";
+import { type KeptTimes, keptTimes } from "../passthrough";
+import { parseTtmlTimestamp } from "./timestamp";
+import type { XmlReadElement } from "./xml-read-tree";
 
 // -- Types --------------------------------------------------------------------
 
@@ -60,13 +61,19 @@ function capturedTimes(
   return { ...(begin !== null && { begin }), ...(end !== null && { end }), envelope };
 }
 
-// The bounds the source wrote: kept while the content still spans the same envelope, else derived again.
+const milliseconds = (time: string) => Math.round(parseTtmlTimestamp(time) * 1000);
+
+// The bounds the source wrote: each kept while the content still spans the same envelope and the bound still holds
+// all of it, else derived again.
 function writtenTimes(kept: KeptTimes, envelope: Envelope): WrittenTimes {
-  const [begin, end] = keptTimes(kept, envelope) ?? envelope;
+  const [keptBegin, keptEnd] = keptTimes(kept, envelope) ?? envelope;
+  const begin =
+    keptBegin !== undefined && milliseconds(keptBegin) <= milliseconds(envelope[0]) ? keptBegin : envelope[0];
+  const end = keptEnd !== undefined && milliseconds(keptEnd) >= milliseconds(envelope[1]) ? keptEnd : envelope[1];
   return [kept.begin === undefined ? undefined : begin, kept.end === undefined ? undefined : end];
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export type { Envelope };
-export { backgroundEnvelope, capturedTimes, lineEnvelope, partEnvelope, writtenTimes };
+export { backgroundEnvelope, capturedTimes, lineEnvelope, milliseconds, partEnvelope, writtenTimes };

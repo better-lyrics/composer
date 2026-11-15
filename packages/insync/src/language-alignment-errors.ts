@@ -3,6 +3,7 @@ import { backgroundText, lineText } from "./line-text";
 import { validateTransliterationAlignment } from "./language-align";
 import { lineTransliteration } from "./language-line-languages";
 import type { LyricLine } from "./line";
+import { memoBySplitCharacter } from "./memo-by-identity";
 
 type LanguageAlignmentErrorField = "transliteration" | "background-transliteration";
 
@@ -42,9 +43,11 @@ function getLanguageAlignmentErrors(line: LyricLine, splitChar: string): Languag
   return errors;
 }
 
+const cachedLanguageAlignmentErrors = memoBySplitCharacter(getLanguageAlignmentErrors);
+
 function getLanguageAlignmentErrorItems(lines: LyricLine[], splitChar: string): LanguageAlignmentErrorItem[] {
   return lines.flatMap((line, lineIndex) => {
-    const errors = getLanguageAlignmentErrors(line, splitChar);
+    const errors = cachedLanguageAlignmentErrors(line, splitChar);
     return errors.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line, splitChar), errors }] : [];
   });
 }

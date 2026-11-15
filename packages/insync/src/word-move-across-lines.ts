@@ -1,6 +1,7 @@
 import type { TimeRange } from "./group-shared-timing";
 import { wouldDropCrossInstance } from "./cross-instance";
-import { isLinked } from "./instance-predicates";
+import { instanceKey } from "./instance-key";
+import { isLinked, isSlotLine, type SlotLine } from "./instance-predicates";
 import { withoutBackground } from "./line-background";
 import { manualBackgroundWordEdit } from "./line-lane-word-edits";
 import { drawnSyllables } from "./line-drawn-track";
@@ -152,16 +153,51 @@ function lineUpdateFor(
   return updates;
 }
 
-// Text moved between a group line and a line of any other instance, or of none, makes that group line its
-// instance's own; text moved inside one instance changes its template.
-function linesLeavingTheirTemplate(moves: WordMove[], linesById: Map<string, LyricLine>): Set<string> {
+// An instance takes a move between two of its template lines only whole, so where another instance follows the
+// template at just one of the two lines, that line becomes its instance's own instead of diverging from the template.
+function linesMissingTheirPair(lines: readonly LyricLine[], pairs: readonly SlotLine[][]): string[] {
+  if (pairs.length === 0) return [];
+  const slotKey = (groupId: string, instanceIdx: number, slot: number) =>
+    `${instanceKey(groupId, instanceIdx)}\u0000${slot}`;
+  const groupIds = new Set(pairs.map(([line]) => line.groupId));
+  const instancesByGroup = new Map<string, Set<number>>();
+  const attached = new Map<string, SlotLine>();
+  for (const line of lines) {
+    if (!isLinked(line) || !groupIds.has(line.groupId)) continue;
+    instancesByGroup.set(line.groupId, (instancesByGroup.get(line.groupId) ?? new Set()).add(line.instanceIdx));
+    if (isSlotLine(line)) attached.set(slotKey(line.groupId, line.instanceIdx, line.templateLineIdx), line);
+  }
+  return pairs.flatMap(([source, target]) =>
+    [...(instancesByGroup.get(source.groupId) ?? [])].flatMap((instanceIdx) => {
+      const [from, to] = [source, target].map((line) =>
+        attached.get(slotKey(line.groupId, instanceIdx, line.templateLineIdx)),
+      );
+      const lone = from && to ? undefined : (from ?? to);
+      return lone ? [lone.id] : [];
+    }),
+  );
+}
+
+// Text moved between a group line and a line of any other instance, or of none, or a detached one, makes that group
+// line its instance's own; text moved inside one instance changes its template.
+function linesLeavingTheirTemplate(
+  lines: readonly LyricLine[],
+  moves: WordMove[],
+  linesById: Map<string, LyricLine>,
+): Set<string> {
   const leaving = new Set<string>();
+  const pairs: SlotLine[][] = [];
   for (const move of moves) {
     const source = linesById.get(move.sourceLineId);
     const target = linesById.get(move.targetLineId);
-    if (!source || !target || source.id === target.id || !wouldDropCrossInstance(source, target)) continue;
+    if (!source || !target || source.id === target.id) continue;
+    if (!wouldDropCrossInstance(source, target) && !source.detached === !target.detached) {
+      if (isSlotLine(source) && isSlotLine(target)) pairs.push([source, target]);
+      continue;
+    }
     for (const line of [source, target]) if (isLinked(line) && !line.detached) leaving.add(line.id);
   }
+  for (const id of linesMissingTheirPair(lines, pairs)) leaving.add(id);
   return leaving;
 }
 
@@ -183,7 +219,7 @@ function applyWordMoveAcrossLines(
   const selfOverlap = detectIncomingSelfOverlap(moves);
   if (selfOverlap) return selfOverlap;
 
-  const leaving = linesLeavingTheirTemplate(moves, linesById);
+  const leaving = linesLeavingTheirTemplate(lines, moves, linesById);
   const removeByLine = planRemovals(moves);
   const insertByLine = planInserts(moves);
 
@@ -191,7 +227,10 @@ function applyWordMoveAcrossLines(
   for (const line of lines) {
     const removals = removeByLine.get(line.id);
     const inserts = insertByLine.get(line.id);
-    if (!removals && !inserts) continue;
+    if (!removals && !inserts) {
+      if (leaving.has(line.id)) updates.push({ id: line.id, updates: { detached: true } });
+      continue;
+    }
     const lineUpdates = lineUpdateFor(line, removals, inserts, rangeOf(line).max, splitChar);
     if (!lineUpdates) return { ok: false, reject: "line-synced-source" };
     if (Object.keys(lineUpdates).length === 0) continue;

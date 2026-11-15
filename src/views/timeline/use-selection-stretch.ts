@@ -61,13 +61,14 @@ function writePreviewLines(lines: LyricLine[]): void {
 }
 
 // Applies stretch updates to the pre-drag snapshot the way the stretch command will commit them: each line
-// reconciled, no sibling propagation, and shared group timing copied, so the preview matches the release.
+// reconciled, no sibling propagation, and shared group timing copied, so the preview matches the release. A stretch
+// whose copy has no room is refused on release, so its preview stays on the snapshot.
 function applyStretchUpdates(
   snapshotLines: LyricLine[],
   updates: ReadonlyArray<{ id: string; updates: Partial<LyricLine> }>,
 ): LyricLine[] {
   const doc = docOfLines(snapshotLines);
-  return copyThroughTemplate({
+  const copy = copyThroughTemplate({
     doc,
     before: snapshotLines,
     after: applyLineUpdates(snapshotLines, updates),
@@ -75,7 +76,8 @@ function applyStretchUpdates(
     touched: updates.map((update) => update.id),
     anchors: instanceAnchors(doc),
     songEnd: songEndOrUnbounded(useAudioStore.getState().duration),
-  }).lines;
+  });
+  return copy.blocked ? snapshotLines : copy.lines;
 }
 
 // -- Hook ----------------------------------------------------------------------

@@ -10,7 +10,7 @@ import type { LyricLine } from "../line";
 import { backgroundText, lineText } from "../line-text";
 import { roleWords } from "../line-track";
 import type { WordTiming } from "../word-timing";
-import { parseTtmlTimestamp } from "./read-helpers";
+import { parseTtmlTimestamp } from "./timestamp";
 import { ownLanguage, readInlineAlternates } from "./modelled";
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";

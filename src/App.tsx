@@ -14,6 +14,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import { usePitchTrack } from "@/hooks/usePitchTrack";
 import { useShortcutPresetIntro } from "@/hooks/useShortcutPresetIntro";
 import { useSpaceHabitHint } from "@/hooks/useSpaceHabitHint";
+import { usePlacementBlockedNotice } from "@/hooks/usePlacementBlockedNotice";
 import { useSplitInAllInstancesNotice } from "@/hooks/useSplitInAllInstancesNotice";
 import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
@@ -113,6 +114,7 @@ const AppShell: React.FC = () => {
   useStorageMaintenance();
   useLanguageAutoRefresh();
   useSplitInAllInstancesNotice();
+  usePlacementBlockedNotice();
   useRangePlayback();
   useProjectChannel();
   useProjectShortcuts(isEditor);

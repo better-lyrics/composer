@@ -4,19 +4,17 @@ import { trackText } from "./line-text";
 import { backgroundTrack, mainTrack } from "./line-track";
 import { newBackgroundTrack, withBackgroundTrack, withTrackText } from "./line-track-writes";
 import { classifyLine } from "./background-vocal-extraction";
+import { memoBySplitCharacter } from "./memo-by-identity";
 
 // -- Functions ----------------------------------------------------------------
 
-const typedGroupsByMain = new WeakMap<MainTrack, boolean>();
-
 // Whether the main text holds bracketed text extraction would add to the background; read once per main track.
+const typedGroupsOfMain = memoBySplitCharacter(
+  (main: MainTrack, splitChar: string) => classifyLine(trackText(main, splitChar)).kind === "inline",
+);
+
 function hasTypedGroups(line: LyricLine, splitChar: string): boolean {
-  const main = mainTrack(line);
-  const cached = typedGroupsByMain.get(main);
-  if (cached !== undefined) return cached;
-  const typed = classifyLine(trackText(main, splitChar)).kind === "inline";
-  typedGroupsByMain.set(main, typed);
-  return typed;
+  return typedGroupsOfMain(mainTrack(line), splitChar);
 }
 
 // The background a typed row shows becomes the line's background track. Retyped syllables keep their ids and timing

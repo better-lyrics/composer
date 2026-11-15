@@ -1,7 +1,7 @@
 import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
 import { diffEditTextChange, withMovedTextDetached } from "insync/edit-text-diff-edit-text";
-import { editTextWithRewrittenRows, linesToEditText } from "insync/edit-text";
-import { type BackgroundRange, NO_RANGES, type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
+import { editTextWithRewrittenRows } from "insync/edit-text";
+import { type BackgroundRange, NO_RANGES, type ShownEditText } from "insync/edit-text-shown-row";
 import type { LinkGroup } from "insync/group";
 import type { InstanceAnchors } from "insync/group-template-copy";
 import { type CarriedSplit, carryTemplateEdits } from "insync/group-template-edit";
@@ -53,13 +53,22 @@ function typedLyricLines(
   return textToLyricLines(mainTexts, defaultAgentId, lines, splitCharacter, backgrounds);
 }
 
-function committedEditText(
-  lines: readonly LyricLine[],
+// A structural commit rewrites only the rows that no longer show a line the project held before it.
+function linesAlreadyHeld(lines: readonly LyricLine[], finalLines: readonly LyricLine[]): (LyricLine | undefined)[] {
+  const held = new Set(lines);
+  return finalLines.map((line) => (held.has(line) ? line : undefined));
+}
+
+// Rows the user typed stay as typed; only rows the commit rewrote show the committed line.
+function rewrittenEditText(
+  text: string,
   ranges: readonly BackgroundRange[] | undefined,
+  typedLines: readonly (LyricLine | undefined)[],
+  finalLines: readonly LyricLine[],
   splitCharacter: string,
 ): ShownEditText {
-  if (ranges) return shownEditText(lines, splitCharacter);
-  return { text: linesToEditText(lines, splitCharacter), ranges: NO_RANGES };
+  if (ranges) return shownWithRewrittenRows({ text, ranges }, typedLines, finalLines, splitCharacter);
+  return { text: editTextWithRewrittenRows(text, typedLines, finalLines, splitCharacter), ranges: NO_RANGES };
 }
 
 function decideEditTextAction({
@@ -79,7 +88,7 @@ function decideEditTextAction({
     // A break that takes lines out of their instance commits them, so the text shows them as committed.
     const leftInstance = moved.detachedIds.length > 0 || moved.removedIds.length > 0;
     const shown = leftInstance
-      ? committedEditText(moved.lines, ranges, splitCharacter)
+      ? rewrittenEditText(text, ranges, linesAlreadyHeld(lines, moved.lines), moved.lines, splitCharacter)
       : { text, ranges: ranges ?? NO_RANGES };
     return {
       kind: "apply",
@@ -101,11 +110,7 @@ function decideEditTextAction({
     anchors,
     splitChar: splitCharacter,
   });
-  if (!ranges) {
-    const editText = editTextWithRewrittenRows(text, lyricLines, finalLines, splitCharacter);
-    return { kind: "apply", finalLines, editText, editRanges: NO_RANGES, detachedIds: [], removedIds: [], splits };
-  }
-  const shown = shownWithRewrittenRows({ text, ranges }, lyricLines, finalLines, splitCharacter);
+  const shown = rewrittenEditText(text, ranges, lyricLines, finalLines, splitCharacter);
   return {
     kind: "apply",
     finalLines,

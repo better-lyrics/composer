@@ -11,6 +11,7 @@ import { getSplitCharacter } from "@/utils/split-character";
 
 const GROUP_TOAST_DURATION_MS = 8000;
 const SHARED_SONG_EDGE_TOAST_ID = "shared-song-edge";
+const PLACEMENT_BLOCKED_TOAST_ID = "placement-blocked";
 const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, (count: number) => string> = {
   "before-song-start": () => ": the shared timing would start before the song",
   "past-song-end": () => ": the shared timing would run past the end of the song",
@@ -79,7 +80,7 @@ function showGroupedToast(group: LinkGroup, lineCount: number, filledGaps: numbe
 }
 
 function showPlacementBlockedToast(): void {
-  toast.error("Not enough room in the song to place this instance here");
+  toast.error("Not enough room in the song to place this instance here", { id: PLACEMENT_BLOCKED_TOAST_ID });
 }
 
 function showSharingBlockedToast(name: string, refusal: RealignRefusal): void {

@@ -1,23 +1,24 @@
-import type { LyricCommand } from "./command";
-import { lineEditCommand } from "./line-edits";
-import { refused } from "./outcome";
 import { type TimeRange, timeRangeResolver } from "../group-shared-timing";
 import type { LanguagePieces, LanguageSide } from "../language";
 import { languageSide, pieceOf, withAddedPieces } from "../language-pieces";
+import type { LineUpdate, LyricLine } from "../line";
 import { drawnPieces, drawnSyllables } from "../line-drawn-track";
 import { manualBackgroundWordEdit } from "../line-lane-word-edits";
-import type { LineUpdate, LyricLine } from "../line";
-import { trackRole, type WordTrack, untimedSyllablesOf } from "../line-track";
+import { trackRole, untimedSyllablesOf, type WordTrack } from "../line-track";
 import { mainTimingEdit } from "../line-track-writes";
 import type { SyllableAddress } from "../selection-model";
 import { type ResolvedAddress, resolveAddresses } from "../selection-resolve";
-import { mergeWordsIntoTrack } from "../word-merge-track";
-import { type WordMove, applyWordMoveAcrossLines } from "../word-move-across-lines";
-import { boundsOverlap } from "../word-overlap";
-import { reorderWordTrack } from "../word-reorder-track";
-import { withReorderDetaches } from "../word-reorder-detach";
-import type { WordTiming } from "../word-timing";
 import { cloneWord } from "../word-clone";
+import { newWordId } from "../word-id";
+import { mergeWordsIntoTrack } from "../word-merge-track";
+import { applyWordMoveAcrossLines, type WordMove } from "../word-move-across-lines";
+import { boundsOverlap } from "../word-overlap";
+import { withReorderDetaches } from "../word-reorder-detach";
+import { reorderWordTrack } from "../word-reorder-track";
+import type { WordTiming } from "../word-timing";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused } from "./outcome";
 
 // -- Types --------------------------------------------------------------------
 
@@ -143,7 +144,6 @@ function duplicatesFor(
   forLine: readonly ResolvedAddress[],
   timeDelta: number,
   range: TimeRange,
-  newId: () => string,
   splitChar: string,
 ) {
   const wordDups: WordTiming[] = [];
@@ -155,7 +155,7 @@ function duplicatesFor(
     const newBegin = Math.max(range.min, word.begin + timeDelta);
     const newEnd = Math.min(range.max, word.end + timeDelta);
     if (newEnd <= newBegin) continue;
-    const dup = cloneWord(word, { begin: newBegin, end: newEnd, id: newId() });
+    const dup = cloneWord(word, { begin: newBegin, end: newEnd, id: newWordId() });
     if (selection.type === "word") wordDups.push(dup);
     else bgDups.push(dup);
     const side = languageSide(selection.type);
@@ -176,7 +176,6 @@ function planDuplicate(
   selections: readonly ResolvedAddress[],
   timeDelta: number,
   rangeOf: (line: LyricLine) => TimeRange,
-  newId: () => string,
   splitChar: string,
 ): DuplicatePlan {
   const byId = linesById(lines);
@@ -184,7 +183,7 @@ function planDuplicate(
   const updates = [...byLine(selections)].flatMap(([lineId, forLine]) => {
     const line = byId.get(lineId);
     if (!line) return [];
-    const { wordDups, bgDups, readings } = duplicatesFor(line, forLine, timeDelta, rangeOf(line), newId, splitChar);
+    const { wordDups, bgDups, readings } = duplicatesFor(line, forLine, timeDelta, rangeOf(line), splitChar);
     const lineUpdates: Partial<LyricLine> = {};
     const existingWords = drawnSyllables(line, "main", splitChar);
     if (wordDups.length > 0 && !overlapsAny(wordDups, existingWords)) {
@@ -279,7 +278,6 @@ function duplicateWords(args: MoveArgs, report?: (plan: DuplicatePlan) => void):
         resolveAddresses(lines, args.addresses, ctx.splitChar),
         args.timeDelta,
         rangeOf,
-        ctx.newId,
         ctx.splitChar,
       );
       report?.(plan);

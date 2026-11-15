@@ -465,4 +465,18 @@ describe("breaking an instance line", () => {
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.editText.split("\n")[4]).toBe("you");
   });
+
+  it("regression: rows the break left alone keep the text as typed", () => {
+    const typed = ["I love you", "more than words", "verse line ", "I love", " you", "more than words"].join("\n");
+    const action = decideEditTextAction({
+      text: typed,
+      defaultAgentId: "v1",
+      lines: chorusLines(),
+      groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
+      ranges: NO_RANGES,
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.editText.split("\n")[2]).toBe("verse line ");
+  });
 });

@@ -3,6 +3,7 @@ import { languageSourceFingerprint } from "./language-fingerprint";
 import { lineTranslations, lineTransliteration, withLanguages } from "./language-line-languages";
 import type { LanguageSide, LineLanguage } from "./language";
 import type { LyricLine } from "./line";
+import { memoBySplitCharacter } from "./memo-by-identity";
 
 type LanguageReviewReason = "source-changed" | "alignment";
 type LanguageReviewTrack = ({ kind: "transliteration" } | { kind: "translation"; language: string }) & {
@@ -89,9 +90,11 @@ function getLanguageReviewTracks(line: LyricLine, splitChar: string): LanguageRe
   return tracks;
 }
 
+const cachedLanguageReviewTracks = memoBySplitCharacter(getLanguageReviewTracks);
+
 function getLanguageReviewItems(lines: LyricLine[], splitChar: string): LanguageReviewItem[] {
   return lines.flatMap((line, lineIndex) => {
-    const tracks = getLanguageReviewTracks(line, splitChar);
+    const tracks = cachedLanguageReviewTracks(line, splitChar);
     return tracks.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line, splitChar), tracks }] : [];
   });
 }
