@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 
 const timedSpans = (line: LyricLine) =>
   timedSyllables(mainTrack(line)).map((word) => [word.text, +word.begin.toFixed(3), +word.end.toFixed(3)]);

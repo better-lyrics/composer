@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { artistCredit } from "@/domain/project/display-title";
 import { normalizeLanguageTag } from "@/domain/project/language";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import type { UnisonLyric, UnisonLyricsFormat } from "@/lib/unison/api-types";
 import { startVideoProject } from "@/lib/unison/video-project";
 import { useProjectStore } from "@/stores/project";

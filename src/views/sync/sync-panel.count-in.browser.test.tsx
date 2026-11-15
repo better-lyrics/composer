@@ -1,7 +1,7 @@
 import { Activity } from "react";
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { isCountingIn, togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

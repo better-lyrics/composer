@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { OUTSIDE_FOCUS_ATTRIBUTE } from "@/views/preview/lyrics-layout";
 import { type RefObject, useEffect, useEffectEvent } from "react";
 

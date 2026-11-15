@@ -3,7 +3,7 @@
  */
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineTemplate } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 import { decidePasteInstanceAction } from "./decide-paste-instance-action";
 

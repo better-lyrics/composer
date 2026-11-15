@@ -1,6 +1,6 @@
 import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

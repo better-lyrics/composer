@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";

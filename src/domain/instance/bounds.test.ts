@@ -1,6 +1,6 @@
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { instanceBounds } from "@/domain/instance/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------

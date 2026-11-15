@@ -1,6 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { instanceKey } from "@/domain/instance/key";
+import { linesOfInstance } from "insync/instance-enumerate";
+import { instanceKey } from "insync/instance-key";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";

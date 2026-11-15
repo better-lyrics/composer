@@ -1,5 +1,5 @@
 import { savedLines } from "@/lib/saved-project";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { type IndexEntryInput, buildIndexEntry } from "@/domain/project/index-entry";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

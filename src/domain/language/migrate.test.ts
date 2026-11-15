@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { type LegacyLine, legacyLine, legacyWords } from "@/test/legacy-languages";
 
 function oldLine(overrides: Partial<LegacyLine> = {}): LyricLine {

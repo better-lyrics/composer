@@ -1,6 +1,6 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { Agent } from "insync/agent";
+import type { ProjectMetadata } from "insync/metadata";
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import { type SavedLine, linesFromLink } from "@/lib/saved-project";

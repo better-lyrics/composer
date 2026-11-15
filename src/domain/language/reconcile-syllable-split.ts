@@ -10,7 +10,7 @@ import type {
   LineLanguage,
   LineLanguages,
   TransliterationAlignmentStatus,
-} from "@/domain/language/model";
+} from "insync/language";
 import {
   type PositionalPieces,
   keyedPieces,
@@ -21,11 +21,11 @@ import {
   trackPieces,
 } from "@/domain/language/pieces";
 import { withPiecesOn, withTrackPieces } from "@/domain/language/side-pieces";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText, syllablesText } from "@/domain/line/text";
 import { withRoleWords } from "@/domain/line/track-writes";
-import { trackRole, trackWords, type WordTrack } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { trackRole, trackWords, type WordTrack } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

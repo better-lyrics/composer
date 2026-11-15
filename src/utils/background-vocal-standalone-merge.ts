@@ -1,13 +1,13 @@
 import { type BackgroundSource, withBackground, withSeededBackgroundWords } from "@/domain/line/background";
-import { effectiveBounds, mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { effectiveBounds, mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
 import { backgroundText, syllablesText } from "@/domain/line/text";
 import { spreadSpan } from "@/domain/line/span-to-words";
-import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "@/domain/line/track";
-import { lastEnd } from "@/domain/word/bounds";
+import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "insync/line-track";
+import { lastEnd } from "insync/word-bounds";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "@/utils/background-vocal-brackets";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createInitialBgWords } from "@/utils/sync-helpers";

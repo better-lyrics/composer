@@ -1,6 +1,6 @@
 import { ALIGN_TRANSLITERATION } from "@/domain/commands/languages";
 import { lineTranslations } from "@/domain/language/line-languages";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { sameTransliteration } from "@/views/languages/same-transliteration";
 

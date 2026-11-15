@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { splitWord } from "@/domain/commands/word-structure";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { wordAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";

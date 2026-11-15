@@ -1,7 +1,7 @@
 import { Toaster, toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

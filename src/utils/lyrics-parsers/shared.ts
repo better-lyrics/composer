@@ -1,9 +1,9 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { LyricLine } from "insync/line";
+import type { ProjectMetadata } from "insync/metadata";
 import { pluralize } from "@/utils/pluralize";
 
 // -- Types --------------------------------------------------------------------

@@ -1,5 +1,5 @@
-import type { LineTrack, LyricLine } from "@/domain/line/model";
-import { backgroundTrack, isSpanTimed, mainTrack } from "@/domain/line/track";
+import type { LineTrack, LyricLine } from "insync/line";
+import { backgroundTrack, isSpanTimed, mainTrack } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import { lineTimingWordId } from "@/domain/word/id";
 

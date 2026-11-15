@@ -1,9 +1,9 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { fieldUpdates } from "@/test/field-updates";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 /**
  * @vitest-environment node

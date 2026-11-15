@@ -1,4 +1,4 @@
-import type { LanguagePieces, LineLanguage, LineLanguages } from "@/domain/language/model";
+import type { LanguagePieces, LineLanguage, LineLanguages } from "insync/language";
 import { keyedPieces } from "@/domain/language/pieces";
 import {
   languagesFromV3,
@@ -13,9 +13,9 @@ import {
   withoutV3Piece,
 } from "@/domain/language/v3-languages";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
-import { roleWords } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "insync/line";
+import { roleWords } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------

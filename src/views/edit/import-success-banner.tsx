@@ -1,5 +1,5 @@
 import { IconFileImport, IconX } from "@tabler/icons-react";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { IconButton } from "@/ui/icon-button";
 import type { ParseResult } from "@/utils/lyrics-parsers";
 import { pluralize } from "@/utils/pluralize";

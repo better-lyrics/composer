@@ -1,10 +1,10 @@
-import type { LanguagePiece, LanguagePieces, LineLanguages } from "@/domain/language/model";
+import type { LanguagePiece, LanguagePieces, LineLanguages } from "insync/language";
 import { keyedPieces, pieceOf } from "@/domain/language/pieces";
 import { withPiecesOn } from "@/domain/language/side-pieces";
 import type { LineFields } from "@/domain/line/line-from-fields";
 import type { LinePassthrough } from "@/domain/line/passthrough";
 import { newWordId } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

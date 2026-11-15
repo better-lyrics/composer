@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backgroundTrack } from "@/domain/line/track";
+import { backgroundTrack } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { type SubmitCheckInput, submitChecks } from "@/domain/unison/submit-checks";
 import { createLine } from "@/test/factories";

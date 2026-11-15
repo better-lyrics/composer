@@ -2,7 +2,7 @@ import type { Part, PartSection } from "insync/part";
 import { partsAfterLineChange } from "insync/part-membership";
 import { type DocPassthrough, withRenamedAnchors } from "insync/passthrough";
 import { type EditedTtmlLines, mergedLineIds } from "@/domain/line/edited-ttml-lines";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Helpers ------------------------------------------------------------------
 

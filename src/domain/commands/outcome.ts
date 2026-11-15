@@ -1,9 +1,9 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { RealignRefusal } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { StepRefusal } from "@/domain/step-timing/step-write";
 import type { MoveRejectReason } from "@/domain/word/move-across-lines";

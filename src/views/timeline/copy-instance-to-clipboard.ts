@@ -1,9 +1,9 @@
 import { toast } from "sonner";
-import { belongsToInstance } from "@/domain/instance/predicates";
+import { belongsToInstance } from "insync/instance-predicates";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

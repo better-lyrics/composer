@@ -1,7 +1,7 @@
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { PROJECT_FILE_NAME, projectFileNamed } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";

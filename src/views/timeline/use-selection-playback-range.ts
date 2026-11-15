@@ -1,6 +1,6 @@
 import { selectionBounds } from "@/domain/selection/bounds";
 import { playbackRange } from "@/domain/selection/playback-range";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

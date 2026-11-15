@@ -5,17 +5,17 @@ import { mergeSyllableGroup } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
 import type { LinkGroup } from "@/domain/group/template";
 import { withBackground, withSeededBackground } from "@/domain/line/background";
-import { bgBounds } from "@/domain/line/bounds";
+import { bgBounds } from "insync/line-bounds";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
 
 /**
  * @vitest-environment node
  */
-import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 
 beforeEach(() => {

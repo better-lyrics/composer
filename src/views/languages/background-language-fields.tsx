@@ -1,11 +1,11 @@
 import { IconSeparatorVertical } from "@tabler/icons-react";
 import { alignTrackToLine } from "@/domain/language/align";
 import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
-import type { LineLanguage } from "@/domain/language/model";
+import type { LineLanguage } from "insync/language";
 import { alignmentNeedsReview, isTransliterationSourceStale } from "@/domain/language/review";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, timedSyllables } from "insync/line-track";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { LanguageField as Field } from "@/views/languages/language-field";

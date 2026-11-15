@@ -1,6 +1,6 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
-import { trackRole } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { trackRole } from "insync/line-track";
 import {
   STRETCH_EPS,
   type StretchAnchor,

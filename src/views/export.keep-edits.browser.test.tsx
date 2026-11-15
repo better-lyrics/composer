@@ -1,7 +1,7 @@
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

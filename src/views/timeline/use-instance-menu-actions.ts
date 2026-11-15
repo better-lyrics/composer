@@ -2,8 +2,8 @@ import { addInstance, removeInstance, shiftInstance } from "@/domain/commands/in
 import { fillInstanceRows } from "@/domain/commands/instance-rows";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { instanceKey } from "@/domain/instance/key";
+import { linesOfInstance } from "insync/instance-enumerate";
+import { instanceKey } from "insync/instance-key";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

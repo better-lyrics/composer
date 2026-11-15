@@ -1,4 +1,4 @@
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 
 // -- Functions ----------------------------------------------------------------
 

@@ -5,7 +5,7 @@ import { lineWordSelections } from "@/domain/selection/line-selections";
 import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { playbackRange } from "@/domain/selection/playback-range";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

@@ -7,7 +7,7 @@ import {
 } from "@/domain/musicbrainz/suggestion";
 import { type MusicBrainzMatch, useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { showMusicBrainzFillToast } from "@/utils/musicbrainz-toast";

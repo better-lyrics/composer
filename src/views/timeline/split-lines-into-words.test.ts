@@ -4,9 +4,9 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { patchOf, updatedLine } from "@/test/field-updates";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";

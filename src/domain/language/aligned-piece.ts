@@ -1,9 +1,9 @@
 import { withAlignedTransliteration } from "@/domain/language/align";
-import type { LanguagePiece } from "@/domain/language/model";
+import type { LanguagePiece } from "insync/language";
 import { languageSide, pieceOf, trackPieces } from "@/domain/language/pieces";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "insync/line";
+import type { WordTrack } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Functions ----------------------------------------------------------------
 

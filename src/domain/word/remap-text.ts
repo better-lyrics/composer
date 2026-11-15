@@ -1,6 +1,6 @@
 import { splitTrailingWhitespace } from "insync/from-words";
 import { lcsPairs, wordKey } from "@/domain/word/alignment";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { synthesizeBracketedWord } from "@/utils/word-timing";
 

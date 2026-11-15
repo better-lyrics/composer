@@ -1,13 +1,13 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { LinkGroup } from "@/domain/group/template";
 import { alignTrackToLine } from "@/domain/language/align";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
-import type { LineLanguage } from "@/domain/language/model";
-import type { LyricLine } from "@/domain/line/model";
+import type { LineLanguage } from "insync/language";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { createGroup, createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
 

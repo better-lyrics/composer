@@ -1,9 +1,9 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { updatedLine, withFields } from "@/test/field-updates";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { placeSharedInstance, realignSharedInstance, realignSharedInstances } from "@/domain/group/shared-placement";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

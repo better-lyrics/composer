@@ -1,9 +1,9 @@
 import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
-import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
-import type { LineTrack, LyricLine } from "@/domain/line/model";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { bgBounds, effectiveBounds } from "insync/line-bounds";
+import type { LineTrack, LyricLine } from "insync/line";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withTrackSpan, withTrackWords } from "@/domain/line/track-writes";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 function shiftWords(words: readonly WordTiming[], delta: number): WordTiming[] {
   return words.map((w) => ({ ...w, begin: Math.max(0, w.begin + delta), end: Math.max(0, w.end + delta) }));

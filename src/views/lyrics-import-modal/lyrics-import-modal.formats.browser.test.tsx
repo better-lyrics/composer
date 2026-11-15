@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

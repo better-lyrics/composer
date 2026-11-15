@@ -2,7 +2,7 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { applied } from "@/domain/commands/outcome";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import type { LineUpdate } from "@/domain/line/model";
+import type { LineUpdate } from "insync/line";
 
 // -- Commands -----------------------------------------------------------------
 

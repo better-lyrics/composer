@@ -1,10 +1,10 @@
 import { Toaster } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
-import { effectiveBounds, mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { effectiveBounds, mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

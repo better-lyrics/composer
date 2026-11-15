@@ -1,5 +1,5 @@
-import { type LinkedLine, belongsToInstance, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { type LinkedLine, belongsToInstance, isAttachedToInstance, isLinked } from "./instance-predicates";
+import type { LyricLine } from "./line";
 
 // -- Types --------------------------------------------------------------------
 

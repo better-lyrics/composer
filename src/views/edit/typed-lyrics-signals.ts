@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { noteGuideSignal } from "@/lib/guide-signals";

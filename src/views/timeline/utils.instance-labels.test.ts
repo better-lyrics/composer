@@ -1,6 +1,6 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { resetAllStores } from "@/test/stores";
 import { getDrawnRows } from "@/views/timeline/drawn-rows";

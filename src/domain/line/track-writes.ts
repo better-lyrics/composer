@@ -6,7 +6,7 @@ import type {
   MainTrack,
   Syllable,
   TrackRole,
-} from "@/domain/line/model";
+} from "insync/line";
 import { syllablesFromText } from "@/domain/line/syllables-from-text";
 import {
   backgroundTrack,
@@ -15,8 +15,8 @@ import {
   isTimedSyllable,
   mainTrack,
   untimedSyllable,
-} from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+} from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Tracks -------------------------------------------------------------------
 

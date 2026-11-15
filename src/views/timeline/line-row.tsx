@@ -1,10 +1,10 @@
 import { memo, useCallback } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
-import { belongsToInstance } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { belongsToInstance } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
-import { mainTrack } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { mainTrack } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";

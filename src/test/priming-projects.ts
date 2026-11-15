@@ -1,8 +1,8 @@
 import { msFromSeconds, secondsFromMs } from "insync/time";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { TrackRole } from "@/domain/line/model";
-import { roleWords } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { TrackRole } from "insync/line";
+import { roleWords } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { newWordId } from "@/domain/word/id";
 import { type ProjectSaveInput, saveCurrentProject } from "@/lib/persistence";

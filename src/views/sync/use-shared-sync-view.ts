@@ -1,5 +1,5 @@
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { SyncCursor } from "@/domain/sync/cursor";
 import { foldedLineIds } from "@/domain/sync/folded-lines";
 import type { SkippedInstance } from "@/domain/sync/skipped-instances";

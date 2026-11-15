@@ -1,8 +1,8 @@
 import { withFields } from "@/test/field-updates";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { alternateBackgroundPlacement } from "@/domain/language/background-placement";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { describe, expect, it } from "vitest";
 

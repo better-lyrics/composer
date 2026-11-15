@@ -1,4 +1,4 @@
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import type { LinkGroup } from "@/domain/group/template";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

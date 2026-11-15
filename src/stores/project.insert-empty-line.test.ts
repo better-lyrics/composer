@@ -1,5 +1,5 @@
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node

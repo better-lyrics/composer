@@ -1,5 +1,5 @@
-import { mainTrack } from "@/domain/line/track";
-import type { LyricLine } from "@/domain/line/model";
+import { mainTrack } from "insync/line-track";
+import type { LyricLine } from "insync/line";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { planLines, plainWindow } from "@/stores/alignment-plan";
 import { createLine } from "@/test/factories";

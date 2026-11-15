@@ -1,6 +1,6 @@
 import type { Part, PartSection } from "insync/part";
 import type { Passthrough } from "insync/passthrough";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { sectionAnchors } from "@/utils/lyrics-parsers/ttml-anchors";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
 import { nodePassthrough } from "@/utils/lyrics-parsers/ttml-passthrough-read";

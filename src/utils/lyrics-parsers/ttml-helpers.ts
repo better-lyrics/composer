@@ -1,5 +1,5 @@
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { LYRIC_ROLES, UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
 import { syllableCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { parseXmlDocument, type XmlParseResult } from "@/utils/xml-document";

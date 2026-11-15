@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
-import type { LanguagePieces } from "@/domain/language/model";
+import type { LanguagePieces } from "insync/language";
 import { pieceOf } from "@/domain/language/pieces";
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { insertWord } from "@/domain/commands/word-structure";
@@ -9,7 +9,7 @@ import { addressOf } from "@/domain/selection/resolve";
 import { shouldRollNeighbour } from "@/domain/word/boundary";
 import { newWordId } from "@/domain/word/id";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

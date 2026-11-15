@@ -1,8 +1,8 @@
 import { withOwnTiming } from "@/domain/group/own-timing";
-import { isAttachedToInstance } from "@/domain/instance/predicates";
+import { isAttachedToInstance } from "insync/instance-predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { mainBounds } from "@/domain/line/bounds";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { mainBounds } from "insync/line-bounds";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { type SyncAddress, sameSyncPosition } from "@/domain/sync/address";
 import { type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { type SyncCursor, advanceCursor } from "@/domain/sync/cursor";

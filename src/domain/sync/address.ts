@@ -1,5 +1,5 @@
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack } from "insync/line-track";
 import type { SyncCursor } from "@/domain/sync/cursor";
 
 // -- Types --------------------------------------------------------------------

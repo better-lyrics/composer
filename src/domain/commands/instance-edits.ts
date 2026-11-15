@@ -10,11 +10,11 @@ import {
   templateBackgroundFields,
   templateLanguages,
 } from "@/domain/group/template";
-import { nextInstanceIdx } from "@/domain/instance/enumerate";
-import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predicates";
+import { nextInstanceIdx } from "insync/instance-enumerate";
+import { belongsToInstance, isAttachedToInstance } from "insync/instance-predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { withLinePassthrough } from "@/domain/line/passthrough";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";

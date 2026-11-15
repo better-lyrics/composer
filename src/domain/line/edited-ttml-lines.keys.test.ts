@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergeEditedTtmlLines, mergedLineIdsByKey } from "@/domain/line/edited-ttml-lines";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { exportedTtml, mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";

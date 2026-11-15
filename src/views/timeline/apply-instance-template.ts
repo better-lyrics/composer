@@ -4,9 +4,9 @@ import {
   templateBackgroundFields,
   templateLanguages,
 } from "@/domain/group/template";
-import { nextInstanceIdx } from "@/domain/instance/enumerate";
+import { nextInstanceIdx } from "insync/instance-enumerate";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { withLinePassthrough } from "@/domain/line/passthrough";
 
 // -- Interfaces ----------------------------------------------------------------

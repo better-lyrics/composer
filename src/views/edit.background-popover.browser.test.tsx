@@ -3,7 +3,7 @@ import { userEvent } from "vitest/browser";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack } from "@/domain/line/track";
+import { backgroundTrack } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";

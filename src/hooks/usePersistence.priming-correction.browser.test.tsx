@@ -1,4 +1,4 @@
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";

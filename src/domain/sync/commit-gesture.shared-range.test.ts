@@ -1,7 +1,7 @@
 import { changedFields, updatedLine } from "@/test/field-updates";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { type FactoryLineOptions, createGroup, createLine } from "@/test/factories";

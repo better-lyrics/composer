@@ -1,16 +1,16 @@
 import { withSeededBackground } from "@/domain/line/background";
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 /**
  * @vitest-environment node
  */
 import { patchOf, updatedLine } from "@/test/field-updates";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import {
   nudgeSelectedWords,
   partitionNudgeSelections,
@@ -18,7 +18,7 @@ import {
   shiftSelectionsTogether,
 } from "@/domain/selection/nudge";
 import { spacedText } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
 

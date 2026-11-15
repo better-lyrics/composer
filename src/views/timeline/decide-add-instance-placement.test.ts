@@ -1,11 +1,11 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { splitTrailingWhitespace } from "insync/from-words";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 /**
  * @vitest-environment node
  */
 import type { LineTemplate } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { describe, expect, it } from "vitest";
 import { decideAddInstancePlacement, templateDuration } from "./decide-add-instance-placement";

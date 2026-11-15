@@ -2,11 +2,11 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { isSpanTimed, mainTrack, trackRole } from "@/domain/line/track";
+import { isSpanTimed, mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 
 // -- Types --------------------------------------------------------------------

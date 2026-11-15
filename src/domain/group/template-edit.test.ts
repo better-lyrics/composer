@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "@/domain/group/template";
 import { carryTemplateEdits } from "@/domain/group/template-edit";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withFields } from "@/test/field-updates";
 
 const ownTiming: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };

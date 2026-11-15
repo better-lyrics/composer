@@ -1,4 +1,4 @@
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

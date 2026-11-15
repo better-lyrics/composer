@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import type { ProjectMetadata } from "insync/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 

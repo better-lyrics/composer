@@ -4,12 +4,12 @@ import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
 } from "@/domain/language/reconcile-syllable-split";
-import type { LanguagePiece } from "@/domain/language/model";
+import type { LanguagePiece } from "insync/language";
 import type { PositionalPieces } from "@/domain/language/pieces";
 import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddress } from "@/domain/selection/resolve";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useAlignmentStore } from "@/stores/alignment";

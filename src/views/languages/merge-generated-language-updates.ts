@@ -1,5 +1,5 @@
 import { lineTranslations } from "@/domain/language/line-languages";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
 import type { GenerationEdits } from "@/views/languages/generation-edit-guard";

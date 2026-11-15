@@ -1,7 +1,7 @@
 import { type TimeRange, wholeSongRange } from "@/domain/group/shared-timing";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
-import { trackRole } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { trackRole } from "insync/line-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { pastedWordBounds } from "@/views/timeline/apply-paste-to-lines";
 import { bgTrackHeight, wordBlockWidth } from "@/views/timeline/row-geometry";

@@ -1,4 +1,4 @@
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 
 // -- Constants ----------------------------------------------------------------
 

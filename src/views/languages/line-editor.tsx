@@ -12,16 +12,16 @@ import {
   withoutTransliteration,
 } from "@/domain/language/line-languages";
 import { manualSegments } from "@/domain/language/manual-segments";
-import type { LineLanguage } from "@/domain/language/model";
+import type { LineLanguage } from "insync/language";
 import {
   alignmentNeedsReview,
   getLanguageReviewTracks,
   isTransliterationSourceStale,
   languageLineAnchorId,
 } from "@/domain/language/review";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";

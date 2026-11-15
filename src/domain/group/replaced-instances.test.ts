@@ -1,7 +1,7 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { replacedInstances } from "@/domain/group/replaced-instances";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { newBackgroundTrack, withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

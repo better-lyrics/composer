@@ -1,5 +1,5 @@
 import { AGENT_PRESETS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 
 // -- Functions ----------------------------------------------------------------
 

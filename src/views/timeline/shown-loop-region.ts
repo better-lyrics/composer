@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { LoopRegionDrag } from "@/views/timeline/timeline-store";
 

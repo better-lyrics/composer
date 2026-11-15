@@ -1,13 +1,13 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { toast } from "sonner";
 import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
-import type { LyricLine } from "@/domain/line/model";
-import { type WordTrack, trackRole } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { type WordTrack, trackRole } from "insync/line-track";
 import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

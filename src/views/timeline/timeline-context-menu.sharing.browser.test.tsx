@@ -1,4 +1,4 @@
-import { mainTrack, roleWords } from "@/domain/line/track";
+import { mainTrack, roleWords } from "insync/line-track";
 import type { LinkGroup } from "@/domain/group/template";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWords } from "@/test/factories";

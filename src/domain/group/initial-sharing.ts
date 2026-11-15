@@ -1,5 +1,5 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { mainTrack, roleWords } from "@/domain/line/track";
+import { mainTrack, roleWords } from "insync/line-track";
 import { withSharing } from "@/domain/group/own-timing";
 import { sameTime } from "@/domain/group/same-timing";
 import { type SharingOutcome, realignSharedInstances } from "@/domain/group/shared-placement";
@@ -11,8 +11,8 @@ import {
   instancesInLineOrder,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "insync/line";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

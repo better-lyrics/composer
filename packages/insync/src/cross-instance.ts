@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "./line";
 
 // Pure helper: does moving a word from `source` to a target within `target`
 // cross an instance boundary?

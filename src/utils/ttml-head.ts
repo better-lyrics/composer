@@ -1,10 +1,10 @@
 import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
 import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { toComposerMeta, YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
 import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
 import {

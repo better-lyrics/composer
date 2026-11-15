@@ -1,5 +1,5 @@
-import type { LineTrack, LyricLine, Syllable } from "@/domain/line/model";
-import { isSpanTimed, isTimedSyllable } from "@/domain/line/track";
+import type { LineTrack, LyricLine, Syllable } from "insync/line";
+import { isSpanTimed, isTimedSyllable } from "insync/line-track";
 
 // -- Types --------------------------------------------------------------------
 

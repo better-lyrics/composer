@@ -5,11 +5,11 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { mergeSyllableGroup, snapSyllablesFlush, toggleWordExplicit } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { newWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 /**
  * @vitest-environment node

@@ -1,5 +1,5 @@
 import type { LinkGroup } from "@/domain/group/template";
-import { instanceKey } from "@/domain/instance/key";
+import { instanceKey } from "insync/instance-key";
 import { instanceName } from "@/domain/instance/name";
 import { useProjectStore } from "@/stores/project";
 import { Tooltip } from "@/ui/tooltip";

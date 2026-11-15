@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { LyricCommand } from "@/domain/commands/command";
 import { type LyricRoot, type Outcome, applied, changedLineIds, refused } from "@/domain/commands/outcome";
 import {

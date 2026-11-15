@@ -2,13 +2,13 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { lineTranslations, withLanguages } from "@/domain/language/line-languages";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
-import type { LanguagePieces, LineLanguage, LineTranslations } from "@/domain/language/model";
+import type { LanguagePieces, LineLanguage, LineTranslations } from "insync/language";
 import { keyedPieces } from "@/domain/language/pieces";
 import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { roleWords } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 import { ownLanguage, readInlineAlternates } from "@/utils/lyrics-parsers/ttml-modelled";
 

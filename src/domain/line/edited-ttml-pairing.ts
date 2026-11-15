@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { generateLineTtml } from "@/utils/ttml";
 import type { LineKeyIds } from "@/utils/ttml-line-keys";
 

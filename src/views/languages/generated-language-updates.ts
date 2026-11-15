@@ -6,9 +6,9 @@ import {
   withLanguages,
   withoutTransliteration,
 } from "@/domain/language/line-languages";
-import type { LineLanguage, LineTranslations, TransliterationSegment } from "@/domain/language/model";
+import type { LineLanguage, LineTranslations, TransliterationSegment } from "insync/language";
 import { withoutPieces } from "@/domain/language/side-pieces";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { isStructurallyEqual } from "@/utils/structural-equal";

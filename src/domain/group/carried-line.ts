@@ -9,7 +9,7 @@ import {
 import { withAlignedWords } from "@/domain/language/align";
 import { regroupedLanguages, withOwnPieces } from "@/domain/language/pieces";
 import { withSeededBackground } from "@/domain/line/background";
-import type { BackgroundTrack, LineTrack, LineTracks, LyricLine, MainTrack, Syllable } from "@/domain/line/model";
+import type { BackgroundTrack, LineTrack, LineTracks, LyricLine, MainTrack, Syllable } from "insync/line";
 import {
   backgroundTrack,
   isSpanTimed,
@@ -17,7 +17,7 @@ import {
   mainTrack,
   timedSyllables,
   untimedSyllable,
-} from "@/domain/line/track";
+} from "insync/line-track";
 import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 

@@ -1,7 +1,7 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { hasAnyTiming } from "@/domain/line/predicates";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import { SAVED_PROJECT_VERSION, savedKeptRoot, savedLinesForLink } from "@/lib/saved-project";

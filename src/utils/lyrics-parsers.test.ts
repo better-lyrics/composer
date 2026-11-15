@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 
 describe("parseLyricsFile - plain LRC", () => {

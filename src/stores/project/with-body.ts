@@ -1,7 +1,7 @@
 import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
 import { flattenBody, knownFlatLines } from "@/domain/group/flatten";
-import type { LyricDoc } from "@/domain/group/model";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricDoc } from "insync/group";
+import type { LyricLine } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

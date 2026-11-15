@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingWrite } from "@/domain/line/track-writes";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";

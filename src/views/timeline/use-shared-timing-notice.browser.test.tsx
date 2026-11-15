@@ -1,6 +1,6 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";

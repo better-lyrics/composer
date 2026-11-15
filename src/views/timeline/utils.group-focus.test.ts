@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { createLine, createWord, createWords } from "@/test/factories";
 import { getDrawnRows } from "@/views/timeline/drawn-rows";
 import { type RowLayout, computeRowLayout } from "@/views/timeline/utils";

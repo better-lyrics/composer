@@ -1,7 +1,7 @@
 import { withLineIds } from "@/domain/group/line-ids";
-import { type Instance, isInstanceSpan, type LyricDoc, type TemplateLine } from "@/domain/group/model";
+import { type Instance, isInstanceSpan, type LyricDoc, type TemplateLine } from "insync/group";
 import { ownTimedLine, retimedLine, templateContent, untimedLine } from "@/domain/group/template-line";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Caches -------------------------------------------------------------------
 

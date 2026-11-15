@@ -1,7 +1,7 @@
 import { languageSide, pieceOf } from "@/domain/language/pieces";
 import { drawnPieces } from "@/domain/line/drawn-track";
 import { toAddress, wordAt } from "@/domain/selection/resolve";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { Modal } from "@/ui/modal";
 import {

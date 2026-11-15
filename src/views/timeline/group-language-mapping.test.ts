@@ -5,8 +5,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { addInstance } from "@/domain/commands/instance-edits";
 import { withAlignedTransliteration } from "@/domain/language/align";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";

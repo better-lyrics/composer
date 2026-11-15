@@ -1,7 +1,7 @@
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { memoByIdentity } from "@/utils/memo-by-identity";
 import type { RowLayout } from "@/views/timeline/utils";

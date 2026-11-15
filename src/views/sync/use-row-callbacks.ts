@@ -1,5 +1,5 @@
 import type { PositionalPieces } from "@/domain/language/pieces";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import type { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 

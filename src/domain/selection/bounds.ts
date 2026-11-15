@@ -1,7 +1,7 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { wordAt } from "@/domain/selection/resolve";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 
 // -- Functions ----------------------------------------------------------------
 

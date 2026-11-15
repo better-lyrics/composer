@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import { createFramePlayback } from "@/views/preview/frame/frame-playback";

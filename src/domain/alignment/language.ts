@@ -1,6 +1,6 @@
 import { hasKana } from "@/domain/alignment/cjk";
 import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 
 // -- Types --------------------------------------------------------------------

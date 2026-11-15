@@ -1,6 +1,6 @@
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

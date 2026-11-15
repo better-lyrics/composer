@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { LyricLine } from "insync/line";
+import type { ProjectMetadata } from "insync/metadata";
 import { generateTTML } from "@/utils/ttml";
 
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };

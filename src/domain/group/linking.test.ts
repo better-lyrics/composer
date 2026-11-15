@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
 
 // -- Helpers ------------------------------------------------------------------
 

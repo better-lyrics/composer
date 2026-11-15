@@ -1,10 +1,10 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
-import { lineInstanceKey } from "@/domain/instance/key";
+import { lineInstanceKey } from "insync/instance-key";
 import { withManualBackgroundWords } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { hasAnyTiming, isLineSynced } from "@/domain/line/predicates";
-import { mainTrack, roleWords } from "@/domain/line/track";
+import { mainTrack, roleWords } from "insync/line-track";
 import { withMainTrack, withoutTrackTiming, withTrackWords } from "@/domain/line/track-writes";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 

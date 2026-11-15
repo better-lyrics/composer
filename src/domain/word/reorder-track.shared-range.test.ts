@@ -1,5 +1,5 @@
 import { reorderWordTrack } from "@/domain/word/reorder-track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { describe, expect, it } from "vitest";
 
 const track: WordTiming[] = [

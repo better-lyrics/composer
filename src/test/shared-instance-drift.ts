@@ -6,7 +6,7 @@ import {
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine, TrackRole } from "@/domain/line/model";
+import type { LyricLine, TrackRole } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

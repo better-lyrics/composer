@@ -1,9 +1,9 @@
 import type { V3Piece } from "@/domain/language/v3-languages";
 import { v3Languages, v3WordPieces } from "@/domain/language/v3-languages";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { spacedFromWords } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import type { SavedLineV3 } from "@/lib/saved-project-v3";
 
 // -- Writing ------------------------------------------------------------------

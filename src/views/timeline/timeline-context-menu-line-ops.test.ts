@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { mainTrack, roleWords } from "@/domain/line/track";
+import { mainTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 
 // These pin the Task 1.4 contract: gutter add/delete operations on a project

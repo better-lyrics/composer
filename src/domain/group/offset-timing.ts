@@ -1,6 +1,6 @@
 import { withReadingsOf } from "@/domain/language/pieces";
-import type { LineTrack, LineUpdate, LyricLine } from "@/domain/line/model";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LineTrack, LineUpdate, LyricLine } from "insync/line";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import {
   withMainTrack,
   withoutTrackTiming,
@@ -8,9 +8,9 @@ import {
   withTrackSpan,
   withTrackWords,
 } from "@/domain/line/track-writes";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { withIdsOf } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Timing fields ------------------------------------------------------------

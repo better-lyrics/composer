@@ -1,7 +1,7 @@
 import { agentWithoutKeptData } from "@/domain/agent/kept-data";
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack } from "@/domain/line/track";
+import type { Agent } from "insync/agent";
+import type { LyricLine } from "insync/line";
+import { mainTrack } from "insync/line-track";
 import { withAgent } from "@/domain/line/track-writes";
 
 // -- Constants ----------------------------------------------------------------

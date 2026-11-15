@@ -1,8 +1,8 @@
 import { instanceStart, instancesInLineOrder, keepsOwnTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { attachedLineIndices } from "@/domain/instance/enumerate";
+import { attachedLineIndices } from "insync/instance-enumerate";
 import { instanceName } from "@/domain/instance/name";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { SyncCursor } from "@/domain/sync/cursor";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";

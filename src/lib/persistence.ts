@@ -1,14 +1,14 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import type { Stem } from "@/audio/separation/types";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
 import type { PlayedRange } from "@/domain/alignment/played-ranges";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";

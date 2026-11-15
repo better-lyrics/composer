@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { useAudioStore } from "@/stores/audio";
 import { cn } from "@/utils/cn";
 import { useEffectiveFocusGroup } from "@/views/timeline/effective-focus";

@@ -1,7 +1,7 @@
 import { alternateBackgroundPlacement } from "@/domain/language/background-placement";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText, syllableJoint } from "@/domain/line/text";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

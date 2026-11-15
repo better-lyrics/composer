@@ -10,9 +10,9 @@ import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignmen
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import { applyAlignedTimings, retimeNewSyllables } from "@/domain/commands/alignment";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
 import {
   type AlignedWords,

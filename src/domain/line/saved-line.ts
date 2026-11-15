@@ -11,9 +11,9 @@ import type {
   Syllable,
   TrackTiming,
   UntimedSyllable,
-} from "@/domain/line/model";
+} from "insync/line";
 import { placesKeptElements } from "@/domain/line/passthrough";
-import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "@/domain/line/track";
+import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 
 // -- Types --------------------------------------------------------------------

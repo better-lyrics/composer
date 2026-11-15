@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LineLanguage } from "@/domain/language/model";
+import type { LineLanguage } from "insync/language";
 import {
   alignmentNeedsReview,
   confirmTransliterationAlignment,
@@ -9,7 +9,7 @@ import {
   isTransliterationSourceStale,
 } from "@/domain/language/review";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { withFields } from "@/test/field-updates";
 import { legacyLine, legacyTrack } from "@/test/legacy-languages";

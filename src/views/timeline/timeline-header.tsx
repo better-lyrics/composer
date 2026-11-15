@@ -13,14 +13,14 @@ import {
 import { useCallback, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { convertToWordTiming } from "@/domain/commands/line-timing";
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
+import { instanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
 import { convertLineToWord } from "@/domain/line/span-to-words";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressOf } from "@/domain/selection/resolve";

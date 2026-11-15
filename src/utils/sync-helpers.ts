@@ -1,13 +1,13 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { trackRole, untimedSyllablesOf } from "@/domain/line/track";
+import { trackRole, untimedSyllablesOf } from "insync/line-track";
 import type { SyncAddress } from "@/domain/sync/address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import { textParts } from "@/domain/word/text-parts";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
 import { getSplitCharacter } from "@/utils/split-character";

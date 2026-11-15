@@ -6,11 +6,11 @@ import {
   sharedInstancesInLineOrder,
 } from "@/domain/group/shared-timing";
 import { templateSourceInstance } from "@/domain/group/template-source";
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceIndicesOf } from "insync/instance-enumerate";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "@/domain/line/track";
+import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "insync/line-track";
 import { isAddressed } from "@/domain/selection/identity";
 import { resolveAddress } from "@/domain/selection/resolve";
 import { hasIntraGroupGap, isInSyllableGroup } from "@/domain/word/syllable-groups";

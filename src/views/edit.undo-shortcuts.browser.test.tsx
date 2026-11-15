@@ -1,5 +1,5 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { beforeEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";

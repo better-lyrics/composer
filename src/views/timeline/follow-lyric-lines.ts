@@ -1,6 +1,6 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import type { WordTrack } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
 import { isInQueueOrder, queueOrder } from "@/domain/step-timing/step-queue";

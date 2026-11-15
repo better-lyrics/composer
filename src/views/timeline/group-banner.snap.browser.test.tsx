@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { createSnapPoint } from "@/domain/snap-point/model";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

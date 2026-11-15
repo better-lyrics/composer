@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import { applyStepKey } from "@/domain/step-timing/step-write";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 const w = (text: string, begin: number, end: number): WordTiming => wordFromSpaced({ text, begin, end });
 const MIN = 0.05;

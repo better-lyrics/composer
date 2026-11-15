@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { moveWords } from "@/domain/commands/word-moves";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";

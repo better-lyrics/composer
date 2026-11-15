@@ -1,5 +1,5 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**

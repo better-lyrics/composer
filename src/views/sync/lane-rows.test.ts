@@ -1,5 +1,5 @@
 import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/language/display";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { buildLaneRows } from "@/views/sync/lane-rows";

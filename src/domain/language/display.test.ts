@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 
 const line: LyricLine = legacyLine({

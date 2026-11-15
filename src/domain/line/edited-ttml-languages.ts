@@ -1,16 +1,10 @@
 import { languagesWith, lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
-import type {
-  LanguagePieces,
-  LanguageSide,
-  LineLanguage,
-  LineLanguages,
-  LineTranslations,
-} from "@/domain/language/model";
+import type { LanguagePieces, LanguageSide, LineLanguage, LineLanguages, LineTranslations } from "insync/language";
 import { keyedPieces, pieceOf, trackPieces } from "@/domain/language/pieces";
 import { withoutPieces, withPiecesOn } from "@/domain/language/side-pieces";
-import type { LyricLine } from "@/domain/line/model";
-import { roleWords } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "insync/line";
+import { roleWords } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { hasAlternateText } from "@/utils/ttml-alternate-content";
 
 // -- Types --------------------------------------------------------------------

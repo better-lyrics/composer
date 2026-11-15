@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack } from "@/domain/line/track";
+import { backgroundTrack } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";

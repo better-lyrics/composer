@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { createGroup, createLine } from "@/test/factories";
 import { instancePasteClipboard } from "@/views/timeline/instance-paste-template";
 

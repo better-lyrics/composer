@@ -1,6 +1,6 @@
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import { belongsToInstance, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { belongsToInstance, isAttachedToInstance, isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------

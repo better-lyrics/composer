@@ -1,6 +1,6 @@
 import { addGroupWithLines, updateGroup } from "@/domain/commands/group-edits";
 import { conformToInstance } from "@/domain/commands/instance-rows";
-import { instanceCount } from "@/domain/instance/enumerate";
+import { instanceCount } from "insync/instance-enumerate";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";

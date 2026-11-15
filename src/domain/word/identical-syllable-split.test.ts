@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
 import { createLine } from "@/test/factories";
 

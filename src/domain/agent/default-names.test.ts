@@ -1,5 +1,5 @@
 import { withDefaultAgentNames } from "@/domain/agent/default-names";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { describe, expect, it } from "vitest";
 
 describe("withDefaultAgentNames", () => {

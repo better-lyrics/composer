@@ -1,7 +1,7 @@
 import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
-import type { LanguagePiece } from "@/domain/language/model";
+import type { LanguagePiece } from "insync/language";
 import type { PositionalPieces } from "@/domain/language/pieces";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";

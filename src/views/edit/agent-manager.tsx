@@ -1,10 +1,10 @@
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { removeSinger } from "@/domain/commands/lyrics-replace";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
 import { nextAgentId } from "@/domain/agent/next-agent-id";
-import type { Agent, AgentType } from "@/domain/agent/model";
+import type { Agent, AgentType } from "insync/agent";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";

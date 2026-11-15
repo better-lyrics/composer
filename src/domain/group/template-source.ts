@@ -1,6 +1,6 @@
 import { firstFullyTimedInstance, sharedInstancesInLineOrder, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Functions ----------------------------------------------------------------
 

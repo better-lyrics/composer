@@ -1,8 +1,8 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 /**
  * @vitest-environment node
  */

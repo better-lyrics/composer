@@ -1,8 +1,8 @@
 import { instanceStart, keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { instanceIndicesOf } from "insync/instance-enumerate";
 import { instanceName } from "@/domain/instance/name";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";

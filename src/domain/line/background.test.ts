@@ -7,10 +7,10 @@ import {
   withoutBackground,
 } from "@/domain/line/background";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { withFields } from "@/test/field-updates";
 
 const line: LyricLine = lineFromFields({ id: "a", text: "hello", agentId: "v1" });

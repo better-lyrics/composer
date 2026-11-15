@@ -1,6 +1,6 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { HistoryNote } from "@/domain/commands/command";
 import type { LinkGroup } from "@/domain/group/template";
 import type { SnapPoint } from "@/domain/snap-point/model";

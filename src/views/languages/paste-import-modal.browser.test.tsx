@@ -1,6 +1,6 @@
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { validateTransliterationAlignment } from "@/domain/language/align";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { type LegacyLine, legacyView } from "@/test/legacy-languages";

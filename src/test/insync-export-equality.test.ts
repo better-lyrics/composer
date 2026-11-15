@@ -1,13 +1,13 @@
 import { withRoleWords } from "@/domain/line/track-writes";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { joinsFromWords, syllablesFromWords } from "insync/from-words";
 import { wordsFromSyllables } from "insync/to-words";
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { withoutV3Piece } from "@/domain/language/v3-languages";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import type { SavedProjectV3 } from "@/lib/saved-project";
 import { REAL_PROJECT_FILES, realStoredRecords } from "@/test/real-records";

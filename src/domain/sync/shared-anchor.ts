@@ -5,8 +5,8 @@ import {
   sharedInstancesInLineOrder,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { SyncCursor } from "@/domain/sync/cursor";
 

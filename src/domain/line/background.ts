@@ -1,8 +1,8 @@
-import { effectiveBounds } from "@/domain/line/bounds";
+import { effectiveBounds } from "insync/line-bounds";
 import { syllablesFromFields } from "@/domain/line/line-from-fields";
-import type { BackgroundSource, BackgroundTrack, LyricLine } from "@/domain/line/model";
+import type { BackgroundSource, BackgroundTrack, LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, untimedSyllable } from "@/domain/line/track";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, untimedSyllable } from "insync/line-track";
 import {
   newBackgroundTrack,
   trackTimingWrite,
@@ -10,8 +10,8 @@ import {
   withTrackSpan,
   withTrackSyllables,
 } from "@/domain/line/track-writes";
-import { firstBegin, lastEnd } from "@/domain/word/bounds";
-import type { WordTiming } from "@/domain/word/timing";
+import { firstBegin, lastEnd } from "insync/word-bounds";
+import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createInitialBgWords } from "@/utils/sync-helpers";
 

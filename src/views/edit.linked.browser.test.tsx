@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";

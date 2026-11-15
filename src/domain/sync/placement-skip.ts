@@ -1,6 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
+import { linesOfInstance } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
 
 // -- Interfaces ---------------------------------------------------------------
 

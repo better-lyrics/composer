@@ -2,7 +2,7 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { applied, changedLineIds, refused, withLines } from "@/domain/commands/outcome";
 import { withNewInstance } from "@/domain/group/own-timing";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -1,11 +1,11 @@
 import { expect } from "vitest";
 import { lineTranslations } from "@/domain/language/line-languages";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import { useProjectStore } from "@/stores/project";
 import {

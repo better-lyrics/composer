@@ -1,5 +1,5 @@
 import { type LanguageDisplayLine, type LanguageTextVariant, getLanguageDisplayLine } from "@/domain/language/display";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useSettingsStore } from "@/stores/settings";
 import { useMemo } from "react";
 

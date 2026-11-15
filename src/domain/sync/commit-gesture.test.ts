@@ -1,12 +1,12 @@
 import { withSeededBackground } from "@/domain/line/background";
 import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { changedFields, updatedLine } from "@/test/field-updates";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { lineText } from "@/domain/line/text";
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";

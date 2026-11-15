@@ -2,12 +2,12 @@ import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tab
 import { useCallback, useMemo } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { setWordBoundary } from "@/domain/commands/word-timing";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText } from "@/domain/line/text";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

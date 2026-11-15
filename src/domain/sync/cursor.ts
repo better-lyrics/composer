@@ -1,8 +1,8 @@
-import { mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
 import { type SyncGranularity, isSyncableLine } from "@/domain/line/sync-progress";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 
 // -- Types --------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { findInsertionSlot, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { describe, expect, it } from "vitest";
 

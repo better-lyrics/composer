@@ -6,12 +6,12 @@ import {
   instanceSlots,
   type LyricDoc,
   type TemplateLine,
-} from "@/domain/group/model";
+} from "insync/group";
 import { readInstance } from "@/domain/group/read-instance";
 import { toTemplateLine } from "@/domain/group/template-line";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceKey } from "@/domain/instance/key";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceKey } from "insync/instance-key";
+import type { LyricLine } from "insync/line";
 import { isWordSynced } from "@/domain/line/predicates";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 

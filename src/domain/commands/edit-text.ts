@@ -1,12 +1,12 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
 import type { LinkGroup } from "@/domain/group/template";
-import { isLinked } from "@/domain/instance/predicates";
+import { isLinked } from "insync/instance-predicates";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, isSpanTimed, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, isSpanTimed, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackText } from "@/domain/line/track-writes";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";

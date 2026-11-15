@@ -5,9 +5,9 @@
 import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "@/domain/group/template";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { decideEditTextAction } from "./decide-edit-text-action";

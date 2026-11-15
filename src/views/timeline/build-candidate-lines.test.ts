@@ -5,7 +5,7 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { trackPieces } from "@/domain/language/pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { useSettingsStore } from "@/stores/settings";
 import type { SyllableAddress } from "@/domain/selection/model";

@@ -1,6 +1,6 @@
 import { withFields } from "@/test/field-updates";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { foldedLineIds } from "@/domain/sync/folded-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

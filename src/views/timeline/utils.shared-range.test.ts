@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import {
   nudgeSelectedWords,

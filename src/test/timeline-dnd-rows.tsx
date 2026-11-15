@@ -1,7 +1,7 @@
 import { DndContext } from "@dnd-kit/core";
 import { afterAll, beforeAll } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
 import { DragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { LineRow } from "@/views/timeline/line-row";

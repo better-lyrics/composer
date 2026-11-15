@@ -11,7 +11,7 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { extractLineBackground } from "@/domain/commands/edit-text";
-import { bgBounds } from "@/domain/line/bounds";
+import { bgBounds } from "insync/line-bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 
 function wordsAt(texts: string[], begin: number, end: number): WordTiming[] {

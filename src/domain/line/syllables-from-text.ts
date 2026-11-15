@@ -1,10 +1,10 @@
-import type { LineTrack, Syllable, UntimedSyllable } from "@/domain/line/model";
-import { timedSyllables } from "@/domain/line/track";
+import type { LineTrack, Syllable, UntimedSyllable } from "insync/line";
+import { timedSyllables } from "insync/line-track";
 import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import { newWordId } from "@/domain/word/id";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { textParts } from "@/domain/word/text-parts";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Tokens -------------------------------------------------------------------

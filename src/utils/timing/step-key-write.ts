@@ -1,7 +1,7 @@
 import { isSharedLine, type TimeRange } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { combinedTrackEdits } from "@/domain/line/combined-track-edits";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { stepBgWordEdit } from "@/utils/timing/bg-word-timing";

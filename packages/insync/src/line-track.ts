@@ -7,8 +7,8 @@ import type {
   Syllable,
   TrackRole,
   UntimedSyllable,
-} from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+} from "./line";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 import { lineTransliteration } from "@/domain/language/line-languages";
 import { withoutPieces } from "@/domain/language/side-pieces";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Functions ----------------------------------------------------------------

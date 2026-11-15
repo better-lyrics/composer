@@ -5,7 +5,7 @@ import { type BackgroundRange, NO_RANGES } from "@/domain/edit-text/shown-row";
 import type { LinkGroup } from "@/domain/group/template";
 import type { InstanceAnchors } from "@/domain/group/template-copy";
 import { type CarriedSplit, carryTemplateEdits } from "@/domain/group/template-edit";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { textToLyricLines } from "@/utils/lyrics-text";
 
 // -- Types --------------------------------------------------------------------

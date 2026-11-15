@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText, trackText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { createLine, createWords } from "@/test/factories";
 
 describe("tracksFromFields", () => {

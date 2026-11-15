@@ -1,12 +1,12 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { backgroundTrack, isSpanTimed, mainTrack, roleWords } from "@/domain/line/track";
+import { backgroundTrack, isSpanTimed, mainTrack, roleWords } from "insync/line-track";
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import { type LineTemplate, type LinkGroup, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
 import { trackPieces } from "@/domain/language/pieces";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { linesOfInstance } from "insync/instance-enumerate";
+import { mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { linePassthroughOf } from "@/domain/line/passthrough";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";

@@ -1,12 +1,12 @@
 import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { withKeptSyllablePieces } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
 import { convertBackgroundToWord, convertMainToWord } from "@/domain/line/span-to-words";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { evenlyTimedWords } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

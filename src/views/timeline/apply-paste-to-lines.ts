@@ -1,15 +1,15 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
-import type { LanguagePiece } from "@/domain/language/model";
+import type { LanguagePiece } from "insync/language";
 import { withAddedPieces } from "@/domain/language/pieces";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import type { LyricLine, MainTrack } from "@/domain/line/model";
-import { type WordTrack, isSpanTimed, mainTrack, trackRole, untimedSyllablesOf } from "@/domain/line/track";
+import type { LyricLine, MainTrack } from "insync/line";
+import { type WordTrack, isSpanTimed, mainTrack, trackRole, untimedSyllablesOf } from "insync/line-track";
 import { withMainTrack, withTrackSyllables, withTrackWords } from "@/domain/line/track-writes";
 import { withNewId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 
 // -- Types --------------------------------------------------------------------

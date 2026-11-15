@@ -1,12 +1,12 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute } from "insync/xml-node";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { syncProgress } from "@/domain/line/sync-progress";
 import { normalizeLanguageTag } from "@/domain/project/language";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { type TimingGranularity, timingGranularityOf } from "@/domain/project/timing-granularity";

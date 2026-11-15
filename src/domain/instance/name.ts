@@ -1,6 +1,6 @@
 import type { LinkGroup } from "@/domain/group/template";
-import { instanceOrdinal } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceOrdinal } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
 
 // -- Functions ----------------------------------------------------------------
 

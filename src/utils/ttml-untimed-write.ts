@@ -1,8 +1,8 @@
 import type { Passthrough } from "insync/passthrough";
 import { escapeXmlText, writeXmlAttrs, type XmlAttr } from "insync/xml-node";
-import type { LineTrack, Syllable } from "@/domain/line/model";
+import type { LineTrack, Syllable } from "insync/line";
 import { syllableJoint } from "@/domain/line/text";
-import { isTimedSyllable } from "@/domain/line/track";
+import { isTimedSyllable } from "insync/line-track";
 import { getSplitCharacter, stripSplitCharacter, withoutSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { spanContent, timedSpan } from "@/utils/ttml-markup";

@@ -1,7 +1,7 @@
-import type { OwnTiming, SpanTimes, TemplateLine } from "@/domain/group/model";
+import type { OwnTiming, SpanTimes, TemplateLine } from "insync/group";
 import { instanceBounds } from "@/domain/instance/bounds";
-import type { LineTrack, LineTracks, LyricLine, Syllable } from "@/domain/line/model";
-import { isSpanTimed, isTimedSyllable, untimedSyllable } from "@/domain/line/track";
+import type { LineTrack, LineTracks, LyricLine, Syllable } from "insync/line";
+import { isSpanTimed, isTimedSyllable, untimedSyllable } from "insync/line-track";
 
 // -- Types --------------------------------------------------------------------
 

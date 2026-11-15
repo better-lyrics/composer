@@ -4,10 +4,10 @@ import type { LineageCounterpart, LineagePair } from "@/domain/group/syllable-li
 import type { LinkGroup } from "@/domain/group/template";
 import type { InstanceAnchors } from "@/domain/group/template-copy";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked, type LinkedLine } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceKey } from "insync/instance-key";
+import { isLinked, type LinkedLine } from "insync/instance-predicates";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

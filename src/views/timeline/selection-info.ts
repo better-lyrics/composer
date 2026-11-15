@@ -1,10 +1,10 @@
 import type { LinkGroup } from "@/domain/group/template";
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { wordAt } from "@/domain/selection/resolve";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { pluralize } from "@/utils/pluralize";
 
 // -- Types --------------------------------------------------------------------
