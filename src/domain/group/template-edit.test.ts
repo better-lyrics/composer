@@ -80,6 +80,46 @@ describe("carryTemplateEdits", () => {
     ]);
   });
 
+  it("gives the singer and the background with its source to every other instance, which keeps its own timing", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Hello", backgroundText: "oh" }),
+      groupLine("L2", 1, { text: "Hello", words: words(9, ["Hello"], 1), backgroundText: "oh" }),
+    ];
+    const after = before.with(
+      0,
+      withFields(before[0], {
+        agentId: "v2",
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      }),
+    );
+    const out = carried(before, after)[1];
+    expect([lineText(out), mainTrack(out).agentId, backgroundText(out), backgroundTrack(out)?.source]).toEqual([
+      "Hello",
+      "v2",
+      "ooh",
+      "extraction",
+    ]);
+    expect(spans(out)).toEqual([["Hello", 9, 10]]);
+  });
+
+  it("regression: a split mark typed in one instance joins the other instance's syllables too", () => {
+    const before = [
+      groupLine("L1", 0, { text: "hel lo", words: words(0, ["hel", "lo"], 1) }),
+      groupLine("L2", 1, { text: "hel lo", words: words(10, ["hel", "lo"], 1) }),
+    ];
+    const joined = timedSyllables(mainTrack(before[0])).map((word, index) =>
+      index === 0 ? { ...word, sep: "", joinsNext: true } : word,
+    );
+    const after = before.with(0, withFields(before[0], { text: "hel|lo", words: joined }));
+    const out = carried(before, after)[1];
+    expect(timedSyllables(mainTrack(out)).map((word) => word.joinsNext)).toEqual([true, false]);
+    expect(spans(out)).toEqual([
+      ["hel", 10, 11],
+      ["lo", 11, 12],
+    ]);
+  });
+
   it("drops the background from every instance when the edit removes it", () => {
     const withBackground = { text: "main", backgroundText: "ooh", backgroundTextSource: "extraction" as const };
     const before = [groupLine("L1", 0, withBackground), groupLine("L2", 1, withBackground)];

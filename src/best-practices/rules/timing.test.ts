@@ -69,9 +69,9 @@ describe("TIMING", () => {
 // -- Review locks --------------------------------------------------------------
 
 describe("TIMING review locks", () => {
-  // Locked against extractLinkedFields in src/domain/group/linking.ts, which
-  // propagates text, agentId, backgroundText and backgroundTextSource only. If
-  // timing ever starts propagating, update this copy rather than drop the test.
+  // Locked against sameSharedContent in src/domain/group/carried-line.ts, which
+  // carries text, singer and background to other instances, never timing. If
+  // that changes, update this copy rather than drop the test.
   it("names the three timing fields that stay instance-local", () => {
     const copy = ruleById(TIMING, "link-the-repeats").body.join(" ");
     expect(copy).toMatch(/begin, end and word timings/i);
