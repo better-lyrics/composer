@@ -10,6 +10,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, roleWords } from "@/domain/line/track";
+import { withAgent } from "@/domain/line/track-writes";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { type FieldPatch, withFields } from "@/test/field-updates";
@@ -216,6 +217,16 @@ describe("copyThroughTemplate", () => {
   });
 
   describe("instances with different lines", () => {
+    it("regression: an instance holding its own line anchors where that line meets the template", () => {
+      const otherSinger = withAgent(chorus(1, 1, 54), "v2");
+      const before = [chorus(0, 0, 10), chorus(0, 1, 14), otherSinger];
+      const after = edit(before, "c0-1", nudgeWord(0, 0.5));
+      expectTimes(times(byId(copiedThroughTemplate(before, after, sharing, ["c0-1"]).lines, "c1-1")), [
+        [54.5, 54.9],
+        [54.5, 55],
+      ]);
+    });
+
     it("regression: anchors on lines both instances have when one instance lost a line", () => {
       const before = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
       const after = edit(before, "c0-1", nudgeWord(0, 0.5));

@@ -165,4 +165,16 @@ describe("foldLines", () => {
     const folded = foldLines({ doc, after, touched: ["glow-0", "glow-1"], groups: [chorus], copiesSharedTiming: true });
     expect(mainTrack(folded.lines[1]).syllables.map((syllable) => syllable.id)).toEqual(ownIds);
   });
+
+  it("a line edit outside a group keeps that group's instances and template", () => {
+    const lines = [glowLine(0, 10), createLine({ id: "verse", text: "Lanterns over water" }), glowLine(1, 40)];
+    const doc = docFromFlatLines(lines);
+    const edited = createLine({ id: "verse", text: "Lanterns over the water" });
+    for (const after of [lines.with(1, edited), lines.toSpliced(1, 0, createLine({ id: "new", text: "Ash" }))]) {
+      const folded = foldLines({ doc, after, touched: [], groups: [chorus], copiesSharedTiming: false });
+      expect(folded.doc.templates.chorus).toBe(doc.templates.chorus);
+      expect(instances(folded.doc)).toEqual(instances(doc));
+      instances(folded.doc).forEach((instance, index) => expect(instance).toBe(instances(doc)[index]));
+    }
+  });
 });

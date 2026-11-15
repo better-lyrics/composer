@@ -2,6 +2,7 @@ import { primeSlotLine, templateSlotLine } from "@/domain/group/flatten";
 import { invertedIds, pairedIds, withLineIds } from "@/domain/group/line-ids";
 import type { Instance, TemplateLine } from "@/domain/group/model";
 import {
+  fittedAnchor,
   type LineContent,
   lineContent,
   ownTimingOf,
@@ -9,7 +10,6 @@ import {
   templateContent,
   untimedLine,
 } from "@/domain/group/template-line";
-import { instanceBounds } from "@/domain/instance/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
@@ -51,17 +51,6 @@ function placement(
   const at = anchors.find((anchor) => anchor !== undefined && held.every(placedAt(anchor)));
   if (at !== undefined) return { at };
   return { ownTiming: ownTimingOf(held.map(({ content }) => content)) };
-}
-
-// Where the template sits for the first timed line the instance shares with it, so an instance missing a template
-// line still anchors on the lines it has.
-function fittedAnchor(held: readonly HeldSlot[]): number | undefined {
-  for (const { template, content } of held) {
-    const own = instanceBounds([content]);
-    const relative = instanceBounds([templateContent(template)]);
-    if (own && relative) return own.begin - relative.begin;
-  }
-  return undefined;
 }
 
 function withSlots(
@@ -112,7 +101,8 @@ function readInstance(
     delete ids[template.slot];
   }
   const instance = unheld.length ? withSlots(draft, ids, replaced) : draft;
-  for (const slot of held) if (!unheld.includes(slot)) primeSlotLine(slot.template, instance, slot.line);
+  const unheldSlots = new Set(unheld);
+  for (const slot of held) if (!unheldSlots.has(slot)) primeSlotLine(slot.template, instance, slot.line);
   return instance;
 }
 

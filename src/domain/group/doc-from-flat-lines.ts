@@ -65,7 +65,9 @@ function readBody(lines: readonly LyricLine[]): BodyRead {
     if (!run) {
       run = { groupId, idx: instanceIdx, lines: [] };
       runs.set(key, run);
-      runsByGroup.set(groupId, [...(runsByGroup.get(groupId) ?? []), run]);
+      const groupRuns = runsByGroup.get(groupId);
+      if (groupRuns) groupRuns.push(run);
+      else runsByGroup.set(groupId, [run]);
     }
     run.lines.push(line);
     if (open && open.key === key) {

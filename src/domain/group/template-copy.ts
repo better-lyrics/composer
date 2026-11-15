@@ -4,7 +4,7 @@ import { instanceSlots, isInstanceSpan, type LyricDoc, type TemplateLine } from 
 import { hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
 import { sharesTiming, timingChanged } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { lineContent, toTemplateLine } from "@/domain/group/template-line";
+import { fittedAnchor, lineContent, toTemplateLine } from "@/domain/group/template-line";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "@/domain/instance/key";
 import { isLinked, type LinkedLine } from "@/domain/instance/predicates";
@@ -37,12 +37,19 @@ type SlotLine = LinkedLine & { templateLineIdx: number };
 
 // -- Anchors ------------------------------------------------------------------
 
-// An instance's anchor is where its template is placed, or its first time when it keeps its own.
+// An instance's anchor is where its template is placed. One on its own timing, or holding its own lines, anchors where
+// its first line timed in both meets the template, else at its first time.
 function instanceAnchors(doc: LyricDoc): InstanceAnchors {
   const anchors = new Map<string, Map<number, number>>();
   for (const instance of Object.values(doc.instances)) {
-    const lines = instanceSlots(instance).flatMap((slot) => instanceSlotLine(doc, instance, slot) ?? []);
-    const at = instance.at ?? instanceBounds(lines.filter((line) => !line.detached))?.begin;
+    const template = doc.templates[instance.groupId] ?? [];
+    const slots = instanceSlots(instance).flatMap((slot) => {
+      const content = instanceSlotLine(doc, instance, slot);
+      const templateLine = template.find((line) => line.slot === slot);
+      return content && templateLine && !content.detached ? [{ template: templateLine, content }] : [];
+    });
+    const lines = slots.map(({ content }) => content);
+    const at = instance.at ?? fittedAnchor(slots) ?? instanceBounds(lines)?.begin;
     if (at === undefined) continue;
     const byIdx = anchors.get(instance.groupId) ?? new Map<number, number>();
     byIdx.set(instance.idx, at);

@@ -1,4 +1,5 @@
 import type { OwnTiming, SpanTimes, TemplateLine } from "@/domain/group/model";
+import { instanceBounds } from "@/domain/instance/bounds";
 import type { LineTrack, LineTracks, LyricLine, Syllable } from "@/domain/line/model";
 import { isSpanTimed, isTimedSyllable, untimedSyllable } from "@/domain/line/track";
 
@@ -75,6 +76,17 @@ function ownTimingOf(lines: readonly LineContent[]): OwnTiming {
   return Object.keys(tracks).length ? { syllables, tracks } : { syllables };
 }
 
+// Where the template sits for the instance's first template line, in slot order, that is timed in both, so an
+// instance missing a template line, or holding its own, still anchors on the lines it has.
+function fittedAnchor(slots: readonly { template: TemplateLine; content: LineContent }[]): number | undefined {
+  for (const { template, content } of slots.toSorted((a, b) => a.template.slot - b.template.slot)) {
+    const own = instanceBounds([content]);
+    const relative = instanceBounds([templateContent(template)]);
+    if (own && relative) return own.begin - relative.begin;
+  }
+  return undefined;
+}
+
 function toTemplateLine(line: LyricLine, slot: number, at: number | undefined): TemplateLine {
   return { ...retimedLine(lineContent(line), at === undefined ? 0 : -at), slot };
 }
@@ -86,4 +98,13 @@ function templateContent({ slot: _slot, ...line }: TemplateLine): LineContent {
 // -- Exports ------------------------------------------------------------------
 
 export type { LineContent };
-export { lineContent, ownTimedLine, ownTimingOf, retimedLine, templateContent, toTemplateLine, untimedLine };
+export {
+  fittedAnchor,
+  lineContent,
+  ownTimedLine,
+  ownTimingOf,
+  retimedLine,
+  templateContent,
+  toTemplateLine,
+  untimedLine,
+};
