@@ -8,7 +8,7 @@ import { clampShiftDelta, shiftLineTiming, shiftTrack } from "@/domain/line/shif
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "insync/line-track-writes";
 import { isSyncableLine } from "insync/line-sync-progress";
-import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
+import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "insync/sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { withSlotWord } from "insync/sync-slot-words";
 import type { Bounds } from "insync/word-bounds";

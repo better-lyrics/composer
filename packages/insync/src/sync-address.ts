@@ -1,6 +1,6 @@
-import type { LyricLine } from "insync/line";
-import { mainTrack } from "insync/line-track";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import type { LyricLine } from "./line";
+import { mainTrack } from "./line-track";
+import type { SyncCursor } from "./sync-cursor";
 
 // -- Types --------------------------------------------------------------------
 

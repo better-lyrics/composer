@@ -1,6 +1,6 @@
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import type { SyncCursor } from "insync/sync-cursor";
 import { foldedLineIds } from "@/domain/sync/folded-lines";
 import type { SkippedInstance } from "@/domain/sync/skipped-instances";
 import { laneGroupTags, placingInstanceName } from "@/views/sync/shared-sync-tags";

@@ -1,9 +1,9 @@
 import type { LyricLine } from "insync/line";
 import type { SyncGranularity } from "insync/line-sync-progress";
-import { syncAddressPosition } from "@/domain/sync/address";
+import { syncAddressPosition } from "insync/sync-address";
 import { storedSyncPosition } from "@/domain/sync/anchor-gesture";
-import { resolveSyncCursor } from "@/domain/sync/cursor";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import { resolveSyncCursor } from "insync/sync-cursor";
+import type { SyncCursor } from "insync/sync-cursor";
 import {
   type SkippedInstance,
   keptReRecording,

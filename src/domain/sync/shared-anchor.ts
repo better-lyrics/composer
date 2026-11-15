@@ -8,7 +8,7 @@ import type { LinkGroup } from "insync/group";
 import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { isSyncableLine } from "insync/line-sync-progress";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import type { SyncCursor } from "insync/sync-cursor";
 
 // -- Types --------------------------------------------------------------------
 

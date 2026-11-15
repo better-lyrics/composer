@@ -2,7 +2,7 @@ import type { LyricLine } from "insync/line";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { backgroundText, lineText } from "insync/line-text";
 import { trackRole, untimedSyllablesOf } from "insync/line-track";
-import type { SyncAddress } from "@/domain/sync/address";
+import type { SyncAddress } from "insync/sync-address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "insync/word-timing";

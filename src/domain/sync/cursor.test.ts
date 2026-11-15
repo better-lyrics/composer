@@ -6,7 +6,7 @@ import {
   previousSlot,
   resolveSyncCursor,
   slotBounds,
-} from "@/domain/sync/cursor";
+} from "insync/sync-cursor";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
