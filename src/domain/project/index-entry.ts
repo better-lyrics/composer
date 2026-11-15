@@ -43,7 +43,7 @@ interface ProjectIndexEntry {
 interface IndexEntryInput {
   id: string;
   metadata: Parameters<typeof normalizeLoadedMetadata>[0];
-  lines: unknown;
+  lines: readonly LyricLine[];
   audioSource: SavedAudioSource | undefined;
   storedAudioBytes: number;
   storedStemBytes?: number;
@@ -100,7 +100,8 @@ function format4Line(line: Record<string, unknown> & { tracks: unknown[] }): Lyr
   return lineFromSaved({ id: String(line.id), tracks });
 }
 
-function normalizeStoredLines(lines: unknown): LyricLine[] {
+// Only for a record whose loaded lines are not at hand: reading every saved line again is most of a save's index cost.
+function storedLyricLines(lines: unknown): LyricLine[] {
   const entries = (Array.isArray(lines) ? lines : []).filter(isStoredLine);
   const format4 = entries.filter(isFormat4Line).map(format4Line);
   const records = entries.filter(isStoredLyricLine) as unknown as LineFields[];
@@ -114,12 +115,12 @@ function normalizeStoredLines(lines: unknown): LyricLine[] {
       getSplitCharacter(),
     ),
   );
-  return [...format4, ...format3].filter((value) => hasMainLyrics(value, getSplitCharacter()));
+  return [...format4, ...format3];
 }
 
 function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {
   const metadata = normalizeLoadedMetadata(input.metadata);
-  const lyricLines = normalizeStoredLines(input.lines);
+  const lyricLines = input.lines.filter((line) => hasMainLyrics(line, getSplitCharacter()));
   const unisonLyricId = readUnisonLyricId(input.unisonLyricId);
   return {
     id: input.id,
@@ -147,5 +148,5 @@ function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {
 
 // -- Exports ------------------------------------------------------------------
 
-export { buildIndexEntry };
+export { buildIndexEntry, storedLyricLines };
 export type { IndexEntryInput, ProjectIndexEntry };

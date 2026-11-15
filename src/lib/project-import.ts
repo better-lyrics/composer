@@ -1,4 +1,4 @@
-import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
+import { type ProjectIndexEntry, buildIndexEntry, storedLyricLines } from "@/domain/project/index-entry";
 import { byMostRecentlyEdited } from "@/domain/project/library-order";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -69,7 +69,7 @@ function projectFileSummary(file: ProjectFile): ProjectFileSummary {
   const entry = buildIndexEntry({
     id: file.projectId ?? "",
     metadata: file.metadata,
-    lines: file.lines,
+    lines: storedLyricLines(file.lines),
     audioSource: file.audioSource,
     storedAudioBytes: 0,
     updatedAt: file.savedAt,

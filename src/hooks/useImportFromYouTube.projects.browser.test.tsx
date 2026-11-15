@@ -4,6 +4,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { getLinkProjectSettled, getPersistenceSettled, getQueryImportSettled } from "@/lib/persistence-settled";
+import { storedLyricLines } from "@/domain/project/index-entry";
 import { indexEntryForProject } from "@/lib/project-index-write";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { isProjectDeleted } from "@/lib/project-tombstones";
@@ -55,7 +56,7 @@ async function seedOpenAlpha(lyrics = true): Promise<void> {
 
 async function seedOrphanedVideoIndexEntry(id: string, videoId: string): Promise<void> {
   const project = storedProject({ audioSource: { kind: "youtube", videoId } });
-  const entry = indexEntryForProject(id, project, { storedAudioBytes: 0 });
+  const entry = indexEntryForProject(id, project, storedLyricLines(project.lines), { storedAudioBytes: 0 });
   await setInStore(PROJECT_INDEX_STORE_NAME, id, entry);
 }
 

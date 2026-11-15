@@ -1,6 +1,6 @@
 import { savedLines } from "@/lib/saved-project";
 import type { LyricLine } from "insync/line";
-import { type IndexEntryInput, buildIndexEntry } from "@/domain/project/index-entry";
+import { type IndexEntryInput, buildIndexEntry, storedLyricLines } from "@/domain/project/index-entry";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -9,7 +9,10 @@ function storedRecord(line: unknown): unknown {
   return typeof line === "object" && line !== null && "tracks" in line ? savedLines([line as LyricLine])[0] : line;
 }
 
-function input({ lines, ...overrides }: Partial<IndexEntryInput> = {}): IndexEntryInput {
+function input({
+  lines,
+  ...overrides
+}: Partial<Omit<IndexEntryInput, "lines">> & { lines?: unknown } = {}): IndexEntryInput {
   return {
     id: "p1",
     metadata: { title: "Midnight City", artists: ["M83"], album: "Hurry Up, We're Dreaming", duration: 243 },
@@ -17,7 +20,7 @@ function input({ lines, ...overrides }: Partial<IndexEntryInput> = {}): IndexEnt
     storedAudioBytes: 0,
     updatedAt: 1_758_900_000_000,
     ...overrides,
-    lines: Array.isArray(lines) ? lines.map(storedRecord) : lines,
+    lines: storedLyricLines(Array.isArray(lines) ? lines.map(storedRecord) : lines),
   };
 }
 
@@ -152,6 +155,28 @@ describe("buildIndexEntry", () => {
   });
 
   describe("invariants", () => {
+    it("counts the lines a save started from the same as the record it wrote", () => {
+      const lines = [
+        createLine({ text: "Waiting in a car", words: [{ text: "Waiting", begin: 1.0004, end: 2 }] }),
+        createLine({ text: "Waiting for a ride", begin: 3, end: 4 }),
+        createLine({ text: "In the dark" }),
+        createLine({
+          text: "Main words",
+          backgroundText: "(ooh)",
+          backgroundWords: [{ text: "ooh", begin: 5, end: 6 }],
+        }),
+        createLine({ text: "", begin: 7, end: 8 }),
+      ];
+      const counts = ({ lineCount, syncedLineCount, hasWordTiming }: ReturnType<typeof buildIndexEntry>) => ({
+        lineCount,
+        syncedLineCount,
+        hasWordTiming,
+      });
+      const fromRecord = counts(buildIndexEntry(input({ lines })));
+      expect(fromRecord).toEqual({ lineCount: 4, syncedLineCount: 3, hasWordTiming: true });
+      expect(counts(buildIndexEntry({ ...input(), lines }))).toEqual(fromRecord);
+    });
+
     it("never counts more synced lines than lyric lines", () => {
       const lines = [createLine({ text: "a", begin: 1, end: 2 }), createLine({ text: "", begin: 3, end: 4 })];
       const entry = buildIndexEntry(input({ lines }));
