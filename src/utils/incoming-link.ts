@@ -9,6 +9,11 @@ interface LinkLocation {
   hash: string;
 }
 
+interface BootUnisonLyric {
+  present: boolean;
+  id: number | null;
+}
+
 // -- Constants ----------------------------------------------------------------
 
 const SONG_QUERY_PARAM_NAMES = ["title", "artist", "album", "duration", "isrc"] as const;
@@ -38,6 +43,10 @@ function readUnisonLyricParam(params: URLSearchParams): number | null {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
+function hasUnisonLyricLink(params: URLSearchParams): boolean {
+  return readUnisonLyricParam(params) !== null;
+}
+
 function hasLinkedFileParams(params: URLSearchParams): boolean {
   return LINKED_FILE_PARAM_NAMES.some((name) => readTrimmed(params, name) !== null);
 }
@@ -58,9 +67,21 @@ function hasIncomingLink({ search, hash }: LinkLocation): boolean {
   if (hash.startsWith(IMPORT_HASH_PREFIX)) return true;
   const params = new URLSearchParams(search);
   if (readYouTubeParam(params) !== null) return true;
-  if (readUnisonLyricParam(params) !== null) return true;
+  if (hasUnisonLyricLink(params)) return true;
   if (hasLinkedFileParams(params)) return true;
   return SONG_QUERY_PARAM_NAMES.some((name) => readTrimmed(params, name) !== null);
+}
+
+// -- Boot ---------------------------------------------------------------------
+
+function readBootUnisonLyric(): BootUnisonLyric {
+  if (typeof window === "undefined") return { present: false, id: null };
+  const params = new URLSearchParams(window.location.search);
+  return { present: params.has(UNISON_LYRIC_PARAM), id: readUnisonLyricParam(params) };
+}
+
+function hasBootUnisonLyric(): boolean {
+  return readBootUnisonLyric().id !== null;
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -70,10 +91,12 @@ export {
   IMPORT_HASH_PREFIX,
   LINKED_FILE_PARAM_NAMES,
   UNISON_LYRIC_PARAM,
+  hasBootUnisonLyric,
   hasIncomingLink,
   hasLinkedFileParams,
   linkedFileName,
   readLinkedFileUrl,
+  readBootUnisonLyric,
   readTrimmed,
   readUnisonLyricParam,
 };

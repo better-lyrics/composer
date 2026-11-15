@@ -1,35 +1,15 @@
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { openUnisonLyricFromLink } from "@/lib/unison/open-unison-lyric";
 import { getPersistenceSettled, markLinkProjectSettled } from "@/lib/persistence-settled";
-import { UNISON_LYRIC_PARAM, readUnisonLyricParam } from "@/utils/incoming-link";
+import { UNISON_LYRIC_PARAM, readBootUnisonLyric } from "@/utils/incoming-link";
 import { showUnisonLyricLinkFailedToast } from "@/utils/unison-toast";
 import { stripQueryParams } from "@/utils/url-params";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// -- Types --------------------------------------------------------------------
-
-interface BootUnisonLyric {
-  present: boolean;
-  id: number | null;
-}
-
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[Boot]";
-const NO_UNISON_LYRIC: BootUnisonLyric = { present: false, id: null };
-
-// -- Helpers ------------------------------------------------------------------
-
-function readBootUnisonLyric(): BootUnisonLyric {
-  if (typeof window === "undefined") return NO_UNISON_LYRIC;
-  const params = new URLSearchParams(window.location.search);
-  return { present: params.has(UNISON_LYRIC_PARAM), id: readUnisonLyricParam(params) };
-}
-
-function hasBootUnisonLyric(): boolean {
-  return readBootUnisonLyric().id !== null;
-}
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -73,4 +53,4 @@ function useImportFromUnisonLyric(): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { hasBootUnisonLyric, useImportFromUnisonLyric };
+export { useImportFromUnisonLyric };

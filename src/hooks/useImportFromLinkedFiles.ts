@@ -13,11 +13,11 @@ import { useProjectStore } from "@/stores/project";
 import {
   LINKED_FILE_PARAM_NAMES,
   type LinkedFileParam,
+  hasBootUnisonLyric,
   hasLinkedFileParams,
   linkedFileName,
   readLinkedFileUrl,
   readTrimmed,
-  readUnisonLyricParam,
 } from "@/utils/incoming-link";
 import { composeAbortSignals } from "@/utils/abort-signals";
 import { showNewProjectToast } from "@/utils/project-toast";
@@ -71,7 +71,7 @@ function readBootLinkedFiles(): BootLinkedFiles {
   return {
     present: true,
     blankParams: false,
-    skippedForVideo: readYouTubeParam(params) !== null || readUnisonLyricParam(params) !== null,
+    skippedForVideo: readYouTubeParam(params) !== null || hasBootUnisonLyric(),
     audioUrl: readLinkedFileUrl(params, "audioUrl"),
     lyricsUrl: readLinkedFileUrl(params, "lyricsUrl"),
     invalid: LINKED_FILE_PARAM_NAMES.filter(
