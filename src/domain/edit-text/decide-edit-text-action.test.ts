@@ -353,3 +353,19 @@ describe("removing a group row", () => {
     expect(action.finalLines.map((line) => line.id)).toEqual(["c1a", "c1b", "v1", "c2a"]);
   });
 });
+
+describe("typing a split mark in an instance", () => {
+  it("regression: reports the split it carried to the other instances, for the one-time notice", () => {
+    const lines = chorusLines();
+    const text = baseText(lines).replace("I love you", "I lo|ve you");
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      splitCharacter: "|",
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.splits).toEqual([{ groupId: "g1", instances: 2 }]);
+  });
+});

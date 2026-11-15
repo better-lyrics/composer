@@ -62,6 +62,10 @@ describe("syllableLineage · syllables added at the end", () => {
 
   it("stops at the end the instance has room for", () => {
     const own = [syllable("x", "glow", 5, 7), syllable("y", "on", 7, 9)];
-    expect(spans(syllableLineage(before, after, counterpartIn(before, own), 10))[2]).toEqual(["now", 9.5, 10]);
+    expect(spans(syllableLineage(before, after, counterpartIn(before, own), { floor: 0, limit: 10 }))[2]).toEqual([
+      "now",
+      9.5,
+      10,
+    ]);
   });
 });

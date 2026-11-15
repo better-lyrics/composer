@@ -1,5 +1,6 @@
 import {
   type LineageCounterpart,
+  type LineRoom,
   lineageByLetters,
   lineageByText,
   syllableLineage,
@@ -18,7 +19,6 @@ import {
   untimedSyllable,
 } from "@/domain/line/track";
 import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
-import { newWordId } from "@/domain/word/id";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Content ------------------------------------------------------------------
@@ -62,7 +62,7 @@ function inPlace(syllables: readonly Syllable[], counterpart: LineageCounterpart
   let timedRun = true;
   return syllables.map((syllable) => {
     const target = counterpart(syllable.id)?.target;
-    const id = target?.id ?? newWordId();
+    const id = target?.id ?? targetId(counterpart, syllable.id);
     if (timedRun && target && isTimedSyllable(target)) return { ...syllable, id, begin: target.begin, end: target.end };
     timedRun = false;
     return { ...untimedSyllable(syllable), id };
@@ -77,7 +77,9 @@ function proportional(
   to: readonly [number, number] | undefined,
   counterpart: LineageCounterpart,
 ): Syllable[] {
-  if (!from || !to || from[1] <= from[0]) return syllables.map(untimedSyllable);
+  if (!from || !to || from[1] <= from[0]) {
+    return syllables.map((syllable) => ({ ...untimedSyllable(syllable), id: targetId(counterpart, syllable.id) }));
+  }
   const scale = (to[1] - to[0]) / (from[1] - from[0]);
   const at = (time: number) => Math.round((to[0] + (time - from[0]) * scale) * 1e9) / 1e9;
   return syllables.map((syllable) => {
@@ -101,13 +103,13 @@ interface TrackCarry {
   own: LineTrack | undefined;
   offset: number | null;
   counterpart: LineageCounterpart;
-  // Where the line after it starts: syllables the edit added at the end stop there.
-  limit: number;
+  // Syllables the edit added before or after the instance's own stay in this room.
+  room: LineRoom;
 }
 
 // The edited track's content on the other instance's track: on the shared timing when the two share it, else on that
 // instance's own timing through the syllables' lineage. A line-synced track keeps its span.
-function carriedTrackTiming({ before, after, own, offset, counterpart, limit }: TrackCarry) {
+function carriedTrackTiming({ before, after, own, offset, counterpart, room }: TrackCarry) {
   if (offset !== null) {
     const span = isSpanTimed(after) ? ([after.begin + offset, after.end + offset] as const) : undefined;
     return { syllables: shifted(after.syllables, offset, counterpart), span };
@@ -117,7 +119,7 @@ function carriedTrackTiming({ before, after, own, offset, counterpart, limit }: 
   if (isSpanTimed(after)) {
     const timed = own && timedSyllables(own).length > 0;
     const syllables = timed
-      ? lineageByText(after.syllables, own.syllables, counterpart)
+      ? lineageByText(after.syllables, own.syllables, counterpart, room)
       : inPlace(after.syllables, counterpart);
     return { syllables, span: undefined };
   }
@@ -130,7 +132,7 @@ function carriedTrackTiming({ before, after, own, offset, counterpart, limit }: 
   const kept = before && sameIds(before.syllables, after.syllables);
   const syllables = kept
     ? inPlace(after.syllables, counterpart)
-    : syllableLineage(before?.syllables ?? [], after.syllables, counterpart, limit);
+    : syllableLineage(before?.syllables ?? [], after.syllables, counterpart, room);
   return { syllables, span: undefined };
 }
 
@@ -165,17 +167,17 @@ interface LineCarry {
   own: LyricLine;
   offset: number | null;
   counterpart: LineageCounterpart;
-  limit: number;
+  room: LineRoom;
 }
 
 // Another instance's line after an edit to its template line: the edit's content, that instance's own timing and
 // ids, and its readings unless the edit rewrote them.
-function carriedLine({ before, after, own, offset, counterpart, limit }: LineCarry): LyricLine {
+function carriedLine({ before, after, own, offset, counterpart, room }: LineCarry): LyricLine {
   const ownMain = mainTrack(own);
   const afterMain = mainTrack(after);
   const main: MainTrack = withTiming(
     { ...ownMain, agentId: afterMain.agentId },
-    carriedTrackTiming({ before: mainTrack(before), after: afterMain, own: ownMain, offset, counterpart, limit }),
+    carriedTrackTiming({ before: mainTrack(before), after: afterMain, own: ownMain, offset, counterpart, room }),
   );
   const afterBackground = backgroundTrack(after);
   const ownBackground = backgroundTrack(own);
@@ -190,7 +192,7 @@ function carriedLine({ before, after, own, offset, counterpart, limit }: LineCar
         own: ownBackground,
         offset,
         counterpart,
-        limit,
+        room,
       }),
     );
   const tracks: LineTracks = background ? [main, background] : [main];

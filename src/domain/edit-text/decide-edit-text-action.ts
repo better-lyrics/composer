@@ -3,7 +3,8 @@ import { diffEditTextChange, withMovedTextDetached } from "@/domain/edit-text/di
 import { editTextWithRewrittenRows } from "@/domain/edit-text/edit-text";
 import { type BackgroundRange, NO_RANGES } from "@/domain/edit-text/shown-row";
 import type { LinkGroup } from "@/domain/group/template";
-import { carryTemplateEdits } from "@/domain/group/template-edit";
+import type { InstanceAnchors } from "@/domain/group/template-copy";
+import { type CarriedSplit, carryTemplateEdits } from "@/domain/group/template-edit";
 import type { LyricLine } from "@/domain/line/model";
 import { textToLyricLines } from "@/utils/lyrics-text";
 
@@ -19,6 +20,8 @@ type EditTextAction =
       // Group lines the edit made their instance's own, and ones it removed from their instance.
       detachedIds: readonly string[];
       removedIds: readonly string[];
+      // Splits the edit carried to other instances of a group.
+      splits: readonly CarriedSplit[];
     };
 
 interface DecideOptions {
@@ -30,6 +33,8 @@ interface DecideOptions {
   splitCharacter?: string;
   /** Where the text shows background tracks inline; the text shows none when left out. */
   ranges?: readonly BackgroundRange[];
+  /** Where each group instance sits, from the project's doc; read from the lines when left out. */
+  anchors?: InstanceAnchors;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -55,6 +60,7 @@ function decideEditTextAction({
   groups,
   splitCharacter,
   ranges,
+  anchors,
 }: DecideOptions): EditTextAction {
   const lyricLines = typedLyricLines(text, ranges, defaultAgentId, lines, splitCharacter);
   const diff = diffEditTextChange(lines, lyricLines);
@@ -68,18 +74,27 @@ function decideEditTextAction({
       editRanges: ranges ?? NO_RANGES,
       detachedIds: moved.detachedIds,
       removedIds: moved.removedIds,
+      splits: [],
     };
   }
 
   if (diff.contentUpdates.length === 0) return { kind: "noop" };
   // The rows of other instances show the edit as the commit will write it.
-  const finalLines = carryTemplateEdits({ before: lines, after: lyricLines, groups }).lines;
+  const { lines: finalLines, splits } = carryTemplateEdits({ before: lines, after: lyricLines, groups, anchors });
   if (!ranges) {
     const editText = editTextWithRewrittenRows(text, lyricLines, finalLines);
-    return { kind: "apply", finalLines, editText, editRanges: NO_RANGES, detachedIds: [], removedIds: [] };
+    return { kind: "apply", finalLines, editText, editRanges: NO_RANGES, detachedIds: [], removedIds: [], splits };
   }
   const shown = shownWithRewrittenRows({ text, ranges }, lyricLines, finalLines);
-  return { kind: "apply", finalLines, editText: shown.text, editRanges: shown.ranges, detachedIds: [], removedIds: [] };
+  return {
+    kind: "apply",
+    finalLines,
+    editText: shown.text,
+    editRanges: shown.ranges,
+    detachedIds: [],
+    removedIds: [],
+    splits,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
