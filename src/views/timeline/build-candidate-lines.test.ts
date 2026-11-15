@@ -1,10 +1,12 @@
 /**
  * @vitest-environment node
  */
+
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { describe, expect, it } from "vitest";
 import { buildCandidateLines } from "./build-candidate-lines";
+import { lineWordSelections } from "@/domain/selection/line-selections";
 
 const lineA: LyricLine = {
   id: "a",
@@ -38,45 +40,42 @@ const lineWithBg: LyricLine = {
   backgroundWords: [{ id: "w9", text: "bg", sep: "", begin: 0.5, end: 1 }],
 };
 
-function selectAll(line: LyricLine, lineIndex: number): WordSelection[] {
-  const sels: WordSelection[] = [];
-  (line.words ?? []).forEach((_, i) => sels.push({ lineId: line.id, lineIndex, wordIndex: i, type: "word" }));
-  (line.backgroundWords ?? []).forEach((_, i) => sels.push({ lineId: line.id, lineIndex, wordIndex: i, type: "bg" }));
-  return sels;
+function selectAll(line: LyricLine): SyllableAddress[] {
+  return lineWordSelections(line);
 }
 
 describe("buildCandidateLines", () => {
   it("returns the lines in order when every word is selected", () => {
     const lines = [lineA, lineB];
-    const sel = [...selectAll(lineA, 0), ...selectAll(lineB, 1)];
+    const sel = [...selectAll(lineA), ...selectAll(lineB)];
     const result = buildCandidateLines(lines, sel);
     expect(result?.map((l) => l.id)).toEqual(["a", "b"]);
   });
 
   it("preserves lineIndex order when selection is built out of order", () => {
     const lines = [lineA, lineB];
-    const sel = [...selectAll(lineB, 1), ...selectAll(lineA, 0)];
+    const sel = [...selectAll(lineB), ...selectAll(lineA)];
     const result = buildCandidateLines(lines, sel);
     expect(result?.map((l) => l.id)).toEqual(["a", "b"]);
   });
 
   it("returns undefined when only some words of a line are selected", () => {
     const lines = [lineA];
-    const sel: WordSelection[] = [{ lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" }];
+    const sel: SyllableAddress[] = [{ lineId: "a", type: "word", syllableId: "w1" }];
     expect(buildCandidateLines(lines, sel)).toBeUndefined();
   });
 
   it("requires every bg word to be selected when bg track has words", () => {
     const lines = [lineWithBg];
-    const sel: WordSelection[] = [{ lineId: "c", lineIndex: 0, wordIndex: 0, type: "word" }];
+    const sel: SyllableAddress[] = [{ lineId: "c", type: "word", syllableId: "w8" }];
     expect(buildCandidateLines(lines, sel)).toBeUndefined();
   });
 
   it("returns the line when both main and bg words are fully selected", () => {
     const lines = [lineWithBg];
-    const sel: WordSelection[] = [
-      { lineId: "c", lineIndex: 0, wordIndex: 0, type: "word" },
-      { lineId: "c", lineIndex: 0, wordIndex: 0, type: "bg" },
+    const sel: SyllableAddress[] = [
+      { lineId: "c", type: "word", syllableId: "w8" },
+      { lineId: "c", type: "bg", syllableId: "w9" },
     ];
     expect(buildCandidateLines(lines, sel)?.map((l) => l.id)).toEqual(["c"]);
   });
@@ -86,7 +85,7 @@ describe("buildCandidateLines", () => {
   });
 
   it("returns undefined when a selected line is missing from project", () => {
-    const sel: WordSelection[] = [{ lineId: "ghost", lineIndex: 0, wordIndex: 0, type: "word" }];
+    const sel: SyllableAddress[] = [{ lineId: "ghost", type: "word", syllableId: "w1" }];
     expect(buildCandidateLines([lineA], sel)).toBeUndefined();
   });
 });

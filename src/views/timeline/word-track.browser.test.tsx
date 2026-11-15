@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
 import { applyWordPatch } from "@/utils/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -561,12 +562,7 @@ describe("WordTrack", () => {
       await userEvent.click(edgeOf(blocks[1], "left"));
 
       await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
-      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
-        lineId: line.id,
-        lineIndex: 0,
-        wordIndex: 1,
-        type: "word",
-      });
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual(wordAddress(line, 1));
     });
 
     it("selects the word when its right edge is clicked without dragging", async () => {
@@ -577,12 +573,7 @@ describe("WordTrack", () => {
       await userEvent.click(edgeOf(blocks[0], "right"));
 
       await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
-      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
-        lineId: line.id,
-        lineIndex: 0,
-        wordIndex: 0,
-        type: "word",
-      });
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual(wordAddress(line, 0));
     });
 
     it("does not push an undo entry when a boundary is clicked without dragging", async () => {
@@ -605,12 +596,7 @@ describe("WordTrack", () => {
       pressEdgeMoveAndClick(blocks[1], "left", { dx: 0, dy: 40 });
 
       await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
-      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
-        lineId: line.id,
-        lineIndex: 0,
-        wordIndex: 1,
-        type: "word",
-      });
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual(wordAddress(line, 1));
       expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
       expect(useProjectStore.getState().history).toHaveLength(0);
     });
@@ -623,12 +609,7 @@ describe("WordTrack", () => {
       pressEdgeMoveAndClick(blocks[1], "left", { dx: 1, dy: 0 });
 
       await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
-      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
-        lineId: line.id,
-        lineIndex: 0,
-        wordIndex: 1,
-        type: "word",
-      });
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual(wordAddress(line, 1));
       expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
       expect(useProjectStore.getState().history).toHaveLength(0);
     });

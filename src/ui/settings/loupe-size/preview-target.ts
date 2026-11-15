@@ -1,16 +1,15 @@
 import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
-import type { WordSelection } from "@/domain/selection/model";
+import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
 
 // -- Helpers ------------------------------------------------------------------
 
-function firstSyncedWord(lines: readonly LyricLine[]): WordSelection | null {
+function firstSyncedWord(lines: readonly LyricLine[]): ResolvedAddress | null {
   const lineIndex = lines.findIndex(isWordSynced);
-  if (lineIndex === -1) return null;
-  return { lineId: lines[lineIndex].id, lineIndex, wordIndex: 0, type: "word" };
+  return lineIndex === -1 ? null : resolvedAt(lines, lineIndex, "word", 0);
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -25,8 +24,8 @@ function previewLoupeTarget(lines: readonly LyricLine[], playhead: number): Loup
   if (!word) return null;
   return {
     lineId: selection.lineId,
-    track: selection.type,
-    wordIndex: selection.wordIndex,
+    type: selection.type,
+    syllableId: selection.syllableId,
     edge: "begin",
     startTime: word.begin,
     time: word.begin,

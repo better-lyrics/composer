@@ -1,25 +1,22 @@
-import { sameWordSelection } from "@/domain/selection/identity";
-import type { WordSelection } from "@/domain/selection/model";
+import { sameAddress } from "@/domain/selection/identity";
+import type { SyllableAddress } from "@/domain/selection/model";
 
 // -- Set operations -----------------------------------------------------------
 
-function toggleWordSelection(selections: WordSelection[], selection: WordSelection): WordSelection[] {
-  if (selections.some((w) => sameWordSelection(w, selection))) {
-    return selections.filter((w) => !sameWordSelection(w, selection));
-  }
-  return [...selections, selection];
+function toggleAddress<A extends SyllableAddress>(addresses: A[], address: A): A[] {
+  if (addresses.some((a) => sameAddress(a, address))) return addresses.filter((a) => !sameAddress(a, address));
+  return [...addresses, address];
 }
 
-// Union of two selection lists, deduped by identity. Existing entries keep
-// their position; incoming entries are appended only when not already present.
-function mergeWordSelections(existing: WordSelection[], incoming: WordSelection[]): WordSelection[] {
+// Union of two address lists, deduped. Existing entries keep their position; incoming entries are appended only when not already present.
+function mergeAddresses<A extends SyllableAddress>(existing: A[], incoming: A[]): A[] {
   const merged = [...existing];
-  for (const selection of incoming) {
-    if (!merged.some((w) => sameWordSelection(w, selection))) merged.push(selection);
+  for (const address of incoming) {
+    if (!merged.some((a) => sameAddress(a, address))) merged.push(address);
   }
   return merged;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { mergeWordSelections, toggleWordSelection };
+export { mergeAddresses, toggleAddress };

@@ -1,5 +1,6 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
+import { resolveAddresses } from "@/domain/selection/resolve";
 import { pluralize } from "@/utils/pluralize";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
@@ -14,12 +15,13 @@ import { toast } from "sonner";
 function useTimelineClipboard(lines: readonly ReadableLine[]) {
   const handleCopy = useCallback(() => {
     const { selectedWords } = useTimelineStore.getState();
-    if (selectedWords.length === 0) return;
+    const resolved = resolveAddresses(lines, selectedWords);
+    if (resolved.length === 0) return;
 
-    const minLineIndex = Math.min(...selectedWords.map((w) => w.lineIndex));
+    const minLineIndex = Math.min(...resolved.map((w) => w.lineIndex));
     const entries: ClipboardEntry[] = [];
 
-    for (const sel of selectedWords) {
+    for (const sel of resolved) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
       const wordsArray = trackWords(line, sel.type);

@@ -2,6 +2,7 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { installScrollHost, makeAltDuplicateEvent } from "@/views/timeline/use-timeline-dnd.test-helpers";
@@ -22,7 +23,7 @@ describe("effective line write-back", () => {
         LINE_SYNCED,
       ],
     });
-    useTimelineStore.setState({ selectedWords: [{ lineId: "w", lineIndex: 0, wordIndex: 0, type: "word" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress("w", 0, "word")] });
     const lines = getEffectiveLines(useProjectStore.getState().lines);
     await renderHook(() => useTimelineKeyboard(createRef<HTMLDivElement | null>(), lines, 30));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "n", bubbles: true }));
@@ -49,7 +50,7 @@ describe("effective line write-back", () => {
     useProjectStore.setState({ activeTab: "timeline", lines: [LINE_SYNCED] });
     useSettingsStore.setState({ rollingEdit: false });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: "ls", lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress("ls", 0, "word")],
     });
     const lines = getEffectiveLines(useProjectStore.getState().lines);
     await renderHook(() => useTimelineKeyboard(createRef<HTMLDivElement | null>(), lines, 30));

@@ -1,8 +1,20 @@
-import { describe, expect, it } from "vitest";
-import type { WordSelection } from "@/domain/selection/model";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
 import { selectionPatch, toggledSelectionPatch } from "@/views/timeline/step-timing/step-selection";
 
-const word = (wordIndex: number): WordSelection => ({ lineId: "l0", lineIndex: 0, wordIndex, type: "word" });
+const word = (wordIndex: number): SyllableAddress => ({ lineId: "l0", type: "word", syllableId: `w${wordIndex}` });
+
+beforeEach(() => {
+  const words = ["Bright", "side", "now"].map((text, index) => ({
+    id: `w${index}`,
+    text,
+    begin: index,
+    end: index + 1,
+  }));
+  useProjectStore.getState().setLines([createLine({ id: "l0", text: "Bright side now", words })]);
+});
 
 describe("step selection", () => {
   it("regression: a one-word queue survives a lane pick and a Cmd-click edit", () => {

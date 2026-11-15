@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
+import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { nextCursorSlot } from "@/domain/step-timing/step-cursor";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -12,12 +13,12 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 // -- Types --------------------------------------------------------------------
 
 interface StepView extends StepSkipView {
-  next: WordSelection | null;
+  next: ResolvedAddress | null;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const NO_SELECTION: WordSelection[] = [];
+const NO_SELECTION: SyllableAddress[] = [];
 
 // -- State --------------------------------------------------------------------
 

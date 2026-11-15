@@ -1,39 +1,39 @@
 import { useCallback, useRef } from "react";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { useSettingsStore } from "@/stores/settings";
 import { useStepView } from "@/views/timeline/step-timing/step-next";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
 
-type TrackType = WordSelection["type"];
+type TrackType = SyllableAddress["type"];
 
 interface StepTrack {
   stepTiming: boolean;
   trackAttributes: { "data-word-track": true; "data-step-chain"?: "off" };
   nextWordIndex: number;
-  queuedIndices: ReadonlySet<number>;
+  queuedIds: ReadonlySet<string>;
 }
 
 interface StepChoice {
   stepTiming: boolean;
-  queuedIndices: ReadonlySet<number>;
+  queuedIds: ReadonlySet<string>;
   chosenLine: boolean;
   chosenBackground: boolean;
 }
 
 interface StepChoiceSource {
   stepTiming: boolean;
-  stepQueue: WordSelection[] | null;
-  selectedWords: WordSelection[];
+  stepQueue: SyllableAddress[] | null;
+  selectedWords: SyllableAddress[];
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const NO_INDICES: ReadonlySet<number> = new Set();
+const NO_IDS: ReadonlySet<string> = new Set();
 const STEP_OFF: StepChoice = {
   stepTiming: false,
-  queuedIndices: NO_INDICES,
+  queuedIds: NO_IDS,
   chosenLine: false,
   chosenBackground: false,
 };
@@ -42,16 +42,16 @@ const STEP_OFF: StepChoice = {
 
 function stepChoiceOf(state: StepChoiceSource, lineId: string, type: TrackType): StepChoice {
   if (!state.stepTiming) return STEP_OFF;
-  let queued: Set<number> | null = null;
+  let queued: Set<string> | null = null;
   for (const queuedWord of state.stepQueue ?? []) {
     if (queuedWord.lineId !== lineId || queuedWord.type !== type) continue;
     queued ??= new Set();
-    queued.add(queuedWord.wordIndex);
+    queued.add(queuedWord.syllableId);
   }
   const chosen = state.stepQueue ?? state.selectedWords;
   return {
     stepTiming: true,
-    queuedIndices: queued ?? NO_INDICES,
+    queuedIds: queued ?? NO_IDS,
     chosenLine: chosen.some((s) => s.lineId === lineId),
     chosenBackground: chosen.some((s) => s.lineId === lineId && s.type === "bg"),
   };
@@ -60,8 +60,8 @@ function stepChoiceOf(state: StepChoiceSource, lineId: string, type: TrackType):
 function sameStepChoice(a: StepChoice, b: StepChoice): boolean {
   if (a.stepTiming !== b.stepTiming || a.chosenLine !== b.chosenLine || a.chosenBackground !== b.chosenBackground)
     return false;
-  if (a.queuedIndices.size !== b.queuedIndices.size) return false;
-  for (const index of a.queuedIndices) if (!b.queuedIndices.has(index)) return false;
+  if (a.queuedIds.size !== b.queuedIds.size) return false;
+  for (const id of a.queuedIds) if (!b.queuedIds.has(id)) return false;
   return true;
 }
 
@@ -69,7 +69,9 @@ function sameStepChoice(a: StepChoice, b: StepChoice): boolean {
 
 // Keeps its previous value while this track's part of the step choice is unchanged, so a step elsewhere never re-renders it.
 function useStepChoice(lineId: string, type: TrackType): StepChoice {
-  const cacheRef = useRef<{ queue: WordSelection[] | null; selected: WordSelection[]; value: StepChoice } | null>(null);
+  const cacheRef = useRef<{ queue: SyllableAddress[] | null; selected: SyllableAddress[]; value: StepChoice } | null>(
+    null,
+  );
   const select = useCallback(
     (state: StepChoiceSource): StepChoice => {
       if (!state.stepTiming) return STEP_OFF;
@@ -86,7 +88,7 @@ function useStepChoice(lineId: string, type: TrackType): StepChoice {
 }
 
 function useStepTrack(lineId: string, trackType: TrackType): StepTrack {
-  const { stepTiming, queuedIndices, chosenLine, chosenBackground } = useStepChoice(lineId, trackType);
+  const { stepTiming, queuedIds, chosenLine, chosenBackground } = useStepChoice(lineId, trackType);
   const includeBackground = useSettingsStore((s) => s.stepTimingBackground);
   const nextWordIndex = useStepView((view) =>
     view?.next?.lineId === lineId && view.next.type === trackType ? view.next.wordIndex : -1,
@@ -100,7 +102,7 @@ function useStepTrack(lineId: string, trackType: TrackType): StepTrack {
     stepTiming,
     trackAttributes: { "data-word-track": true, "data-step-chain": offChain ? "off" : undefined },
     nextWordIndex,
-    queuedIndices,
+    queuedIds,
   };
 }
 

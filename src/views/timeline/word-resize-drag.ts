@@ -184,7 +184,14 @@ function useWordResizeDrag({
         setDragState(newState);
         setLiveWordEdit({ lineId, kind: trackType, words: liveWordBounds(newState) });
         showLoupeEdit(
-          { lineId, track: trackType, wordIndex, edge: boundaryEdge, startTime: edgeAtStart, time: clamped },
+          {
+            lineId,
+            type: trackType,
+            syllableId: originalWord.id,
+            edge: boundaryEdge,
+            startTime: edgeAtStart,
+            time: clamped,
+          },
           false,
         );
       };
@@ -267,5 +274,5 @@ function useWordResizeDrag({
 
 // -- Exports -------------------------------------------------------------------
 
-export { useWordResizeDrag };
 export type { UpdateWord };
+export { useWordResizeDrag };
