@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { markWordsExplicit } from "@/domain/commands/word-edits";
+import { markWordsExplicit } from "insync/commands/word-edits";
 import type { LinkGroup } from "insync/group";
 import { withSeededBackground } from "insync/line-background";
 import { drawnSyllables } from "insync/line-drawn-track";

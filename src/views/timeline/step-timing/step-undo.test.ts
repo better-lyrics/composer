@@ -5,8 +5,8 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { followStepUndo, rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { refreshGeneratedLanguages } from "@/domain/commands/languages";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { refreshGeneratedLanguages } from "insync/commands/languages";
 
 const WORD_IDS = ["paper", "boats"];
 const slot = (wordIndex: number): SyllableAddress => ({ lineId: "a", type: "word", syllableId: WORD_IDS[wordIndex] });

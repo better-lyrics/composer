@@ -1,9 +1,9 @@
-import { addInstance, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
-import { addGroupWithLines } from "@/domain/commands/group-edits";
+import { addInstance, removeInstance, shiftInstance } from "insync/commands/instance-edits";
+import { addGroupWithLines } from "insync/commands/group-edits";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { type NudgeReport, nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
-import { fillInstanceRows } from "@/domain/commands/instance-rows";
+import { type NudgeReport, nudgeSelection, setWordBoundary } from "insync/commands/word-timing";
+import { fillInstanceRows } from "insync/commands/instance-rows";
 import { pickedTemplateSource } from "insync/group-template-source";
 import { instanceBounds } from "insync/instance-bounds";
 import { instanceCount, linesOfInstance } from "insync/instance-enumerate";

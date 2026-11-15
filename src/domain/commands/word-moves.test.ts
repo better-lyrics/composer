@@ -2,8 +2,8 @@
  * @vitest-environment node
  */
 
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { duplicateWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { duplicateWords, moveWordsAcrossLines } from "insync/commands/word-moves";
 import { pieceOf, trackPieces } from "insync/language-pieces";
 import type { LineLanguages } from "insync/language";
 import { roleWords, type WordTrack } from "insync/line-track";

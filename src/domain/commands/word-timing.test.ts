@@ -2,8 +2,8 @@
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { retimeWord, setWordBoundary, stretchSelection } from "@/domain/commands/word-timing";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { retimeWord, setWordBoundary, stretchSelection } from "insync/commands/word-timing";
 import { commitGesture } from "insync/sync-commit-gesture";
 import { withSeededBackground } from "insync/line-background";
 import { drawnSyllables } from "insync/line-drawn-track";

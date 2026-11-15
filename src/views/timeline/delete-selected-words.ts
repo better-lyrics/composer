@@ -1,4 +1,4 @@
-import { deleteWords } from "@/domain/commands/word-structure";
+import { deleteWords } from "insync/commands/word-structure";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 

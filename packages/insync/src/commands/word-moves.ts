@@ -1,22 +1,22 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { refused } from "@/domain/commands/outcome";
-import { type TimeRange, timeRangeResolver } from "insync/group-shared-timing";
-import type { LanguagePieces, LanguageSide } from "insync/language";
-import { languageSide, pieceOf, withAddedPieces } from "insync/language-pieces";
-import { drawnPieces, drawnSyllables } from "insync/line-drawn-track";
-import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { trackRole, type WordTrack, untimedSyllablesOf } from "insync/line-track";
-import { mainTimingEdit } from "insync/line-track-writes";
-import type { SyllableAddress } from "insync/selection-model";
-import { type ResolvedAddress, resolveAddresses } from "insync/selection-resolve";
-import { mergeWordsIntoTrack } from "insync/word-merge-track";
-import { type WordMove, applyWordMoveAcrossLines } from "insync/word-move-across-lines";
-import { boundsOverlap } from "insync/word-overlap";
-import { reorderWordTrack } from "insync/word-reorder-track";
-import type { WordTiming } from "insync/word-timing";
-import { cloneWord } from "insync/word-clone";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused } from "./outcome";
+import { type TimeRange, timeRangeResolver } from "../group-shared-timing";
+import type { LanguagePieces, LanguageSide } from "../language";
+import { languageSide, pieceOf, withAddedPieces } from "../language-pieces";
+import { drawnPieces, drawnSyllables } from "../line-drawn-track";
+import { manualBackgroundWordEdit } from "../line-lane-word-edits";
+import type { LineUpdate, LyricLine } from "../line";
+import { trackRole, type WordTrack, untimedSyllablesOf } from "../line-track";
+import { mainTimingEdit } from "../line-track-writes";
+import type { SyllableAddress } from "../selection-model";
+import { type ResolvedAddress, resolveAddresses } from "../selection-resolve";
+import { mergeWordsIntoTrack } from "../word-merge-track";
+import { type WordMove, applyWordMoveAcrossLines } from "../word-move-across-lines";
+import { boundsOverlap } from "../word-overlap";
+import { reorderWordTrack } from "../word-reorder-track";
+import type { WordTiming } from "../word-timing";
+import { cloneWord } from "../word-clone";
 
 // -- Types --------------------------------------------------------------------
 

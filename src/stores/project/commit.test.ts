@@ -3,9 +3,9 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { addGroup, updateGroup } from "@/domain/commands/group-edits";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { addGroup, updateGroup } from "insync/commands/group-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 import { flattenBody } from "insync/group-flatten";
 import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";

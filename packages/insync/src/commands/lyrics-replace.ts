@@ -1,15 +1,15 @@
-import type { Part } from "insync/part";
-import type { DocPassthrough } from "insync/passthrough";
-import type { LyricLine } from "insync/line";
-import { mainTrack } from "insync/line-track";
-import { withAgent } from "insync/line-track-writes";
-import { agentsAfterImport } from "insync/agent-imported-agents";
-import type { Agent } from "insync/agent";
-import type { LyricCommand } from "@/domain/commands/command";
-import { applied, changedLineIds } from "@/domain/commands/outcome";
-import type { LinkGroup } from "insync/group";
-import { type EditedLyrics, changesProject, editedLyricsWrite } from "insync/project-edited-lyrics";
-import type { ProjectMetadata } from "insync/metadata";
+import type { Part } from "../part";
+import type { DocPassthrough } from "../passthrough";
+import type { LyricLine } from "../line";
+import { mainTrack } from "../line-track";
+import { withAgent } from "../line-track-writes";
+import { agentsAfterImport } from "../agent-imported-agents";
+import type { Agent } from "../agent";
+import type { LyricCommand } from "./command";
+import { applied, changedLineIds } from "./outcome";
+import type { LinkGroup } from "../group";
+import { type EditedLyrics, changesProject, editedLyricsWrite } from "../project-edited-lyrics";
+import type { ProjectMetadata } from "../metadata";
 
 // -- Types --------------------------------------------------------------------
 

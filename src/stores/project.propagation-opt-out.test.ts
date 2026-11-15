@@ -3,10 +3,10 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { addGroup } from "@/domain/commands/group-edits";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
+import { addGroup } from "insync/commands/group-edits";
+import { pasteLines } from "insync/commands/instance-rows";
+import { lineEditCommand } from "insync/commands/line-edits";
+import { retimeSyncWord, shiftSyncLine } from "insync/commands/sync";
 import type { LinkGroup } from "insync/group";
 import { lineFromFields } from "insync/line-from-fields";
 import { mainTrack, timedSyllables } from "insync/line-track";

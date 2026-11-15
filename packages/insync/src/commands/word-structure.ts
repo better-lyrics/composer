@@ -1,12 +1,12 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { refused, withLines } from "@/domain/commands/outcome";
-import type { WordWriteExtras } from "@/domain/commands/word-edits";
-import { withBackground, withSeededBackground, withoutBackground } from "insync/line-background";
-import { drawnSyllables } from "insync/line-drawn-track";
-import { mainWordsEdit, manualBackgroundWordEdit } from "insync/line-lane-word-edits";
-import type { LyricLine } from "insync/line";
-import { syllablesText } from "insync/line-text";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused, withLines } from "./outcome";
+import type { WordWriteExtras } from "./word-edits";
+import { withBackground, withSeededBackground, withoutBackground } from "../line-background";
+import { drawnSyllables } from "../line-drawn-track";
+import { mainWordsEdit, manualBackgroundWordEdit } from "../line-lane-word-edits";
+import type { LyricLine } from "../line";
+import { syllablesText } from "../line-text";
 import {
   backgroundTrack,
   isSpanTimed,
@@ -15,14 +15,14 @@ import {
   type WordTrack,
   untimedSyllablesOf,
   trackRole,
-} from "insync/line-track";
-import { withBackgroundTrack, withMainTrack, withTrackText } from "insync/line-track-writes";
-import { withFieldWords } from "insync/line-word-track-edits";
-import type { SyllableAddress } from "insync/selection-model";
-import { resolveAddresses } from "insync/selection-resolve";
-import { applyWordDeletion } from "insync/word-apply-word-deletion";
-import { mergeWordsIntoTrack } from "insync/word-merge-track";
-import type { WordTiming } from "insync/word-timing";
+} from "../line-track";
+import { withBackgroundTrack, withMainTrack, withTrackText } from "../line-track-writes";
+import { withFieldWords } from "../line-word-track-edits";
+import type { SyllableAddress } from "../selection-model";
+import { resolveAddresses } from "../selection-resolve";
+import { applyWordDeletion } from "../word-apply-word-deletion";
+import { mergeWordsIntoTrack } from "../word-merge-track";
+import type { WordTiming } from "../word-timing";
 
 // -- Types --------------------------------------------------------------------
 

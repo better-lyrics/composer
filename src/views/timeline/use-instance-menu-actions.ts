@@ -1,5 +1,5 @@
-import { addInstance, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
-import { fillInstanceRows } from "@/domain/commands/instance-rows";
+import { addInstance, removeInstance, shiftInstance } from "insync/commands/instance-edits";
+import { fillInstanceRows } from "insync/commands/instance-rows";
 import { pickedTemplateSource } from "insync/group-template-source";
 import { instanceBounds } from "insync/instance-bounds";
 import { linesOfInstance } from "insync/instance-enumerate";

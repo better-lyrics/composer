@@ -19,7 +19,7 @@ const GENERIC_LINE_SETTER =
   /\b(?:setLines|setLinesWithHistory|updateLine|updateLineWithHistory|updateLinesWithHistory|editLines|patchLines|replaceLines)\b/;
 const BURST_INTERNALS = /\b(?:commitPendingLineEdit|applyLineUpdatesToCurrentStep|isDirtySinceHistory)\b/;
 const RAW_LYRIC_STATE_WRITE = /useProjectStore\.setState\([^;]*\b(?:lines|groups|agents)\b/;
-const LYRIC_PATH_OWNERS = ["stores/project/", "domain/commands/"];
+const LYRIC_PATH_OWNERS = ["stores/project/"];
 // Test fixtures seed the store directly; they never ship.
 const TEST_FIXTURE = /^test\/|\.test-helpers\.tsx?$|-harness\.tsx?$/;
 const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);

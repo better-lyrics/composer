@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pressStepKey } from "@/domain/commands/word-timing";
+import { pressStepKey } from "insync/commands/word-timing";
 import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "insync/line-track";

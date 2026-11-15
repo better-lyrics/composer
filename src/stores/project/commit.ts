@@ -1,7 +1,7 @@
 import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "insync/line";
-import type { LyricCommand } from "@/domain/commands/command";
-import { type Applied, applied, isRefused, type LyricRoot, type Outcome } from "@/domain/commands/outcome";
+import type { LyricCommand } from "insync/commands/command";
+import { type Applied, applied, isRefused, type LyricRoot, type Outcome } from "insync/commands/outcome";
 import { foldLines } from "insync/group-fold";
 import type { LyricDoc } from "insync/group";
 import type { CarriedSplit } from "insync/group-template-edit";

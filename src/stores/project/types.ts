@@ -2,7 +2,7 @@ import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
 import type { Agent } from "insync/agent";
-import type { LyricRoot } from "@/domain/commands/outcome";
+import type { LyricRoot } from "insync/commands/outcome";
 import type { LinkGroup, LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";
 import type { EditedLyrics } from "insync/project-edited-lyrics";

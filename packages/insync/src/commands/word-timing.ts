@@ -1,24 +1,24 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { refused } from "@/domain/commands/outcome";
-import { timeRangeResolver, wholeSongRange } from "insync/group-shared-timing";
-import { mainWordsEdit, manualBackgroundWordEdit } from "insync/line-lane-word-edits";
-import { isSpanTimed, mainTrack, trackRole } from "insync/line-track";
-import { withMainTrack, withTrackSpan } from "insync/line-track-writes";
-import { drawnSyllables } from "insync/line-drawn-track";
-import type { LineUpdate, LyricLine } from "insync/line";
-import type { SyllableAddress } from "insync/selection-model";
-import { partitionNudgeSelections, shiftSelectionsTogether } from "insync/selection-nudge";
-import { resolveAddress, resolveAddresses, resolveLineIndex } from "insync/selection-resolve";
-import { stretchSelections } from "insync/selection-stretch";
-import type { StretchAnchor } from "insync/selection-stretch-targets";
-import type { StepKey } from "insync/step-timing-step-write";
-import type { BoundaryEdge } from "insync/word-boundary";
-import type { WordTiming } from "insync/word-timing";
-import { bgWordBoundaryEdit } from "insync/timing-bg-word-ops";
-import { type StepKeyPlan, planStepKey } from "insync/timing-step-key-write";
-import { wordBoundaryEdit } from "insync/timing-main-word-ops";
-import { applyWordPatch } from "insync/word-patch";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused } from "./outcome";
+import { timeRangeResolver, wholeSongRange } from "../group-shared-timing";
+import { mainWordsEdit, manualBackgroundWordEdit } from "../line-lane-word-edits";
+import { isSpanTimed, mainTrack, trackRole } from "../line-track";
+import { withMainTrack, withTrackSpan } from "../line-track-writes";
+import { drawnSyllables } from "../line-drawn-track";
+import type { LineUpdate, LyricLine } from "../line";
+import type { SyllableAddress } from "../selection-model";
+import { partitionNudgeSelections, shiftSelectionsTogether } from "../selection-nudge";
+import { resolveAddress, resolveAddresses, resolveLineIndex } from "../selection-resolve";
+import { stretchSelections } from "../selection-stretch";
+import type { StretchAnchor } from "../selection-stretch-targets";
+import type { StepKey } from "../step-timing-step-write";
+import type { BoundaryEdge } from "../word-boundary";
+import type { WordTiming } from "../word-timing";
+import { bgWordBoundaryEdit } from "../timing-bg-word-ops";
+import { type StepKeyPlan, planStepKey } from "../timing-step-key-write";
+import { wordBoundaryEdit } from "../timing-main-word-ops";
+import { applyWordPatch } from "../word-patch";
 
 // -- Types --------------------------------------------------------------------
 

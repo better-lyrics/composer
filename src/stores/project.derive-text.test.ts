@@ -1,10 +1,10 @@
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { mergeSyllableGroup, snapSyllablesFlush, toggleWordExplicit } from "@/domain/commands/word-edits";
-import { splitWord } from "@/domain/commands/word-structure";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { pasteLines } from "insync/commands/instance-rows";
+import { lineEditCommand } from "insync/commands/line-edits";
+import { mergeSyllableGroup, snapSyllablesFlush, toggleWordExplicit } from "insync/commands/word-edits";
+import { splitWord } from "insync/commands/word-structure";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { newWordId } from "insync/word-id";

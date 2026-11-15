@@ -1,7 +1,7 @@
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
 import { useCallback, useMemo } from "react";
 import { getAgentColor } from "insync/agent-colors";
-import { setWordBoundary } from "@/domain/commands/word-timing";
+import { setWordBoundary } from "insync/commands/word-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";

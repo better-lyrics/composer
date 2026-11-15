@@ -1,11 +1,11 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand, patchLines } from "@/domain/commands/line-edits";
-import { refused } from "@/domain/commands/outcome";
-import { lineTranslations, withLanguages } from "insync/language-line-languages";
-import type { LanguagePieces } from "insync/language";
-import { confirmTransliterationAlignment } from "insync/language-review";
-import { withTrackPieces } from "insync/language-side-pieces";
-import type { LineUpdate, LyricLine } from "insync/line";
+import type { LyricCommand } from "./command";
+import { lineEditCommand, patchLines } from "./line-edits";
+import { refused } from "./outcome";
+import { lineTranslations, withLanguages } from "../language-line-languages";
+import type { LanguagePieces } from "../language";
+import { confirmTransliterationAlignment } from "../language-review";
+import { withTrackPieces } from "../language-side-pieces";
+import type { LineUpdate, LyricLine } from "../line";
 
 // -- Constants ----------------------------------------------------------------
 

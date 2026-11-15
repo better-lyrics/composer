@@ -1,12 +1,12 @@
-import type { Part } from "insync/part";
-import type { DocPassthrough } from "insync/passthrough";
-import type { Agent } from "insync/agent";
-import type { RealignRefusal } from "insync/group-shared-placement";
-import type { LinkGroup } from "insync/group";
-import type { LyricLine } from "insync/line";
-import type { SyllableAddress } from "insync/selection-model";
-import type { StepRefusal } from "insync/step-timing-step-write";
-import type { MoveRejectReason } from "insync/word-move-across-lines";
+import type { Part } from "../part";
+import type { DocPassthrough } from "../passthrough";
+import type { Agent } from "../agent";
+import type { RealignRefusal } from "../group-shared-placement";
+import type { LinkGroup } from "../group";
+import type { LyricLine } from "../line";
+import type { SyllableAddress } from "../selection-model";
+import type { StepRefusal } from "../step-timing-step-write";
+import type { MoveRejectReason } from "../word-move-across-lines";
 
 // -- Types --------------------------------------------------------------------
 

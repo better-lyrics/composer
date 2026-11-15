@@ -8,7 +8,7 @@ import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { createLine } from "@/test/factories";
 import { isMac } from "@/utils/platform";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLines } from "insync/commands/instance-rows";
 
 // -- Constants ----------------------------------------------------------------
 

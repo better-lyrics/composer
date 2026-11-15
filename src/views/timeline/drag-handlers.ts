@@ -1,5 +1,5 @@
-import { isRefused } from "@/domain/commands/outcome";
-import { moveWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
+import { isRefused } from "insync/commands/outcome";
+import { moveWords, moveWordsAcrossLines } from "insync/commands/word-moves";
 import type { LyricLine } from "insync/line";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";

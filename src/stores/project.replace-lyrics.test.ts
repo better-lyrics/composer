@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLyrics } from "insync/commands/edit-text";
 import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";

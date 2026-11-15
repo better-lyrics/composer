@@ -3,12 +3,12 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { addGroupWithLines, removeGroup } from "@/domain/commands/group-edits";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { refreshGeneratedLanguages } from "@/domain/commands/languages";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { addGroupWithLines, removeGroup } from "insync/commands/group-edits";
+import { pasteLines } from "insync/commands/instance-rows";
+import { refreshGeneratedLanguages } from "insync/commands/languages";
+import { lineEditCommand } from "insync/commands/line-edits";
+import { removeSinger, replaceLyrics } from "insync/commands/lyrics-replace";
 import { lineFromFields } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";

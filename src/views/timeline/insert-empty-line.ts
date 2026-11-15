@@ -1,4 +1,4 @@
-import { insertEmptyLine as insertEmptyLineCommand } from "@/domain/commands/line-edits";
+import { insertEmptyLine as insertEmptyLineCommand } from "insync/commands/line-edits";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 

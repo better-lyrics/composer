@@ -1,5 +1,5 @@
-import { setInstanceOwnTiming } from "@/domain/commands/instance-edits";
-import { isRefused } from "@/domain/commands/outcome";
+import { setInstanceOwnTiming } from "insync/commands/instance-edits";
+import { isRefused } from "insync/commands/outcome";
 import { replacedInstances } from "insync/group-replaced-instances";
 import { sharesTiming } from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";

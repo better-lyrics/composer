@@ -5,7 +5,7 @@ import { INITIAL_STATE, useProjectStore } from "@/stores/project";
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { insertEmptyLine } from "@/domain/commands/line-edits";
+import { insertEmptyLine } from "insync/commands/line-edits";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const LINE_SYNCED = lineFromFields(

@@ -1,4 +1,4 @@
-import type { LyricRoot, Outcome } from "@/domain/commands/outcome";
+import type { LyricRoot, Outcome } from "./outcome";
 
 // -- Types --------------------------------------------------------------------
 

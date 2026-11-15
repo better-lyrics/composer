@@ -4,7 +4,7 @@ import type { LyricLine } from "insync/line";
  */
 
 import { describe, expect, it } from "vitest";
-import { splitSyncWord } from "@/domain/commands/sync";
+import { splitSyncWord } from "insync/commands/sync";
 import { realignSharedInstance } from "insync/group-shared-placement";
 import type { LineLanguages } from "insync/language";
 import { trackPieces } from "insync/language-pieces";

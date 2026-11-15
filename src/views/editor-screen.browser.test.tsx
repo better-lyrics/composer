@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLines } from "insync/commands/instance-rows";
 import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";

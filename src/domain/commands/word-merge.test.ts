@@ -2,9 +2,9 @@
  * @vitest-environment node
  */
 
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { mergeWords } from "@/domain/commands/word-merge";
-import { deleteWords } from "@/domain/commands/word-structure";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { mergeWords } from "insync/commands/word-merge";
+import { deleteWords } from "insync/commands/word-structure";
 import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";

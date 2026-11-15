@@ -1,4 +1,4 @@
-import { updateGroup } from "@/domain/commands/group-edits";
+import { updateGroup } from "insync/commands/group-edits";
 import type { LinkGroup } from "insync/group";
 import { instanceKey } from "insync/instance-key";
 import { useProjectStore } from "@/stores/project";

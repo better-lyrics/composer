@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { placeInstance } from "@/domain/commands/instance-edits";
-import { isRefused } from "@/domain/commands/outcome";
-import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "@/domain/commands/sync";
+import { placeInstance } from "insync/commands/instance-edits";
+import { isRefused } from "insync/commands/outcome";
+import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "insync/commands/sync";
 import { effectiveBounds } from "insync/line-bounds";
 import type { PositionalPieces } from "insync/language-pieces";
 import { drawnSyllables } from "insync/line-drawn-track";

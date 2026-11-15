@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";

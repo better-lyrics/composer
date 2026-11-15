@@ -18,7 +18,7 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLyrics } from "insync/commands/edit-text";
 
 // -- Helpers ------------------------------------------------------------------
 

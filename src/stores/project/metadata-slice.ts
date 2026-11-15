@@ -1,5 +1,5 @@
 import { withDefaultAgentNames } from "insync/agent-default-names";
-import { applyEditedLyrics, replaceLyrics } from "@/domain/commands/lyrics-replace";
+import { applyEditedLyrics, replaceLyrics } from "insync/commands/lyrics-replace";
 import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "insync/project-imported-metadata";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLyrics } from "insync/commands/edit-text";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";

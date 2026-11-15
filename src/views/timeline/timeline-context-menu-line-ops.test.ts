@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLyrics } from "insync/commands/edit-text";
 import { lineFromFields } from "insync/line-from-fields";
 import { mainTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";

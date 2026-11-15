@@ -8,7 +8,7 @@ import { lineById, romanizedWords, timedLine } from "@/test/generated-language-l
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { pasteLines } from "@/domain/commands/instance-rows";
+import { pasteLines } from "insync/commands/instance-rows";
 import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
 import { getSplitCharacter } from "@/utils/split-character";
 

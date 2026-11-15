@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { duplicateWords } from "@/domain/commands/word-moves";
+import { duplicateWords } from "insync/commands/word-moves";
 import { toAddress } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import {

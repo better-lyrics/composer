@@ -2,7 +2,7 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { typeWordText } from "@/domain/commands/word-structure";
+import { typeWordText } from "insync/commands/word-structure";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
 import { addressOf } from "insync/selection-resolve";

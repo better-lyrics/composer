@@ -1,8 +1,8 @@
 import { msFromSeconds } from "insync/time";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { addGroup } from "@/domain/commands/group-edits";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { addGroup } from "insync/commands/group-edits";
 import { bgBounds } from "insync/line-bounds";
 import { lineText } from "insync/line-text";
 import { detectedGrid } from "@/domain/tempo/beat-grid";

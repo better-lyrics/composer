@@ -1,14 +1,14 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { withLineUpdates } from "@/domain/commands/line-edits";
-import { applied, refused } from "@/domain/commands/outcome";
-import { withAlignedWords } from "insync/language-align";
-import { regroupedLanguages } from "insync/language-pieces";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { fieldRole, fieldWords, type TrackField, trackField } from "insync/line-track";
-import { withFieldWords } from "insync/line-word-track-edits";
-import type { SyllableAddress } from "insync/selection-model";
-import { resolveAddresses } from "insync/selection-resolve";
-import { mergeWordRun } from "insync/word-merge-run";
+import type { LyricCommand } from "./command";
+import { withLineUpdates } from "./line-edits";
+import { applied, refused } from "./outcome";
+import { withAlignedWords } from "../language-align";
+import { regroupedLanguages } from "../language-pieces";
+import type { LineUpdate, LyricLine } from "../line";
+import { fieldRole, fieldWords, type TrackField, trackField } from "../line-track";
+import { withFieldWords } from "../line-word-track-edits";
+import type { SyllableAddress } from "../selection-model";
+import { resolveAddresses } from "../selection-resolve";
+import { mergeWordRun } from "../word-merge-run";
 
 // -- Helpers ------------------------------------------------------------------
 

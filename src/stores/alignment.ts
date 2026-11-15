@@ -9,7 +9,7 @@ import { hasCjk } from "@/domain/alignment/cjk";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
-import { applyAlignedTimings, retimeNewSyllables } from "@/domain/commands/alignment";
+import { applyAlignedTimings, retimeNewSyllables } from "insync/commands/alignment";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";

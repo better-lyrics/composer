@@ -1,5 +1,5 @@
-import type { Refusal } from "@/domain/commands/outcome";
-import type { SyllableAddress } from "insync/selection-model";
+import type { Refusal } from "./commands/outcome";
+import type { SyllableAddress } from "./selection-model";
 
 // -- Types --------------------------------------------------------------------
 

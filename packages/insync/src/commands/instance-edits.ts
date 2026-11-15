@@ -1,23 +1,23 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { applied, changedLineIds, refused, withLines } from "@/domain/commands/outcome";
-import { unlinkLines } from "insync/group-linking";
-import { withNewInstance, withOwnTiming } from "insync/group-own-timing";
-import { placeSharedInstance, realignSharedInstance } from "insync/group-shared-placement";
-import { wholeSongRange } from "insync/group-shared-timing";
+import type { LyricCommand } from "./command";
+import { applied, changedLineIds, refused, withLines } from "./outcome";
+import { unlinkLines } from "../group-linking";
+import { withNewInstance, withOwnTiming } from "../group-own-timing";
+import { placeSharedInstance, realignSharedInstance } from "../group-shared-placement";
+import { wholeSongRange } from "../group-shared-timing";
 import {
   type LineTemplate,
   offsetTemplateWords,
   templateBackgroundFields,
   templateLanguages,
-} from "insync/group-template";
-import { nextInstanceIdx } from "insync/instance-enumerate";
-import { belongsToInstance, isAttachedToInstance } from "insync/instance-predicates";
-import { applyLineUpdates } from "insync/line-apply-line-updates";
-import { lineFromFields } from "insync/line-from-fields";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { withLinePassthrough } from "insync/line-passthrough";
-import { clampShiftDelta, shiftLineTiming } from "insync/line-shift";
-import { songEndOrUnbounded } from "insync/song-end";
+} from "../group-template";
+import { nextInstanceIdx } from "../instance-enumerate";
+import { belongsToInstance, isAttachedToInstance } from "../instance-predicates";
+import { applyLineUpdates } from "../line-apply-line-updates";
+import { lineFromFields } from "../line-from-fields";
+import type { LineUpdate, LyricLine } from "../line";
+import { withLinePassthrough } from "../line-passthrough";
+import { clampShiftDelta, shiftLineTiming } from "../line-shift";
+import { songEndOrUnbounded } from "../song-end";
 
 // -- Constants ----------------------------------------------------------------
 

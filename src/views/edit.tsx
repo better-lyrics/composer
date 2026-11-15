@@ -1,14 +1,14 @@
 import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { LyricCommand } from "@/domain/commands/command";
+import type { LyricCommand } from "insync/commands/command";
 import {
   editBackgroundText,
   extractBackground,
   extractLineBackground,
   pasteLyrics,
   typeLyrics,
-} from "@/domain/commands/edit-text";
-import { assignSinger } from "@/domain/commands/singer";
+} from "insync/commands/edit-text";
+import { assignSinger } from "insync/commands/singer";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { instanceAnchors } from "insync/group-template-copy";

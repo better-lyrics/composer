@@ -1,20 +1,20 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { refused } from "@/domain/commands/outcome";
-import { timeRangeResolver } from "insync/group-shared-timing";
-import type { PositionalPieces } from "insync/language-pieces";
-import { splitWordsKeepingTransliteration } from "insync/language-reconcile-syllable-split";
-import { effectiveBounds } from "insync/line-bounds";
-import type { LyricLine } from "insync/line";
-import { shiftLineTiming } from "insync/line-shift";
-import { withRoleWords, withoutLineTiming } from "insync/line-track-writes";
-import { roleWords, type WordTrack } from "insync/line-track";
-import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
-import type { WordTiming } from "insync/word-timing";
-import type { BoundaryEdge } from "insync/word-boundary";
-import { bgWordRetimeEdit } from "insync/timing-bg-word-ops";
-import type { RetimeChange } from "insync/timing-word-ops";
-import { wordRetimeEdit } from "insync/timing-main-word-ops";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused } from "./outcome";
+import { timeRangeResolver } from "../group-shared-timing";
+import type { PositionalPieces } from "../language-pieces";
+import { splitWordsKeepingTransliteration } from "../language-reconcile-syllable-split";
+import { effectiveBounds } from "../line-bounds";
+import type { LyricLine } from "../line";
+import { shiftLineTiming } from "../line-shift";
+import { withRoleWords, withoutLineTiming } from "../line-track-writes";
+import { roleWords, type WordTrack } from "../line-track";
+import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "../sync-commit-gesture";
+import type { WordTiming } from "../word-timing";
+import type { BoundaryEdge } from "../word-boundary";
+import { bgWordRetimeEdit } from "../timing-bg-word-ops";
+import type { RetimeChange } from "../timing-word-ops";
+import { wordRetimeEdit } from "../timing-main-word-ops";
 
 // -- Types --------------------------------------------------------------------
 

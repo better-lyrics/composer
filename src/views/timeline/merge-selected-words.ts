@@ -1,4 +1,4 @@
-import { mergeWords } from "@/domain/commands/word-merge";
+import { mergeWords } from "insync/commands/word-merge";
 import { withAlignedWords } from "insync/language-align";
 import type { LyricLine } from "insync/line";
 import { trackWords, type WordTrack } from "insync/line-track";

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { addGroup } from "@/domain/commands/group-edits";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { mergeSyllableGroup } from "@/domain/commands/word-edits";
-import { splitWord } from "@/domain/commands/word-structure";
+import { addGroup } from "insync/commands/group-edits";
+import { pasteLines } from "insync/commands/instance-rows";
+import { mergeSyllableGroup } from "insync/commands/word-edits";
+import { splitWord } from "insync/commands/word-structure";
 import type { LinkGroup } from "insync/group";
 import { withBackground, withSeededBackground } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";

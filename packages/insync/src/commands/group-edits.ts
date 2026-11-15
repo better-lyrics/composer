@@ -1,15 +1,15 @@
-import type { LyricLine } from "insync/line";
-import type { LyricCommand } from "@/domain/commands/command";
-import { type LyricRoot, type Outcome, applied, changedLineIds, refused } from "@/domain/commands/outcome";
+import type { LyricLine } from "../line";
+import type { LyricCommand } from "./command";
+import { type LyricRoot, type Outcome, applied, changedLineIds, refused } from "./outcome";
 import {
   type GroupPlan,
   type RepeatingSections,
   planGroupSharing,
   planRepeatingSections,
-} from "@/domain/group/group-plans";
-import { unlinkLines } from "insync/group-linking";
-import type { SharingOutcome } from "insync/group-shared-placement";
-import type { LinkGroup } from "insync/group";
+} from "../group-plans";
+import { unlinkLines } from "../group-linking";
+import type { SharingOutcome } from "../group-shared-placement";
+import type { LinkGroup } from "../group";
 
 // -- Helpers ------------------------------------------------------------------
 

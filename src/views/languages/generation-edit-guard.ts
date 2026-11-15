@@ -1,4 +1,4 @@
-import { ALIGN_TRANSLITERATION } from "@/domain/commands/languages";
+import { ALIGN_TRANSLITERATION } from "insync/commands/languages";
 import { lineTranslations } from "insync/language-line-languages";
 import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";

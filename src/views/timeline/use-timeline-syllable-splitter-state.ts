@@ -1,5 +1,5 @@
-import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
-import { splitWord } from "@/domain/commands/word-structure";
+import { splitIdenticalSyllables } from "insync/commands/word-edits";
+import { splitWord } from "insync/commands/word-structure";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
@@ -22,7 +22,7 @@ import { getSplitCharacter } from "@/utils/split-character";
 import { splitWordIntoWords } from "@/utils/word-split";
 import { splitSourceWord } from "insync/word-clone";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { isRefused } from "@/domain/commands/outcome";
+import { isRefused } from "insync/commands/outcome";
 
 // -- Types --------------------------------------------------------------------
 

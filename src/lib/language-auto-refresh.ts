@@ -1,4 +1,4 @@
-import { refreshGeneratedLanguages } from "@/domain/commands/languages";
+import { refreshGeneratedLanguages } from "insync/commands/languages";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { staleGeneratedLanguages } from "insync/language-stale-generated";
 import type { LyricLine } from "insync/line";

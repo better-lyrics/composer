@@ -1,4 +1,4 @@
-import { markWordsExplicit, mergeSyllableGroup } from "@/domain/commands/word-edits";
+import { markWordsExplicit, mergeSyllableGroup } from "insync/commands/word-edits";
 import type { LyricLine } from "insync/line";
 import { type TrackField, trackField, trackWords } from "insync/line-track";
 import { contiguousSelectionRun, type SelectionRun } from "insync/selection-contiguous";

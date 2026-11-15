@@ -1,4 +1,4 @@
-import { clearBackground, setBackgroundText } from "@/domain/commands/word-structure";
+import { clearBackground, setBackgroundText } from "insync/commands/word-structure";
 import { useProjectStore } from "@/stores/project";
 import { focusOnMount } from "@/utils/focus-on-mount";
 import { useCallback, useState } from "react";

@@ -1,5 +1,5 @@
 import { mainTrack } from "insync/line-track";
-import { removeSinger } from "@/domain/commands/lyrics-replace";
+import { removeSinger } from "insync/commands/lyrics-replace";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { agentDisplayName } from "insync/agent-display-name";
 import { AGENT_PRESETS, getAgentColor } from "insync/agent-colors";

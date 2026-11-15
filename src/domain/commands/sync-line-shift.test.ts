@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
+import { retimeSyncWord, shiftSyncLine } from "insync/commands/sync";
 import { withSeededBackground } from "insync/line-background";
 import { fieldsOfLine } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";

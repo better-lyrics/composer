@@ -1,4 +1,4 @@
-import { setInstanceOwnTiming } from "@/domain/commands/instance-edits";
+import { setInstanceOwnTiming } from "insync/commands/instance-edits";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";

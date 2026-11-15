@@ -3,10 +3,10 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { applyAlignedTimings } from "@/domain/commands/alignment";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { isRefused } from "@/domain/commands/outcome";
-import { snapSyllablesFlush } from "@/domain/commands/word-edits";
+import { applyAlignedTimings } from "insync/commands/alignment";
+import { lineEditCommand } from "insync/commands/line-edits";
+import { isRefused } from "insync/commands/outcome";
+import { snapSyllablesFlush } from "insync/commands/word-edits";
 import type { LinkGroup } from "insync/group";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";

@@ -1,7 +1,7 @@
 import { IconPlus } from "@tabler/icons-react";
 import { useCallback } from "react";
-import { placeLineAt } from "@/domain/commands/line-timing";
-import { fillEmptyTrack } from "@/domain/commands/word-structure";
+import { placeLineAt } from "insync/commands/line-timing";
+import { fillEmptyTrack } from "insync/commands/word-structure";
 import type { TimeRange } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";

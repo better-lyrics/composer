@@ -1,9 +1,9 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { refused } from "@/domain/commands/outcome";
-import type { LineUpdate } from "insync/line";
-import { mainTrack } from "insync/line-track";
-import { withMainTrack, withTrackSpan } from "insync/line-track-writes";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused } from "./outcome";
+import type { LineUpdate } from "../line";
+import { mainTrack } from "../line-track";
+import { withMainTrack, withTrackSpan } from "../line-track-writes";
 
 // -- Commands -----------------------------------------------------------------
 

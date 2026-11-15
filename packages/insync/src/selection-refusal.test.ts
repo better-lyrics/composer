@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { SyllableAddress } from "insync/selection-model";
-import { selectionRefusal } from "@/domain/selection/selection-refusal";
+import type { SyllableAddress } from "./selection-model";
+import { selectionRefusal } from "./selection-refusal";
 
 // -- Helpers ------------------------------------------------------------------
 

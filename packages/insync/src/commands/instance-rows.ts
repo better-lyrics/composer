@@ -1,8 +1,8 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { applied, changedLineIds, refused, withLines } from "@/domain/commands/outcome";
-import { withNewInstance } from "insync/group-own-timing";
-import type { LineUpdate, LyricLine } from "insync/line";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { applied, changedLineIds, refused, withLines } from "./outcome";
+import { withNewInstance } from "../group-own-timing";
+import type { LineUpdate, LyricLine } from "../line";
 
 // -- Helpers ------------------------------------------------------------------
 

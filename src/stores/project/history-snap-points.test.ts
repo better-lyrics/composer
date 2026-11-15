@@ -1,7 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLyrics } from "insync/commands/edit-text";
 
 describe("project history snapshots snap points", () => {
   beforeEach(() =>

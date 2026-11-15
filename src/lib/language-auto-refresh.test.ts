@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";

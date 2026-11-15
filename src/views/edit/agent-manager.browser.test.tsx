@@ -6,7 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLyrics } from "insync/commands/edit-text";
 
 async function openAgents(screen: Awaited<ReturnType<typeof render>>): Promise<void> {
   await screen.getByRole("button", { name: /^Agents/ }).click();

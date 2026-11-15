@@ -1,4 +1,4 @@
-import { assignSinger } from "@/domain/commands/singer";
+import { assignSinger } from "insync/commands/singer";
 import { agentDisplayName } from "insync/agent-display-name";
 import { getAgentColor } from "insync/agent-colors";
 import { nextAgentId } from "insync/agent-next-agent-id";

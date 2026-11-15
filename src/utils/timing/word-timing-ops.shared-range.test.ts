@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { retimeSyncWord } from "@/domain/commands/sync";
-import { setWordBoundary } from "@/domain/commands/word-timing";
+import { retimeSyncWord } from "insync/commands/sync";
+import { setWordBoundary } from "insync/commands/word-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { addressAt } from "insync/selection-resolve";

@@ -1,7 +1,7 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { refused } from "@/domain/commands/outcome";
-import { withAgent } from "insync/line-track-writes";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused } from "./outcome";
+import { withAgent } from "../line-track-writes";
 
 // -- Commands -----------------------------------------------------------------
 

@@ -1,18 +1,18 @@
-import type { LyricCommand } from "@/domain/commands/command";
-import { type LyricRoot, type Outcome, applied, refused, withLines } from "@/domain/commands/outcome";
-import type { LineLanguages } from "insync/language";
-import type { LyricLine } from "insync/line";
-import { fieldWords, type TrackField } from "insync/line-track";
+import type { LyricCommand } from "./command";
+import { type LyricRoot, type Outcome, applied, refused, withLines } from "./outcome";
+import type { LineLanguages } from "../language";
+import type { LyricLine } from "../line";
+import { fieldWords, type TrackField } from "../line-track";
 import {
   type ExplicitTarget,
   applyMarkWordsExplicit,
   applyMergeSyllableGroup,
   withFieldWords,
-} from "insync/line-word-track-edits";
-import { applySyllableSplitToLines } from "insync/word-identical-syllable-split";
-import type { IdenticalMatchSource } from "insync/identical-word-matcher";
-import { closeIntraGroupGaps, expandSelectionToGroupmates } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+} from "../line-word-track-edits";
+import { applySyllableSplitToLines } from "../word-identical-syllable-split";
+import type { IdenticalMatchSource } from "../identical-word-matcher";
+import { closeIntraGroupGaps, expandSelectionToGroupmates } from "../word-syllable-groups";
+import type { WordTiming } from "../word-timing";
 
 // -- Types --------------------------------------------------------------------
 

@@ -9,8 +9,8 @@ import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
  */
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
-import { markWordsExplicit, toggleWordExplicit } from "@/domain/commands/word-edits";
-import { addInstance } from "@/domain/commands/instance-edits";
+import { markWordsExplicit, toggleWordExplicit } from "insync/commands/word-edits";
+import { addInstance } from "insync/commands/instance-edits";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 beforeEach(() => {
