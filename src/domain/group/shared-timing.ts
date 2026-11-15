@@ -1,5 +1,5 @@
 import type { LinkGroup } from "insync/group";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { instanceKey } from "insync/instance-key";
 import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
 import { bgBounds, mainBounds } from "insync/line-bounds";

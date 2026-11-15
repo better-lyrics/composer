@@ -1,7 +1,7 @@
 import { instanceStart, keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "insync/group";
 import { instanceIndicesOf } from "insync/instance-enumerate";
-import { instanceName } from "@/domain/instance/name";
+import { instanceName } from "insync/instance-name";
 import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";

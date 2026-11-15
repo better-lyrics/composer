@@ -4,7 +4,7 @@ import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import { type LineTemplate, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
 import type { LinkGroup } from "insync/group";
 import { trackPieces } from "insync/language-pieces";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { linesOfInstance } from "insync/instance-enumerate";
 import { mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";

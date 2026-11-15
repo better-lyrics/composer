@@ -1,7 +1,7 @@
 import { addInstance, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
 import { fillInstanceRows } from "@/domain/commands/instance-rows";
 import { pickedTemplateSource } from "@/domain/group/template-source";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { linesOfInstance } from "insync/instance-enumerate";
 import { instanceKey } from "insync/instance-key";
 import { noteGuideSignal } from "@/lib/guide-signals";

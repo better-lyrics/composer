@@ -5,7 +5,7 @@ import { placeLineAt } from "@/domain/commands/line-timing";
 import { isRefused } from "@/domain/commands/outcome";
 import { assignSinger } from "@/domain/commands/singer";
 import { isSharedLine } from "@/domain/group/shared-timing";
-import { instanceName } from "@/domain/instance/name";
+import { instanceName } from "insync/instance-name";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";

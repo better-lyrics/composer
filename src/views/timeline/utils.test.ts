@@ -8,7 +8,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import {

@@ -9,7 +9,7 @@ import {
 } from "insync/group";
 import { readInstance } from "@/domain/group/read-instance";
 import { toTemplateLine } from "@/domain/group/template-line";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { instanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";

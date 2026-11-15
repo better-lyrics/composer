@@ -1,5 +1,5 @@
 import type { OwnTiming, SpanTimes, TemplateLine } from "insync/group";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import type { LineTrack, LineTracks, LyricLine, Syllable } from "insync/line";
 import { isSpanTimed, isTimedSyllable, untimedSyllable } from "insync/line-track";
 

@@ -3,7 +3,7 @@ import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LineageCounterpart, LineagePair } from "@/domain/group/syllable-lineage";
 import type { LinkGroup } from "insync/group";
 import type { InstanceAnchors } from "@/domain/group/template-copy";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { instanceKey } from "insync/instance-key";
 import { isLinked, type LinkedLine } from "insync/instance-predicates";
 import { effectiveBounds } from "insync/line-bounds";

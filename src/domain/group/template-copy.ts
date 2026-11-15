@@ -13,7 +13,7 @@ import {
 import { offsetTimingFields } from "@/domain/group/offset-timing";
 import { sharesTiming, timingChanged } from "@/domain/group/shared-timing";
 import { fittedAnchor, lineContent, toTemplateLine } from "@/domain/group/template-line";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { instanceKey } from "insync/instance-key";
 import { isLinked, type LinkedLine } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";

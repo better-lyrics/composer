@@ -3,7 +3,7 @@ import { isRefused } from "@/domain/commands/outcome";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "insync/group";
-import { instanceName } from "@/domain/instance/name";
+import { instanceName } from "insync/instance-name";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";

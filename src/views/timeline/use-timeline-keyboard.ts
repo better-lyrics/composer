@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { type NudgeReport, nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
 import { fillInstanceRows } from "@/domain/commands/instance-rows";
 import { pickedTemplateSource } from "@/domain/group/template-source";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { instanceCount, linesOfInstance } from "insync/instance-enumerate";
 import { instanceKey, parseInstanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
