@@ -1,5 +1,5 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
-import { getAgentColor } from "@/domain/agent/colors";
+import { getAgentColor } from "insync/agent-colors";
 import { mainTrack } from "insync/line-track";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { sameAddress } from "@/domain/selection/identity";

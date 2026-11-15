@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
 import { fieldsOfLine, type LineFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";

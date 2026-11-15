@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { getAgentColor } from "@/domain/agent/colors";
+import { getAgentColor } from "insync/agent-colors";
 import { belongsToInstance } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";

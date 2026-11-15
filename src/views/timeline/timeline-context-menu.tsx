@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { getAgentColor } from "@/domain/agent/colors";
-import { agentDisplayName } from "@/domain/agent/display-name";
+import { getAgentColor } from "insync/agent-colors";
+import { agentDisplayName } from "insync/agent-display-name";
 import { instanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
 import { selectionBounds } from "@/domain/selection/bounds";

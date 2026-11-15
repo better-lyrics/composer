@@ -1,6 +1,6 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
-import { agentIdAt, createPerformerAgents } from "@/domain/agent/performer-agents";
+import { agentIdAt, createPerformerAgents } from "insync/agent-performer-agents";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { hasAnyTiming } from "insync/line-predicates";
 import { syllablesText } from "insync/line-text";

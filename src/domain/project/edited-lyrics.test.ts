@@ -1,5 +1,5 @@
 import { withFields } from "@/test/field-updates";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { changedParts, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

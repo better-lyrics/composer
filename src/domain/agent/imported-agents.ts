@@ -1,4 +1,4 @@
-import { agentWithoutKeptData } from "@/domain/agent/kept-data";
+import { agentWithoutKeptData } from "insync/agent-kept-data";
 import type { Agent } from "insync/agent";
 import type { LyricLine } from "insync/line";
 import { mainTrack } from "insync/line-track";

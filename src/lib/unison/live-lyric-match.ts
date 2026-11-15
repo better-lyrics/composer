@@ -1,4 +1,4 @@
-import { agentWithoutKeptData } from "@/domain/agent/kept-data";
+import { agentWithoutKeptData } from "insync/agent-kept-data";
 import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import { withoutKeptData } from "@/domain/line/passthrough";
 import { changedParts, editedLyricsWrite, type ProjectLyrics } from "@/domain/project/edited-lyrics";

@@ -1,9 +1,9 @@
 import { mainTrack } from "insync/line-track";
 import { removeSinger } from "@/domain/commands/lyrics-replace";
 import { noteGuideSignal } from "@/lib/guide-signals";
-import { agentDisplayName } from "@/domain/agent/display-name";
-import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
-import { nextAgentId } from "@/domain/agent/next-agent-id";
+import { agentDisplayName } from "insync/agent-display-name";
+import { AGENT_PRESETS, getAgentColor } from "insync/agent-colors";
+import { nextAgentId } from "insync/agent-next-agent-id";
 import type { Agent, AgentType } from "insync/agent";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";

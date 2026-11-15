@@ -1,4 +1,4 @@
-import type { Agent } from "insync/agent";
+import type { Agent } from "./agent";
 
 // -- Constants ----------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 import { assignSinger } from "@/domain/commands/singer";
-import { agentDisplayName } from "@/domain/agent/display-name";
-import { getAgentColor } from "@/domain/agent/colors";
-import { nextAgentId } from "@/domain/agent/next-agent-id";
+import { agentDisplayName } from "insync/agent-display-name";
+import { getAgentColor } from "insync/agent-colors";
+import { nextAgentId } from "insync/agent-next-agent-id";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";

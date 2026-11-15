@@ -1,7 +1,7 @@
 import { mainBounds } from "insync/line-bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { SavedProjectStems } from "@/domain/stems/saved-stems";
 import { storedDataBytes } from "@/domain/storage/stored-data";
 import { saveAudioFile } from "@/lib/persistence";

@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { APP_STATE_STORE_NAME, getFromStore } from "@/lib/persistence-idb";
 import { deleteProjectAudio, loadProjectAudio, saveProjectAudio } from "@/lib/project-audio";
 import {

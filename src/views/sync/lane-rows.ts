@@ -1,6 +1,6 @@
 import { mainTrack } from "insync/line-track";
-import { getAgentColor } from "@/domain/agent/colors";
-import { agentDisplayName } from "@/domain/agent/display-name";
+import { getAgentColor } from "insync/agent-colors";
+import { agentDisplayName } from "insync/agent-display-name";
 import type { Agent } from "insync/agent";
 import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/language/display";
 import type { LyricLine } from "insync/line";

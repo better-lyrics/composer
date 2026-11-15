@@ -1,7 +1,7 @@
 import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
 import type { Agent } from "insync/agent";
-import { placeholderAgentName } from "@/domain/agent/placeholder-name";
+import { placeholderAgentName } from "insync/agent-placeholder-name";
 import type { LinkGroup } from "insync/group";
 import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
 import type { ProjectMetadata } from "insync/metadata";

@@ -1,4 +1,4 @@
-import { createPerformerAgents, isGroupPerformerName } from "@/domain/agent/performer-agents";
+import { createPerformerAgents, isGroupPerformerName } from "./agent-performer-agents";
 import { describe, expect, it } from "vitest";
 
 describe("isGroupPerformerName", () => {

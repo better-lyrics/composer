@@ -1,5 +1,5 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { findOpenProjectId, forgetOpenProjectId } from "@/lib/open-project-session";
 import { clearAudioFile, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { DB_NAME, DB_VERSION } from "@/lib/persistence-idb";

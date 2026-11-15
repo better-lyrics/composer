@@ -1,5 +1,5 @@
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
 import type { LinkGroup } from "insync/group";
 import { alignTrackToLine } from "insync/language-align";

@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
 import { hasAnyTiming } from "insync/line-predicates";
 import type { ProjectMetadata } from "insync/metadata";

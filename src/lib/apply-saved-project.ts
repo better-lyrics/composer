@@ -1,5 +1,5 @@
 import { restorePlayedRanges } from "@/audio/playback-ranges";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { readAlignedTimings } from "@/domain/alignment/fingerprint";
 import { readPlayedRanges } from "@/domain/alignment/played-ranges";
 import { withSeededBackground } from "@/domain/line/background";

@@ -1,4 +1,4 @@
-import { getAgentColor } from "@/domain/agent/colors";
+import { getAgentColor } from "insync/agent-colors";
 import { cn } from "@/utils/cn";
 import { withoutSplitCharacter } from "insync/split-character-text";
 import { LinePreviewActions } from "@/views/edit/line-preview-actions";

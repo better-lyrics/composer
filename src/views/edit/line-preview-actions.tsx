@@ -1,5 +1,5 @@
-import { agentDisplayName } from "@/domain/agent/display-name";
-import { getAgentColor } from "@/domain/agent/colors";
+import { agentDisplayName } from "insync/agent-display-name";
+import { getAgentColor } from "insync/agent-colors";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";

@@ -1,4 +1,4 @@
-import { withDefaultAgentNames } from "@/domain/agent/default-names";
+import { withDefaultAgentNames } from "insync/agent-default-names";
 import { applyEditedLyrics, replaceLyrics } from "@/domain/commands/lyrics-replace";
 import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";

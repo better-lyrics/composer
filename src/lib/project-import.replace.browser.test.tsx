@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { mainBounds } from "insync/line-bounds";
 import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";

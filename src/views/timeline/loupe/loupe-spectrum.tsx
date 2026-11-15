@@ -1,6 +1,6 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainTrack } from "insync/line-track";
-import { getAgentColor } from "@/domain/agent/colors";
+import { getAgentColor } from "insync/agent-colors";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import type { PitchTrack } from "@/domain/pitch/track";
