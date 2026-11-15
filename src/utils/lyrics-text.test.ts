@@ -687,6 +687,18 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     expect(timedSyllables(mainTrack(result[0])).map((w) => w.begin)).toEqual([1, 2, 3, 5, 6, 7]);
   });
 
+  it("regression: joining two rows joins their translations and romanizations in order", () => {
+    const languages = (translation: string, romanization: string): LyricLine["languages"] => ({
+      translations: { de: { language: "de", origin: "manual", sourceFingerprint: "", main: { text: translation } } },
+      transliteration: { language: "ja-Latn", origin: "google", sourceFingerprint: "", main: { text: romanization } },
+    });
+    const lanterns = { ...timedLine("lanterns", ["Lanterns"], 1), languages: languages("Laternen", "rantan") };
+    const paper = { ...timedLine("paper", ["Paper"], 5), languages: languages("Papier", "peepaa") };
+    const [joined] = textToLyricLines("LanternsPaper", "v1", [lanterns, paper]);
+    expect(joined.languages?.translations?.de.main.text).toBe("Laternen Papier");
+    expect(joined.languages?.transliteration?.main.text).toBe("rantan peepaa");
+  });
+
   it("regression: a repeated row keeps the timing of the line nearest its place, not the first one", () => {
     const lines = [
       timedLine("lanterns", ["Lanterns", "drift", "away"], 1),

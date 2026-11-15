@@ -1,3 +1,5 @@
+import type { LineLanguage, LineLanguages } from "./language";
+import { languagesWith, lineTranslations, lineTransliteration } from "./language-line-languages";
 import { withAddedPieces } from "./language-pieces";
 import { sidePieces } from "./language-side-pieces";
 import type { LyricLine, MainTrack, Syllable } from "./line";
@@ -29,6 +31,34 @@ function joinedTrack(tracks: readonly MainTrack[], seams: readonly string[]): Ma
   return timedAfterUntimed ? null : withTrackSyllables(first, syllables);
 }
 
+// One language of the joined line: the first line's, its text every line's text in order.
+function joinedLanguage(languages: readonly (LineLanguage | undefined)[]): LineLanguage | undefined {
+  const present = languages.filter((language) => language !== undefined);
+  const [first] = present;
+  if (!first || present.length === 1) return first;
+  const text = present
+    .map((language) => language.main.text.trim())
+    .filter(Boolean)
+    .join(" ");
+  if (text === first.main.text) return first;
+  const { segments: _segments, ...main } = first.main;
+  return { ...first, main: { ...main, text } };
+}
+
+function joinedTexts(lines: readonly LyricLine[]): LineLanguages | undefined {
+  const keys = new Set(lines.flatMap((line) => Object.keys(lineTranslations(line) ?? {})));
+  const translations = Object.fromEntries(
+    [...keys].flatMap((key) => {
+      const joined = joinedLanguage(lines.map((line) => lineTranslations(line)?.[key]));
+      return joined ? [[key, joined] as const] : [];
+    }),
+  );
+  return languagesWith(lines[0].languages, {
+    translations: keys.size ? translations : undefined,
+    transliteration: joinedLanguage(lines.map(lineTransliteration)),
+  });
+}
+
 // -- Functions ----------------------------------------------------------------
 
 // Lines whose rows were joined in Edit become the first line, holding every line's syllables and readings in order.
@@ -41,10 +71,10 @@ function joinedLines(lines: readonly LyricLine[], seams: readonly string[]): Lyr
   if (!track) return null;
   const languages = rest.reduce(
     (written, line) => withAddedPieces(written, "main", sidePieces(line.languages, "main") ?? {}),
-    first.languages,
+    joinedTexts(lines),
   );
   const joined = withMainTrack(first, track);
-  return languages === first.languages ? joined : { ...joined, languages };
+  return languages ? { ...joined, languages } : joined;
 }
 
 // -- Exports ------------------------------------------------------------------
