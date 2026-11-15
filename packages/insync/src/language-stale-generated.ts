@@ -43,4 +43,3 @@ function staleGeneratedLanguages(lines: readonly LyricLine[], splitChar: string)
 // -- Exports ------------------------------------------------------------------
 
 export { staleGeneratedLanguages };
-export type { StaleGeneratedLanguages };

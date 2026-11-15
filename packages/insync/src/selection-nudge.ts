@@ -236,5 +236,4 @@ function nudgeSelectedWords(
 
 // -- Exports ------------------------------------------------------------------
 
-export type { NudgeResult, NudgeSelection, PartitionedSelections };
 export { nudgeSelectedWords, partitionNudgeSelections, shiftLineSyncedRows, shiftSelectionsTogether };

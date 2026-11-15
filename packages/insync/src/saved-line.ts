@@ -80,14 +80,4 @@ interface SavedLine {
 
 // -- Exports ------------------------------------------------------------------
 
-export type {
-  SavedLanguages,
-  SavedLine,
-  SavedLineLanguage,
-  SavedPiece,
-  SavedPieces,
-  SavedSpan,
-  SavedSyllable,
-  SavedTrack,
-  SavedTrackLanguage,
-};
+export type { SavedLanguages, SavedLine, SavedLineLanguage, SavedPieces, SavedSpan, SavedSyllable, SavedTrack };

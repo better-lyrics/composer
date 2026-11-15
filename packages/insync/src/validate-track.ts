@@ -55,4 +55,4 @@ function validateTrack(track: SyllableTrack): TrackReport {
 // -- Exports ------------------------------------------------------------------
 
 export { isWarningRule, validateTrack };
-export type { TrackFinding, TrackReport, TrackRule };
+export type { TrackRule };

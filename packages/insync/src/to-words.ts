@@ -30,4 +30,3 @@ function wordsFromSyllables(track: SyllableTrack): WordsOutput[] {
 // -- Exports ------------------------------------------------------------------
 
 export { wordsFromSyllables };
-export type { WordsOutput };

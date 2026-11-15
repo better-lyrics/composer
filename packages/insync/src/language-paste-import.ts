@@ -39,4 +39,3 @@ function alignPastedLanguageLines(text: string, sourceLines: string[]): PasteAli
 }
 
 export { alignPastedLanguageLines, pastedRows };
-export type { PasteAlignment };
