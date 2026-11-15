@@ -76,6 +76,36 @@ describe("word timing commands", () => {
     expect(useProjectStore.getState().history).toBe(before.history);
   });
 
+  it("regression: a step pressed at a word's own start leaves the word and still starts the next one", () => {
+    const far = createWord({ text: "Far", begin: 5, end: 6 });
+    useProjectStore
+      .getState()
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [
+          verse("v0"),
+          createLine({ id: "v1", text: "Far", words: [far] }),
+        ]),
+      );
+    const [, glow] = timedSyllables(mainTrack(lineById("v0")!));
+    const step = (word: typeof ember, next: ReturnType<typeof addressOf>, time: number) =>
+      pressStepKey({
+        ...boundaryArgs("v0", word),
+        cursor: addressOf({ id: "v0" }, "word", word),
+        startNext: next,
+        key: "step",
+        time,
+      });
+    useProjectStore.getState().commit(step(ember, addressOf({ id: "v0" }, "word", glow), ember.begin));
+    useProjectStore.getState().commit(step(glow, addressOf({ id: "v1" }, "word", far), 1.6));
+
+    const timings = (id: string) => timedSyllables(mainTrack(lineById(id)!)).map(({ begin, end }) => [begin, end]);
+    expect(timings("v0")).toEqual([
+      [1, 1.6],
+      [1.6, 2.4],
+    ]);
+    expect(timings("v1")).toEqual([[1.6, 6]]);
+  });
+
   it("retimes one copy of a linked line and leaves the other copy alone", () => {
     const group = createGroup({ id: "chorus" });
     const link = { groupId: group.id, templateLineIdx: 0 };

@@ -121,7 +121,8 @@ function createWordTimingOps(config: WordFieldConfig) {
     const line = lines[lineIdx];
     const words = line ? getWords(line, splitChar) : undefined;
     if (!line || !words?.[wordIdx]) return null;
-    if (key !== "start" && endsAtOwnStart(words[wordIdx], "end", time)) return null;
+    const endsOnly = key === "end" || (key === "step" && wordIdx === words.length - 1);
+    if (endsOnly && endsAtOwnStart(words[wordIdx], "end", time)) return null;
     const result = applyStepKey({ words, index: wordIdx, key, time, minDuration, range });
     if (result.kind === "refused") return result;
     const update = { id: line.id, updates: boundaryUpdate(line, result.words, splitChar) };

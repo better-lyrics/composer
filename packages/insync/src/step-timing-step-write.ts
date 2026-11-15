@@ -1,4 +1,5 @@
 import type { TimeRange } from "./group-shared-timing";
+import { endsAtOwnStart } from "./word-boundary";
 import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
@@ -80,8 +81,8 @@ function applyStepKey(input: StepWriteInput): StepWrite {
   if (!words[index]) return NO_ROOM;
   if (key === "start") return writeStart(words, index, input);
   if (key === "end" || index === words.length - 1) return writeEnd(words, index, input);
-  const ended = writeEnd(words, index, input);
-  if (ended.kind === "refused") return ended;
+  const ended = endsAtOwnStart(words[index], "end", input.time) ? null : writeEnd(words, index, input);
+  if (ended?.kind === "refused") return ended;
   const begin = words[index].end;
   const next = words[index + 1];
   const end = Math.max(next.end, begin + input.minDuration);

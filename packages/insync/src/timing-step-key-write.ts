@@ -70,12 +70,12 @@ function planStepKey(input: StepKeyWriteInput): StepKeyPlan | null {
   const inTrack = startNext?.lineId === cursor.lineId && startNext.type === cursor.type;
   const ownKey = key !== "step" || inTrack ? key : "end";
   const own = editAt(input, cursor, ownKey);
-  if (!own) return null;
-  if (own.kind === "refused") return own;
+  if (own?.kind === "refused") return own;
   if (key !== "step" || !startNext || inTrack)
-    return { kind: "written", updates: [own.update], endedPrevious: own.endedPrevious };
+    return own && { kind: "written", updates: [own.update], endedPrevious: own.endedPrevious };
   const started = editAt(input, startNext, "start");
   if (started?.kind === "refused") return started;
+  if (!own) return started && { kind: "written", updates: [started.update] };
   return {
     kind: "written",
     updates: joinedUpdates(input, own.update, started?.update),
