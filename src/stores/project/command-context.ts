@@ -2,7 +2,7 @@ import type { CommandContext } from "@/domain/commands/command";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { getSplitCharacter } from "@/utils/split-character";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "insync/song-end";
 
 // -- Functions ----------------------------------------------------------------
 

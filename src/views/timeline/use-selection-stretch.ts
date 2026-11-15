@@ -8,7 +8,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "insync/song-end";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { selfKey } from "@/views/timeline/snap";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";

@@ -11,7 +11,7 @@ import type { LyricLine } from "insync/line";
 import { linePassthroughOf } from "@/domain/line/passthrough";
 import { backgroundText, lineText } from "insync/line-text";
 import { GROUP_COLORS, pickNextGroupColor } from "insync/group-colors";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "insync/song-end";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------

@@ -17,7 +17,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { withLinePassthrough } from "@/domain/line/passthrough";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "insync/song-end";
 
 // -- Constants ----------------------------------------------------------------
 

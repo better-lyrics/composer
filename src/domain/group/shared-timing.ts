@@ -9,7 +9,7 @@ import { roleWords } from "insync/line-track";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import { withoutWordIds } from "insync/word-id";
 import { isStructurallyEqual } from "insync/structural-equal";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "insync/song-end";
 
 // -- Types --------------------------------------------------------------------
 

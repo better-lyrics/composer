@@ -4,7 +4,7 @@ import type { SharingOutcome } from "@/domain/group/shared-placement";
 import { withEvenSyllableSplits } from "@/domain/group/syllable-splits";
 import { GROUP_COLORS, pickNextGroupColor } from "insync/group-colors";
 import { isStructurallyEqual } from "insync/structural-equal";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "insync/song-end";
 
 // -- Types --------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "./song-end";
 
 describe("songEndOrUnbounded", () => {
   it("keeps a known song length", () => {

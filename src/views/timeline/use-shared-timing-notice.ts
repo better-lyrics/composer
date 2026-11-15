@@ -7,7 +7,7 @@ import { useProjectStore } from "@/stores/project";
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
 import { showKeptOwnTimingToast, showReplacedOwnTimingToast } from "@/utils/group-toast";
 import { pluralWord, pluralize } from "insync/pluralize";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { songEndOrUnbounded } from "insync/song-end";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
