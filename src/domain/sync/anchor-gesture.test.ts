@@ -143,6 +143,23 @@ describe("anchorGesture", () => {
   });
 
   describe("regressions", () => {
+    it("regression: the tap that ends the line before a placed instance leaves the instance where it is", () => {
+      const verseWithBackground = createLine({
+        id: "v1",
+        text: "Walking home",
+        backgroundText: "(home)",
+        words: [
+          { text: "Walking", sep: " ", begin: 20, end: 20.5 },
+          { text: "home", begin: 20.6, end: 20.6 },
+        ],
+        backgroundWords: [{ text: "(home)", begin: 20.8, end: 21.6 }],
+      });
+      const lines = song(22).map((line) => (line.id === "v1" ? verseWithBackground : line));
+      const { anchor } = gestureAt(lines, "tap-word", { lineIndex: 3, wordIndex: 0 }, 21.2);
+      expect(anchor).toMatchObject({ keepsPlacement: true });
+      expect(anchor?.precedingUpdates.map((update) => update.id)).toEqual(["v1"]);
+    });
+
     it("regression: moves a placed instance earlier than the room its old position leaves", () => {
       const { commit, anchor } = gestureAt(song(60), "tap-word", { lineIndex: 3, wordIndex: 0 }, 40);
       expect(commit?.clampedTo).toBe(50);

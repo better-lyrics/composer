@@ -6,8 +6,8 @@ import type { InstanceAnchors } from "./group-template-copy";
 import { instanceBounds } from "./instance-bounds";
 import { instanceKey } from "./instance-key";
 import { isLinked, type LinkedLine } from "./instance-predicates";
-import { effectiveBounds } from "./line-bounds";
 import type { LyricLine } from "./line";
+import { nextLineStart, previousLineEnd } from "./line-neighbour-bounds";
 
 // -- Types --------------------------------------------------------------------
 
@@ -124,22 +124,6 @@ function counterpartOf(source: Map<number, SlotLine>, target: Map<number, SlotLi
     });
   }
   return (id) => pairs.get(id);
-}
-
-function nextLineStart(lines: readonly LyricLine[], index: number): number {
-  for (let next = index + 1; next < lines.length; next++) {
-    const bounds = effectiveBounds(lines[next]);
-    if (bounds) return bounds.begin;
-  }
-  return Number.POSITIVE_INFINITY;
-}
-
-function previousLineEnd(lines: readonly LyricLine[], index: number): number {
-  for (let previous = index - 1; previous >= 0; previous--) {
-    const bounds = effectiveBounds(lines[previous]);
-    if (bounds) return bounds.end;
-  }
-  return 0;
 }
 
 function isSplit(edit: Edit): boolean {

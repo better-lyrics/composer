@@ -10,7 +10,9 @@ import { belongsToInstance, isAttachedToInstance } from "../instance-predicates"
 import { applyLineUpdates } from "../line-apply-line-updates";
 import { lineFromFields } from "../line-from-fields";
 import type { LineUpdate, LyricLine } from "../line";
+import { previousLineEnd } from "../line-neighbour-bounds";
 import { withLinePassthrough } from "../line-passthrough";
+import { isSyncableLine } from "../line-sync-progress";
 import { clampShiftDelta, shiftLineTiming } from "../line-shift";
 import { songEndOrUnbounded } from "../song-end";
 
@@ -49,6 +51,20 @@ function instanceLine(
     splitChar,
   );
   return withLinePassthrough(line, template.passthrough);
+}
+
+// An instance placed before the line above it ends would sit on that line.
+function startsInsideLineAbove(
+  lines: readonly LyricLine[],
+  groupId: string,
+  instanceIdx: number,
+  start: number,
+  splitChar: string,
+): boolean {
+  const anchorIndex = lines.findIndex(
+    (line) => isAttachedToInstance(line, groupId, instanceIdx) && isSyncableLine(line, splitChar),
+  );
+  return anchorIndex > 0 && start < previousLineEnd(lines, anchorIndex);
 }
 
 // -- Commands -----------------------------------------------------------------
@@ -163,7 +179,9 @@ function placeInstance(
         ctx.splitChar,
         songEndOrUnbounded(duration),
       );
-      if (!placed.length) return refused({ reason: "placement-out-of-range" });
+      if (!placed.length || startsInsideLineAbove(root.lines, groupId, instanceIdx, start, ctx.splitChar)) {
+        return refused({ reason: "placement-out-of-range" });
+      }
       return applied(
         { ...root, lines: applyLineUpdates(root.lines, placed) },
         placed.map((update) => update.id),
