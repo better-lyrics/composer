@@ -1,11 +1,5 @@
 import { newWordId } from "@/domain/word/id";
-import {
-  copyMergeCover,
-  isPartialSyllableRun,
-  isWholeSyllableGroupRun,
-  mergeWordRun,
-  mergeWordText,
-} from "@/domain/word/merge-run";
+import { isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun, mergeWordText } from "@/domain/word/merge-run";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
@@ -141,69 +135,5 @@ describe("isWholeSyllableGroupRun", () => {
         [0, 1, 2, 3],
       ),
     ).toBe(false);
-  });
-});
-
-describe("copyMergeCover", () => {
-  const source: WordTiming[] = [
-    { id: "w17", text: "one", sep: " ", begin: 0, end: 1, joinsNext: false },
-    { id: "w18", text: "two", sep: " ", begin: 1, end: 2, joinsNext: false },
-    { id: "w19", text: "three", sep: "", begin: 2, end: 3, joinsNext: false },
-  ];
-
-  it("maps a run onto a copy split the same way", () => {
-    expect(copyMergeCover(source, [0, 1], source)).toEqual({ inside: [0, 1], overlapping: [0, 1] });
-  });
-
-  it("maps a run onto every word of a copy that covers the same text", () => {
-    const copy: WordTiming[] = [
-      { id: "w20", text: "o", sep: "", begin: 10, end: 10.4, joinsNext: true },
-      { id: "w21", text: "ne", sep: " ", begin: 10.4, end: 11, joinsNext: false },
-      { id: "w22", text: "two", sep: " ", begin: 11, end: 12, joinsNext: false },
-      { id: "w23", text: "three", sep: "", begin: 12, end: 13, joinsNext: false },
-    ];
-    expect(copyMergeCover(source, [0, 1], copy)).toEqual({ inside: [0, 1, 2], overlapping: [0, 1, 2] });
-  });
-
-  it("regression: maps the run after it grows to the whole split word", () => {
-    const grouped: WordTiming[] = [
-      { id: "w24", text: "so", sep: " ", begin: 0, end: 1, joinsNext: false },
-      { id: "w25", text: "beau", sep: "", begin: 1, end: 1.2, joinsNext: true },
-      { id: "w26", text: "ti", sep: "", begin: 1.2, end: 1.4, joinsNext: true },
-      { id: "w27", text: "ful", sep: "", begin: 1.4, end: 1.8, joinsNext: false },
-    ];
-    const copy: WordTiming[] = [
-      { id: "w28", text: "so", sep: " ", begin: 10, end: 11, joinsNext: false },
-      { id: "w29", text: "be", sep: "", begin: 11, end: 11.1, joinsNext: true },
-      { id: "w30", text: "au", sep: "", begin: 11.1, end: 11.2, joinsNext: true },
-      { id: "w31", text: "ti", sep: "", begin: 11.2, end: 11.4, joinsNext: true },
-      { id: "w32", text: "ful", sep: "", begin: 11.4, end: 11.8, joinsNext: false },
-    ];
-    expect(copyMergeCover(grouped, [0, 1], copy).inside).toEqual([0, 1, 2, 3, 4]);
-  });
-
-  it("regression: reports a copy whose blocks cross the merged text", () => {
-    const grouped: WordTiming[] = [
-      { id: "w33", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
-      { id: "w34", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
-      { id: "w35", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
-    ];
-    const copy: WordTiming[] = [
-      { id: "w36", text: "be", sep: "", begin: 10, end: 10.2, joinsNext: true },
-      { id: "w37", text: "aut", sep: "", begin: 10.2, end: 10.5, joinsNext: true },
-      { id: "w38", text: "iful", sep: "", begin: 10.5, end: 10.9, joinsNext: false },
-    ];
-    expect(copyMergeCover(grouped, [0, 1], copy)).toEqual({ inside: [0, 1], overlapping: [0, 1, 2] });
-  });
-
-  describe("edge cases", () => {
-    it("returns no indices when the copy has not reached the run yet", () => {
-      expect(
-        copyMergeCover(source, [1, 2], [{ id: "w1", text: "one", sep: " ", begin: 0, end: 1, joinsNext: false }]),
-      ).toEqual({
-        inside: [],
-        overlapping: [],
-      });
-    });
   });
 });

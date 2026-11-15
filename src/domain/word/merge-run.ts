@@ -4,11 +4,6 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-interface CopyMergeCover {
-  inside: number[];
-  overlapping: number[];
-}
-
 interface IndexSpan {
   start: number;
   end: number;
@@ -83,31 +78,6 @@ function mergeWordRun(words: WordTiming[], indices: number[]): WordTiming[] | nu
   return [...words.slice(0, start), merged, ...words.slice(end + 1)];
 }
 
-function textOffsets(words: WordTiming[]): number[] {
-  const offsets = [0];
-  for (const word of words) offsets.push(offsets[offsets.length - 1] + word.text.length + word.sep.length);
-  return offsets;
-}
-
-// Linked copies share their text, so a run maps onto a copy by the characters it covers, not by word slots.
-function copyMergeCover(source: WordTiming[], sourceIndices: number[], target: WordTiming[]): CopyMergeCover {
-  const span = mergedSpan(source, sourceIndices);
-  if (!span) return { inside: [], overlapping: [] };
-  const sourceOffsets = textOffsets(source);
-  const start = sourceOffsets[span.start];
-  const end = sourceOffsets[span.end + 1];
-  const targetOffsets = textOffsets(target);
-  const inside: number[] = [];
-  const overlapping: number[] = [];
-  for (let index = 0; index < target.length; index++) {
-    const wordStart = targetOffsets[index];
-    const wordEnd = targetOffsets[index + 1];
-    if (wordStart < end && wordEnd > start) overlapping.push(index);
-    if (wordStart >= start && wordEnd <= end) inside.push(index);
-  }
-  return { inside, overlapping };
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { copyMergeCover, isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun, mergeWordText, mergedWord };
+export { isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun, mergeWordText, mergedWord };
