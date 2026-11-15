@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { withAlignedWords } from "insync/language-align";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { languagesWith, lineTransliteration } from "insync/language-line-languages";
@@ -23,7 +23,7 @@ import {
 import { withPiecesOn, withTrackPieces } from "insync/language-side-pieces";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText, syllablesText } from "insync/line-text";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import { trackRole, trackWords, type WordTrack } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 

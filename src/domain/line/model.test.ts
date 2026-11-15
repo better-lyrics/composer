@@ -1,4 +1,4 @@
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import { mainTrack } from "insync/line-track";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

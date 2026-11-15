@@ -1,7 +1,7 @@
 import { validateLine } from "insync/validate-line";
 import { readAlignedTimings, timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
 import { migrateLegacyTransliterationLine } from "insync/language-migrate";
-import { withSeededBackground, withSeededBackgroundWords } from "@/domain/line/background";
+import { withSeededBackground, withSeededBackgroundWords } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";

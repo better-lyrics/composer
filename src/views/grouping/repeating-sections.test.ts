@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { roleWords } from "insync/line-track";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { newWordId } from "insync/word-id";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";

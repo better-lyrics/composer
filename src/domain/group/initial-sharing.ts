@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { mainTrack, roleWords } from "insync/line-track";
 import { withSharing } from "insync/group-own-timing";
 import { sameTime } from "insync/group-same-timing";

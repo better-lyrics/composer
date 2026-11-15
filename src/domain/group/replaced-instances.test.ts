@@ -1,8 +1,8 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { mainTrack } from "insync/line-track";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import type { LyricLine } from "insync/line";
-import { newBackgroundTrack, withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
+import { newBackgroundTrack, withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

@@ -11,10 +11,10 @@ import {
 import type { LinkGroup } from "insync/group";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { mainBounds } from "insync/line-bounds";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";
-import { isSyncableLine } from "@/domain/line/sync-progress";
+import { isSyncableLine } from "insync/line-sync-progress";
 
 // -- Types --------------------------------------------------------------------
 

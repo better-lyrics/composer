@@ -1,4 +1,4 @@
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import { mainTrack } from "insync/line-track";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**

@@ -1,7 +1,7 @@
 import type { CommandContext, HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { type Applied, type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LineUpdate } from "insync/line";
 
 // -- Types --------------------------------------------------------------------

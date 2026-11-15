@@ -5,9 +5,9 @@ import {
   templateLanguages,
 } from "@/domain/group/template";
 import { nextInstanceIdx } from "insync/instance-enumerate";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { withLinePassthrough } from "@/domain/line/passthrough";
+import { withLinePassthrough } from "insync/line-passthrough";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------

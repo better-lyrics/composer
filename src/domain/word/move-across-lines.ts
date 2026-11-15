@@ -1,13 +1,13 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { wouldDropCrossInstance } from "insync/cross-instance";
 import { isLinked } from "insync/instance-predicates";
-import { withoutBackground } from "@/domain/line/background";
-import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { withoutBackground } from "insync/line-background";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { trackRole, untimedSyllablesOf } from "insync/line-track";
-import { mainTimingEdit } from "@/domain/line/track-writes";
+import { mainTimingEdit } from "insync/line-track-writes";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";

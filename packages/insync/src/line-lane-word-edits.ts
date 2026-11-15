@@ -1,7 +1,7 @@
-import { withManualBackgroundWords } from "@/domain/line/background";
-import type { LyricLine } from "insync/line";
-import { withRoleWords } from "@/domain/line/track-writes";
-import type { WordTiming } from "insync/word-timing";
+import { withManualBackgroundWords } from "./line-background";
+import type { LyricLine } from "./line";
+import { withRoleWords } from "./line-track-writes";
+import type { WordTiming } from "./word-timing";
 
 // -- Functions ----------------------------------------------------------------
 

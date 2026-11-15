@@ -2,7 +2,7 @@ import { instanceStart, sharedInstancesInLineOrder } from "@/domain/group/shared
 import type { LinkGroup } from "insync/group";
 import { attachedLineIndices } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
-import { isSyncableLine } from "@/domain/line/sync-progress";
+import { isSyncableLine } from "insync/line-sync-progress";
 import { type SyncCursor, nextSyncableLineIndex } from "@/domain/sync/cursor";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 

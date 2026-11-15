@@ -1,11 +1,11 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LanguagePiece } from "insync/language";
 import { withAddedPieces } from "insync/language-pieces";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import type { LyricLine, MainTrack } from "insync/line";
 import { type WordTrack, isSpanTimed, mainTrack, trackRole, untimedSyllablesOf } from "insync/line-track";
-import { withMainTrack, withTrackSyllables, withTrackWords } from "@/domain/line/track-writes";
+import { withMainTrack, withTrackSyllables, withTrackWords } from "insync/line-track-writes";
 import { withNewId } from "insync/word-id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "insync/word-overlap";

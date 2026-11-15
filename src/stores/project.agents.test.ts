@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";

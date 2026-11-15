@@ -1,5 +1,5 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import type { LyricLine } from "insync/line";
 import { googleLanguageProvider } from "@/services/google-language-provider";

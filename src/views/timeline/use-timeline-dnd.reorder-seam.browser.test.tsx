@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useAudioStore } from "@/stores/audio";

@@ -1,6 +1,6 @@
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

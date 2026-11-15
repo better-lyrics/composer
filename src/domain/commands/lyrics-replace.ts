@@ -2,7 +2,7 @@ import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import type { LyricLine } from "insync/line";
 import { mainTrack } from "insync/line-track";
-import { withAgent } from "@/domain/line/track-writes";
+import { withAgent } from "insync/line-track-writes";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "insync/agent";
 import type { LyricCommand } from "@/domain/commands/command";

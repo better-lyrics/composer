@@ -1,5 +1,5 @@
 import { withFields } from "@/test/field-updates";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { describe, expect, it } from "vitest";
 import { planTransliterationAlignment } from "insync/language-align";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
@@ -11,7 +11,7 @@ import {
   type WordSplitResult,
 } from "@/domain/language/reconcile-syllable-split";
 import type { V3TransliterationTrack } from "insync/language-v3-languages";
-import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnLanguages, drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables, type WordTrack } from "insync/line-track";

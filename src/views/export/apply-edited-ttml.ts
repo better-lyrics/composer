@@ -1,7 +1,7 @@
 import { mergedEditedKept } from "@/domain/line/edited-ttml-kept";
 import { holdsEveryLine, mergedLineIdsByKey, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "insync/line";
-import { isProjectFullySynced } from "@/domain/line/sync-progress";
+import { isProjectFullySynced } from "insync/line-sync-progress";
 import { changedParts, type EditedLyrics, editedLyricsWrite, type ProjectPart } from "@/domain/project/edited-lyrics";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";

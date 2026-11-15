@@ -2,7 +2,7 @@ import { firstFullyTimedInstance, sharedInstancesInLineOrder } from "@/domain/gr
 import type { LinkGroup } from "insync/group";
 import { instanceKey } from "insync/instance-key";
 import { instanceName } from "insync/instance-name";
-import { drawnLine } from "@/domain/line/drawn-track";
+import { drawnLine } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { stepSkippedLineIds } from "@/domain/step-timing/step-skip";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";

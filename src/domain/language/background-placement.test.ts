@@ -1,6 +1,6 @@
 import { withFields } from "@/test/field-updates";
 import type { WordTiming } from "insync/word-timing";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { alternateBackgroundPlacement } from "insync/language-background-placement";
 import type { LyricLine } from "insync/line";
 import { newWordId } from "insync/word-id";

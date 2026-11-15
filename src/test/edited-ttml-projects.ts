@@ -1,4 +1,4 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
 import type { LinkGroup } from "insync/group";

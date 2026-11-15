@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";

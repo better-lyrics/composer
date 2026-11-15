@@ -1,9 +1,9 @@
 import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { withKeptSyllablePieces } from "insync/language-pieces";
-import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
-import { convertBackgroundToWord, convertMainToWord } from "@/domain/line/span-to-words";
+import { convertBackgroundToWord, convertMainToWord } from "insync/line-span-to-words";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { SyllableAddress } from "insync/selection-model";
 import type { WordTiming } from "insync/word-timing";

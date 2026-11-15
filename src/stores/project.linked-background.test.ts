@@ -4,10 +4,10 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
 import type { LinkGroup } from "insync/group";
-import { withBackground, withSeededBackground } from "@/domain/line/background";
+import { withBackground, withSeededBackground } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";
-import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText } from "insync/line-text";
 

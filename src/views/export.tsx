@@ -1,7 +1,7 @@
 import { IconFolderOpen } from "@tabler/icons-react";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { fullySyncedLineCount } from "@/domain/line/sync-progress";
+import { fullySyncedLineCount } from "insync/line-sync-progress";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { useUnisonSession } from "@/hooks/useUnisonSession";

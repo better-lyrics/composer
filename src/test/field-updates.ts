@@ -1,9 +1,9 @@
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { hasAnyTiming } from "insync/line-predicates";
 import { mainTrack } from "insync/line-track";
-import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
-import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
+import { withMainTrack, withRoleWords, withTrackText } from "insync/line-track-writes";
+import { withUntimedIdsOf } from "insync/line-untimed-ids";
 import { useProjectStore } from "@/stores/project";
 import { isStructurallyEqual } from "insync/structural-equal";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

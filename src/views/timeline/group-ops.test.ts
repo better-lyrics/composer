@@ -5,12 +5,12 @@
 import { describe, expect, it } from "vitest";
 import { addInstance } from "@/domain/commands/instance-edits";
 import type { LinkGroup } from "insync/group";
-import { withSeededBackground } from "@/domain/line/background";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { withSeededBackground } from "insync/line-background";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import {

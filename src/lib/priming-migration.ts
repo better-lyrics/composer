@@ -3,7 +3,7 @@ import type { PrimingCrop } from "@/audio/lame-priming";
 import type { LineTrack, LyricLine } from "insync/line";
 import { shiftWords } from "@/domain/line/shift";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack, withTrackSpan, withTrackWords } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withMainTrack, withTrackSpan, withTrackWords } from "insync/line-track-writes";
 import { type SnapPoint, shiftedSnapPoints } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { shiftedGrid } from "@/domain/tempo/grid-edits";

@@ -1,5 +1,5 @@
 import { msFromSeconds } from "insync/time";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";

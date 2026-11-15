@@ -8,7 +8,7 @@ import type { LineUpdate, LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "insync/line-predicates";
 import { lineText } from "insync/line-text";
 import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import type { WordTiming } from "insync/word-timing";
 import { splitIntoWordsWithMeta } from "insync/lyric-words";
 import { getSplitCharacter } from "@/utils/split-character";

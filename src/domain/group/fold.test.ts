@@ -5,7 +5,7 @@ import { foldLines } from "@/domain/group/fold";
 import type { Instance, LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { withMainTrack, withTrackWords } from "@/domain/line/track-writes";
+import { withMainTrack, withTrackWords } from "insync/line-track-writes";
 import { EDITED_TTML_PROJECTS } from "@/test/edited-ttml-projects";
 import { createGroup, createLine } from "@/test/factories";
 import { song } from "@/test/shared-timing-sync";

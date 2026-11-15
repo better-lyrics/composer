@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import type { SyncGranularity } from "@/domain/line/sync-progress";
+import type { SyncGranularity } from "insync/line-sync-progress";
 import { syncAddressPosition } from "@/domain/sync/address";
 import { storedSyncPosition } from "@/domain/sync/anchor-gesture";
 import { resolveSyncCursor } from "@/domain/sync/cursor";

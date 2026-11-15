@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { stretchSelections } from "@/domain/selection/stretch";

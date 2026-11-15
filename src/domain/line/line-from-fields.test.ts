@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { lineText, trackText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { createLine, createWords } from "@/test/factories";

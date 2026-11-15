@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { backgroundTrack, isSpanTimed, mainTrack, roleWords } from "insync/line-track";
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import { type LineTemplate, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
@@ -8,7 +8,7 @@ import { instanceBounds } from "insync/instance-bounds";
 import { linesOfInstance } from "insync/instance-enumerate";
 import { mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { linePassthroughOf } from "@/domain/line/passthrough";
+import { linePassthroughOf } from "insync/line-passthrough";
 import { backgroundText, lineText } from "insync/line-text";
 import { GROUP_COLORS, pickNextGroupColor } from "insync/group-colors";
 import { songEndOrUnbounded } from "insync/song-end";

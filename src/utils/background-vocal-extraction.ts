@@ -1,12 +1,12 @@
 import { isLinked } from "insync/instance-predicates";
-import { withBackground, withSeededBackground } from "@/domain/line/background";
+import { withBackground, withSeededBackground } from "insync/line-background";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { bgBounds } from "insync/line-bounds";
 import { isWordSynced } from "insync/line-predicates";
 import { wordContentSpans } from "insync/line-reconstruct-text";
 import { backgroundText, lineText, syllablesText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords } from "insync/line-track";
-import { withMainTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
+import { withMainTrack, withTrackSyllables, withTrackText } from "insync/line-track-writes";
 import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";

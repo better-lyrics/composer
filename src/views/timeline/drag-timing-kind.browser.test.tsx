@@ -1,5 +1,5 @@
 import { mainTrack, roleWords } from "insync/line-track";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";

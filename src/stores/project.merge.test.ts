@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup } from "@/domain/commands/group-edits";
 import { mergeSyllableGroup, snapSyllablesFlush } from "@/domain/commands/word-edits";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

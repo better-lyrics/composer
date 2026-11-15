@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { describe, expect, it } from "vitest";
 
 import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "insync/edit-text";

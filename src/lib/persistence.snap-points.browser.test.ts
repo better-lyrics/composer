@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { saveCurrentProject } from "@/lib/persistence";

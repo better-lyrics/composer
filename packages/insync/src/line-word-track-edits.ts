@@ -1,13 +1,13 @@
-import { withAlignedWords } from "insync/language-align";
-import { regroupedLanguages } from "insync/language-pieces";
-import { withManualBackgroundWords } from "@/domain/line/background";
-import { explicitFieldWords } from "@/domain/line/drawn-track";
-import type { LyricLine } from "insync/line";
-import { fieldRole, fieldWords, type TrackField } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
-import { mergedWord } from "insync/word-merge-run";
-import { computeSyllableGroups, expandSelectionToGroupmates } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import { withAlignedWords } from "./language-align";
+import { regroupedLanguages } from "./language-pieces";
+import { withManualBackgroundWords } from "./line-background";
+import { explicitFieldWords } from "./line-drawn-track";
+import type { LyricLine } from "./line";
+import { fieldRole, fieldWords, type TrackField } from "./line-track";
+import { withRoleWords } from "./line-track-writes";
+import { mergedWord } from "./word-merge-run";
+import { computeSyllableGroups, expandSelectionToGroupmates } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

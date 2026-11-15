@@ -1,6 +1,6 @@
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import type { LineTrack, LyricLine, TrackRole } from "insync/line";
-import { syllablesFromText } from "@/domain/line/syllables-from-text";
+import { syllablesFromText } from "insync/line-syllables-from-text";
 import { trackText } from "insync/line-text";
 import {
   backgroundTrack,
@@ -10,7 +10,7 @@ import {
   untimedSyllable,
   type WordTrack,
 } from "insync/line-track";
-import { withRoleTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
+import { withRoleTrack, withTrackSyllables, withTrackText } from "insync/line-track-writes";
 import type { WordTiming } from "insync/word-timing";
 import { splitWordIntoSyllables } from "insync/single-word-syllable-split";
 import { withoutSplitCharacter } from "insync/split-character-text";

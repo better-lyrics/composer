@@ -1,5 +1,5 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";

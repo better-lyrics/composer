@@ -1,7 +1,7 @@
-import type { LyricLine } from "insync/line";
-import { trackText } from "insync/line-text";
-import { mainTrack } from "insync/line-track";
-import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
+import type { LyricLine } from "./line";
+import { trackText } from "./line-text";
+import { mainTrack } from "./line-track";
+import { withMainTrack, withTrackText } from "./line-track-writes";
 
 // The single chokepoint for re-deciding timing after a text edit: both the exact-match and position-match
 // branches of textToLyricLines route through here so they cannot drift apart and clear timing on lines the

@@ -1,4 +1,4 @@
-import { drawnLine, drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnLine, drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "@/domain/selection/resolve";

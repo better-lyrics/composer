@@ -1,4 +1,4 @@
-import type { SyncGranularity } from "@/domain/line/sync-progress";
+import type { SyncGranularity } from "insync/line-sync-progress";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";

@@ -2,7 +2,7 @@ import { agentWithoutKeptData } from "insync/agent-kept-data";
 import type { Agent } from "insync/agent";
 import type { LyricLine } from "insync/line";
 import { mainTrack } from "insync/line-track";
-import { withAgent } from "@/domain/line/track-writes";
+import { withAgent } from "insync/line-track-writes";
 
 // -- Constants ----------------------------------------------------------------
 

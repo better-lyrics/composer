@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { deleteWords } from "@/domain/commands/word-structure";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

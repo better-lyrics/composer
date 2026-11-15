@@ -1,4 +1,4 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 
 /**
  * @vitest-environment node
@@ -6,7 +6,7 @@ import { fieldsOfLine } from "@/domain/line/line-from-fields";
 
 import { describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

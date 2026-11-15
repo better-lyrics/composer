@@ -2,9 +2,9 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused, withLines } from "@/domain/commands/outcome";
 import type { WordWriteExtras } from "@/domain/commands/word-edits";
-import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { withBackground, withSeededBackground, withoutBackground } from "insync/line-background";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { mainWordsEdit, manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import type { LyricLine } from "insync/line";
 import { syllablesText } from "insync/line-text";
 import {
@@ -16,8 +16,8 @@ import {
   untimedSyllablesOf,
   trackRole,
 } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack, withTrackText } from "@/domain/line/track-writes";
-import { withFieldWords } from "@/domain/line/word-track-edits";
+import { withBackgroundTrack, withMainTrack, withTrackText } from "insync/line-track-writes";
+import { withFieldWords } from "insync/line-word-track-edits";
 import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { applyWordDeletion } from "@/domain/word/apply-word-deletion";

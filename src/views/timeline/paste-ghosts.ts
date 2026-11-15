@@ -1,5 +1,5 @@
 import { type TimeRange, wholeSongRange } from "@/domain/group/shared-timing";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole } from "insync/line-track";
 import { boundsOverlap } from "insync/word-overlap";

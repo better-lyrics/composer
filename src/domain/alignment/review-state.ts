@@ -3,7 +3,7 @@ import { type AlignedTimings, timingFingerprint } from "@/domain/alignment/finge
 import { coversSpan, mergeRanges, type PlayedRange } from "@/domain/alignment/played-ranges";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { isLineTimed } from "insync/line-sync-progress";
 import { isExportedLine } from "@/utils/ttml-line-keys";
 import { getSplitCharacter } from "@/utils/split-character";
 

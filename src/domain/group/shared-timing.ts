@@ -6,7 +6,7 @@ import { bgBounds, mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";
 import { roleWords } from "insync/line-track";
-import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
+import { isLineFullyTimed, isSyncableLine } from "insync/line-sync-progress";
 import { withoutWordIds } from "insync/word-id";
 import { isStructurallyEqual } from "insync/structural-equal";
 import { songEndOrUnbounded } from "insync/song-end";

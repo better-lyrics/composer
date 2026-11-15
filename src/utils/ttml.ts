@@ -4,7 +4,7 @@ import { escapeXmlAttribute } from "insync/xml-node";
 import type { Agent } from "insync/agent";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import { syncProgress } from "@/domain/line/sync-progress";
+import { syncProgress } from "insync/line-sync-progress";
 import { normalizeLanguageTag } from "insync/project-language";
 import type { ProjectMetadata } from "insync/metadata";
 import { YOUTUBE_VIDEO_ID_KEY } from "insync/project-metadata-ttml";

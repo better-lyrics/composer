@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getLinkScope, isLinkedSibling, unlinkLines } from "insync/group-linking";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

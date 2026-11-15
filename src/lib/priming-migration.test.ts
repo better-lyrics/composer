@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mainBounds } from "insync/line-bounds";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";

@@ -12,7 +12,7 @@ import {
   v3WordPieces,
   withoutV3Piece,
 } from "insync/language-v3-languages";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";

@@ -1,4 +1,4 @@
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { timingGranularityOf } from "insync/project-timing-granularity";
 import { describe, expect, it } from "vitest";

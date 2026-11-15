@@ -2,7 +2,7 @@ import { restorePlayedRanges } from "@/audio/playback-ranges";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { readAlignedTimings } from "@/domain/alignment/fingerprint";
 import { readPlayedRanges } from "@/domain/alignment/played-ranges";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import { savedExportTiming } from "@/domain/project/export-timing";
 import { isMetadataKey } from "insync/project-imported-metadata";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";

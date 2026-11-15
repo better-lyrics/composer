@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
+import { withMainTrack, withTrackText } from "insync/line-track-writes";
 import { createLine } from "@/test/factories";
 import {
   classifyLine,

@@ -1,11 +1,11 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "insync/group-linking";
 import { lineInstanceKey } from "insync/instance-key";
-import { withManualBackgroundWords } from "@/domain/line/background";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { withManualBackgroundWords } from "insync/line-background";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { hasAnyTiming, isLineSynced } from "insync/line-predicates";
 import { mainTrack, roleWords } from "insync/line-track";
-import { withMainTrack, withoutTrackTiming, withTrackWords } from "@/domain/line/track-writes";
+import { withMainTrack, withoutTrackTiming, withTrackWords } from "insync/line-track-writes";
 import { absorbDeletedSyllablesIntoNeighbors } from "insync/word-syllable-groups";
 
 interface DeletionSelection {

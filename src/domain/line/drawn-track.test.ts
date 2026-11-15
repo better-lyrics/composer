@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
-import { withSeededBackground } from "@/domain/line/background";
-import { drawnLanguages, drawnLine, drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { withSeededBackground } from "insync/line-background";
+import { drawnLanguages, drawnLine, drawnPieces, drawnSyllables } from "insync/line-drawn-track";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { mainTimingEdit, mainTimingWrite } from "@/domain/line/track-writes";
+import { mainTimingEdit, mainTimingWrite } from "insync/line-track-writes";
 import { lineTimingWordId } from "insync/word-id";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";

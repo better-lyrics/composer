@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getPersistenceSettled } from "@/lib/persistence-settled";

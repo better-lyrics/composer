@@ -1,5 +1,5 @@
 import { mainBounds } from "insync/line-bounds";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { lineText } from "insync/line-text";

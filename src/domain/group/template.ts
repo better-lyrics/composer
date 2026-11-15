@@ -1,8 +1,8 @@
 import type { LanguagePiece, LanguagePieces, LineLanguages } from "insync/language";
 import { keyedPieces, pieceOf } from "insync/language-pieces";
 import { withPiecesOn } from "insync/language-side-pieces";
-import type { LineFields } from "@/domain/line/line-from-fields";
-import type { LinePassthrough } from "@/domain/line/passthrough";
+import type { LineFields } from "insync/line-from-fields";
+import type { LinePassthrough } from "insync/line-passthrough";
 import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 

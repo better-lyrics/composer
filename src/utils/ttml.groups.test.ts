@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
 import type { LinkGroup } from "insync/group";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";

@@ -1,8 +1,8 @@
 import type { SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import type { LanguageTextVariant } from "@/domain/language/display";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineFromSaved } from "@/domain/line/saved-line";
+import { lineFromSaved } from "insync/line-saved-line";
 import { hasAnyTiming, hasMainLyrics, isWordSynced } from "insync/line-predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 import { findMatchingTemplate, linesStructurallyEqual, structurallyEqualLineSequences } from "./structural-match";

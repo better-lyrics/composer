@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { Agent } from "insync/agent";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";

@@ -1,4 +1,4 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { fieldWords, roleWords, trackField, trackWords } from "insync/line-track";
 import { describe, expect, it } from "vitest";

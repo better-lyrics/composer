@@ -1,7 +1,7 @@
 import { withKeptSyllablePieces } from "insync/language-pieces";
-import { withManualBackgroundWords } from "@/domain/line/background";
+import { withManualBackgroundWords } from "insync/line-background";
 import type { LyricLine } from "insync/line";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import { roleWords, trackWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { type IdenticalMatchSource, findIdenticalWords } from "insync/identical-word-matcher";

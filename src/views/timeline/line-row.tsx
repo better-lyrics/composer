@@ -2,7 +2,7 @@ import { memo, useCallback } from "react";
 import { getAgentColor } from "insync/agent-colors";
 import { belongsToInstance } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnPieces, drawnSyllables } from "insync/line-drawn-track";
 import { mainTrack } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";

@@ -2,7 +2,7 @@ import { sameTime } from "insync/group-same-timing";
 import { instanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
 import { mainBounds } from "insync/line-bounds";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "insync/line-predicates";
 import { mainTrack, roleWords } from "insync/line-track";

@@ -2,7 +2,7 @@ import type { Part, PartSection } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import { escapeXmlAttribute } from "insync/xml-node";
 import { bgBounds, effectiveBounds } from "insync/line-bounds";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LineTrack, LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";

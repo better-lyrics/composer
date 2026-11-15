@@ -1,11 +1,11 @@
-import type { LineLanguages } from "insync/language";
-import type { BackgroundSource, BackgroundTrack, LyricLine, MainTrack, Syllable, TrackTiming } from "insync/line";
-import { groupFieldsOf } from "insync/line-group-fields";
-import { textSyllables } from "@/domain/line/syllables-from-text";
-import { trackText } from "insync/line-text";
-import { backgroundTrack, isExplicitBlock, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withTrackExplicit } from "@/domain/line/track-writes";
-import type { WordTiming } from "insync/word-timing";
+import type { LineLanguages } from "./language";
+import type { BackgroundSource, BackgroundTrack, LyricLine, MainTrack, Syllable, TrackTiming } from "./line";
+import { groupFieldsOf } from "./line-group-fields";
+import { textSyllables } from "./line-syllables-from-text";
+import { trackText } from "./line-text";
+import { backgroundTrack, isExplicitBlock, isSpanTimed, mainTrack, timedSyllables } from "./line-track";
+import { withTrackExplicit } from "./line-track-writes";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

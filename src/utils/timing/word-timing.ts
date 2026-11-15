@@ -1,6 +1,6 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { mainTimingWrite } from "@/domain/line/track-writes";
+import { mainTimingWrite } from "insync/line-track-writes";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 
 // Timeline edits read the main track as the Timeline draws it; Sync retimes only its timed syllables.

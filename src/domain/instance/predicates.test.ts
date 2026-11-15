@@ -1,4 +1,4 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { belongsToInstance, isAttachedToInstance, isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { isLineTimed } from "insync/line-sync-progress";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { importLyricsButtonStep, importLyricsDialogStep } from "@/tour/import-lyrics-steps";

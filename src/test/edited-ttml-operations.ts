@@ -1,9 +1,9 @@
 import { expect } from "vitest";
 import { lineTranslations } from "insync/language-line-languages";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "insync/line-predicates";
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { isLineTimed } from "insync/line-sync-progress";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { timingGranularityOf } from "insync/project-timing-granularity";

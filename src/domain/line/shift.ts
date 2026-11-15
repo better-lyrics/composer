@@ -2,7 +2,7 @@ import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timi
 import { bgBounds, effectiveBounds } from "insync/line-bounds";
 import type { LineTrack, LyricLine } from "insync/line";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withTrackSpan, withTrackWords } from "@/domain/line/track-writes";
+import { withTrackSpan, withTrackWords } from "insync/line-track-writes";
 import type { WordTiming } from "insync/word-timing";
 
 function shiftWords(words: readonly WordTiming[], delta: number): WordTiming[] {

@@ -1,10 +1,10 @@
-import { effectiveBounds } from "insync/line-bounds";
-import type { LyricLine } from "insync/line";
-import { hasMainLyrics, isLineSynced } from "insync/line-predicates";
-import { backgroundText, lineText } from "insync/line-text";
-import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "insync/lyric-words";
+import { effectiveBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
+import { hasMainLyrics, isLineSynced } from "./line-predicates";
+import { backgroundText, lineText } from "./line-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
+import type { WordTiming } from "./word-timing";
+import { splitIntoWordsWithMeta } from "./lyric-words";
 
 // -- Types --------------------------------------------------------------------
 

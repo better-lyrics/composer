@@ -12,7 +12,7 @@ import { isLinked } from "insync/instance-predicates";
 import { currentInstanceFromSelection } from "insync/selection-instance";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import { resolveAddress, toAddress } from "@/domain/selection/resolve";

@@ -1,4 +1,4 @@
-import { syncProgress } from "@/domain/line/sync-progress";
+import { syncProgress } from "insync/line-sync-progress";
 import type { ProjectTab } from "@/domain/project/tab";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

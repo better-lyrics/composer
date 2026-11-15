@@ -1,7 +1,7 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { fieldUpdates } from "@/test/field-updates";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";

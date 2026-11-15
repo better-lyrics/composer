@@ -1,4 +1,4 @@
-import { isLineTimed, isSyncableLine } from "@/domain/line/sync-progress";
+import { isLineTimed, isSyncableLine } from "insync/line-sync-progress";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { pluralize } from "insync/pluralize";

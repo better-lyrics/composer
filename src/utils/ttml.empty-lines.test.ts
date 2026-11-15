@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import type { ProjectMetadata } from "insync/metadata";
 import { generateTTML } from "@/utils/ttml";

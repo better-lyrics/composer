@@ -8,7 +8,7 @@ import {
   applyMarkWordsExplicit,
   applyMergeSyllableGroup,
   withFieldWords,
-} from "@/domain/line/word-track-edits";
+} from "insync/line-word-track-edits";
 import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
 import type { IdenticalMatchSource } from "insync/identical-word-matcher";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "insync/word-syllable-groups";

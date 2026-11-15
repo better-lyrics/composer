@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
-import { withSeededBackground } from "@/domain/line/background";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { withSeededBackground } from "insync/line-background";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";

@@ -3,7 +3,7 @@ import type { LyricLine } from "insync/line";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { detectNonLatinLanguage } from "insync/language-script-detection";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import { hasAnyTiming } from "insync/line-predicates";
 import { lineText } from "insync/line-text";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";

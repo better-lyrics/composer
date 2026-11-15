@@ -3,7 +3,7 @@ import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { TrackRole } from "insync/line";
 import { roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { newWordId } from "insync/word-id";
 import { type ProjectSaveInput, saveCurrentProject } from "@/lib/persistence";
 import { loadProjectForRestore } from "@/lib/project-restore";

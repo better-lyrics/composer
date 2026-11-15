@@ -8,7 +8,7 @@ import {
   trackPieces,
   withReadingsOf,
 } from "insync/language-pieces";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { mergeWordRun } from "insync/word-merge-run";
 import type { WordTiming } from "insync/word-timing";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

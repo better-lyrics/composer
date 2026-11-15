@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import { createLine, createWord } from "@/test/factories";
 import { BG_DROP_ZONE_HEIGHT, bgTrackHeight, emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

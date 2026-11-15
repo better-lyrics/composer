@@ -2,12 +2,12 @@ import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing"
 import type { LinkGroup } from "insync/group";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { bgBounds, mainBounds } from "insync/line-bounds";
-import { withBackgroundSeededFrom, withSeededBackground } from "@/domain/line/background";
+import { withBackgroundSeededFrom, withSeededBackground } from "insync/line-background";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { clampShiftDelta, shiftLineTiming, shiftTrack } from "@/domain/line/shift";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
-import { isSyncableLine } from "@/domain/line/sync-progress";
+import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "insync/line-track-writes";
+import { isSyncableLine } from "insync/line-sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { withSlotWord } from "insync/sync-slot-words";

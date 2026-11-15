@@ -1,9 +1,9 @@
-import { type BackgroundSource, withBackground, withSeededBackgroundWords } from "@/domain/line/background";
+import { type BackgroundSource, withBackground, withSeededBackgroundWords } from "insync/line-background";
 import { effectiveBounds, mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, syllablesText } from "insync/line-text";
-import { spreadSpan } from "@/domain/line/span-to-words";
+import { spreadSpan } from "insync/line-span-to-words";
 import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "insync/line-track";
 import { lastEnd } from "insync/word-bounds";
 import { remapWordTextsPreservingTiming } from "insync/word-remap-text";

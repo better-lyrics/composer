@@ -1,4 +1,4 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { mainBounds } from "insync/line-bounds";
 import { updatedLine, withFields } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";

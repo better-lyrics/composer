@@ -1,8 +1,8 @@
-import { withoutBackground, withSeededBackground } from "@/domain/line/background";
+import { withoutBackground, withSeededBackground } from "insync/line-background";
 import type { LyricLine, MainTrack } from "insync/line";
 import { trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack } from "insync/line-track";
-import { newBackgroundTrack, withBackgroundTrack, withTrackText } from "@/domain/line/track-writes";
+import { newBackgroundTrack, withBackgroundTrack, withTrackText } from "insync/line-track-writes";
 import { classifyLine } from "@/utils/background-vocal-extraction";
 
 // -- Functions ----------------------------------------------------------------

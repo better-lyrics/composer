@@ -4,10 +4,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { editBackgroundText, typeLyrics } from "@/domain/commands/edit-text";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

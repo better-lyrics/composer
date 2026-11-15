@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "insync/language-align";
 import type { LineLanguage, TransliterationAlignmentStatus } from "insync/language";
 import { mappedTransliteration } from "insync/language-pieces";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { newWordId } from "insync/word-id";

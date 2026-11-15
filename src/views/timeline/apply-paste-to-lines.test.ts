@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { pieceOf } from "insync/language-pieces";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
-import { withMainTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
+import { withMainTrack, withTrackSpan, withTrackSyllables } from "insync/line-track-writes";
 import { lineTimingWordId, newWordId } from "insync/word-id";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";

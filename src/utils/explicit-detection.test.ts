@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { findExplicitWords } from "@/utils/explicit-detection";

@@ -1,5 +1,5 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { SyllableAddress } from "insync/selection-model";
 import { addressOf } from "@/domain/selection/resolve";
 import { mergeAddresses } from "insync/selection-set-ops";

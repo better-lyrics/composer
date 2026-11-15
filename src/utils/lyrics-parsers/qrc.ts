@@ -1,7 +1,7 @@
 import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
 import { agentIdAt, createPerformerAgents } from "insync/agent-performer-agents";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { hasAnyTiming } from "insync/line-predicates";
 import { syllablesText } from "insync/line-text";
 import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";

@@ -7,7 +7,7 @@ import {
   syncGaps,
   syncProgress,
   wordSlotCount,
-} from "@/domain/line/sync-progress";
+} from "insync/line-sync-progress";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { withFields } from "@/test/field-updates";

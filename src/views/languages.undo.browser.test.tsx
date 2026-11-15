@@ -1,6 +1,6 @@
 import { fieldUpdates } from "@/test/field-updates";
 import { lineText } from "insync/line-text";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";

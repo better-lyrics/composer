@@ -1,4 +1,4 @@
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import { roleWords } from "insync/line-track";
 import { joinsFromWords, syllablesFromWords } from "insync/from-words";
 import { wordsFromSyllables } from "insync/to-words";

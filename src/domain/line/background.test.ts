@@ -5,8 +5,8 @@ import {
   withManualBackgroundWords,
   withSeededBackground,
   withoutBackground,
-} from "@/domain/line/background";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+} from "insync/line-background";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

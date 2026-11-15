@@ -1,7 +1,7 @@
-import type { Passthrough } from "insync/passthrough";
-import type { LineTrack, LyricLine, Syllable } from "insync/line";
-import { backgroundTrack, isTimedSyllable, mainTrack } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
+import type { Passthrough } from "./passthrough";
+import type { LineTrack, LyricLine, Syllable } from "./line";
+import { backgroundTrack, isTimedSyllable, mainTrack } from "./line-track";
+import { withBackgroundTrack, withMainTrack } from "./line-track-writes";
 
 // -- Types --------------------------------------------------------------------
 

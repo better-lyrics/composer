@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { belongsToInstance } from "insync/instance-predicates";
 import { pieceOf, trackPieces } from "insync/language-pieces";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";

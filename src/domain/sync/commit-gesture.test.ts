@@ -1,6 +1,6 @@
-import { withSeededBackground } from "@/domain/line/background";
-import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { withSeededBackground } from "insync/line-background";
+import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { mainBounds } from "insync/line-bounds";
 import { changedFields, updatedLine } from "@/test/field-updates";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";

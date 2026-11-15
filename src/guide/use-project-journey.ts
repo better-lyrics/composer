@@ -1,5 +1,5 @@
 import { type Journey, projectJourney } from "@/domain/guide/journey";
-import { isProjectFullySynced } from "@/domain/line/sync-progress";
+import { isProjectFullySynced } from "insync/line-sync-progress";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { playableFile, useAudioStore } from "@/stores/audio";

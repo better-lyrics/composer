@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { useProjectStore } from "@/stores/project";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";

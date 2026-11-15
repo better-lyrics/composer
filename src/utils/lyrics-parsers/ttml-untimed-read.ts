@@ -3,7 +3,7 @@ import type { XmlChild } from "insync/xml-node";
 import type { LineTrack, LyricLine } from "insync/line";
 import { syllableJoint, syllablesText } from "insync/line-text";
 import { backgroundTrack, mainTrack } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withMainTrack } from "insync/line-track-writes";
 import { elementRole, isLyricTextElement, LYRIC_ROLES } from "@/utils/lyrics-parsers/ttml-modelled";
 import { mixedContentPassthrough } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { markupBaseText } from "@/utils/ttml-markup";

@@ -1,7 +1,7 @@
-import type { LineTrack, LyricLine } from "insync/line";
-import { backgroundTrack, isSpanTimed, mainTrack } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
-import { lineTimingWordId } from "insync/word-id";
+import type { LineTrack, LyricLine } from "./line";
+import { backgroundTrack, isSpanTimed, mainTrack } from "./line-track";
+import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "./line-track-writes";
+import { lineTimingWordId } from "./word-id";
 
 // -- Functions ----------------------------------------------------------------
 

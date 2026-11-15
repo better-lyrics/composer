@@ -1,18 +1,18 @@
-import { effectiveBounds } from "insync/line-bounds";
-import { syllablesFromFields } from "@/domain/line/line-from-fields";
-import type { BackgroundSource, BackgroundTrack, LyricLine } from "insync/line";
-import { backgroundText } from "insync/line-text";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, untimedSyllable } from "insync/line-track";
+import { effectiveBounds } from "./line-bounds";
+import { syllablesFromFields } from "./line-from-fields";
+import type { BackgroundSource, BackgroundTrack, LyricLine } from "./line";
+import { backgroundText } from "./line-text";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, untimedSyllable } from "./line-track";
 import {
   newBackgroundTrack,
   trackTimingWrite,
   withBackgroundTrack,
   withTrackSpan,
   withTrackSyllables,
-} from "@/domain/line/track-writes";
-import { firstBegin, lastEnd } from "insync/word-bounds";
-import type { WordTiming } from "insync/word-timing";
-import { createInitialBgWords } from "insync/lyric-words";
+} from "./line-track-writes";
+import { firstBegin, lastEnd } from "./word-bounds";
+import type { WordTiming } from "./word-timing";
+import { createInitialBgWords } from "./lyric-words";
 
 // -- Types --------------------------------------------------------------------
 

@@ -1,8 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { withSeededBackground } from "@/domain/line/background";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { withSeededBackground } from "insync/line-background";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { mainBounds } from "insync/line-bounds";
 import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";

@@ -7,7 +7,7 @@ import {
   withRoleTrack,
   withTrackSpan,
   withTrackWords,
-} from "@/domain/line/track-writes";
+} from "insync/line-track-writes";
 import type { Bounds } from "insync/word-bounds";
 import { withIdsOf } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";

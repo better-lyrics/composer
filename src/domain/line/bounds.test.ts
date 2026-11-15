@@ -1,4 +1,4 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { bgBounds, effectiveBounds, mainBounds } from "insync/line-bounds";
 
 import { describe, expect, it } from "vitest";

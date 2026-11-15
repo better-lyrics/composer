@@ -3,7 +3,7 @@ import type { LinkGroup } from "insync/group";
 import { attachedLineIndices } from "insync/instance-enumerate";
 import { instanceName } from "insync/instance-name";
 import type { LyricLine } from "insync/line";
-import { isSyncableLine } from "@/domain/line/sync-progress";
+import { isSyncableLine } from "insync/line-sync-progress";
 import type { SyncCursor } from "@/domain/sync/cursor";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 import { getSplitCharacter } from "@/utils/split-character";

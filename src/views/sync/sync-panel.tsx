@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { hasTransliteration } from "insync/language-has-transliteration";
 import { playingLineIndex } from "insync/line-playing-line";
-import { isProjectFullySynced, syncProgress } from "@/domain/line/sync-progress";
+import { isProjectFullySynced, syncProgress } from "insync/line-sync-progress";
 import { SYNC_START } from "@/domain/sync/address";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "insync/agent";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";

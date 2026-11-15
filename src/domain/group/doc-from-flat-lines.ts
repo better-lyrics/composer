@@ -13,7 +13,7 @@ import { instanceBounds } from "insync/instance-bounds";
 import { instanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
 import { isWordSynced } from "insync/line-predicates";
-import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
+import { isLineFullyTimed, isSyncableLine } from "insync/line-sync-progress";
 
 // -- Types --------------------------------------------------------------------
 

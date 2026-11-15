@@ -9,7 +9,7 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";

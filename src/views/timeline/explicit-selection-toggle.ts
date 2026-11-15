@@ -1,4 +1,4 @@
-import { explicitFieldWords } from "@/domain/line/drawn-track";
+import { explicitFieldWords } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackField } from "insync/line-track";
 import type { SyllableAddress } from "insync/selection-model";

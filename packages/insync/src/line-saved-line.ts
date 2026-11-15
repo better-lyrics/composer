@@ -1,20 +1,12 @@
-import { isEmptyPassthrough } from "insync/passthrough";
-import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
-import { msFromSeconds, secondsFromMs } from "insync/time";
-import { languagesFromSaved, savedLanguages } from "insync/language-saved-languages";
-import { groupFieldsOf } from "insync/line-group-fields";
-import type {
-  BackgroundTrack,
-  LineTrack,
-  LyricLine,
-  MainTrack,
-  Syllable,
-  TrackTiming,
-  UntimedSyllable,
-} from "insync/line";
-import { placesKeptElements } from "@/domain/line/passthrough";
-import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "insync/line-track";
-import { newWordId } from "insync/word-id";
+import { isEmptyPassthrough } from "./passthrough";
+import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "./saved-line";
+import { msFromSeconds, secondsFromMs } from "./time";
+import { languagesFromSaved, savedLanguages } from "./language-saved-languages";
+import { groupFieldsOf } from "./line-group-fields";
+import type { BackgroundTrack, LineTrack, LyricLine, MainTrack, Syllable, TrackTiming, UntimedSyllable } from "./line";
+import { placesKeptElements } from "./line-passthrough";
+import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "./line-track";
+import { newWordId } from "./word-id";
 
 // -- Types --------------------------------------------------------------------
 

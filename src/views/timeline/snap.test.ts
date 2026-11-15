@@ -1,8 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { withSeededBackground } from "@/domain/line/background";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { withSeededBackground } from "insync/line-background";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { gridPoints } from "@/domain/tempo/grid-points";

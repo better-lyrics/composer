@@ -1,5 +1,5 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";

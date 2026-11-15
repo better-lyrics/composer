@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { withSeededBackground } from "@/domain/line/background";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import { isProjectFullySynced } from "@/domain/line/sync-progress";
+import { withSeededBackground } from "insync/line-background";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { isProjectFullySynced } from "insync/line-sync-progress";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

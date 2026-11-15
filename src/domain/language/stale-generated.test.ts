@@ -1,4 +1,4 @@
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import type { LanguageContentOrigin } from "insync/language";
 import { staleGeneratedLanguages } from "insync/language-stale-generated";

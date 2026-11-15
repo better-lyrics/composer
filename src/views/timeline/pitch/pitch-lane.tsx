@@ -1,7 +1,7 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
 import { effectiveBounds } from "insync/line-bounds";
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { isLineTimed } from "insync/line-sync-progress";
 import type { LyricLine } from "insync/line";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
 import { songWordCoverage, spillRuns, wordCoverage } from "@/domain/pitch/spill";

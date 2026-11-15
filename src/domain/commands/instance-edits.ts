@@ -13,9 +13,9 @@ import {
 import { nextInstanceIdx } from "insync/instance-enumerate";
 import { belongsToInstance, isAttachedToInstance } from "insync/instance-predicates";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { withLinePassthrough } from "@/domain/line/passthrough";
+import { withLinePassthrough } from "insync/line-passthrough";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
 import { songEndOrUnbounded } from "insync/song-end";
 

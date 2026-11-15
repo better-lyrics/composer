@@ -1,4 +1,4 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
 import { generateTTML } from "@/utils/ttml";

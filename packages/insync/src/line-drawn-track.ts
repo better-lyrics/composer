@@ -1,8 +1,8 @@
-import { withAlignedTransliteration } from "insync/language-align";
-import type { LanguagePieces, LineLanguages } from "insync/language";
-import { trackPieces } from "insync/language-pieces";
-import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "insync/line";
-import { trackText } from "insync/line-text";
+import { withAlignedTransliteration } from "./language-align";
+import type { LanguagePieces, LineLanguages } from "./language";
+import { trackPieces } from "./language-pieces";
+import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "./line";
+import { trackText } from "./line-text";
 import {
   backgroundTrack,
   fieldWords,
@@ -12,12 +12,12 @@ import {
   type TrackField,
   timedSyllables,
   trackOf,
-} from "insync/line-track";
-import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
-import { lineTimingWordId } from "insync/word-id";
-import { wordFromSpaced } from "insync/word-spaced-words";
-import type { WordTiming } from "insync/word-timing";
-import { withoutSplitCharacter } from "insync/split-character-text";
+} from "./line-track";
+import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "./line-track-writes";
+import { lineTimingWordId } from "./word-id";
+import { wordFromSpaced } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
+import { withoutSplitCharacter } from "./split-character-text";
 
 // -- Types --------------------------------------------------------------------
 

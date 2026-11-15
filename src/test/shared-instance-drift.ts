@@ -5,7 +5,7 @@ import {
   sharedInstancesInLineOrder,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "insync/group";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine, TrackRole } from "insync/line";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

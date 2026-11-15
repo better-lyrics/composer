@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "insync/line";
-import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
-import { backgroundText, lineText } from "insync/line-text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { lineFromFields } from "./line-from-fields";
+import type { LyricLine } from "./line";
+import { reconcileMatchedTiming } from "./line-reconcile-text";
+import { backgroundText, lineText } from "./line-text";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "./line-track";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 const timedSpans = (line: LyricLine) =>
   timedSyllables(mainTrack(line)).map((word) => [word.text, +word.begin.toFixed(3), +word.end.toFixed(3)]);

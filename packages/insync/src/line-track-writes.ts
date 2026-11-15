@@ -1,13 +1,5 @@
-import type {
-  BackgroundSource,
-  BackgroundTrack,
-  LineTrack,
-  LyricLine,
-  MainTrack,
-  Syllable,
-  TrackRole,
-} from "insync/line";
-import { syllablesFromText } from "@/domain/line/syllables-from-text";
+import type { BackgroundSource, BackgroundTrack, LineTrack, LyricLine, MainTrack, Syllable, TrackRole } from "./line";
+import { syllablesFromText } from "./line-syllables-from-text";
 import {
   backgroundTrack,
   isExplicitBlock,
@@ -15,8 +7,8 @@ import {
   isTimedSyllable,
   mainTrack,
   untimedSyllable,
-} from "insync/line-track";
-import type { WordTiming } from "insync/word-timing";
+} from "./line-track";
+import type { WordTiming } from "./word-timing";
 
 // -- Tracks -------------------------------------------------------------------
 

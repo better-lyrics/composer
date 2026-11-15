@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "insync/group";
 import { carryTemplateEdits } from "@/domain/group/template-edit";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";

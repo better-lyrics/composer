@@ -8,7 +8,7 @@ import {
 } from "insync/group-syllable-lineage";
 import { withAlignedWords } from "insync/language-align";
 import { regroupedLanguages, withOwnPieces } from "insync/language-pieces";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import type { BackgroundTrack, LineTrack, LineTracks, LyricLine, MainTrack, Syllable } from "insync/line";
 import {
   backgroundTrack,
@@ -18,7 +18,7 @@ import {
   timedSyllables,
   untimedSyllable,
 } from "insync/line-track";
-import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "@/domain/line/track-writes";
+import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "insync/line-track-writes";
 import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Content ------------------------------------------------------------------

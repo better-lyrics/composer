@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { mainTrack } from "insync/line-track";
 import { getAgentColor } from "insync/agent-colors";
 import { effectiveBounds } from "insync/line-bounds";

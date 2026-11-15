@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "insync/agent-colors";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";

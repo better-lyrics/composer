@@ -1,9 +1,9 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "insync/line";
-import { type SyncGapTrack, timedWordSlotRanges } from "@/domain/line/sync-progress";
-import { backgroundText, lineText } from "insync/line-text";
-import { mainTrack, timedSyllables } from "insync/line-track";
-import type { WordTiming } from "insync/word-timing";
+import { drawnSyllables } from "./line-drawn-track";
+import type { LyricLine } from "./line";
+import { type SyncGapTrack, timedWordSlotRanges } from "./line-sync-progress";
+import { backgroundText, lineText } from "./line-text";
+import { mainTrack, timedSyllables } from "./line-track";
+import type { WordTiming } from "./word-timing";
 
 // -- Types ---------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { fieldsOfLine } from "insync/line-from-fields";
 import { fieldUpdates } from "@/test/field-updates";
 import { useProjectStore } from "@/stores/project";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";

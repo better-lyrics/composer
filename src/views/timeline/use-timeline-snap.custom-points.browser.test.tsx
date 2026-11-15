@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

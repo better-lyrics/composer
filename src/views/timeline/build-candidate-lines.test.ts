@@ -4,7 +4,7 @@
 
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { trackPieces } from "insync/language-pieces";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { useSettingsStore } from "@/stores/settings";

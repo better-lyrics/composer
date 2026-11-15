@@ -7,7 +7,7 @@ import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-sy
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { shiftLineTiming } from "@/domain/line/shift";
-import { withRoleWords, withoutLineTiming } from "@/domain/line/track-writes";
+import { withRoleWords, withoutLineTiming } from "insync/line-track-writes";
 import { roleWords, type WordTrack } from "insync/line-track";
 import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "insync/word-timing";

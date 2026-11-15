@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { describe, expect, it } from "vitest";

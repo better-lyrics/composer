@@ -1,4 +1,4 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { hasAnyTiming } from "insync/line-predicates";
 import { syllablesText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";

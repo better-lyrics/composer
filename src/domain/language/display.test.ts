@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getLanguageDisplayLine } from "@/domain/language/display";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";

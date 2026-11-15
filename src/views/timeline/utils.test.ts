@@ -1,11 +1,11 @@
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import { mainBounds } from "insync/line-bounds";
 /**
  * @vitest-environment node
  */
 import { patchOf, updatedLine } from "@/test/field-updates";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "insync/instance-bounds";

@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { toast } from "sonner";
 import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
 import type { LyricLine } from "insync/line";

@@ -1,4 +1,4 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { pasteLines } from "@/domain/commands/instance-rows";

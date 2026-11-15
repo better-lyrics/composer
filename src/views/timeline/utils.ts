@@ -1,9 +1,9 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { lineInstanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, trackRole } from "insync/line-track";
-import { withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
+import { withMainTrack, withTrackSyllables } from "insync/line-track-writes";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { formatTime as formatTimeBase } from "insync/format-time";
 import { distributeWordsInLine } from "insync/lyric-words";

@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { userEvent } from "vitest/browser";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";

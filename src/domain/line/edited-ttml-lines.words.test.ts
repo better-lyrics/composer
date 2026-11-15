@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
+import { withMainTrack, withRoleWords, withTrackText } from "insync/line-track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

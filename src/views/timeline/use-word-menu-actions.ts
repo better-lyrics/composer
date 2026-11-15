@@ -1,7 +1,7 @@
 import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 import { useCallback } from "react";
 import { fillEmptyTrack, insertWord } from "@/domain/commands/word-structure";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
 import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { newWordId } from "insync/word-id";

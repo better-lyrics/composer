@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";

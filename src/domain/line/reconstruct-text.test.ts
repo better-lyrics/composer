@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { withSplitMarksFromWords, wordContentSpans } from "insync/line-reconstruct-text";
 import { lineText, syllablesText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import { wordKey } from "insync/word-alignment";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
