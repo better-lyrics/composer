@@ -47,6 +47,15 @@ function untimedMainSpan(p: XmlReadElement, begin: number, end: number): { begin
   };
 }
 
+// An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`.
+function untimedBackgroundSpan(bg: XmlReadElement, begin: number, end: number) {
+  if (!bg.hasAttribute("begin") && !bg.hasAttribute("end")) return {};
+  const ownBegin = bg.hasAttribute("begin") ? parseTtmlTimestamp(bg.getAttribute("begin") ?? "") : begin;
+  const ownEnd = bg.hasAttribute("end") ? parseTtmlTimestamp(bg.getAttribute("end") ?? "") : end;
+  if (!Number.isFinite(ownBegin) || !Number.isFinite(ownEnd) || ownEnd < ownBegin) return {};
+  return { backgroundBegin: ownBegin, backgroundEnd: ownEnd };
+}
+
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 
 // -- TTML Parser --------------------------------------------------------------
@@ -182,6 +191,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     let backgroundText: string | undefined;
     let backgroundWords: WordTiming[] | undefined;
     let untimedBackground: UntimedLyric | undefined;
+    let backgroundSpan: { backgroundBegin?: number; backgroundEnd?: number } = {};
     let untimedMain: UntimedLyric | undefined;
 
     if (bgContainer) {
@@ -191,6 +201,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
+        backgroundSpan = untimedBackgroundSpan(bgContainer, begin, end);
       }
     }
 
@@ -214,6 +225,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
             backgroundText,
             backgroundWords,
             backgroundTextSource,
+            ...backgroundSpan,
             ...groupFields,
           },
           splitChar,
@@ -234,6 +246,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
               backgroundText,
               backgroundWords,
               backgroundTextSource,
+              ...backgroundSpan,
               ...groupFields,
             },
             splitChar,

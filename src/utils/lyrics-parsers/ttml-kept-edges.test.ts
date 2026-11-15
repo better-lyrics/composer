@@ -127,7 +127,7 @@ describe("ttml kept data edges", () => {
       `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0:01.000" end="0:03.000">Low tide<span ttm:role="x-bg" begin="0:02.000">(low)</span></p></div></body></tt>`,
     );
     expect(backgroundAfterItsSpan).toContain(
-      '<span ttm:role="x-bg" begin="0:01.000"><span begin="0:01.000" end="0:03.000">(low)</span></span>',
+      '<span ttm:role="x-bg" begin="0:02.000"><span begin="0:02.000" end="0:03.000">(low)</span></span>',
     );
   });
 
