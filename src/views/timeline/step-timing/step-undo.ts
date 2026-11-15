@@ -1,4 +1,4 @@
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { useProjectStore } from "@/stores/project";
 import type { HistoryEntry } from "@/stores/project/history-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

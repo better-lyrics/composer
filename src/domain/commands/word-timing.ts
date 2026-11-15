@@ -7,7 +7,7 @@ import { isSpanTimed, mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LineUpdate, LyricLine } from "insync/line";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { partitionNudgeSelections, shiftSelectionsTogether } from "@/domain/selection/nudge";
 import { resolveAddress, resolveAddresses, resolveLineIndex } from "@/domain/selection/resolve";
 import { stretchSelections } from "@/domain/selection/stretch";

@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { type SelectionGrips, selectionGripEdges } from "@/views/timeline/stretch-grips";

@@ -1,6 +1,6 @@
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { createLine } from "@/test/factories";
 import { wordAddress } from "@/test/word-address";
 import { computeRowLayout } from "@/views/timeline/utils";

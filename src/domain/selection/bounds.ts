@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { wordAt } from "@/domain/selection/resolve";
 import type { Bounds } from "insync/word-bounds";
 

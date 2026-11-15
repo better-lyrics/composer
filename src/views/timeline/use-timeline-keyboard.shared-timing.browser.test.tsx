@@ -4,7 +4,7 @@ import { renderHook } from "vitest-browser-react";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

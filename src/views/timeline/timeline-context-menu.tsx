@@ -5,7 +5,7 @@ import { instanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
 import { selectionBounds } from "@/domain/selection/bounds";
 import { lineWordSelections } from "@/domain/selection/line-selections";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { toAddress } from "@/domain/selection/resolve";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";

@@ -2,7 +2,7 @@ import { instanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { memoByIdentity } from "insync/memo-by-identity";
 import type { RowLayout } from "@/views/timeline/utils";
 

@@ -1,6 +1,6 @@
 import type { LyricLine } from "insync/line";
-import { addressKey, sameAddress } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
+import { addressKey, sameAddress } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
 import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 
 // -- Functions ----------------------------------------------------------------

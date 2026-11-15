@@ -1,5 +1,5 @@
-import { isAddressed, sameAddress } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
+import { isAddressed, sameAddress } from "./selection-identity";
+import type { SyllableAddress } from "./selection-model";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
-import { sameAddress } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
+import { sameAddress } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
 import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "insync/word-timing";

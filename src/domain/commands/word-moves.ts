@@ -9,7 +9,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { trackRole, type WordTrack, untimedSyllablesOf } from "insync/line-track";
 import { mainTimingEdit } from "@/domain/line/track-writes";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";

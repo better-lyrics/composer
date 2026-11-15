@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { wordAddress } from "@/test/word-address";
 import {

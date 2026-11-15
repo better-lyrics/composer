@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { useSettingsStore } from "@/stores/settings";
 import { useStepView } from "@/views/timeline/step-timing/step-next";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

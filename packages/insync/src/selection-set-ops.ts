@@ -1,5 +1,5 @@
-import { sameAddress } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
+import { sameAddress } from "./selection-identity";
+import type { SyllableAddress } from "./selection-model";
 
 // -- Set operations -----------------------------------------------------------
 

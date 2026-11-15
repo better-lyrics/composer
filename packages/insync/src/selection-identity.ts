@@ -1,5 +1,5 @@
-import type { WordTrack } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { WordTrack } from "./line-track";
+import type { SyllableAddress } from "./selection-model";
 
 // -- Identity -----------------------------------------------------------------
 

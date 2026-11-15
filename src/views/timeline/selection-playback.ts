@@ -1,9 +1,9 @@
 import type { SeekReveal } from "@/audio/seek-reveal-intent";
 import { selectionBounds } from "@/domain/selection/bounds";
-import { sameAddress } from "@/domain/selection/identity";
+import { sameAddress } from "insync/selection-identity";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import type { LoopRegion } from "@/domain/selection/loop-region";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { playbackRange } from "@/domain/selection/playback-range";
 import type { Bounds } from "insync/word-bounds";
 import { noteGuideSignal } from "@/lib/guide-signals";

@@ -2,7 +2,7 @@ import type { LinkGroup } from "insync/group";
 import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { wordAt } from "@/domain/selection/resolve";
 import type { WordTiming } from "insync/word-timing";
 import { pluralize } from "insync/pluralize";

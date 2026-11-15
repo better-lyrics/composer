@@ -7,7 +7,7 @@ import {
 import type { LanguagePiece } from "insync/language";
 import type { PositionalPieces } from "insync/language-pieces";
 import { splitTransliterationAtBoundaries } from "insync/language-transliteration-format";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddress } from "@/domain/selection/resolve";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";

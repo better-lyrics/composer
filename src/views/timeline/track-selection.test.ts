@@ -1,4 +1,4 @@
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { nextTrackSelection } from "@/views/timeline/track-selection";
 import { describe, expect, it } from "vitest";
 

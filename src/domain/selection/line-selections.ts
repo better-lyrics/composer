@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { addressOf } from "@/domain/selection/resolve";
 
 // -- Constants ----------------------------------------------------------------

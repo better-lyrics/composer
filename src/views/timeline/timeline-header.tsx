@@ -22,7 +22,7 @@ import { convertLineToWord } from "@/domain/line/span-to-words";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { addressOf } from "@/domain/selection/resolve";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";

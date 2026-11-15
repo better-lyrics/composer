@@ -1,8 +1,8 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { addressOf } from "@/domain/selection/resolve";
-import { mergeAddresses } from "@/domain/selection/set-ops";
+import { mergeAddresses } from "insync/selection-set-ops";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";

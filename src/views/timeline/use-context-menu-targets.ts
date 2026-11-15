@@ -11,7 +11,7 @@ import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "insync/line-track";
-import { isAddressed } from "@/domain/selection/identity";
+import { isAddressed } from "insync/selection-identity";
 import { resolveAddress } from "@/domain/selection/resolve";
 import { hasIntraGroupGap, isInSyllableGroup } from "insync/word-syllable-groups";
 import { isAutoAlignAvailable } from "@/stores/alignment";

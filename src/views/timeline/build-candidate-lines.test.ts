@@ -8,7 +8,7 @@ import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { useSettingsStore } from "@/stores/settings";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { describe, expect, it } from "vitest";
 import { buildCandidateLines } from "./build-candidate-lines";
 import { lineWordSelections } from "@/domain/selection/line-selections";

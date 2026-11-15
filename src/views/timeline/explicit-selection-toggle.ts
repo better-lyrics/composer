@@ -1,7 +1,7 @@
 import { explicitFieldWords } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackField } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import { getSplitCharacter } from "@/utils/split-character";

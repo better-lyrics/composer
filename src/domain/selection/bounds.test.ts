@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { trackRole } from "insync/line-track";
 import { selectionBounds } from "@/domain/selection/bounds";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

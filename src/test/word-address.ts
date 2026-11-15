@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole, type WordTrack } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

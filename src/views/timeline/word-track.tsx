@@ -3,7 +3,7 @@ import type { LanguagePieces } from "insync/language";
 import { pieceOf } from "insync/language-pieces";
 import { timedTransliterationSlice } from "insync/language-transliteration-format";
 import { insertWord } from "@/domain/commands/word-structure";
-import { isAddressed } from "@/domain/selection/identity";
+import { isAddressed } from "insync/selection-identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";
 import { addressOf } from "@/domain/selection/resolve";
 import { shouldRollNeighbour } from "@/domain/word/boundary";

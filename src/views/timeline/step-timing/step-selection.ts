@@ -1,9 +1,9 @@
 import type { LyricLine } from "insync/line";
 import type { LoopRegion } from "@/domain/selection/loop-region";
-import { sameAddress } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
+import { sameAddress } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
 import { liveAddresses, resolveAddress, type ResolvedAddress, toAddress } from "@/domain/selection/resolve";
-import { toggleAddress } from "@/domain/selection/set-ops";
+import { toggleAddress } from "insync/selection-set-ops";
 import { queueOrder } from "@/domain/step-timing/step-queue";
 import { useProjectStore } from "@/stores/project";
 import { getSplitCharacter } from "@/utils/split-character";

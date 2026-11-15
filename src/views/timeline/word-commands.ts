@@ -2,7 +2,7 @@ import { markWordsExplicit, mergeSyllableGroup } from "@/domain/commands/word-ed
 import type { LyricLine } from "insync/line";
 import { type TrackField, trackField, trackWords } from "insync/line-track";
 import { contiguousSelectionRun, type SelectionRun } from "@/domain/selection/contiguous";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { isInSyllableGroup } from "insync/word-syllable-groups";
 import { noteGuideSignal } from "@/lib/guide-signals";

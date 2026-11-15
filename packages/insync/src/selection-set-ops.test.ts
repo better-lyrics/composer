@@ -1,5 +1,5 @@
-import type { SyllableAddress } from "@/domain/selection/model";
-import { mergeAddresses, toggleAddress } from "@/domain/selection/set-ops";
+import type { SyllableAddress } from "./selection-model";
+import { mergeAddresses, toggleAddress } from "./selection-set-ops";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------

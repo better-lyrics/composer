@@ -6,7 +6,7 @@ import { regroupedLanguages } from "insync/language-pieces";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { fieldRole, fieldWords, type TrackField, trackField } from "insync/line-track";
 import { withFieldWords } from "@/domain/line/word-track-edits";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { mergeWordRun } from "insync/word-merge-run";
 

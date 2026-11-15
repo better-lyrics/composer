@@ -2,7 +2,7 @@ import type { LanguageTextVariant } from "@/domain/language/display";
 import { hasTransliteration } from "insync/language-has-transliteration";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { LoopRegion } from "@/domain/selection/loop-region";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import type { Bounds } from "insync/word-bounds";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

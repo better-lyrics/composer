@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { trackRole } from "insync/line-track";
-import { sameAddress } from "@/domain/selection/identity";
+import { sameAddress } from "insync/selection-identity";
 import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
 import { type SyllablePosition, expandSelectionToGroupmates, getSyllablePositions } from "insync/word-syllable-groups";
 import type { DragGhostCell } from "@/views/timeline/drag-ghost";

@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole, type WordTrack } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import type { WordTiming } from "insync/word-timing";
 import { memoByIdentity } from "insync/memo-by-identity";
 

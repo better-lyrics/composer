@@ -2,7 +2,7 @@ import { FileDropZone } from "@/audio/file-drop-zone";
 import { getAgentColor } from "insync/agent-colors";
 import { mainTrack } from "insync/line-track";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
-import { sameAddress } from "@/domain/selection/identity";
+import { sameAddress } from "insync/selection-identity";
 import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";

@@ -18,7 +18,7 @@ import {
 } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withTrackText } from "@/domain/line/track-writes";
 import { withFieldWords } from "@/domain/line/word-track-edits";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { applyWordDeletion } from "@/domain/word/apply-word-deletion";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";

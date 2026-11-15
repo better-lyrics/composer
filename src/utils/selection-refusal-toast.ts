@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import type { Refusal } from "@/domain/commands/outcome";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { type SelectionCommand, selectionRefusal } from "@/domain/selection/selection-refusal";
 
 // -- Constants -----------------------------------------------------------------

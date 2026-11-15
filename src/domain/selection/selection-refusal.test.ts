@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { selectionRefusal } from "@/domain/selection/selection-refusal";
 
 // -- Helpers ------------------------------------------------------------------

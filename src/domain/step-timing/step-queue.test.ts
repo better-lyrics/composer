@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { chainedNext, nextInQueue, queueOrder } from "@/domain/step-timing/step-queue";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
