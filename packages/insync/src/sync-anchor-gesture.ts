@@ -4,7 +4,7 @@ import { isAttachedToInstance } from "./instance-predicates";
 import { applyLineUpdates } from "./line-apply-line-updates";
 import { mainBounds } from "./line-bounds";
 import type { LineUpdate, LyricLine } from "./line";
-import { previousLineEnd } from "./line-neighbour-bounds";
+import { previousMainEnd } from "./line-neighbour-bounds";
 import { type SyncAddress, sameSyncPosition } from "./sync-address";
 import { type GestureContext, type SyncGesture, commitGesture } from "./sync-commit-gesture";
 import { type SyncCursor, advanceCursor } from "./sync-cursor";
@@ -20,7 +20,7 @@ interface AnchorGesture {
   anchorCursor: SyncCursor;
   resumeCursor: SyncCursor;
   clampedTo: number | null;
-  // Placed already, and the tap lands before the line above it ends: the tap only ends that line.
+  // Placed already, and the tap lands before the main track of the line above ends: the tap only ends that line.
   keepsPlacement: boolean;
 }
 
@@ -73,7 +73,7 @@ function anchorGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
     lines.filter((line) => isAttachedToInstance(line, groupId, instanceIdx)).map((line) => line.id),
   );
   const precedingUpdates = commit.lineUpdates.filter((update) => !instanceIds.has(update.id));
-  const lineAboveEnd = previousLineEnd(applyLineUpdates(lines, precedingUpdates), anchorCursor.lineIndex);
+  const lineAboveEnd = previousMainEnd(applyLineUpdates(lines, precedingUpdates), anchorCursor.lineIndex);
   return {
     groupId,
     instanceIdx,

@@ -129,7 +129,7 @@ function useSyncHandlers({
         groups: useProjectStore.getState().groups,
         splitChar: getSplitCharacter(),
       });
-      if (anchor?.keepsPlacement) {
+      if (anchor?.keepsPlacement && anchor.precedingUpdates.length > 0) {
         useProjectStore.getState().commit(syncClosingTap(anchor.precedingUpdates));
         const position = syncAddressAt(useProjectStore.getState().lines, anchor.anchorCursor);
         setSyncState((prev) => ({ ...prev, position }));

@@ -143,7 +143,7 @@ describe("anchorGesture", () => {
   });
 
   describe("regressions", () => {
-    it("regression: the tap that ends the line before a placed instance leaves the instance where it is", () => {
+    it("regression: a tap inside the background echo of the line above still moves a placed instance there", () => {
       const verseWithBackground = createLine({
         id: "v1",
         text: "Walking home",
@@ -156,7 +156,7 @@ describe("anchorGesture", () => {
       });
       const lines = song(22).map((line) => (line.id === "v1" ? verseWithBackground : line));
       const { anchor } = gestureAt(lines, "tap-word", { lineIndex: 3, wordIndex: 0 }, 21.2);
-      expect(anchor).toMatchObject({ keepsPlacement: true });
+      expect(anchor).toMatchObject({ keepsPlacement: false, start: 21.2 });
       expect(anchor?.precedingUpdates.map((update) => update.id)).toEqual(["v1"]);
     });
 

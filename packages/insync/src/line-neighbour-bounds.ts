@@ -1,4 +1,4 @@
-import { effectiveBounds } from "./line-bounds";
+import { effectiveBounds, mainBounds } from "./line-bounds";
 import type { LyricLine } from "./line";
 
 // -- Functions ----------------------------------------------------------------
@@ -21,6 +21,15 @@ function previousLineEnd(lines: readonly LyricLine[], index: number): number {
   return 0;
 }
 
+// Where the main track of the nearest line before `index` with one ends; a background may run past it.
+function previousMainEnd(lines: readonly LyricLine[], index: number): number {
+  for (let previous = index - 1; previous >= 0; previous--) {
+    const bounds = mainBounds(lines[previous]);
+    if (bounds) return bounds.end;
+  }
+  return 0;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { nextLineStart, previousLineEnd };
+export { nextLineStart, previousLineEnd, previousMainEnd };

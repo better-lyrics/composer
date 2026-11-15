@@ -449,6 +449,18 @@ describe("placeInstance", () => {
     expect(roleWords(lineById("c1"), "main")).toBeUndefined();
   });
 
+  it("regression: places an instance over the background echo of the line above", () => {
+    const verse = createLine({
+      id: "v",
+      text: "Walking",
+      backgroundText: "(home)",
+      words: [{ text: "Walking", begin: 20, end: 21 }],
+      backgroundWords: [{ text: "(home)", begin: 20.8, end: 22 }],
+    });
+    seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
+    expect(placed("g1", 1, 21.5, SONG_LENGTH)).toBe(true);
+  });
+
   it("copies a preceding edit on a shared instance before placing, so the placed copy includes it", () => {
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
     const closeLastWord = fieldUpdates([
