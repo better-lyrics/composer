@@ -1,4 +1,4 @@
-import { withShownBackground } from "@/domain/edit-text/shown-background";
+import { withShownBackground } from "insync/edit-text-shown-background";
 import { withoutBackground } from "insync/line-background";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";

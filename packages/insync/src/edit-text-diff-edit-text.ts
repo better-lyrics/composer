@@ -1,8 +1,8 @@
-import { sameSharedContent } from "insync/group-carried-line";
-import { withLineIds } from "insync/group-line-ids";
-import { isLinked } from "insync/instance-predicates";
-import type { LyricLine } from "insync/line";
-import { isStructurallyEqual } from "insync/structural-equal";
+import { sameSharedContent } from "./group-carried-line";
+import { withLineIds } from "./group-line-ids";
+import { isLinked } from "./instance-predicates";
+import type { LyricLine } from "./line";
+import { isStructurallyEqual } from "./structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

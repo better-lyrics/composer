@@ -1,9 +1,9 @@
-import { withoutBackground, withSeededBackground } from "insync/line-background";
-import type { LyricLine, MainTrack } from "insync/line";
-import { trackText } from "insync/line-text";
-import { backgroundTrack, mainTrack } from "insync/line-track";
-import { newBackgroundTrack, withBackgroundTrack, withTrackText } from "insync/line-track-writes";
-import { classifyLine } from "insync/background-vocal-extraction";
+import { withoutBackground, withSeededBackground } from "./line-background";
+import type { LyricLine, MainTrack } from "./line";
+import { trackText } from "./line-text";
+import { backgroundTrack, mainTrack } from "./line-track";
+import { newBackgroundTrack, withBackgroundTrack, withTrackText } from "./line-track-writes";
+import { classifyLine } from "./background-vocal-extraction";
 
 // -- Functions ----------------------------------------------------------------
 

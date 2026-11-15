@@ -1,5 +1,5 @@
 import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
-import { diffEditTextChange, withMovedTextDetached } from "@/domain/edit-text/diff-edit-text";
+import { diffEditTextChange, withMovedTextDetached } from "insync/edit-text-diff-edit-text";
 import { editTextWithRewrittenRows } from "insync/edit-text";
 import { type BackgroundRange, NO_RANGES } from "insync/edit-text-shown-row";
 import type { LinkGroup } from "insync/group";
