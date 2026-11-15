@@ -95,7 +95,13 @@ function childrenOf(
   if (ORDERED_NODES.has(node)) found.push({ anchor, kind: "order", name: node, value: JSON.stringify(order) });
 }
 
-function nodeOf(node: TtmlNode, element: XmlReadElement, anchor: string, found: Found, visit?: (child: XmlReadElement) => void) {
+function nodeOf(
+  node: TtmlNode,
+  element: XmlReadElement,
+  anchor: string,
+  found: Found,
+  visit?: (child: XmlReadElement) => void,
+) {
   attributesOf(node, element, anchor, found);
   childrenOf(node, element, anchor, found, visit);
 }

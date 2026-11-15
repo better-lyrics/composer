@@ -47,7 +47,8 @@ function trackAnchors(container: XmlReadElement, timed: readonly { id: string }[
   const syllableOf = new Map(spans.length === timed.length ? spans.map((span, index) => [span, timed[index].id]) : []);
   return (child) => {
     const element = asElement(child);
-    if (!element) return spans.length === 0 && ("text" in child ? child.text : "").trim() !== "" ? TEXT_ANCHOR : undefined;
+    if (!element)
+      return spans.length === 0 && ("text" in child ? child.text : "").trim() !== "" ? TEXT_ANCHOR : undefined;
     const role = elementRole(element);
     if (holdsBackground && role === BACKGROUND_ANCHOR) return BACKGROUND_ANCHOR;
     if (spans.length > 0) return syllableOf.get(element);

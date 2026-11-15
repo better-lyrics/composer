@@ -1,12 +1,7 @@
 import type { LyricLine } from "../line";
 import type { LyricCommand } from "./command";
 import { type LyricRoot, type Outcome, applied, changedLineIds, refused } from "./outcome";
-import {
-  type GroupPlan,
-  type RepeatingSections,
-  planGroupSharing,
-  planRepeatingSections,
-} from "../group-plans";
+import { type GroupPlan, type RepeatingSections, planGroupSharing, planRepeatingSections } from "../group-plans";
 import { unlinkLines } from "../group-linking";
 import type { SharingOutcome } from "../group-shared-placement";
 import type { LinkGroup } from "../group";

@@ -4,12 +4,7 @@ import { unlinkLines } from "../group-linking";
 import { withNewInstance, withOwnTiming } from "../group-own-timing";
 import { placeSharedInstance, realignSharedInstance } from "../group-shared-placement";
 import { wholeSongRange } from "../group-shared-timing";
-import {
-  type LineTemplate,
-  offsetTemplateWords,
-  templateBackgroundFields,
-  templateLanguages,
-} from "../group-template";
+import { type LineTemplate, offsetTemplateWords, templateBackgroundFields, templateLanguages } from "../group-template";
 import { nextInstanceIdx } from "../instance-enumerate";
 import { belongsToInstance, isAttachedToInstance } from "../instance-predicates";
 import { applyLineUpdates } from "../line-apply-line-updates";

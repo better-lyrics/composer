@@ -38,7 +38,11 @@ function directTimedSpans(element: XmlReadElement): XmlReadElement[] {
   return directChildren(element, "span").filter((span) => span.hasAttribute("begin"));
 }
 
-function mappedPiecesFromSpans(words: WordTiming[] | undefined, text: string, spans: XmlReadElement[]): LanguagePieces | null {
+function mappedPiecesFromSpans(
+  words: WordTiming[] | undefined,
+  text: string,
+  spans: XmlReadElement[],
+): LanguagePieces | null {
   if (!words || words.length !== spans.length || spans.length === 0) return null;
   const fragments = spans.map((span) => span.textContent.trim());
   if (fragments.some((fragment) => !fragment)) return null;
@@ -71,7 +75,12 @@ function mappedPiecesFromSpans(words: WordTiming[] | undefined, text: string, sp
   );
 }
 
-function parseTranslations(root: XmlReadElement, lines: LyricLine[], lineIndexByKey: Map<string, number>, splitChar: string) {
+function parseTranslations(
+  root: XmlReadElement,
+  lines: LyricLine[],
+  lineIndexByKey: Map<string, number>,
+  splitChar: string,
+) {
   const translations = directChildren(root, "translations")[0];
   if (!translations) return;
   for (const container of directChildren(translations, "translation")) {
@@ -155,9 +164,7 @@ function parseTransliterations(
       const background =
         Array.from(textElement.getElementsByTagName("span")).find((span) => role(span) === "x-bg") ?? null;
       const text = decodeTransliterationText(textWithoutBackground(textElement));
-      const romanBackground = background
-        ? decodeTransliterationText(background.textContent) || undefined
-        : undefined;
+      const romanBackground = background ? decodeTransliterationText(background.textContent) || undefined : undefined;
       lines[index] = withTransliteration(
         lines[index],
         language,

@@ -49,7 +49,11 @@ function sectionFrom(
 
 // Every section of the body with a song part, its own times, unmodelled data or nested sections becomes a part of
 // the lines it holds. A plain `<div>`, the only kind Composer writes, makes none.
-function partsFromDivs(doc: XmlReadDocument, lineByParagraph: ReadonlyMap<XmlReadElement, LyricLine>, splitChar: string): Part[] {
+function partsFromDivs(
+  doc: XmlReadDocument,
+  lineByParagraph: ReadonlyMap<XmlReadElement, LyricLine>,
+  splitChar: string,
+): Part[] {
   const body = Array.from(doc.documentElement.children).find((child) => child.tagName === "body");
   return (body ? childSections(body) : []).flatMap((div) => {
     const section = sectionFrom(div, lineByParagraph, splitChar);

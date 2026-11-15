@@ -5,13 +5,7 @@ import type { Agent } from "../agent";
 import type { LyricLine } from "../line";
 import { withLinePassthrough } from "../line-passthrough";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
-import {
-  type AnchorOf,
-  noAnchors,
-  rootAnchors,
-  sectionAnchors,
-  trackAnchors,
-} from "./anchors";
+import { type AnchorOf, noAnchors, rootAnchors, sectionAnchors, trackAnchors } from "./anchors";
 import { ITUNES_NS, isModelledAttribute, modelledChildTest, type TtmlNode } from "./modelled";
 import { backgroundEnvelope, capturedTimes, lineEnvelope } from "./kept-times";
 import { markupBaseText } from "./markup";
@@ -105,7 +99,11 @@ function withAgentCapture(agent: Agent, element: XmlReadElement, nameElement: Xm
 const withTimes = (times: Passthrough["times"]) => (times ? { times } : {});
 
 // A `<p>` and its x-bg container: unmodelled data, and their own times when the writer would not derive them.
-function withParagraphCapture(line: LyricLine, paragraph: XmlReadElement, background: XmlReadElement | null): LyricLine {
+function withParagraphCapture(
+  line: LyricLine,
+  paragraph: XmlReadElement,
+  background: XmlReadElement | null,
+): LyricLine {
   const kept = nodePassthrough(
     "p",
     paragraph,

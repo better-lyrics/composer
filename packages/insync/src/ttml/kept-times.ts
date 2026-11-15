@@ -47,7 +47,11 @@ type WrittenTimes = readonly [begin: string | undefined, end: string | undefined
 
 // A node's own times, either or both, kept when the source wrote them; `onlyIfDifferent` skips times the writer
 // derives anyway.
-function capturedTimes(element: XmlReadElement, envelope: Envelope | null, onlyIfDifferent: boolean): KeptTimes | undefined {
+function capturedTimes(
+  element: XmlReadElement,
+  envelope: Envelope | null,
+  onlyIfDifferent: boolean,
+): KeptTimes | undefined {
   const begin = element.getAttribute("begin");
   const end = element.getAttribute("end");
   if ((begin === null && end === null) || !envelope) return undefined;

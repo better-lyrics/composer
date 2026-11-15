@@ -7,11 +7,7 @@ import { lineTranslations, lineTransliteration } from "../language-line-language
 import type { ProjectMetadata } from "../metadata";
 import { toComposerMeta, YOUTUBE_VIDEO_ID_KEY } from "../project-metadata-ttml";
 import { ITUNES_NS } from "./modelled";
-import {
-  hasAlternateText,
-  renderTranslationContent,
-  renderTransliterationContent,
-} from "./alternate-content";
+import { hasAlternateText, renderTranslationContent, renderTransliterationContent } from "./alternate-content";
 import type { KeyedLine } from "./line-keys";
 import { keptContent } from "./markup";
 import { keptAttributes, keptElementLines } from "./passthrough-write";
