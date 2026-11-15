@@ -1,4 +1,4 @@
-import { dedupeIgnoringCase } from "@/domain/agent/performer-agents";
+import { dedupeIgnoringCase } from "insync/agent-performer-agents";
 import type { ProjectMetadata } from "insync/metadata";
 
 // -- Constants ----------------------------------------------------------------

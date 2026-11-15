@@ -1,11 +1,12 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { roleWords } from "insync/line-track";
-import { mainTimingWrite, withRoleWords } from "@/domain/line/track-writes";
-import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
+import { mainTimingWrite, withRoleWords } from "insync/line-track-writes";
+import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
-import type { BoundaryEdge } from "@/domain/word/boundary";
+import type { BoundaryEdge } from "insync/word-boundary";
 import { createLine } from "@/test/factories";
-import { type RetimeChange, createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { type RetimeChange, createWordTimingOps } from "insync/timing-word-ops";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Retime seam --------------------------------------------------------------
 
@@ -22,13 +23,18 @@ function retimeInto(
   wordIdx: number,
 ): void {
   const line = lines[lineIdx];
-  const update = line ? retimeEdit({ line, wordIdx, edge, change, range: UNBOUNDED_TIME_RANGE }) : null;
+  const update = line
+    ? retimeEdit({ line, wordIdx, edge, change, range: UNBOUNDED_TIME_RANGE, splitChar: DEFAULT_SPLIT_CHARACTER })
+    : null;
   if (update) calls.push(update);
 }
 
 // -- Factory instances --------------------------------------------------------
 
-const wordsOps = createWordTimingOps({ getWords: (line) => drawnSyllables(line, "main"), writeWords: mainTimingWrite });
+const wordsOps = createWordTimingOps({
+  getWords: (line) => drawnSyllables(line, "main", DEFAULT_SPLIT_CHARACTER),
+  writeWords: mainTimingWrite,
+});
 const bgOps = createWordTimingOps({
   getWords: (line) => roleWords(line, "bg"),
   writeWords: (line, words) => ({ tracks: withRoleWords(line, "bg", words).tracks }),

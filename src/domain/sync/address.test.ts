@@ -1,11 +1,12 @@
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { convertLineToWord } from "@/domain/line/span-to-words";
+import { convertLineToWord } from "insync/line-span-to-words";
 import type { LyricLine } from "insync/line";
-import { withRoleWords } from "@/domain/line/track-writes";
-import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
+import { withRoleWords } from "insync/line-track-writes";
+import { syncAddressAt, syncAddressPosition } from "insync/sync-address";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const SLOW = { id: "y1", text: "Slow ", begin: 1, end: 2 };
 const TIDE = { id: "y2", text: "tide ", begin: 2, end: 3 };
@@ -17,7 +18,13 @@ const tideLine = (
 ) => createLine({ id: "tide", text, words });
 
 const editTo = (line: LyricLine, text: string): LyricLine[] => {
-  const action = decideEditTextAction({ text, defaultAgentId: "v1", lines: [line], groups: [] });
+  const action = decideEditTextAction({
+    text,
+    defaultAgentId: "v1",
+    lines: [line],
+    groups: [],
+    splitCharacter: DEFAULT_SPLIT_CHARACTER,
+  });
   if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
   return action.finalLines;
 };

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
+import { withMainTrack, withRoleWords, withTrackText } from "insync/line-track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -31,7 +32,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       expect(words[0]).toBe((stored[0] && roleWords(stored[0], "main"))?.[0]);
       expect(words[2]).toBe((stored[0] && roleWords(stored[0], "main"))?.[2]);
       expect(words[1]).toEqual({ text: "lo", sep: " ", begin: 1.6, end: 2, joinsNext: false });
-      expect(lineText(merged[0]!)).toBe("Hel|lo world");
+      expect(lineText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("Hel|lo world");
     });
 
     it("regression: editing one background word timing keeps the other background words as stored", () => {
@@ -81,7 +82,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       expect(words[0]).toBe((stored[0] && roleWords(stored[0], "bg"))?.[0]);
       expect(words[1]).toBe((stored[0] && roleWords(stored[0], "bg"))?.[1]);
       expect(words[2]).toEqual({ text: "ohh", sep: "", begin: 1.8, end: 2, joinsNext: false });
-      expect(backgroundText(merged[0]!)).toBe("yeah o|ohh");
+      expect(backgroundText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("yeah o|ohh");
     });
   });
 
@@ -113,12 +114,12 @@ describe("mergeEditedTtmlLines · word timing", () => {
     const loaded = createLine({ id: "a", text: "a b" });
     const [first] = mainTrack(loaded).syllables;
     const tapped = withRoleWords(loaded, "main", [{ ...first, begin: 1, end: 2 }]);
-    const typed = withMainTrack(tapped, withTrackText(mainTrack(tapped), "a b c d"));
+    const typed = withMainTrack(tapped, withTrackText(mainTrack(tapped), "a b c d", DEFAULT_SPLIT_CHARACTER));
 
     const merged = mergeEditedExport([typed], (ttml) => ttml.replace('end="0:02.000"', 'end="0:02.500"'))[0]!;
 
     const ids = mainTrack(merged).syllables.map((syllable) => syllable.id);
-    expect(lineText(merged)).toBe("a b c d");
+    expect(lineText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("a b c d");
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -132,8 +133,8 @@ describe("mergeEditedTtmlLines · word timing", () => {
     const merged = mergeEditedExport([partly], (ttml) => ttml.replace('ttm:agent="v1"', 'ttm:agent="v2"'))[0]!;
 
     expect(mainTrack(merged).agentId).toBe("v2");
-    expect(lineText(merged)).toBe("a b c d");
-    expect(backgroundText(merged)).toBe("ooh ah");
+    expect(lineText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("a b c d");
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh ah");
   });
 
   it("takes a span's kept data from the edited file and keeps every word as stored", () => {
@@ -170,8 +171,8 @@ describe("mergeEditedTtmlLines · word timing", () => {
           ),
       )[0]!;
 
-      expect(lineText(merged)).toBe("a b c d");
-      expect(backgroundText(merged)).toBe("ooh ah");
+      expect(lineText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("a b c d");
+      expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh ah");
     });
 
     it("an edited file that holds the rest as untimed text does not repeat it", () => {
@@ -187,8 +188,8 @@ describe("mergeEditedTtmlLines · word timing", () => {
           ),
       )[0]!;
 
-      expect(lineText(merged)).toBe("a b c d");
-      expect(backgroundText(merged)).toBe("ooh ah");
+      expect(lineText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("a b c d");
+      expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh ah");
     });
 
     it("a timed word deleted in the edited file stays deleted", () => {
@@ -196,7 +197,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
         ttml.replace(/<span begin="0:02.000"[^>]*>world<\/span>/, ""),
       )[0]!;
 
-      expect(lineText(merged).trim()).toBe("Hel|lo");
+      expect(lineText(merged, DEFAULT_SPLIT_CHARACTER).trim()).toBe("Hel|lo");
     });
 
     it("regression: an edited file that times part of a line-synced line keeps the rest", () => {
@@ -205,7 +206,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
         ttml.replace(">a b c</p>", '><span begin="0:01.000" end="0:02.000">a</span></p>'),
       )[0]!;
 
-      expect(lineText(merged)).toBe("a b c");
+      expect(lineText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("a b c");
       expect(timedSyllables(mainTrack(merged)).map((word) => word.text)).toEqual(["a"]);
     });
   });

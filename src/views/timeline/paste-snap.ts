@@ -1,4 +1,4 @@
-import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import { type TimeRange, timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
 import { snapPointTimes } from "@/domain/snap-point/model";

@@ -2,20 +2,21 @@ import { IconPlus } from "@tabler/icons-react";
 import { useCallback } from "react";
 import { placeLineAt } from "@/domain/commands/line-timing";
 import { fillEmptyTrack } from "@/domain/commands/word-structure";
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import type { WordTrack } from "insync/line-track";
-import { addressOf } from "@/domain/selection/resolve";
-import { newWordId } from "@/domain/word/id";
+import { addressOf } from "insync/selection-resolve";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
-import { stripSplitCharacter } from "@/utils/split-character";
-import { createTrackWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { findInsertionSlot } from "@/utils/word-spaces";
+import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
+import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
+import { findInsertionSlot } from "insync/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
 import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
@@ -122,7 +123,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
 
 const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, duration, rowHeight }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const displayText = stripSplitCharacter(lineText(line));
+  const displayText = stripSplitCharacter(lineText(line, getSplitCharacter()));
 
   return (
     <div
@@ -137,7 +138,10 @@ const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, durati
       >
         <span className="truncate pr-0.5">{truncateLabel(displayText, MAIN_LABEL_MAX_CHARS)}</span>
         {displayText.length > 0 && (
-          <SyncLineButton lineId={line.id} wordCount={splitIntoWordsWithMeta(lineText(line)).parts.length} />
+          <SyncLineButton
+            lineId={line.id}
+            wordCount={splitIntoWordsWithMeta(lineText(line, getSplitCharacter()), getSplitCharacter()).parts.length}
+          />
         )}
       </div>
     </div>
@@ -158,7 +162,7 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
-    {truncateLabel(backgroundText(line) ?? "", BG_LABEL_MAX_CHARS) || "BG"}
+    {truncateLabel(backgroundText(line, getSplitCharacter()) ?? "", BG_LABEL_MAX_CHARS) || "BG"}
   </div>
 );
 

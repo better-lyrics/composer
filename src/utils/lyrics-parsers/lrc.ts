@@ -1,12 +1,12 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { syllablesText } from "@/domain/line/text";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import { hasAnyTiming } from "insync/line-predicates";
+import { syllablesText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";
-import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { type ParseIssue, type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
-import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
+import { DEFAULT_MIN_WORD_DURATION } from "insync/word-spaces";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -204,7 +204,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
 
   fillLineEnds(lines, gapMarkers, metadata.duration ?? fallbackDuration);
 
-  const reconciledLines = lines.map((line) => lineFromFields(line));
+  const reconciledLines = lines.map((line) => lineFromFields(line, getSplitCharacter()));
   return {
     lines: reconciledLines,
     metadata,

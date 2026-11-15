@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { effectiveBounds } from "insync/line-bounds";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { parseLrcClock } from "@/utils/lyrics-parsers/lrc";
 import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const RUMORS_LRC = `[ti:Rumors]
 [ar:Test Artist]
@@ -64,13 +65,13 @@ describe("parseLyricsFile - LRC separators", () => {
 describe("T6 LRC empty timed line", () => {
   it("ends the line before an empty [00:22.00] marker at 22 s", () => {
     const parsed = parseLyricsFile("rumors.lrc", RUMORS_LRC, 30);
-    const anything = parsed.lines.find((line) => lineText(line).startsWith("Of anything"));
+    const anything = parsed.lines.find((line) => lineText(line, DEFAULT_SPLIT_CHARACTER).startsWith("Of anything"));
     expect(anything && effectiveBounds(anything)?.end).toBe(22);
   });
 
   it("does not emit the gap marker as a lyric line", () => {
     const parsed = parseLyricsFile("rumors.lrc", RUMORS_LRC, 30);
-    expect(parsed.lines.map((line) => lineText(line))).not.toContain("");
+    expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).not.toContain("");
     expect(parsed.lines).toHaveLength(6);
   });
 
@@ -117,7 +118,7 @@ describe("T13 invalid LRC timestamps", () => {
       { line: 2, text: "[aa:bb.cc]garbage", reason: "unparsed" },
       { line: 3, text: "plain line no timestamp", reason: "unparsed" },
     ]);
-    expect(parsed.lines.map((line) => lineText(line))).toEqual(["valid"]);
+    expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["valid"]);
   });
 
   it("does not report metadata tags", () => {
@@ -127,19 +128,19 @@ describe("T13 invalid LRC timestamps", () => {
 
   it("keeps the valid tags of a line that also carries an invalid one", () => {
     const parsed = parseLyricsFile("song.lrc", "[00:01.00][00:75.00]Chorus\n[00:05.00]Next", 10);
-    expect(parsed.lines.filter((line) => lineText(line) === "Chorus")).toHaveLength(1);
+    expect(parsed.lines.filter((line) => lineText(line, DEFAULT_SPLIT_CHARACTER) === "Chorus")).toHaveLength(1);
     expect(parsed.issues).toEqual([{ line: 1, text: "[00:01.00][00:75.00]Chorus", reason: "ignored-timestamp" }]);
   });
 
   it("reports a line skipped for an invalid inline clock even when a line tag was also ignored", () => {
     const parsed = parseLyricsFile("song.lrc", "[00:01.00][00:75.00]<00:01.00>Hi <00:61.00>there\n[00:05.00]Next", 10);
-    expect(parsed.lines.map((line) => lineText(line))).toEqual(["Next"]);
+    expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Next"]);
     expect(skippedLineCount(parsed.issues)).toBe(1);
   });
 
   it("reports an invalid inline word clock and skips the line", () => {
     const parsed = parseLyricsFile("song.lrc", "[00:01.00]<00:01.00>Hi <00:61.00>there\n[00:05.00]Next", 10);
-    expect(parsed.lines.map((line) => lineText(line))).toEqual(["Next"]);
+    expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Next"]);
     expect(parsed.issues[0]?.reason).toBe("invalid-timestamp");
   });
 
@@ -153,7 +154,7 @@ describe("LRC metadata tags with an empty value", () => {
   it("does not report an empty [by:] tag as unparsed", () => {
     const parsed = parseLyricsFile("song.lrc", "[by:]\n[00:01.00]Only", 10);
     expect(parsed.issues).toEqual([]);
-    expect(parsed.lines.map((line) => lineText(line))).toEqual(["Only"]);
+    expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Only"]);
   });
 
   it("does not write an empty title or artist", () => {
@@ -199,7 +200,7 @@ describe("LRC with singer or background vocal tags", () => {
     it("keeps a lyric that starts with an uppercase V and a number", () => {
       const parsed = parseLyricsFile("song.lrc", "[00:01.00]V8: engine roar", 10);
       expect(parsed.issues).toEqual([]);
-      expect(parsed.lines.map((line) => lineText(line))).toEqual(["V8: engine roar"]);
+      expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["V8: engine roar"]);
     });
 
     it("refuses an uppercase background tag", () => {
@@ -210,7 +211,10 @@ describe("LRC with singer or background vocal tags", () => {
     it("keeps lyrics that only mention v1 or bg", () => {
       const parsed = parseLyricsFile("song.lrc", "[00:01.00]Track v1: the bg mix\n[00:02.00]Say v2:", 10);
       expect(parsed.issues).toEqual([]);
-      expect(parsed.lines.map((line) => lineText(line))).toEqual(["Track v1: the bg mix", "Say v2:"]);
+      expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "Track v1: the bg mix",
+        "Say v2:",
+      ]);
     });
   });
 

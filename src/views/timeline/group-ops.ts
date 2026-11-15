@@ -1,17 +1,18 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { backgroundTrack, isSpanTimed, mainTrack, roleWords } from "insync/line-track";
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import { type LineTemplate, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
+import { initialGroupSharing } from "insync/group-initial-sharing";
+import { type LineTemplate, languagesToTemplate, wordsToTemplate } from "insync/group-template";
 import type { LinkGroup } from "insync/group";
-import { trackPieces } from "@/domain/language/pieces";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { trackPieces } from "insync/language-pieces";
+import { instanceBounds } from "insync/instance-bounds";
 import { linesOfInstance } from "insync/instance-enumerate";
 import { mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { linePassthroughOf } from "@/domain/line/passthrough";
-import { backgroundText, lineText } from "@/domain/line/text";
-import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { linePassthroughOf } from "insync/line-passthrough";
+import { backgroundText, lineText } from "insync/line-text";
+import { GROUP_COLORS, pickNextGroupColor } from "insync/group-colors";
+import { songEndOrUnbounded } from "insync/song-end";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -109,6 +110,7 @@ function createGroupFromSelection(
     updatedLines,
     { id: groupId, label, color, templateVersion: 1 },
     shareTimingInNewGroups,
+    getSplitCharacter(),
     songEndOrUnbounded(options.duration ?? 0),
   );
   return { group: shared.group, updatedLines: shared.lines };
@@ -127,7 +129,7 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
   for (const line of matched) {
     const mainWords = roleWords(line, "main");
     const background = backgroundTrack(line);
-    const drawnBackground = drawnSyllables(line, "bg");
+    const drawnBackground = drawnSyllables(line, "bg", getSplitCharacter());
     const bgWords = drawnBackground.length > 0 ? drawnBackground : undefined;
     const tplWords = mainWords && wordsToTemplate(mainWords, startTime, trackPieces(line, "main"));
     const tplBgWords = bgWords && wordsToTemplate(bgWords, startTime, trackPieces(line, "bg"));
@@ -135,12 +137,12 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
     const lineBounds = mainBounds(line);
     const passthrough = linePassthroughOf(line);
     templates.push({
-      text: lineText(line),
+      text: lineText(line, getSplitCharacter()),
       agentId: mainTrack(line).agentId,
       relativeBegin: lineBounds ? lineBounds.begin - startTime : undefined,
       relativeEnd: lineBounds ? lineBounds.end - startTime : undefined,
       words: tplWords,
-      backgroundText: backgroundText(line),
+      backgroundText: backgroundText(line, getSplitCharacter()),
       backgroundWords: tplBgWords,
       backgroundTextSource: background?.source,
       ...(background && isSpanTimed(background) && { backgroundLineSynced: true }),

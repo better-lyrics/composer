@@ -1,7 +1,7 @@
 import { IconFolderOpen } from "@tabler/icons-react";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { fullySyncedLineCount } from "@/domain/line/sync-progress";
+import { fullySyncedLineCount } from "insync/line-sync-progress";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
@@ -23,6 +23,7 @@ import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import type { UnisonExportSource } from "@/views/export/unison/submit-card-shell";
 import { UnisonPanel } from "@/views/export/unison/unison-panel";
 import { useAlignmentReview } from "@/views/export/use-alignment-review";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -51,7 +52,7 @@ const ExportPanel: React.FC = () => {
   } = useExportTtml();
 
   const projectSession = useProjectStore((state) => state.projectSession);
-  const fullySyncedLines = useProjectStore((state) => fullySyncedLineCount(state.lines));
+  const fullySyncedLines = useProjectStore((state) => fullySyncedLineCount(state.lines, getSplitCharacter()));
   const unisonEnabled = useUnisonFeatures().enabled;
   const signedInToUnison = useUnisonSession() !== null && unisonEnabled;
   const [copied, setCopied] = useState(false);

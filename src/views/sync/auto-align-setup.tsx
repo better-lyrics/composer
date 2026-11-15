@@ -1,7 +1,7 @@
 import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import { coversLanguage } from "@/domain/alignment/language";
-import { hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { languageName } from "@/domain/project/language";
+import { hasMainLyrics, isLineSynced, isWordSynced } from "insync/line-predicates";
+import { languageName } from "insync/project-language";
 import { useSelectedAlignmentModel } from "@/hooks/useAlignmentModels";
 import { useSongLanguage } from "@/hooks/useSongLanguage";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -16,7 +16,7 @@ import { PopActions, PopButton, PopGroup, PopHead, PopRow, PopText } from "@/ui/
 import { StatusChip } from "@/ui/status-chip";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
 import { percent } from "@/utils/percent";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import {
   IconCheck,
   IconLanguage,
@@ -26,6 +26,7 @@ import {
   IconWand,
 } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -126,7 +127,9 @@ const AutoAlignSetup: React.FC<{ run: (realign: boolean) => void }> = ({ run }) 
   const hasVocals = useSeparationStore((s) => !!s.stemUrls.vocals);
   const counts = useMemo<LineCounts>(() => {
     const { lineTimed, wordTimed } = countAlignableLines(lines);
-    const untimed = lines.filter((l) => hasMainLyrics(l) && !isWordSynced(l) && !isLineSynced(l)).length;
+    const untimed = lines.filter(
+      (l) => hasMainLyrics(l, getSplitCharacter()) && !isWordSynced(l) && !isLineSynced(l),
+    ).length;
     return { lineTimed, wordTimed, untimed };
   }, [lines]);
   const timed = counts.lineTimed + counts.wordTimed;

@@ -1,10 +1,10 @@
 import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
-import { diffEditTextChange, withMovedTextDetached } from "@/domain/edit-text/diff-edit-text";
-import { editTextWithRewrittenRows } from "@/domain/edit-text/edit-text";
-import { type BackgroundRange, NO_RANGES } from "@/domain/edit-text/shown-row";
+import { diffEditTextChange, withMovedTextDetached } from "insync/edit-text-diff-edit-text";
+import { editTextWithRewrittenRows } from "insync/edit-text";
+import { type BackgroundRange, NO_RANGES } from "insync/edit-text-shown-row";
 import type { LinkGroup } from "insync/group";
-import type { InstanceAnchors } from "@/domain/group/template-copy";
-import { type CarriedSplit, carryTemplateEdits } from "@/domain/group/template-edit";
+import type { InstanceAnchors } from "insync/group-template-copy";
+import { type CarriedSplit, carryTemplateEdits } from "insync/group-template-edit";
 import type { LyricLine } from "insync/line";
 import { textToLyricLines } from "@/utils/lyrics-text";
 
@@ -29,8 +29,8 @@ interface DecideOptions {
   defaultAgentId: string;
   lines: LyricLine[];
   groups: LinkGroup[];
-  /** The split character the text was written with; the current one when left out. */
-  splitCharacter?: string;
+  /** The split character the text was written with. */
+  splitCharacter: string;
   /** Where the text shows background tracks inline; the text shows none when left out. */
   ranges?: readonly BackgroundRange[];
   /** Where each group instance sits, from the project's doc; read from the lines when left out. */
@@ -44,7 +44,7 @@ function typedLyricLines(
   ranges: readonly BackgroundRange[] | undefined,
   defaultAgentId: string,
   lines: LyricLine[],
-  splitCharacter: string | undefined,
+  splitCharacter: string,
 ): LyricLine[] {
   if (!ranges) return textToLyricLines(text, defaultAgentId, lines, splitCharacter);
   const rows = editRows(text, ranges);
@@ -80,12 +80,18 @@ function decideEditTextAction({
 
   if (diff.contentUpdates.length === 0) return { kind: "noop" };
   // The rows of other instances show the edit as the commit will write it.
-  const { lines: finalLines, splits } = carryTemplateEdits({ before: lines, after: lyricLines, groups, anchors });
+  const { lines: finalLines, splits } = carryTemplateEdits({
+    before: lines,
+    after: lyricLines,
+    groups,
+    anchors,
+    splitChar: splitCharacter,
+  });
   if (!ranges) {
-    const editText = editTextWithRewrittenRows(text, lyricLines, finalLines);
+    const editText = editTextWithRewrittenRows(text, lyricLines, finalLines, splitCharacter);
     return { kind: "apply", finalLines, editText, editRanges: NO_RANGES, detachedIds: [], removedIds: [], splits };
   }
-  const shown = shownWithRewrittenRows({ text, ranges }, lyricLines, finalLines);
+  const shown = shownWithRewrittenRows({ text, ranges }, lyricLines, finalLines, splitCharacter);
   return {
     kind: "apply",
     finalLines,

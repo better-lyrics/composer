@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -9,6 +9,7 @@ import { createGroup, createLine, createWord, createWords } from "@/test/factori
 import { render } from "@/test/render";
 import { LineRow } from "@/views/timeline/line-row";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("LineRow", () => {
   it("renders one word block per word on a synced line", async () => {
@@ -185,7 +186,7 @@ describe("LineRow", () => {
       .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
       .toEqual(["ah ", "ah"]);
     const after = useProjectStore.getState().lines[0];
-    expect(backgroundText(after)).toBe("ah ah");
+    expect(backgroundText(after, getSplitCharacter())).toBe("ah ah");
     expect(timedSyllables(backgroundTrack(after))[0].begin).toBeLessThan(roleWords(after, "bg")?.[1].begin ?? 0);
     expect(timedSyllables(backgroundTrack(after))[1].end).toBeLessThanOrEqual(30);
     expect(useTimelineStore.getState().editingWord).toBeNull();

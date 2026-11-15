@@ -3,11 +3,12 @@ import {
   offsetTemplateWords,
   templateBackgroundFields,
   templateLanguages,
-} from "@/domain/group/template";
+} from "insync/group-template";
 import { nextInstanceIdx } from "insync/instance-enumerate";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { withLinePassthrough } from "@/domain/line/passthrough";
+import { withLinePassthrough } from "insync/line-passthrough";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -51,19 +52,22 @@ function applyInstanceTemplate({
     const tplLine = template[idx - startIndex];
     const words = tplLine.words && offsetTemplateWords(tplLine.words, instanceStart);
     const backgroundWords = tplLine.backgroundWords && offsetTemplateWords(tplLine.backgroundWords, instanceStart);
-    const instanceLine = lineFromFields({
-      id: line.id,
-      text: tplLine.text,
-      agentId: tplLine.agentId,
-      groupId,
-      instanceIdx,
-      templateLineIdx: idx - startIndex,
-      ...(tplLine.relativeBegin !== undefined && { begin: tplLine.relativeBegin + instanceStart }),
-      ...(tplLine.relativeEnd !== undefined && { end: tplLine.relativeEnd + instanceStart }),
-      ...(words && { words }),
-      ...templateBackgroundFields(tplLine, backgroundWords),
-      languages: templateLanguages(tplLine, words, backgroundWords),
-    });
+    const instanceLine = lineFromFields(
+      {
+        id: line.id,
+        text: tplLine.text,
+        agentId: tplLine.agentId,
+        groupId,
+        instanceIdx,
+        templateLineIdx: idx - startIndex,
+        ...(tplLine.relativeBegin !== undefined && { begin: tplLine.relativeBegin + instanceStart }),
+        ...(tplLine.relativeEnd !== undefined && { end: tplLine.relativeEnd + instanceStart }),
+        ...(words && { words }),
+        ...templateBackgroundFields(tplLine, backgroundWords),
+        languages: templateLanguages(tplLine, words, backgroundWords),
+      },
+      getSplitCharacter(),
+    );
     return withLinePassthrough(instanceLine, tplLine.passthrough);
   });
 

@@ -1,13 +1,14 @@
 import { refreshGeneratedLanguages } from "@/domain/commands/languages";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { staleGeneratedLanguages } from "insync/language-stale-generated";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { isTransientLines } from "@/stores/project/transient-lines";
 import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
 import { mergeGeneratedLanguageUpdates } from "@/views/languages/merge-generated-language-updates";
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -33,7 +34,7 @@ const LOG_PREFIX = "[LanguageAutoRefresh]";
 // -- Refresh ------------------------------------------------------------------
 
 function sourceKey(line: LyricLine): string {
-  return `${line.id}\u0000${languageSourceFingerprint(lineText(line), backgroundText(line))}`;
+  return `${line.id}\u0000${languageSourceFingerprint(getSplitCharacter(), lineText(line, getSplitCharacter()), backgroundText(line, getSplitCharacter()))}`;
 }
 
 // A drag preview is never refreshed: the write would end the gesture, and the drag's own commit schedules the next refresh.
@@ -45,7 +46,10 @@ async function refreshStaleGeneratedLanguages(signal: AbortSignal, failures: Fai
     failures.sourceKeys = new Set();
   }
   const failedSources = failures.sourceKeys;
-  const groups = staleGeneratedLanguages(starting.lines.filter((line) => !failedSources.has(sourceKey(line))));
+  const groups = staleGeneratedLanguages(
+    starting.lines.filter((line) => !failedSources.has(sourceKey(line))),
+    getSplitCharacter(),
+  );
   if (groups.length === 0) return;
   const startingById = new Map(starting.lines.map((line) => [line.id, line]));
   const requests = groups.map((group) => {

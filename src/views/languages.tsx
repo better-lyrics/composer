@@ -1,6 +1,6 @@
 import { applyGeneratedLanguages, removeTranslation } from "@/domain/commands/languages";
-import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
-import { pastedRows } from "@/domain/language/paste-import";
+import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
+import { pastedRows } from "insync/language-paste-import";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -17,7 +17,7 @@ import { RegenerateLanguageControl } from "@/views/languages/regenerate-language
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";

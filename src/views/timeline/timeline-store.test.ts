@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { wordAt } from "@/domain/selection/resolve";
+import { wordAt } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("markerMode", () => {
   beforeEach(() => {
@@ -184,7 +185,9 @@ describe("selection after a lines change", () => {
 
   function selectedTexts(): (string | undefined)[] {
     const { lines } = useProjectStore.getState();
-    return useTimelineStore.getState().selectedWords.map((selected) => wordAt(lines, selected)?.text);
+    return useTimelineStore
+      .getState()
+      .selectedWords.map((selected) => wordAt(lines, selected, DEFAULT_SPLIT_CHARACTER)?.text);
   }
 
   function splitFirstWord(): void {
@@ -255,9 +258,9 @@ describe("selection after a lines change", () => {
     useTimelineStore.getState().setSelectedWords([address("w1"), address("w2"), address("w3")], true);
     const [fall, into, to, place] = timedSyllables(mainTrack(line));
     const reordered = [fall, { ...to, begin: 1.5 }, into, place];
-    useProjectStore
-      .getState()
-      .restoreLyrics({ lines: [createLine({ id: "a", text: lineText(line), words: reordered })] });
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "a", text: lineText(line, DEFAULT_SPLIT_CHARACTER), words: reordered })],
+    });
     expect(useTimelineStore.getState().stepQueue).toEqual([address("w1"), address("w3"), address("w2")]);
     expect(selectedTexts()).toEqual(["Fall"]);
   });

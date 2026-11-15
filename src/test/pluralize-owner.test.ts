@@ -3,7 +3,7 @@ import { findProductionMatches } from "@/test/source-files";
 
 // -- Rules --------------------------------------------------------------------
 
-const OWNER = "utils/pluralize.ts";
+const OWNER = "insync/pluralize.ts";
 
 const COUNT_IS_ONE = String.raw`(?:[!=]==|[<>]=?) 1 \? `;
 
@@ -46,7 +46,7 @@ const HAND_WRITTEN_PLURALS = [
 
 // -- Tests --------------------------------------------------------------------
 
-describe("plurals go through utils/pluralize", () => {
+describe("plurals go through insync/pluralize", () => {
   for (const rule of HAND_WRITTEN_PLURALS) {
     it(`has no ${rule.name} outside the owner`, () => {
       expect(findProductionMatches(rule.pattern, (relPath) => relPath === OWNER)).toEqual([]);

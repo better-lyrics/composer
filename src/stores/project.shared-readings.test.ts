@@ -5,13 +5,14 @@ import type { LyricLine } from "insync/line";
 
 import { describe, expect, it } from "vitest";
 import { splitSyncWord } from "@/domain/commands/sync";
-import { realignSharedInstance } from "@/domain/group/shared-placement";
+import { realignSharedInstance } from "insync/group-shared-placement";
 import type { LineLanguages } from "insync/language";
-import { trackPieces } from "@/domain/language/pieces";
+import { trackPieces } from "insync/language-pieces";
 import { roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function chorusLine(id: string, instanceIdx: number, begin: number): LyricLine {
   const sky = createWord({ text: "하늘", begin, end: begin + 1 });
@@ -58,6 +59,7 @@ describe("readings of instances sharing timing", () => {
       metadata: { title: "", artists: [], album: "", duration: 20, language: "ko" },
       agents: useProjectStore.getState().agents,
       lines: useProjectStore.getState().lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(romanSpans(ttml, "L2")).toBe(romanSpans(ttml, "L1"));
     expect(romanSpans(ttml, "L1")).toContain(">neul<");
@@ -87,7 +89,7 @@ describe("readings when an instance takes the shared timing again", () => {
     const own = chorusLine("b", 1, 11);
     const groups = [createGroup({ id: "g1", sharesTiming: true })];
 
-    const realigned = realignSharedInstance([reference, own], groups, "g1", 1);
+    const realigned = realignSharedInstance([reference, own], groups, "g1", 1, DEFAULT_SPLIT_CHARACTER);
     const update = "updates" in realigned ? realigned.updates[0] : undefined;
     const b = { ...own, ...update?.updates };
     const pieces = trackPieces(b, "main");

@@ -1,16 +1,17 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import type { TimeRange } from "insync/group-shared-timing";
 import type { LanguagePiece } from "insync/language";
-import { withAddedPieces } from "@/domain/language/pieces";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { withAddedPieces } from "insync/language-pieces";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import type { LyricLine, MainTrack } from "insync/line";
 import { type WordTrack, isSpanTimed, mainTrack, trackRole, untimedSyllablesOf } from "insync/line-track";
-import { withMainTrack, withTrackSyllables, withTrackWords } from "@/domain/line/track-writes";
-import { withNewId } from "@/domain/word/id";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { boundsOverlap } from "@/domain/word/overlap";
+import { withMainTrack, withTrackSyllables, withTrackWords } from "insync/line-track-writes";
+import { withNewId } from "insync/word-id";
+import { mergeWordsIntoTrack } from "insync/word-merge-track";
+import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -53,7 +54,7 @@ function pasteOverlaps(
     const pasted = pastedWordBounds(entry.word, timeDelta, rangeOf(lines[lineIdx]));
     if (pasted.end <= pasted.begin) return true;
 
-    const existingWords = drawnSyllables(lines[lineIdx], trackRole(entry.trackType));
+    const existingWords = drawnSyllables(lines[lineIdx], trackRole(entry.trackType), getSplitCharacter());
     if (existingWords.some((existing) => boundsOverlap(pasted, existing))) return true;
   }
   return false;
@@ -94,12 +95,20 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
 
     let lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      const merged = mergeWordsIntoTrack(drawnSyllables(line, "main"), newWords, untimedSyllablesOf(line, "main"));
+      const merged = mergeWordsIntoTrack(
+        drawnSyllables(line, "main", getSplitCharacter()),
+        newWords,
+        untimedSyllablesOf(line, "main"),
+      );
       lineUpdates = { tracks: withMainTrack(line, convertedMainTrack(line, merged)).tracks };
     }
     if (newBgWords.length > 0) {
-      const merged = mergeWordsIntoTrack(drawnSyllables(line, "bg"), newBgWords, untimedSyllablesOf(line, "bg"));
-      lineUpdates = manualBackgroundWordEdit(line, merged, lineUpdates);
+      const merged = mergeWordsIntoTrack(
+        drawnSyllables(line, "bg", getSplitCharacter()),
+        newBgWords,
+        untimedSyllablesOf(line, "bg"),
+      );
+      lineUpdates = manualBackgroundWordEdit(line, merged, getSplitCharacter(), lineUpdates);
     }
 
     const languages = withAddedPieces(withAddedPieces(line.languages, "main", mainPieces), "bg", bgPieces);

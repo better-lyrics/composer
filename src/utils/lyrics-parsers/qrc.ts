@@ -1,12 +1,12 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
-import { agentIdAt, createPerformerAgents } from "@/domain/agent/performer-agents";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { syllablesText } from "@/domain/line/text";
+import { agentIdAt, createPerformerAgents } from "insync/agent-performer-agents";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import { hasAnyTiming } from "insync/line-predicates";
+import { syllablesText } from "insync/line-text";
 import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectMetadata } from "insync/metadata";
-import { type SpacedWord, spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, spacedText, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import {
   MS_PER_SECOND,
@@ -203,7 +203,7 @@ function parseQrc(content: string, fallbackDuration?: number): ParseResult {
   const parsed = backfillZeroDurations(shifted, fallbackDuration);
   const { lines, metadata, agents } = partitionQrcLines(parsed, header.metadata);
 
-  const reconciledLines = lines.map((line) => lineFromFields(line));
+  const reconciledLines = lines.map((line) => lineFromFields(line, getSplitCharacter()));
   return {
     lines: reconciledLines,
     metadata,

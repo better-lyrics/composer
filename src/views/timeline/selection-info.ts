@@ -1,11 +1,12 @@
 import type { LinkGroup } from "insync/group";
 import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { wordAt } from "@/domain/selection/resolve";
+import { isLineSynced } from "insync/line-predicates";
+import type { SyllableAddress } from "insync/selection-model";
+import { wordAt } from "insync/selection-resolve";
 import type { WordTiming } from "insync/word-timing";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -24,7 +25,7 @@ interface MultiSelectionSummary {
 // -- Helpers ------------------------------------------------------------------
 
 function selectedWord(selection: SyllableAddress, lines: readonly LyricLine[]): WordTiming | null {
-  return wordAt(lines, selection);
+  return wordAt(lines, selection, getSplitCharacter());
 }
 
 // -- Functions ----------------------------------------------------------------

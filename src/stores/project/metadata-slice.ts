@@ -1,7 +1,7 @@
-import { withDefaultAgentNames } from "@/domain/agent/default-names";
+import { withDefaultAgentNames } from "insync/agent-default-names";
 import { applyEditedLyrics, replaceLyrics } from "@/domain/commands/lyrics-replace";
-import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createAlignmentReviewInitialState } from "@/stores/project/alignment-review-slice";
 import { createBeatGridInitialState } from "@/stores/project/beat-grid-slice";
@@ -15,7 +15,7 @@ import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from 
 import { createUiInitialState } from "@/stores/project/ui-slice";
 import { createUnisonLinkInitialState } from "@/stores/project/unison-link-slice";
 import { writingLyrics } from "@/stores/project/lyric-change-listeners";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
 import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------

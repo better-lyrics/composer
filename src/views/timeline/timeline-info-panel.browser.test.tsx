@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -9,6 +9,7 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -253,7 +254,7 @@ describe("TimelineInfoPanel selection copy", () => {
             { text: "b", begin: 1, end: 2 },
           ]),
         }),
-        lineFromFields({ id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 }),
+        lineFromFields({ id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 }, getSplitCharacter()),
       ],
     });
     useTimelineStore.setState({

@@ -4,12 +4,12 @@ import {
   type V3Piece,
   v3PiecesOf,
   withoutV3Piece,
-} from "@/domain/language/v3-languages";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+} from "insync/language-v3-languages";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { withSplitMarksFromWords } from "@/domain/line/reconstruct-text";
+import { withSplitMarksFromWords } from "insync/line-reconstruct-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 

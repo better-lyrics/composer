@@ -2,9 +2,10 @@ import { playedRanges } from "@/audio/playback-ranges";
 import { withBuildTag } from "@/domain/alignment/build-tag";
 import { withExportTiming } from "@/domain/alignment/export-timing";
 import { alignmentBreakdown } from "@/domain/alignment/review-state";
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 import { useProjectStore } from "@/stores/project";
 import { generateProjectTtml } from "@/utils/ttml";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -33,6 +34,7 @@ function outgoingTtml({
   const ttml = generateProjectTtml(
     { metadata, agents, lines: settled, groups, parts, passthrough },
     duration,
+    getSplitCharacter(),
     exportTiming,
     youtubeVideoId,
   );

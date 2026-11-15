@@ -1,5 +1,5 @@
 import type { Bounds } from "insync/word-bounds";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Functions -----------------------------------------------------------------
 

@@ -2,14 +2,14 @@ import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@t
 import { useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { pasteLanguageLines } from "@/domain/commands/languages";
-import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
+import { alignTrackToLine, validateTransliterationAlignment } from "insync/language-align";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { lineTranslations, lineTransliteration, withLanguages } from "insync/language-line-languages";
+import { wholeLineSegments } from "insync/language-manual-segments";
 import type { LineLanguage } from "insync/language";
-import { alignPastedLanguageLines } from "@/domain/language/paste-import";
+import { alignPastedLanguageLines } from "insync/language-paste-import";
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
@@ -20,7 +20,8 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { Select } from "@/ui/select";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -70,7 +71,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     () =>
       alignPastedLanguageLines(
         pastedText,
-        lines.map((line) => lineText(line)),
+        lines.map((line) => lineText(line, getSplitCharacter())),
       ),
     [lines, pastedText],
   );
@@ -81,7 +82,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       kind === "transliteration"
         ? lines.map((line, index) =>
             validateTransliterationAlignment(
-              lineText(line),
+              lineText(line, getSplitCharacter()),
               mappedLines[index] ?? "",
               timedSyllables(mainTrack(line)),
               lineTransliteration(line)?.main.pieces,
@@ -107,15 +108,19 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     lines.forEach((line, index) => {
       const text = mappedLines[index]?.trim();
       if (!text) return;
-      const sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+      const sourceFingerprint = languageSourceFingerprint(
+        getSplitCharacter(),
+        lineText(line, getSplitCharacter()),
+        backgroundText(line, getSplitCharacter()),
+      );
       if (kind === "transliteration") {
         const transliteration: LineLanguage = {
           language: `${sourceLanguage || "und"}-Latn`,
-          main: { text, segments: wholeLineSegments(lineText(line), text) },
+          main: { text, segments: wholeLineSegments(lineText(line, getSplitCharacter()), text) },
           origin: "import",
           sourceFingerprint,
         };
-        updates.push({ id: line.id, updates: alignTrackToLine(line, transliteration) });
+        updates.push({ id: line.id, updates: alignTrackToLine(line, transliteration, getSplitCharacter()) });
         return;
       }
       const translations = {
@@ -211,7 +216,9 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                   {index + 1}
                 </span>
                 <p className="pt-1.5 text-sm leading-5 break-words text-composer-text-secondary select-text">
-                  {lineText(line) || <span className="italic text-composer-text-muted">Blank line</span>}
+                  {lineText(line, getSplitCharacter()) || (
+                    <span className="italic text-composer-text-muted">Blank line</span>
+                  )}
                 </p>
                 <IconArrowRight aria-hidden="true" className="mt-2.5 size-3.5 text-composer-text-faint" />
                 <div>

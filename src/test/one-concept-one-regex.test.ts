@@ -1,9 +1,7 @@
 import { readFileSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createSourceFile, forEachChild, isRegularExpressionLiteral, type Node, ScriptTarget } from "typescript";
 import { describe, expect, it } from "vitest";
-import { isTestFile, walkSourceFiles } from "@/test/source-files";
+import { isTestFile, walkScannedSources } from "@/test/source-files";
 
 // CI guard for regex ownership: one pattern in two files is one concept with
 // two homes, and the copies drift.
@@ -15,8 +13,6 @@ import { isTestFile, walkSourceFiles } from "@/test/source-files";
 
 // -- Constants ----------------------------------------------------------------
 
-const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-
 // Generic tokenization primitives with no domain meaning. Permanent: a pattern
 // belongs here only when every copy of it means nothing beyond "split on
 // whitespace" or "trim a line break".
@@ -25,9 +21,7 @@ const PRIMITIVES = new Set<string>(["\\r?\\n", "\\s+", " +$", "[a-zA-Z0-9]"]);
 // A ratchet, not a policy. Each entry is a concept that wants the owner named
 // beside it and does not route through one yet. It may only SHRINK: never add
 // an entry, and the stale-entry test below forces deletion once one is migrated.
-const BASELINE_DEBT = new Map<string, string>([
-  ["\\/$", "base URL normalisation, already owned by utils/url.ts"],
-]);
+const BASELINE_DEBT = new Map<string, string>([["\\/$", "base URL normalisation, already owned by utils/url.ts"]]);
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -44,8 +38,7 @@ function extractRegexSources(file: string, code: string): string[] {
 function collectDuplicates(): Map<string, string[]> {
   const filesBySource = new Map<string, Set<string>>();
 
-  for (const file of walkSourceFiles(SRC_ROOT)) {
-    const rel = relative(SRC_ROOT, file).split("\\").join("/");
+  for (const { file, rel } of walkScannedSources()) {
     if (isTestFile(rel)) continue;
 
     for (const source of extractRegexSources(file, readFileSync(file, "utf8"))) {

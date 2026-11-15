@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Tests --------------------------------------------------------------------
 
@@ -12,7 +13,10 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
   describe("regressions: edits written against older lyrics", () => {
     it("regression: an edit whose source is not the current export stays in the export only", () => {
       useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
-      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">Hello<",
+        ">Hello there<",
+      );
       const editState = { source: "an older export", content: edited };
       useProjectStore.setState({ ttmlEditState: editState });
       const before = useProjectStore.getState().lines;
@@ -23,11 +27,11 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
 
     it("regression: an edit kept over changed lyrics stays in the export only", () => {
       useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const generated = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
       const edited = generated.replace(">Hello<", ">Hello there<");
       useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
       useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hi", begin: 1, end: 2 })] });
-      const changed = generateProjectTtml(useProjectStore.getState(), 0);
+      const changed = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
       useProjectStore.setState((state) => ({ ttmlEditState: keptTtmlEdit(state.ttmlEditState, changed) }));
       const before = useProjectStore.getState().lines;
       expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "lyrics-changed" });
@@ -43,7 +47,7 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
         ],
         metadata: { title: "Kept title", artists: [], album: "", duration: 0 },
       });
-      const edited = generateProjectTtml(useProjectStore.getState(), 0)
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER)
         .replace(/\n\s*<p [^>]*>Bravo<\/p>/, "")
         .replace(/<ttm:title>[^<]*<\/ttm:title>/, "");
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied", keptInExport: true });
@@ -52,7 +56,9 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
       const again = kept?.content.replace(">Charlie<", ">Charlie!<") ?? "";
       useProjectStore.getState().setTtmlEditState({ source: kept?.source ?? "", content: again });
       expect(applyEditedTtml(again, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => [line.id, lineText(line)])).toEqual([
+      expect(
+        useProjectStore.getState().lines.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)]),
+      ).toEqual([
         ["a", "Alpha"],
         ["c", "Charlie!"],
       ]);
@@ -65,57 +71,73 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
           createLine({ id: "c", text: "Charlie", begin: 3, end: 4 }),
         ],
       });
-      const edited = generateProjectTtml(useProjectStore.getState(), 0)
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER)
         .replace("<div>", "<div><!-- note -->")
         .replace(
           "\n    </div>",
           '\n      <p begin="0:05.000" end="0:06.000" itunes:key="X" ttm:agent="v1">Extra</p>\n    </div>',
         );
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied", keptInExport: true });
-      const created = useProjectStore.getState().lines.find((line) => lineText(line) === "Extra");
+      const created = useProjectStore
+        .getState()
+        .lines.find((line) => lineText(line, DEFAULT_SPLIT_CHARACTER) === "Extra");
       const kept = useProjectStore.getState().ttmlEditState;
       const again = kept?.content.replace(">Charlie<", ">Charlie!<") ?? "";
       useProjectStore.getState().setTtmlEditState({ source: kept?.source ?? "", content: again });
       expect(applyEditedTtml(again, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.find((line) => lineText(line) === "Extra")).toEqual(created);
+      expect(
+        useProjectStore.getState().lines.find((line) => lineText(line, DEFAULT_SPLIT_CHARACTER) === "Extra"),
+      ).toEqual(created);
     });
   });
 
   describe("regressions: the audio duration is not a project change", () => {
     it("regression: an edit written before the audio duration arrived still applies", () => {
       useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const generated = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
       const edited = generated.replace(">Hello<", ">Hello there<");
       useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
       expect(applyEditedTtml(edited, 200)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello there"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "Hello there",
+      ]);
     });
 
     it("regression: an edit written with audio still applies after the audio goes missing", () => {
       useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 200);
+      const generated = generateProjectTtml(useProjectStore.getState(), 200, DEFAULT_SPLIT_CHARACTER);
       const edited = generated.replace(">Hello<", ">Hello there<");
       useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello there"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "Hello there",
+      ]);
     });
 
     it("regression: an edit typed on after a relink changed the duration still applies", () => {
       useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 200);
+      const generated = generateProjectTtml(useProjectStore.getState(), 200, DEFAULT_SPLIT_CHARACTER);
       const started = typedTtmlEdit(null, generated, generated.replace(">Hello<", ">Hello there<"), false);
-      const relinked = generateProjectTtml(useProjectStore.getState(), 180);
+      const relinked = generateProjectTtml(useProjectStore.getState(), 180, DEFAULT_SPLIT_CHARACTER);
       const edited = relinked.replace(">Hello<", ">Hello again<");
       const typed = typedTtmlEdit(started, relinked, edited, false);
       useProjectStore.setState({ ttmlEditState: typed });
       expect(typed.lyricsChanged).toBeUndefined();
       expect(applyEditedTtml(edited, 180)).toMatchObject({ status: "applied" });
-      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello again"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "Hello again",
+      ]);
     });
 
     it("regression: a fully applied edit to a YouTube export is not kept in the export", () => {
       useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 200, undefined, "dQw4w9WgXcQ");
+      const generated = generateProjectTtml(
+        useProjectStore.getState(),
+        200,
+        DEFAULT_SPLIT_CHARACTER,
+        undefined,
+        "dQw4w9WgXcQ",
+      );
       const edited = generated.replace(">Hello<", ">Hello there<");
       useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
       expect(applyEditedTtml(edited, 200, "dQw4w9WgXcQ")).toEqual({

@@ -5,12 +5,13 @@ import { alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
 import { mainBounds } from "insync/line-bounds";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // Which lines a run aligns, and what each one is aligned against.
 
@@ -58,7 +59,7 @@ function planLine(
   if (isSpanTimed(main)) {
     const end = main.end === main.begin ? nextBegin : main.end;
     if (end <= main.begin) return null;
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
+    const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line, getSplitCharacter()), getSplitCharacter());
     if (parts.length === 0) return null;
     return {
       taps: { begin: main.begin, end: main.end },
@@ -105,7 +106,7 @@ function countAlignableLines(lines: readonly LyricLine[], lineIds?: readonly str
 // A line the user retimed or retyped mid-run keeps their edit. The store
 // replaces a line's object (and its words array) on every change.
 function isUnchanged(current: LyricLine | undefined, planned: PlannedLine): boolean {
-  if (!current || lineText(current) !== lineText(planned.line)) return false;
+  if (!current || lineText(current, getSplitCharacter()) !== lineText(planned.line, getSplitCharacter())) return false;
   if (planned.existing) return timedSyllables(mainTrack(current)) === planned.existing;
   const span = mainBounds(current);
   return isLineSynced(current) && span?.begin === planned.taps.begin && span.end === planned.taps.end;

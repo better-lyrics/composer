@@ -1,10 +1,10 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand, patchLines } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
-import { lineTranslations, withLanguages } from "@/domain/language/line-languages";
+import { lineTranslations, withLanguages } from "insync/language-line-languages";
 import type { LanguagePieces } from "insync/language";
-import { confirmTransliterationAlignment } from "@/domain/language/review";
-import { withTrackPieces } from "@/domain/language/side-pieces";
+import { confirmTransliterationAlignment } from "insync/language-review";
+import { withTrackPieces } from "insync/language-side-pieces";
 import type { LineUpdate, LyricLine } from "insync/line";
 
 // -- Constants ----------------------------------------------------------------
@@ -39,10 +39,10 @@ function saveTransliterationAlignment(
 ): LyricCommand {
   return lineEditCommand(
     { command: ALIGN_TRANSLITERATION, args: [lineId, field] },
-    (root) => {
+    (root, ctx) => {
       const line = root.lines.find((candidate) => candidate.id === lineId);
       if (!line) return refused({ reason: "line-gone", lineId });
-      const confirmed = confirmTransliterationAlignment(line, field);
+      const confirmed = confirmTransliterationAlignment(line, field, ctx.splitChar);
       const side = field === "words" ? "main" : "bg";
       const transliteration = confirmed && withTrackPieces(confirmed, side, pieces);
       return [{ id: lineId, updates: withLanguages(line, { transliteration }) }];

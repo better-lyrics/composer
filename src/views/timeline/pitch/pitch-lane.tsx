@@ -1,7 +1,7 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
 import { effectiveBounds } from "insync/line-bounds";
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { isLineTimed } from "insync/line-sync-progress";
 import type { LyricLine } from "insync/line";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
 import { songWordCoverage, spillRuns, wordCoverage } from "@/domain/pitch/spill";
@@ -29,6 +29,7 @@ import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { wordFit } from "@/views/timeline/word-fit";
 import { useCallback, useEffect, useRef } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -133,7 +134,8 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
   const inksRef = useRef<LaneInks | null>(null);
   const otherTracksRef = useRef<OtherTracksCoverage | null>(null);
   const pitchLineOn = useSettingsStore((s) => s.pitchLine !== "off");
-  const hasSungLane = isLineTimed(line) && drawnSyllables(line, trackRole(kind)).length > 0;
+  const hasSungLane =
+    isLineTimed(line, getSplitCharacter()) && drawnSyllables(line, trackRole(kind), getSplitCharacter()).length > 0;
 
   const revealSung = useCallback(() => {
     const sung = sungRef.current;
@@ -152,7 +154,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     const sung = sungRef.current;
     const ghost = ghostRef.current;
     const lineBounds = effectiveBounds(line);
-    const words = drawnSyllables(line, trackRole(kind));
+    const words = drawnSyllables(line, trackRole(kind), getSplitCharacter());
     if (!spark || !sung || !ghost || !lineBounds || words.length === 0) return;
     const selectedSet = new Set(selected.split(","));
     const laneWords: LaneWord[] = words.map((word, index) => {
@@ -170,7 +172,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
       height,
       pitchRangeBetween(rows.track, lineBounds.begin, lineBounds.end),
     );
-    const leadWords = kind === "bg" ? drawnSyllables(line, "main") : [];
+    const leadWords = kind === "bg" ? drawnSyllables(line, "main", getSplitCharacter()) : [];
     const drawing = { window, runs: laneRuns(rows.track, kind, window, laneWords, leadWords), words: laneWords };
     let coverage = rows.coverage;
     if (live) {

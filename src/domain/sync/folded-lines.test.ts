@@ -1,9 +1,10 @@
 import { withFields } from "@/test/field-updates";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import { foldedLineIds } from "@/domain/sync/folded-lines";
+import { foldedLineIds } from "insync/sync-folded-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -36,7 +37,7 @@ const song = (secondBegin?: number, thirdBegin?: number) => [
 ];
 
 const folded = (lines: LyricLine[], lineIndex: number, wordIndex = 0, groups: LinkGroup[] = sharing) =>
-  [...foldedLineIds(lines, groups, { lineIndex, wordIndex })].toSorted();
+  [...foldedLineIds(lines, groups, { lineIndex, wordIndex }, DEFAULT_SPLIT_CHARACTER)].toSorted();
 
 describe("foldedLineIds", () => {
   it("folds every line after the first of an instance one tap places", () => {

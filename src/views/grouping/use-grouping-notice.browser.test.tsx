@@ -2,13 +2,14 @@ import { Toaster, toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { skippedSharedInstances } from "insync/sync-skipped-instances";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWords } from "@/test/factories";
 import { GroupingNotices } from "@/test/grouping-notices";
 import { render } from "@/test/render";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -107,9 +108,9 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
     expect(mainTrack(lineById("two-b")!).begin).toBe(43);
     expect(mainTrack(lineById("two-c")!).begin).toBe(46);
-    expect(skippedSharedInstances(store().lines, store().groups).map((skipped) => skipped.lineIds)).toEqual([
-      ["two-a", "two-b", "two-c"],
-    ]);
+    expect(
+      skippedSharedInstances(store().lines, store().groups, getSplitCharacter()).map((skipped) => skipped.lineIds),
+    ).toEqual([["two-a", "two-b", "two-c"]]);
     toast("Grouping settled");
     await expect.element(screen.getByText("Grouping settled")).toBeVisible();
     expect(screen.container.ownerDocument.body.textContent).not.toContain("was replaced");

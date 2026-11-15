@@ -4,41 +4,54 @@
 
 import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "insync/group";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { decideEditTextAction } from "./decide-edit-text-action";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const groupChorus: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
 
 function chorusLines(): LyricLine[] {
   return [
-    lineFromFields({ id: "c1a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-    lineFromFields({
-      id: "c1b",
-      text: "more than words",
-      agentId: "v1",
-      groupId: "g1",
-      instanceIdx: 0,
-      templateLineIdx: 1,
-    }),
-    lineFromFields({ id: "v1", text: "verse line", agentId: "v1" }),
-    lineFromFields({ id: "c2a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
-    lineFromFields({
-      id: "c2b",
-      text: "more than words",
-      agentId: "v1",
-      groupId: "g1",
-      instanceIdx: 1,
-      templateLineIdx: 1,
-    }),
+    lineFromFields(
+      { id: "c1a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
+    lineFromFields(
+      {
+        id: "c1b",
+        text: "more than words",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 1,
+      },
+      getSplitCharacter(),
+    ),
+    lineFromFields({ id: "v1", text: "verse line", agentId: "v1" }, getSplitCharacter()),
+    lineFromFields(
+      { id: "c2a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
+    lineFromFields(
+      {
+        id: "c2b",
+        text: "more than words",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 1,
+      },
+      getSplitCharacter(),
+    ),
   ];
 }
 
-const baseText = (lines: LyricLine[]) => lines.map((l) => lineText(l)).join("\n");
+const baseText = (lines: LyricLine[]) => lines.map((l) => lineText(l, getSplitCharacter())).join("\n");
 
 describe("decideEditTextAction", () => {
   it("returns noop when text is unchanged", () => {
@@ -48,6 +61,7 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     expect(action.kind).toBe("noop");
   });
@@ -60,11 +74,12 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
-    expect(lineText(action.finalLines.find((l) => l.id === "c1a")!)).toBe("I luv you");
-    expect(lineText(action.finalLines.find((l) => l.id === "c2a")!)).toBe("I luv you");
+    expect(lineText(action.finalLines.find((l) => l.id === "c1a")!, getSplitCharacter())).toBe("I luv you");
+    expect(lineText(action.finalLines.find((l) => l.id === "c2a")!, getSplitCharacter())).toBe("I luv you");
   });
 
   it("returns the edit text with linked siblings rewritten and typed rows verbatim", () => {
@@ -75,6 +90,7 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.editText).toBe("I luv you \nmore than words\nverse  line\nI luv you\nmore than words");
@@ -88,6 +104,7 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.editText).toBe(text);
@@ -101,11 +118,12 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
     expect(action.finalLines.length).toBe(lines.length + 1);
-    expect(lineText(action.finalLines[action.finalLines.length - 1])).toBe("brand new outro");
+    expect(lineText(action.finalLines[action.finalLines.length - 1], getSplitCharacter())).toBe("brand new outro");
   });
 
   it("a row split out of a chorus line makes only that line its instance's own", () => {
@@ -116,13 +134,14 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.detachedIds).toEqual(["c2a"]);
     const byId = new Map(action.finalLines.map((line) => [line.id, line]));
     expect(byId.get("c2a")).toMatchObject({ groupId: "g1", instanceIdx: 1, templateLineIdx: 0, detached: true });
-    expect(lineText(byId.get("c2a")!)).toBe("I love");
-    expect(lineText(byId.get("c1a")!)).toBe("I love you");
+    expect(lineText(byId.get("c2a")!, getSplitCharacter())).toBe("I love");
+    expect(lineText(byId.get("c1a")!, getSplitCharacter())).toBe("I love you");
     expect(byId.get("c1a")?.detached).toBeUndefined();
     expect(byId.get("c2b")?.detached).toBeUndefined();
   });
@@ -135,64 +154,73 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     expect(lines).toEqual(before);
   });
 
   it("propagates a content edit to a sibling instance via apply", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w1", text: "I", sep: " ", begin: 0, end: 0.4, joinsNext: false },
-          { id: "w2", text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
-          { id: "w3", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
-        ],
-      }),
-      lineFromFields({
-        id: "b",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w4", text: "I", sep: " ", begin: 30, end: 30.5, joinsNext: false },
-          { id: "w5", text: "love", sep: " ", begin: 30.5, end: 31.0, joinsNext: false },
-          { id: "w6", text: "you", sep: "", begin: 31.0, end: 31.5, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w1", text: "I", sep: " ", begin: 0, end: 0.4, joinsNext: false },
+            { id: "w2", text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
+            { id: "w3", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
+          ],
+        },
+        getSplitCharacter(),
+      ),
+      lineFromFields(
+        {
+          id: "b",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w4", text: "I", sep: " ", begin: 30, end: 30.5, joinsNext: false },
+            { id: "w5", text: "love", sep: " ", begin: 30.5, end: 31.0, joinsNext: false },
+            { id: "w6", text: "you", sep: "", begin: 31.0, end: 31.5, joinsNext: false },
+          ],
+        },
+        getSplitCharacter(),
+      ),
     ];
     const action = decideEditTextAction({
       text: "I luv you\nI love you",
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
     const a = action.finalLines.find((l) => l.id === "a");
     const b = action.finalLines.find((l) => l.id === "b");
-    expect(lineText(a!)).toBe("I luv you");
+    expect(lineText(a!, getSplitCharacter())).toBe("I luv you");
     expect(timedSyllables(mainTrack(a!))[1]).toMatchObject({ text: "luv", sep: " " });
     expect(timedSyllables(mainTrack(a!))[1].begin).toBe(0.4);
-    expect(lineText(b!)).toBe("I luv you");
+    expect(lineText(b!, getSplitCharacter())).toBe("I luv you");
     expect(timedSyllables(mainTrack(b!))[1]).toMatchObject({ text: "luv", sep: " " });
     expect(timedSyllables(mainTrack(b!))[1].begin).toBe(30.5);
   });
 
   it("returns apply (with empty group cleanup unrelated) when impacted is empty even on length change outside group", () => {
-    const lines: LyricLine[] = [lineFromFields({ id: "a", text: "first", agentId: "v1" })];
+    const lines: LyricLine[] = [lineFromFields({ id: "a", text: "first", agentId: "v1" }, getSplitCharacter())];
     const action = decideEditTextAction({
       text: "first\nsecond",
       defaultAgentId: "v1",
       lines,
       groups: [],
+      splitCharacter: getSplitCharacter(),
     });
     expect(action.kind).toBe("apply");
   });
@@ -249,6 +277,7 @@ describe("regressions", () => {
       defaultAgentId: "v1",
       lines,
       groups: [],
+      splitCharacter: getSplitCharacter(),
     });
     if (step1.kind !== "apply") throw new Error(step1.kind);
     const step2 = decideEditTextAction({
@@ -256,6 +285,7 @@ describe("regressions", () => {
       defaultAgentId: "v1",
       lines: step1.finalLines,
       groups: [],
+      splitCharacter: getSplitCharacter(),
     });
     if (step2.kind !== "apply") throw new Error(step2.kind);
     expect(timedSyllables(mainTrack(step2.finalLines[0]))).toEqual(timedSyllables(mainTrack(lines[0])));
@@ -263,27 +293,34 @@ describe("regressions", () => {
   });
   it("keeps every untouched line as the same object through a keystroke", () => {
     const lines: LyricLine[] = [
-      lineFromFields({ id: "a", text: "Under the porch light (hey)", agentId: "v2", begin: 1, end: 3 }),
-      lineFromFields({
-        id: "b",
-        text: "we counted the trains",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-      }),
-      lineFromFields({ id: "c", text: "(ooh) slow and steady", agentId: "v1" }),
+      lineFromFields(
+        { id: "a", text: "Under the porch light (hey)", agentId: "v2", begin: 1, end: 3 },
+        getSplitCharacter(),
+      ),
+      lineFromFields(
+        {
+          id: "b",
+          text: "we counted the trains",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+        },
+        getSplitCharacter(),
+      ),
+      lineFromFields({ id: "c", text: "(ooh) slow and steady", agentId: "v1" }, getSplitCharacter()),
     ];
     const action = decideEditTextAction({
       text: "Under the porch light (hey)\nwe counted the train\n(ooh) slow and steady",
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     if (action.kind !== "apply") throw new Error(action.kind);
     expect(action.finalLines[0]).toBe(lines[0]);
     expect(action.finalLines[2]).toBe(lines[2]);
-    expect(fieldsOfLine(action.finalLines[1])).toMatchObject({
+    expect(fieldsOfLine(action.finalLines[1], getSplitCharacter())).toMatchObject({
       id: "b",
       text: "we counted the train",
       agentId: "v1",
@@ -297,35 +334,47 @@ describe("regressions", () => {
 describe("typing in a line-synced instance", () => {
   it("regression: keeps a word-synced instance's own word timing", () => {
     const lines: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "We glow tonight",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        begin: 10,
-        end: 12,
-      }),
-      lineFromFields({
-        id: "b",
-        text: "We glow tonight",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w1", text: "We", sep: " ", begin: 40, end: 40.5, joinsNext: false },
-          { id: "w2", text: "glow", sep: " ", begin: 40.5, end: 41, joinsNext: false },
-          { id: "w3", text: "tonight", sep: "", begin: 41, end: 41.5, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "We glow tonight",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 10,
+          end: 12,
+        },
+        getSplitCharacter(),
+      ),
+      lineFromFields(
+        {
+          id: "b",
+          text: "We glow tonight",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w1", text: "We", sep: " ", begin: 40, end: 40.5, joinsNext: false },
+            { id: "w2", text: "glow", sep: " ", begin: 40.5, end: 41, joinsNext: false },
+            { id: "w3", text: "tonight", sep: "", begin: 41, end: 41.5, joinsNext: false },
+          ],
+        },
+        getSplitCharacter(),
+      ),
     ];
     for (const text of ["We glow tonight now\nWe glow tonight", "We glow so bright\nWe glow tonight"]) {
-      const action = decideEditTextAction({ text, defaultAgentId: "v1", lines, groups: [groupChorus] });
+      const action = decideEditTextAction({
+        text,
+        defaultAgentId: "v1",
+        lines,
+        groups: [groupChorus],
+        splitCharacter: getSplitCharacter(),
+      });
       if (action.kind !== "apply") throw new Error(action.kind);
       const copy = action.finalLines[1];
-      expect(lineText(copy)).toBe(lineText(action.finalLines[0]));
+      expect(lineText(copy, getSplitCharacter())).toBe(lineText(action.finalLines[0], getSplitCharacter()));
       expect(
         timedSyllables(mainTrack(copy))
           .slice(0, 2)
@@ -346,6 +395,7 @@ describe("removing a group row", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
+      splitCharacter: getSplitCharacter(),
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.detachedIds).toEqual([]);

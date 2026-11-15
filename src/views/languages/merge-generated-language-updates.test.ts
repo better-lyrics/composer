@@ -5,14 +5,15 @@
 import { describe, expect, it } from "vitest";
 import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { moveWords } from "@/domain/commands/word-moves";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { roleWords } from "insync/line-track";
-import { addressOf } from "@/domain/selection/resolve";
+import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
 import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
 import { mergeGeneratedLanguageUpdates } from "@/views/languages/merge-generated-language-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function chorusLine(id: string, instanceIdx: number, begin: number, reading: string) {
   return legacyLine({
@@ -93,7 +94,7 @@ describe("mergeGeneratedLanguageUpdates", () => {
         segments: [],
         alignmentStatus: "confirmed",
         origin: "google",
-        sourceFingerprint: languageSourceFingerprint("하|늘", undefined),
+        sourceFingerprint: languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, "하|늘", undefined),
       },
     });
     useProjectStore.getState().reset();

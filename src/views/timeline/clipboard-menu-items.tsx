@@ -1,6 +1,6 @@
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { MenuItem } from "@/ui/menu";
 import { commitPasteAt } from "@/views/timeline/commit-paste";

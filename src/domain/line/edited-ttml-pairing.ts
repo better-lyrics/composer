@@ -16,8 +16,8 @@ function withoutAlternates(line: LyricLine): LyricLine {
   return main;
 }
 
-function mainExport(line: LyricLine): string {
-  return generateLineTtml(withoutAlternates(line));
+function mainExport(line: LyricLine, splitChar: string): string {
+  return generateLineTtml(withoutAlternates(line), splitChar);
 }
 
 function indexesByKey(editedKeys: readonly (string | undefined)[]): Map<string, number[]> {
@@ -42,6 +42,7 @@ function pairEditedLines(
   edited: readonly LyricLine[],
   editedKeys: readonly (string | undefined)[],
   keyIds: LineKeyIds,
+  splitChar: string,
 ): EditedLinePairs {
   const storedById = new Map(stored.map((line) => [line.id, line] as const));
   const lines = [...edited];
@@ -51,10 +52,10 @@ function pairEditedLines(
     const partner = id === undefined ? undefined : storedById.get(id);
     const [first] = indexes;
     if (!partner || first === undefined) continue;
-    const form = mainExport(partner);
+    const form = mainExport(partner, splitChar);
     const chosen = indexes.find((index) => {
       const line = edited[index];
-      return line !== undefined && mainExport(line) === form;
+      return line !== undefined && mainExport(line, splitChar) === form;
     });
     const pairedIndex = chosen ?? first;
     partners[pairedIndex] = partner;

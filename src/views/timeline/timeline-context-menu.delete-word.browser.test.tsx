@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { hasAnyTiming } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
@@ -10,6 +10,7 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -105,7 +106,7 @@ describe("TimelineContextMenu · delete word", () => {
 
       const line = lineById("l1");
       expect(line && hasAnyTiming(line)).toBe(false);
-      expect(lineText(line!)).toBe("hello world");
+      expect(lineText(line!, getSplitCharacter())).toBe("hello world");
     });
 
     const threeWords = () =>

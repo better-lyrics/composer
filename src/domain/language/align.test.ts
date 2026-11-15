@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "@/domain/language/align";
+import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "insync/language-align";
 import type { LineLanguage, TransliterationAlignmentStatus } from "insync/language";
-import { mappedTransliteration } from "@/domain/language/pieces";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { mappedTransliteration } from "insync/language-pieces";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import {
   type LegacyWord,
   legacyLanguages,
@@ -15,6 +15,7 @@ import {
   piecesOfLegacyWords,
   wordsWithPieces,
 } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function planned(words: LegacyWord[], text: string, status?: TransliterationAlignmentStatus) {
   const { words: plain, pieces } = piecesOfLegacyWords(words);
@@ -124,14 +125,17 @@ describe("transliteration alignment", () => {
       origin: "google",
       sourceFingerprint: "test",
     });
-    const line = lineFromFields({ id: "line", agentId: "v1", text: "붙어있던", words });
-    const first = { ...line, ...alignTrackToLine(line, track) };
+    const line = lineFromFields({ id: "line", agentId: "v1", text: "붙어있던", words }, DEFAULT_SPLIT_CHARACTER);
+    const first = { ...line, ...alignTrackToLine(line, track, DEFAULT_SPLIT_CHARACTER) };
     const firstTrack = first.languages?.transliteration;
     expect(firstTrack?.main.alignmentStatus).toBe("needs-review");
-    const reused = firstTrack && alignTrackToLine(first, firstTrack).languages?.transliteration;
+    const reused =
+      firstTrack && alignTrackToLine(first, firstTrack, DEFAULT_SPLIT_CHARACTER).languages?.transliteration;
     expect(reused?.main.alignmentStatus).toBe("needs-review");
     expect(reused?.main.pieces).toBe(firstTrack?.main.pieces);
-    expect(alignTrackToLine(first, track).languages?.transliteration?.main.alignmentStatus).toBe("needs-review");
+    expect(
+      alignTrackToLine(first, track, DEFAULT_SPLIT_CHARACTER).languages?.transliteration?.main.alignmentStatus,
+    ).toBe("needs-review");
   });
 
   it.each([undefined, "inferred", "unresolved"] as const)(
@@ -186,8 +190,11 @@ describe("transliteration alignment", () => {
     });
     expect(
       legacyLanguages(
-        alignTrackToLine(lineFromFields({ id: "line", agentId: "v1", text: "가", backgroundText: "나" }), track)
-          .languages,
+        alignTrackToLine(
+          lineFromFields({ id: "line", agentId: "v1", text: "가", backgroundText: "나" }, DEFAULT_SPLIT_CHARACTER),
+          track,
+          DEFAULT_SPLIT_CHARACTER,
+        ).languages,
       ).transliteration,
     ).toMatchObject({ alignmentStatus: "inferred", backgroundAlignmentStatus: "inferred" });
   });
@@ -212,7 +219,9 @@ describe("transliteration alignment", () => {
       backgroundWords: [{ id: "w12", text: "나", sep: "", begin: 0, end: 1, transliteration: "na", joinsNext: false }],
       transliteration: legacyLanguages({ transliteration: track }).transliteration,
     });
-    expect(legacyLanguages(alignTrackToLine(line, track).languages).transliteration).toMatchObject({
+    expect(
+      legacyLanguages(alignTrackToLine(line, track, DEFAULT_SPLIT_CHARACTER).languages).transliteration,
+    ).toMatchObject({
       alignmentStatus: "confirmed",
       backgroundAlignmentStatus: "needs-review",
     });
@@ -246,17 +255,20 @@ describe("withAlignedWords", () => {
   });
 
   it("returns the same line when there is no transliteration track", () => {
-    const line: LyricLine = lineFromFields({
-      id: "line",
-      agentId: "v1",
-      text: "Hello",
-      words: [{ id: "w18", text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false }],
-    });
-    expect(withAlignedWords(line)).toBe(line);
+    const line: LyricLine = lineFromFields(
+      {
+        id: "line",
+        agentId: "v1",
+        text: "Hello",
+        words: [{ id: "w18", text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(withAlignedWords(line, DEFAULT_SPLIT_CHARACTER)).toBe(line);
   });
 
   it("replaces stale stored pieces with the plan from the track text", () => {
-    const aligned = withAlignedWords(koreanLine);
+    const aligned = withAlignedWords(koreanLine, DEFAULT_SPLIT_CHARACTER);
     expect(
       legacyWords(timedSyllables(mainTrack(aligned)), aligned.languages)?.map((word) => word.transliteration),
     ).toEqual(["Uh", "ildan eun", "na"]);
@@ -268,7 +280,7 @@ describe("withAlignedWords", () => {
   });
 
   it("writes the plan status for each track onto the transliteration", () => {
-    const aligned = withAlignedWords(koreanLine);
+    const aligned = withAlignedWords(koreanLine, DEFAULT_SPLIT_CHARACTER);
     expect(aligned.languages?.transliteration?.main.alignmentStatus).toBe("inferred");
     expect(aligned.languages?.transliteration?.bg?.alignmentStatus).toBe("inferred");
     expect(aligned.languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
@@ -276,7 +288,7 @@ describe("withAlignedWords", () => {
 
   it("does not mutate the input line", () => {
     const before = structuredClone(koreanLine);
-    withAlignedWords(koreanLine);
+    withAlignedWords(koreanLine, DEFAULT_SPLIT_CHARACTER);
     expect(koreanLine).toEqual(before);
   });
 
@@ -309,7 +321,7 @@ describe("withAlignedWords", () => {
       origin: "manual",
       sourceFingerprint: "",
     };
-    const { languages } = alignTrackToLine(line, typed);
+    const { languages } = alignTrackToLine(line, typed, DEFAULT_SPLIT_CHARACTER);
     expect(languages?.transliteration?.main.pieces).toEqual({
       w1: { text: "h", joinerAfter: "" },
       w2: { text: "aneul" },

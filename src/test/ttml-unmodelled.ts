@@ -1,6 +1,6 @@
 import { writeXmlChild, writeXmlElement } from "insync/xml-node";
-import { importableMetadata } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { importableMetadata } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { parseTtmlDocument } from "@/utils/lyrics-parsers/ttml-helpers";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/utils/lyrics-parsers/ttml-modelled";
 import { xmlChildrenFromDom, xmlElementFromDom } from "@/utils/lyrics-parsers/xml-node-from-dom";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -238,7 +239,7 @@ function missingUnmodelledNodes(source: string, exported: string): UnmodelledNod
 
 // The export of a file opened as a new project.
 function exportOfImport(source: string): string {
-  const parsed = parseTtml(source);
+  const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
   return generateTTML({
     metadata: normalizeLoadedMetadata(importableMetadata(parsed.metadata)),
     agents: parsed.agents ?? [],
@@ -246,6 +247,7 @@ function exportOfImport(source: string): string {
     groups: parsed.groups ?? [],
     parts: parsed.parts,
     passthrough: parsed.passthrough,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
 }
 

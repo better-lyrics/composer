@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
-import { type ShownEditText, shownEditText } from "@/domain/edit-text/shown-row";
+import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -17,8 +18,12 @@ interface ShownText extends ShownEditText {
 // they show.
 function useShownEditText(lines: readonly LyricLine[]) {
   const splitCharacter = useSettingsStore((s) => s.splitCharacter);
-  const [shownText, setShownText] = useState<ShownText>(() => ({ ...shownEditText(lines), splitCharacter }));
-  if (shownText.splitCharacter !== splitCharacter) setShownText({ ...shownEditText(lines), splitCharacter });
+  const [shownText, setShownText] = useState<ShownText>(() => ({
+    ...shownEditText(lines, getSplitCharacter()),
+    splitCharacter,
+  }));
+  if (shownText.splitCharacter !== splitCharacter)
+    setShownText({ ...shownEditText(lines, getSplitCharacter()), splitCharacter });
   // Typed text keeps its inline backgrounds where the keystroke left them.
   const setRawText = useCallback(
     (text: string, caret?: number) =>
@@ -37,7 +42,7 @@ function useShownEditText(lines: readonly LyricLine[]) {
     [],
   );
   const showLines = useCallback(
-    (shownLines: readonly LyricLine[]) => showEditText(shownEditText(shownLines)),
+    (shownLines: readonly LyricLine[]) => showEditText(shownEditText(shownLines, getSplitCharacter())),
     [showEditText],
   );
   return { shownText, setRawText, showEditText, showLines };

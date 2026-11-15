@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { buildProjectBundle } from "@/lib/project-bundle";
 import { parseProjectFileContents } from "@/lib/project-file-read";
 import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";

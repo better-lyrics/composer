@@ -1,4 +1,4 @@
-import type { SyllablePosition } from "@/domain/word/syllable-groups";
+import type { SyllablePosition } from "insync/word-syllable-groups";
 
 // -- Constants -----------------------------------------------------------------
 

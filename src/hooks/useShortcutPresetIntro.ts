@@ -1,7 +1,7 @@
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { shortcutPreset } from "@/stores/shortcut-presets";
 import { useUIStore } from "@/stores/ui";
-import { pluralize, pluralWord } from "@/utils/pluralize";
+import { pluralize, pluralWord } from "insync/pluralize";
 import { useEffect } from "react";
 import { toast } from "sonner";
 

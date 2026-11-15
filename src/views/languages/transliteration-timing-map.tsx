@@ -1,4 +1,4 @@
-import { type TransliterationSlice, timedTransliterationSlice } from "@/domain/language/transliteration-format";
+import { type TransliterationSlice, timedTransliterationSlice } from "insync/language-transliteration-format";
 import type { WordTiming } from "insync/word-timing";
 import { cn } from "@/utils/cn";
 import { IconArrowRight } from "@tabler/icons-react";

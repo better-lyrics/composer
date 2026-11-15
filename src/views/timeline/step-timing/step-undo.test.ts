@@ -1,6 +1,6 @@
 import { fieldUpdates } from "@/test/field-updates";
 import { afterEach, beforeEach, expect, it } from "vitest";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { followStepUndo, rememberStepPress } from "@/views/timeline/step-timing/step-undo";

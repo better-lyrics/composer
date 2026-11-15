@@ -1,12 +1,12 @@
 import { expect } from "vitest";
-import { lineTranslations } from "@/domain/language/line-languages";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { lineTranslations } from "insync/language-line-languages";
+import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { isLineTimed } from "@/domain/line/sync-progress";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
+import { isLineTimed } from "insync/line-sync-progress";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { timingGranularityOf } from "@/domain/project/timing-granularity";
+import { timingGranularityOf } from "insync/project-timing-granularity";
 import { useProjectStore } from "@/stores/project";
 import {
   type EditOperation,
@@ -21,8 +21,9 @@ import {
   timedAt,
 } from "@/test/edited-ttml-edits";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { keyedExportLines } from "@/utils/ttml-line-keys";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Operations ---------------------------------------------------------------
 
@@ -66,10 +67,14 @@ const OPERATIONS: readonly EditOperation[] = [
       lossless: true,
       expectTaken: (lines) => {
         const added = required(
-          lines.find((line) => lineText(line) === "Brand new line"),
+          lines.find((line) => lineText(line, DEFAULT_SPLIT_CHARACTER) === "Brand new line"),
           "added line",
         );
-        expect(fieldsOfLine(added)).toMatchObject({ begin: 30, end: 31, backgroundText: "new ooh" });
+        expect(fieldsOfLine(added, DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+          begin: 30,
+          end: 31,
+          backgroundText: "new ooh",
+        });
         expect(roleWords(added, "bg")).toBeUndefined();
       },
     }),
@@ -98,7 +103,7 @@ const OPERATIONS: readonly EditOperation[] = [
         reordered: true,
         lossless: true,
         expectTaken: (lines) => {
-          const order = lines.filter(isLineTimed).map((line) => line.id);
+          const order = lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER)).map((line) => line.id);
           expect(order.indexOf(second.id)).toBe(order.indexOf(first.id) - 1);
         },
       };
@@ -131,16 +136,20 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "edit a background",
     edit: (project, ttml) => {
       const line = required(
-        project.lines.find((candidate) => backgroundText(candidate)),
+        project.lines.find((candidate) => backgroundText(candidate, DEFAULT_SPLIT_CHARACTER)),
         "background",
       );
-      const last = timedSyllables(backgroundTrack(line)).at(-1)?.text.trimEnd() ?? backgroundText(line);
+      const last =
+        timedSyllables(backgroundTrack(line)).at(-1)?.text.trimEnd() ?? backgroundText(line, DEFAULT_SPLIT_CHARACTER);
       return {
         edited: editParagraph(ttml, project, line, (p) =>
           p.replace(`>${last}</span></span>`, `>${last}h</span></span>`),
         ),
         touched: [line.id],
-        expectTaken: (lines) => expect(backgroundText(lineById(lines, line.id))).toBe(`${backgroundText(line)}h`),
+        expectTaken: (lines) =>
+          expect(backgroundText(lineById(lines, line.id), DEFAULT_SPLIT_CHARACTER)).toBe(
+            `${backgroundText(line, DEFAULT_SPLIT_CHARACTER)}h`,
+          ),
       };
     },
   },
@@ -186,7 +195,7 @@ const OPERATIONS: readonly EditOperation[] = [
         const ids = new Set(lines.map((line) => line.id));
         expect(part?.lineIds.every((id) => ids.has(id))).toBe(true);
         expect(part?.lineIds).toEqual(
-          expect.arrayContaining(keyedExportLines(project.lines).map(({ line }) => line.id)),
+          expect.arrayContaining(keyedExportLines(project.lines, DEFAULT_SPLIT_CHARACTER).map(({ line }) => line.id)),
         );
       },
     }),
@@ -221,7 +230,7 @@ const COMBINED_OPERATIONS: readonly EditOperation[] = [
           textEdit.expectTaken(lines);
           const ids = lines.map((candidate) => candidate.id);
           expect(ids.indexOf(line.id)).toBe(
-            lines.findIndex((candidate) => lineText(candidate) === "Brand new line") + 1,
+            lines.findIndex((candidate) => lineText(candidate, DEFAULT_SPLIT_CHARACTER) === "Brand new line") + 1,
           );
         },
       };
@@ -239,7 +248,7 @@ const COMBINED_OPERATIONS: readonly EditOperation[] = [
         reordered: true,
         expectTaken: (lines) => {
           textEdit.expectTaken(lines);
-          const order = lines.filter(isLineTimed).map((line) => line.id);
+          const order = lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER)).map((line) => line.id);
           expect(order.indexOf(second.id)).toBe(order.indexOf(first.id) - 1);
         },
       };

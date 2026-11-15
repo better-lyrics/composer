@@ -1,10 +1,10 @@
 import type { SeekReveal } from "@/audio/seek-reveal-intent";
-import { selectionBounds } from "@/domain/selection/bounds";
-import { sameAddress } from "@/domain/selection/identity";
-import { lineWordSelections } from "@/domain/selection/line-selections";
-import type { LoopRegion } from "@/domain/selection/loop-region";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { playbackRange } from "@/domain/selection/playback-range";
+import { selectionBounds } from "insync/selection-bounds";
+import { sameAddress } from "insync/selection-identity";
+import { lineWordSelections } from "insync/selection-line-selections";
+import type { LoopRegion } from "insync/selection-loop-region";
+import type { SyllableAddress } from "insync/selection-model";
+import { playbackRange } from "insync/selection-playback-range";
 import type { Bounds } from "insync/word-bounds";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
@@ -14,6 +14,7 @@ import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { focusBounds } from "@/views/timeline/group-focus";
 import { soloPlayStart } from "@/views/timeline/solo-playback";
 import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- State --------------------------------------------------------------------
 
@@ -27,7 +28,11 @@ useAudioStore.subscribe((state, previous) => {
 // -- Reads --------------------------------------------------------------------
 
 function currentSelectionBounds(): Bounds | null {
-  return selectionBounds(useProjectStore.getState().lines, useTimelineStore.getState().selectedWords);
+  return selectionBounds(
+    useProjectStore.getState().lines,
+    useTimelineStore.getState().selectedWords,
+    getSplitCharacter(),
+  );
 }
 
 function currentPlaybackRange(): Bounds | null {
@@ -192,7 +197,7 @@ function selectWordUnlessSelected(target: SyllableAddress): void {
 
 function selectLine(lineId: string): void {
   const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
-  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line));
+  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line, getSplitCharacter()));
 }
 
 // -- Exports ------------------------------------------------------------------

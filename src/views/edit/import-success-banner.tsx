@@ -2,7 +2,7 @@ import { IconFileImport, IconX } from "@tabler/icons-react";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { IconButton } from "@/ui/icon-button";
 import type { ParseResult } from "@/utils/lyrics-parsers";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 

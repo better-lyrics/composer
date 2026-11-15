@@ -4,15 +4,16 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { deleteWords } from "@/domain/commands/word-structure";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { addressAt } from "@/domain/selection/resolve";
-import type { DeletionSelection } from "@/domain/word/apply-word-deletion";
-import { newWordId } from "@/domain/word/id";
+import { addressAt } from "insync/selection-resolve";
+import type { DeletionSelection } from "insync/word-apply-word-deletion";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -27,16 +28,19 @@ function chorusLine(
     { id: newWordId(), text: "me", sep: " ", begin: offset + 0.5, end: offset + 1, joinsNext: false },
     { id: newWordId(), text: "now", sep: "", begin: offset + 1, end: offset + 1.5, joinsNext: false },
   ];
-  return lineFromFields({
-    id: opts.id ?? `c${instanceIdx}-${templateLineIdx}`,
-    text: words.map((word) => word.text + word.sep).join(""),
-    agentId: "v1",
-    groupId: "g1",
-    instanceIdx,
-    templateLineIdx,
-    ...(opts.detached ? { detached: true } : {}),
-    words,
-  });
+  return lineFromFields(
+    {
+      id: opts.id ?? `c${instanceIdx}-${templateLineIdx}`,
+      text: words.map((word) => word.text + word.sep).join(""),
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx,
+      ...(opts.detached ? { detached: true } : {}),
+      words,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 const del = (lineId: string, wordIndex: number, type: "word" | "bg" = "word"): DeletionSelection => ({
@@ -52,7 +56,7 @@ function applyWordDeletion(lines: LyricLine[], selections: readonly DeletionSele
     groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
   });
   const addresses = selections.flatMap(
-    ({ lineId, type, wordIndex }) => addressAt(lines, lineId, type, wordIndex) ?? [],
+    ({ lineId, type, wordIndex }) => addressAt(lines, lineId, type, wordIndex, DEFAULT_SPLIT_CHARACTER) ?? [],
   );
   useProjectStore.getState().commit(deleteWords(addresses));
   return useProjectStore.getState().lines;
@@ -75,7 +79,7 @@ describe("applyWordDeletion · linked instances", () => {
 
     for (const id of ["c0-0", "c1-0", "c2-0"]) {
       expect(texts(byId(result, id))).toEqual(["hold ", "now"]);
-      expect(lineText(byId(result, id)!)).toBe("hold now");
+      expect(lineText(byId(result, id)!, DEFAULT_SPLIT_CHARACTER)).toBe("hold now");
     }
   });
 
@@ -92,14 +96,17 @@ describe("applyWordDeletion · linked instances", () => {
 
   it("removes background words from every linked instance", () => {
     const withBg = (instanceIdx: number, offset: number): LyricLine =>
-      lineFromFields({
-        ...fieldsOfLine(chorusLine(instanceIdx, offset)),
-        backgroundText: "oh yeah",
-        backgroundWords: [
-          { id: newWordId(), text: "oh", sep: " ", begin: offset, end: offset + 0.5, joinsNext: false },
-          { id: newWordId(), text: "yeah", sep: "", begin: offset + 0.5, end: offset + 1, joinsNext: false },
-        ],
-      });
+      lineFromFields(
+        {
+          ...fieldsOfLine(chorusLine(instanceIdx, offset), DEFAULT_SPLIT_CHARACTER),
+          backgroundText: "oh yeah",
+          backgroundWords: [
+            { id: newWordId(), text: "oh", sep: " ", begin: offset, end: offset + 0.5, joinsNext: false },
+            { id: newWordId(), text: "yeah", sep: "", begin: offset + 0.5, end: offset + 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     const lines = [withBg(0, 10), withBg(1, 40)];
 
     const result = applyWordDeletion(lines, [del("c0-0", 0, "bg")]);
@@ -168,8 +175,14 @@ describe("applyWordDeletion · linked instances", () => {
   describe("regressions", () => {
     it("regression: keeps an instance the delete only reached through its link", () => {
       const secondLine = { text: "la", agentId: "v1", groupId: "g1", templateLineIdx: 1 };
-      const timedSecond: LyricLine = lineFromFields({ ...secondLine, id: "b0", instanceIdx: 0, begin: 12, end: 13 });
-      const untimedSecond: LyricLine = lineFromFields({ ...secondLine, id: "b1", instanceIdx: 1 });
+      const timedSecond: LyricLine = lineFromFields(
+        { ...secondLine, id: "b0", instanceIdx: 0, begin: 12, end: 13 },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const untimedSecond: LyricLine = lineFromFields(
+        { ...secondLine, id: "b1", instanceIdx: 1 },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       const lines = [chorusLine(0, 10), timedSecond, chorusLine(1, 40), untimedSecond];
 
       const result = applyWordDeletion(lines, [del("c0-0", 0), del("c0-0", 1), del("c0-0", 2)]);
@@ -210,16 +223,19 @@ describe("applyWordDeletion · linked instances", () => {
 
     it("clears a linked line-synced line in every instance", () => {
       const synced = (instanceIdx: number, offset: number): LyricLine =>
-        lineFromFields({
-          id: `s${instanceIdx}`,
-          text: "la la",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx,
-          templateLineIdx: 1,
-          begin: offset,
-          end: offset + 2,
-        });
+        lineFromFields(
+          {
+            id: `s${instanceIdx}`,
+            text: "la la",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx,
+            templateLineIdx: 1,
+            begin: offset,
+            end: offset + 2,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        );
       const lines = [chorusLine(0, 10), synced(0, 12), chorusLine(1, 40), synced(1, 42)];
 
       const result = applyWordDeletion(lines, [del("s0", 0)]);

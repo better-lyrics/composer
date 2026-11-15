@@ -1,10 +1,11 @@
 import type { LyricLine } from "insync/line";
-import { type SyncAddress, syncAddressAt } from "@/domain/sync/address";
-import { type AnchorUndo, anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
-import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import { type SyncAddress, syncAddressAt } from "insync/sync-address";
+import { type AnchorUndo, anchorGesture, storedSyncPosition } from "insync/sync-anchor-gesture";
+import { type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
+import type { SyncCursor } from "insync/sync-cursor";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -49,7 +50,10 @@ const song = (secondBegin?: number): LyricLine[] => [
 
 function gestureAt(lines: LyricLine[], gesture: SyncGesture, cursor: SyncCursor, time: number) {
   const ctx = { cursor, jumped: false, time, defaultWordDuration: 0.5, groups: sharing };
-  return { commit: commitGesture(lines, gesture, ctx), anchor: anchorGesture(lines, gesture, ctx) };
+  return {
+    commit: commitGesture(lines, gesture, { ...ctx, splitChar: DEFAULT_SPLIT_CHARACTER }),
+    anchor: anchorGesture(lines, gesture, { ...ctx, splitChar: DEFAULT_SPLIT_CHARACTER }),
+  };
 }
 
 describe("anchorGesture", () => {

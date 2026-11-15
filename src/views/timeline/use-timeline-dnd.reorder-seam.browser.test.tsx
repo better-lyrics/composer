@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -13,6 +13,7 @@ import {
   makeReorderDragStartEvent,
   POINTER_Y_MAIN,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineDnd · within-track reorder seam", () => {
   let scrollHost: HTMLDivElement;
@@ -22,16 +23,19 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        lineFromFields({
-          id: "l1",
-          text: "word1 word2 word3",
-          agentId: "v1",
-          words: [
-            { id: "w1", text: "word1", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-            { id: "w2", text: "word2", sep: " ", begin: 1, end: 1.5, joinsNext: false },
-            { id: "w3", text: "word3", sep: "", begin: 2, end: 2.5, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "l1",
+            text: "word1 word2 word3",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "word1", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+              { id: "w2", text: "word2", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+              { id: "w3", text: "word3", sep: "", begin: 2, end: 2.5, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
       ],
     });
     scrollHost = installScrollHost();

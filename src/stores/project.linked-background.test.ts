@@ -4,12 +4,12 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
 import type { LinkGroup } from "insync/group";
-import { withBackground, withSeededBackground } from "@/domain/line/background";
+import { withBackground, withSeededBackground } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";
-import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 
 /**
  * @vitest-environment node
@@ -17,6 +17,7 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -31,26 +32,32 @@ function seedTwoInstancesWithTimings() {
   useProjectStore.getState().commit(addGroup(seedGroup("g1")));
   useProjectStore.setState({
     lines: [
-      lineFromFields({
-        id: "a0",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        begin: 30,
-        end: 32,
-      }),
-      lineFromFields({
-        id: "a1",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        begin: 60,
-        end: 62,
-      }),
+      lineFromFields(
+        {
+          id: "a0",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 30,
+          end: 32,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "a1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          begin: 60,
+          end: 62,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ],
   });
 }
@@ -66,12 +73,15 @@ describe("project store · background vocals across linked instances", () => {
     seedTwoInstancesWithTimings();
     const source = useProjectStore.getState().lines.find((l) => l.id === "a0");
     if (!source) throw new Error("a0 not found");
-    const seeded = withSeededBackground(withBackground(source, { text: "ooh yeah", source: "manual" }));
+    const seeded = withSeededBackground(
+      withBackground(source, { text: "ooh yeah", source: "manual" }, DEFAULT_SPLIT_CHARACTER),
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { tracks: seeded.tracks } }]));
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(backgroundText(sibling!)).toBe("ooh yeah");
+    expect(backgroundText(sibling!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah");
     expect(timedSyllables(backgroundTrack(sibling!))).toEqual([]);
     expect(bgBounds(sibling!)?.begin).toBeGreaterThanOrEqual(60);
     expect(bgBounds(sibling!)?.end).toBeLessThanOrEqual(62);
@@ -80,19 +90,22 @@ describe("project store · background vocals across linked instances", () => {
   it("regression: a background edit reaches an instance with a diverged split, and later splits stay in step", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const instance = (id: string, instanceIdx: number, backgroundWords: WordTiming[] | undefined): LyricLine =>
-      lineFromFields({
-        id,
-        text: "hold me",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx,
-        templateLineIdx: 0,
-        begin: (backgroundWords?.[0].begin ?? 0) - 1,
-        end: backgroundWords?.at(-1)?.end ?? 0,
-        backgroundText: backgroundWords?.map((w) => w.text + w.sep).join(""),
-        backgroundWords,
-        backgroundTextSource: "manual",
-      });
+      lineFromFields(
+        {
+          id,
+          text: "hold me",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          begin: (backgroundWords?.[0].begin ?? 0) - 1,
+          end: backgroundWords?.at(-1)?.end ?? 0,
+          backgroundText: backgroundWords?.map((w) => w.text + w.sep).join(""),
+          backgroundWords,
+          backgroundTextSource: "manual",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     useProjectStore.setState({
       lines: [
         instance("a0", 0, [
@@ -116,16 +129,20 @@ describe("project store · background vocals across linked instances", () => {
       pasteLines([
         {
           id: "a0",
-          updates: manualBackgroundWordEdit(lineById("a0"), [
-            { id: "w6", text: "ahh", sep: " ", begin: 10, end: 10.5, joinsNext: false },
-            { id: "w7", text: "yeah", sep: "", begin: 10.5, end: 11, joinsNext: false },
-          ]),
+          updates: manualBackgroundWordEdit(
+            lineById("a0"),
+            [
+              { id: "w6", text: "ahh", sep: " ", begin: 10, end: 10.5, joinsNext: false },
+              { id: "w7", text: "yeah", sep: "", begin: 10.5, end: 11, joinsNext: false },
+            ],
+            DEFAULT_SPLIT_CHARACTER,
+          ),
         },
       ]),
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(backgroundText(a1!)).toBe("ahh yeah");
+    expect(backgroundText(a1!, DEFAULT_SPLIT_CHARACTER)).toBe("ahh yeah");
     expect(bgTexts("a1")).toEqual(["ahh ", "yeah"]);
     expect(timedSyllables(backgroundTrack(a1!))[0].begin).toBe(60);
     expect(timedSyllables(backgroundTrack(a1!)).at(-1)?.end).toBe(61.5);
@@ -143,19 +160,22 @@ describe("project store · background vocals across linked instances", () => {
   it("regression: a background merge reaches an instance whose word count differed", () => {
     useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const instance = (id: string, instanceIdx: number, backgroundWords: WordTiming[]): LyricLine =>
-      lineFromFields({
-        id,
-        text: "hold me",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx,
-        templateLineIdx: 0,
-        begin: backgroundWords[0].begin - 1,
-        end: backgroundWords.at(-1)?.end ?? 0,
-        backgroundText: backgroundWords.map((w) => w.text + w.sep).join(""),
-        backgroundWords,
-        backgroundTextSource: "manual",
-      });
+      lineFromFields(
+        {
+          id,
+          text: "hold me",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          begin: backgroundWords[0].begin - 1,
+          end: backgroundWords.at(-1)?.end ?? 0,
+          backgroundText: backgroundWords.map((w) => w.text + w.sep).join(""),
+          backgroundWords,
+          backgroundTextSource: "manual",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     useProjectStore.setState({
       lines: [
         instance("a0", 0, [

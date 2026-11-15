@@ -1,9 +1,10 @@
 import { mainTrack } from "insync/line-track";
 import type { LyricLine } from "insync/line";
-import { commitGesture } from "@/domain/sync/commit-gesture";
+import { commitGesture } from "insync/sync-commit-gesture";
 import { planLines, plainWindow } from "@/stores/alignment-plan";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // Line mode tap scenarios from hubertfa-posttrain's parity fixtures
 // (tests/composer_parity), which pin the behaviour hfapt/linemode.py
@@ -147,6 +148,7 @@ function tapLines(scenario: Scenario) {
       jumped,
       time,
       defaultWordDuration: 0.3,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!commit) throw new Error(`tap on line ${lineIndex} wasn't committed`);
     clamped.push(commit.clampedTo);

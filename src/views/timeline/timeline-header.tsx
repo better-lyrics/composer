@@ -15,22 +15,22 @@ import { useShallow } from "zustand/react/shallow";
 import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { instanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
-import { hasTransliteration } from "@/domain/language/has-transliteration";
+import { hasTransliteration } from "insync/language-has-transliteration";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
-import { convertLineToWord } from "@/domain/line/span-to-words";
-import { lineText } from "@/domain/line/text";
+import { isLineSynced } from "insync/line-predicates";
+import { convertLineToWord } from "insync/line-span-to-words";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { addressOf } from "@/domain/selection/resolve";
+import { withRoleWords } from "insync/line-track-writes";
+import type { SyllableAddress } from "insync/selection-model";
+import { addressOf } from "insync/selection-resolve";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { TooltipGroup } from "@/ui/tooltip";
-import { memoByIdentity } from "@/utils/memo-by-identity";
+import { memoByIdentity } from "insync/memo-by-identity";
 import { HeaderAction } from "@/views/timeline/header-action";
 import { SnapLatch } from "@/views/timeline/snap-latch";
 import { SpectrumLatch } from "@/views/timeline/spectrum/spectrum-latch";
@@ -40,6 +40,7 @@ import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls"
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCueShortcuts } from "@/views/timeline/use-cue-shortcuts";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface TimelineHeaderProps {
   onImportLyrics?: () => void;
@@ -56,7 +57,9 @@ interface LineFacts {
 const lineFacts = memoByIdentity(
   (lines: readonly LyricLine[]): LineFacts => ({
     hasTransliteration: hasTransliteration(lines),
-    hasUnexpandedLines: lines.some((l) => !timedSyllables(mainTrack(l)).length && lineText(l).trim().length > 0),
+    hasUnexpandedLines: lines.some(
+      (l) => !timedSyllables(mainTrack(l)).length && lineText(l, getSplitCharacter()).trim().length > 0,
+    ),
     instanceKeys: [...new Set(lines.flatMap((l) => (isLinked(l) ? [instanceKey(l.groupId, l.instanceIdx)] : [])))],
   }),
 );
@@ -100,7 +103,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     for (const line of lines) {
       const main = mainTrack(line);
       if (timedSyllables(main).length) continue;
-      if (!lineText(line).trim()) continue;
+      if (!lineText(line, getSplitCharacter()).trim()) continue;
       const written = isLineSynced(line)
         ? convertLineToWord(line)
         : withRoleWords(

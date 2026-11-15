@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { exportOfImport, missingUnmodelledNodes, readTtmlDocument, unmodelledNodes } from "@/test/ttml-unmodelled";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { parseXmlDocument } from "@/utils/xml-document";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -32,7 +33,7 @@ describe("real ttml files", () => {
     let keptNodes = 0;
     for (const path of REAL_TTML_FILES) {
       const source = readFileSync(path, "utf8");
-      const parsed = parseTtml(source);
+      const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
       if (parsed.issues.some((issue) => issue.reason === "empty-document")) {
         unreadable.push(path);
         continue;

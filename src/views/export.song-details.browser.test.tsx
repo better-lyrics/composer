@@ -1,5 +1,5 @@
 import { describe, expect, it, onTestFinished } from "vitest";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { stubClipboard } from "@/test/clipboard";

@@ -1,0 +1,138 @@
+import { mainBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
+import { isLineSynced } from "./line-predicates";
+import { type SyncGranularity, isSyncableLine } from "./line-sync-progress";
+import { mainTrack, timedSyllables } from "./line-track";
+
+// -- Types --------------------------------------------------------------------
+
+interface SyncCursor {
+  lineIndex: number;
+  wordIndex: number;
+}
+
+interface SyncSlot {
+  lineIndex: number;
+  wordIndex: number | null;
+}
+
+// -- Navigation ---------------------------------------------------------------
+
+function nextSyncableLineIndex(lines: readonly LyricLine[], fromIndex: number, splitChar: string): number {
+  for (let i = fromIndex + 1; i < lines.length; i++) if (isSyncableLine(lines[i], splitChar)) return i;
+  return lines.length;
+}
+
+function prevSyncableLineIndex(lines: readonly LyricLine[], fromIndex: number, splitChar: string): number {
+  for (let i = Math.min(fromIndex, lines.length) - 1; i >= 0; i--) if (isSyncableLine(lines[i], splitChar)) return i;
+  return -1;
+}
+
+function advanceCursor(
+  lines: readonly LyricLine[],
+  cursor: SyncCursor,
+  granularity: SyncGranularity,
+  splitChar: string,
+): SyncCursor {
+  const line = lines[cursor.lineIndex];
+  if (granularity === "word" && line && cursor.wordIndex + 1 < mainTrack(line).syllables.length) {
+    return { lineIndex: cursor.lineIndex, wordIndex: cursor.wordIndex + 1 };
+  }
+  return { lineIndex: nextSyncableLineIndex(lines, cursor.lineIndex, splitChar), wordIndex: 0 };
+}
+
+function isCursorPastEnd(lines: readonly LyricLine[], cursor: SyncCursor): boolean {
+  return lines.length > 0 && cursor.lineIndex >= lines.length;
+}
+
+// -- Resolution ---------------------------------------------------------------
+
+function firstUntimedSlot(line: LyricLine, granularity: SyncGranularity): number | null {
+  if (isLineSynced(line)) return null;
+  const timed = timedSyllables(mainTrack(line)).length;
+  if (granularity === "line") return timed > 0 ? null : 0;
+  return timed < mainTrack(line).syllables.length ? timed : null;
+}
+
+function clampCursor(
+  lines: readonly LyricLine[],
+  stored: SyncCursor,
+  granularity: SyncGranularity,
+  splitChar: string,
+): SyncCursor {
+  const lineIndex = Math.max(0, Math.min(stored.lineIndex, lines.length));
+  if (lineIndex < lines.length && !isSyncableLine(lines[lineIndex], splitChar)) {
+    return { lineIndex: nextSyncableLineIndex(lines, lineIndex, splitChar), wordIndex: 0 };
+  }
+  const line = lines[lineIndex];
+  if (!line || granularity === "line") return { lineIndex, wordIndex: 0 };
+  return { lineIndex, wordIndex: Math.max(0, Math.min(stored.wordIndex, timedSyllables(mainTrack(line)).length)) };
+}
+
+// Undo can remove timing behind the stored cursor; pull it back so the next tap fills the hole.
+function resolveSyncCursor(
+  lines: readonly LyricLine[],
+  stored: SyncCursor,
+  jumped: boolean,
+  granularity: SyncGranularity,
+  splitChar: string,
+): SyncCursor {
+  let cursor = clampCursor(lines, stored, granularity, splitChar);
+  if (jumped) return cursor;
+  while (cursor.wordIndex === 0) {
+    const prev = prevSyncableLineIndex(lines, cursor.lineIndex, splitChar);
+    if (prev < 0) break;
+    const gap = firstUntimedSlot(lines[prev], granularity);
+    if (gap === null) break;
+    cursor = { lineIndex: prev, wordIndex: gap };
+  }
+  return cursor;
+}
+
+// -- Slots --------------------------------------------------------------------
+
+function lastSlotOf(lines: readonly LyricLine[], lineIndex: number, granularity: SyncGranularity): SyncSlot | null {
+  const line = lines[lineIndex];
+  const words = timedSyllables(mainTrack(line));
+  if (granularity === "word" && words.length) return { lineIndex, wordIndex: words.length - 1 };
+  return mainBounds(line) ? { lineIndex, wordIndex: null } : null;
+}
+
+function previousSlot(
+  lines: readonly LyricLine[],
+  cursor: SyncCursor,
+  granularity: SyncGranularity,
+  splitChar: string,
+): SyncSlot | null {
+  const line = lines[cursor.lineIndex];
+  const words = line ? timedSyllables(mainTrack(line)) : [];
+  if (granularity === "word" && words.length && cursor.wordIndex > 0) {
+    return { lineIndex: cursor.lineIndex, wordIndex: Math.min(cursor.wordIndex, words.length) - 1 };
+  }
+  const prev = prevSyncableLineIndex(lines, cursor.lineIndex, splitChar);
+  return prev < 0 ? null : lastSlotOf(lines, prev, granularity);
+}
+
+function slotBounds(lines: readonly LyricLine[], slot: SyncSlot): { begin: number; end: number } | null {
+  const line = lines[slot.lineIndex];
+  if (!line) return null;
+  if (slot.wordIndex === null) {
+    const bounds = mainBounds(line);
+    return bounds ? { begin: bounds.begin, end: bounds.end } : null;
+  }
+  const word = timedSyllables(mainTrack(line))[slot.wordIndex];
+  return word ? { begin: word.begin, end: word.end } : null;
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export {
+  advanceCursor,
+  isCursorPastEnd,
+  nextSyncableLineIndex,
+  previousSlot,
+  prevSyncableLineIndex,
+  resolveSyncCursor,
+  slotBounds,
+};
+export type { SyncCursor, SyncSlot };

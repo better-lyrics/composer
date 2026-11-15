@@ -11,7 +11,7 @@ import { fieldUpdates } from "@/test/field-updates";
 import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
-import { applyWordPatch } from "@/utils/word-patch";
+import { applyWordPatch } from "insync/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 

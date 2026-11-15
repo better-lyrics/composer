@@ -9,8 +9,8 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
-import { lineFromFields } from "@/domain/line/line-from-fields";
-import { lineText } from "@/domain/line/text";
+import { lineFromFields } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
@@ -18,6 +18,7 @@ import { useProjectStore } from "@/stores/project";
 import type { ProjectState } from "@/stores/project/types";
 import { createGroup, createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // Pins the contract that history entries round-trip exactly and are never
 // changed by later edits. Entries share the store's immutable objects, so a
@@ -59,12 +60,15 @@ describe("history snapshot integrity", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        lineFromFields({
-          id: "L1",
-          text: "hello",
-          agentId: "v1",
-          words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
-        }),
+        lineFromFields(
+          {
+            id: "L1",
+            text: "hello",
+            agentId: "v1",
+            words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ]),
     );
     store.commit(
@@ -92,14 +96,17 @@ describe("history snapshot integrity", () => {
     const store = useProjectStore.getState();
     store.commit(
       addGroupWithLines({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }, [
-        lineFromFields({
-          id: "L1",
-          text: "x",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-        }),
+        lineFromFields(
+          {
+            id: "L1",
+            text: "x",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ]),
     );
     expect(useProjectStore.getState().groups).toHaveLength(1);
@@ -114,15 +121,18 @@ describe("history snapshot integrity", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        lineFromFields({
-          id: "A",
-          text: "a",
-          agentId: "v1",
-          words: [
-            { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5, joinsNext: false },
-            { id: "w4", text: "b", sep: "", begin: 0.5, end: 1, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "A",
+            text: "a",
+            agentId: "v1",
+            words: [
+              { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+              { id: "w4", text: "b", sep: "", begin: 0.5, end: 1, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ]),
     );
     store.commit(
@@ -231,7 +241,7 @@ describe("history snapshot integrity", () => {
       line.groupId = "changed in place";
     }).toThrow(TypeError);
     expect(() => store().lines.push(createLine({ id: "b" }))).toThrow(TypeError);
-    expect(store().lines.map((entry) => lineText(entry))).toEqual(["kept"]);
+    expect(store().lines.map((entry) => lineText(entry, DEFAULT_SPLIT_CHARACTER))).toEqual(["kept"]);
   });
 
   it("an in-place write to a committed store line throws, and undo then redo give back the same objects", () => {
@@ -248,6 +258,6 @@ describe("history snapshot integrity", () => {
 
     expect(store().lines).toBe(committedLines);
     expect(store().lines[0]).toBe(committedLines[0]);
-    expect(lineText(store().lines[0])).toBe("second");
+    expect(lineText(store().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("second");
   });
 });

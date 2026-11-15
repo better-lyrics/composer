@@ -1,6 +1,6 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { lineText } from "@/domain/line/text";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineText } from "insync/line-text";
+import { lineFromFields } from "insync/line-from-fields";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
@@ -8,6 +8,7 @@ import { EditorScreen } from "@/views/editor-screen";
 import { LanguagesPanel } from "@/views/languages";
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -22,7 +23,7 @@ function press(target: EventTarget, init: KeyboardEventInit): void {
 }
 
 function firstLineText(): string {
-  return lineText(useProjectStore.getState().lines[0]);
+  return lineText(useProjectStore.getState().lines[0], getSplitCharacter());
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -31,7 +32,9 @@ describe("Languages undo history", () => {
   beforeEach(() => {
     const store = useProjectStore.getState();
     store.setMetadata({ language: "ja" });
-    store.restoreLyrics({ lines: [lineFromFields({ id: "line", text: FIRST_TEXT, agentId: "v1" })] });
+    store.restoreLyrics({
+      lines: [lineFromFields({ id: "line", text: FIRST_TEXT, agentId: "v1" }, getSplitCharacter())],
+    });
     store.clearHistory();
     store.commit(pasteLines(fieldUpdates([{ id: "line", updates: { text: SECOND_TEXT } }])));
     store.undo();

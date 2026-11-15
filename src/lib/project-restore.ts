@@ -1,5 +1,5 @@
-import { type LanguageTextVariant, isLanguageTextVariant } from "@/domain/language/display";
-import { hasTransliteration } from "@/domain/language/has-transliteration";
+import { type LanguageTextVariant, isLanguageTextVariant } from "insync/language-display";
+import { hasTransliteration } from "insync/language-has-transliteration";
 import { type ResumePosition, isResumePosition } from "@/domain/project/resume-position";
 import { type ProjectTab, isProjectTab } from "@/domain/project/tab";
 import { applySavedProject } from "@/lib/apply-saved-project";

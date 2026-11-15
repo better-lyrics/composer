@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { LyricLine } from "insync/line";
 import { findOpenProjectId } from "@/lib/open-project-session";
 import type { ProjectSaveInput } from "@/lib/persistence";

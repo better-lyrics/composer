@@ -1,10 +1,10 @@
 import type { LyricLine } from "insync/line";
-import { wordAt } from "@/domain/selection/resolve";
+import { wordAt } from "insync/selection-resolve";
 import type { LoupeSize } from "@/domain/spectrum/loupe-size";
 import { useProjectStore } from "@/stores/project";
 import { loupeDeltaPopVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { LOUPE_ZOOM } from "@/views/timeline/loupe/draw-loupe";
 import { LoupeSpectrum } from "@/views/timeline/loupe/loupe-spectrum";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
@@ -12,6 +12,7 @@ import { pitchSession } from "@/views/timeline/pitch/pitch-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconMicrophone2 } from "@tabler/icons-react";
 import { m, useReducedMotion } from "motion/react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -31,7 +32,7 @@ const LOUPE_CARD_SURFACE =
 function editedWordText(lines: readonly LyricLine[], target: LoupeTarget): string {
   const line = lines.find((candidate) => candidate.id === target.lineId);
   if (!line) return "";
-  return wordAt([line], target)?.text.trim() ?? "";
+  return wordAt([line], target, getSplitCharacter())?.text.trim() ?? "";
 }
 
 function deltaLabel(deltaMs: number): string {

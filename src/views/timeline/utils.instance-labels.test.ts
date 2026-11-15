@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
@@ -6,18 +6,22 @@ import { resetAllStores } from "@/test/stores";
 import { getDrawnRows } from "@/views/timeline/drawn-rows";
 import { beforeEach, describe, expect, it } from "vitest";
 import { detachLine, removeInstance } from "@/domain/commands/instance-edits";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function linked(id: string, text: string, instanceIdx: number, templateLineIdx: number, begin: number): LyricLine {
-  return lineFromFields({
-    id,
-    text,
-    agentId: "v1",
-    groupId: "g1",
-    instanceIdx,
-    templateLineIdx,
-    begin,
-    end: begin + 1,
-  });
+  return lineFromFields(
+    {
+      id,
+      text,
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx,
+      begin,
+      end: begin + 1,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 function seed() {
@@ -27,7 +31,7 @@ function seed() {
       linked("a0", "Chorus a", 0, 0, 0),
       linked("a1", "Chorus b", 0, 1, 1),
       linked("a2", "Chorus c", 0, 2, 2),
-      lineFromFields({ id: "v", text: "Verse", agentId: "v1", begin: 4, end: 5 }),
+      lineFromFields({ id: "v", text: "Verse", agentId: "v1", begin: 4, end: 5 }, DEFAULT_SPLIT_CHARACTER),
       linked("b0", "Chorus a", 1, 0, 6),
       linked("b1", "Chorus b", 1, 1, 7),
       linked("b2", "Chorus c", 1, 2, 8),

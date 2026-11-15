@@ -8,9 +8,10 @@ import {
   sharesTiming,
   timeRangeResolver,
   wholeSongRange,
-} from "@/domain/group/shared-timing";
+} from "insync/group-shared-timing";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("keepsOwnTiming", () => {
   it("is true only for an own-timing instance of a sharing group", () => {
@@ -211,13 +212,13 @@ describe("wholeSongRange", () => {
 describe("firstFullyTimedInstance", () => {
   it("picks the first fully timed instance in the order given", () => {
     const lines = [chorus(0, 0), chorus(1, 0, 10), chorus(2, 0, 20)];
-    expect(firstFullyTimedInstance(lines, "g1", [0, 2, 1])).toBe(2);
+    expect(firstFullyTimedInstance(lines, "g1", [0, 2, 1], DEFAULT_SPLIT_CHARACTER)).toBe(2);
   });
 
   describe("edge cases", () => {
     it("skips a partly timed instance", () => {
       const lines = [chorus(0, 0, 1), chorus(0, 1), chorus(1, 0, 10), chorus(1, 1, 12)];
-      expect(firstFullyTimedInstance(lines, "g1", [0, 1])).toBe(1);
+      expect(firstFullyTimedInstance(lines, "g1", [0, 1], DEFAULT_SPLIT_CHARACTER)).toBe(1);
     });
 
     it("prefers a fully timed instance synced word by word over an earlier line-synced one", () => {
@@ -231,7 +232,9 @@ describe("firstFullyTimedInstance", () => {
           instanceIdx,
           templateLineIdx: 0,
         });
-      expect(firstFullyTimedInstance([lineSynced(0, 1), chorus(1, 0, 10)], "g1", [0, 1])).toBe(1);
+      expect(firstFullyTimedInstance([lineSynced(0, 1), chorus(1, 0, 10)], "g1", [0, 1], DEFAULT_SPLIT_CHARACTER)).toBe(
+        1,
+      );
     });
 
     it("falls back to the first line-synced instance when none is synced word by word", () => {
@@ -245,12 +248,14 @@ describe("firstFullyTimedInstance", () => {
           instanceIdx,
           templateLineIdx: 0,
         });
-      expect(firstFullyTimedInstance([lineSynced(0, 1), lineSynced(1, 10)], "g1", [1, 0])).toBe(1);
+      expect(
+        firstFullyTimedInstance([lineSynced(0, 1), lineSynced(1, 10)], "g1", [1, 0], DEFAULT_SPLIT_CHARACTER),
+      ).toBe(1);
     });
 
     it("is undefined when no candidate is fully timed or there are no candidates", () => {
-      expect(firstFullyTimedInstance([chorus(0, 0)], "g1", [0])).toBeUndefined();
-      expect(firstFullyTimedInstance([chorus(0, 0, 1)], "g1", [])).toBeUndefined();
+      expect(firstFullyTimedInstance([chorus(0, 0)], "g1", [0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+      expect(firstFullyTimedInstance([chorus(0, 0, 1)], "g1", [], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
     });
   });
 });

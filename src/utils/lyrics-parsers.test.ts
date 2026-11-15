@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("parseLyricsFile - plain LRC", () => {
   it("parses line-level timing without word timing", () => {
@@ -13,14 +14,14 @@ describe("parseLyricsFile - plain LRC", () => {
     expect(result.lines).toHaveLength(2);
 
     expect(mainTrack(result.lines[0]).begin).toBeCloseTo(12.34, 2);
-    expect(lineText(result.lines[0])).toBe("Hello world");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello world");
     expect(roleWords(result.lines[0], "main")).toBeUndefined();
     expect(mainTrack(result.lines[0]).end).toBeCloseTo(15.67, 2);
 
     // The last line has no following line and no [length:] tag, so its end is
     // unknown: it parses as an untimed line rather than a begin-only line.
     expect(mainTrack(result.lines[1]).begin).toBeUndefined();
-    expect(lineText(result.lines[1])).toBe("Next line");
+    expect(lineText(result.lines[1], DEFAULT_SPLIT_CHARACTER)).toBe("Next line");
     expect(roleWords(result.lines[1], "main")).toBeUndefined();
   });
 
@@ -61,7 +62,7 @@ describe("parseLyricsFile - plain LRC", () => {
 [00:20.00]Verse line`;
     const result = parseLyricsFile("song.lrc", content);
 
-    const chorusLines = result.lines.filter((l) => lineText(l) === "Chorus line");
+    const chorusLines = result.lines.filter((l) => lineText(l, DEFAULT_SPLIT_CHARACTER) === "Chorus line");
     expect(chorusLines).toHaveLength(2);
     expect(chorusLines.map((l) => mainTrack(l).begin).sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual([10, 30]);
   });
@@ -88,7 +89,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     // A word-synced line carries its timing in `words`, not at line level.
     expect(mainTrack(line1).begin).toBeUndefined();
     expect(mainTrack(line1).end).toBeUndefined();
-    expect(lineText(line1)).toBe("Hello world");
+    expect(lineText(line1, DEFAULT_SPLIT_CHARACTER)).toBe("Hello world");
   });
 
   it("uses a trailing sentinel tag as the last word's end", () => {
@@ -128,7 +129,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     const content = "[00:12.00]<00:12.00>Hello <00:12.50>beautiful <00:13.00>world<00:13.50>";
     const result = parseLyricsFile("song.lrc", content);
 
-    expect(lineText(result.lines[0])).toBe("Hello beautiful world");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello beautiful world");
     expect(
       timedSyllables(mainTrack(result.lines[0]))
         .map((w) => w.text + w.sep)
@@ -141,12 +142,12 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
 [00:20.00]Middle`;
     const result = parseLyricsFile("song.lrc", content);
 
-    const chorusLines = result.lines.filter((l) => lineText(l) === "Hello world");
+    const chorusLines = result.lines.filter((l) => lineText(l, DEFAULT_SPLIT_CHARACTER) === "Hello world");
     expect(chorusLines).toHaveLength(2);
     for (const line of chorusLines) {
       expect(roleWords(line, "main")).toBeUndefined();
     }
-    expect(chorusLines.some((l) => lineText(l).includes("<"))).toBe(false);
+    expect(chorusLines.some((l) => lineText(l, DEFAULT_SPLIT_CHARACTER).includes("<"))).toBe(false);
   });
 });
 
@@ -208,7 +209,7 @@ Second subtitle line`;
     expect(result.lines).toHaveLength(2);
     expect(mainTrack(result.lines[0]).begin).toBeCloseTo(10.0, 2);
     expect(mainTrack(result.lines[0]).end).toBeCloseTo(12.5, 2);
-    expect(lineText(result.lines[0])).toBe("First subtitle line");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("First subtitle line");
     expect(mainTrack(result.lines[1]).begin).toBeCloseTo(13.0, 2);
     expect(mainTrack(result.lines[1]).end).toBeCloseTo(15.5, 2);
   });

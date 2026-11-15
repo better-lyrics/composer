@@ -1,4 +1,4 @@
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { isLineTimed } from "insync/line-sync-progress";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { importLyricsButtonStep, importLyricsDialogStep } from "@/tour/import-lyrics-steps";
@@ -8,6 +8,7 @@ import { formatShortcut } from "@/utils/format-key";
 import { MOD_KEY } from "@/utils/platform";
 import { escapeXmlText } from "insync/xml-node";
 import type { DriveStep } from "driver.js";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -51,7 +52,8 @@ const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="
 
 const gateAudioLoaded = () => useAudioStore.getState().source !== null;
 const gateLyricsExist = () => useProjectStore.getState().lines.length > 0;
-const gateFirstLineSynced = () => useProjectStore.getState().lines.some(isLineTimed);
+const gateFirstLineSynced = () =>
+  useProjectStore.getState().lines.some((value) => isLineTimed(value, getSplitCharacter()));
 
 // -- Tour Steps ---------------------------------------------------------------
 

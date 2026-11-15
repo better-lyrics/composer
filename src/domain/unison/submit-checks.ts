@@ -1,12 +1,13 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
 import type { LyricLine } from "insync/line";
-import { fullySyncedLineCount, isSyncableLine, type SyncGap, syncGaps } from "@/domain/line/sync-progress";
-import { type ZeroLengthWordIssue, zeroLengthWordIssues } from "@/domain/line/zero-length-words";
+import { fullySyncedLineCount, isSyncableLine, type SyncGap, syncGaps } from "insync/line-sync-progress";
+import { type ZeroLengthWordIssue, zeroLengthWordIssues } from "insync/line-zero-length-words";
 import { namedArtists } from "@/domain/project/display-title";
-import { normalizeLanguageTag } from "@/domain/project/language";
+import { normalizeLanguageTag } from "insync/project-language";
 import { type UnisonTtmlProblem, precheckUnisonTtml } from "@/domain/unison/ttml-precheck";
 import { isValidIsrc } from "@/utils/isrc";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -95,9 +96,9 @@ function songCheck({ title, artists }: SubmitCheckInput): SubmitCheck {
 }
 
 function syncedCheck({ lines }: SubmitCheckInput): SubmitCheck {
-  const gaps = syncGaps(lines);
-  const lineCount = lines.filter(isSyncableLine).length;
-  const syncedLineCount = fullySyncedLineCount(lines);
+  const gaps = syncGaps(lines, getSplitCharacter());
+  const lineCount = lines.filter((value) => isSyncableLine(value, getSplitCharacter())).length;
+  const syncedLineCount = fullySyncedLineCount(lines, getSplitCharacter());
   if (lineCount > 0 && gaps.length === 0) return { id: "synced", status: "pass", syncedLineCount, lineCount };
   return { id: "synced", status: "fail", syncedLineCount, lineCount, fix: { kind: "lines", issues: gaps } };
 }
@@ -116,7 +117,8 @@ function ttmlProblem({ content, contentIsEdited }: SubmitCheckInput): TtmlCheckP
 function ttmlFix(problem: TtmlCheckProblem, input: SubmitCheckInput): CheckFix {
   if (input.contentIsEdited) return { kind: "action", action: "regenerate" };
   // Generated word timing comes from the user's own words; other generated format problems are Composer's to fix.
-  if (problem === "zero-length-words") return { kind: "lines", issues: zeroLengthWordIssues(input.lines) };
+  if (problem === "zero-length-words")
+    return { kind: "lines", issues: zeroLengthWordIssues(input.lines, getSplitCharacter()) };
   return { kind: "none" };
 }
 

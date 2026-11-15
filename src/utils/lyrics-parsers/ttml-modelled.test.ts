@@ -9,6 +9,7 @@ import {
 } from "@/test/ttml-fixtures";
 import { readTtmlDocument, unmodelledNodes } from "@/test/ttml-unmodelled";
 import { generateProjectTtml } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("ttml modelled", () => {
   it("a Composer export has nothing to keep", () => {
@@ -19,8 +20,8 @@ describe("ttml modelled", () => {
       buildAlternateBackgroundLanguageTtml(),
       buildMatchingAlternateLanguageTtml(),
       ...EDITED_TTML_PROJECTS.flatMap((build) => [
-        generateProjectTtml(build(), 30, "word"),
-        generateProjectTtml(build(), 30, "line"),
+        generateProjectTtml(build(), 30, DEFAULT_SPLIT_CHARACTER, "word"),
+        generateProjectTtml(build(), 30, DEFAULT_SPLIT_CHARACTER, "line"),
       ]),
     ];
     for (const ttml of exports) expect(unmodelledNodes(readTtmlDocument(ttml))).toEqual([]);

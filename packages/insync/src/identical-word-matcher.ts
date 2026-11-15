@@ -1,0 +1,88 @@
+import type { LyricLine } from "./line";
+import { backgroundTrack, mainTrack, timedSyllables, trackWords } from "./line-track";
+import { isInSyllableGroup } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
+
+// -- Types --------------------------------------------------------------------
+
+interface IdenticalMatchSource {
+  lineId: string;
+  wordIndex: number;
+  type: "word" | "bg";
+}
+
+interface IdenticalMatch extends IdenticalMatchSource {
+  lineIndex: number;
+  word: WordTiming;
+}
+
+interface MatchOptions {
+  caseInsensitive: boolean;
+  excludeSource: boolean;
+  splitPoints: number[];
+}
+
+// -- Functions ----------------------------------------------------------------
+
+function normalizeText(text: string, caseInsensitive: boolean): string {
+  const trimmed = text.trimEnd();
+  return caseInsensitive ? trimmed.toLocaleLowerCase() : trimmed;
+}
+
+function findSourceWord(lines: LyricLine[], source: IdenticalMatchSource): WordTiming | undefined {
+  const sourceLine = lines.find((line) => line.id === source.lineId);
+  if (!sourceLine) return undefined;
+  const track = trackWords(sourceLine, source.type);
+  return track?.[source.wordIndex];
+}
+
+function collectTrackMatches(
+  line: LyricLine,
+  lineIndex: number,
+  track: WordTiming[],
+  type: "word" | "bg",
+  source: IdenticalMatchSource,
+  options: MatchOptions,
+  targetText: string,
+  minLength: number,
+  out: IdenticalMatch[],
+): void {
+  for (let wordIndex = 0; wordIndex < track.length; wordIndex++) {
+    const word = track[wordIndex];
+    if (!word) continue;
+    if (isInSyllableGroup(track, wordIndex)) continue;
+    const isSource = line.id === source.lineId && type === source.type && wordIndex === source.wordIndex;
+    if (options.excludeSource && isSource) continue;
+    const trimmed = word.text;
+    if (trimmed.length < minLength) continue;
+    const candidate = options.caseInsensitive ? trimmed.toLocaleLowerCase() : trimmed;
+    if (candidate !== targetText) continue;
+    out.push({ lineId: line.id, lineIndex, wordIndex, type, word });
+  }
+}
+
+function findIdenticalWords(lines: LyricLine[], source: IdenticalMatchSource, options: MatchOptions): IdenticalMatch[] {
+  const sourceWord = findSourceWord(lines, source);
+  if (!sourceWord) return [];
+
+  const targetText = normalizeText(sourceWord.text, options.caseInsensitive);
+  const maxSplitPoint = options.splitPoints.length > 0 ? Math.max(...options.splitPoints) : 0;
+  const minLength = maxSplitPoint + 1;
+
+  const matches: IdenticalMatch[] = [];
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
+    if (!line) continue;
+    const mainWords = timedSyllables(mainTrack(line));
+    const backgroundWords = timedSyllables(backgroundTrack(line));
+    collectTrackMatches(line, lineIndex, mainWords, "word", source, options, targetText, minLength, matches);
+    collectTrackMatches(line, lineIndex, backgroundWords, "bg", source, options, targetText, minLength, matches);
+  }
+  return matches;
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { findIdenticalWords };
+
+export type { IdenticalMatchSource };

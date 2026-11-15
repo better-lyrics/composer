@@ -1,12 +1,13 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { bgBounds, effectiveBounds, mainBounds } from "insync/line-bounds";
 
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function line(extras: Partial<LineFields> = {}) {
-  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras }, DEFAULT_SPLIT_CHARACTER);
 }
 
 // -- mainBounds ---------------------------------------------------------------

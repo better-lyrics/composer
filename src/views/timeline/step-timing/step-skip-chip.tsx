@@ -1,6 +1,6 @@
 import type { LinkGroup } from "insync/group";
 import { instanceKey } from "insync/instance-key";
-import { instanceName } from "@/domain/instance/name";
+import { instanceName } from "insync/instance-name";
 import { useProjectStore } from "@/stores/project";
 import { Tooltip } from "@/ui/tooltip";
 import { BannerTag } from "@/views/timeline/banner-tag";

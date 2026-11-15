@@ -1,17 +1,18 @@
 import { restorePlayedRanges } from "@/audio/playback-ranges";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { readAlignedTimings } from "@/domain/alignment/fingerprint";
 import { readPlayedRanges } from "@/domain/alignment/played-ranges";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground } from "insync/line-background";
 import { savedExportTiming } from "@/domain/project/export-timing";
-import { isMetadataKey } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { isMetadataKey } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -33,7 +34,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   const state = useProjectStore.getState();
   state.setMetadata(normalizeLoadedMetadata(project.metadata));
   state.restoreLyrics({
-    lines: linesFromSaved(project.lines ?? []).map(withSeededBackground),
+    lines: linesFromSaved(project.lines ?? []).map((value) => withSeededBackground(value, getSplitCharacter())),
     groups: project.groups ?? [],
     parts: project.parts ?? [],
     passthrough: project.passthrough ?? {},

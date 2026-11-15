@@ -1,12 +1,13 @@
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
-import { flattenBody } from "@/domain/group/flatten";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
+import { flattenBody } from "insync/group-flatten";
 import { isInstanceSpan, type LyricDoc } from "insync/group";
-import { sameToTheMs } from "@/domain/group/read-instance";
+import { sameToTheMs } from "insync/group-read-instance";
 import type { LyricLine } from "insync/line";
 import { linesFromSaved, type StoredProject, upgradeSavedProject } from "@/lib/saved-project";
 import { compareExports, type ExportDifference } from "@/test/export-equality";
 import { type InstanceDrift, sharedInstanceDrift } from "@/test/shared-instance-drift";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -72,7 +73,7 @@ function fallbacksOf(doc: LyricDoc, lossy: number): MigrationFallbacks {
 // cloned before flattening so no line object is handed back from the read.
 function checkTemplateMigration(name: string, record: StoredProject): TemplateMigrationReport {
   const flat: LyricLine[] = linesFromSaved(upgradeSavedProject(structuredClone(record)).lines);
-  const doc = docFromFlatLines(flat);
+  const doc = docFromFlatLines(flat, DEFAULT_SPLIT_CHARACTER);
   const fromTemplate = flattenBody(structuredClone(doc));
   const lossyLines = flat.flatMap((line, index) => (sameToTheMs(fromTemplate[index], line) ? [] : [line.id]));
   if (fromTemplate.length !== flat.length) lossyLines.push(`line count ${flat.length} to ${fromTemplate.length}`);

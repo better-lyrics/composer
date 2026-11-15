@@ -1,16 +1,17 @@
 import { isRefused } from "@/domain/commands/outcome";
 import { moveWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
 import type { LyricLine } from "insync/line";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
-import { sameAddress } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "@/domain/selection/resolve";
-import type { MoveRejectReason } from "@/domain/word/move-across-lines";
-import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { sameAddress } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
+import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "insync/selection-resolve";
+import type { MoveRejectReason } from "insync/word-move-across-lines";
+import { expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import { useProjectStore } from "@/stores/project";
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -50,9 +51,11 @@ function resolveWordsToOperate(
   activeData: DragData,
   selectedWords: readonly SyllableAddress[],
 ): DragWord[] {
-  const dragged = addressAt(lines, activeData.lineId, activeData.trackType, activeData.wordIndex);
+  const dragged = addressAt(lines, activeData.lineId, activeData.trackType, activeData.wordIndex, getSplitCharacter());
   const isDraggedWordSelected = dragged !== null && selectedWords.some((selected) => sameAddress(selected, dragged));
-  return isDraggedWordSelected ? resolveAddresses(lines, selectedWords) : [draggedWord(activeData)];
+  return isDraggedWordSelected
+    ? resolveAddresses(lines, selectedWords, getSplitCharacter())
+    : [draggedWord(activeData)];
 }
 
 function expandSelectionsAcrossLines(lines: readonly LyricLine[], selections: DragWord[]): DragWord[] {
@@ -63,7 +66,7 @@ function expandSelectionsAcrossLines(lines: readonly LyricLine[], selections: Dr
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
-    const words = drawnSyllables(line, trackRole(sel.type));
+    const words = drawnSyllables(line, trackRole(sel.type), getSplitCharacter());
     if (!words) continue;
     const expanded = expandSelectionToGroupmates(words, [sel.wordIndex]);
     for (const idx of expanded) {
@@ -77,7 +80,7 @@ function expandSelectionsAcrossLines(lines: readonly LyricLine[], selections: Dr
 }
 
 function resolvedWords(lines: readonly LyricLine[], words: readonly DragWord[]): ResolvedAddress[] {
-  return words.flatMap((word) => addressAt(lines, word.lineId, word.type, word.wordIndex) ?? []);
+  return words.flatMap((word) => addressAt(lines, word.lineId, word.type, word.wordIndex, getSplitCharacter()) ?? []);
 }
 
 function addressesOf(lines: readonly LyricLine[], words: readonly DragWord[]): SyllableAddress[] {

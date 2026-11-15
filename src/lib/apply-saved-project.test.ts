@@ -4,7 +4,7 @@ import type { Agent } from "insync/agent";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup } from "@/domain/commands/group-edits";
 import { bgBounds } from "insync/line-bounds";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
@@ -15,6 +15,7 @@ import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const FILE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "File Lead" },
@@ -126,7 +127,9 @@ describe("applySavedProject", () => {
       useProjectStore.getState().undo();
       useProjectStore.getState().undo();
 
-      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["file line"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "file line",
+      ]);
       expect(useProjectStore.getState().groups.map((group) => group.id)).toEqual(["gb"]);
     });
   });

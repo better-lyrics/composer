@@ -1,5 +1,5 @@
 import type { LanguagePieces, LineLanguage, LineLanguages } from "insync/language";
-import { keyedPieces } from "@/domain/language/pieces";
+import { keyedPieces } from "insync/language-pieces";
 import {
   languagesFromV3,
   lineLanguageFromV3,
@@ -11,12 +11,13 @@ import {
   v3PiecesOf,
   v3WordPieces,
   withoutV3Piece,
-} from "@/domain/language/v3-languages";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+} from "insync/language-v3-languages";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -39,12 +40,15 @@ function legacyLine({ words, backgroundWords, translations, transliteration, ...
     { main: v3PiecesOf(words), bg: v3PiecesOf(backgroundWords) },
     { words: storeWords, backgroundWords: storeBackgroundWords },
   );
-  const line = lineFromFields({
-    ...fields,
-    ...(storeWords && { words: storeWords }),
-    ...(storeBackgroundWords && { backgroundWords: storeBackgroundWords }),
-    ...(languages && { languages }),
-  });
+  const line = lineFromFields(
+    {
+      ...fields,
+      ...(storeWords && { words: storeWords }),
+      ...(storeBackgroundWords && { backgroundWords: storeBackgroundWords }),
+      ...(languages && { languages }),
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
   const kept = [
     ...(legacyWords(roleWords(line, "main"), languages) ?? []),
     ...(legacyWords(roleWords(line, "bg"), languages, "bg") ?? []),
@@ -82,7 +86,7 @@ function wordsWithPieces(words: readonly WordTiming[], pieces: LanguagePieces | 
 }
 
 function legacyView(line: LyricLine): LegacyLine {
-  const { languages, words, backgroundWords, ...fields } = fieldsOfLine(line);
+  const { languages, words, backgroundWords, ...fields } = fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER);
   return {
     ...fields,
     ...(words && { words: legacyWords(words, languages) }),

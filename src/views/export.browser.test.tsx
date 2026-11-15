@@ -2,8 +2,8 @@ import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { mainTrack } from "insync/line-track";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { lineText } from "@/domain/line/text";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
+import { lineText } from "insync/line-text";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -14,6 +14,7 @@ import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
 import { resolvedColor } from "@/test/resolved-color";
 import { ExportPanel } from "@/views/export";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -422,7 +423,7 @@ describe("ExportPanel · Done applies TTML edits to the project", () => {
     await textarea.fill(generated.replace(">Hello<", ">Hello there<"));
     await screen.getByRole("button", { name: "Done" }).click();
     await expect
-      .poll(() => useProjectStore.getState().lines.map((line) => lineText(line)))
+      .poll(() => useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter())))
       .toEqual(["Hello there", "World"]);
     expect(useProjectStore.getState().ttmlEditState).toBeNull();
     await expect.element(screen.getByText("Updated the lyrics from the TTML")).toBeInTheDocument();
@@ -434,7 +435,9 @@ describe("ExportPanel · Done applies TTML edits to the project", () => {
       '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:05.000" end="00:06.000">Pasted in</p></div></body></tt>',
     );
     await screen.getByRole("button", { name: "Done" }).click();
-    await expect.poll(() => useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Pasted in"]);
+    await expect
+      .poll(() => useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter())))
+      .toEqual(["Pasted in"]);
     expect(mainTrack(useProjectStore.getState().lines[0]!).begin).toBe(5);
   });
 
@@ -444,7 +447,10 @@ describe("ExportPanel · Done applies TTML edits to the project", () => {
       await textarea.fill("CUSTOM EDITED CONTENT");
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByText(/only change the exported file/)).toBeInTheDocument();
-      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Hello", "World"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
+        "Hello",
+        "World",
+      ]);
       expect(useProjectStore.getState().ttmlEditState?.content).toBe("CUSTOM EDITED CONTENT");
     });
   });

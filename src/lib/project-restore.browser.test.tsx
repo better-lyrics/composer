@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { usePersistence } from "@/hooks/usePersistence";
 import { createProject, restoreOpenProject } from "@/lib/open-project";
 import { flushPendingSave } from "@/lib/persistence-debounce";
@@ -34,6 +34,7 @@ import { createLine } from "@/test/factories";
 import { seedStoredProject, v3StoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -108,7 +109,10 @@ describe("project-restore", () => {
     applyProjectToStores(await loadProjectForRestore("p1"));
     const project = useProjectStore.getState();
     expect(project.metadata.title).toBe("Midnight City");
-    expect(project.lines.map((line) => lineText(line))).toEqual(["Waiting in a car", "Waiting for a ride"]);
+    expect(project.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
+      "Waiting in a car",
+      "Waiting for a ride",
+    ]);
     expect(project.activeTab).toBe("timeline");
     expect(project.isDirty).toBe(false);
     expect(useSeparationStore.getState().currentStem).toBe("vocals");

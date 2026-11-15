@@ -1,4 +1,4 @@
-import type { LineTemplate } from "@/domain/group/template";
+import type { LineTemplate } from "insync/group-template";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { type InstanceApplyResult, applyInstanceTemplate } from "@/views/timeline/apply-instance-template";

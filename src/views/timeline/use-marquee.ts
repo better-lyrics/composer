@@ -1,8 +1,8 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { addressOf } from "@/domain/selection/resolve";
-import { mergeAddresses } from "@/domain/selection/set-ops";
+import { drawnSyllables } from "insync/line-drawn-track";
+import type { SyllableAddress } from "insync/selection-model";
+import { addressOf } from "insync/selection-resolve";
+import { mergeAddresses } from "insync/selection-set-ops";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -13,6 +13,7 @@ import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { readViewScroll, scrollViewBy } from "@/views/timeline/view-scroll";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -113,12 +114,12 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       if (!pos) continue;
 
       const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-      const backgroundWords = drawnSyllables(line, "bg");
+      const backgroundWords = drawnSyllables(line, "bg", getSplitCharacter());
       const mainTop = pos.top;
       const mainBottom = mainTop + mainHeight;
 
       if (mainTop < rectBottom && mainBottom > rect.y) {
-        for (const word of drawnSyllables(line, "main")) {
+        for (const word of drawnSyllables(line, "main", getSplitCharacter())) {
           const wordLeft = GUTTER_WIDTH + word.begin * zoom;
           const wordRight = GUTTER_WIDTH + word.end * zoom;
           if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "word", word));

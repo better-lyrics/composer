@@ -1,9 +1,9 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 /**
  * @vitest-environment node
  */
@@ -13,9 +13,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function seedLine(id: string, overrides: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({ id, text: "hello world", agentId: "v1", ...overrides });
+  return lineFromFields({ id, text: "hello world", agentId: "v1", ...overrides }, DEFAULT_SPLIT_CHARACTER);
 }
 
 function seedGroup(id: string, overrides: Partial<LinkGroup> = {}): LinkGroup {
@@ -170,16 +171,16 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { text: "" })]));
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "our favorite song is on" })] });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("our favorite song is on");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("our favorite song is on");
 
     useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a", updates: { begin: 5, end: 7 } }])));
     const placed = useProjectStore.getState().lines[0];
-    expect(lineText(placed)).toBe("our favorite song is on");
+    expect(lineText(placed, DEFAULT_SPLIT_CHARACTER)).toBe("our favorite song is on");
     expect(mainTrack(placed).begin).toBe(5);
 
     useProjectStore.getState().undo();
     const afterUndo = useProjectStore.getState().lines[0];
-    expect(lineText(afterUndo)).toBe("our favorite song is on");
+    expect(lineText(afterUndo, DEFAULT_SPLIT_CHARACTER)).toBe("our favorite song is on");
     expect(mainTrack(afterUndo).begin).toBeUndefined();
   });
 
@@ -190,7 +191,7 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "alpha edited" })] });
     useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "a", updates: { begin: 1, end: 2 } }])));
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("alpha edited");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("alpha edited");
     expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBeUndefined();
   });
 
@@ -243,10 +244,10 @@ describe("closeLyricBurst", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("hello");
 
     useProjectStore.getState().redo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello world");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("hello world");
   });
 
   it("is a no-op when nothing changed since the last history entry", () => {
@@ -269,18 +270,18 @@ describe("closeLyricBurst", () => {
 
     useProjectStore.getState().undo();
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("one");
 
     const baseline = useProjectStore.getState().lines;
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "one edited" })] });
     useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("one edited");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("one edited");
     expect(useProjectStore.getState().canRedo()).toBe(false);
     expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
 
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("one");
   });
 
   it("seeds the baseline entry when history is empty so undo can return to it", () => {
@@ -293,10 +294,10 @@ describe("closeLyricBurst", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: false });
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("start typed");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("start typed");
 
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("start");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("start");
   });
 
   it("does not mutate the baseline array passed in", () => {
@@ -323,7 +324,9 @@ describe("closeLyricBurst", () => {
       live.groupId = "live mutation";
     }).toThrow(TypeError);
 
-    expect(lineText(useProjectStore.getState().history[committedIndex].lines[0])).toBe("clone me edited");
+    expect(lineText(useProjectStore.getState().history[committedIndex].lines[0], DEFAULT_SPLIT_CHARACTER)).toBe(
+      "clone me edited",
+    );
   });
 
   it("never lets history exceed MAX_HISTORY_SIZE", () => {
@@ -392,9 +395,9 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
       .closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: baselineWasDirty });
 
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("B");
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("A");
   });
 
   it("does not seed a duplicate baseline when the store was clean before the run", () => {
@@ -411,7 +414,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
 
     expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("A");
   });
 
   it("treats an omitted baselineWasDirty as clean", () => {
@@ -435,7 +438,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
 
     expect(useProjectStore.getState().history).toHaveLength(2);
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("A");
   });
 
   it("truncates the redo branch when the dirty path commits mid-history", () => {
@@ -446,7 +449,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
       .commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { text: "three" })]));
     useProjectStore.getState().undo();
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("one");
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "one cross-view" })] });
     const baseline = useProjectStore.getState().lines;
@@ -454,11 +457,11 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, parts: [], passthrough: {}, wasPending: true });
 
     expect(useProjectStore.getState().canRedo()).toBe(false);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("one typed");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("one typed");
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("one cross-view");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("one cross-view");
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("one");
   });
 
   it("does not mutate the baseline array on the dirty path", () => {
@@ -485,7 +488,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
       baseline[0].groupId = "live mutation";
     }).toThrow(TypeError);
     useProjectStore.getState().undo();
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("B");
   });
 
   it("no-ops when isDirtySinceHistory is false even if baselineWasDirty is true", () => {
@@ -503,7 +506,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
 // -- Undo with a pending non-history edit -------------------------------------
 
 describe("undo with a pending non-history edit", () => {
-  const texts = () => useProjectStore.getState().lines.map((line) => lineText(line));
+  const texts = () => useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER));
 
   describe("regressions", () => {
     it("regression: undo after a non-history replace returns to the last committed state and redo returns to the replace", () => {

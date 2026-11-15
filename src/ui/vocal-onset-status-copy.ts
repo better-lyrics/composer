@@ -1,4 +1,4 @@
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 const DETECTING_VOCAL_ONSETS = "Detecting vocal onsets";
 

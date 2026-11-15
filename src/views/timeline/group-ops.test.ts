@@ -5,12 +5,12 @@
 import { describe, expect, it } from "vitest";
 import { addInstance } from "@/domain/commands/instance-edits";
 import type { LinkGroup } from "insync/group";
-import { withSeededBackground } from "@/domain/line/background";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { withSeededBackground } from "insync/line-background";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import {
@@ -19,9 +19,10 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "./group-ops";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const lines = (overrides: Partial<LineFields>[]): LyricLine[] =>
-  overrides.map((o, i) => lineFromFields({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }));
+  overrides.map((o, i) => lineFromFields({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }, DEFAULT_SPLIT_CHARACTER));
 
 describe("lineIdsAreContiguous", () => {
   it("true when selection is consecutive", () => {
@@ -79,28 +80,34 @@ describe("createGroupFromSelection", () => {
 describe("instanceToTemplate", () => {
   it("converts an instance's lines into relative-offset templates", () => {
     const ls: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
-          { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.9, joinsNext: false },
-          { id: "w3", text: "you", sep: "", begin: 30.9, end: 32, joinsNext: false },
-        ],
-      }),
-      lineFromFields({
-        id: "b",
-        text: "yeah",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 1,
-        words: [{ id: "w4", text: "yeah", sep: "", begin: 32, end: 33, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+            { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.9, joinsNext: false },
+            { id: "w3", text: "you", sep: "", begin: 30.9, end: 32, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "b",
+          text: "yeah",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 1,
+          words: [{ id: "w4", text: "yeah", sep: "", begin: 32, end: 33, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
 
     const tpl = instanceToTemplate(ls, "g1", 0);
@@ -114,17 +121,21 @@ describe("instanceToTemplate", () => {
 
   it("regression: keeps the timing of a line-synced background", () => {
     const line = withSeededBackground(
-      lineFromFields({
-        id: "a",
-        text: "hi",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        begin: 10,
-        end: 14,
-        backgroundText: "ooh",
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "hi",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 10,
+          end: 14,
+          backgroundText: "ooh",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
     );
     const [template] = instanceToTemplate([line], "g1", 0);
     expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[0, 2]]);
@@ -132,17 +143,21 @@ describe("instanceToTemplate", () => {
 
   it("regression: an instance added from a line-synced background keeps a background span", () => {
     const line = withSeededBackground(
-      lineFromFields({
-        id: "a",
-        text: "hi",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        begin: 10,
-        end: 14,
-        backgroundText: "ooh",
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "hi",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 10,
+          end: 14,
+          backgroundText: "ooh",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
     );
     useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
     useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
@@ -153,37 +168,44 @@ describe("instanceToTemplate", () => {
 
   it("regression: an instance added from an explicit line-synced background keeps the mark", () => {
     const seeded = withSeededBackground(
-      lineFromFields({
-        id: "a",
-        text: "hi",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        begin: 10,
-        end: 14,
-        backgroundText: "damn",
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "hi",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 10,
+          end: 14,
+          backgroundText: "damn",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
     );
     const background = backgroundTrack(seeded)!;
     const line = withBackgroundTrack(seeded, withTrackExplicit(background, true));
     useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
     useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
-    expect(drawnSyllables(useProjectStore.getState().lines[1], "bg")[0].explicit).toBe(true);
+    expect(drawnSyllables(useProjectStore.getState().lines[1], "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBe(true);
   });
 
   it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {
     const ls: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "hi",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        backgroundWords: [{ id: "w5", text: "yeah", sep: "", begin: 28, end: 29, joinsNext: false }],
-        words: [{ id: "w6", text: "hi", sep: "", begin: 30, end: 31, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "hi",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          backgroundWords: [{ id: "w5", text: "yeah", sep: "", begin: 28, end: 29, joinsNext: false }],
+          words: [{ id: "w6", text: "hi", sep: "", begin: 30, end: 31, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].words?.[0].relativeBegin).toBeCloseTo(2);
@@ -192,18 +214,21 @@ describe("instanceToTemplate", () => {
 
   it("carries backgroundTextSource from a real line into the template", () => {
     const ls: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "main",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [{ id: "w7", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
-        backgroundText: "ooh",
-        backgroundWords: [{ id: "w8", text: "ooh", sep: "", begin: 30, end: 30.5, joinsNext: false }],
-        backgroundTextSource: "extraction",
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [{ id: "w7", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w8", text: "ooh", sep: "", begin: 30, end: 30.5, joinsNext: false }],
+          backgroundTextSource: "extraction",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBe("extraction");
@@ -211,17 +236,20 @@ describe("instanceToTemplate", () => {
 
   it("carries a manual-sourced background flag into the template", () => {
     const ls: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "main",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [{ id: "w9", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
-        backgroundText: "ooh",
-        backgroundTextSource: "manual",
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [{ id: "w9", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
+          backgroundText: "ooh",
+          backgroundTextSource: "manual",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBe("manual");
@@ -229,15 +257,18 @@ describe("instanceToTemplate", () => {
 
   it("leaves backgroundTextSource undefined for a line with no background", () => {
     const ls: LyricLine[] = [
-      lineFromFields({
-        id: "a",
-        text: "main",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [{ id: "w10", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
-      }),
+      lineFromFields(
+        {
+          id: "a",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [{ id: "w10", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBeUndefined();
@@ -245,18 +276,21 @@ describe("instanceToTemplate", () => {
 
   it("uses word-derived start anchor even when line.begin/end is stale (regression)", () => {
     const ls: LyricLine[] = [
-      lineFromFields({
-        id: "L1",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w11", text: "hello", sep: " ", begin: 5, end: 6, joinsNext: false },
-          { id: "w12", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "x",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w11", text: "hello", sep: " ", begin: 5, end: 6, joinsNext: false },
+            { id: "w12", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const template = instanceToTemplate(ls, "g1", 0);
     expect(template).toHaveLength(1);

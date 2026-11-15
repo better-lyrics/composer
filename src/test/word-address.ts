@@ -1,15 +1,16 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole, type WordTrack } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { addressOf } from "@/domain/selection/resolve";
+import type { SyllableAddress } from "insync/selection-model";
+import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Functions ----------------------------------------------------------------
 
 // A slot with no word yet gets an address that resolves to nothing, as a selection of a removed word would.
 function wordAddress(line: LyricLine, wordIndex: number, type: WordTrack = "word"): SyllableAddress {
-  const word = drawnSyllables(line, trackRole(type))[wordIndex];
+  const word = drawnSyllables(line, trackRole(type), DEFAULT_SPLIT_CHARACTER)[wordIndex];
   return word
     ? addressOf(line, type, word)
     : { lineId: line.id, type, syllableId: `${line.id}-${type}-${wordIndex}-none` };

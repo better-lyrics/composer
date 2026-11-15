@@ -1,16 +1,17 @@
 import { shareGroupTiming } from "@/domain/commands/group-edits";
 import { NOTHING_SHARED } from "@/domain/group/group-plans";
-import type { SharingOutcome } from "@/domain/group/shared-placement";
-import { type SharedTimingSuggestion, sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
+import type { SharingOutcome } from "insync/group-shared-placement";
+import { type SharedTimingSuggestion, sharedTimingSuggestions } from "insync/group-shared-timing-suggestions";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
 import { showKeptOwnTimingToast, showReplacedOwnTimingToast } from "@/utils/group-toast";
-import { pluralWord, pluralize } from "@/utils/pluralize";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { pluralWord, pluralize } from "insync/pluralize";
+import { songEndOrUnbounded } from "insync/song-end";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -49,7 +50,7 @@ function useSharedTimingNotice(): NoticeKind | null {
   const duration = useAudioStore((s) => s.duration);
 
   const suggestions = useMemo(
-    () => sharedTimingSuggestions(lines, groups, songEndOrUnbounded(duration)),
+    () => sharedTimingSuggestions(lines, groups, getSplitCharacter(), songEndOrUnbounded(duration)),
     [lines, groups, duration],
   );
   const { visible, dismissedFingerprints } = useMemo(

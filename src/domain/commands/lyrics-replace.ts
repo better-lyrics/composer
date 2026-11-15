@@ -2,13 +2,13 @@ import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import type { LyricLine } from "insync/line";
 import { mainTrack } from "insync/line-track";
-import { withAgent } from "@/domain/line/track-writes";
-import { agentsAfterImport } from "@/domain/agent/imported-agents";
+import { withAgent } from "insync/line-track-writes";
+import { agentsAfterImport } from "insync/agent-imported-agents";
 import type { Agent } from "insync/agent";
 import type { LyricCommand } from "@/domain/commands/command";
 import { applied, changedLineIds } from "@/domain/commands/outcome";
 import type { LinkGroup } from "insync/group";
-import { type EditedLyrics, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
+import { type EditedLyrics, changesProject, editedLyricsWrite } from "insync/project-edited-lyrics";
 import type { ProjectMetadata } from "insync/metadata";
 
 // -- Types --------------------------------------------------------------------

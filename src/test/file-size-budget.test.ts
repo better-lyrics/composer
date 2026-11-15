@@ -1,7 +1,6 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { walkScannedSources } from "@/test/source-files";
 
 // Non-test source files are held to a 300-line guideline: a file past that
 // mark is doing too much and should be split into focused modules.
@@ -14,7 +13,6 @@ import { describe, expect, it } from "vitest";
 //     baseline it: split the file instead. The subset test below fails the
 //     build for any over-budget file not already on the baseline.
 
-const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const LINE_BUDGET = 300;
 
 const BASELINE_OVER_BUDGET = new Set<string>([
@@ -36,19 +34,6 @@ function isTestFile(relPath: string): boolean {
   return relPath.endsWith(".test.ts") || relPath.endsWith(".test.tsx") || relPath.endsWith(".browser.test.tsx");
 }
 
-function* walk(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    const stat = statSync(full);
-    if (stat.isDirectory()) {
-      if (entry === "node_modules" || entry === "dist" || entry === ".git") continue;
-      yield* walk(full);
-    } else if (entry.endsWith(".ts") || entry.endsWith(".tsx")) {
-      yield full;
-    }
-  }
-}
-
 function lineCount(file: string): number {
   const content = readFileSync(file, "utf8");
   if (content === "") return 0;
@@ -59,8 +44,7 @@ function lineCount(file: string): number {
 
 function collectOverBudget(): Map<string, number> {
   const overBudget = new Map<string, number>();
-  for (const file of walk(SRC_ROOT)) {
-    const rel = relative(SRC_ROOT, file).replace(/\\/g, "/");
+  for (const { file, rel } of walkScannedSources()) {
     if (isTestFile(rel)) continue;
     const count = lineCount(file);
     if (count > LINE_BUDGET) overBudget.set(rel, count);

@@ -1,9 +1,9 @@
 import { msFromSeconds, secondsFromMs } from "insync/time";
 import type { LanguagePieces } from "insync/language";
-import { sidePieces, withPiecesOn } from "@/domain/language/side-pieces";
+import { sidePieces, withPiecesOn } from "insync/language-side-pieces";
 import type { LineTrack, LyricLine, Syllable } from "insync/line";
 import { backgroundTrack, mainTrack } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withMainTrack } from "insync/line-track-writes";
 
 // -- Helpers ------------------------------------------------------------------
 

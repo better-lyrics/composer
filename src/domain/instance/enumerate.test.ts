@@ -1,4 +1,4 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import {
   instanceCount,
   instanceIndicesOf,
@@ -10,11 +10,12 @@ import {
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function line(extras: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras }, DEFAULT_SPLIT_CHARACTER);
 }
 
 // -- linesOfInstance ----------------------------------------------------------

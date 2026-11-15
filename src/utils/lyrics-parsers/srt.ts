@@ -1,7 +1,8 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { hasAnyTiming } from "@/domain/line/predicates";
+import { hasAnyTiming } from "insync/line-predicates";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -51,7 +52,7 @@ function parseSrt(content: string, _fallbackDuration?: number): ParseResult {
       .trim();
 
     if (text) {
-      lines.push(lineFromFields({ id: generateLineId(), text, agentId: "v1", begin, end }));
+      lines.push(lineFromFields({ id: generateLineId(), text, agentId: "v1", begin, end }, getSplitCharacter()));
     }
   }
 

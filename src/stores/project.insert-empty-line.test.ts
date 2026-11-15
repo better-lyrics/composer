@@ -1,4 +1,4 @@
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import { mainTrack } from "insync/line-track";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
@@ -6,14 +6,21 @@ import { INITIAL_STATE, useProjectStore } from "@/stores/project";
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { insertEmptyLine } from "@/domain/commands/line-edits";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-const LINE_SYNCED = lineFromFields({ id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 });
-const WORD_SYNCED = lineFromFields({
-  id: "w",
-  text: "hi",
-  agentId: "v1",
-  words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
-});
+const LINE_SYNCED = lineFromFields(
+  { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 },
+  DEFAULT_SPLIT_CHARACTER,
+);
+const WORD_SYNCED = lineFromFields(
+  {
+    id: "w",
+    text: "hi",
+    agentId: "v1",
+    words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
+  },
+  DEFAULT_SPLIT_CHARACTER,
+);
 
 describe("project store · insertEmptyLineWithHistory", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
@@ -24,7 +31,7 @@ describe("project store · insertEmptyLineWithHistory", () => {
       useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "below" }));
       const after = useProjectStore.getState().lines;
       expect(after.map((l) => l.id)[0]).toBe("w");
-      expect(fieldsOfLine(after[1])).toMatchObject({ text: "", agentId: "v1" });
+      expect(fieldsOfLine(after[1], DEFAULT_SPLIT_CHARACTER)).toMatchObject({ text: "", agentId: "v1" });
       expect(after[2].id).toBe("ls");
     });
 
@@ -33,7 +40,7 @@ describe("project store · insertEmptyLineWithHistory", () => {
       useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "ls", position: "above" }));
       const after = useProjectStore.getState().lines;
       expect(after[0].id).toBe("w");
-      expect(fieldsOfLine(after[1])).toMatchObject({ text: "", agentId: "v1" });
+      expect(fieldsOfLine(after[1], DEFAULT_SPLIT_CHARACTER)).toMatchObject({ text: "", agentId: "v1" });
       expect(after[2].id).toBe("ls");
     });
 

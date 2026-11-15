@@ -2,10 +2,11 @@ import { changedFields, updatedLine } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import { type FactoryLineOptions, createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const sharing = [createGroup({ id: "g1", sharesTiming: true })];
@@ -27,6 +28,7 @@ function run(
     time,
     defaultWordDuration: 0.3,
     groups,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
 }
 
@@ -119,6 +121,7 @@ describe("commitGesture with a shared time range", () => {
         jumped: false,
         time: 6.5,
         defaultWordDuration: 0.3,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
       expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "c1", updates: { begin: 6.5, end: 6.5 } });
     });

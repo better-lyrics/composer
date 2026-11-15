@@ -5,7 +5,8 @@ import {
   resolveStretchTargets,
   selectedFiniteWords,
   selectionExtremes,
-} from "@/domain/selection/stretch-targets";
+} from "insync/selection-stretch-targets";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -31,15 +32,15 @@ interface SelectionGrips {
 // selected, mirroring planStretchDrag's qualification.
 function selectionGripEdges(rawLines: LyricLine[], selections: ReadonlyArray<StretchSelectionRef>): SelectionGrips {
   const none: SelectionGrips = { left: null, right: null };
-  const targets = resolveStretchTargets(rawLines, selections);
+  const targets = resolveStretchTargets(rawLines, selections, getSplitCharacter());
   if (!targets) return none;
 
-  const { t0, t1, count } = selectionExtremes(targets);
+  const { t0, t1, count } = selectionExtremes(targets, getSplitCharacter());
   if (count < 2) return none;
 
   let left: GripRef | null = null;
   let right: GripRef | null = null;
-  for (const { track, idx, word } of selectedFiniteWords(targets)) {
+  for (const { track, idx, word } of selectedFiniteWords(targets, getSplitCharacter())) {
     if (!left && Math.abs(word.begin - t0) <= STRETCH_EPS) {
       left = { lineId: track.line.id, type: track.type, wordIndex: idx, syllableId: word.id, edge: "left" };
     }

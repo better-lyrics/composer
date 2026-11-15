@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { editRows, remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
-import { shownEditText } from "@/domain/edit-text/shown-row";
+import { shownEditText } from "insync/edit-text-shown-row";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -26,7 +27,7 @@ const lines = [
 
 describe("inline backgrounds in the Edit text", () => {
   it("reads every shown row back into the tracks it came from", () => {
-    const shown = shownEditText(lines);
+    const shown = shownEditText(lines, DEFAULT_SPLIT_CHARACTER);
     expect(shown.text).toBe("Run (go) to the sea\nSay (it) again (again)\nQuiet now");
     expect(editRows(shown.text, shown.ranges)).toEqual([
       { text: "Run to the sea", background: "go" },
@@ -36,7 +37,7 @@ describe("inline backgrounds in the Edit text", () => {
   });
 
   it("edits the background inside its brackets and turns it into text when a bracket is touched", () => {
-    const shown = shownEditText(lines);
+    const shown = shownEditText(lines, DEFAULT_SPLIT_CHARACTER);
     const typedInside = shown.text.replace("(go)", "(go go)");
     const inside = remapBackgroundRanges(shown.text, typedInside, shown.ranges, typedInside.indexOf(" go)") + 3);
     expect(editRows(typedInside, inside)[0]).toEqual({ text: "Run to the sea", background: "go go" });
@@ -62,7 +63,7 @@ describe("inline backgrounds in the Edit text", () => {
   });
 
   it("keeps a token one input left alone while it edits text far apart on both sides", () => {
-    const shown = shownEditText(lines);
+    const shown = shownEditText(lines, DEFAULT_SPLIT_CHARACTER);
     const corrected = shown.text.replace("Run", "Ran").replace("Quiet", "Quite");
     const ranges = remapBackgroundRanges(shown.text, corrected, shown.ranges, corrected.indexOf("Quite") + 5);
     expect(editRows(corrected, ranges)).toEqual([

@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -30,13 +31,19 @@ function pasteTextareaValue(textarea: HTMLTextAreaElement, value: string): void 
 
 function linkedChorusAroundVerse(): LyricLine[] {
   return [
-    lineFromFields({ id: "a0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-    lineFromFields({ id: "x", text: "Verse", agentId: "v1" }),
-    lineFromFields({ id: "b0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+    lineFromFields(
+      { id: "a0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
+    lineFromFields({ id: "x", text: "Verse", agentId: "v1" }, getSplitCharacter()),
+    lineFromFields(
+      { id: "b0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
   ];
 }
 
-const texts = () => useProjectStore.getState().lines.map((l) => lineText(l));
+const texts = () => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter()));
 
 // -- Tests --------------------------------------------------------------------
 
@@ -104,25 +111,31 @@ describe("pasting over a linked line", () => {
     useProjectStore.setState({
       activeTab: "edit",
       lines: [
-        lineFromFields({
-          id: "a0",
-          text: "Chorus line",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-        }),
-        lineFromFields({ id: "x", text: "Verse", agentId: "v1" }),
-        lineFromFields({ id: "bg1", text: "(oh)", agentId: "v1" }),
-        lineFromFields({ id: "bg2", text: "(yeah)", agentId: "v1" }),
-        lineFromFields({
-          id: "b0",
-          text: "Chorus line",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "Chorus line",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields({ id: "x", text: "Verse", agentId: "v1" }, getSplitCharacter()),
+        lineFromFields({ id: "bg1", text: "(oh)", agentId: "v1" }, getSplitCharacter()),
+        lineFromFields({ id: "bg2", text: "(yeah)", agentId: "v1" }, getSplitCharacter()),
+        lineFromFields(
+          {
+            id: "b0",
+            text: "Chorus line",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+          },
+          getSplitCharacter(),
+        ),
       ],
       groups: [createGroup({ id: "g1", label: "Chorus" })],
     });

@@ -8,7 +8,7 @@ import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { formatProjectCount } from "@/utils/project-count";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE, isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
 import { type ImportContext, importLyrics, importProjectLyrics } from "@/views/lyrics-import-modal/import-lyrics";

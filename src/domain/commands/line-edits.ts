@@ -1,7 +1,7 @@
 import type { CommandContext, HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { type Applied, type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LineUpdate } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
@@ -79,7 +79,10 @@ function insertEmptyLine({
     run: (root, ctx) => {
       const anchorIndex = root.lines.findIndex((line) => line.id === anchorLineId);
       if (anchorIndex === -1) return refused({ reason: "line-gone", lineId: anchorLineId });
-      const newLine = lineFromFields({ id: ctx.newId(), text: "", agentId: root.agents?.[0]?.id ?? "v1" });
+      const newLine = lineFromFields(
+        { id: ctx.newId(), text: "", agentId: root.agents?.[0]?.id ?? "v1" },
+        ctx.splitChar,
+      );
       const lines = root.lines.toSpliced(position === "above" ? anchorIndex : anchorIndex + 1, 0, newLine);
       return applied({ ...root, lines }, [newLine.id]);
     },

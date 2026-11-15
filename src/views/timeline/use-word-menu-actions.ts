@@ -1,22 +1,23 @@
 import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 import { useCallback } from "react";
 import { fillEmptyTrack, insertWord } from "@/domain/commands/word-structure";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
-import { addressOf, toAddress } from "@/domain/selection/resolve";
-import { newWordId } from "@/domain/word/id";
+import { addressOf, toAddress } from "insync/selection-resolve";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
-import { findInsertionSlot } from "@/utils/word-spaces";
+import { findInsertionSlot } from "insync/word-spaces";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { runExplicitToggle, runSyllableMerge, runWordMerge } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -69,7 +70,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!line) return;
 
     const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-    const existingWords = drawnSyllables(line, trackRole(type));
+    const existingWords = drawnSyllables(line, trackRole(type), getSplitCharacter());
     const range = storedLineTimeRange(lineId, duration);
     const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, range, minWordDuration);
     if (!slot) {

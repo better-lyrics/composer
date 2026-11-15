@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => lineText(line));
+  return useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -24,7 +25,10 @@ describe("applyEditedTtml · whether the export holds the project", () => {
         ],
       });
       const before = useProjectStore.getState().lines;
-      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">World<", ">World2<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">World<",
+        ">World2<",
+      );
       expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "not-held", part: "lines" });
       expect(useProjectStore.getState().lines).toBe(before);
       expect(useProjectStore.getState().canUndo()).toBe(false);
@@ -38,7 +42,10 @@ describe("applyEditedTtml · whether the export holds the project", () => {
         metadata: { title: "Song", artists: [], album: "Real album", duration: 0, extra: { album: "Other album" } },
       });
       const before = useProjectStore.getState().metadata;
-      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">Hello<",
+        ">Hello there<",
+      );
       expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "not-held", part: "metadata" });
       expect(useProjectStore.getState().metadata).toBe(before);
       expect(lineTexts()).toEqual(["Hello"]);
@@ -78,7 +85,10 @@ describe("applyEditedTtml · whether the export holds the project", () => {
           extra: { mood: "calm" },
         },
       });
-      const edited = generateProjectTtml(useProjectStore.getState(), 180).replace(">World<", ">World2<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 180, DEFAULT_SPLIT_CHARACTER).replace(
+        ">World<",
+        ">World2<",
+      );
       expect(applyEditedTtml(edited, 180)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello", "World2"]);
       expect(useProjectStore.getState().metadata.language).toBe("en-us");
@@ -89,7 +99,10 @@ describe("applyEditedTtml · whether the export holds the project", () => {
         lines: [createLine({ text: "Hello", begin: 1, end: 2 })],
         metadata: { title: "Song", artists: ["Ana", ""], album: "", duration: 0 },
       });
-      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">Hello<",
+        ">Hello there<",
+      );
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello there"]);
       expect(useProjectStore.getState().metadata.artists).toEqual(["Ana", ""]);
@@ -106,7 +119,10 @@ describe("applyEditedTtml · whether the export holds the project", () => {
           { id: "v2", type: "person", name: undefined },
         ],
       });
-      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">World<", ">World2<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">World<",
+        ">World2<",
+      );
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello", "World2"]);
       expect(useProjectStore.getState().agents[1]?.name).toBeUndefined();
@@ -119,7 +135,10 @@ describe("applyEditedTtml · whether the export holds the project", () => {
           createLine({ text: "World", begin: 2, end: 3 }),
         ],
       });
-      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">World<", ">World2<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">World<",
+        ">World2<",
+      );
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello", "World2"]);
     });
@@ -138,12 +157,15 @@ describe("applyEditedTtml · whether the export holds the project", () => {
           }),
         ],
       });
-      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">now<", ">no|w<");
+      const edited = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER).replace(
+        ">now<",
+        ">no|w<",
+      );
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
       const applied = useProjectStore.getState().lines;
       expect(timedSyllables(mainTrack(applied[0]!)).map((word) => word.text + word.sep)).toEqual(["End ", "no|w"]);
 
-      const again = generateProjectTtml(useProjectStore.getState(), 0);
+      const again = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
       expect(applyEditedTtml(again, 0)).toEqual({ status: "export-only", reason: "not-synced" });
       expect(useProjectStore.getState().lines).toBe(applied);
       expect(again).toContain(">no|w<");

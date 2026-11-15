@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { getLanguageReviewTracks } from "@/domain/language/review";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { getLanguageReviewTracks } from "insync/language-review";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord, createWords } from "@/test/factories";
@@ -13,6 +13,7 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("TimelineSyllableSplitter", () => {
   beforeEach(() => useAudioStore.getState().reset());
@@ -257,7 +258,7 @@ describe("TimelineSyllableSplitter", () => {
     const lineAfter = useProjectStore.getState().lines[0];
     // text is reconciled via reconstructLineText: the split char marks the
     // syllable joints so line.text tokenizes 1:1 back to line.words.
-    expect(lineText(lineAfter)).toBe("ev|er|y");
+    expect(lineText(lineAfter, getSplitCharacter())).toBe("ev|er|y");
   });
 
   it("writes manually selected transliteration boundaries back to the language track", async () => {
@@ -311,7 +312,7 @@ describe("TimelineSyllableSplitter", () => {
         text: "khorosho",
         segments: [],
         origin: "manual",
-        sourceFingerprint: languageSourceFingerprint("хорошо"),
+        sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), "хорошо"),
       },
     });
     useProjectStore.setState({ lines: [line] });
@@ -326,10 +327,12 @@ describe("TimelineSyllableSplitter", () => {
 
     await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
-    expect(lineText(saved)).toBe("хор ошо");
+    expect(lineText(saved, getSplitCharacter())).toBe("хор ошо");
     expect(saved.languages?.transliteration?.main.text).toBe("khorosho");
-    expect(saved.languages?.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
-    expect(getLanguageReviewTracks(saved)).toEqual([]);
+    expect(saved.languages?.transliteration?.sourceFingerprint).toBe(
+      languageSourceFingerprint(getSplitCharacter(), "хор ошо"),
+    );
+    expect(getLanguageReviewTracks(saved, getSplitCharacter())).toEqual([]);
   });
 
   it("keeps a literal transliteration dash when splitting into words at it", async () => {
@@ -343,7 +346,7 @@ describe("TimelineSyllableSplitter", () => {
         text: "to-do",
         segments: [],
         origin: "manual",
-        sourceFingerprint: languageSourceFingerprint("to-do"),
+        sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), "to-do"),
       },
     });
     useProjectStore.setState({ lines: [line] });
@@ -359,7 +362,7 @@ describe("TimelineSyllableSplitter", () => {
     await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
     expect(saved.languages?.transliteration?.main.text).toBe("to-do");
-    expect(getLanguageReviewTracks(saved)).toEqual([]);
+    expect(getLanguageReviewTracks(saved, getSplitCharacter())).toEqual([]);
   });
 
   it("preserves a literal transliteration dash when the playhead sets the timing boundary", async () => {

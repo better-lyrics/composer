@@ -2,12 +2,12 @@ import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "insync/line";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { detectNonLatinLanguage } from "@/domain/language/script-detection";
-import { withSeededBackground } from "@/domain/line/background";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { detectNonLatinLanguage } from "insync/language-script-detection";
+import { withSeededBackground } from "insync/line-background";
+import { hasAnyTiming } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
-import { importableMetadata } from "@/domain/project/imported-metadata";
+import { importableMetadata } from "insync/project-imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "insync/metadata";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -18,7 +18,7 @@ import { type ConfirmOptions, useConfirm, useConfirmStore } from "@/stores/confi
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { type SettingsState, useSettingsStore } from "@/stores/settings";
-import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import {
   type ParseIssue,
@@ -28,8 +28,9 @@ import {
   skippedLineCount,
   skippedLinesMessage,
 } from "@/utils/lyrics-parsers/shared";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { distributeLinesTiming } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -130,14 +131,20 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   if (!(await confirmReplace(ctx.confirm))) return false;
 
   let workingLines = ctx.applyBackgroundExtraction
-    ? extractBackgroundVocals(parsed.lines, {
-        mergeStandaloneLines: ctx.backgroundExtractionMergeStandalone,
-        preserveBrackets: ctx.backgroundExtractionPreserveBrackets,
-      })
+    ? extractBackgroundVocals(
+        parsed.lines,
+        {
+          mergeStandaloneLines: ctx.backgroundExtractionMergeStandalone,
+          preserveBrackets: ctx.backgroundExtractionPreserveBrackets,
+        },
+        getSplitCharacter(),
+      )
     : parsed.lines;
 
   if (!parsed.hasTimingData && ctx.audioDuration > 0) {
-    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map(withSeededBackground);
+    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map((value) =>
+      withSeededBackground(value, getSplitCharacter()),
+    );
   }
 
   const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));
@@ -146,7 +153,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
   if (input.searchResult) noteGuideSignal("edit.search");
-  if (detectNonLatinLanguage(workingLines.map((line) => lineText(line)).join("\n")))
+  if (detectNonLatinLanguage(workingLines.map((line) => lineText(line, getSplitCharacter())).join("\n")))
     noteGuideSignal("edit.nonLatinLyrics");
   ctx.onResult?.(reported, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;

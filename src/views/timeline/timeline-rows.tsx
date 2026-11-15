@@ -1,7 +1,7 @@
 import { instanceKey, lineInstanceKey } from "insync/instance-key";
 import { retimeWord } from "@/domain/commands/word-timing";
 import type { WordTrack } from "insync/line-track";
-import { addressAt } from "@/domain/selection/resolve";
+import { addressAt } from "insync/selection-resolve";
 import type { WordTiming } from "insync/word-timing";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";
@@ -16,6 +16,7 @@ import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store"
 import { type DrawnRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -39,10 +40,12 @@ function retimeWordAt(
   adjacentUpdates?: Partial<WordTiming>,
 ): void {
   const project = useProjectStore.getState();
-  const address = addressAt(project.lines, lineId, type, wordIndex);
+  const address = addressAt(project.lines, lineId, type, wordIndex, getSplitCharacter());
   if (!address) return;
   const neighbour =
-    adjacentIndex !== undefined && adjacentUpdates ? addressAt(project.lines, lineId, type, adjacentIndex) : null;
+    adjacentIndex !== undefined && adjacentUpdates
+      ? addressAt(project.lines, lineId, type, adjacentIndex, getSplitCharacter())
+      : null;
   if (adjacentIndex !== undefined && adjacentUpdates && !neighbour) return;
   project.commit(
     retimeWord({ address, updates }, neighbour ? { address: neighbour, updates: adjacentUpdates ?? {} } : undefined),

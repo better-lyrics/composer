@@ -1,7 +1,8 @@
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
-import { flattenBody, knownFlatLines } from "@/domain/group/flatten";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
+import { flattenBody, knownFlatLines } from "insync/group-flatten";
 import type { LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,7 +28,7 @@ function withBody(doc: LyricDoc): DocLines {
 function docOfLines(lines: LyricLine[]): LyricDoc {
   const known = docByLines.get(lines);
   if (known) return known;
-  const doc = docFromFlatLines(lines);
+  const doc = docFromFlatLines(lines, getSplitCharacter());
   docByLines.set(lines, doc);
   return doc;
 }
@@ -39,7 +40,7 @@ function projectDoc(state: DocLines): LyricDoc {
 }
 
 function emptyBody(): DocLines {
-  return withBody(docFromFlatLines([]));
+  return withBody(docFromFlatLines([], getSplitCharacter()));
 }
 
 // -- Exports ------------------------------------------------------------------

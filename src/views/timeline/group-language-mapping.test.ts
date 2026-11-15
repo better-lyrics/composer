@@ -4,15 +4,16 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { addInstance } from "@/domain/commands/instance-edits";
-import { withAlignedTransliteration } from "@/domain/language/align";
+import { withAlignedTransliteration } from "insync/language-align";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function mappedWords(fragments: string[], start: number): LegacyWord[] {
   const joiners = ["", "-", "", "  "];
@@ -76,7 +77,9 @@ function expectExactCopy(copy: LyricLine, source: LyricLine, delta: number) {
     // Rendering/export must reuse the chosen boundaries, not infer new ones.
     const pieces = copy.languages?.transliteration?.[side]?.pieces;
     expect(pieces).toBeDefined();
-    expect(withAlignedTransliteration(copy).languages?.transliteration?.[side]?.pieces).toBe(pieces);
+    expect(withAlignedTransliteration(copy, DEFAULT_SPLIT_CHARACTER).languages?.transliteration?.[side]?.pieces).toBe(
+      pieces,
+    );
   }
   const copied = copy.languages?.transliteration;
   const original = source.languages?.transliteration;

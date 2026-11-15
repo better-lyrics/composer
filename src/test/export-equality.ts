@@ -8,6 +8,7 @@ import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import type { LyricsWriterInput } from "@/utils/lyrics-writers/shared";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
 import { generateProjectTtml } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -80,12 +81,12 @@ const writerInput = ({ metadata, agents, lines }: EditedTtmlProject): LyricsWrit
 const EXPORT_FORMATS: readonly ExportFormat[] = [
   {
     name: "TTML word",
-    write: (project) => generateProjectTtml(project, EXPORT_DURATION_SECONDS, "word"),
+    write: (project) => generateProjectTtml(project, EXPORT_DURATION_SECONDS, DEFAULT_SPLIT_CHARACTER, "word"),
     times: (output) => timesBy(output, TTML_CLOCK_REGEX, (match) => [msOf(parseTtmlTimestamp(match[0]))]),
   },
   {
     name: "TTML line",
-    write: (project) => generateProjectTtml(project, EXPORT_DURATION_SECONDS, "line"),
+    write: (project) => generateProjectTtml(project, EXPORT_DURATION_SECONDS, DEFAULT_SPLIT_CHARACTER, "line"),
     times: (output) => timesBy(output, TTML_CLOCK_REGEX, (match) => [msOf(parseTtmlTimestamp(match[0]))]),
   },
   {

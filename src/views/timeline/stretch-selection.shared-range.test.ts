@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
-import { stretchSelections } from "@/domain/selection/stretch";
+import { stretchSelections } from "insync/selection-stretch";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -39,10 +40,16 @@ describe("stretchSelections with a shared time range", () => {
   const rangeOf = timeRangeResolver(lines, sharing, DURATION);
 
   it("stops growth where the latest instance reaches the song end", () => {
-    const result = stretchSelections(lines, [word("c1", 0), word("c1", 1)], 10, {
-      rangeOf,
-      minWordDuration: MIN_WORD_DURATION,
-    });
+    const result = stretchSelections(
+      lines,
+      [word("c1", 0), word("c1", 1)],
+      10,
+      {
+        rangeOf,
+        minWordDuration: MIN_WORD_DURATION,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedFactor).toBeCloseTo((14 - 10) / 2);
   });
 
@@ -67,29 +74,47 @@ describe("stretchSelections with a shared time range", () => {
       ]),
     });
     const all = [...rows, outside];
-    const result = stretchSelections(all, [word("x", 0), word("x", 1), word("c1", 0)], 10, {
-      rangeOf: timeRangeResolver(all, sharing, DURATION),
-      minWordDuration: MIN_WORD_DURATION,
-    });
+    const result = stretchSelections(
+      all,
+      [word("x", 0), word("x", 1), word("c1", 0)],
+      10,
+      {
+        rangeOf: timeRangeResolver(all, sharing, DURATION),
+        minWordDuration: MIN_WORD_DURATION,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(result.appliedFactor).toBeCloseTo((14 - 9) / (12 - 9));
   });
 
   describe("regressions", () => {
     it("regression: a line of an old group still grows to the song end", () => {
-      const result = stretchSelections(lines, [word("c1", 0), word("c1", 1)], 10, {
-        rangeOf: timeRangeResolver(lines, oldGroup, DURATION),
-        minWordDuration: MIN_WORD_DURATION,
-      });
+      const result = stretchSelections(
+        lines,
+        [word("c1", 0), word("c1", 1)],
+        10,
+        {
+          rangeOf: timeRangeResolver(lines, oldGroup, DURATION),
+          minWordDuration: MIN_WORD_DURATION,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(result.appliedFactor).toBeCloseTo((DURATION - 10) / 2);
     });
   });
 
   describe("edge cases", () => {
     it("is a no-op when the range end is not finite", () => {
-      const result = stretchSelections(lines, [word("c1", 0), word("c1", 1)], 2, {
-        rangeOf: timeRangeResolver(lines, sharing, Number.NaN),
-        minWordDuration: MIN_WORD_DURATION,
-      });
+      const result = stretchSelections(
+        lines,
+        [word("c1", 0), word("c1", 1)],
+        2,
+        {
+          rangeOf: timeRangeResolver(lines, sharing, Number.NaN),
+          minWordDuration: MIN_WORD_DURATION,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(result.updates).toEqual([]);
     });
 
@@ -103,10 +128,16 @@ describe("stretchSelections with a shared time range", () => {
         ]),
       });
       const rows = [outside, lineChorus("c0", 0, 3), lineChorus("c1", 1, 10)];
-      const result = stretchSelections(rows, [word("x", 0), word("x", 1), word("c1", 0)], 0.1, {
-        rangeOf: timeRangeResolver(rows, sharing, DURATION),
-        minWordDuration: MIN_WORD_DURATION,
-      });
+      const result = stretchSelections(
+        rows,
+        [word("x", 0), word("x", 1), word("c1", 0)],
+        0.1,
+        {
+          rangeOf: timeRangeResolver(rows, sharing, DURATION),
+          minWordDuration: MIN_WORD_DURATION,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(result.appliedFactor).toBeCloseTo((7 - 1) / (10 - 1));
     });
   });

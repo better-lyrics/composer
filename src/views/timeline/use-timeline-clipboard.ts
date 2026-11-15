@@ -1,10 +1,10 @@
 import type { LyricLine } from "insync/line";
-import { languageSide, pieceOf } from "@/domain/language/pieces";
-import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
+import { languageSide, pieceOf } from "insync/language-pieces";
+import { drawnPieces, drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
-import { resolveAddresses } from "@/domain/selection/resolve";
-import { copiedSyllable } from "@/domain/word/syllable-groups";
-import { pluralize } from "@/utils/pluralize";
+import { resolveAddresses } from "insync/selection-resolve";
+import { copiedSyllable } from "insync/word-syllable-groups";
+import { pluralize } from "insync/pluralize";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { selectedBannerInstance } from "@/views/timeline/selected-banner";
@@ -12,13 +12,14 @@ import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-t
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
 function useTimelineClipboard(lines: readonly LyricLine[]) {
   const handleCopy = useCallback(() => {
     const { selectedWords } = useTimelineStore.getState();
-    const resolved = resolveAddresses(lines, selectedWords);
+    const resolved = resolveAddresses(lines, selectedWords, getSplitCharacter());
     if (resolved.length === 0) return;
 
     const minLineIndex = Math.min(...resolved.map((w) => w.lineIndex));
@@ -32,10 +33,10 @@ function useTimelineClipboard(lines: readonly LyricLine[]) {
     for (const sel of resolved) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
-      const wordsArray = drawnSyllables(line, trackRole(sel.type));
+      const wordsArray = drawnSyllables(line, trackRole(sel.type), getSplitCharacter());
       if (!wordsArray?.[sel.wordIndex]) continue;
 
-      const piece = pieceOf(drawnPieces(line, languageSide(sel.type)), wordsArray[sel.wordIndex]);
+      const piece = pieceOf(drawnPieces(line, languageSide(sel.type), getSplitCharacter()), wordsArray[sel.wordIndex]);
       entries.push({
         word: copiedSyllable(wordsArray, sel.wordIndex, copiedByTrack.get(`${sel.lineIndex}:${sel.type}`) ?? new Set()),
         lineOffset: sel.lineIndex - minLineIndex,

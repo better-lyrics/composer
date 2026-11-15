@@ -7,8 +7,8 @@ import {
   planGroupSharing,
   planRepeatingSections,
 } from "@/domain/group/group-plans";
-import { unlinkLines } from "@/domain/group/linking";
-import type { SharingOutcome } from "@/domain/group/shared-placement";
+import { unlinkLines } from "insync/group-linking";
+import type { SharingOutcome } from "insync/group-shared-placement";
 import type { LinkGroup } from "insync/group";
 
 // -- Helpers ------------------------------------------------------------------
@@ -77,7 +77,7 @@ function shareGroupTiming(groupId: string, duration: number, report?: (sharing: 
   return {
     note: { command: "share group timing", args: [groupId] },
     copiesSharedTiming: false,
-    run: (root) => appliedPlan(root, reported(planGroupSharing(root, groupId, duration), report)),
+    run: (root, ctx) => appliedPlan(root, reported(planGroupSharing(root, groupId, duration, ctx.splitChar), report)),
   };
 }
 

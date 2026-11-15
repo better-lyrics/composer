@@ -1,4 +1,4 @@
-import { type TimeRange, timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
+import { type TimeRange, timeRangeResolver, wholeSongRange } from "insync/group-shared-timing";
 import { useProjectStore } from "@/stores/project";
 
 // -- Functions ----------------------------------------------------------------

@@ -7,7 +7,7 @@ import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { useSettingsStore } from "@/stores/settings";
 import { unisonViewPath } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { showWantedShelfHiddenToast } from "@/utils/unison-toast";
 import { IconArrowRight, IconFlame } from "@tabler/icons-react";
 import { useId, useMemo } from "react";

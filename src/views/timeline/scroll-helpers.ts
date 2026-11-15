@@ -1,4 +1,4 @@
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { linesOfInstance } from "insync/instance-enumerate";
 import { instanceKey } from "insync/instance-key";
 import { useProjectStore } from "@/stores/project";

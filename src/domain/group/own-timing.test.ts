@@ -1,4 +1,4 @@
-import { withNewInstance } from "@/domain/group/own-timing";
+import { withNewInstance } from "insync/group-own-timing";
 import { createGroup } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

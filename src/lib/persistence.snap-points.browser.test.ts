@@ -1,5 +1,5 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { lineFromFields } from "insync/line-from-fields";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
@@ -7,6 +7,7 @@ import type { SavedProjectV3 } from "@/lib/saved-project";
 import { createProjectSaveInput, snapPoints } from "@/test/factories";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -14,7 +15,7 @@ function saveWithSnapPoints(customSnapPoints: SnapPoint[]): Promise<void> {
   return saveCurrentProject(
     createProjectSaveInput({
       metadata: { title: "snap", artists: [], album: "", duration: 0 },
-      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id })],
+      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }, getSplitCharacter())],
       customSnapPoints,
     }),
   );

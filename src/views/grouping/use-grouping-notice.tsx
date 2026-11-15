@@ -1,6 +1,6 @@
 import { groupRepeatingSections } from "@/domain/commands/group-edits";
 import { NOTHING_SHARED } from "@/domain/group/group-plans";
-import type { SharingOutcome } from "@/domain/group/shared-placement";
+import type { SharingOutcome } from "insync/group-shared-placement";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -12,7 +12,7 @@ import {
   showKeptOwnTimingToast,
   showReplacedOwnTimingToast,
 } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import type { RepeatingSection } from "@/views/grouping/repeating-sections";
 import { IconBulb, IconLink } from "@tabler/icons-react";

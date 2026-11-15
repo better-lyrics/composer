@@ -37,8 +37,9 @@ function mergedEditedKept(
   stored: readonly LyricLine[],
   edit: EditedTtmlLines,
   merged: readonly LyricLine[],
+  splitChar: string,
 ): { parts: readonly Part[]; passthrough: DocPassthrough } {
-  const idOf = mergedLineIds(stored, edit);
+  const idOf = mergedLineIds(stored, edit, splitChar);
   const passthrough = edit.passthrough ?? {};
   return {
     parts: mergedEditedParts(edit, merged, idOf),

@@ -1,13 +1,14 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { resolveLineIndex } from "@/domain/selection/resolve";
+import type { SyllableAddress } from "insync/selection-model";
+import { resolveLineIndex } from "insync/selection-resolve";
 import { isInQueueOrder, queueOrder } from "@/domain/step-timing/step-queue";
 import { onLyricsChanged } from "@/stores/project/lyric-change-listeners";
-import { memoByIdentity } from "@/utils/memo-by-identity";
+import { memoByIdentity } from "insync/memo-by-identity";
 import { selectionPatch } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -24,8 +25,8 @@ type AddressedPatch = Partial<Pick<TimelineState, keyof AddressedState | "loopRe
 const lineIndexHints = new Map<string, number>();
 
 const trackWordIds: Record<WordTrack, (line: LyricLine) => ReadonlySet<string>> = {
-  word: memoByIdentity((line) => new Set(drawnSyllables(line, "main").map((word) => word.id))),
-  bg: memoByIdentity((line) => new Set(drawnSyllables(line, "bg").map((word) => word.id))),
+  word: memoByIdentity((line) => new Set(drawnSyllables(line, "main", getSplitCharacter()).map((word) => word.id))),
+  bg: memoByIdentity((line) => new Set(drawnSyllables(line, "bg", getSplitCharacter()).map((word) => word.id))),
 };
 
 // -- Functions ----------------------------------------------------------------
@@ -70,8 +71,8 @@ function reorderedQueue(
     const index = lineIndexOf(lines, address.lineId);
     return index !== undefined && previous[index] === lines[index];
   });
-  if (untouched || isInQueueOrder(lines, queue)) return queue;
-  return queueOrder(lines, queue);
+  if (untouched || isInQueueOrder(lines, queue, getSplitCharacter())) return queue;
+  return queueOrder(lines, queue, getSplitCharacter());
 }
 
 function liveList<A extends SyllableAddress>(addresses: A[], isLive: (address: A) => boolean): A[] {

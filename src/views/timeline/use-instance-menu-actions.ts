@@ -1,7 +1,7 @@
 import { addInstance, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
 import { fillInstanceRows } from "@/domain/commands/instance-rows";
-import { pickedTemplateSource } from "@/domain/group/template-source";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { pickedTemplateSource } from "insync/group-template-source";
+import { instanceBounds } from "insync/instance-bounds";
 import { linesOfInstance } from "insync/instance-enumerate";
 import { instanceKey } from "insync/instance-key";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -16,6 +16,7 @@ import { pingGroup } from "@/views/timeline/ping-group";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -44,7 +45,11 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     const playheadTime = livePlaybackTime();
     const { lines: projectLines, groups } = useProjectStore.getState();
     const group = groups.find((candidate) => candidate.id === groupId);
-    const template = instanceToTemplate(projectLines, groupId, pickedTemplateSource(projectLines, group, instanceIdx));
+    const template = instanceToTemplate(
+      projectLines,
+      groupId,
+      pickedTemplateSource(projectLines, group, instanceIdx, getSplitCharacter()),
+    );
     if (template.length === 0) {
       toast.error("Could not derive instance template");
       return;

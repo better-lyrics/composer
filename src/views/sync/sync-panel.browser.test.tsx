@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -16,6 +16,7 @@ import { firstBegin, tapAt } from "@/test/shared-timing-sync";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -397,6 +398,6 @@ describe("bg-init derivation", () => {
     await new Promise((r) => setTimeout(r, 30));
     useProjectStore.getState().undo();
     await new Promise((r) => setTimeout(r, 30));
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("a");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("a");
   });
 });

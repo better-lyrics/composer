@@ -1,12 +1,11 @@
 import type { Passthrough } from "insync/passthrough";
 import type { XmlChild } from "insync/xml-node";
 import type { LineTrack, LyricLine } from "insync/line";
-import { syllableJoint, syllablesText } from "@/domain/line/text";
+import { syllableJoint, syllablesText } from "insync/line-text";
 import { backgroundTrack, mainTrack } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withMainTrack } from "insync/line-track-writes";
 import { elementRole, isLyricTextElement, LYRIC_ROLES } from "@/utils/lyrics-parsers/ttml-modelled";
 import { mixedContentPassthrough } from "@/utils/lyrics-parsers/ttml-passthrough-read";
-import { getSplitCharacter } from "@/utils/split-character";
 import { markupBaseText } from "@/utils/ttml-markup";
 
 // -- Types --------------------------------------------------------------------
@@ -73,9 +72,8 @@ function trimmedLyric(text: string, spans: readonly KeptSpan[]): UntimedLyric {
 // -- Syllables ----------------------------------------------------------------
 
 // Every syllable a kept span wrote whole takes its data; a track whose syllables do not spell the text takes none.
-function withSpans<T extends LineTrack>(track: T, lyric: UntimedLyric | undefined): T {
+function withSpans<T extends LineTrack>(track: T, lyric: UntimedLyric | undefined, splitChar: string): T {
   if (!lyric || lyric.spans.length === 0) return track;
-  const splitChar = getSplitCharacter();
   if (syllablesText(track.syllables, splitChar) !== lyric.text) return track;
   let at = 0;
   let spanIndex = 0;
@@ -90,15 +88,20 @@ function withSpans<T extends LineTrack>(track: T, lyric: UntimedLyric | undefine
   return { ...track, syllables };
 }
 
-function withUntimedSpans(line: LyricLine, main: UntimedLyric | undefined, background: UntimedLyric | undefined) {
+function withUntimedSpans(
+  line: LyricLine,
+  main: UntimedLyric | undefined,
+  background: UntimedLyric | undefined,
+  splitChar: string,
+) {
   const bg = backgroundTrack(line);
-  const withMain = withMainTrack(line, withSpans(mainTrack(line), main));
-  return bg ? withBackgroundTrack(withMain, withSpans(bg, background)) : withMain;
+  const withMain = withMainTrack(line, withSpans(mainTrack(line), main, splitChar));
+  return bg ? withBackgroundTrack(withMain, withSpans(bg, background, splitChar)) : withMain;
 }
 
 // A line-synced background's syllables take back the kept spans its one timed span was written with.
-function withSpansFromMarkup<T extends LineTrack>(track: T, markup: readonly XmlChild[]): T {
-  return withSpans(track, untimedLyricOfMarkup(markup));
+function withSpansFromMarkup<T extends LineTrack>(track: T, markup: readonly XmlChild[], splitChar: string): T {
+  return withSpans(track, untimedLyricOfMarkup(markup), splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

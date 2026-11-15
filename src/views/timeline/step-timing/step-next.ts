@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
 import { useLayoutEffect, useMemo, useSyncExternalStore } from "react";
-import type { SyllableAddress } from "@/domain/selection/model";
-import type { ResolvedAddress } from "@/domain/selection/resolve";
+import type { SyllableAddress } from "insync/selection-model";
+import type { ResolvedAddress } from "insync/selection-resolve";
 import { nextCursorSlot } from "@/domain/step-timing/step-cursor";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -9,6 +9,7 @@ import { effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 import { type StepSkipView, stepSkipView } from "@/views/timeline/step-timing/step-skip-view";
 import { liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -56,7 +57,10 @@ function useStepNext(lines: readonly LyricLine[]): StepView | null {
     if (!live.cursor) return { ...skip, next: null };
     const focus = effectiveFocus(lines, focusedGroup);
     const include = (line: LyricLine) => isInFocus(line, focus) && !skip.skippedLineIds.has(line.id);
-    return { ...skip, next: nextCursorSlot(lines, live.cursor, live.queue, include, withBackground) };
+    return {
+      ...skip,
+      next: nextCursorSlot(lines, live.cursor, live.queue, include, getSplitCharacter(), withBackground),
+    };
   }, [stepTiming, selected, queue, lines, focusedGroup, groups, collapsedInstances, withBackground]);
 }
 

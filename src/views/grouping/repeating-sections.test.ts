@@ -2,15 +2,16 @@
  * @vitest-environment node
  */
 import { roleWords } from "insync/line-track";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function line(id: string, text: string, opts: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({ id, text, agentId: "v1", ...opts });
+  return lineFromFields({ id, text, agentId: "v1", ...opts }, DEFAULT_SPLIT_CHARACTER);
 }
 
 function detect(lines: LyricLine[], splitChar = "|") {
@@ -87,12 +88,15 @@ describe("findRepeatingStandaloneSections", () => {
     ];
     const before = groupingSuggestions(lines, "|");
     const retimed = lines.map((l, i) =>
-      lineFromFields({
-        ...fieldsOfLine(l),
-        begin: i + 10,
-        end: i + 11,
-        words: roleWords(l, "main")?.map((w) => ({ ...w, begin: w.begin + 5, end: w.end + 5 })),
-      }),
+      lineFromFields(
+        {
+          ...fieldsOfLine(l, DEFAULT_SPLIT_CHARACTER),
+          begin: i + 10,
+          end: i + 11,
+          words: roleWords(l, "main")?.map((w) => ({ ...w, begin: w.begin + 5, end: w.end + 5 })),
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     );
     expect(groupingSuggestions(retimed, "|")).toBe(before);
     expect(groupingSuggestions(retimed.with(3, line("v", "verse two")), "|")).not.toBe(before);
@@ -228,25 +232,31 @@ describe("findRepeatingStandaloneSections", () => {
 
     it("rejects pseudo-repeats whose word splits differ", () => {
       const lines: LyricLine[] = [
-        lineFromFields({
-          id: "1",
-          text: "I love",
-          agentId: "v1",
-          words: [
-            { id: "w2", text: "I", sep: "", begin: 0, end: 1, joinsNext: true },
-            { id: "w3", text: " love", sep: "", begin: 1, end: 2, joinsNext: false },
-          ],
-        }),
-        lineFromFields({ id: "2", text: "you", agentId: "v1" }),
-        lineFromFields({ id: "3", text: "so", agentId: "v1" }),
-        lineFromFields({
-          id: "4",
-          text: "I love",
-          agentId: "v1",
-          words: [{ id: "w4", text: "I love", sep: "", begin: 10, end: 11, joinsNext: false }],
-        }),
-        lineFromFields({ id: "5", text: "you", agentId: "v1" }),
-        lineFromFields({ id: "6", text: "so", agentId: "v1" }),
+        lineFromFields(
+          {
+            id: "1",
+            text: "I love",
+            agentId: "v1",
+            words: [
+              { id: "w2", text: "I", sep: "", begin: 0, end: 1, joinsNext: true },
+              { id: "w3", text: " love", sep: "", begin: 1, end: 2, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields({ id: "2", text: "you", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+        lineFromFields({ id: "3", text: "so", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+        lineFromFields(
+          {
+            id: "4",
+            text: "I love",
+            agentId: "v1",
+            words: [{ id: "w4", text: "I love", sep: "", begin: 10, end: 11, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields({ id: "5", text: "you", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+        lineFromFields({ id: "6", text: "so", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
       ];
       expect(spans(lines)).toEqual([{ starts: [1, 4], length: 2 }]);
     });
@@ -350,7 +360,9 @@ describe("findRepeatingStandaloneSections", () => {
       "Chorus b",
       "Chorus c",
     ];
-    const lines: LyricLine[] = texts.map((text, i) => lineFromFields({ id: `l${i}`, text, agentId: "v1" }));
+    const lines: LyricLine[] = texts.map((text, i) =>
+      lineFromFields({ id: `l${i}`, text, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+    );
     const sections = detect(lines);
     expect(sections.map((s) => ({ starts: s.starts, length: s.length, first: s.previewLines[0] }))).toEqual([
       { starts: [3, 10, 16], length: 3, first: "Chorus a" },

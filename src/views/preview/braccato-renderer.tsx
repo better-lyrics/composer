@@ -1,4 +1,4 @@
-import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
+import { alternateMatchesMainText } from "insync/language-alternate-visibility";
 import type { Bounds } from "insync/word-bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
@@ -19,6 +19,7 @@ import { TTMLParser } from "@braccato/parsers";
 import { IconArrowDown } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -69,12 +70,12 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
     const line = renderer.lines[index];
     if (!line || lyric.isInstrumental) continue;
 
-    if (lyric.romanization && !alternateMatchesMainText(lyric.romanization, lyric.words)) {
+    if (lyric.romanization && !alternateMatchesMainText(lyric.romanization, lyric.words, getSplitCharacter())) {
       injectRomanization(el.ownerDocument, line.lyricElement, line, lyric.romanization, lyric.timedRomanization);
     }
 
     const translation = lyric.translation?.text ?? Object.values(lyric.translations ?? {})[0];
-    if (translation && !alternateMatchesMainText(translation, lyric.words)) {
+    if (translation && !alternateMatchesMainText(translation, lyric.words, getSplitCharacter())) {
       injectTranslation(el.ownerDocument, line.lyricElement, translation);
     }
   }

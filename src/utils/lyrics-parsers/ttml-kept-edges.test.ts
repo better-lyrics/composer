@@ -1,25 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { agentsAfterImport } from "@/domain/agent/imported-agents";
-import { lineText } from "@/domain/line/text";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
+import { agentsAfterImport } from "insync/agent-imported-agents";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { mainTimingWrite } from "@/domain/line/track-writes";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { mainTimingWrite } from "insync/line-track-writes";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
 import { parseXmlDocument } from "@/utils/xml-document";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function exported(): string {
-  const parsed = parseTtml(edgeCasesTtml);
+  const parsed = parseTtml(edgeCasesTtml, DEFAULT_SPLIT_CHARACTER);
   return generateTTML({
     metadata: normalizeLoadedMetadata(parsed.metadata),
     agents: parsed.agents ?? [],
     lines: parsed.lines,
     parts: parsed.parts,
     passthrough: parsed.passthrough,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
 }
 
@@ -48,7 +50,7 @@ describe("ttml kept data edges", () => {
   });
 
   it("a song part holding nested sections covers their lines, and an empty one is kept", () => {
-    const parsed = parseTtml(edgeCasesTtml);
+    const parsed = parseTtml(edgeCasesTtml, DEFAULT_SPLIT_CHARACTER);
     const verse = parsed.parts?.find((part) => part.kind === "Verse");
     expect(verse?.lineIds).toEqual([parsed.lines[0].id, parsed.lines[1].id]);
     const ttml = exported();
@@ -58,12 +60,14 @@ describe("ttml kept data edges", () => {
   });
 
   it("a singer's name is its own ttm:name; a nested one is kept once", () => {
-    expect(parseTtml(edgeCasesTtml).agents?.[0].name).toBe("Ilse Marr");
+    expect(parseTtml(edgeCasesTtml, DEFAULT_SPLIT_CHARACTER).agents?.[0].name).toBe("Ilse Marr");
     expect(occurrences(exported(), "Shade Wren")).toBe(1);
   });
 
   it("an element inside a line-synced line that is not lyric text stays out of the lyric and is kept", () => {
-    expect(lineText(parseTtml(edgeCasesTtml).lines[2])).toBe("Quiet harbour bright");
+    expect(lineText(parseTtml(edgeCasesTtml, DEFAULT_SPLIT_CHARACTER).lines[2], DEFAULT_SPLIT_CHARACTER)).toBe(
+      "Quiet harbour bright",
+    );
     expect(exported()).toContain("<x-vendor:note>aside</x-vendor:note>");
   });
 
@@ -81,21 +85,27 @@ describe("ttml kept data edges", () => {
 
   it("a second round trip changes nothing", () => {
     const once = exported();
-    const parsed = parseTtml(once);
+    const parsed = parseTtml(once, DEFAULT_SPLIT_CHARACTER);
     const twice = generateTTML({
       metadata: normalizeLoadedMetadata(parsed.metadata),
       agents: parsed.agents ?? [],
       lines: parsed.lines,
       parts: parsed.parts,
       passthrough: parsed.passthrough,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(twice).toBe(once);
   });
 
   it("a file naming the default singer keeps that singer's kept data on import", () => {
-    const parsed = parseTtml(edgeCasesTtml);
+    const parsed = parseTtml(edgeCasesTtml, DEFAULT_SPLIT_CHARACTER);
     const { agents } = agentsAfterImport(DEFAULT_AGENTS, parsed.agents, parsed.lines);
-    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents, lines: parsed.lines });
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents,
+      lines: parsed.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain('<ttm:agent xml:id="v1" type="person" x-vendor:voice="alto">');
     expect(ttml).toContain("<x-vendor:alias><ttm:name>Shade Wren</ttm:name></x-vendor:alias>");
   });
@@ -136,8 +146,13 @@ describe("ttml kept data edges", () => {
 
   it("a line-synced line and its background write their untimed span back with its attribute", () => {
     const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling"><head><metadata/></head><body><div><p begin="0:01.000" end="0:03.000"><span tts:color="red">Hello</span> world<span ttm:role="x-bg"><span tts:color="red">Hello</span> world</span></p></div></body></tt>`;
-    const parsed = parseTtml(source);
-    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents: [], lines: parsed.lines });
+    const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: [],
+      lines: parsed.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain('ttm:agent="v1"><span tts:color="red">Hello</span> world<span ttm:role="x-bg">');
     expect(ttml).toContain(
       '<span ttm:role="x-bg"><span begin="0:01.000" end="0:03.000"><span tts:color="red">Hello</span> world</span></span>',
@@ -146,21 +161,27 @@ describe("ttml kept data edges", () => {
 
   it("regression: a kept element stays after the syllable it followed when an earlier one is deleted", () => {
     const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:k="https://vendor.example/k"><body><div><p begin="0:01.000" end="0:04.000"><span begin="0:01.000" end="0:02.000">Tide </span><span begin="0:02.000" end="0:03.000">comes </span><k:mark/><span begin="0:03.000" end="0:04.000">in</span></p></div></body></tt>`;
-    const parsed = parseTtml(source);
+    const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
     const [line] = parsed.lines;
     const edited = { ...line, ...mainTimingWrite(line, timedSyllables(mainTrack(line)).slice(1)) };
-    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents: [], lines: [edited] });
+    const ttml = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: [],
+      lines: [edited],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toMatch(/>comes<\/span> <k:mark\/><span [^>]*>in<\/span><\/p>/);
   });
 
   it("regression: a body element between two plain sections stays between their lines", () => {
     const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:k="https://vendor.example/k"><body><div><p begin="0:01.000" end="0:02.000">Low tide</p></div><k:break/><div><p begin="0:03.000" end="0:04.000">High tide</p></div></body></tt>`;
-    const parsed = parseTtml(source);
+    const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
     const ttml = generateTTML({
       metadata: normalizeLoadedMetadata(parsed.metadata),
       agents: [],
       lines: parsed.lines,
       passthrough: parsed.passthrough,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(ttml).toMatch(/Low tide<\/p>\s*<\/div>\s*<k:break\/>\s*<div>\s*<p [^>]*>High tide/);
   });

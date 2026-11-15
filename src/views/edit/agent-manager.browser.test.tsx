@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { pasteLyrics } from "@/domain/commands/edit-text";

@@ -1,10 +1,10 @@
-import { agentDisplayName } from "@/domain/agent/display-name";
-import { getAgentColor } from "@/domain/agent/colors";
+import { agentDisplayName } from "insync/agent-display-name";
+import { getAgentColor } from "insync/agent-colors";
 import { useProjectStore } from "@/stores/project";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 

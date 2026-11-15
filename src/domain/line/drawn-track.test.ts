@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { withSeededBackground } from "@/domain/line/background";
-import { drawnLanguages, drawnLine, drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
-import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { withSeededBackground } from "insync/line-background";
+import { drawnLanguages, drawnLine, drawnPieces, drawnSyllables } from "insync/line-drawn-track";
+import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { mainTimingEdit, mainTimingWrite } from "@/domain/line/track-writes";
-import { lineTimingWordId } from "@/domain/word/id";
+import { mainTimingEdit, mainTimingWrite } from "insync/line-track-writes";
+import { lineTimingWordId } from "insync/word-id";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { patchOf } from "@/test/field-updates";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
 function line(extras: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras }, getSplitCharacter());
 }
 
 // -- drawnSyllables -----------------------------------------------------------
@@ -26,40 +27,53 @@ describe("drawnSyllables", () => {
       { id: "w2", text: "world", sep: "", begin: 1, end: 2, joinsNext: false },
     ];
     const synced = line({ words });
-    expect(drawnSyllables(synced, "main")).toEqual(words);
-    expect(drawnSyllables(synced, "main")).toBe(timedSyllables(mainTrack(synced)));
+    expect(drawnSyllables(synced, "main", getSplitCharacter())).toEqual(words);
+    expect(drawnSyllables(synced, "main", getSplitCharacter())).toBe(timedSyllables(mainTrack(synced)));
   });
 
   it("draws a line-synced line as one block over its span", () => {
-    expect(drawnSyllables(line({ text: "Hello world", begin: 3, end: 7 }), "main")).toEqual([
+    expect(drawnSyllables(line({ text: "Hello world", begin: 3, end: 7 }), "main", getSplitCharacter())).toEqual([
       { id: lineTimingWordId("l1"), text: "Hello world", sep: "", begin: 3, end: 7, joinsNext: false },
     ]);
   });
 
   it("strips split characters from the block text", () => {
-    expect(drawnSyllables(line({ text: "Hel|lo wo|rld", begin: 3, end: 7 }), "main")[0].text).toBe("Hello world");
+    expect(drawnSyllables(line({ text: "Hel|lo wo|rld", begin: 3, end: 7 }), "main", getSplitCharacter())[0].text).toBe(
+      "Hello world",
+    );
   });
 
   it("draws nothing for an untimed line", () => {
-    expect(drawnSyllables(line(), "main")).toEqual([]);
-    expect(drawnSyllables(line({ words: [] }), "main")).toEqual([]);
+    expect(drawnSyllables(line(), "main", getSplitCharacter())).toEqual([]);
+    expect(drawnSyllables(line({ words: [] }), "main", getSplitCharacter())).toEqual([]);
   });
 
   it("keeps the block id across a timing change", () => {
     const synced = createLine({ id: "l7", text: "Into the quiet", begin: 1, end: 3 });
-    const moved = lineFromFields({ ...fieldsOfLine(synced), begin: 2, end: 4 });
-    expect(drawnSyllables(moved, "main")[0].id).toBe(drawnSyllables(synced, "main")[0].id);
+    const moved = lineFromFields(
+      { ...fieldsOfLine(synced, getSplitCharacter()), begin: 2, end: 4 },
+      getSplitCharacter(),
+    );
+    expect(drawnSyllables(moved, "main", getSplitCharacter())[0].id).toBe(
+      drawnSyllables(synced, "main", getSplitCharacter())[0].id,
+    );
   });
 
   it("invariant: the same track and split character give the same array, and only those", () => {
     useSettingsStore.getState().set("splitCharacter", "|");
     const synced = createLine({ id: "l", text: "Fa|ding", begin: 3, end: 5 });
-    const before = drawnSyllables(synced, "main");
-    expect(drawnSyllables(synced, "main")).toBe(before);
-    expect(drawnSyllables(lineFromFields({ ...fieldsOfLine(synced), begin: 4 }), "main")).not.toBe(before);
+    const before = drawnSyllables(synced, "main", getSplitCharacter());
+    expect(drawnSyllables(synced, "main", getSplitCharacter())).toBe(before);
+    expect(
+      drawnSyllables(
+        lineFromFields({ ...fieldsOfLine(synced, getSplitCharacter()), begin: 4 }, getSplitCharacter()),
+        "main",
+        getSplitCharacter(),
+      ),
+    ).not.toBe(before);
 
     useSettingsStore.getState().set("splitCharacter", "/");
-    const resplit = drawnSyllables(synced, "main");
+    const resplit = drawnSyllables(synced, "main", getSplitCharacter());
     useSettingsStore.getState().set("splitCharacter", "|");
     expect(resplit).not.toBe(before);
   });
@@ -76,14 +90,16 @@ describe("drawnPieces", () => {
         language: "ru-Latn",
         main: { text: "privet", segments: [] },
         origin: "manual",
-        sourceFingerprint: languageSourceFingerprint("Привет"),
+        sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), "Привет"),
       },
     },
   });
 
   it("reads the romanization aligned to the drawn syllables", () => {
-    expect(drawnPieces(romanized, "main")?.w4?.text).toBe("privet");
-    expect(drawnPieces(romanized, "main")).toBe(drawnPieces(romanized, "main"));
+    expect(drawnPieces(romanized, "main", getSplitCharacter())?.w4?.text).toBe("privet");
+    expect(drawnPieces(romanized, "main", getSplitCharacter())).toBe(
+      drawnPieces(romanized, "main", getSplitCharacter()),
+    );
   });
 
   it("regression: reads the background romanization on the block of a line-synced background", () => {
@@ -99,19 +115,25 @@ describe("drawnPieces", () => {
             main: { text: "privet", segments: [] },
             bg: { text: "da", segments: [] },
             origin: "manual",
-            sourceFingerprint: languageSourceFingerprint("Привет", "да"),
+            sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), "Привет", "да"),
           },
         },
       }),
+      getSplitCharacter(),
     );
-    expect(drawnPieces(synced, "bg")?.[lineTimingWordId("l1", "bg")]?.text).toBe("da");
+    expect(drawnPieces(synced, "bg", getSplitCharacter())?.[lineTimingWordId("l1", "bg")]?.text).toBe("da");
   });
 
   it("invariant: an unchanged line gives the same drawn line and languages", () => {
     const synced = line({ text: "Fa|ding", begin: 3, end: 5 });
-    expect(drawnLine(synced)).toBe(drawnLine(synced));
-    expect(drawnLanguages(romanized)).toBe(drawnLanguages(romanized));
-    expect(drawnLine(lineFromFields({ ...fieldsOfLine(synced), begin: 4 }))).not.toBe(drawnLine(synced));
+    expect(drawnLine(synced, getSplitCharacter())).toBe(drawnLine(synced, getSplitCharacter()));
+    expect(drawnLanguages(romanized, getSplitCharacter())).toBe(drawnLanguages(romanized, getSplitCharacter()));
+    expect(
+      drawnLine(
+        lineFromFields({ ...fieldsOfLine(synced, getSplitCharacter()), begin: 4 }, getSplitCharacter()),
+        getSplitCharacter(),
+      ),
+    ).not.toBe(drawnLine(synced, getSplitCharacter()));
   });
 });
 
@@ -120,7 +142,7 @@ describe("drawnPieces", () => {
 describe("mainTimingWrite", () => {
   it("regression D7/[: a timing edit of a line-synced row writes begin/end, not words", () => {
     const synced = createLine({ text: "Line synced", begin: 3, end: 5 });
-    const [block] = drawnSyllables(synced, "main");
+    const [block] = drawnSyllables(synced, "main", getSplitCharacter());
     expect(patchOf(mainTimingWrite(synced, [{ ...block, begin: 4, end: 6 }]), synced)).toEqual({ begin: 4, end: 6 });
   });
 
@@ -134,7 +156,7 @@ describe("mainTimingWrite", () => {
 describe("mainTimingEdit", () => {
   it("keeps a line-synced row line-synced when an edit leaves one block", () => {
     const synced = createLine({ text: "Line synced", begin: 3, end: 5 });
-    const [block] = drawnSyllables(synced, "main");
+    const [block] = drawnSyllables(synced, "main", getSplitCharacter());
     expect(patchOf(mainTimingEdit(synced, [{ ...block, begin: 6, end: 8 }]), synced)).toEqual({ begin: 6, end: 8 });
   });
 

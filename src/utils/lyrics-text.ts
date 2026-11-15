@@ -1,11 +1,12 @@
-import { withShownBackground } from "@/domain/edit-text/shown-background";
-import { withoutBackground } from "@/domain/line/background";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { withShownBackground } from "insync/edit-text-shown-background";
+import { withoutBackground } from "insync/line-background";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
-import { backgroundText, lineText, trackText } from "@/domain/line/text";
+import { reconcileMatchedTiming } from "insync/line-reconcile-text";
+import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { cleanSplitCharacters, getSplitCharacter, withoutSplitCharacter } from "@/utils/split-character";
+import { getSplitCharacter } from "@/utils/split-character";
+import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -15,7 +16,7 @@ function matchKey(text: string, splitChar: string): string {
 
 function carriesBackground(line: LyricLine): boolean {
   return (
-    backgroundText(line) !== undefined ||
+    backgroundText(line, getSplitCharacter()) !== undefined ||
     roleWords(line, "bg") !== undefined ||
     backgroundTrack(line)?.source !== undefined
   );
@@ -106,7 +107,7 @@ function textToLyricLines(
   return mapped.map((line, index) =>
     carriesBackground(line) &&
     keepsNoTimedBackground(line, sources[index], splitChar) &&
-    /\([^)]*\)/.test(lineText(line))
+    /\([^)]*\)/.test(lineText(line, getSplitCharacter()))
       ? withoutBackground(line)
       : line,
   );

@@ -11,7 +11,7 @@ import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syl
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import { applyAlignedTimings, retimeNewSyllables } from "@/domain/commands/alignment";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
 import {
@@ -26,6 +26,7 @@ import { recordRealignedLines } from "@/stores/alignment-record";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -138,7 +139,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         return fail(set, "unsupported-language", "The alignment model doesn't cover this song's language.");
       }
       const hanReading = hanReadingFor(project.metadata.language, project.lines);
-      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line)));
+      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line, getSplitCharacter())));
       const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
       if (!vocalsUrl) {
         return fail(
@@ -237,7 +238,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     );
     const planned = planLines(project.lines, [...groupsOf.keys()], true);
     const hanReading = hanReadingFor(project.metadata.language, project.lines);
-    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line)));
+    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line, getSplitCharacter())));
     const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.

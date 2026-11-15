@@ -1,14 +1,15 @@
 import { setInstanceOwnTiming } from "@/domain/commands/instance-edits";
 import { isRefused } from "@/domain/commands/outcome";
-import { replacedInstances } from "@/domain/group/replaced-instances";
-import { sharesTiming } from "@/domain/group/shared-timing";
+import { replacedInstances } from "insync/group-replaced-instances";
+import { sharesTiming } from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
-import { instanceName } from "@/domain/instance/name";
+import { instanceName } from "insync/instance-name";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { useCallback } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
       return;
     }
     const after = useProjectStore.getState().lines;
-    const replaced = replacedInstances(store.lines, after).length > 0;
+    const replaced = replacedInstances(store.lines, after, getSplitCharacter()).length > 0;
     showGroupActionToast(
       replaced ? `${name} shares timing again. Its own timing was replaced.` : `${name} shares timing again`,
     );

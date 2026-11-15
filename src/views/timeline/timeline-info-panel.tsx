@@ -1,12 +1,12 @@
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
 import { useCallback, useMemo } from "react";
-import { getAgentColor } from "@/domain/agent/colors";
+import { getAgentColor } from "insync/agent-colors";
 import { setWordBoundary } from "@/domain/commands/word-timing";
 import type { LyricLine } from "insync/line";
-import { backgroundText } from "@/domain/line/text";
+import { backgroundText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
-import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
-import type { BoundaryEdge } from "@/domain/word/boundary";
+import { type ResolvedAddress, resolveAddress, toAddress } from "insync/selection-resolve";
+import type { BoundaryEdge } from "insync/word-boundary";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
@@ -28,6 +28,7 @@ import {
 import { useTimelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Components ----------------------------------------------------------------
 
@@ -97,7 +98,7 @@ const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, 
         <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
       </div>
 
-      <BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />
+      <BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line, getSplitCharacter())} />
 
       <div className="flex items-center gap-2 ml-auto">
         <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin} title={`Set begin to cursor (${beginKeys})`}>
@@ -120,7 +121,7 @@ const TimelineInfoPanel: React.FC = () => {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const lines = useTimelineDrawnLines(rawLines);
   const selectedWord = useMemo(
-    () => (selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null),
+    () => (selectedWords[0] ? resolveAddress(lines, selectedWords[0], getSplitCharacter()) : null),
     [selectedWords, lines],
   );
   const highlight = useMemo(

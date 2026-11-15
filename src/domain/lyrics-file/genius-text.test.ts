@@ -1,4 +1,4 @@
-import { isSectionTagLine, readGeniusLyrics, readsAsGeniusLyrics } from "@/domain/lyrics-file/genius-text";
+import { isSectionTagLine, readGeniusLyrics, readsAsGeniusLyrics } from "insync/lyrics-file-genius-text";
 import { GENIUS_PAGE_COPY, TAGGED_LYRICS } from "@/test/genius-fixtures";
 import { describe, expect, it } from "vitest";
 

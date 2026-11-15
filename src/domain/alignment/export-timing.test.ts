@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { readExportTiming, withExportTiming } from "@/domain/alignment/export-timing";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { withRoleWords } from "insync/line-track-writes";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -47,7 +48,12 @@ function withVendorData(line: LyricLine): LyricLine {
 }
 
 function ttmlOf(lines: LyricLine[]): string {
-  return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines });
+  return generateTTML({
+    metadata: normalizeLoadedMetadata(null),
+    agents: [],
+    lines,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
+  });
 }
 
 // -- Tests --------------------------------------------------------------------

@@ -1,18 +1,19 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { shiftLineTiming } from "@/domain/line/shift";
+import { shiftLineTiming } from "insync/line-shift";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { nudgeSelectedWords } from "@/domain/selection/nudge";
-import { stretchSelections } from "@/domain/selection/stretch";
-import { commitGesture } from "@/domain/sync/commit-gesture";
-import { clampBoundaryTime } from "@/domain/word/boundary";
-import { boundsOverlap } from "@/domain/word/overlap";
+import { nudgeSelectedWords } from "insync/selection-nudge";
+import { stretchSelections } from "insync/selection-stretch";
+import { commitGesture } from "insync/sync-commit-gesture";
+import { clampBoundaryTime } from "insync/word-boundary";
+import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -109,7 +110,13 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
   beforeEach(seedSong);
 
   it("word nudge", () => {
-    const { updates } = nudgeSelectedWords(store().lines, selectWords("a1", 2), -50, rangeOf());
+    const { updates } = nudgeSelectedWords(
+      store().lines,
+      selectWords("a1", 2),
+      -50,
+      rangeOf(),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     commit(updates);
 
     expect(timedSyllables(mainTrack(lineById("a1")))[0].begin).toBe(8);
@@ -144,10 +151,16 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
 
   it("stretch", () => {
     const selection = [...selectWords("a1", 2), ...selectWords("b1", 2)];
-    const { updates, appliedFactor } = stretchSelections(store().lines, selection, 10, {
-      rangeOf: rangeOf(),
-      minWordDuration: MIN_WORD_DURATION,
-    });
+    const { updates, appliedFactor } = stretchSelections(
+      store().lines,
+      selection,
+      10,
+      {
+        rangeOf: rangeOf(),
+        minWordDuration: MIN_WORD_DURATION,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     commit(updates);
 
     expect(appliedFactor).toBeCloseTo((12.5 - 10) / 2.2, 6);
@@ -172,6 +185,7 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
       time: 6.5,
       defaultWordDuration: 0.3,
       groups: store().groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!gesture) throw new Error("tap produced no commit");
     commit(gesture.lineUpdates);

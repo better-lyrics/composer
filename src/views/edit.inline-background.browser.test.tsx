@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -53,8 +54,8 @@ describe("Edit shows background vocals inline", () => {
     const edited = "Hold me close (ooh yes)";
     typeInto(textarea, edited, edited.indexOf("yes") + 3);
 
-    await expect.poll(() => backgroundText(storedLine())).toBe("ooh yes");
-    expect(lineText(storedLine())).toBe("Hold me close");
+    await expect.poll(() => backgroundText(storedLine(), getSplitCharacter())).toBe("ooh yes");
+    expect(lineText(storedLine(), getSplitCharacter())).toBe("Hold me close");
     expect(timedSyllables(backgroundTrack(storedLine()))[0]).toEqual(ooh);
     expect(textarea.value).toBe(edited);
   });
@@ -72,7 +73,7 @@ describe("Edit shows background vocals inline", () => {
     textarea.focus();
     textarea.blur();
 
-    await expect.poll(() => lineText(storedLine())).toBe("Oh Hold (me) close");
-    expect(backgroundText(storedLine())).toBe("ooh");
+    await expect.poll(() => lineText(storedLine(), getSplitCharacter())).toBe("Oh Hold (me) close");
+    expect(backgroundText(storedLine(), getSplitCharacter())).toBe("ooh");
   });
 });

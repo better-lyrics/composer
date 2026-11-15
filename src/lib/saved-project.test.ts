@@ -1,6 +1,6 @@
 import { msFromSeconds } from "insync/time";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
 import { roleWords } from "insync/line-track";
 import {

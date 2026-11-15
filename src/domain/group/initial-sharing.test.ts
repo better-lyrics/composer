@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { initialGroupSharing } from "insync/group-initial-sharing";
+import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { skippedSharedInstances } from "insync/sync-skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
 import { withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -38,7 +39,8 @@ const shifted = (instanceIdx: number, begin: number, secondWordShift = 0) =>
   });
 
 const newGroup = createGroup({ id: "g1", label: "Chorus" });
-const share = (lines: LyricLine[], settingOn = true) => initialGroupSharing(lines, newGroup, settingOn);
+const share = (lines: LyricLine[], settingOn = true) =>
+  initialGroupSharing(lines, newGroup, settingOn, DEFAULT_SPLIT_CHARACTER);
 const sharingOf = (lines: LyricLine[]) => {
   const { sharesTiming, ownTimingInstances } = share(lines).group;
   return { sharesTiming, ownTimingInstances };
@@ -105,7 +107,11 @@ describe("initialGroupSharing", () => {
       const result = share(lines);
       expect(result.group.ownTimingInstances).toBeUndefined();
       expect(timedSyllables(mainTrack(result.lines.find((line) => line.id === "c1-1")!))[0]?.begin).toBeCloseTo(43, 6);
-      expect(skippedSharedInstances(result.lines, [result.group]).map((skipped) => skipped.instanceIdx)).toEqual([1]);
+      expect(
+        skippedSharedInstances(result.lines, [result.group], DEFAULT_SPLIT_CHARACTER).map(
+          (skipped) => skipped.instanceIdx,
+        ),
+      ).toEqual([1]);
     });
 
     it("regression: shares a partly line-synced instance mid-sync, so sync skips it", () => {
@@ -120,8 +126,15 @@ describe("initialGroupSharing", () => {
         });
       const result = share([lineSynced(0, 0, 10), lineSynced(0, 1, 13), lineSynced(1, 0, 40), lineSynced(1, 1)]);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(fieldsOfLine(result.lines.find((line) => line.id === "l1-1")!)).toMatchObject({ begin: 43, end: 45 });
-      expect(skippedSharedInstances(result.lines, [result.group]).map((skipped) => skipped.instanceIdx)).toEqual([1]);
+      expect(fieldsOfLine(result.lines.find((line) => line.id === "l1-1")!, DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+        begin: 43,
+        end: 45,
+      });
+      expect(
+        skippedSharedInstances(result.lines, [result.group], DEFAULT_SPLIT_CHARACTER).map(
+          (skipped) => skipped.instanceIdx,
+        ),
+      ).toEqual([1]);
     });
 
     it("regression: measures the offset only over template lines timed in both instances", () => {
@@ -143,7 +156,7 @@ describe("initialGroupSharing", () => {
 
     it("keeps its own timing for an instance the shared timing would run past the song end", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
-      const result = initialGroupSharing(lines, newGroup, true, 300);
+      const result = initialGroupSharing(lines, newGroup, true, DEFAULT_SPLIT_CHARACTER, 300);
       expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "past-song-end" }]);
       expect(result.group.ownTimingInstances).toEqual([1]);
       expect(result.lines).toEqual(lines);
@@ -261,7 +274,7 @@ describe("initialGroupSharing", () => {
     it("replaces sharing fields the group already had", () => {
       const lines = [shifted(0, 10), shifted(1, 40, 0.2)];
       const old = createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] });
-      expect(initialGroupSharing(lines, old, true).group.ownTimingInstances).toBeUndefined();
+      expect(initialGroupSharing(lines, old, true, DEFAULT_SPLIT_CHARACTER).group.ownTimingInstances).toBeUndefined();
     });
   });
 

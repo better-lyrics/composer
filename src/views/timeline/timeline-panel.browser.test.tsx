@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

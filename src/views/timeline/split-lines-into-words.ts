@@ -1,15 +1,16 @@
 import { convertToWordTiming } from "@/domain/commands/line-timing";
-import { withKeptSyllablePieces } from "@/domain/language/pieces";
-import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { withKeptSyllablePieces } from "insync/language-pieces";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
-import { convertBackgroundToWord, convertMainToWord } from "@/domain/line/span-to-words";
+import { isLineSynced } from "insync/line-predicates";
+import { convertBackgroundToWord, convertMainToWord } from "insync/line-span-to-words";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
-import { evenlyTimedWords } from "@/utils/sync-helpers";
+import { evenlyTimedWords } from "insync/lyric-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -23,7 +24,7 @@ interface LineWordsUpdate {
 type SplitTarget = Pick<SyllableAddress, "lineId" | "type">;
 
 function splitMultiWordWord(word: WordTiming): WordTiming[] {
-  const parts = evenlyTimedWords(word.text, word.begin, word.end);
+  const parts = evenlyTimedWords(word.text, word.begin, word.end, getSplitCharacter());
   if (parts.length < 2) return [word];
   const { joinsNext, ...base } = word;
   const lastIndex = parts.length - 1;
@@ -63,7 +64,7 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
     const bgWords = timedSyllables(backgroundTrack(realLine));
     const splitBg = tracks.has("bg") ? splitMultiWordBgWords(bgWords) : null;
     if (splitBg) {
-      lineUpdates = manualBackgroundWordEdit(realLine, splitBg, {
+      lineUpdates = manualBackgroundWordEdit(realLine, splitBg, getSplitCharacter(), {
         ...lineUpdates,
         languages: withKeptSyllablePieces(realLine, "bg", bgWords, splitBg),
       });

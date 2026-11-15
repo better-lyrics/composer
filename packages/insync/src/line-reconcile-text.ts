@@ -1,0 +1,14 @@
+import type { LyricLine } from "./line";
+import { trackText } from "./line-text";
+import { mainTrack } from "./line-track";
+import { withMainTrack, withTrackText } from "./line-track-writes";
+
+// The single chokepoint for re-deciding timing after a text edit: both the exact-match and position-match
+// branches of textToLyricLines route through here so they cannot drift apart and clear timing on lines the
+// user never touched.
+function reconcileMatchedTiming(line: LyricLine, cleanedText: string, splitChar: string): LyricLine {
+  if (trackText(mainTrack(line), splitChar) === cleanedText) return line;
+  return withMainTrack(line, withTrackText(mainTrack(line), cleanedText, splitChar));
+}
+
+export { reconcileMatchedTiming };

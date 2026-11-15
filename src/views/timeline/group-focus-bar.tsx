@@ -1,7 +1,7 @@
-import { instanceStart, keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
+import { instanceStart, keepsOwnTiming, sharesTiming } from "insync/group-shared-timing";
 import type { LinkGroup } from "insync/group";
 import { instanceIndicesOf } from "insync/instance-enumerate";
-import { instanceName } from "@/domain/instance/name";
+import { instanceName } from "insync/instance-name";
 import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
@@ -10,7 +10,7 @@ import { IconButton } from "@/ui/icon-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { adjacentHeardInstance, focusBounds, heardInstances } from "@/views/timeline/group-focus";
 import { hearInstance } from "@/views/timeline/hear-instance";

@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { saveAudioFile, saveCurrentProject } from "@/lib/persistence";

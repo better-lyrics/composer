@@ -1,10 +1,11 @@
-import type { KeptOwnTiming, RealignRefusal } from "@/domain/group/shared-placement";
+import type { KeptOwnTiming, RealignRefusal } from "insync/group-shared-placement";
 import type { LinkGroup } from "insync/group";
-import { instanceName } from "@/domain/instance/name";
-import { lineText } from "@/domain/line/text";
+import { instanceName } from "insync/instance-name";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -96,7 +97,9 @@ function showLineDiffersToast(lineIds: readonly string[], lines = useProjectStor
   const line = lineIds.length > 0 ? lines.find((candidate) => candidate.id === lineIds[0]) : undefined;
   const group = line && groups.find((candidate) => candidate.id === line.groupId);
   if (!line || !group || line.instanceIdx === undefined) return;
-  showGroupActionToast(`"${lineText(line)}" now differs in ${instanceName(lines, group, line.instanceIdx)}`);
+  showGroupActionToast(
+    `"${lineText(line, getSplitCharacter())}" now differs in ${instanceName(lines, group, line.instanceIdx)}`,
+  );
 }
 
 function showSplitInAllInstancesToast(count: number): void {

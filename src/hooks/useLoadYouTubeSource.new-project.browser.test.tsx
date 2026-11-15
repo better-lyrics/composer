@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { usePersistence } from "@/hooks/usePersistence";
 import { deleteProject, restoreOpenProject } from "@/lib/open-project";
@@ -19,6 +19,7 @@ import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -215,9 +216,9 @@ describe("useLoadYouTubeSource · projects", () => {
       const load = await loader();
       const loading = load(VIDEO_ID);
       const id = openProjectIdSnapshot();
-      useProjectStore
-        .getState()
-        .restoreLyrics({ lines: [lineFromFields({ id: "n1", text: "New words", agentId: "v1" })] });
+      useProjectStore.getState().restoreLyrics({
+        lines: [lineFromFields({ id: "n1", text: "New words", agentId: "v1" }, getSplitCharacter())],
+      });
       failLoad();
       await expect(loading).rejects.toThrow();
       expect(openProjectIdSnapshot()).toBe(id);

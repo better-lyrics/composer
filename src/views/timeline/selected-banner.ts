@@ -1,7 +1,7 @@
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { isAddressed } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
+import { isAddressed } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
 import { getWordsInInstance } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------

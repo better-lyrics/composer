@@ -1,4 +1,4 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
@@ -19,6 +19,7 @@ import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -70,9 +71,9 @@ describe("useResolveYouTubeTunnel · projects", () => {
       const loading = result.current(VIDEO_ID);
       const newId = openProjectIdSnapshot() ?? "";
       expect(newId).not.toBe("a");
-      useProjectStore
-        .getState()
-        .restoreLyrics({ lines: [lineFromFields({ id: "n1", text: "New words", agentId: "v1" })] });
+      useProjectStore.getState().restoreLyrics({
+        lines: [lineFromFields({ id: "n1", text: "New words", agentId: "v1" }, getSplitCharacter())],
+      });
       await expect(loading).rejects.toThrow();
       expect(useAudioStore.getState().source).toBeNull();
       await flushPendingSave();

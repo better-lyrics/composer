@@ -1,10 +1,11 @@
 import type { LyricLine } from "insync/line";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { resolveAddresses } from "@/domain/selection/resolve";
+import type { SyllableAddress } from "insync/selection-model";
+import { resolveAddresses } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { type SelectionGrips, selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback, useRef } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -56,7 +57,7 @@ let cachedGrips: CachedGrips | null = null;
 function sharedSelectionGrips(selections: SyllableAddress[]): SelectionGrips {
   const { lines } = useProjectStore.getState();
   if (cachedGrips && cachedGrips.selections === selections && cachedGrips.lines === lines) return cachedGrips.grips;
-  const grips = selectionGripEdges(lines, resolveAddresses(lines, selections));
+  const grips = selectionGripEdges(lines, resolveAddresses(lines, selections, getSplitCharacter()));
   cachedGrips = { selections, lines, grips };
   return grips;
 }

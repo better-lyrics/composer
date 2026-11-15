@@ -1,9 +1,9 @@
-import { getAgentColor } from "@/domain/agent/colors";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { getAgentColor } from "insync/agent-colors";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
-import { withoutSplitCharacter } from "@/utils/split-character";
-import { splitIntoWords } from "@/utils/sync-helpers";
+import { withoutSplitCharacter } from "insync/split-character-text";
+import { splitIntoWords } from "insync/lyric-words";
 import { focusedControlOwnsKey } from "@/utils/typing-target";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
@@ -12,6 +12,7 @@ import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
 import { memo, useMemo } from "react";
 import { cn } from "@/utils/cn";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -100,7 +101,9 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 }) => {
   // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const wordTexts = useMemo(
-    () => displayWordTexts ?? (words?.length ? words.map((w) => w.text + w.sep) : splitIntoWords(text)),
+    () =>
+      displayWordTexts ??
+      (words?.length ? words.map((w) => w.text + w.sep) : splitIntoWords(text, getSplitCharacter())),
     [displayWordTexts, text, words, splitCharacter],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
@@ -110,7 +113,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       (backgroundWords?.length
         ? backgroundWords.map((w) => w.text + w.sep)
         : (displayBackgroundText ?? backgroundText)
-          ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "")
+          ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "", getSplitCharacter())
           : []),
     [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts, splitCharacter],
   );

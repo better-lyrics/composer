@@ -1,10 +1,10 @@
 import { markWordsExplicit, mergeSyllableGroup } from "@/domain/commands/word-edits";
 import type { LyricLine } from "insync/line";
 import { type TrackField, trackField, trackWords } from "insync/line-track";
-import { contiguousSelectionRun, type SelectionRun } from "@/domain/selection/contiguous";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { resolveAddresses } from "@/domain/selection/resolve";
-import { isInSyllableGroup } from "@/domain/word/syllable-groups";
+import { contiguousSelectionRun, type SelectionRun } from "insync/selection-contiguous";
+import type { SyllableAddress } from "insync/selection-model";
+import { resolveAddresses } from "insync/selection-resolve";
+import { isInSyllableGroup } from "insync/word-syllable-groups";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import {
@@ -12,6 +12,7 @@ import {
   resolveExplicitSelectionToggle,
 } from "@/views/timeline/explicit-selection-toggle";
 import { isPartialSyllableSelection, mergeRunKind, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -34,7 +35,7 @@ function singleSelectedWord(selection: SyllableAddress[]): SyllableAddress | nul
 }
 
 function wordMergeTarget(selection: SyllableAddress[], lines: LyricLine[]): WordMerge | null {
-  const run = contiguousSelectionRun(resolveAddresses(lines, selection));
+  const run = contiguousSelectionRun(resolveAddresses(lines, selection, getSplitCharacter()));
   if (!run) return null;
   const line = lines.find((candidate) => candidate.id === run.lineId);
   if (!line) return null;
@@ -42,7 +43,7 @@ function wordMergeTarget(selection: SyllableAddress[], lines: LyricLine[]): Word
 }
 
 function syllableMergeTarget(addresses: SyllableAddress[], lines: LyricLine[]): SyllableMerge | null {
-  const selection = resolveAddresses(lines, addresses);
+  const selection = resolveAddresses(lines, addresses, getSplitCharacter());
   if (selection.length === 0) return null;
   const first = selection[0];
   if (!selection.every((word) => word.lineId === first.lineId && word.type === first.type)) return null;

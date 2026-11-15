@@ -2,8 +2,8 @@ import { Toaster } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
 import { effectiveBounds, mainBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { isLineSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -14,6 +14,7 @@ import { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { isMac } from "@/utils/platform";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -63,7 +64,7 @@ function assertMonotonic(allLines: LyricLine[]): void {
     const words = roleWords(l, "main");
     if (words) return words;
     const span = isLineSynced(l) ? mainBounds(l) : null;
-    if (span) return [{ text: lineText(l), begin: span.begin, end: span.end }];
+    if (span) return [{ text: lineText(l, getSplitCharacter()), begin: span.begin, end: span.end }];
     return [];
   });
   for (let i = 0; i < flat.length; i++) {
@@ -99,7 +100,7 @@ describe("D2 undo mid word-sync", () => {
     await tapAt(4);
     key({ key: "ArrowLeft", code: "ArrowLeft" });
     await settle();
-    expect(lineText(lines()[0])).toContain("the rumors");
+    expect(lineText(lines()[0], getSplitCharacter())).toContain("the rumors");
   });
 });
 
@@ -110,7 +111,7 @@ describe("sibling: nudge mid-sync truncates untapped text", () => {
     await tapAt(1);
     key({ key: "ArrowLeft", code: "ArrowLeft" });
     await settle();
-    expect(lineText(lines()[0])).toBe("one two three");
+    expect(lineText(lines()[0], getSplitCharacter())).toBe("one two three");
   });
 });
 

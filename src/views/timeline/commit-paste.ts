@@ -1,9 +1,9 @@
 import { addInstance } from "@/domain/commands/instance-edits";
 import { toast } from "sonner";
 import { fillInstanceRows, pasteLines } from "@/domain/commands/instance-rows";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LineTemplate } from "@/domain/group/template";
-import { templateSourceInstance } from "@/domain/group/template-source";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import type { LineTemplate } from "insync/group-template";
+import { templateSourceInstance } from "insync/group-template-source";
 import { instanceCount } from "insync/instance-enumerate";
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
@@ -12,7 +12,7 @@ import { useAudioStore } from "@/stores/audio";
 import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -20,6 +20,7 @@ import { instancePasteTemplate } from "@/views/timeline/instance-paste-template"
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -116,7 +117,7 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
         return "cancelled";
       }
       if (answer === "link") {
-        const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx);
+        const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx, getSplitCharacter());
         const template = instanceToTemplate(lines, match.groupId, sourceIdx);
         return placeInstance(lines, target, match.groupId, template, `Linked as another ${groupLabel}`);
       }

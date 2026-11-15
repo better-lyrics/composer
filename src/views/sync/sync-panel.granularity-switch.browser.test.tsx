@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -10,6 +10,7 @@ import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -50,7 +51,7 @@ describe("SyncPanel granularity switch", () => {
       await expect.poll(() => useProjectStore.getState().granularity).toBe("word");
       const synced = useProjectStore.getState().lines.find((line) => line.id === "line-synced");
       expect(synced && isLineSynced(synced)).toBe(true);
-      expect(fieldsOfLine(synced!)).toMatchObject({ begin: 1, end: 3 });
+      expect(fieldsOfLine(synced!, getSplitCharacter())).toMatchObject({ begin: 1, end: 3 });
       expect(synced && roleWords(synced, "main")).toBeUndefined();
     });
   });
@@ -105,7 +106,7 @@ describe("SyncPanel granularity switch", () => {
 
       const restored = useProjectStore.getState().lines[0];
       expect(isLineSynced(restored)).toBe(true);
-      expect(fieldsOfLine(restored)).toMatchObject({ begin: 1, end: 3 });
+      expect(fieldsOfLine(restored, getSplitCharacter())).toMatchObject({ begin: 1, end: 3 });
     });
   });
 

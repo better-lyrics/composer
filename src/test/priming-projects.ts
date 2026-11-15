@@ -1,15 +1,16 @@
 import { msFromSeconds, secondsFromMs } from "insync/time";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { TrackRole } from "insync/line";
 import { roleWords } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
-import { lineFromFields } from "@/domain/line/line-from-fields";
-import { newWordId } from "@/domain/word/id";
+import { lineFromFields } from "insync/line-from-fields";
+import { newWordId } from "insync/word-id";
 import { type ProjectSaveInput, saveCurrentProject } from "@/lib/persistence";
 import { loadProjectForRestore } from "@/lib/project-restore";
 import { getOpenProjectId } from "@/lib/project-storage";
 import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import { createProjectSaveInput } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -20,15 +21,18 @@ function seedSavedProject(
   return saveCurrentProject(
     createProjectSaveInput({
       lines: [
-        lineFromFields({
-          id: "L1",
-          text: "hello world",
-          agentId: DEFAULT_AGENTS[0].id,
-          words: [
-            { id: newWordId(), text: "hello", sep: "", begin: 1.0, end: 1.5, joinsNext: true },
-            { id: newWordId(), text: "world", sep: "", begin: 1.5, end: 2.0, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "L1",
+            text: "hello world",
+            agentId: DEFAULT_AGENTS[0].id,
+            words: [
+              { id: newWordId(), text: "hello", sep: "", begin: 1.0, end: 1.5, joinsNext: true },
+              { id: newWordId(), text: "world", sep: "", begin: 1.5, end: 2.0, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       primingStripped,
       primingCorrected,

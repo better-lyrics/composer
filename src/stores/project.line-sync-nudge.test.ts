@@ -1,6 +1,6 @@
 import { fieldUpdates } from "@/test/field-updates";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
@@ -8,6 +8,7 @@ import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // These tests pin the contract that nudging a line-synced row by writing
 // only `begin/end` (without `words`) keeps it line-synced. The previous bug
@@ -19,7 +20,9 @@ describe("project store · line-sync nudge granularity", () => {
 
   it("preserves line-sync when only begin/end change", () => {
     const store = useProjectStore.getState();
-    store.restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })] });
+    store.restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
+    });
     store.commit(pasteLines(fieldUpdates([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }])));
     const after = useProjectStore.getState().lines[0];
     expect(roleWords(after, "main")).toBeUndefined();
@@ -29,7 +32,9 @@ describe("project store · line-sync nudge granularity", () => {
 
   it("preserves line-sync across multiple consecutive nudges (no drift to word-sync)", () => {
     const store = useProjectStore.getState();
-    store.restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })] });
+    store.restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
+    });
     for (let i = 0; i < 5; i++) {
       const cur = useProjectStore.getState().lines[0];
       store.commit(
@@ -53,7 +58,7 @@ describe("project store · line-sync nudge granularity", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }),
+        lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER),
       ]),
     );
     store.commit(pasteLines(fieldUpdates([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }])));
@@ -66,7 +71,9 @@ describe("project store · line-sync nudge granularity", () => {
 
   it("flips to word-sync only when an explicit words array is written", () => {
     const store = useProjectStore.getState();
-    store.restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })] });
+    store.restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
+    });
     store.commit(
       pasteLines(
         fieldUpdates([
@@ -98,30 +105,36 @@ describe("instance shift = nudging every selected word at once", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        lineFromFields({
-          id: "A",
-          text: "I love",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: [
-            { id: "w2", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
-            { id: "w3", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
-          ],
-        }),
-        lineFromFields({
-          id: "B",
-          text: "all night",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 1,
-          words: [
-            { id: "w4", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
-            { id: "w5", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
-          ],
-        }),
+        lineFromFields(
+          {
+            id: "A",
+            text: "I love",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: [
+              { id: "w2", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
+              { id: "w3", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "B",
+            text: "all night",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 1,
+            words: [
+              { id: "w4", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
+              { id: "w5", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ]),
     );
     // Simulating what nudgeSelectedWords would output with all-instance selected:
@@ -161,24 +174,30 @@ describe("instance shift = nudging every selected word at once", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        lineFromFields({
-          id: "A1",
-          text: "x",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          words: [{ id: "w10", text: "x", sep: "", begin: 10, end: 11, joinsNext: false }],
-        }),
-        lineFromFields({
-          id: "A2",
-          text: "x",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-          words: [{ id: "w11", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
-        }),
+        lineFromFields(
+          {
+            id: "A1",
+            text: "x",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: [{ id: "w10", text: "x", sep: "", begin: 10, end: 11, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "A2",
+            text: "x",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            words: [{ id: "w11", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ]),
     );
     // Only nudge instance 0

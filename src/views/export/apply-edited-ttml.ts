@@ -1,8 +1,8 @@
 import { mergedEditedKept } from "@/domain/line/edited-ttml-kept";
 import { holdsEveryLine, mergedLineIdsByKey, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "insync/line";
-import { isProjectFullySynced } from "@/domain/line/sync-progress";
-import { changedParts, type EditedLyrics, editedLyricsWrite, type ProjectPart } from "@/domain/project/edited-lyrics";
+import { isProjectFullySynced } from "insync/line-sync-progress";
+import { changedParts, type EditedLyrics, editedLyricsWrite, type ProjectPart } from "insync/project-edited-lyrics";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";
 import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
@@ -10,6 +10,7 @@ import { generateProjectTtml } from "@/utils/ttml";
 import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
 import { crossedProjectChange } from "@/views/export/ttml-edit-state";
 import { readTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -28,20 +29,21 @@ const OWN_EXPORT = "the exported TTML";
 // -- Helpers ------------------------------------------------------------------
 
 function editedLyricsFrom(stored: readonly LyricLine[], parsed: ParseResult): EditedLyrics {
-  const lines = mergeEditedTtmlLines(stored, parsed);
+  const lines = mergeEditedTtmlLines(stored, parsed, getSplitCharacter());
   return {
     lines,
     groups: parsed.groups ?? [],
     agents: parsed.agents,
     metadata: parsed.metadata,
-    kept: mergedEditedKept(stored, parsed, lines),
+    kept: mergedEditedKept(stored, parsed, lines, getSplitCharacter()),
   };
 }
 
 function partNotHeld(project: ProjectStore, audioDuration: number, youtubeVideoId?: string): ProjectPart | undefined {
-  const ownExport = generateProjectTtml(project, audioDuration, undefined, youtubeVideoId);
+  const ownExport = generateProjectTtml(project, audioDuration, getSplitCharacter(), undefined, youtubeVideoId);
   const own = readTtmlLyrics(ownExport, OWN_EXPORT, audioDuration);
-  if (own.status === "unreadable" || !holdsEveryLine(project.lines, own.parsed.lines)) return "lines";
+  if (own.status === "unreadable" || !holdsEveryLine(project.lines, own.parsed.lines, getSplitCharacter()))
+    return "lines";
   const roundTrip = editedLyricsFrom(project.lines, own.parsed);
   return changedParts(project, editedLyricsWrite(project, roundTrip))[0];
 }
@@ -51,26 +53,32 @@ function partNotHeld(project: ProjectStore, audioDuration: number, youtubeVideoI
 function applyEditedTtml(content: string, audioDuration: number, youtubeVideoId?: string): EditedTtmlApply {
   const project = useProjectStore.getState();
   const read = readTtmlLyrics(content, EDITED_TTML, audioDuration);
-  if (!isProjectFullySynced(project.lines)) {
+  if (!isProjectFullySynced(project.lines, getSplitCharacter())) {
     return read.status === "unreadable"
       ? { status: "export-only", reason: "not-synced", message: read.message }
       : { status: "export-only", reason: "not-synced" };
   }
   if (read.status === "unreadable") return read;
   const edit = project.ttmlEditState;
-  if (edit && crossedProjectChange(edit, generateProjectTtml(project, audioDuration, undefined, youtubeVideoId))) {
+  if (
+    edit &&
+    crossedProjectChange(
+      edit,
+      generateProjectTtml(project, audioDuration, getSplitCharacter(), undefined, youtubeVideoId),
+    )
+  ) {
     return { status: "export-only", reason: "lyrics-changed" };
   }
   const notHeld = partNotHeld(project, audioDuration, youtubeVideoId);
   if (notHeld) return { status: "export-only", reason: "not-held", part: notHeld };
   project.applyEditedLyricsWithHistory(editedLyricsFrom(project.lines, read.parsed));
   const applied = useProjectStore.getState();
-  const regenerated = generateProjectTtml(applied, audioDuration, undefined, youtubeVideoId);
+  const regenerated = generateProjectTtml(applied, audioDuration, getSplitCharacter(), undefined, youtubeVideoId);
   const keptInExport = canonicalLineKeys(regenerated) !== canonicalLineKeys(content);
   const keptContent = renumberLineKeys(
     content,
-    mergedLineIdsByKey(project.lines, read.parsed),
-    lineKeyIds(applied.lines),
+    mergedLineIdsByKey(project.lines, read.parsed, getSplitCharacter()),
+    lineKeyIds(applied.lines, getSplitCharacter()),
   );
   applied.setTtmlEditState(keptInExport ? { source: regenerated, content: keptContent } : null);
   return { status: "applied", skipped: skippedLineCount(read.parsed.issues), keptInExport };

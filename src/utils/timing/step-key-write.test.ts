@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { pressStepKey } from "@/domain/commands/word-timing";
-import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
+import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "insync/line-track";
-import { type ResolvedAddress, resolvedAt, toAddress } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolvedAt, toAddress } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { planStepKey } from "@/utils/timing/step-key-write";
+import { planStepKey } from "insync/timing-step-key-write";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const chorus = (id: string, instanceIdx: number, begin: number): LyricLine =>
@@ -23,7 +24,7 @@ const chorus = (id: string, instanceIdx: number, begin: number): LyricLine =>
     ],
   });
 const slot = (_lineId: string, lineIndex: number, wordIndex: number, type: WordTrack = "word"): ResolvedAddress => {
-  const resolved = resolvedAt(useProjectStore.getState().lines, lineIndex, type, wordIndex);
+  const resolved = resolvedAt(useProjectStore.getState().lines, lineIndex, type, wordIndex, DEFAULT_SPLIT_CHARACTER);
   if (!resolved) throw new Error("no word there");
   return resolved;
 };
@@ -38,6 +39,7 @@ const press = (cursor: ResolvedAddress, startNext: ResolvedAddress | null, time:
     startNext,
     ...step,
     rangeOf: () => UNBOUNDED_TIME_RANGE,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
   if (plan?.kind !== "written") return plan;
   const next = startNext && toAddress(startNext);

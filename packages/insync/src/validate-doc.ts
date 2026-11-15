@@ -1,10 +1,11 @@
 import type { Doc } from "./doc";
 import { type Instance, isInstanceSpan, type TemplateLine } from "./group";
 import type { LineTrack, LyricLine, Syllable } from "./line";
+import { ownTimedTrack, retimedTrack, untimedTrack } from "./group-template-line";
 import { isTimedSyllable } from "./line-track";
 import type { PartSection } from "./part";
 import { msFromSeconds } from "./time";
-import { type TrackRule, validateTrack } from "./validate-track";
+import { isWarningRule, type TrackRule, validateTrack } from "./validate-track";
 
 // -- Types --------------------------------------------------------------------
 
@@ -49,9 +50,6 @@ interface TrackTimes {
 
 // -- Constants ----------------------------------------------------------------
 
-// Imported files bring these in and they are kept, so they never refuse a doc.
-const IMPORTED_SPAN_RULES = new Set<TrackRule>(["begin-after-end", "overlaps-previous"]);
-
 // Template times are relative to the anchor, so these are checked only where an instance places them.
 const TIME_RULES = new Set<TrackRule>(["non-finite-time", "negative-begin", "begin-after-end", "overlaps-previous"]);
 
@@ -74,22 +72,8 @@ function storedTimes(track: LineTrack): TrackTimes {
 // The times flattening gives a template track in an instance: its own times by template id, the template moved to
 // the anchor, or none.
 function placedTimes(track: LineTrack, instance: Instance): TrackTimes {
-  const own = instance.ownTiming;
-  if (own) {
-    const span = own.tracks?.[track.id];
-    const syllables: readonly Syllable[] = track.syllables;
-    return span
-      ? { span, syllables: syllables.map(syllableParts) }
-      : { syllables: syllables.map((syllable) => ({ ...syllableParts(syllable), span: own.syllables[syllable.id] })) };
-  }
-  const { at } = instance;
-  const stored = storedTimes(track);
-  if (at === undefined) return { syllables: stored.syllables.map(({ span: _span, ...parts }) => parts) };
-  const moved = (span: Span | undefined): Span | undefined => span && [span[0] + at, span[1] + at];
-  return {
-    ...(stored.span && { span: moved(stored.span) }),
-    syllables: stored.syllables.map((syllable) => ({ ...syllable, span: moved(syllable.span) })),
-  };
+  if (instance.ownTiming) return storedTimes(ownTimedTrack(track, instance.ownTiming));
+  return storedTimes(instance.at === undefined ? untimedTrack(track) : retimedTrack(track, instance.at));
 }
 
 function spanRules([begin, end]: Span): TrackRule[] {
@@ -120,7 +104,7 @@ function latestEnd(times: TrackTimes): number {
 }
 
 function pushRules(rules: readonly TrackRule[], node: string, report: DocReport): void {
-  for (const rule of rules) (IMPORTED_SPAN_RULES.has(rule) ? report.warnings : report.errors).push({ node, rule });
+  for (const rule of rules) (isWarningRule(rule) ? report.warnings : report.errors).push({ node, rule });
 }
 
 // -- Lines --------------------------------------------------------------------

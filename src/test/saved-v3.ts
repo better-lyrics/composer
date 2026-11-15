@@ -1,10 +1,11 @@
-import type { V3Piece } from "@/domain/language/v3-languages";
-import { v3Languages, v3WordPieces } from "@/domain/language/v3-languages";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import type { V3Piece } from "insync/language-v3-languages";
+import { v3Languages, v3WordPieces } from "insync/language-v3-languages";
+import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { spacedFromWords } from "@/domain/word/spaced-words";
+import { spacedFromWords } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
 import type { SavedLineV3 } from "@/lib/saved-project-v3";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Writing ------------------------------------------------------------------
 
@@ -14,7 +15,7 @@ function savedWordsV3(words: readonly WordTiming[], pieces: readonly V3Piece[] |
 }
 
 function savedLineV3(line: LyricLine): SavedLineV3 {
-  const { languages, words, backgroundWords, ...fields } = fieldsOfLine(line);
+  const { languages, words, backgroundWords, ...fields } = fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER);
   return {
     ...fields,
     ...(words && { words: savedWordsV3(words, v3WordPieces(words, languages, "main")) }),

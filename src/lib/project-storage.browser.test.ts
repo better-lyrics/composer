@@ -1,5 +1,5 @@
 import { listStemJobs, putStem } from "@/audio/separation/stem-store";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import {
   APP_STATE_STORE_NAME,
   PROJECT_INDEX_STORE_NAME,

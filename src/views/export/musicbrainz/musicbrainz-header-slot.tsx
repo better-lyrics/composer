@@ -3,7 +3,7 @@ import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { LinkButton } from "@/ui/link-button";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { recordingSearchPageUrl } from "@/views/export/musicbrainz/musicbrainz-links";
 import type { MusicBrainzPanel } from "@/views/export/musicbrainz/use-musicbrainz-panel";
 import {

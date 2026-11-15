@@ -5,13 +5,14 @@
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
-import { lineFromFields } from "@/domain/line/line-from-fields";
-import { lineText } from "@/domain/line/text";
+import { lineFromFields } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { deleteGroupWithConfirm } from "./delete-group-with-confirm";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -24,32 +25,38 @@ function seedChorusGroup() {
   useProjectStore.setState({
     groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     lines: [
-      lineFromFields({
-        id: "a0",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
-          { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
-          { id: "w3", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
-        ],
-      }),
-      lineFromFields({
-        id: "a1",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w4", text: "I", sep: " ", begin: 60, end: 60.4, joinsNext: false },
-          { id: "w5", text: "love", sep: " ", begin: 60.4, end: 60.8, joinsNext: false },
-          { id: "w6", text: "you", sep: "", begin: 60.8, end: 61.2, joinsNext: false },
-        ],
-      }),
+      lineFromFields(
+        {
+          id: "a0",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+            { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
+            { id: "w3", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "a1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w4", text: "I", sep: " ", begin: 60, end: 60.4, joinsNext: false },
+            { id: "w5", text: "love", sep: " ", begin: 60.4, end: 60.8, joinsNext: false },
+            { id: "w6", text: "you", sep: "", begin: 60.8, end: 61.2, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ],
   });
 }
@@ -98,7 +105,7 @@ describe("deleteGroupWithConfirm · confirm accepted", () => {
     await done;
 
     const a0 = useProjectStore.getState().lines.find((l) => l.id === "a0");
-    expect(lineText(a0!)).toBe("I love you");
+    expect(lineText(a0!, DEFAULT_SPLIT_CHARACTER)).toBe("I love you");
     expect(timedSyllables(mainTrack(a0!))[0].begin).toBe(30);
     expect(timedSyllables(mainTrack(a0!))[2].end).toBe(31.2);
   });

@@ -12,13 +12,15 @@ describe("validateTrack", () => {
     expect(validateTrack([timed("we", 0, 200), timed("glow", 200, 600)])).toEqual({ errors: [], warnings: [] });
   });
 
-  it("reports broken invariants as errors", () => {
+  it("reports broken invariants as errors and a reversed span as a warning", () => {
     const result = validateTrack([timed("", 0, 200), timed("glow", 600, 200, true)]);
-    expect(result.errors).toEqual([
-      { index: 0, rule: "empty-text" },
-      { index: 1, rule: "begin-after-end" },
-      { index: 1, rule: "last-joins-next" },
-    ]);
+    expect(result).toEqual({
+      errors: [
+        { index: 0, rule: "empty-text" },
+        { index: 1, rule: "last-joins-next" },
+      ],
+      warnings: [{ index: 1, rule: "begin-after-end" }],
+    });
   });
 
   it("reports times that are not finite numbers", () => {

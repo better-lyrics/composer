@@ -1,28 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { withEvenSyllableSplits } from "@/domain/group/syllable-splits";
+import { withEvenSyllableSplits } from "insync/group-syllable-splits";
 /**
  * @vitest-environment node
  */
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { createWords } from "@/test/factories";
 import type { FieldPatch } from "@/test/field-updates";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function line(id: string, text: string, words?: Partial<WordTiming>[], extra: FieldPatch = {}): LyricLine {
-  return lineFromFields({
-    id,
-    text,
-    agentId: "v1",
-    ...(words
-      ? { words: createWords(words.map((word) => ({ id: newWordId(), text: "", sep: "", begin: 0, end: 0, ...word }))) }
-      : {}),
-    ...extra,
-  });
+  return lineFromFields(
+    {
+      id,
+      text,
+      agentId: "v1",
+      ...(words
+        ? {
+            words: createWords(
+              words.map((word) => ({ id: newWordId(), text: "", sep: "", begin: 0, end: 0, ...word })),
+            ),
+          }
+        : {}),
+      ...extra,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 function even(a: LyricLine, b: LyricLine): LyricLine[] | null {
@@ -47,7 +55,7 @@ describe("withEvenSyllableSplits", () => {
       { id: "w2", text: "too", sep: "", begin: 10.7, end: 11, joinsNext: false },
     ]);
     const result = even(timed, line("b", "fal|ling too"));
-    expect(lineText(result![0])).toBe("fal|ling too");
+    expect(lineText(result![0], DEFAULT_SPLIT_CHARACTER)).toBe("fal|ling too");
     expect(texts(roleWords(result?.[0], "main"))).toEqual(["fal", "ling ", "too"]);
     expect(timedSyllables(mainTrack(result![0]))[0]).toMatchObject({ begin: 10 });
     expect(timedSyllables(mainTrack(result![0]))[0]?.end).toBeCloseTo(10.3, 6);
@@ -87,7 +95,10 @@ describe("withEvenSyllableSplits", () => {
 
     it("regression: combines splits that sit in different words of the line", () => {
       const result = even(line("a", "un|der a thousand"), line("b", "under a thou|sand"));
-      expect(result?.map((copy) => lineText(copy))).toEqual(["un|der a thou|sand", "un|der a thou|sand"]);
+      expect(result?.map((copy) => lineText(copy, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "un|der a thou|sand",
+        "un|der a thou|sand",
+      ]);
     });
 
     it("regression: refuses copies that split the same word in different places", () => {
@@ -106,7 +117,7 @@ describe("withEvenSyllableSplits", () => {
         { id: "w13", text: "oo", sep: "", begin: 1.5, end: 2, joinsNext: false },
       ]);
       const result = even(line("a", "fa|lling too"), timed);
-      expect(lineText(result![1])).toBe("fa|lling t|oo");
+      expect(lineText(result![1], DEFAULT_SPLIT_CHARACTER)).toBe("fa|lling t|oo");
       expect(texts(roleWords(result?.[1], "main"))).toEqual(["fa", "lling ", "t", "oo"]);
       expect(timedSyllables(mainTrack(result![1]))[1]?.end).toBe(1);
       expect(spans(roleWords(result?.[1], "main"))?.slice(2)).toEqual([
@@ -122,7 +133,7 @@ describe("withEvenSyllableSplits", () => {
         { id: "w16", text: "too", sep: "", begin: 1, end: 2, joinsNext: false },
       ]);
       const result = even(line("a", "falling| too"), timed);
-      expect(lineText(result![0])).toBe("fal|ling too");
+      expect(lineText(result![0], DEFAULT_SPLIT_CHARACTER)).toBe("fal|ling too");
       expect(result?.[1]).toBe(timed);
     });
 
@@ -155,7 +166,10 @@ describe("withEvenSyllableSplits", () => {
 
     it("regression: only adds split characters, never removes one", () => {
       const result = even(line("a", "|over and ov|er"), line("b", "over and over"));
-      expect(result?.map((copy) => lineText(copy))).toEqual(["over and ov|er", "over and ov|er"]);
+      expect(result?.map((copy) => lineText(copy, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "over and ov|er",
+        "over and ov|er",
+      ]);
     });
 
     it("regression: writes a split into the text when only the timed words had it", () => {
@@ -165,7 +179,7 @@ describe("withEvenSyllableSplits", () => {
         { id: "w21", text: "la", sep: "", begin: 10.6, end: 11, joinsNext: false },
       ]);
       const result = even(timed, line("b", "la|la la"));
-      expect(result?.map((copy) => lineText(copy))).toEqual(["la|la la", "la|la la"]);
+      expect(result?.map((copy) => lineText(copy, DEFAULT_SPLIT_CHARACTER))).toEqual(["la|la la", "la|la la"]);
       expect(timedSyllables(mainTrack(result![0]))).toBe(timedSyllables(mainTrack(timed)));
     });
 
@@ -184,7 +198,7 @@ describe("withEvenSyllableSplits", () => {
         { id: "w23", text: "falling", sep: " ", begin: 10, end: 10.7, joinsNext: false },
       ]);
       const result = even(partial, line("b", "fal|ling t|oo"));
-      expect(lineText(result![0])).toBe("fal|ling t|oo");
+      expect(lineText(result![0], DEFAULT_SPLIT_CHARACTER)).toBe("fal|ling t|oo");
       expect(texts(roleWords(result?.[0], "main"))).toEqual(["fal", "ling "]);
       expect(timedSyllables(mainTrack(result![0]))[1]?.end).toBe(10.7);
     });
@@ -206,7 +220,7 @@ describe("withEvenSyllableSplits", () => {
 
     it("drops a transliteration piece the new syllables cannot spell", () => {
       const timed = legacyLine({
-        ...fieldsOfLine(line("a", "falling too")),
+        ...fieldsOfLine(line("a", "falling too"), DEFAULT_SPLIT_CHARACTER),
         words: [
           { id: "w26", text: "falling", sep: " ", begin: 0, end: 1, transliteration: "FALLING", joinsNext: false },
           { id: "w27", text: "too", sep: "", begin: 1, end: 2, transliteration: "TOO", joinsNext: false },

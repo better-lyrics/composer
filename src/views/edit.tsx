@@ -11,8 +11,8 @@ import {
 import { assignSinger } from "@/domain/commands/singer";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
-import { instanceAnchors } from "@/domain/group/template-copy";
-import { detectNonLatinLanguage } from "@/domain/language/script-detection";
+import { instanceAnchors } from "insync/group-template-copy";
+import { detectNonLatinLanguage } from "insync/language-script-detection";
 import type { LyricLine } from "insync/line";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
@@ -27,10 +27,10 @@ import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Tooltip } from "@/ui/tooltip";
-import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals, lineHasInlineParens } from "insync/background-vocal-extraction";
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
-import { pluralWord } from "@/utils/pluralize";
+import { pluralWord } from "insync/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
 import { EditNotices } from "@/views/edit/edit-notices";
@@ -46,6 +46,7 @@ import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -242,7 +243,7 @@ const EditPanel: React.FC = () => {
     const current = useProjectStore.getState().lines;
     if (detectNonLatinLanguage(lyricsText(current))) noteGuideSignal("edit.nonLatinLyrics");
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) {
-      if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
+      if (current.some((value) => lineHasInlineParens(value, getSplitCharacter()))) noteGuideSignal("edit.parenInLine");
       return;
     }
     const extracted = extractBackground({
@@ -301,10 +302,14 @@ const EditPanel: React.FC = () => {
       if (wasPaste) {
         const pastedLines = finalLines;
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
-          finalLines = extractBackgroundVocals(finalLines, {
-            mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
-            preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
-          });
+          finalLines = extractBackgroundVocals(
+            finalLines,
+            {
+              mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+              preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
+            },
+            getSplitCharacter(),
+          );
         }
         finalizeRun();
         commitAndShow(pasteLyrics(lines, finalLines));

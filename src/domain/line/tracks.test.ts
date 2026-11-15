@@ -1,10 +1,11 @@
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { fieldWords, roleWords, trackField, trackWords } from "insync/line-track";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function line(extras: Partial<LineFields> = {}): LyricLine {
-  return lineFromFields({ id: "l1", text: "Hello world", agentId: "v1", ...extras });
+  return lineFromFields({ id: "l1", text: "Hello world", agentId: "v1", ...extras }, DEFAULT_SPLIT_CHARACTER);
 }
 
 const mainWords = [

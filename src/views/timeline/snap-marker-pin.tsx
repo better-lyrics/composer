@@ -17,7 +17,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/utils/cn";
 import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Types ---------------------------------------------------------------------
 

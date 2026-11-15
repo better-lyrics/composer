@@ -8,10 +8,10 @@ import {
   applyMarkWordsExplicit,
   applyMergeSyllableGroup,
   withFieldWords,
-} from "@/domain/line/word-track-edits";
-import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
-import type { IdenticalMatchSource } from "@/utils/identical-word-matcher";
-import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+} from "insync/line-word-track-edits";
+import { applySyllableSplitToLines } from "insync/word-identical-syllable-split";
+import type { IdenticalMatchSource } from "insync/identical-word-matcher";
+import { closeIntraGroupGaps, expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
@@ -25,8 +25,14 @@ interface WordWriteExtras {
 
 // -- Helpers ------------------------------------------------------------------
 
-function withWordWrite(line: LyricLine, field: WordField, words: WordTiming[], extras: WordWriteExtras): LyricLine {
-  const written = withFieldWords(line, field, words);
+function withWordWrite(
+  line: LyricLine,
+  field: WordField,
+  words: WordTiming[],
+  extras: WordWriteExtras,
+  splitChar: string,
+): LyricLine {
+  const written = withFieldWords(line, field, words, splitChar);
   return "languages" in extras ? { ...written, languages: extras.languages } : written;
 }
 
@@ -36,11 +42,12 @@ function wordWrite(
   newWords: WordTiming[],
   field: WordField,
   extras: WordWriteExtras,
+  splitChar: string,
 ): Outcome {
   if (!root.lines.some((line) => line.id === lineId)) return refused({ reason: "line-gone", lineId });
   return withLines(
     root,
-    root.lines.map((line) => (line.id === lineId ? withWordWrite(line, field, newWords, extras) : line)),
+    root.lines.map((line) => (line.id === lineId ? withWordWrite(line, field, newWords, extras, splitChar) : line)),
   );
 }
 
@@ -64,7 +71,7 @@ function toggleWordExplicit(lineId: string, field: WordField, wordIndices: reado
   return {
     note: { command: "toggle explicit", args: [lineId, field, ...wordIndices] },
     copiesSharedTiming: true,
-    run: (root) => {
+    run: (root, ctx) => {
       if (wordIndices.length === 0) return applied(root, []);
       const target = root.lines.find((line) => line.id === lineId);
       if (!target) return refused({ reason: "line-gone", lineId });
@@ -72,7 +79,7 @@ function toggleWordExplicit(lineId: string, field: WordField, wordIndices: reado
       if (!currentWords || currentWords.length === 0) return applied(root, []);
       const newWords = toggledExplicitWords(currentWords, wordIndices);
       if (!newWords) return applied(root, []);
-      return wordWrite(root, lineId, newWords, field, {});
+      return wordWrite(root, lineId, newWords, field, {}, ctx.splitChar);
     },
   };
 }
@@ -81,7 +88,7 @@ function mergeSyllableGroup(lineId: string, field: WordField, wordIndices: numbe
   return {
     note: { command: "merge syllables", args: [lineId, field, ...wordIndices] },
     copiesSharedTiming: true,
-    run: (root) => withLines(root, applyMergeSyllableGroup(root.lines, lineId, field, wordIndices)),
+    run: (root, ctx) => withLines(root, applyMergeSyllableGroup(root.lines, lineId, field, wordIndices, ctx.splitChar)),
   };
 }
 
@@ -89,7 +96,7 @@ function snapSyllablesFlush(lineId: string, field: WordField): LyricCommand {
   return {
     note: { command: "snap syllables", args: [lineId, field] },
     copiesSharedTiming: true,
-    run: (root) => {
+    run: (root, ctx) => {
       const target = root.lines.find((line) => line.id === lineId);
       if (!target) return refused({ reason: "line-gone", lineId });
       const lineWords = fieldWords(target, field);
@@ -98,7 +105,7 @@ function snapSyllablesFlush(lineId: string, field: WordField): LyricCommand {
       if (snapped === lineWords) return applied(root, []);
       return withLines(
         root,
-        root.lines.map((line) => (line.id === lineId ? withFieldWords(line, field, snapped) : line)),
+        root.lines.map((line) => (line.id === lineId ? withFieldWords(line, field, snapped, ctx.splitChar) : line)),
       );
     },
   };
@@ -108,7 +115,7 @@ function markWordsExplicit(targets: ExplicitTarget[], value: boolean): LyricComm
   return {
     note: { command: "mark explicit", args: [targets.length, value ? 1 : 0] },
     copiesSharedTiming: false,
-    run: (root) => withLines(root, applyMarkWordsExplicit(root.lines, targets, value)),
+    run: (root, ctx) => withLines(root, applyMarkWordsExplicit(root.lines, targets, value, ctx.splitChar)),
   };
 }
 
@@ -124,9 +131,12 @@ function splitIdenticalSyllables({
   return {
     note: { command: "split identical", args: [source.lineId, source.type, source.wordIndex, ...splitPoints] },
     copiesSharedTiming: true,
-    run: (root) => {
+    run: (root, ctx) => {
       if (splitPoints.length === 0) return applied(root, []);
-      return withLines(root, applySyllableSplitToLines(root.lines, source, splitPoints, caseInsensitive));
+      return withLines(
+        root,
+        applySyllableSplitToLines(root.lines, source, splitPoints, caseInsensitive, ctx.splitChar),
+      );
     },
   };
 }

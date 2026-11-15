@@ -3,19 +3,20 @@ import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { LinkGroup } from "insync/group";
 import { instancePositionsByLineId } from "insync/instance-enumerate";
 import { isLinked } from "insync/instance-predicates";
-import type { LanguageDisplayLine } from "@/domain/language/display";
+import type { LanguageDisplayLine } from "insync/language-display";
 import { effectiveBounds } from "insync/line-bounds";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { isLineSynced } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import type { SkippedInstance } from "@/domain/sync/skipped-instances";
+import type { SkippedInstance } from "insync/sync-skipped-instances";
 import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type SyncLineListHandlers, useRowCallbacks } from "@/views/sync/use-row-callbacks";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -151,15 +152,15 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           {...rowCallbacks(index)}
           lineId={line.id}
           lineNumber={index + 1}
-          text={lineText(line)}
+          text={lineText(line, getSplitCharacter())}
           displayText={displayLine.text}
           displayWordTexts={displayLine.wordTexts}
           isCurrent={index === currentLineIndex}
           agentId={mainTrack(line).agentId}
-          backgroundText={backgroundText(line)}
+          backgroundText={backgroundText(line, getSplitCharacter())}
           displayBackgroundText={displayLine.backgroundText}
           displayBackgroundWordTexts={displayLine.backgroundWordTexts}
-          backgroundWords={displayLine.backgroundWords ?? drawnSyllables(line, "bg")}
+          backgroundWords={displayLine.backgroundWords ?? drawnSyllables(line, "bg", getSplitCharacter())}
           words={displayLine.words ?? timedSyllables(mainTrack(line))}
           lineBegin={timing?.begin}
           lineEnd={timing?.end}

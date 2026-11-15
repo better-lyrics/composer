@@ -1,5 +1,5 @@
-import { SYNC_START, type SyncAddress, syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import { SYNC_START, type SyncAddress, syncAddressAt, syncAddressPosition } from "insync/sync-address";
+import type { SyncCursor } from "insync/sync-cursor";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

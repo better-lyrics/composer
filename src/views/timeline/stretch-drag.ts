@@ -1,4 +1,4 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole } from "insync/line-track";
 import {
@@ -10,8 +10,9 @@ import {
   deriveBounds,
   isFiniteWord,
   resolveStretchTargets,
-} from "@/domain/selection/stretch-targets";
+} from "insync/selection-stretch-targets";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -47,7 +48,7 @@ function planStretchDrag(
   drag: StretchDragRef,
   options: StretchClampOptions,
 ): StretchDragPlan | null {
-  const targets = resolveStretchTargets(rawLines, selections);
+  const targets = resolveStretchTargets(rawLines, selections, getSplitCharacter());
   if (!targets) return null;
 
   // Single owner of "what is a grip": the dragged edge must be the selection's
@@ -59,14 +60,16 @@ function planStretchDrag(
   }
 
   const draggedTrack = targets.tracks.get(`${drag.lineId}:${drag.type}`);
-  const draggedWords = draggedTrack ? drawnSyllables(draggedTrack.line, trackRole(draggedTrack.type)) : null;
+  const draggedWords = draggedTrack
+    ? drawnSyllables(draggedTrack.line, trackRole(draggedTrack.type), getSplitCharacter())
+    : null;
   const draggedWord = draggedTrack?.indices.has(drag.wordIndex) ? draggedWords?.[drag.wordIndex] : undefined;
   if (!isFiniteWord(draggedWord)) return null;
 
   const anchor: StretchAnchor = drag.edge === "right" ? "start" : "end";
   const edgeTime = anchor === "start" ? draggedWord.end : draggedWord.begin;
 
-  const bounds = deriveBounds(targets, { ...options, anchor });
+  const bounds = deriveBounds(targets, { ...options, anchor }, getSplitCharacter());
   if (!bounds) return null;
   // Degenerate grip-to-anchor distance (possible only when a line-synced row
   // defines the anchor and both words sit on top of it).

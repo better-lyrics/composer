@@ -1,6 +1,6 @@
-import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
-import { boundsOverlap } from "@/domain/word/overlap";
-import type { SyllablePosition } from "@/domain/word/syllable-groups";
+import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "insync/word-boundary";
+import { boundsOverlap } from "insync/word-overlap";
+import type { SyllablePosition } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";

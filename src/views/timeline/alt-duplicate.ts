@@ -1,6 +1,6 @@
 import type { LyricLine } from "insync/line";
 import { duplicateWords } from "@/domain/commands/word-moves";
-import { toAddress } from "@/domain/selection/resolve";
+import { toAddress } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import {
   DRAG_X_MIN_THRESHOLD,

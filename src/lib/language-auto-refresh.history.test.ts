@@ -1,15 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { pasteLines } from "@/domain/commands/instance-rows";
-import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
 import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ describe("createLanguageAutoRefresh history", () => {
           pasteLyrics(useProjectStore.getState().lines, [timedLine("a", ["Доброе", "утро"], ["Dobroye", "utro"])]),
         );
       const pasted = legacyLine({
-        ...fieldsOfLine(lineById("a")),
+        ...fieldsOfLine(lineById("a"), DEFAULT_SPLIT_CHARACTER),
         text: "Добрый вечер",
         words: [
           { id: "w1", text: "Добрый", sep: " ", begin: 1, end: 2, transliteration: "Dobroye", joinsNext: false },
@@ -52,7 +53,11 @@ describe("createLanguageAutoRefresh history", () => {
           fieldUpdates([
             {
               id: "a",
-              updates: { text: lineText(pasted), words: roleWords(pasted, "main"), languages: pasted.languages },
+              updates: {
+                text: lineText(pasted, DEFAULT_SPLIT_CHARACTER),
+                words: roleWords(pasted, "main"),
+                languages: pasted.languages,
+              },
             },
           ]),
         ),
@@ -62,11 +67,11 @@ describe("createLanguageAutoRefresh history", () => {
       expect(lineById("a").languages?.transliteration?.main.text).toBe("Dobryy  vecher");
 
       useProjectStore.getState().undo();
-      expect(lineText(lineById("a"))).toBe("Доброе утро");
+      expect(lineText(lineById("a"), DEFAULT_SPLIT_CHARACTER)).toBe("Доброе утро");
       expect(lineById("a").languages?.transliteration?.main.text).toBe("Dobroye  utro");
 
       useProjectStore.getState().redo();
-      expect(lineText(lineById("a"))).toBe("Добрый вечер");
+      expect(lineText(lineById("a"), DEFAULT_SPLIT_CHARACTER)).toBe("Добрый вечер");
       expect(lineById("a").languages?.transliteration?.main.text).toBe("Dobryy  vecher");
     });
   });
@@ -91,17 +96,20 @@ describe("createLanguageAutoRefresh history", () => {
       expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
 
       useProjectStore.getState().undo();
-      expect(lineText(lineById("a"))).toBe("Быстрая река");
+      expect(lineText(lineById("a"), DEFAULT_SPLIT_CHARACTER)).toBe("Быстрая река");
       expect(lineById("a").languages?.transliteration?.main.text).toBe("Bystraya  reka");
     });
   });
 
   describe("drag previews", () => {
     function stretched(line: LyricLine): LyricLine {
-      return lineFromFields({
-        ...fieldsOfLine(line),
-        words: roleWords(line, "main")?.map((word) => ({ ...word, end: word.end + 0.5 })),
-      });
+      return lineFromFields(
+        {
+          ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER),
+          words: roleWords(line, "main")?.map((word) => ({ ...word, end: word.end + 0.5 })),
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
     }
 
     it.each([

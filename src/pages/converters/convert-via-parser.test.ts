@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
 import type { ProjectMetadata } from "insync/metadata";
 import type { Part } from "insync/part";
@@ -11,6 +11,7 @@ import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
 import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -306,7 +307,7 @@ describe("convertViaParser", () => {
     for (const [, source] of FOREIGN_TTML_FIXTURES) {
       const conversion = { ...LRC_CONVERSION, extension: "ttml" as const };
       const link = projectOf(convertViaParser(conversion, { input: source, filename: "in.ttml", format: LRC_OUTPUT }));
-      const opened = generateTTML({ ...link, lines: linesFromLink(link) });
+      const opened = generateTTML({ ...link, lines: linesFromLink(link), splitChar: DEFAULT_SPLIT_CHARACTER });
 
       expect(missingUnmodelledNodes(source, opened)).toEqual([]);
     }

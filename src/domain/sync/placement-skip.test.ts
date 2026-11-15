@@ -1,6 +1,6 @@
 import { withFields } from "@/test/field-updates";
-import { placementSkipTarget } from "@/domain/sync/placement-skip";
-import { newWordId } from "@/domain/word/id";
+import { placementSkipTarget } from "insync/sync-placement-skip";
+import { newWordId } from "insync/word-id";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

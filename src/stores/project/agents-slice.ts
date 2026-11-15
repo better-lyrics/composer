@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { AgentActions, AgentsState, ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 

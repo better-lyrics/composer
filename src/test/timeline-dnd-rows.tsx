@@ -1,30 +1,37 @@
 import { DndContext } from "@dnd-kit/core";
 import { afterAll, beforeAll } from "vitest";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
 import { DragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { LineRow } from "@/views/timeline/line-row";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Constants -----------------------------------------------------------------
 
 const DND_LINES: LyricLine[] = [
-  lineFromFields({
-    id: "l0",
-    text: "alpha beta",
-    agentId: "v1",
-    words: [
-      { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
-      { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
-    ],
-  }),
-  lineFromFields({
-    id: "l1",
-    text: "gamma",
-    agentId: "v1",
-    words: [{ id: "w3", text: "gamma", sep: "", begin: 5, end: 5.3, joinsNext: false }],
-  }),
+  lineFromFields(
+    {
+      id: "l0",
+      text: "alpha beta",
+      agentId: "v1",
+      words: [
+        { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
+        { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
+      ],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  ),
+  lineFromFields(
+    {
+      id: "l1",
+      text: "gamma",
+      agentId: "v1",
+      words: [{ id: "w3", text: "gamma", sep: "", begin: 5, end: 5.3, joinsNext: false }],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  ),
 ];
 
 const ACTIVATION_STEP_PX = 12;

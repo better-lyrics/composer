@@ -1,17 +1,18 @@
 import { validateLine } from "insync/validate-line";
 import { readAlignedTimings, timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
-import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
-import { withSeededBackground, withSeededBackgroundWords } from "@/domain/line/background";
+import { migrateLegacyTransliterationLine } from "insync/language-migrate";
+import { withSeededBackground, withSeededBackgroundWords } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
+import { isLineSynced } from "insync/line-predicates";
 import { backgroundTrack } from "insync/line-track";
 import { linesFromSaved, type SavedProjectV3, upgradeSavedProject } from "@/lib/saved-project";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { compareExports, type ExportDifference } from "@/test/export-equality";
 import { withPositionIds, withTimesInWholeMs } from "@/test/saved-format-equality";
 import { type InstanceDrift, sharedInstanceDrift } from "@/test/shared-instance-drift";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { isStructurallyEqual } from "insync/structural-equal";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -36,7 +37,9 @@ interface UpgradeReport {
 // The lines 3.x read from a record with its own reader.
 function linesAsV3Opened(record: SavedProjectV3): LyricLine[] {
   const loaded = linesFromSavedV3(record.lines);
-  return record.version < 3 ? loaded.map(migrateLegacyTransliterationLine) : loaded;
+  return record.version < 3
+    ? loaded.map((value) => migrateLegacyTransliterationLine(value, DEFAULT_SPLIT_CHARACTER))
+    : loaded;
 }
 
 function seedsBackgroundSpan(line: LyricLine): boolean {
@@ -47,8 +50,8 @@ function unalignedAfterUpgrade(record: SavedProjectV3, before: LyricLine[], afte
   const aligned = readAlignedTimings(record.alignedTimings);
   const now = readAlignedTimings(rekeyed);
   return before.flatMap((line, index) =>
-    aligned[line.id] === v3TimingFingerprint(withSeededBackgroundWords(line)) &&
-    now[line.id] !== timingFingerprint(withSeededBackground(after[index]))
+    aligned[line.id] === v3TimingFingerprint(withSeededBackgroundWords(line, DEFAULT_SPLIT_CHARACTER)) &&
+    now[line.id] !== timingFingerprint(withSeededBackground(after[index], DEFAULT_SPLIT_CHARACTER))
       ? [line.id]
       : [],
   );
@@ -65,8 +68,8 @@ function checkUpgrade(name: string, record: SavedProjectV3): UpgradeReport {
   const excluded = new Set(before.flatMap((line, index) => (seedsBackgroundSpan(line) ? [index] : [])));
   const compared = (lines: LyricLine[]) => lines.filter((_line, index) => !excluded.has(index));
   const exports = compareExports(
-    { ...project, lines: compared(before.map(withSeededBackgroundWords)) },
-    { ...project, lines: compared(after.map(withSeededBackground)) },
+    { ...project, lines: compared(before.map((value) => withSeededBackgroundWords(value, DEFAULT_SPLIT_CHARACTER))) },
+    { ...project, lines: compared(after.map((value) => withSeededBackground(value, DEFAULT_SPLIT_CHARACTER))) },
   );
   return {
     name,

@@ -1,4 +1,4 @@
-import { instanceName } from "@/domain/instance/name";
+import { instanceName } from "insync/instance-name";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

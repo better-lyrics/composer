@@ -1,6 +1,6 @@
 import { livePlaybackTime } from "@/stores/audio";
 import { CountdownRing } from "@/ui/countdown-ring";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Interfaces ---------------------------------------------------------------
 

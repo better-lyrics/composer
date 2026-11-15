@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -9,6 +9,7 @@ import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
+import { getSplitCharacter } from "@/utils/split-character";
 
 function firstWordId(lineId: string): string {
   const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
@@ -74,7 +75,7 @@ describe("WordEditOverlay", () => {
     await screen.getByRole("textbox", { name: "Edit word" }).fill("New words");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("New words");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("New words");
     const after = useProjectStore.getState().lines[0];
     expect(roleWords(after, "main")).toBeUndefined();
     expect(mainTrack(after).begin).toBe(0);

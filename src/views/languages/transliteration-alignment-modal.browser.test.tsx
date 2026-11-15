@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { getLanguageReviewTracks } from "@/domain/language/review";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { getLanguageReviewTracks } from "insync/language-review";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { newWordId } from "@/domain/word/id";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -42,7 +43,7 @@ function setupLine({
             text: transliterationText ?? "gana",
             segments: [],
             origin: "manual",
-            sourceFingerprint: languageSourceFingerprint(text),
+            sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), text),
           },
         }
       : {}),
@@ -94,7 +95,7 @@ describe("TransliterationAlignmentModal", () => {
       const repeat: LyricLine = legacyLine({
         id: "l2",
         agentId: "v1",
-        text: lineText(line),
+        text: lineText(line, getSplitCharacter()),
         transliteration: legacyLanguages(line.languages).transliteration,
         groupId: "g1",
         instanceIdx: 1,
@@ -209,8 +210,10 @@ describe("TransliterationAlignmentModal", () => {
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.languages?.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(lineText(line)));
-      expect(getLanguageReviewTracks(saved)).toEqual([]);
+      expect(saved.languages?.transliteration?.sourceFingerprint).toBe(
+        languageSourceFingerprint(getSplitCharacter(), lineText(line, getSplitCharacter())),
+      );
+      expect(getLanguageReviewTracks(saved, getSplitCharacter())).toEqual([]);
     });
 
     it("regression: saves per-word transliteration and joiners for a pronunciation break inside one lexical group", async () => {
@@ -247,7 +250,7 @@ describe("TransliterationAlignmentModal", () => {
           text: "bam ha  neul",
           segments: [],
           origin: "manual",
-          sourceFingerprint: languageSourceFingerprint("밤하늘"),
+          sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), "밤하늘"),
         },
       });
       useProjectStore.getState().restoreLyrics({ lines: [line] });

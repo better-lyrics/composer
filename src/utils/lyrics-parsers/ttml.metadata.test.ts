@@ -1,10 +1,11 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { lineFromFields } from "@/domain/line/line-from-fields";
-import { lineText } from "@/domain/line/text";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = {
   title: "Song",
@@ -15,11 +16,11 @@ const metadata: ProjectMetadata = {
   songwriters: ["W1"],
   extra: { spotifyId: "abc" },
 };
-const lines = [lineFromFields({ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" })];
+const lines = [lineFromFields({ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)];
 
 describe("parseTtml metadata round-trip", () => {
-  const ttml = generateTTML({ metadata, agents: [], lines });
-  const parsed = parseTtml(ttml).metadata;
+  const ttml = generateTTML({ metadata, agents: [], lines, splitChar: DEFAULT_SPLIT_CHARACTER });
+  const parsed = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).metadata;
   it("recovers title from ttm:title", () => expect(parsed.title).toBe("Song"));
   it("recovers all artists including comma names", () => {
     expect(parsed.artists).toEqual(["Tyler, The Creator", "Kali Uchis"]);
@@ -33,7 +34,7 @@ describe("parseTtml metadata round-trip", () => {
   it("still reads the legacy [type=artist] fallback when no composer:meta", () => {
     const legacy =
       '<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/><ttm:name type="artist">Legacy Artist</ttm:name></metadata></head><body><div><p begin="1" end="2" ttm:agent="v1">hi</p></div></body></tt>';
-    expect(parseTtml(legacy).metadata.artists).toEqual(["Legacy Artist"]);
+    expect(parseTtml(legacy, DEFAULT_SPLIT_CHARACTER).metadata.artists).toEqual(["Legacy Artist"]);
   });
   it("round-trips XML-special characters in metadata values", () => {
     const special: ProjectMetadata = {
@@ -43,7 +44,10 @@ describe("parseTtml metadata round-trip", () => {
       duration: 0,
       extra: { url: "x<y&z" },
     };
-    const out = parseTtml(generateTTML({ metadata: special, agents: [], lines })).metadata;
+    const out = parseTtml(
+      generateTTML({ metadata: special, agents: [], lines, splitChar: DEFAULT_SPLIT_CHARACTER }),
+      DEFAULT_SPLIT_CHARACTER,
+    ).metadata;
     expect(out.artists).toEqual(["Tom & Jerry", 'A "Q" B']);
     expect(out.album).toBe("a < b");
     expect(out.extra).toEqual({ url: "x<y&z" });
@@ -58,7 +62,7 @@ describe("parseTtml metadata round-trip", () => {
       '<composer:meta key="album" value="Al"/>' +
       "</metadata></head>" +
       '<body><div><p begin="1" end="2" ttm:agent="v1">hi</p></div></body></tt>';
-    const out = parseTtml(undeclared).metadata;
+    const out = parseTtml(undeclared, DEFAULT_SPLIT_CHARACTER).metadata;
     expect(out.artists).toEqual(["A", "B"]);
     expect(out.album).toBe("Al");
   });
@@ -68,8 +72,8 @@ describe("parseTtml line timing", () => {
   it('regression: a line-timed <p begin="0"> stays timed', () => {
     const ttml =
       '<?xml version="1.0" encoding="UTF-8"?><tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0" end="2.5">Hello there</p></div></body></tt>';
-    const [line] = parseTtml(ttml).lines;
-    expect(fieldsOfLine(line)).toMatchObject({ text: "Hello there", begin: 0, end: 2.5 });
+    const [line] = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).lines;
+    expect(fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER)).toMatchObject({ text: "Hello there", begin: 0, end: 2.5 });
   });
 });
 
@@ -77,13 +81,17 @@ describe("parseTtml escapes", () => {
   it("regression: backslashes in a well-formed file stay lyric text", () => {
     const ttml =
       '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="1" end="2">Saved in C:\\new folder</p><p begin="2" end="3">He said \\"hi\\"</p></div></body></tt>';
-    expect(parseTtml(ttml).lines.map(lineText)).toEqual(["Saved in C:\\new folder", 'He said \\"hi\\"']);
+    expect(
+      parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).lines.map((value) => lineText(value, DEFAULT_SPLIT_CHARACTER)),
+    ).toEqual(["Saved in C:\\new folder", 'He said \\"hi\\"']);
   });
 
   it("a document pasted with JSON escapes still reads", () => {
     const ttml =
       '<tt xmlns=\\"http://www.w3.org/ns/ttml\\"><body><div><p begin=\\"1\\" end=\\"2\\">Low tide</p></div></body></tt>';
-    expect(parseTtml(ttml).lines.map(lineText)).toEqual(["Low tide"]);
+    expect(
+      parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).lines.map((value) => lineText(value, DEFAULT_SPLIT_CHARACTER)),
+    ).toEqual(["Low tide"]);
   });
 });
 
@@ -98,8 +106,9 @@ describe("parseTtml inline translations", () => {
         "",
         '<p begin="1" end="3" itunes:key="L1">Salt on the window<span ttm:role="x-translation" xml:lang="fr">Sel sur la fenetre</span><span ttm:role="x-roman" xml:lang="en-Latn">salt on da window</span></p>',
       ),
+      DEFAULT_SPLIT_CHARACTER,
     ).lines;
-    expect(lineText(line)).toBe("Salt on the window");
+    expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("Salt on the window");
     expect(line.languages?.translations?.fr).toMatchObject({ main: { text: "Sel sur la fenetre" }, origin: "import" });
     expect(line.languages?.transliteration).toMatchObject({ language: "en-Latn", main: { text: "salt on da window" } });
   });
@@ -115,8 +124,9 @@ describe("parseTtml inline translations", () => {
           '<span ttm:role="x-translation" xml:lang="de">Inline Salz</span><span ttm:role="x-translation" xml:lang="fr">Air salin</span>' +
           '<span ttm:role="x-bg"><span begin="2" end="3">(air)</span><span ttm:role="x-translation" xml:lang="fr">(air)</span><span ttm:role="x-translation" xml:lang="de">(Luft)</span></span></p>',
       ),
+      DEFAULT_SPLIT_CHARACTER,
     ).lines;
-    expect(lineText(line)).toBe("Salt air");
+    expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("Salt air");
     expect(line.languages?.translations?.de).toMatchObject({ main: { text: "Salz am Fenster" } });
     expect(line.languages?.translations?.de?.bg).toBeUndefined();
     expect(line.languages?.translations?.fr).toMatchObject({ main: { text: "Air salin" }, bg: { text: "(air)" } });
@@ -124,22 +134,37 @@ describe("parseTtml inline translations", () => {
 
   it("a translation without its own language takes the nearest one around it", () => {
     const source = doc("", '<p begin="1" end="3">Salt air<span ttm:role="x-translation">Aire salado</span></p>');
-    const [line] = parseTtml(source.replace("<div>", '<div xml:lang="es">')).lines;
+    const [line] = parseTtml(source.replace("<div>", '<div xml:lang="es">'), DEFAULT_SPLIT_CHARACTER).lines;
     expect(line.languages?.translations?.es?.main.text).toBe("Aire salado");
   });
 
   it("a second romanization language the line cannot hold is written back where it was", () => {
     const romanizations =
       '<span ttm:role="x-roman" xml:lang="ja-Latn">shio</span><span ttm:role="x-roman" xml:lang="ja-Hrkt">しお</span>';
-    const parsed = parseTtml(doc("", `<p begin="1" end="3"><span begin="1" end="3">塩</span>${romanizations}</p>`));
+    const parsed = parseTtml(
+      doc("", `<p begin="1" end="3"><span begin="1" end="3">塩</span>${romanizations}</p>`),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(parsed.lines[0].languages?.transliteration?.language).toBe("ja-Latn");
-    const ttml = generateTTML({ metadata, agents: [], lines: parsed.lines, passthrough: parsed.passthrough });
+    const ttml = generateTTML({
+      metadata,
+      agents: [],
+      lines: parsed.lines,
+      passthrough: parsed.passthrough,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain(
       '<span begin="0:01.000" end="0:03.000">塩</span><span ttm:role="x-roman" xml:lang="ja-Hrkt">しお</span></p>',
     );
-    const reopened = parseTtml(ttml);
+    const reopened = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER);
     expect(reopened.lines[0].languages?.transliteration).toMatchObject({ language: "ja-Latn", main: { text: "shio" } });
-    const again = generateTTML({ metadata, agents: [], lines: reopened.lines, passthrough: reopened.passthrough });
+    const again = generateTTML({
+      metadata,
+      agents: [],
+      lines: reopened.lines,
+      passthrough: reopened.passthrough,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(again).toBe(ttml);
   });
 });

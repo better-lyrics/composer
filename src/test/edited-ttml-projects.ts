@@ -1,15 +1,16 @@
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { Agent } from "insync/agent";
 import type { LinkGroup } from "insync/group";
-import { alignTrackToLine } from "@/domain/language/align";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
+import { alignTrackToLine } from "insync/language-align";
+import { wholeLineSegments } from "insync/language-manual-segments";
 import type { LineLanguage } from "insync/language";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";
 import { createGroup, createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -26,11 +27,11 @@ interface EditedTtmlProject {
 function withTransliteration(line: LyricLine, text: string): LyricLine {
   const track: LineLanguage = {
     language: "ja-Latn",
-    main: { text, segments: wholeLineSegments(lineText(line), text) },
+    main: { text, segments: wholeLineSegments(lineText(line, DEFAULT_SPLIT_CHARACTER), text) },
     origin: "manual",
     sourceFingerprint: `fp-${line.id}`,
   };
-  return { ...line, ...alignTrackToLine(line, track) };
+  return { ...line, ...alignTrackToLine(line, track, DEFAULT_SPLIT_CHARACTER) };
 }
 
 // -- Fixtures -----------------------------------------------------------------
@@ -41,7 +42,10 @@ function chorusSong(): EditedTtmlProject {
     lines: [
       createLine({ id: "lead-blank", text: "" }),
       legacyLine({
-        ...fieldsOfLine(createLine({ id: "intro", text: "Hel|lo there", begin: 1, end: 2.5, agentId: "v1" })),
+        ...fieldsOfLine(
+          createLine({ id: "intro", text: "Hel|lo there", begin: 1, end: 2.5, agentId: "v1" }),
+          DEFAULT_SPLIT_CHARACTER,
+        ),
         translations: {
           es: { language: "es", text: "Hola a todos", origin: "manual", sourceFingerprint: "fp-intro" },
           fr: { language: "fr", text: "", origin: "manual", sourceFingerprint: "fp-intro" },
@@ -71,6 +75,7 @@ function chorusSong(): EditedTtmlProject {
             instanceIdx: 0,
             templateLineIdx: 0,
           }),
+          DEFAULT_SPLIT_CHARACTER,
         ),
         translations: {},
       }),
@@ -128,6 +133,7 @@ function transliteratedSong(): EditedTtmlProject {
       legacyLine({
         ...fieldsOfLine(
           withTransliteration(createLine({ id: "greeting", text: "こんにちは", begin: 1, end: 2 }), "konnichiwa"),
+          DEFAULT_SPLIT_CHARACTER,
         ),
         translations: {
           en: { language: "en", text: "Hello", origin: "google", sourceFingerprint: "fp-greeting", stale: true },

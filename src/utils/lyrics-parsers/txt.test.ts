@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { fieldsOfLine } from "@/domain/line/line-from-fields";
-import { lineText } from "@/domain/line/text";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
 import { GENIUS_PAGE_COPY } from "@/test/genius-fixtures";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-const texts = (content: string) => parseTxt(content).lines.map((line) => lineText(line));
+const texts = (content: string) => parseTxt(content).lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER));
 
 describe("parseTxt", () => {
   it("keeps a blank line between stanzas as an empty line", () => {
@@ -36,8 +37,11 @@ describe("parseTxt", () => {
   describe("Genius lyrics", () => {
     it("drops section tags and page junk and declares credited singers", () => {
       const result = parseTxt(GENIUS_PAGE_COPY);
-      expect(fieldsOfLine(result.lines[0])).toMatchObject({ text: "Yeah, yeah", agentId: "v2" });
-      expect(result.lines.some((line) => lineText(line).startsWith("["))).toBe(false);
+      expect(fieldsOfLine(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+        text: "Yeah, yeah",
+        agentId: "v2",
+      });
+      expect(result.lines.some((line) => lineText(line, DEFAULT_SPLIT_CHARACTER).startsWith("["))).toBe(false);
       expect(result.agents?.map((agent) => agent.name)).toEqual(["Lead", "Drake", "Drake, Rihanna", "Rihanna"]);
     });
 

@@ -2,7 +2,7 @@ import { savedLines } from "@/lib/saved-project";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { listProjectIndex } from "@/lib/project-repository";
@@ -21,6 +21,7 @@ import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE } from "@/views/lyrics-import-modal/accepted-files";
 import type { ImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -50,7 +51,7 @@ async function renderHosts() {
 }
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => lineText(line));
+  return useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()));
 }
 
 async function openAlpha(): Promise<void> {
@@ -105,7 +106,7 @@ describe("importLyricsFile with a project file", () => {
     await expect(pending).resolves.toBe(true);
     expect(openProjectIdSnapshot()).not.toBe("alpha");
     expect(useProjectStore.getState().metadata.title).toBe("Lust for Life");
-    expect(linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line))).toEqual([
+    expect(linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line, getSplitCharacter()))).toEqual([
       "Alpha line one",
       "Alpha line two",
     ]);

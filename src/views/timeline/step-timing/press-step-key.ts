@@ -1,17 +1,17 @@
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { toast } from "sonner";
 import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
 import type { LyricLine } from "insync/line";
 import { type WordTrack, trackRole } from "insync/line-track";
-import { addressOf, toAddress } from "@/domain/selection/resolve";
+import { addressOf, toAddress } from "insync/selection-resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
-import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
+import type { StepKey, StepRefusal } from "insync/step-timing-step-write";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import type { StepKeyPlan } from "@/utils/timing/step-key-write";
+import type { StepKeyPlan } from "insync/timing-step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
@@ -21,6 +21,7 @@ import { rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { isWholeLane, liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -69,7 +70,7 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
     return;
   }
   const line = lines[cursor.lineIndex];
-  const word = line ? drawnSyllables(line, trackRole(cursor.type))[cursor.wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(cursor.type), getSplitCharacter())[cursor.wordIndex] : undefined;
   if (!line || !word) return;
   const project = useProjectStore.getState();
   const { skippedLineIds } = stepSkipView(lines, project.groups, timeline.collapsedInstances, line);
@@ -79,8 +80,16 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
   const next =
     key === "start"
       ? null
-      : nextCursorSlot(lines, cursor, queue, include, useSettingsStore.getState().stepTimingBackground);
-  const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
+      : nextCursorSlot(
+          lines,
+          cursor,
+          queue,
+          include,
+          getSplitCharacter(),
+          useSettingsStore.getState().stepTimingBackground,
+        );
+  const startNext =
+    key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include, getSplitCharacter())) : null;
   let outcome = null as StepKeyPlan | null;
   const command = stepKeyCommand(
     {
@@ -102,7 +111,8 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
   if (outcome?.endedPrevious) showEndedPreviousToast(outcome.endedPrevious);
   noteGuideSignal("timeline.stepTiming");
   const leftLine = cursor.type === "word" && next?.lineId !== cursor.lineId;
-  if (leftLine && drawnSyllables(line, "bg").length) noteGuideSignal("timeline.stepPastBackground");
+  if (leftLine && drawnSyllables(line, "bg", getSplitCharacter()).length)
+    noteGuideSignal("timeline.stepPastBackground");
   if (queue && key !== "start" && !next) noteGuideSignal("timeline.stepQueueEnd");
   // The queue outlives its last word, so the keys never leave the chosen words.
   timeline.setSelectedWords([next ?? cursor]);

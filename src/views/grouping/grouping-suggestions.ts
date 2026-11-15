@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -32,9 +32,9 @@ function sameWordTexts(a: readonly WordTiming[], b: readonly WordTiming[]): bool
 function sameScanInputLine(a: LyricLine, b: LyricLine): boolean {
   return (
     a === b ||
-    (lineText(a) === lineText(b) &&
+    (lineText(a, getSplitCharacter()) === lineText(b, getSplitCharacter()) &&
       mainTrack(a).agentId === mainTrack(b).agentId &&
-      backgroundText(a) === backgroundText(b) &&
+      backgroundText(a, getSplitCharacter()) === backgroundText(b, getSplitCharacter()) &&
       (a.groupId === undefined) === (b.groupId === undefined) &&
       sameWordTexts(timedSyllables(mainTrack(a)), timedSyllables(mainTrack(b))) &&
       sameWordTexts(timedSyllables(backgroundTrack(a)), timedSyllables(backgroundTrack(b))))

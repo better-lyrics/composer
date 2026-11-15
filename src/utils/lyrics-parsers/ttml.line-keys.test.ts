@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -16,8 +17,9 @@ describe("parseTtml · line keys", () => {
       ttml(
         '<p begin="0:01.000" end="0:02.000" itunes:key="L2">Two</p><p begin="0:02.000" end="0:03.000">None</p><p begin="0:03.000" end="0:04.000" itunes:key="L1">One</p>',
       ),
+      DEFAULT_SPLIT_CHARACTER,
     );
-    expect(parsed.lines.map((line) => lineText(line))).toEqual(["Two", "None", "One"]);
+    expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Two", "None", "One"]);
     expect(parsed.lineKeys).toEqual(["L2", undefined, "L1"]);
   });
 
@@ -27,12 +29,16 @@ describe("parseTtml · line keys", () => {
         ttml(
           '<p begin="0:01.000" end="0:02.000" itunes:key="L1"> </p><p begin="0:02.000" end="0:03.000" itunes:key="L2">Two</p>',
         ),
+        DEFAULT_SPLIT_CHARACTER,
       );
       expect(parsed.lineKeys).toEqual(["L2"]);
     });
 
     it("keeps line keys out of the parsed lines", () => {
-      const parsed = parseTtml(ttml('<p begin="0:01.000" end="0:02.000" itunes:key="L1">One</p>'));
+      const parsed = parseTtml(
+        ttml('<p begin="0:01.000" end="0:02.000" itunes:key="L1">One</p>'),
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(Object.keys(parsed.lines[0] ?? {})).not.toContain("key");
     });
   });
@@ -44,6 +50,7 @@ describe("parseTtml · line keys", () => {
           '<p begin="0:01.000" end="0:02.000" itunes:key="L1">Bravo</p><p begin="0:02.000" end="0:03.000" itunes:key="L1">Bravo again</p>',
           '<text for="L1">Bravo es</text>',
         ),
+        DEFAULT_SPLIT_CHARACTER,
       );
       expect(parsed.lines[0]?.languages?.translations?.es?.main.text).toBe("Bravo es");
       expect(parsed.lines[1]?.languages?.translations).toBeUndefined();

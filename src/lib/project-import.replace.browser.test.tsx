@@ -1,6 +1,6 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { mainBounds } from "insync/line-bounds";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import type { ProjectFile } from "@/lib/project-file";
@@ -17,6 +17,7 @@ import { createLine } from "@/test/factories";
 import { savedTime } from "@/test/priming-projects";
 import { linesOfRecord, saveInputTitled, seedStoredProject, songTitled } from "@/test/projects";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -45,9 +46,9 @@ describe("replaceProjectFromFile", () => {
 
     await replaceProjectFromFile("a", fileWithLine("File line"));
 
-    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0])).toBe("File line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0], getSplitCharacter())).toBe("File line");
     await flushPendingSave();
-    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0])).toBe("File line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0], getSplitCharacter())).toBe("File line");
   });
 
   describe("MP3 priming flags", () => {

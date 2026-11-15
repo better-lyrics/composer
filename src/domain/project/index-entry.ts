@@ -1,16 +1,17 @@
 import type { SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
-import type { LanguageTextVariant } from "@/domain/language/display";
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LanguageTextVariant } from "insync/language-display";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineFromSaved } from "@/domain/line/saved-line";
-import { hasAnyTiming, hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
+import { lineFromSaved } from "insync/line-saved-line";
+import { hasAnyTiming, hasMainLyrics, isWordSynced } from "insync/line-predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
-import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -104,13 +105,16 @@ function normalizeStoredLines(lines: unknown): LyricLine[] {
   const format4 = entries.filter(isFormat4Line).map(format4Line);
   const records = entries.filter(isStoredLyricLine) as unknown as LineFields[];
   const format3 = records.map((record) =>
-    lineFromFields({
-      ...record,
-      words: storedWords(record.words),
-      backgroundWords: storedWords(record.backgroundWords),
-    }),
+    lineFromFields(
+      {
+        ...record,
+        words: storedWords(record.words),
+        backgroundWords: storedWords(record.backgroundWords),
+      },
+      getSplitCharacter(),
+    ),
   );
-  return [...format4, ...format3].filter(hasMainLyrics);
+  return [...format4, ...format3].filter((value) => hasMainLyrics(value, getSplitCharacter()));
 }
 
 function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {

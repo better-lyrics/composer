@@ -1,11 +1,11 @@
-import { alignedPieceOf } from "@/domain/language/aligned-piece";
+import { alignedPieceOf } from "insync/language-aligned-piece";
 import type { LanguagePiece } from "insync/language";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
-import { findIdenticalWords } from "@/utils/identical-word-matcher";
+import { findIdenticalWords } from "insync/identical-word-matcher";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
 import {
   type SyllableSplitHandler,
@@ -14,6 +14,7 @@ import {
 } from "@/views/sync/use-syllable-splitter-state";
 import { IconScissors } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -94,7 +95,7 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
 }) => {
   const { lineId, type, word, wordIndex } = splitter;
   const line = useProjectStore((s) => s.lines.find((candidate) => candidate.id === lineId));
-  const piece = useMemo(() => line && alignedPieceOf(line, type, word), [line, type, word]);
+  const piece = useMemo(() => line && alignedPieceOf(line, type, word, getSplitCharacter()), [line, type, word]);
   const state = useSyllableSplitterState({ ...splitter, piece });
   return (
     <Popover reference={trigger} open={open} onOpenChange={onOpenChange}>

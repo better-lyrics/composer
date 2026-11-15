@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { lineFromFields } from "insync/line-from-fields";
 import type { ProjectMetadata } from "insync/metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = {
   title: "Song & Dance",
@@ -13,10 +14,10 @@ const metadata: ProjectMetadata = {
   songwriters: ["W1"],
   extra: { spotifyId: "abc" },
 };
-const lines = [lineFromFields({ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" })];
+const lines = [lineFromFields({ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)];
 
 describe("generateTTML metadata", () => {
-  const ttml = generateTTML({ metadata, agents: [], lines });
+  const ttml = generateTTML({ metadata, agents: [], lines, splitChar: DEFAULT_SPLIT_CHARACTER });
   it("keeps the title in ttm:title", () => expect(ttml).toContain("<ttm:title>Song &amp; Dance</ttm:title>"));
   it("emits one composer:meta per artist", () => {
     expect(ttml).toContain('<composer:meta key="artists" value="Kali Uchis"/>');
@@ -35,6 +36,7 @@ describe("generateTTML metadata", () => {
       metadata: { title: "x", artists: [], album: "", duration: 0 },
       agents: [],
       lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(bare).not.toContain("composer:meta");
   });
@@ -42,7 +44,8 @@ describe("generateTTML metadata", () => {
 
 describe("generateTTML xml:lang", () => {
   const bare: ProjectMetadata = { title: "t", artists: [], album: "", duration: 0 };
-  const generate = (language?: string) => generateTTML({ metadata: { ...bare, language }, agents: [], lines });
+  const generate = (language?: string) =>
+    generateTTML({ metadata: { ...bare, language }, agents: [], lines, splitChar: DEFAULT_SPLIT_CHARACTER });
   const rootOf = (xml: string) => new DOMParser().parseFromString(xml, "application/xml").documentElement;
 
   it("omits xml:lang when no language is set", () => {
@@ -81,21 +84,25 @@ describe("generateTTML xml:lang", () => {
 
   describe("U9 language validation", () => {
     const agents = [{ id: "v1", type: "person" as const, name: "Lead" }];
-    const wordLine = lineFromFields({
-      id: "a",
-      text: "Hello world",
-      agentId: "v1",
-      words: [
-        { id: "w1", text: "Hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
-        { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
-      ],
-    });
+    const wordLine = lineFromFields(
+      {
+        id: "a",
+        text: "Hello world",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "Hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+          { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     it("does not export an invalid BCP-47 tag as xml:lang", () => {
       const ttml = generateTTML({
         metadata: { ...bare, language: "not a lang!!" },
         agents,
         lines: [wordLine],
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
       expect(ttml).not.toContain('xml:lang="not a lang!!"');
     });
@@ -130,6 +137,7 @@ describe("generateTTML attribute escaping", () => {
       agents: [],
       lines,
       groups: [{ id: "g1", label: 'The "Big" Chorus', color: "#fff", templateVersion: 1 }],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     expect(xml).toContain('label="The &quot;Big&quot; Chorus"');
@@ -141,6 +149,7 @@ describe("generateTTML attribute escaping", () => {
       metadata: { title: "t", artists: [], album: "", duration: 0 },
       agents: [{ id: 'v"1', type: "person", name: 'The "Lead"' }],
       lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     expect(xml).toContain('xml:id="v&quot;1"');
@@ -149,12 +158,13 @@ describe("generateTTML attribute escaping", () => {
 
   it("regression: a singer without a name stays unnamed after import and export", () => {
     const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent xml:id="v1" type="person"><ttm:name>Lead</ttm:name></ttm:agent><ttm:agent xml:id="v2" type="group"/></metadata></head><body><div><p begin="1.000" end="2.000" ttm:agent="v2"><span begin="1.000" end="2.000">hi</span></p></div></body></tt>`;
-    const parsed = parseTtml(source);
+    const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
 
     const xml = generateTTML({
       metadata: { title: "t", artists: [], album: "", duration: 0 },
       agents: parsed.agents ?? [],
       lines: parsed.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     expect(xml).toContain('<ttm:agent xml:id="v2" type="group"/>');
@@ -166,6 +176,7 @@ describe("generateTTML attribute escaping", () => {
       metadata: { title: "t", artists: [], album: "", duration: 0, language: 'en"US' },
       agents: [],
       lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     expect(xml).not.toContain("xml:lang=");

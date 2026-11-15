@@ -2,15 +2,16 @@ import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "insync/line";
 import type { LyricCommand } from "@/domain/commands/command";
 import { type Applied, applied, isRefused, type LyricRoot, type Outcome } from "@/domain/commands/outcome";
-import { foldLines } from "@/domain/group/fold";
+import { foldLines } from "insync/group-fold";
 import type { LyricDoc } from "insync/group";
-import type { CarriedSplit } from "@/domain/group/template-edit";
-import { withoutOrphanPieces } from "@/domain/language/pieces";
+import type { CarriedSplit } from "insync/group-template-edit";
+import { withoutOrphanPieces } from "insync/language-pieces";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
 import type { CommitMode } from "@/stores/project/history-types";
 import type { ProjectState } from "@/stores/project/types";
 import { projectDoc, withBody } from "@/stores/project/with-body";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -64,6 +65,7 @@ interface FoldOptions {
   copiesSharedTiming: boolean;
   carriesTemplateEdits: boolean;
   songEnd: number;
+  splitChar: string;
 }
 
 type Folded = Written & { copiedGroupIds: readonly string[]; splits: readonly CarriedSplit[] };
@@ -71,7 +73,14 @@ type Folded = Written & { copiedGroupIds: readonly string[]; splits: readonly Ca
 // Command output goes back into the doc through the fold, which carries template edits and shared timing.
 function folded(state: ProjectState, doc: LyricDoc, root: LyricRoot, ran: Applied, options: FoldOptions): Folded {
   const after = withChangedLinesSettled(state.lines, ran.root.lines);
-  const fold = foldLines({ doc, after, touched: ran.touched, groups: root.groups, ...options });
+  const fold = foldLines({
+    doc,
+    after,
+    touched: ran.touched,
+    groups: root.groups,
+    ...options,
+    splitChar: getSplitCharacter(),
+  });
   const settled = withChangedLinesSettled(state.lines, fold.lines);
   const { copiedGroupIds, splits } = fold;
   if (settled === fold.lines)
@@ -84,6 +93,7 @@ function folded(state: ProjectState, doc: LyricDoc, root: LyricRoot, ran: Applie
     copiesSharedTiming: false,
     carriesTemplateEdits: false,
     songEnd: options.songEnd,
+    splitChar: options.splitChar,
   });
   return { root: { ...ran.root, lines: resettled.lines }, doc: resettled.doc, copiedGroupIds, splits };
 }
@@ -130,6 +140,7 @@ function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitM
     copiesSharedTiming: command.copiesSharedTiming,
     carriesTemplateEdits,
     songEnd: ctx.songEnd,
+    splitChar: ctx.splitChar,
   });
   const outcome = command.afterSharedCopy
     ? command.afterSharedCopy(copied.root, ctx)
@@ -142,6 +153,7 @@ function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitM
           copiesSharedTiming: false,
           carriesTemplateEdits,
           songEnd: ctx.songEnd,
+          splitChar: ctx.splitChar,
         });
   const parted = withPartsSettled(before, written.root);
   return {

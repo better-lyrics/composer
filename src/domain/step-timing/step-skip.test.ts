@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { stepSkippedLineIds } from "@/domain/step-timing/step-skip";
 import { createGroup, createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, begin: number) =>
   createLine({
@@ -20,16 +21,21 @@ const nothingCollapsed = () => false;
 
 describe("stepSkippedLineIds", () => {
   it("skips shared repeats that follow a timed copy, and never the copy itself", () => {
-    expect([...stepSkippedLineIds(lines, sharing, nothingCollapsed, null)]).toEqual(["c1", "c2"]);
+    expect([...stepSkippedLineIds(lines, sharing, nothingCollapsed, null, DEFAULT_SPLIT_CHARACTER)]).toEqual([
+      "c1",
+      "c2",
+    ]);
   });
 
   it("walks the repeat the cursor is already in, so you can retime it there", () => {
-    expect([...stepSkippedLineIds(lines, sharing, nothingCollapsed, lines[2])]).toEqual(["c2"]);
+    expect([...stepSkippedLineIds(lines, sharing, nothingCollapsed, lines[2], DEFAULT_SPLIT_CHARACTER)]).toEqual([
+      "c2",
+    ]);
   });
 
   it("skips collapsed groups, even ones with their own timing", () => {
     const own = [createGroup({ id: "g1" })];
     const collapsed = (groupId: string, instanceIdx: number) => groupId === "g1" && instanceIdx === 0;
-    expect([...stepSkippedLineIds(lines, own, collapsed, null)]).toEqual(["c0"]);
+    expect([...stepSkippedLineIds(lines, own, collapsed, null, DEFAULT_SPLIT_CHARACTER)]).toEqual(["c0"]);
   });
 });

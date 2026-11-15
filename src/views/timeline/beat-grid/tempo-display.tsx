@@ -4,7 +4,7 @@ import type { TempoStats } from "@/domain/tempo/tempo-stats";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { useRef } from "react";

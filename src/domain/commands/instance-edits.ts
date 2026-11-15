@@ -1,23 +1,23 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { applied, changedLineIds, refused, withLines } from "@/domain/commands/outcome";
-import { unlinkLines } from "@/domain/group/linking";
-import { withNewInstance, withOwnTiming } from "@/domain/group/own-timing";
-import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
-import { wholeSongRange } from "@/domain/group/shared-timing";
+import { unlinkLines } from "insync/group-linking";
+import { withNewInstance, withOwnTiming } from "insync/group-own-timing";
+import { placeSharedInstance, realignSharedInstance } from "insync/group-shared-placement";
+import { wholeSongRange } from "insync/group-shared-timing";
 import {
   type LineTemplate,
   offsetTemplateWords,
   templateBackgroundFields,
   templateLanguages,
-} from "@/domain/group/template";
+} from "insync/group-template";
 import { nextInstanceIdx } from "insync/instance-enumerate";
 import { belongsToInstance, isAttachedToInstance } from "insync/instance-predicates";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { withLinePassthrough } from "@/domain/line/passthrough";
-import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { withLinePassthrough } from "insync/line-passthrough";
+import { clampShiftDelta, shiftLineTiming } from "insync/line-shift";
+import { songEndOrUnbounded } from "insync/song-end";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -32,23 +32,27 @@ function instanceLine(
   instanceIdx: number,
   templateLineIdx: number,
   instanceStart: number,
+  splitChar: string,
 ): LyricLine {
   const words = template.words && offsetTemplateWords(template.words, instanceStart);
   const backgroundWords = template.backgroundWords && offsetTemplateWords(template.backgroundWords, instanceStart);
   const languages = templateLanguages(template, words, backgroundWords);
-  const line = lineFromFields({
-    id,
-    text: template.text,
-    agentId: template.agentId,
-    groupId,
-    instanceIdx,
-    templateLineIdx,
-    ...(template.relativeBegin !== undefined ? { begin: template.relativeBegin + instanceStart } : {}),
-    ...(template.relativeEnd !== undefined ? { end: template.relativeEnd + instanceStart } : {}),
-    ...(words ? { words } : {}),
-    ...templateBackgroundFields(template, backgroundWords),
-    ...(languages ? { languages } : {}),
-  });
+  const line = lineFromFields(
+    {
+      id,
+      text: template.text,
+      agentId: template.agentId,
+      groupId,
+      instanceIdx,
+      templateLineIdx,
+      ...(template.relativeBegin !== undefined ? { begin: template.relativeBegin + instanceStart } : {}),
+      ...(template.relativeEnd !== undefined ? { end: template.relativeEnd + instanceStart } : {}),
+      ...(words ? { words } : {}),
+      ...templateBackgroundFields(template, backgroundWords),
+      ...(languages ? { languages } : {}),
+    },
+    splitChar,
+  );
   return withLinePassthrough(line, template.passthrough);
 }
 
@@ -66,7 +70,7 @@ function addInstance(
     run: (root, ctx) => {
       const instanceIdx = nextInstanceIdx(root.lines, groupId);
       const newLines = structure.map((template, templateLineIdx) =>
-        instanceLine(template, ctx.newId(), groupId, instanceIdx, templateLineIdx, instanceStart),
+        instanceLine(template, ctx.newId(), groupId, instanceIdx, templateLineIdx, instanceStart, ctx.splitChar),
       );
       const lines =
         insertAtIndex === undefined || insertAtIndex >= root.lines.length || insertAtIndex < 0
@@ -124,13 +128,13 @@ function setInstanceOwnTiming(groupId: string, instanceIdx: number, own: boolean
   return {
     note: { command: own ? "own timing" : "share timing", args: [groupId, instanceIdx] },
     copiesSharedTiming: false,
-    run: (root) => {
+    run: (root, ctx) => {
       const groups = root.groups.map((group) =>
         group.id === groupId ? withOwnTiming(group, instanceIdx, own) : group,
       );
       const realignment = own
         ? { updates: [] }
-        : realignSharedInstance(root.lines, groups, groupId, instanceIdx, songEndOrUnbounded(duration));
+        : realignSharedInstance(root.lines, groups, groupId, instanceIdx, ctx.splitChar, songEndOrUnbounded(duration));
       if ("refusal" in realignment) return refused({ reason: "realign", refusal: realignment.refusal });
       const lines = applyLineUpdates(root.lines, realignment.updates);
       return applied({ ...root, groups, lines }, changedLineIds(root.lines, lines));
@@ -154,13 +158,14 @@ function placeInstance(
         { ...root, lines: applyLineUpdates(root.lines, precedingUpdates) },
         precedingUpdates.map((update) => update.id),
       ),
-    afterSharedCopy: (root) => {
+    afterSharedCopy: (root, ctx) => {
       const placed = placeSharedInstance(
         root.lines,
         root.groups,
         groupId,
         instanceIdx,
         start,
+        ctx.splitChar,
         songEndOrUnbounded(duration),
       );
       if (!placed.length) return refused({ reason: "placement-out-of-range" });

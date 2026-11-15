@@ -1,6 +1,6 @@
 import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { withRoleWords } from "insync/line-track-writes";
 import type { WordTiming } from "insync/word-timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 

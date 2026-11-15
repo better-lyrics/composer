@@ -1,19 +1,19 @@
 import { useMemo } from "react";
-import { getAgentColor } from "@/domain/agent/colors";
-import { agentDisplayName } from "@/domain/agent/display-name";
+import { getAgentColor } from "insync/agent-colors";
+import { agentDisplayName } from "insync/agent-display-name";
 import { instanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";
-import { selectionBounds } from "@/domain/selection/bounds";
-import { lineWordSelections } from "@/domain/selection/line-selections";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { toAddress } from "@/domain/selection/resolve";
+import { selectionBounds } from "insync/selection-bounds";
+import { lineWordSelections } from "insync/selection-line-selections";
+import type { SyllableAddress } from "insync/selection-model";
+import { toAddress } from "insync/selection-resolve";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Menu, type MenuAnchor, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator } from "@/ui/menu";
 import { SingerTag } from "@/ui/singer-tag";
-import { GROUP_COLORS } from "@/utils/group-colors";
-import { pluralize } from "@/utils/pluralize";
+import { GROUP_COLORS } from "insync/group-colors";
+import { pluralize } from "insync/pluralize";
 import { CopyCutMenuItems, PasteHereMenuItem } from "@/views/timeline/clipboard-menu-items";
 import {
   loopSelection,
@@ -29,6 +29,7 @@ import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useSharedTimingMenuActions } from "@/views/timeline/use-shared-timing-menu-actions";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { WordEditMenuItems } from "@/views/timeline/word-edit-menu-items";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Grouping section ---------------------------------------------------------
 
@@ -133,7 +134,7 @@ function PlaybackMenuItems({
   select?: () => void;
   clearContextMenu: () => void;
 }) {
-  if (!selectionBounds(lines, selections)) return null;
+  if (!selectionBounds(lines, selections, getSplitCharacter())) return null;
   const selectAndRun = (start: () => boolean) => {
     select?.();
     start();
@@ -289,7 +290,7 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
   );
   const { lineId, lineIndex } = target;
   const line = targets.lines.find((candidate) => candidate.id === lineId);
-  const lineSelections = line ? lineWordSelections(line) : [];
+  const lineSelections = line ? lineWordSelections(line, getSplitCharacter()) : [];
 
   return (
     <>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { loadProjectAudio } from "@/lib/project-audio";
 import { projectFileFrom } from "@/lib/project-file";
@@ -14,6 +14,7 @@ import { createLine } from "@/test/factories";
 import { linesOfRecord, seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -60,7 +61,7 @@ describe("import conflict dialog", () => {
     await screen.getByRole("button", { name: "Keep both" }).click();
     const id = await pending;
     expect(id).not.toBe("a");
-    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0])).toBe("Library line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0], getSplitCharacter())).toBe("Library line");
     expect((await listProjectIndex()).length).toBe(2);
   });
 
@@ -71,7 +72,7 @@ describe("import conflict dialog", () => {
     await screen.getByRole("button", { name: "Replace project" }).click();
     await expect(pending).resolves.toBe("a");
     const record = await loadProjectRecord("a");
-    expect(lineText(linesOfRecord(record)[0])).toBe("File line");
+    expect(lineText(linesOfRecord(record)[0], getSplitCharacter())).toBe("File line");
     expect(record?.audioSource).toEqual({ kind: "file", name: "alpha.wav" });
     expect((await loadProjectAudio("a"))?.name).toBe("alpha.wav");
   });
@@ -83,7 +84,7 @@ describe("import conflict dialog", () => {
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await screen.getByRole("button", { name: "Replace project" }).click();
     await pending;
-    expect(lineText(useProjectStore.getState().lines[0]!)).toBe("File line");
+    expect(lineText(useProjectStore.getState().lines[0]!, getSplitCharacter())).toBe("File line");
   });
 
   it("matches a different project id by the same YouTube video, and cancelling writes nothing", async () => {

@@ -5,7 +5,7 @@ import type { LyricLine } from "insync/line";
 import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { useSettingsStore } from "@/stores/settings";
 import { ListScroll } from "@/ui/scroll";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import {
   LinePreview,
   type LinePreviewRowHandlers,

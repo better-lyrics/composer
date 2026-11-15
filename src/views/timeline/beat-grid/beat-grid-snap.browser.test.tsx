@@ -7,7 +7,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { applyWordPatch } from "@/utils/word-patch";
+import { applyWordPatch } from "insync/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { beforeEach, describe, expect, it } from "vitest";

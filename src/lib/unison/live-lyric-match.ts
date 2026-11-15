@@ -1,15 +1,16 @@
-import { agentWithoutKeptData } from "@/domain/agent/kept-data";
+import { agentWithoutKeptData } from "insync/agent-kept-data";
 import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
-import { withoutKeptData } from "@/domain/line/passthrough";
-import { changedParts, editedLyricsWrite, type ProjectLyrics } from "@/domain/project/edited-lyrics";
-import { changedMetadata, importableMetadata } from "@/domain/project/imported-metadata";
+import { withoutKeptData } from "insync/line-passthrough";
+import { changedParts, editedLyricsWrite, type ProjectLyrics } from "insync/project-edited-lyrics";
+import { changedMetadata, importableMetadata } from "insync/project-imported-metadata";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import type { LinkSuggestion, UnsureLink } from "@/domain/unison/link-suggestions";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { isFromNewerComposer, linesFromSaved, type StoredProject, upgradeSavedProject } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ function matchesLiveLyric(stored: StoredProject, lyric: UnisonLyric): boolean {
   const liveDetails = importableMetadata(parsed.metadata);
   const live = { ...parsed, lines: parsed.lines.map(withoutKeptData) };
   const write = editedLyricsWrite(current, {
-    lines: mergeEditedTtmlLines(lines, live),
+    lines: mergeEditedTtmlLines(lines, live, getSplitCharacter()),
     groups: parsed.groups ?? [],
     agents: parsed.agents?.map(agentWithoutKeptData),
     metadata: liveDetails,

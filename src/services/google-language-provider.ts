@@ -1,7 +1,7 @@
 import type { TransliterationSegment } from "insync/language";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
-import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
-import { DASHES, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
+import { wholeLineSegments } from "insync/language-manual-segments";
+import { containsNonLatin, detectNonLatinLanguage } from "insync/language-script-detection";
+import { DASHES, normalizeTransliterationForEditing } from "insync/language-transliteration-format";
 import {
   parseGoogleTranslationResponse,
   parseGoogleTransliterationResponse,

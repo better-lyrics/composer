@@ -1,10 +1,11 @@
 import { updatedLine, withFields } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
-import { applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
+import { applyWordMoveAcrossLines } from "insync/word-move-across-lines";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const DURATION = 20;
 
@@ -42,6 +43,7 @@ function moveIntoChorus(sharesTiming: boolean) {
       },
     ],
     timeRangeResolver(lines, groups, DURATION),
+    DEFAULT_SPLIT_CHARACTER,
   );
 }
 

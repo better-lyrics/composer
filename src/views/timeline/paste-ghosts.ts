@@ -1,13 +1,14 @@
-import { type TimeRange, wholeSongRange } from "@/domain/group/shared-timing";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { type TimeRange, wholeSongRange } from "insync/group-shared-timing";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole } from "insync/line-track";
-import { boundsOverlap } from "@/domain/word/overlap";
+import { boundsOverlap } from "insync/word-overlap";
 import { pastedWordBounds } from "@/views/timeline/apply-paste-to-lines";
 import { bgTrackHeight, wordBlockWidth } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 import type { RowLayout } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -60,7 +61,7 @@ function computeGhosts(
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {
-      const existingWords = drawnSyllables(targetLine, trackRole(isBg ? "bg" : "word"));
+      const existingWords = drawnSyllables(targetLine, trackRole(isBg ? "bg" : "word"), getSplitCharacter());
       overlaps = existingWords.some((existing) => boundsOverlap(pasted, existing));
     }
 

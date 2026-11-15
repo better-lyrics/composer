@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LyricLine } from "insync/line";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import {
@@ -7,7 +7,8 @@ import {
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
-} from "@/domain/selection/nudge";
+} from "insync/selection-nudge";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -46,25 +47,27 @@ describe("nudgeSelectedWords with a shared time range", () => {
   const rangeOf = timeRangeResolver(lines, sharing, DURATION);
 
   it("stops a left nudge where the earliest instance reaches zero", () => {
-    expect(nudgeSelectedWords(lines, wholeLine("c1"), -5, rangeOf).appliedDelta).toBe(-3);
+    expect(nudgeSelectedWords(lines, wholeLine("c1"), -5, rangeOf, DEFAULT_SPLIT_CHARACTER).appliedDelta).toBe(-3);
   });
 
   it("stops a right nudge where the latest instance reaches the song end", () => {
-    expect(nudgeSelectedWords(lines, wholeLine("c1"), 5, rangeOf).appliedDelta).toBe(2);
+    expect(nudgeSelectedWords(lines, wholeLine("c1"), 5, rangeOf, DEFAULT_SPLIT_CHARACTER).appliedDelta).toBe(2);
   });
 
   describe("regressions", () => {
     it("regression: a line of an old group still moves to zero and the song end", () => {
       const rangeOfOld = timeRangeResolver(lines, oldGroup, DURATION);
-      expect(nudgeSelectedWords(lines, wholeLine("c1"), -15, rangeOfOld).appliedDelta).toBe(-10);
-      expect(nudgeSelectedWords(lines, wholeLine("c1"), 15, rangeOfOld).appliedDelta).toBe(8);
+      expect(nudgeSelectedWords(lines, wholeLine("c1"), -15, rangeOfOld, DEFAULT_SPLIT_CHARACTER).appliedDelta).toBe(
+        -10,
+      );
+      expect(nudgeSelectedWords(lines, wholeLine("c1"), 15, rangeOfOld, DEFAULT_SPLIT_CHARACTER).appliedDelta).toBe(8);
     });
   });
 
   describe("edge cases", () => {
     it("keeps an unselected neighbour word as the limit inside the range", () => {
       const firstOnly = [{ lineId: "c1", wordIndex: 0, type: "word" as const }];
-      expect(nudgeSelectedWords(lines, firstOnly, 5, rangeOf).appliedDelta).toBe(0);
+      expect(nudgeSelectedWords(lines, firstOnly, 5, rangeOf, DEFAULT_SPLIT_CHARACTER).appliedDelta).toBe(0);
     });
   });
 });
@@ -97,7 +100,13 @@ describe("shiftSelectionsTogether with a shared time range", () => {
     const selection = [...lineRow("x"), ...lineRow("c1")];
     const rangeOf = timeRangeResolver(lines, sharing, DURATION);
 
-    const result = shiftSelectionsTogether(lines, partitionNudgeSelections(lines, selection), -4, rangeOf);
+    const result = shiftSelectionsTogether(
+      lines,
+      partitionNudgeSelections(lines, selection, DEFAULT_SPLIT_CHARACTER),
+      -4,
+      rangeOf,
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     expect(result.appliedDelta).toBe(-3);
   });
@@ -109,9 +118,10 @@ describe("shiftSelectionsTogether with a shared time range", () => {
       for (const delta of [-50, -3.5, -0.1, 0.1, 2.5, 50]) {
         const { appliedDelta } = shiftSelectionsTogether(
           lines,
-          partitionNudgeSelections(lines, wholeLine("c1")),
+          partitionNudgeSelections(lines, wholeLine("c1"), DEFAULT_SPLIT_CHARACTER),
           delta,
           rangeOf,
+          DEFAULT_SPLIT_CHARACTER,
         );
         for (const offset of [3 - 10, 0, 16 - 10]) {
           expect(10 + appliedDelta + offset).toBeGreaterThanOrEqual(0);

@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { splitWord } from "@/domain/commands/word-structure";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { wordAt } from "@/domain/selection/resolve";
+import { wordAt } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorusLine = (instanceIdx: number, begin: number) =>
   createLine({
@@ -54,6 +55,6 @@ describe("selection after a template edit", () => {
 
     const { lines } = useProjectStore.getState();
     expect(useTimelineStore.getState().selectedWords).toEqual([tonight]);
-    expect(wordAt(lines, tonight)?.text).toBe("tonight");
+    expect(wordAt(lines, tonight, DEFAULT_SPLIT_CHARACTER)?.text).toBe("tonight");
   });
 });

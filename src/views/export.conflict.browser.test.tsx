@@ -1,11 +1,12 @@
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { withFields } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -129,7 +130,10 @@ describe("ExportPanel · edits across regeneration", () => {
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
       expect(useProjectStore.getState().lines).toBe(conflictedLines);
-      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["HELLO REGEN", "World"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
+        "HELLO REGEN",
+        "World",
+      ]);
       expect(useProjectStore.getState().ttmlEditState?.content).toContain("HELLO EDITED");
       expect(screen.getByText("Updated the lyrics from the TTML").elements()).toHaveLength(0);
     });

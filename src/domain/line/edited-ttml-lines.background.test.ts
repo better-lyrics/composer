@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { withSeededBackground } from "@/domain/line/background";
-import { drawnSyllables } from "@/domain/line/drawn-track";
-import { isProjectFullySynced } from "@/domain/line/sync-progress";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { withSeededBackground } from "insync/line-background";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { isProjectFullySynced } from "insync/line-sync-progress";
+import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Tests --------------------------------------------------------------------
 
@@ -17,7 +18,7 @@ describe("mergeEditedTtmlLines · background vocals", () => {
         createLine({ id: "a", text: "Main", begin: 1, end: 2, backgroundText: "ooh", backgroundTextSource: "manual" }),
       ];
       const merged = mergeEditedExport(stored);
-      expect(backgroundText(merged[0]!)).toBe("ooh");
+      expect(backgroundText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
       expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
       expect(merged).toEqual(stored);
     });
@@ -34,17 +35,20 @@ describe("mergeEditedTtmlLines · background vocals", () => {
         }),
       ];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">ooh yeah<", ">ooh no<"));
-      expect(backgroundText(merged[0]!)).toBe("ooh no");
+      expect(backgroundText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh no");
       expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
-      expect(isProjectFullySynced(merged)).toBe(true);
+      expect(isProjectFullySynced(merged, DEFAULT_SPLIT_CHARACTER)).toBe(true);
     });
 
     it("regression: a line-synced background keeps its span through an edit of the line", () => {
       const stored = [
-        withSeededBackground(createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" })),
+        withSeededBackground(
+          createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" }),
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Main<", ">Mane<"));
-      expect(lineText(merged[0]!)).toBe("Mane");
+      expect(lineText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("Mane");
       expect(backgroundTrack(merged[0]!)).toMatchObject({ begin: 2, end: 3 });
       expect(timedSyllables(backgroundTrack(merged[0]!))).toEqual([]);
     });
@@ -52,10 +56,11 @@ describe("mergeEditedTtmlLines · background vocals", () => {
     it("regression: a line-synced background keeps its explicit mark, and takes one the edit sets", () => {
       const seeded = withSeededBackground(
         createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" }),
+        DEFAULT_SPLIT_CHARACTER,
       );
       const marked = [withBackgroundTrack(seeded, withTrackExplicit(backgroundTrack(seeded)!, true))];
       const kept = mergeEditedExport(marked, (ttml) => ttml.replace(">Main<", ">Mane<"));
-      expect(drawnSyllables(kept[0]!, "bg")[0].explicit).toBe(true);
+      expect(drawnSyllables(kept[0]!, "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBe(true);
 
       const set = mergeEditedExport([seeded], (ttml) =>
         ttml.replace(
@@ -63,17 +68,20 @@ describe("mergeEditedTtmlLines · background vocals", () => {
           '<span begin="0:02.000" end="0:03.000" composer:explicit="true">',
         ),
       );
-      expect(drawnSyllables(set[0]!, "bg")[0].explicit).toBe(true);
+      expect(drawnSyllables(set[0]!, "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBe(true);
     });
 
     it("regression: a retimed line-synced background stays line synced", () => {
       const stored = [
-        withSeededBackground(createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" })),
+        withSeededBackground(
+          createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" }),
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ];
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace('<span begin="0:02.000" end="0:03.000">', '<span begin="0:02.200" end="0:02.900">'),
       );
-      expect(backgroundText(merged[0]!)).toBe("ooh yeah");
+      expect(backgroundText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah");
       expect(backgroundTrack(merged[0]!)).toMatchObject({ begin: 2.2, end: 2.9 });
     });
 
@@ -98,10 +106,10 @@ describe("mergeEditedTtmlLines · background vocals", () => {
           '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">New<span ttm:role="x-bg"><span begin="0:04.000" end="0:05.000">ooh</span></span></p></div>',
         ),
       );
-      expect(lineText(merged[1]!)).toBe("New");
-      expect(backgroundText(merged[1]!)).toBe("ooh");
+      expect(lineText(merged[1]!, DEFAULT_SPLIT_CHARACTER)).toBe("New");
+      expect(backgroundText(merged[1]!, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
       expect(merged[1] && roleWords(merged[1], "bg")).toBeUndefined();
-      expect(isProjectFullySynced(merged)).toBe(true);
+      expect(isProjectFullySynced(merged, DEFAULT_SPLIT_CHARACTER)).toBe(true);
     });
 
     it("regression: an edited line next to an added line stores no seeded background words", () => {
@@ -121,7 +129,7 @@ describe("mergeEditedTtmlLines · background vocals", () => {
           .replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Two</p></div>'),
       );
       expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
-      expect(isProjectFullySynced(merged)).toBe(true);
+      expect(isProjectFullySynced(merged, DEFAULT_SPLIT_CHARACTER)).toBe(true);
     });
 
     it("takes background word timing the edit gave a line without background words", () => {

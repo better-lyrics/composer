@@ -1,23 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import type { LinkGroup } from "insync/group";
-import { copyThroughTemplate, instanceAnchors } from "@/domain/group/template-copy";
-import { instanceBounds } from "@/domain/instance/bounds";
-import { withManualBackgroundWords, withSeededBackground } from "@/domain/line/background";
+import { copyThroughTemplate, instanceAnchors } from "insync/group-template-copy";
+import { instanceBounds } from "insync/instance-bounds";
+import { withManualBackgroundWords, withSeededBackground } from "insync/line-background";
 import { bgBounds, mainBounds } from "insync/line-bounds";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
-import { isLineSynced } from "@/domain/line/predicates";
-import { lineText } from "@/domain/line/text";
+import { isLineSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
-import { withAgent } from "@/domain/line/track-writes";
+import { withAgent } from "insync/line-track-writes";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { type FieldPatch, withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // The copy as a commit runs it: the doc read from the lines before the edit, each instance at its anchor.
 function copiedThroughTemplate(before: LyricLine[], after: LyricLine[], groups: LinkGroup[], touched: string[]) {
-  const doc = docFromFlatLines(before);
+  const doc = docFromFlatLines(before, DEFAULT_SPLIT_CHARACTER);
   const anchors = instanceAnchors(doc);
   const copy = copyThroughTemplate({ doc, before, after, groups, touched, anchors, songEnd: Number.POSITIVE_INFINITY });
   return { lines: copy.lines, touchedGroupIds: copy.copiedGroupIds };
@@ -114,11 +115,14 @@ describe("copyThroughTemplate", () => {
           instanceIdx,
           templateLineIdx: 1,
         }),
+        DEFAULT_SPLIT_CHARACTER,
       );
     const before = [chorus(0, 0, 10), lineSynced(0, 11), chorus(1, 0, 40), lineSynced(1, 41)];
-    const moved = withManualBackgroundWords(before[1], [
-      { ...drawnSyllables(before[1], "bg")[0], begin: 11.5, end: 12.5 },
-    ]);
+    const moved = withManualBackgroundWords(
+      before[1],
+      [{ ...drawnSyllables(before[1], "bg", DEFAULT_SPLIT_CHARACTER)[0], begin: 11.5, end: 12.5 }],
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const after = before.with(1, moved);
     const copied = byId(copiedThroughTemplate(before, after, sharing, ["o0"]).lines, "o1");
     expect(copied && bgBounds(copied)?.begin).toBeCloseTo(41.5, 6);
@@ -130,7 +134,7 @@ describe("copyThroughTemplate", () => {
     const after = edit(before, "c0-0", (line) => ({ ...nudgeWord(1, 0.1)(line), agentId: "v2" }));
     const copied = byId(copiedThroughTemplate(before, after, sharing, ["c0-0"]).lines, "c1-0");
     expect(copied && mainTrack(copied).agentId).toBe(mainTrack(before[1]).agentId);
-    expect(lineText(copied!)).toBe("I want");
+    expect(lineText(copied!, DEFAULT_SPLIT_CHARACTER)).toBe("I want");
   });
 
   describe("edge cases", () => {

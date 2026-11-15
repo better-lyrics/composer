@@ -1,4 +1,4 @@
-import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceBounds } from "insync/instance-bounds";
 import { instancePositionsByLineId } from "insync/instance-enumerate";
 import { lineInstanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";

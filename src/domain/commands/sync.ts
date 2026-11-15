@@ -1,20 +1,20 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { PositionalPieces } from "@/domain/language/pieces";
-import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import type { PositionalPieces } from "insync/language-pieces";
+import { splitWordsKeepingTransliteration } from "insync/language-reconcile-syllable-split";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { shiftLineTiming } from "@/domain/line/shift";
-import { withRoleWords, withoutLineTiming } from "@/domain/line/track-writes";
+import { shiftLineTiming } from "insync/line-shift";
+import { withRoleWords, withoutLineTiming } from "insync/line-track-writes";
 import { roleWords, type WordTrack } from "insync/line-track";
-import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
 import type { WordTiming } from "insync/word-timing";
-import type { BoundaryEdge } from "@/domain/word/boundary";
-import { bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";
-import type { RetimeChange } from "@/utils/timing/word-timing-ops";
-import { wordRetimeEdit } from "@/utils/timing/word-timing";
+import type { BoundaryEdge } from "insync/word-boundary";
+import { bgWordRetimeEdit } from "insync/timing-bg-word-ops";
+import type { RetimeChange } from "insync/timing-word-ops";
+import { wordRetimeEdit } from "insync/timing-main-word-ops";
 
 // -- Types --------------------------------------------------------------------
 
@@ -35,13 +35,13 @@ function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefi
 // One gesture is one step; `report` gets the plan so the view moves its cursor without planning again.
 function syncGesture(
   gesture: SyncGesture,
-  ctx: Omit<GestureContext, "groups">,
+  ctx: Omit<GestureContext, "groups" | "splitChar">,
   report: (commit: GestureCommit | null) => void,
 ): LyricCommand {
   return lineEditCommand(
     { command: "sync gesture", args: [gesture, ctx.cursor.lineIndex, ctx.cursor.wordIndex] },
-    (root) => {
-      const commit = commitGesture(root.lines, gesture, { ...ctx, groups: root.groups });
+    (root, command) => {
+      const commit = commitGesture(root.lines, gesture, { ...ctx, groups: root.groups, splitChar: command.splitChar });
       report(commit);
       return commit?.lineUpdates ?? [];
     },
@@ -61,12 +61,12 @@ function retimeSyncWord(
   duration: number,
 ): LyricCommand {
   const { lineId, track, wordIndex } = target;
-  return lineEditCommand({ command: "retime sync word", args: [lineId, track, wordIndex, edge] }, (root) => {
+  return lineEditCommand({ command: "retime sync word", args: [lineId, track, wordIndex, edge] }, (root, ctx) => {
     const line = lineOf(root.lines, lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
     const range = timeRangeResolver(root.lines, root.groups, duration)(line);
     const retime = track === "word" ? wordRetimeEdit : bgWordRetimeEdit;
-    const update = retime({ line, wordIdx: wordIndex, edge, change, range });
+    const update = retime({ line, wordIdx: wordIndex, edge, change, range, splitChar: ctx.splitChar });
     return update ? [update] : [];
   });
 }
@@ -89,11 +89,11 @@ function splitSyncWord(
   newWords: WordTiming[],
   pieces?: PositionalPieces,
 ): LyricCommand {
-  return lineEditCommand({ command: "split sync word", args: [lineId, wordIndex, newWords.length] }, (root) => {
+  return lineEditCommand({ command: "split sync word", args: [lineId, wordIndex, newWords.length] }, (root, ctx) => {
     const line = lineOf(root.lines, lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
     if (!roleWords(line, "main")) return [];
-    const split = splitWordsKeepingTransliteration(line, "word", wordIndex, newWords, pieces);
+    const split = splitWordsKeepingTransliteration(line, "word", wordIndex, newWords, ctx.splitChar, pieces);
     if (!split) return [];
     return [
       { id: line.id, updates: { tracks: withRoleWords(line, "main", split.words).tracks, languages: split.languages } },

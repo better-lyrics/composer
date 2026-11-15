@@ -4,18 +4,18 @@ import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { type NudgeReport, nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
 import { fillInstanceRows } from "@/domain/commands/instance-rows";
-import { pickedTemplateSource } from "@/domain/group/template-source";
-import { instanceBounds } from "@/domain/instance/bounds";
+import { pickedTemplateSource } from "insync/group-template-source";
+import { instanceBounds } from "insync/instance-bounds";
 import { instanceCount, linesOfInstance } from "insync/instance-enumerate";
 import { instanceKey, parseInstanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
 import { currentInstanceFromSelection } from "insync/selection-instance";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { drawnSyllables } from "@/domain/line/drawn-track";
+import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
-import { lineWordSelections } from "@/domain/selection/line-selections";
-import { resolveAddress, toAddress } from "@/domain/selection/resolve";
+import { lineWordSelections } from "insync/selection-line-selections";
+import { resolveAddress, toAddress } from "insync/selection-resolve";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
@@ -72,6 +72,7 @@ import {
   syllableMergeTarget,
   wordMergeTarget,
 } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -88,7 +89,7 @@ function useTimelineKeyboard(
       const currentTime = playheadTime();
 
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
-      const selectedWord = selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null;
+      const selectedWord = selectedWords[0] ? resolveAddress(lines, selectedWords[0], getSplitCharacter()) : null;
       const fromPlayhead = !selectedWord;
       const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge, currentEffectiveFocus());
       if (!targetWord) {
@@ -99,7 +100,7 @@ function useTimelineKeyboard(
       const line = lines[targetWord.lineIndex];
       if (!line) return;
 
-      const wordsArray = drawnSyllables(line, trackRole(targetWord.type));
+      const wordsArray = drawnSyllables(line, trackRole(targetWord.type), getSplitCharacter());
       if (!wordsArray) return;
 
       const wordIndex = targetWord.wordIndex;
@@ -197,7 +198,9 @@ function useTimelineKeyboard(
           e.preventDefault();
           const focus = currentEffectiveFocus();
           const inFocus = lines.filter((line) => isInFocus(line, focus));
-          useTimelineStore.getState().setSelectedWords(inFocus.flatMap(lineWordSelections));
+          useTimelineStore
+            .getState()
+            .setSelectedWords(inFocus.flatMap((value) => lineWordSelections(value, getSplitCharacter())));
           return;
         }
 
@@ -468,7 +471,7 @@ function useTimelineKeyboard(
           const template = instanceToTemplate(
             projectState.lines,
             groupId,
-            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx),
+            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx, getSplitCharacter()),
           );
           if (template.length === 0) {
             toast.error("Could not derive instance template");

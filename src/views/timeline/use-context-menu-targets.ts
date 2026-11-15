@@ -4,16 +4,16 @@ import {
   isInstanceFullyTimed,
   isSharedLine,
   sharedInstancesInLineOrder,
-} from "@/domain/group/shared-timing";
-import { templateSourceInstance } from "@/domain/group/template-source";
+} from "insync/group-shared-timing";
+import { templateSourceInstance } from "insync/group-template-source";
 import { instanceIndicesOf } from "insync/instance-enumerate";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "insync/line-track";
-import { isAddressed } from "@/domain/selection/identity";
-import { resolveAddress } from "@/domain/selection/resolve";
-import { hasIntraGroupGap, isInSyllableGroup } from "@/domain/word/syllable-groups";
+import { isAddressed } from "insync/selection-identity";
+import { resolveAddress } from "insync/selection-resolve";
+import { hasIntraGroupGap, isInSyllableGroup } from "insync/word-syllable-groups";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { countAlignableLines } from "@/stores/alignment-plan";
 import { useAudioStore } from "@/stores/audio";
@@ -36,6 +36,7 @@ import {
   syllableMergeTarget,
   wordMergeTarget,
 } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -123,7 +124,7 @@ function useContextMenuTargets() {
       const template = instanceToTemplate(
         rawLines,
         group.id,
-        templateSourceInstance(rawLines, group, firstInstanceIdx),
+        templateSourceInstance(rawLines, group, firstInstanceIdx, getSplitCharacter()),
       );
       return template.length === selectedLineIds.size ? [{ group, template }] : [];
     });
@@ -138,7 +139,7 @@ function useContextMenuTargets() {
 
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
-    const resolved = resolveAddress(rawLines, contextMenu.target);
+    const resolved = resolveAddress(rawLines, contextMenu.target, getSplitCharacter());
     if (!resolved) return null;
     const { lineId, type, wordIndex } = resolved;
     if (!isInSyllableGroup(trackWords(rawLines[resolved.lineIndex], type) ?? [], wordIndex)) return null;
@@ -159,7 +160,7 @@ function useContextMenuTargets() {
     const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
     if (!targetLine) return null;
     const canPlace =
-      lineText(targetLine).trim() !== "" &&
+      lineText(targetLine, getSplitCharacter()).trim() !== "" &&
       !timedSyllables(mainTrack(targetLine)).length &&
       mainTrack(targetLine).begin === undefined;
     return canPlace ? targetLine : null;
@@ -175,7 +176,7 @@ function useContextMenuTargets() {
     const { instanceIdx } = line;
     if (instanceStart(rawLines, group.id, instanceIdx) !== null) return null;
     const hasTimedSibling = sharedInstancesInLineOrder(rawLines, group).some(
-      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other),
+      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other, getSplitCharacter()),
     );
     return hasTimedSibling ? { groupId: group.id, instanceIdx } : null;
   }, [contextMenu, rawLines]);

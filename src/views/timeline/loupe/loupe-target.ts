@@ -1,9 +1,10 @@
-import { sameAddress } from "@/domain/selection/identity";
-import type { SyllableAddress } from "@/domain/selection/model";
-import { wordAt } from "@/domain/selection/resolve";
+import { sameAddress } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
+import { wordAt } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -61,7 +62,7 @@ function clearLoupe(): void {
 
 function storedEdgeTime(word: SyllableAddress, edge: LoupeEdge): number | null {
   const line = useProjectStore.getState().lines.find((candidate) => candidate.id === word.lineId);
-  const timing = line ? wordAt([line], word) : null;
+  const timing = line ? wordAt([line], word, getSplitCharacter()) : null;
   return timing ? timing[edge] : null;
 }
 

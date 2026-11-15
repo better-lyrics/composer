@@ -1,16 +1,16 @@
 import type { LyricLine } from "insync/line";
-import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
+import type { CommandContext, HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
 import type { LinkGroup } from "insync/group";
 import { isLinked } from "insync/instance-predicates";
-import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
-import { lineText } from "@/domain/line/text";
+import { withBackground, withSeededBackground, withoutBackground } from "insync/line-background";
+import { lineText } from "insync/line-text";
 import { backgroundTrack, isSpanTimed, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withTrackText } from "@/domain/line/track-writes";
-import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "@/utils/background-vocal-extraction";
+import { withBackgroundTrack, withTrackText } from "insync/line-track-writes";
+import { isSectionTagLine } from "insync/lyrics-file-genius-text";
+import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
+import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "insync/background-vocal-extraction";
 
 // -- Types --------------------------------------------------------------------
 
@@ -28,15 +28,15 @@ function sameLines(before: readonly LyricLine[], after: readonly LyricLine[]): b
 // Edit rewrites the whole lyrics; lines that come back unchanged write nothing.
 function wholeLinesEdit(
   note: HistoryNote,
-  next: (root: LyricRoot) => WholeLines | { refused: Refusal } | null,
+  next: (root: LyricRoot, ctx: CommandContext) => WholeLines | { refused: Refusal } | null,
   writesEveryLine = false,
 ): LyricCommand {
   return {
     note,
     copiesSharedTiming: false,
     ...(writesEveryLine && { writesEveryLine }),
-    run: (root) => {
-      const edited = next(root);
+    run: (root, ctx) => {
+      const edited = next(root, ctx);
       if (!edited) return applied(root, []);
       if ("refused" in edited) return edited;
       const groups = edited.groups ?? root.groups;
@@ -64,26 +64,28 @@ function pasteLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): Lyric
 }
 
 function extractBackground(options: ExtractOptions): LyricCommand {
-  return wholeLinesEdit({ command: "extract background", args: [] }, (root) => ({
-    lines: extractBackgroundVocals(root.lines, options),
+  return wholeLinesEdit({ command: "extract background", args: [] }, (root, ctx) => ({
+    lines: extractBackgroundVocals(root.lines, options, ctx.splitChar),
   }));
 }
 
 function removeSectionTagLines(lineIds: ReadonlySet<string>): LyricCommand {
-  return wholeLinesEdit({ command: "remove section tags", args: [...lineIds] }, (root) => ({
-    lines: root.lines.filter((line) => !(lineIds.has(line.id) && isSectionTagLine(lineText(line)) && !isLinked(line))),
+  return wholeLinesEdit({ command: "remove section tags", args: [...lineIds] }, (root, ctx) => ({
+    lines: root.lines.filter(
+      (line) => !(lineIds.has(line.id) && isSectionTagLine(lineText(line, ctx.splitChar)) && !isLinked(line)),
+    ),
   }));
 }
 
 function extractLineBackground(lineId: string, preserveBrackets: boolean): LyricCommand {
-  return lineEditCommand({ command: "extract line background", args: [lineId] }, (root) =>
-    extractInlineOnLine(root.lines, lineId, { mergeStandaloneLines: false, preserveBrackets }),
+  return lineEditCommand({ command: "extract line background", args: [lineId] }, (root, ctx) =>
+    extractInlineOnLine(root.lines, lineId, { mergeStandaloneLines: false, preserveBrackets }, ctx.splitChar),
   );
 }
 
 // Retyped background words keep their timing, a line-synced background keeps its span; a new background is seeded.
 function editBackgroundText(lineId: string, text: string): LyricCommand {
-  return lineEditCommand({ command: "edit background text", args: [lineId, text] }, (root) => {
+  return lineEditCommand({ command: "edit background text", args: [lineId, text] }, (root, ctx) => {
     const target = root.lines.find((line) => line.id === lineId);
     if (!target) return refused({ reason: "line-gone", lineId });
     const background = backgroundTrack(target);
@@ -91,10 +93,14 @@ function editBackgroundText(lineId: string, text: string): LyricCommand {
     const edited = !text
       ? withoutBackground(target)
       : background && isSpanTimed(background)
-        ? withBackgroundTrack(target, { ...withTrackText(background, text), source: "manual" })
+        ? withBackgroundTrack(target, { ...withTrackText(background, text, ctx.splitChar), source: "manual" })
         : timed.length > 0
-          ? withBackground(target, { text, words: remapWordTextsPreservingTiming(timed, text), source: "manual" })
-          : withSeededBackground(withBackground(target, { text, source: "manual" }));
+          ? withBackground(
+              target,
+              { text, words: remapWordTextsPreservingTiming(timed, text, ctx.splitChar), source: "manual" },
+              ctx.splitChar,
+            )
+          : withSeededBackground(withBackground(target, { text, source: "manual" }, ctx.splitChar), ctx.splitChar);
     return [{ id: lineId, updates: { tracks: edited.tracks } }];
   });
 }

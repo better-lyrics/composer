@@ -5,7 +5,7 @@ import { PopActions, PopBody, PopButton, PopGroup, PopHead, PopText } from "@/ui
 import { Popover } from "@/ui/popover";
 import { ShortcutChangeRows } from "@/ui/settings/shortcuts/shortcut-change-rows";
 import { resetMyShortcutChanges, switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import type { Placement } from "@floating-ui/react";
 import { IconChevronDown, IconRefresh } from "@tabler/icons-react";
 

@@ -2,7 +2,7 @@ import { type ModelFile, modelFileName } from "@/domain/models/model-files";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { formatFileSize } from "@/utils/format-file-size";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { type Icon, IconTrash } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------

@@ -6,7 +6,7 @@ import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showGroupedToast } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";

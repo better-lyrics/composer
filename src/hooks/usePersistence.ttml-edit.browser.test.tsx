@@ -1,5 +1,5 @@
-import { lineFromFields } from "@/domain/line/line-from-fields";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { lineFromFields } from "insync/line-from-fields";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useProjectStore } from "@/stores/project";
@@ -8,6 +8,7 @@ import { seedProject } from "@/test/idb";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { render } from "@/test/render";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const PersistenceHost: React.FC = () => {
   usePersistence();
@@ -46,9 +47,9 @@ describe("usePersistence · hand-edited TTML", () => {
   it("saves the edit with the project", async () => {
     await mountPersistence();
 
-    useProjectStore
-      .getState()
-      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })] });
+    useProjectStore.getState().restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }, getSplitCharacter())],
+    });
     useProjectStore.getState().setTtmlEditState(EDIT);
 
     await expect.poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 }).toEqual(EDIT);

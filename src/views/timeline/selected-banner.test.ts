@@ -1,4 +1,4 @@
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { createLine, createWord, createWords } from "@/test/factories";
 import { wordAddress } from "@/test/word-address";
 import { selectedBannerInstance } from "@/views/timeline/selected-banner";

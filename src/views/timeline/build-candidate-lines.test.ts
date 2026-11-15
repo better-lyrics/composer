@@ -2,51 +2,61 @@
  * @vitest-environment node
  */
 
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { trackPieces } from "@/domain/language/pieces";
-import { lineFromFields } from "@/domain/line/line-from-fields";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { trackPieces } from "insync/language-pieces";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
-import { lineText } from "@/domain/line/text";
+import { lineText } from "insync/line-text";
 import { useSettingsStore } from "@/stores/settings";
-import type { SyllableAddress } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { describe, expect, it } from "vitest";
 import { buildCandidateLines } from "./build-candidate-lines";
-import { lineWordSelections } from "@/domain/selection/line-selections";
+import { lineWordSelections } from "insync/selection-line-selections";
+import { getSplitCharacter } from "@/utils/split-character";
 
-const lineA: LyricLine = lineFromFields({
-  id: "a",
-  text: "I love you",
-  agentId: "v1",
-  words: [
-    { id: "w1", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
-    { id: "w2", text: "love", sep: " ", begin: 1, end: 2, joinsNext: false },
-    { id: "w3", text: "you", sep: "", begin: 2, end: 3, joinsNext: false },
-  ],
-});
+const lineA: LyricLine = lineFromFields(
+  {
+    id: "a",
+    text: "I love you",
+    agentId: "v1",
+    words: [
+      { id: "w1", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
+      { id: "w2", text: "love", sep: " ", begin: 1, end: 2, joinsNext: false },
+      { id: "w3", text: "you", sep: "", begin: 2, end: 3, joinsNext: false },
+    ],
+  },
+  getSplitCharacter(),
+);
 
-const lineB: LyricLine = lineFromFields({
-  id: "b",
-  text: "and so do I",
-  agentId: "v1",
-  words: [
-    { id: "w4", text: "and", sep: " ", begin: 3, end: 4, joinsNext: false },
-    { id: "w5", text: "so", sep: " ", begin: 4, end: 5, joinsNext: false },
-    { id: "w6", text: "do", sep: " ", begin: 5, end: 6, joinsNext: false },
-    { id: "w7", text: "I", sep: "", begin: 6, end: 7, joinsNext: false },
-  ],
-});
+const lineB: LyricLine = lineFromFields(
+  {
+    id: "b",
+    text: "and so do I",
+    agentId: "v1",
+    words: [
+      { id: "w4", text: "and", sep: " ", begin: 3, end: 4, joinsNext: false },
+      { id: "w5", text: "so", sep: " ", begin: 4, end: 5, joinsNext: false },
+      { id: "w6", text: "do", sep: " ", begin: 5, end: 6, joinsNext: false },
+      { id: "w7", text: "I", sep: "", begin: 6, end: 7, joinsNext: false },
+    ],
+  },
+  getSplitCharacter(),
+);
 
-const lineWithBg: LyricLine = lineFromFields({
-  id: "c",
-  text: "main",
-  agentId: "v1",
-  words: [{ id: "w8", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
-  backgroundText: "bg",
-  backgroundWords: [{ id: "w9", text: "bg", sep: "", begin: 0.5, end: 1, joinsNext: false }],
-});
+const lineWithBg: LyricLine = lineFromFields(
+  {
+    id: "c",
+    text: "main",
+    agentId: "v1",
+    words: [{ id: "w8", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+    backgroundText: "bg",
+    backgroundWords: [{ id: "w9", text: "bg", sep: "", begin: 0.5, end: 1, joinsNext: false }],
+  },
+  getSplitCharacter(),
+);
 
 function selectAll(line: LyricLine): SyllableAddress[] {
-  return lineWordSelections(line);
+  return lineWordSelections(line, getSplitCharacter());
 }
 
 describe("buildCandidateLines", () => {
@@ -96,26 +106,29 @@ describe("buildCandidateLines", () => {
 
   it("regression: a line-synced line is copied as the Timeline draws it, one timed block", () => {
     useSettingsStore.getState().set("splitCharacter", "|");
-    const synced = lineFromFields({ id: "s", text: "Fa|ding", agentId: "v1", begin: 3, end: 5 });
+    const synced = lineFromFields({ id: "s", text: "Fa|ding", agentId: "v1", begin: 3, end: 5 }, getSplitCharacter());
     const [candidate] = buildCandidateLines([synced], selectAll(synced)) ?? [];
-    expect(lineText(candidate)).toBe("Fading");
+    expect(lineText(candidate, getSplitCharacter())).toBe("Fading");
   });
 
   it("regression: a copied line carries its romanization aligned to the drawn syllables", () => {
-    const romanized = lineFromFields({
-      id: "r",
-      text: "Привет",
-      agentId: "v1",
-      words: [{ id: "w10", text: "Привет", sep: "", begin: 6, end: 7, joinsNext: false }],
-      languages: {
-        transliteration: {
-          language: "ru-Latn",
-          main: { text: "privet", segments: [] },
-          origin: "manual",
-          sourceFingerprint: languageSourceFingerprint("Привет"),
+    const romanized = lineFromFields(
+      {
+        id: "r",
+        text: "Привет",
+        agentId: "v1",
+        words: [{ id: "w10", text: "Привет", sep: "", begin: 6, end: 7, joinsNext: false }],
+        languages: {
+          transliteration: {
+            language: "ru-Latn",
+            main: { text: "privet", segments: [] },
+            origin: "manual",
+            sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), "Привет"),
+          },
         },
       },
-    });
+      getSplitCharacter(),
+    );
     const [candidate] = buildCandidateLines([romanized], selectAll(romanized)) ?? [];
     expect(trackPieces(candidate, "main")?.w10?.text).toBe("privet");
   });
