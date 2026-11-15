@@ -132,4 +132,22 @@ describe("romanization through Sync", () => {
     const pieces = trackPieces(synced, "main");
     expect(roleWords(synced, "main")?.map((word) => pieces?.[word.id]?.text)).toEqual(["HO", "NO", "KO"]);
   });
+
+  it("regression: a partly synced line keeps the reading of its untimed rest when a timed word goes", () => {
+    const timed = [
+      createWord({ text: "ほし ", begin: 1, end: 2 }),
+      createWord({ text: "の ", begin: 2, end: 3 }),
+      createWord({ text: "こえ ", begin: 3, end: 4 }),
+    ];
+    const readings = ["hoshi", "no", "koe"];
+    const pieces = Object.fromEntries(
+      timed.map((word, index) => [word.id, { text: readings[index], joinerAfter: " " }]),
+    );
+    const main = { text: "hoshi no koe yo", pieces };
+    const transliteration = { language: "ja-Latn", origin: "manual" as const, sourceFingerprint: "", main };
+    const line = { ...createLine({ id: "l6", text: "ほし の こえ よ", words: timed }), languages: { transliteration } };
+    useProjectStore.setState({ lines: [line] });
+    useProjectStore.getState().commit(deleteWords([addressOf(line, "word", timed[1])]));
+    expect(useProjectStore.getState().lines[0].languages?.transliteration?.main.text).toBe("hoshi koe yo");
+  });
 });
