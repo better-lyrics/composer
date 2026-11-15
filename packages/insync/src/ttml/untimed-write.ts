@@ -23,7 +23,7 @@ const keptOf = (syllable: Syllable): Passthrough | undefined =>
 // of untimed syllables read from one kept span is one piece written inside that span again, ending at a syllable a
 // kept element follows so the element stays after it; the space after the run stays outside it.
 function untimedTrackPieces(
-  track: LineTrack | undefined,
+  track: Pick<LineTrack, "syllables"> | undefined,
   text: string,
   splitChar: string,
   elementAnchors: ReadonlySet<string>,

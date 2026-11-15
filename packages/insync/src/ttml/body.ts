@@ -66,7 +66,7 @@ function syllablePieces(track: LineTrack, splitChar: string, elementAnchors: Rea
   if (rest.length === 0) return spanPieces(timed);
   return [
     ...spanPieces(timed, true),
-    ...untimedTrackPieces({ ...track, syllables: rest }, syllablesText(rest, splitChar), splitChar, elementAnchors),
+    ...untimedTrackPieces({ syllables: rest }, syllablesText(rest, splitChar), splitChar, elementAnchors),
   ];
 }
 
