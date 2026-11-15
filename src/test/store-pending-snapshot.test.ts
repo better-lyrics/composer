@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const SLICE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../stores/project");
 
 const HISTORY_WRITERS =
-  /\b(amendCurrentStep|commitHistory|commitSharedTimingHistory|commitSnapPointEdit|commitPendingEdit|undoState|redoState)\b/;
+  /\b(amendCurrentStep|commitCommand|commitHistory|commitSnapPointEdit|commitPendingEdit|undoState|redoState)\b/;
 const SNAPSHOT_FIELD_WRITE = /(?<![.\w])(lines|groups|agents|customSnapPoints|beatGrid)\s*[:,}]/;
 const OPAQUE_SPREAD = /\.\.\.(?!state\b)[A-Za-z_]\w*/;
 

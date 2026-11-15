@@ -1,23 +1,22 @@
-import type { StateCreator } from "zustand";
-import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
-import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
-import { withDerivedText } from "@/domain/line/reconstruct-text";
-import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
-import { commitHistory, commitSharedTimingHistory } from "@/stores/project/history-helpers";
+import { moveWordsFromBackground, moveWordsToBackground } from "@/domain/commands/background-moves";
+import { editLines, insertEmptyLine, replaceLines } from "@/domain/commands/line-edits";
 import {
-  applyMarkWordsExplicit,
-  applyMergeSyllableGroup,
-  applyMoveFromBg,
-  applyMoveToBg,
-} from "@/stores/project/lines-slice-helpers";
-import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
+  applyWordCountChange,
+  markWordsExplicit,
+  mergeSyllableGroup,
+  snapSyllablesFlush,
+  splitIdenticalSyllables,
+  toggleWordExplicit,
+} from "@/domain/commands/word-edits";
 import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
-import { getSplitCharacter } from "@/utils/split-character";
-import { applySiblingWords } from "@/utils/word-diff";
+import type { StateCreator } from "zustand";
+
+// -- Helpers ------------------------------------------------------------------
+
+function editOptions(options: { deriveText?: boolean; propagateToSiblings?: boolean }) {
+  return { derivesText: options.deriveText ?? true, propagateToSiblings: options.propagateToSiblings ?? true };
+}
 
 // -- Initial State ------------------------------------------------------------
 
@@ -47,227 +46,62 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   restoreTransientLines: (lines) => set({ lines }),
 
-  setLinesWithHistory: (lines, groups) => set((state) => commitHistory(state, groups ? { lines, groups } : { lines })),
-
-  insertEmptyLineWithHistory: (anchorLineId, position) =>
-    set((state) => {
-      const anchorIndex = state.lines.findIndex((l) => l.id === anchorLineId);
-      if (anchorIndex === -1) return state;
-      const newLine = { id: crypto.randomUUID(), text: "", agentId: state.agents?.[0]?.id ?? "v1" };
-      const lines = state.lines.toSpliced(position === "above" ? anchorIndex : anchorIndex + 1, 0, newLine);
-      return commitHistory(state, { lines });
-    }),
-
-  updateLine: (id, updates, options = {}) =>
-    set((state) => {
-      const splitChar = getSplitCharacter();
-      const deriveText = options.deriveText ?? true;
-      return {
-        lines: state.lines.map((line) => {
-          if (line.id !== id) return line;
-          const reconciled = reconcileLine({ ...line, ...updates });
-          return deriveText ? withDerivedText(reconciled, splitChar, line) : reconciled;
-        }),
-        isDirty: true,
-        isDirtySinceHistory: true,
-      };
-    }),
-
-  updateLineWithHistory: (id, updates, options = {}) =>
-    set((state) => {
-      const { propagateToSiblings = true, ...historyOptions } = options;
-      const target = state.lines.find((l) => l.id === id);
-      const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
-
-      const newLines = state.lines.map((line) => {
-        if (line.id === id) {
-          return reconcileLine({ ...line, ...updates });
-        }
-        if (target && isLinkedSibling(line, linkScope)) return updatedLinkedSibling(line, target, updates);
-        return line;
-      });
-
-      return commitSharedTimingHistory(state, newLines, [id], historyOptions);
-    }),
-
-  updateLinesWithHistory: (updates, options = {}) =>
-    set((state) => {
-      const { propagateToSiblings = true, ...historyOptions } = options;
-      const newLines = [...state.lines];
-      const indexById = new Map<string, number>();
-      for (let i = 0; i < newLines.length; i++) indexById.set(newLines[i].id, i);
-
-      for (const { id, updates: lineUpdates } of updates) {
-        const targetIdx = indexById.get(id);
-        const target = targetIdx !== undefined ? newLines[targetIdx] : undefined;
-        const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
-
-        if (targetIdx !== undefined && target) {
-          newLines[targetIdx] = reconcileLine({ ...target, ...lineUpdates });
-        }
-
-        if (target && linkScope) {
-          for (let i = 0; i < newLines.length; i++) {
-            const line = newLines[i];
-            if (line.id === id || !isLinkedSibling(line, linkScope)) continue;
-            newLines[i] = updatedLinkedSibling(line, target, lineUpdates);
-          }
-        }
-      }
-
-      return commitSharedTimingHistory(
-        state,
-        newLines,
-        updates.map((update) => update.id),
-        historyOptions,
-      );
-    }),
-
-  moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
-    set((state) => {
-      const sourceLine = state.lines.find((l) => l.id === lineId);
-      if (!sourceLine?.words || wordIndices.length === 0) return state;
-      const sourceWordCount = sourceLine.words.length;
-      const linkScope = getLinkScope(sourceLine);
-
-      let mutated = false;
-      const newLines = state.lines.map((line) => {
-        const isSource = line.id === lineId;
-        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line.words?.length === sourceWordCount;
-        if (!isSource && !isSibling) return line;
-        const expanded = expandSelectionToGroupmates(line.words ?? [], wordIndices);
-        const updated = applyMoveToBg(line, expanded, timeDelta, duration);
-        if (!updated) return line;
-        mutated = true;
-        return updated;
-      });
-
-      if (!mutated) return state;
-      return commitSharedTimingHistory(state, newLines);
-    }),
-
-  moveWordFromBg: (lineId, wordIndices, timeDelta, duration) =>
-    set((state) => {
-      const sourceLine = state.lines.find((l) => l.id === lineId);
-      if (!sourceLine?.backgroundWords || wordIndices.length === 0) return state;
-      const sourceBgCount = sourceLine.backgroundWords.length;
-      const linkScope = getLinkScope(sourceLine);
-
-      let mutated = false;
-      const newLines = state.lines.map((line) => {
-        const isSource = line.id === lineId;
-        const isSibling =
-          !isSource && isLinkedSibling(line, linkScope) && line.backgroundWords?.length === sourceBgCount;
-        if (!isSource && !isSibling) return line;
-        const expanded = expandSelectionToGroupmates(line.backgroundWords ?? [], wordIndices);
-        const updated = applyMoveFromBg(line, expanded, timeDelta, duration);
-        if (!updated) return line;
-        mutated = true;
-        return updated;
-      });
-
-      if (!mutated) return state;
-      return commitSharedTimingHistory(state, newLines);
-    }),
-
-  applyWordCountChange: (lineId, newWords, field, resolution, extraUpdates = {}) =>
-    set((state) => {
-      if (resolution === "cancel") return state;
-      const target = state.lines.find((l) => l.id === lineId);
-      if (!target) return state;
-
-      const sourceBefore = target[field];
-      const linkScope = getLinkScope(target);
-
-      if (resolution === "detach") {
-        const edited = state.lines.map((line) =>
-          line.id === lineId ? reconcileLine({ ...line, ...extraUpdates, [field]: newWords }) : line,
-        );
-        return commitSharedTimingHistory(
-          state,
-          unlinkLines(edited, (line) => line.id === lineId),
-        );
-      }
-
-      const linkedExtras = linkScope ? extractLinkedFields(extraUpdates) : null;
-
-      const newLines = state.lines.map((line) => {
-        if (line.id === lineId) {
-          return reconcileLine({ ...line, ...extraUpdates, [field]: newWords });
-        }
-        if (isLinkedSibling(line, linkScope)) {
-          const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
-          const siblingUpdates: Partial<LooseLine> = { ...(linkedExtras ?? {}) };
-          if (propagated) siblingUpdates[field] = propagated;
-          if (Object.keys(siblingUpdates).length > 0) return reconcileLine({ ...line, ...siblingUpdates });
-        }
-        return line;
-      });
-
-      return commitSharedTimingHistory(state, newLines);
-    }),
-
-  toggleWordExplicit: (lineId, field, wordIndices) => {
-    if (wordIndices.length === 0) return;
-    const state = get();
-    const target = state.lines.find((l) => l.id === lineId);
-    if (!target) return;
-    const currentWords = target[field];
-    if (!currentWords || currentWords.length === 0) return;
-
-    const filtered = wordIndices.filter((i) => i >= 0 && i < currentWords.length);
-    const expanded = expandSelectionToGroupmates(currentWords, filtered).filter((i) => i < currentWords.length);
-    const indexSet = new Set(expanded);
-    if (indexSet.size === 0) return;
-
-    const allMarked = Array.from(indexSet).every((i) => currentWords[i].explicit === true);
-    const nextExplicit = !allMarked;
-
-    const newWords: WordTiming[] = currentWords.map((word, i) => {
-      if (!indexSet.has(i)) return word;
-      if (nextExplicit) return { ...word, explicit: true };
-      const { explicit: _explicit, ...rest } = word;
-      return rest;
-    });
-
-    const extraUpdates = field === "backgroundWords" ? manualBackgroundWordEdit(newWords) : {};
-    get().applyWordCountChange(lineId, newWords, field, "apply", extraUpdates);
+  setLinesWithHistory: (lines, groups) => {
+    get().commit(replaceLines(lines, groups));
   },
 
-  mergeSyllableGroupIntoWord: (lineId, field, wordIndices) =>
-    set((state) => {
-      const newLines = applyMergeSyllableGroup(state.lines, lineId, field, wordIndices);
-      if (!newLines) return state;
-      return commitSharedTimingHistory(state, newLines);
-    }),
+  insertEmptyLineWithHistory: (anchorLineId, position) => {
+    get().commit(insertEmptyLine({ anchorLineId, position }));
+  },
 
-  snapSyllablesFlush: (lineId, field) =>
-    set((state) => {
-      const target = state.lines.find((l) => l.id === lineId);
-      if (!target) return state;
-      const lineWords = target[field];
-      if (!lineWords) return state;
-      const snapped = closeIntraGroupGaps(lineWords);
-      if (snapped === lineWords) return state;
-      const lineUpdate = field === "backgroundWords" ? manualBackgroundWordEdit(snapped) : { [field]: snapped };
-      const newLines = state.lines.map((l) => (l.id === lineId ? reconcileLine({ ...l, ...lineUpdate }) : l));
-      return commitSharedTimingHistory(state, newLines);
-    }),
+  updateLine: (id, updates, options = {}) => {
+    const command = editLines([{ id, updates }], {
+      derivesText: options.deriveText ?? true,
+      propagateToSiblings: false,
+      copiesSharedTiming: false,
+    });
+    get().commit(command, "pending");
+  },
 
-  markWordsExplicit: (targets, value) =>
-    set((state) => {
-      const newLines = applyMarkWordsExplicit(state.lines, targets, value);
-      if (!newLines) return state;
-      return commitHistory(state, { lines: newLines });
-    }),
+  updateLineWithHistory: (id, updates, options = {}) => {
+    get().commit(editLines([{ id, updates }], editOptions(options)));
+  },
 
-  splitSyllablesAcrossIdenticalWordsWithHistory: ({ source, splitPoints, caseInsensitive }) =>
-    set((state) => {
-      if (splitPoints.length === 0) return state;
-      const newLines = applySyllableSplitToLines(state.lines, source, splitPoints, caseInsensitive);
-      if (newLines === state.lines) return state;
-      return commitSharedTimingHistory(state, newLines);
-    }),
+  updateLinesWithHistory: (updates, options = {}) => {
+    get().commit(editLines(updates, editOptions(options)));
+  },
+
+  moveWordToBg: (lineId, wordIndices, timeDelta, duration) => {
+    get().commit(moveWordsToBackground({ lineId, wordIndices, timeDelta, duration }));
+  },
+
+  moveWordFromBg: (lineId, wordIndices, timeDelta, duration) => {
+    get().commit(moveWordsFromBackground({ lineId, wordIndices, timeDelta, duration }));
+  },
+
+  applyWordCountChange: (lineId, newWords, field, resolution, extraUpdates = {}) => {
+    get().commit(applyWordCountChange(lineId, newWords, field, resolution, extraUpdates));
+  },
+
+  toggleWordExplicit: (lineId, field, wordIndices) => {
+    get().commit(toggleWordExplicit(lineId, field, wordIndices));
+  },
+
+  mergeSyllableGroupIntoWord: (lineId, field, wordIndices) => {
+    get().commit(mergeSyllableGroup(lineId, field, wordIndices));
+  },
+
+  snapSyllablesFlush: (lineId, field) => {
+    get().commit(snapSyllablesFlush(lineId, field));
+  },
+
+  markWordsExplicit: (targets, value) => {
+    get().commit(markWordsExplicit(targets, value));
+  },
+
+  splitSyllablesAcrossIdenticalWordsWithHistory: (params) => {
+    get().commit(splitIdenticalSyllables(params));
+  },
 });
 
 // -- Exports ------------------------------------------------------------------
