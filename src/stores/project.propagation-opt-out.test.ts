@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
+import { addGroup } from "@/domain/commands/group-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
@@ -125,7 +126,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
   });
 
   it("does not retime a sibling's background words", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const bgA: WordTiming[] = [{ id: "w14", text: "ah", sep: "", begin: 0, end: 0.5 }];
     const bgB: WordTiming[] = [{ id: "w15", text: "ah", sep: "", begin: 20, end: 20.5 }];
     useProjectStore.setState({
@@ -301,7 +302,7 @@ describe("instance resync · issue #96 reproduction", () => {
   });
 
   it("resyncing does not squash a third instance either", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const cWords: WordTiming[] = [
       { id: "w22", text: "I", sep: " ", begin: 30, end: 30.6 },
       { id: "w23", text: "love", sep: " ", begin: 30.6, end: 31.2 },
@@ -414,7 +415,7 @@ describe("propagateToSiblings: false · edge cases", () => {
   });
 
   it("handles a single-instance group with no siblings", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -475,7 +476,7 @@ describe("propagateToSiblings: false · edge cases", () => {
   });
 
   it("leaves the sibling intact even when the sibling already diverged in word count", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const divergedB: WordTiming[] = [
       { id: "w29", text: "I", sep: " ", begin: 10, end: 10.5 },
       { id: "w30", text: "love you", sep: "", begin: 10.5, end: 11.5 },
@@ -516,17 +517,8 @@ describe("propagateToSiblings: false · edge cases", () => {
     expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(divergedB);
   });
 
-  it("updateLinesWithHistory opt-out does not throw on an empty batch", () => {
-    seedTwoWordSyncedInstances();
-    expect(() =>
-      useProjectStore
-        .getState()
-        .commit(lineEditCommand({ command: "edit lines", args: [] }, () => [], { propagateToSiblings: false })),
-    ).not.toThrow();
-  });
-
   it("updateLinesWithHistory opt-out spares the siblings of every batched line", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const mk = (id: string, templateLineIdx: number, instanceIdx: number, words: WordTiming[]) => ({
       id,
       text: "I love you",

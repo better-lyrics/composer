@@ -144,12 +144,6 @@ interface LineActions {
   restoreLyrics: (root: Partial<LyricRoot>) => void;
   previewLines: (lines: RawLine[]) => void;
   restorePreviewLines: (lines: RawLine[]) => void;
-  moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
-  moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
-}
-
-interface GroupActions {
-  addGroup: (group: LinkGroup) => void;
 }
 
 // -- Composed Store -----------------------------------------------------------
@@ -174,7 +168,6 @@ type ProjectActions = MetadataActions &
   BeatGridActions &
   HistoryActions &
   LineActions &
-  GroupActions &
   AlignmentReviewActions &
   UnisonLinkActions;
 
@@ -201,7 +194,6 @@ export type {
   SnapPointActions,
   BeatGridActions,
   LineActions,
-  GroupActions,
   ProjectState,
   ProjectStore,
 };

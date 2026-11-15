@@ -26,6 +26,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { showGroupActionToast, showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
+import { showSelectionRefusal } from "@/utils/selection-refusal-toast";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { centreLineRow } from "@/views/timeline/centre-line-row";
@@ -354,8 +355,12 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.editWord": {
-          const editable = singleSelectedWord(useTimelineStore.getState().selectedWords);
-          if (!editable) break;
+          const { selectedWords } = useTimelineStore.getState();
+          const editable = singleSelectedWord(selectedWords);
+          if (!editable) {
+            showSelectionRefusal("editText", selectedWords);
+            break;
+          }
           e.preventDefault();
           useTimelineStore.getState().setEditingWord(editable);
           noteGuideSignal("timeline.editTextDirect");
@@ -363,23 +368,34 @@ function useTimelineKeyboard(
         }
         case "timeline.splitSyllable":
         case "timeline.splitWord": {
-          if (!singleSelectedWord(useTimelineStore.getState().selectedWords)) break;
+          const { selectedWords } = useTimelineStore.getState();
+          if (!singleSelectedWord(selectedWords)) {
+            showSelectionRefusal("split", selectedWords);
+            break;
+          }
           e.preventDefault();
           const eventName = matched === "timeline.splitWord" ? "timeline:split-word" : "timeline:split-syllable";
           window.dispatchEvent(new CustomEvent(eventName));
           break;
         }
         case "timeline.mergeWords": {
-          const merge = wordMergeTarget(useTimelineStore.getState().selectedWords, useProjectStore.getState().lines);
-          if (!merge) break;
+          const { selectedWords } = useTimelineStore.getState();
+          const merge = wordMergeTarget(selectedWords, useProjectStore.getState().lines);
+          if (!merge) {
+            showSelectionRefusal("mergeWords", selectedWords);
+            break;
+          }
           e.preventDefault();
           runWordMerge(merge);
           break;
         }
         case "timeline.mergeSyllablesIntoWord": {
-          const projectLines = useProjectStore.getState().lines;
-          const merge = syllableMergeTarget(useTimelineStore.getState().selectedWords, projectLines);
-          if (!merge) break;
+          const { selectedWords } = useTimelineStore.getState();
+          const merge = syllableMergeTarget(selectedWords, useProjectStore.getState().lines);
+          if (!merge) {
+            showSelectionRefusal("joinSyllables", selectedWords);
+            break;
+          }
           e.preventDefault();
           runSyllableMerge(merge);
           break;
