@@ -8,7 +8,8 @@ import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, untimedSyllable } from "insync/line-track";
 import { withMainTrack, withTrackSyllables } from "insync/line-track-writes";
-import { deleteWords, insertWord, typeWordText } from "insync/commands/word-structure";
+import { deleteWords, insertWord, splitWord, typeWordText } from "insync/commands/word-structure";
+import { splitWordIntoSyllables } from "insync/single-word-syllable-split";
 import { syncClosingTap, syncGesture } from "insync/commands/sync";
 import { withAlignedTransliteration } from "insync/language-align";
 import { pasteLyrics } from "insync/commands/edit-text";
@@ -79,6 +80,34 @@ describe("word structure commands", () => {
       text: "taido taanzu",
       alignmentStatus: "needs-review",
     });
+  });
+
+  it("regression: a space or split mark typed into a word becomes a boundary, as Edit reads it", () => {
+    useProjectStore.getState().commit(typeWordText(tideAddress, "ti|de and"));
+    const syllables = mainTrack(useProjectStore.getState().lines[0]).syllables;
+    expect(syllables.map(({ text, sep, joinsNext }) => [text, sep, joinsNext])).toEqual([
+      ["ti", "", true],
+      ["de", " ", false],
+      ["and", " ", false],
+      ["turns", "", false],
+    ]);
+  });
+
+  it("regression: a split inside a block of several words leaves no space inside a syllable", () => {
+    useProjectStore
+      .getState()
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l2", text: "sea glass", begin: 3, end: 5 })]),
+      );
+    const [block] = drawnSyllables(useProjectStore.getState().lines[0], "main", DEFAULT_SPLIT_CHARACTER);
+    const pieces = splitWordIntoSyllables({ word: block, splitPoints: [5] });
+    useProjectStore.getState().commit(splitWord("l2", "words", pieces, {}));
+    const syllables = mainTrack(useProjectStore.getState().lines[0]).syllables;
+    expect(syllables.map(({ text, sep, joinsNext }) => [text, sep, joinsNext])).toEqual([
+      ["sea", " ", false],
+      ["g", "", true],
+      ["lass", "", false],
+    ]);
   });
 
   it("regression: renaming the block of a line-synced row updates text and keeps it line-synced", () => {

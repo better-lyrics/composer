@@ -23,6 +23,7 @@ import { resolveAddresses } from "../selection-resolve";
 import { applyWordDeletion } from "../word-apply-word-deletion";
 import { mergeWordsIntoTrack } from "../word-merge-track";
 import type { WordTiming } from "../word-timing";
+import { withTypedBoundaries } from "../word-typed-boundaries";
 
 // -- Types --------------------------------------------------------------------
 
@@ -74,7 +75,10 @@ function typeWordText(address: SyllableAddress, text: string): LyricCommand {
       if (!line || !words || wordIndex === -1) return refused({ reason: "word-gone", address });
       const word = words[wordIndex];
       if (text === word.text) return [];
-      const updated = words.with(wordIndex, { ...word, text, sep: word.sep.endsWith(" ") ? " " : "" });
+      const updated = withTypedBoundaries(
+        words.with(wordIndex, { ...word, text, sep: word.sep.endsWith(" ") ? " " : "" }),
+        ctx.splitChar,
+      );
       return [{ id: line.id, updates: wordTextEdit(line, address.type, updated, ctx.splitChar) }];
     },
   );
@@ -136,7 +140,15 @@ function splitWord(lineId: string, field: TrackField, words: WordTiming[], extra
   return lineEditCommand({ command: "split word", args: [lineId, field, words.length] }, (root, ctx) => {
     const line = lineOf(root.lines, lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
-    return [{ id: lineId, updates: { ...extras, tracks: withFieldWords(line, field, words, ctx.splitChar).tracks } }];
+    return [
+      {
+        id: lineId,
+        updates: {
+          ...extras,
+          tracks: withFieldWords(line, field, withTypedBoundaries(words, ctx.splitChar), ctx.splitChar).tracks,
+        },
+      },
+    ];
   });
 }
 
