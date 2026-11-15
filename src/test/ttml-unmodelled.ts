@@ -3,6 +3,7 @@ import { importableMetadata } from "insync/project-imported-metadata";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { parseTtml } from "insync/ttml/read";
 import { parseTtmlDocument } from "insync/ttml/read-helpers";
+import { parseTtmlTimestamp } from "insync/ttml/timestamp";
 import {
   elementRole,
   isModelledAttribute,
@@ -172,18 +173,7 @@ function walk(doc: XmlReadDocument, withTimes: boolean): Found {
       sectionOf(section);
     });
   });
-  return withoutRepeatedMetadataAttributes(found);
-}
-
-// A head's `<metadata>` blocks are written as one, keeping the first value of each attribute.
-function withoutRepeatedMetadataAttributes(found: Found): Found {
-  const seen = new Set<string>();
-  return found.filter(({ anchor, kind, name }) => {
-    if (anchor !== "metadata" || kind !== "attribute") return true;
-    if (seen.has(name)) return false;
-    seen.add(name);
-    return true;
-  });
+  return found;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -226,6 +216,16 @@ function misplaced(sourceNodes: Found, exportedNodes: Found): Found {
   });
 }
 
+const milliseconds = (time: string) => Math.round(parseTtmlTimestamp(time) * 1000);
+
+// A node's own time the export moved outward, because the source time did not hold the node's content.
+function widenedToHoldContent(node: UnmodelledNode, exportedTimes: ReadonlyMap<string, string>): boolean {
+  const exported = exportedTimes.get(`${node.anchor}/${node.name}`);
+  if (node.kind !== "times" || exported === undefined) return false;
+  const [from, to] = [milliseconds(node.value), milliseconds(exported)];
+  return node.name === "begin" ? to < from : to > from;
+}
+
 // What the source carried, unmodelled or as node times, that the export lost or moved.
 function missingUnmodelledNodes(source: string, exported: string): UnmodelledNode[] {
   const [sourceNodes, exportedNodes] = [walk(readTtmlDocument(source), true), walk(readTtmlDocument(exported), true)];
@@ -233,8 +233,13 @@ function missingUnmodelledNodes(source: string, exported: string): UnmodelledNod
   for (const node of exportedNodes) {
     if (node.kind !== "order") remaining.set(nodeKey(node), (remaining.get(nodeKey(node)) ?? 0) + 1);
   }
+  const exportedTimes = new Map(
+    exportedNodes.flatMap((node) =>
+      node.kind === "times" ? [[`${node.anchor}/${node.name}`, node.value] as const] : [],
+    ),
+  );
   const lost = sourceNodes.filter((node) => {
-    if (node.kind === "order") return false;
+    if (node.kind === "order" || widenedToHoldContent(node, exportedTimes)) return false;
     const count = remaining.get(nodeKey(node)) ?? 0;
     remaining.set(nodeKey(node), count - 1);
     return count <= 0;
