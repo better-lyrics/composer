@@ -15,7 +15,7 @@ import { SYNC_START, syncAddressAt } from "@/domain/sync/address";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
 import type { GestureCommit, SyncGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
-import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
+import { type PlacementSkip, placementSkipTarget } from "insync/sync-placement-skip";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "insync/word-timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";

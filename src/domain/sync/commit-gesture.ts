@@ -10,7 +10,7 @@ import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
-import { withSlotWord } from "@/domain/sync/slot-words";
+import { withSlotWord } from "insync/sync-slot-words";
 import type { Bounds } from "insync/word-bounds";
 import { enforceOrderAround } from "insync/word-order";
 import type { WordTiming } from "insync/word-timing";

@@ -1,5 +1,5 @@
-import type { Syllable } from "insync/line";
-import type { WordTiming } from "insync/word-timing";
+import type { Syllable } from "./line";
+import type { WordTiming } from "./word-timing";
 
 // -- Functions ----------------------------------------------------------------
 

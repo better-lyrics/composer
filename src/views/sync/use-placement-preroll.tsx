@@ -1,4 +1,4 @@
-import type { PlacementSkip } from "@/domain/sync/placement-skip";
+import type { PlacementSkip } from "insync/sync-placement-skip";
 import { PrerollStatus } from "@/views/sync/preroll-status";
 import { useCallback, useState } from "react";
 
