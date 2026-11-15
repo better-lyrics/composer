@@ -34,6 +34,10 @@ function storedProject(overrides: Partial<SavedProject> = {}): SavedProject {
   };
 }
 
+function v4StoredProject(overrides: Partial<SavedProject> = {}): SavedProject {
+  return Object.assign(storedProject(overrides), { version: 4 });
+}
+
 function songTitled(title: string): Pick<SavedProject, "metadata"> {
   return { metadata: { title, artists: [], album: "", duration: 0 } };
 }
@@ -72,4 +76,12 @@ async function loadOpenProjectAudio(): Promise<File | undefined> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { storedProject, songTitled, saveInputTitled, seedStoredProject, loadOpenProjectRecord, loadOpenProjectAudio };
+export {
+  storedProject,
+  v4StoredProject,
+  songTitled,
+  saveInputTitled,
+  seedStoredProject,
+  loadOpenProjectRecord,
+  loadOpenProjectAudio,
+};

@@ -15,6 +15,7 @@ interface ProjectBundle {
   version: typeof PROJECT_BUNDLE_VERSION;
   exportedAt: number;
   projects: ProjectFile[];
+  previousVersions?: ProjectFile[];
 }
 
 interface BundleSource {
@@ -24,13 +25,22 @@ interface BundleSource {
 
 // -- Building -----------------------------------------------------------------
 
-function buildProjectBundle(sources: readonly BundleSource[], exportedAt: number): ProjectBundle {
-  return {
+function toProjectFiles(sources: readonly BundleSource[]): ProjectFile[] {
+  return sources.map((source) => projectFileFrom(source.id, source.project));
+}
+
+function buildProjectBundle(
+  sources: readonly BundleSource[],
+  exportedAt: number,
+  previousVersions: readonly BundleSource[] = [],
+): ProjectBundle {
+  const bundle: ProjectBundle = {
     format: PROJECT_BUNDLE_FORMAT,
     version: PROJECT_BUNDLE_VERSION,
     exportedAt,
-    projects: sources.map((source) => projectFileFrom(source.id, source.project)),
+    projects: toProjectFiles(sources),
   };
+  return previousVersions.length > 0 ? { ...bundle, previousVersions: toProjectFiles(previousVersions) } : bundle;
 }
 
 function projectBundleFileName(date: Date): string {
