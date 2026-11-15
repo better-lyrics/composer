@@ -131,4 +131,40 @@ describe("TTML unresolved transliteration", () => {
       /^<span[^>]+>kyou-<\/span><span[^>]+>hi<\/span> <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/,
     );
   });
+
+  it("regression: a syllable with no reading adds no source script to the romanization", () => {
+    const stored = legacyLine({
+      id: "line-1",
+      agentId: "v1",
+      text: "星の声よ",
+      words: [
+        { id: "w1", text: "星", sep: "", begin: 1, end: 1.5, transliteration: "hoshi", joinsNext: true },
+        { id: "w2", text: "の", sep: "", begin: 1.5, end: 2, transliteration: "no", joinsNext: true },
+        {
+          id: "w3",
+          text: "声",
+          sep: "",
+          begin: 2,
+          end: 2.5,
+          transliteration: "koe",
+          transliterationJoinerAfter: "",
+          joinsNext: true,
+        },
+        { id: "w4", text: "よ", sep: "", begin: 2.5, end: 3, transliteration: "", joinsNext: false },
+      ],
+      transliteration: {
+        language: "ja-Latn",
+        text: "hoshi no koe",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: "test",
+        alignmentStatus: "needs-review",
+      },
+    });
+
+    const content = renderTransliterationContent(stored, DEFAULT_SPLIT_CHARACTER);
+
+    expect(content).toContain("koe</span>");
+    expect(content).not.toContain("よ");
+  });
 });

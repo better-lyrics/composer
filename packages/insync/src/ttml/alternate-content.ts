@@ -60,12 +60,16 @@ function emitTransliterationSpans(word: WordTiming, text: string): string {
   return emitWordSpan(word, text.trim());
 }
 
+// A syllable with no reading writes nothing; the joiner into the next reading is the one before its syllable.
 function alignedTransliterationChunks(words: WordTiming[], pieces: LanguagePieces | undefined): string[] {
-  return words.map((word, index) => {
-    const piece = pieceOf(pieces, word);
-    const text = piece?.text?.trim() || word.text;
-    if (index === words.length - 1) return emitTransliterationSpans(word, text);
-    const joiner = piece?.joinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
+  const read = words.flatMap((word, index) => {
+    const text = pieceOf(pieces, word)?.text?.trim();
+    return text ? [{ word, index, text }] : [];
+  });
+  return read.map(({ word, text }, at) => {
+    if (at === read.length - 1) return emitTransliterationSpans(word, text);
+    const before = read[at + 1].index - 1;
+    const joiner = pieceOf(pieces, words[before])?.joinerAfter ?? (hasLexicalBoundaryAfter(words, before) ? "  " : " ");
     const timed = timedTransliterationSlice({ text, joinerAfter: joiner });
     return `${emitTransliterationSpans(word, timed.text)}${escapeXmlText(timed.joinerAfter ?? "")}`;
   });
