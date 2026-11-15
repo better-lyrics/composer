@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
-import { replaceLines } from "@/domain/commands/line-edits";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -14,7 +14,9 @@ const tideAddress = addressOf({ id: "l1" }, "word", tide);
 beforeEach(() => {
   useProjectStore.getState().reset();
   const words = [tide, createWord({ text: "turns", begin: 4.6, end: 5.2 })];
-  useProjectStore.getState().commit(replaceLines([createLine({ id: "l1", text: "tide turns", words })]));
+  useProjectStore
+    .getState()
+    .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "tide turns", words })]));
 });
 
 describe("word structure commands", () => {

@@ -8,6 +8,8 @@ import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { useChoiceStore } from "@/stores/choice-store";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 import { beforeEach, describe, expect, it } from "vitest";
+import { mergeSyllableGroup, snapSyllablesFlush } from "@/domain/commands/word-edits";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -46,8 +48,8 @@ describe("mergeSyllableGroupIntoWord", () => {
   }
 
   it("collapses a syllable group into one word", () => {
-    useProjectStore.getState().setLines([seedGroupedLine()]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1, 2]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1, 2]));
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words).toHaveLength(1);
     expect(words[0].text).toBe("beautiful");
@@ -92,9 +94,9 @@ describe("mergeSyllableGroupIntoWord", () => {
         sourceFingerprint: "test",
       },
     };
-    useProjectStore.getState().setLines([line]);
+    useProjectStore.getState().restoreLyrics({ lines: [line] });
 
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
     const merged = useProjectStore.getState().lines[0];
     expect(merged.words).toEqual([{ text: "일단은", sep: "", transliteration: "ildan eun", begin: 0, end: 0.9 }]);
@@ -108,9 +110,9 @@ describe("mergeSyllableGroupIntoWord", () => {
       splitPoints: [1],
       transliterationSplitPoints: [4],
     });
-    useProjectStore.getState().setLines([{ id: "line-1", text: "今|日", agentId: "v1", words }]);
+    useProjectStore.getState().restoreLyrics({ lines: [{ id: "line-1", text: "今|日", agentId: "v1", words }] });
 
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0]);
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
 
     expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBe("kyouhi");
   });
@@ -120,74 +122,78 @@ describe("mergeSyllableGroupIntoWord", () => {
     if (!line.words) throw new Error("expected word-synced fixture");
     line.words[0].transliteration = "beau";
     line.words[2].transliteration = "ful";
-    useProjectStore.getState().setLines([line]);
+    useProjectStore.getState().restoreLyrics({ lines: [line] });
 
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0]);
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
 
     expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBeUndefined();
   });
 
   it("collapses the whole group when only one syllable is selected", () => {
-    useProjectStore.getState().setLines([seedGroupedLine()]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words.map((w) => w.text)).toEqual(["beautiful"]);
   });
 
   it("syncs line.text to the collapsed words", () => {
-    useProjectStore.getState().setLines([seedGroupedLine()]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
     expect(useProjectStore.getState().lines[0].text).toBe("beautiful");
   });
 
   it("leaves non-grouped words untouched and is a no-op on a non-grouped selection", () => {
-    useProjectStore.getState().setLines([seedMainLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedMainLine()] });
     const before = useProjectStore.getState().lines[0];
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1]);
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1]));
     expect(useProjectStore.getState().lines[0]).toBe(before);
   });
 
   it("collapses two groups touched by one multi-selection", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "abcd",
-        agentId: "v1",
-        words: [
-          { id: "w8", text: "a", sep: "", begin: 0, end: 0.1, syllableGroupId: "g1" },
-          { id: "w9", text: "b", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
-          { id: "w10", text: "c", sep: "", begin: 0.2, end: 0.3, syllableGroupId: "g2" },
-          { id: "w11", text: "d", sep: "", begin: 0.3, end: 0.4, syllableGroupId: "g2" },
-        ],
-      },
-    ]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 3]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "abcd",
+          agentId: "v1",
+          words: [
+            { id: "w8", text: "a", sep: "", begin: 0, end: 0.1, syllableGroupId: "g1" },
+            { id: "w9", text: "b", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
+            { id: "w10", text: "c", sep: "", begin: 0.2, end: 0.3, syllableGroupId: "g2" },
+            { id: "w11", text: "d", sep: "", begin: 0.3, end: 0.4, syllableGroupId: "g2" },
+          ],
+        },
+      ],
+    });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 3]));
     expect((useProjectStore.getState().lines[0].words ?? []).map((w) => w.text)).toEqual(["ab", "cd"]);
   });
 
   it("works on the background track and syncs backgroundText", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [
-          { id: "w13", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-          { id: "w14", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
-        ],
-        backgroundText: "ooh",
-      },
-    ]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0, 1]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1 }],
+          backgroundWords: [
+            { id: "w13", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
+            { id: "w14", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+          ],
+          backgroundText: "ooh",
+        },
+      ],
+    });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
     const line = useProjectStore.getState().lines[0];
     expect((line.backgroundWords ?? []).map((w) => w.text)).toEqual(["oooh"]);
     expect(line.backgroundText).toBe("oooh");
   });
 
   it("is undoable", () => {
-    useProjectStore.getState().setLines([seedGroupedLine()]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1, 2]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedGroupedLine()] });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1, 2]));
     expect(useProjectStore.getState().canUndo()).toBe(true);
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].words ?? []).toHaveLength(3);
@@ -197,39 +203,41 @@ describe("mergeSyllableGroupIntoWord", () => {
 describe("mergeSyllableGroupIntoWord · linked propagation", () => {
   function seedTwoLinkedInstances() {
     useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
-    useProjectStore.getState().setLines([
-      {
-        id: "a0",
-        text: "every",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w15", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-          { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
-          { id: "w17", text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
-        ],
-      },
-      {
-        id: "a1",
-        text: "every",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w18", text: "ev", sep: "", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
-          { id: "w19", text: "er", sep: "", begin: 10.3, end: 10.6, syllableGroupId: "g_a1" },
-          { id: "w20", text: "y", sep: "", begin: 10.6, end: 11, syllableGroupId: "g_a1" },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "a0",
+          text: "every",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w15", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+            { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
+            { id: "w17", text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+          ],
+        },
+        {
+          id: "a1",
+          text: "every",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w18", text: "ev", sep: "", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
+            { id: "w19", text: "er", sep: "", begin: 10.3, end: 10.6, syllableGroupId: "g_a1" },
+            { id: "w20", text: "y", sep: "", begin: 10.6, end: 11, syllableGroupId: "g_a1" },
+          ],
+        },
+      ],
+    });
   }
 
   it("collapses the group on every linked sibling", () => {
     seedTwoLinkedInstances();
-    useProjectStore.getState().mergeSyllableGroupIntoWord("a0", "words", [0, 1, 2]);
+    useProjectStore.getState().commit(mergeSyllableGroup("a0", "words", [0, 1, 2]));
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
@@ -241,81 +249,87 @@ describe("mergeSyllableGroupIntoWord · linked propagation", () => {
 
 describe("mergeSyllableGroupIntoWord · background provenance", () => {
   it("flips backgroundTextSource to manual after a background-track merge", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w21", text: "main", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [
-          { id: "w22", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-          { id: "w23", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
-        ],
-        backgroundText: "ooh",
-        backgroundTextSource: "extraction",
-      },
-    ]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0, 1]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w21", text: "main", sep: "", begin: 0, end: 1 }],
+          backgroundWords: [
+            { id: "w22", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
+            { id: "w23", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+          ],
+          backgroundText: "ooh",
+          backgroundTextSource: "extraction",
+        },
+      ],
+    });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
     const line = useProjectStore.getState().lines[0];
     expect(line.backgroundTextSource).toBe("manual");
     expect((line.backgroundWords ?? []).map((w) => w.text)).toEqual(["oooh"]);
   });
 
   it("leaves backgroundTextSource untouched when merging the main track", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "beautiful",
-        agentId: "v1",
-        words: [
-          { id: "w24", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { id: "w25", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-          { id: "w26", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
-        ],
-        backgroundWords: [{ id: "w27", text: "ooh", sep: "", begin: 1, end: 1.5 }],
-        backgroundText: "ooh",
-        backgroundTextSource: "extraction",
-      },
-    ]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1, 2]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "beautiful",
+          agentId: "v1",
+          words: [
+            { id: "w24", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
+            { id: "w25", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+            { id: "w26", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+          ],
+          backgroundWords: [{ id: "w27", text: "ooh", sep: "", begin: 1, end: 1.5 }],
+          backgroundText: "ooh",
+          backgroundTextSource: "extraction",
+        },
+      ],
+    });
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0, 1, 2]));
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
   it("flips linked siblings to manual when a background-track merge propagates", () => {
     useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
-    useProjectStore.getState().setLines([
-      {
-        id: "a0",
-        text: "main",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [{ id: "w28", text: "main", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [
-          { id: "w29", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b_a0" },
-          { id: "w30", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b_a0" },
-        ],
-        backgroundText: "ooh",
-        backgroundTextSource: "extraction",
-      },
-      {
-        id: "a1",
-        text: "main",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [{ id: "w31", text: "main", sep: "", begin: 10, end: 11 }],
-        backgroundWords: [
-          { id: "w32", text: "oo", sep: "", begin: 11, end: 11.2, syllableGroupId: "b_a1" },
-          { id: "w33", text: "oh", sep: "", begin: 11.2, end: 11.5, syllableGroupId: "b_a1" },
-        ],
-        backgroundText: "ooh",
-        backgroundTextSource: "extraction",
-      },
-    ]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("a0", "backgroundWords", [0, 1]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "a0",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [{ id: "w28", text: "main", sep: "", begin: 0, end: 1 }],
+          backgroundWords: [
+            { id: "w29", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b_a0" },
+            { id: "w30", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b_a0" },
+          ],
+          backgroundText: "ooh",
+          backgroundTextSource: "extraction",
+        },
+        {
+          id: "a1",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [{ id: "w31", text: "main", sep: "", begin: 10, end: 11 }],
+          backgroundWords: [
+            { id: "w32", text: "oo", sep: "", begin: 11, end: 11.2, syllableGroupId: "b_a1" },
+            { id: "w33", text: "oh", sep: "", begin: 11.2, end: 11.5, syllableGroupId: "b_a1" },
+          ],
+          backgroundText: "ooh",
+          backgroundTextSource: "extraction",
+        },
+      ],
+    });
+    useProjectStore.getState().commit(mergeSyllableGroup("a0", "backgroundWords", [0, 1]));
     const lines = useProjectStore.getState().lines;
     expect(lines.find((l) => l.id === "a0")?.backgroundTextSource).toBe("manual");
     expect(lines.find((l) => l.id === "a1")?.backgroundTextSource).toBe("manual");
@@ -323,21 +337,23 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
   });
 
   it("undo restores the prior extraction provenance", () => {
-    useProjectStore.getState().setLinesWithHistory([
-      {
-        id: "line-1",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w34", text: "main", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [
-          { id: "w35", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-          { id: "w36", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
-        ],
-        backgroundText: "ooh",
-        backgroundTextSource: "extraction",
-      },
-    ]);
-    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0, 1]);
+    useProjectStore.getState().commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        {
+          id: "line-1",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w34", text: "main", sep: "", begin: 0, end: 1 }],
+          backgroundWords: [
+            { id: "w35", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
+            { id: "w36", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+          ],
+          backgroundText: "ooh",
+          backgroundTextSource: "extraction",
+        },
+      ]),
+    );
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0, 1]));
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
@@ -361,9 +377,9 @@ describe("snapSyllablesFlush", () => {
   }
 
   it("closes internal gaps by extending each earlier syllable's end to the next begin", () => {
-    useProjectStore.getState().setLines([seedGappedGroupLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedGappedGroupLine()] });
 
-    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
 
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words[0].end).toBe(words[1].begin);
@@ -375,50 +391,54 @@ describe("snapSyllablesFlush", () => {
   });
 
   it("is a no-op when the line has no syllable group", () => {
-    useProjectStore.getState().setLines([seedMainLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedMainLine()] });
     const before = useProjectStore.getState().lines[0];
 
-    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
 
     expect(useProjectStore.getState().lines[0]).toBe(before);
   });
 
   it("is a no-op when the syllable group is already flush", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "beautiful",
-        agentId: "v1",
-        words: [
-          { id: "w40", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { id: "w41", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-          { id: "w42", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "beautiful",
+          agentId: "v1",
+          words: [
+            { id: "w40", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
+            { id: "w41", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+            { id: "w42", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+          ],
+        },
+      ],
+    });
     const before = useProjectStore.getState().lines[0];
 
-    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
 
     expect(useProjectStore.getState().lines[0]).toBe(before);
   });
 
   it("works on the background track", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w43", text: "main", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [
-          { id: "w44", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-          { id: "w45", text: "oh", sep: "", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
-        ],
-        backgroundText: "oooh",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w43", text: "main", sep: "", begin: 0, end: 1 }],
+          backgroundWords: [
+            { id: "w44", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
+            { id: "w45", text: "oh", sep: "", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
+          ],
+          backgroundText: "oooh",
+        },
+      ],
+    });
 
-    useProjectStore.getState().snapSyllablesFlush("line-1", "backgroundWords");
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "backgroundWords"));
 
     const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
     expect(bg[0].end).toBe(bg[1].begin);
@@ -428,37 +448,39 @@ describe("snapSyllablesFlush", () => {
 
   it("does not touch a linked sibling", () => {
     useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
-    useProjectStore.getState().setLines([
-      {
-        id: "a0",
-        text: "beau|ti|ful",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w46", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-          { id: "w47", text: "ti", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g_a0" },
-          { id: "w48", text: "ful", sep: "", begin: 1.0, end: 1.3, syllableGroupId: "g_a0" },
-        ],
-      },
-      {
-        id: "a1",
-        text: "beau|ti|ful",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w49", text: "beau", sep: "", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
-          { id: "w50", text: "ti", sep: "", begin: 10.5, end: 10.8, syllableGroupId: "g_a1" },
-          { id: "w51", text: "ful", sep: "", begin: 11.0, end: 11.3, syllableGroupId: "g_a1" },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "a0",
+          text: "beau|ti|ful",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w46", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+            { id: "w47", text: "ti", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g_a0" },
+            { id: "w48", text: "ful", sep: "", begin: 1.0, end: 1.3, syllableGroupId: "g_a0" },
+          ],
+        },
+        {
+          id: "a1",
+          text: "beau|ti|ful",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w49", text: "beau", sep: "", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
+            { id: "w50", text: "ti", sep: "", begin: 10.5, end: 10.8, syllableGroupId: "g_a1" },
+            { id: "w51", text: "ful", sep: "", begin: 11.0, end: 11.3, syllableGroupId: "g_a1" },
+          ],
+        },
+      ],
+    });
     const a1Before = useProjectStore.getState().lines.find((l) => l.id === "a1");
 
-    useProjectStore.getState().snapSyllablesFlush("a0", "words");
+    useProjectStore.getState().commit(snapSyllablesFlush("a0", "words"));
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
@@ -470,10 +492,10 @@ describe("snapSyllablesFlush", () => {
   });
 
   it("is undoable", () => {
-    useProjectStore.getState().setLines([seedGappedGroupLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedGappedGroupLine()] });
     const before = useProjectStore.getState().lines[0].words?.map((w) => ({ begin: w.begin, end: w.end }));
 
-    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
     expect(useProjectStore.getState().canUndo()).toBe(true);
 
     useProjectStore.getState().undo();
@@ -484,25 +506,27 @@ describe("snapSyllablesFlush", () => {
 
 describe("snapSyllablesFlush · background provenance", () => {
   function seedGappedBgLine() {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "main",
-        agentId: "v1",
-        words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [
-          { id: "w53", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-          { id: "w54", text: "oh", sep: "", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
-        ],
-        backgroundText: "oooh",
-        backgroundTextSource: "extraction",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "main",
+          agentId: "v1",
+          words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1 }],
+          backgroundWords: [
+            { id: "w53", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
+            { id: "w54", text: "oh", sep: "", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
+          ],
+          backgroundText: "oooh",
+          backgroundTextSource: "extraction",
+        },
+      ],
+    });
   }
 
   it("flips backgroundTextSource to manual after a background-track snap", () => {
     seedGappedBgLine();
-    useProjectStore.getState().snapSyllablesFlush("line-1", "backgroundWords");
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "backgroundWords"));
     const line = useProjectStore.getState().lines[0];
     expect(line.backgroundTextSource).toBe("manual");
     expect(line.backgroundWords?.[0].end).toBe(line.backgroundWords?.[1].begin);
@@ -510,29 +534,31 @@ describe("snapSyllablesFlush · background provenance", () => {
   });
 
   it("leaves backgroundTextSource untouched when snapping the main track", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "beautiful",
-        agentId: "v1",
-        words: [
-          { id: "w55", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { id: "w56", text: "ti", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
-          { id: "w57", text: "ful", sep: "", begin: 1.0, end: 1.3, syllableGroupId: "g1" },
-        ],
-        backgroundWords: [{ id: "w58", text: "ooh", sep: "", begin: 2, end: 2.5 }],
-        backgroundText: "ooh",
-        backgroundTextSource: "extraction",
-      },
-    ]);
-    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "beautiful",
+          agentId: "v1",
+          words: [
+            { id: "w55", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
+            { id: "w56", text: "ti", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
+            { id: "w57", text: "ful", sep: "", begin: 1.0, end: 1.3, syllableGroupId: "g1" },
+          ],
+          backgroundWords: [{ id: "w58", text: "ooh", sep: "", begin: 2, end: 2.5 }],
+          backgroundText: "ooh",
+          backgroundTextSource: "extraction",
+        },
+      ],
+    });
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "words"));
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
   it("undo restores the prior extraction provenance", () => {
     seedGappedBgLine();
     useProjectStore.getState().clearHistory();
-    useProjectStore.getState().snapSyllablesFlush("line-1", "backgroundWords");
+    useProjectStore.getState().commit(snapSyllablesFlush("line-1", "backgroundWords"));
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
@@ -541,18 +567,20 @@ describe("snapSyllablesFlush · background provenance", () => {
 
 describe("mergeSelectedWords", () => {
   it("merges part of a split word into one syllable, undone in one step", async () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "beautiful",
-        agentId: "v1",
-        words: [
-          { id: "w59", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { id: "w60", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-          { id: "w61", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "beautiful",
+          agentId: "v1",
+          words: [
+            { id: "w59", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
+            { id: "w60", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+            { id: "w61", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+          ],
+        },
+      ],
+    });
 
     await mergeSelectedWords("line-1", "word", [1, 2]);
 
@@ -579,7 +607,7 @@ describe("mergeSelectedWords", () => {
         { id: newWordId(), text: "y", sep: "", begin: offset + 0.6, end: offset + 1, syllableGroupId: `g_${id}` },
       ],
     });
-    useProjectStore.getState().setLines([linked("a0", 0, 0), linked("a1", 1, 10)]);
+    useProjectStore.getState().restoreLyrics({ lines: [linked("a0", 0, 0), linked("a1", 1, 10)] });
 
     await mergeSelectedWords("a0", "word", [1, 2]);
 
@@ -606,7 +634,7 @@ describe("mergeSelectedWords", () => {
         { id: newWordId(), text: "ful", sep: "", begin: offset + 1.1, end: offset + 1.6, syllableGroupId: `g_${id}` },
       ],
     });
-    useProjectStore.getState().setLines([linked("a0", 0, 0), linked("a1", 1, 10)]);
+    useProjectStore.getState().restoreLyrics({ lines: [linked("a0", 0, 0), linked("a1", 1, 10)] });
 
     await mergeSelectedWords("a0", "word", [1, 2]);
 
@@ -632,18 +660,20 @@ describe("mergeSelectedWords", () => {
       templateLineIdx: 0,
       words,
     });
-    useProjectStore.getState().setLines([
-      linked("a0", 0, [
-        { id: "w62", text: "every", sep: " ", begin: 0, end: 0.6 },
-        { id: "w63", text: "day", sep: "", begin: 0.6, end: 1 },
-      ]),
-      linked("a1", 1, [
-        { id: "w64", text: "ev", sep: "", begin: 10, end: 10.2 },
-        { id: "w65", text: "er", sep: "", begin: 10.2, end: 10.4 },
-        { id: "w66", text: "y", sep: " ", begin: 10.4, end: 10.6 },
-        { id: "w67", text: "day", sep: "", begin: 10.6, end: 11 },
-      ]),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        linked("a0", 0, [
+          { id: "w62", text: "every", sep: " ", begin: 0, end: 0.6 },
+          { id: "w63", text: "day", sep: "", begin: 0.6, end: 1 },
+        ]),
+        linked("a1", 1, [
+          { id: "w64", text: "ev", sep: "", begin: 10, end: 10.2 },
+          { id: "w65", text: "er", sep: "", begin: 10.2, end: 10.4 },
+          { id: "w66", text: "y", sep: " ", begin: 10.4, end: 10.6 },
+          { id: "w67", text: "day", sep: "", begin: 10.6, end: 11 },
+        ]),
+      ],
+    });
 
     await mergeSelectedWords("a0", "word", [0, 1]);
 
@@ -667,19 +697,21 @@ describe("mergeSelectedWords", () => {
       templateLineIdx: 0,
       words,
     });
-    useProjectStore.getState().setLines([
-      linked("a0", 0, [
-        { id: "w68", text: "one", sep: " ", begin: 0, end: 1 },
-        { id: "w69", text: "two", sep: " ", begin: 1, end: 2 },
-        { id: "w70", text: "three", sep: "", begin: 2, end: 3 },
-      ]),
-      linked("a1", 1, [
-        { id: "w71", text: "o", sep: "", begin: 10, end: 10.4 },
-        { id: "w72", text: "ne", sep: " ", begin: 10.4, end: 11 },
-        { id: "w73", text: "two", sep: " ", begin: 11, end: 12.5 },
-        { id: "w74", text: "three", sep: "", begin: 12.5, end: 13 },
-      ]),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        linked("a0", 0, [
+          { id: "w68", text: "one", sep: " ", begin: 0, end: 1 },
+          { id: "w69", text: "two", sep: " ", begin: 1, end: 2 },
+          { id: "w70", text: "three", sep: "", begin: 2, end: 3 },
+        ]),
+        linked("a1", 1, [
+          { id: "w71", text: "o", sep: "", begin: 10, end: 10.4 },
+          { id: "w72", text: "ne", sep: " ", begin: 10.4, end: 11 },
+          { id: "w73", text: "two", sep: " ", begin: 11, end: 12.5 },
+          { id: "w74", text: "three", sep: "", begin: 12.5, end: 13 },
+        ]),
+      ],
+    });
 
     await mergeSelectedWords("a0", "word", [0, 1]);
 
@@ -701,18 +733,20 @@ describe("mergeSelectedWords", () => {
         templateLineIdx: 0,
         words,
       });
-      useProjectStore.getState().setLines([
-        linked("a0", 0, [
-          { id: "w75", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
-          { id: "w76", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
-          { id: "w77", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g" },
-        ]),
-        linked("a1", 1, [
-          { id: "w78", text: "be", sep: "", begin: 10, end: 10.2, syllableGroupId: "h" },
-          { id: "w79", text: "aut", sep: "", begin: 10.2, end: 10.5, syllableGroupId: "h" },
-          { id: "w80", text: "iful", sep: "", begin: 10.5, end: 10.9, syllableGroupId: "h" },
-        ]),
-      ]);
+      useProjectStore.getState().restoreLyrics({
+        lines: [
+          linked("a0", 0, [
+            { id: "w75", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
+            { id: "w76", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
+            { id: "w77", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g" },
+          ]),
+          linked("a1", 1, [
+            { id: "w78", text: "be", sep: "", begin: 10, end: 10.2, syllableGroupId: "h" },
+            { id: "w79", text: "aut", sep: "", begin: 10.2, end: 10.5, syllableGroupId: "h" },
+            { id: "w80", text: "iful", sep: "", begin: 10.5, end: 10.9, syllableGroupId: "h" },
+          ]),
+        ],
+      });
     }
     const line = (id: string) => useProjectStore.getState().lines.find((l) => l.id === id);
 

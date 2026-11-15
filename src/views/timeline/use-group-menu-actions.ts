@@ -1,3 +1,4 @@
+import { addGroupWithLines, updateGroup } from "@/domain/commands/group-edits";
 import { conformToInstance } from "@/domain/commands/instance-rows";
 import { instanceCount } from "@/domain/instance/enumerate";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -44,7 +45,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
   const handleCreateGroupFromSelection = useCallback(() => {
     if (!groupableSelection) return;
     const projectState = useProjectStore.getState();
-    projectState.addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines);
+    projectState.commit(addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines));
     noteGuideSignal("edit.group");
     showGroupedToast(groupableSelection.result.group, groupableSelection.count, groupableSelection.addedFromGaps);
     clearContextMenu();
@@ -112,7 +113,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
   const handleRecolorGroup = useCallback(
     (color: string) => {
       if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-      useProjectStore.getState().updateGroup(contextMenu.target.groupId, { color });
+      useProjectStore.getState().commit(updateGroup(contextMenu.target.groupId, { color }));
       clearContextMenu();
     },
     [contextMenu, clearContextMenu],

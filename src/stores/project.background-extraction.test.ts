@@ -6,6 +6,7 @@ import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { extractInlineFromLine } from "@/utils/background-vocal-extraction";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -31,11 +32,18 @@ describe("project store · background extraction on linked lines", () => {
     const target = useProjectStore.getState().lines.find((l) => l.id === lineId);
     if (!target) throw new Error(`line ${lineId} not found`);
     const extracted = extractInlineFromLine(target, { mergeStandaloneLines: false, preserveBrackets: false });
-    useProjectStore.getState().updateLineWithHistory(target.id, {
-      text: extracted.text,
-      words: extracted.words,
-      backgroundText: extracted.backgroundText,
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: target.id,
+          updates: {
+            text: extracted.text,
+            words: extracted.words,
+            backgroundText: extracted.backgroundText,
+          },
+        },
+      ]),
+    );
   }
 
   it("propagates an untimed inline extraction to the linked sibling", () => {
@@ -151,11 +159,18 @@ describe("project store · background extraction on linked lines", () => {
       { id: "a1", text: "Hello (ooh)", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
     ]);
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      text: "Hello",
-      backgroundText: "ooh",
-      backgroundTextSource: "extraction",
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            text: "Hello",
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          },
+        },
+      ]),
+    );
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
@@ -191,10 +206,17 @@ describe("project store · background extraction on linked lines", () => {
       },
     ]);
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      backgroundText: undefined,
-      backgroundTextSource: undefined,
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            backgroundText: undefined,
+            backgroundTextSource: undefined,
+          },
+        },
+      ]),
+    );
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
@@ -244,7 +266,7 @@ describe("project store · background extraction on linked lines", () => {
       { id: "w11", text: "ooh", sep: " ", begin: 1, end: 1.5 },
       { id: "w12", text: "aah", sep: "", begin: 1.5, end: 1.8 },
     ];
-    useProjectStore.getState().updateLineWithHistory("a0", manualBackgroundWordEdit(edited));
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: manualBackgroundWordEdit(edited) }]));
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");

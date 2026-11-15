@@ -10,6 +10,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { beforeEach, describe, expect, it } from "vitest";
+import { markWordsExplicit } from "@/domain/commands/word-edits";
 
 function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
   const line = lines.find((candidate) => candidate.id === lineId);
@@ -153,9 +154,9 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
 
   function seedLinkedChorus(explicit = false) {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
-    useProjectStore.getState().setGroups([group]);
-    useProjectStore.getState().setLines(
-      [0, 1, 2].map((idx) => ({
+    useProjectStore.getState().restoreLyrics({ groups: [group] });
+    useProjectStore.getState().restoreLyrics({
+      lines: [0, 1, 2].map((idx) => ({
         id: `inst-${idx}`,
         text: "fuck this",
         agentId: "v1",
@@ -174,14 +175,14 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
           { id: newWordId(), text: "this", sep: "", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
         ],
       })),
-    );
+    });
   }
 
   function runToggle(): void {
     const { lines } = useProjectStore.getState();
     const selection = [sel(lines, "inst-0", 0), sel(lines, "inst-1", 0), sel(lines, "inst-2", 0)];
     const { targets, value } = resolveExplicitSelectionToggle(lines, selection);
-    useProjectStore.getState().markWordsExplicit(targets, value);
+    useProjectStore.getState().commit(markWordsExplicit(targets, value));
   }
 
   it("marks the word across every linked instance instead of flip-flopping", () => {

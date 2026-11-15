@@ -114,7 +114,7 @@ describe("pasted LRC", () => {
   });
 
   it("gives pasted lines the first singer of the project", async () => {
-    useProjectStore.getState().setAgents([{ id: "v2", type: "person", name: "Bob" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v2", type: "person", name: "Bob" }] });
     const screen = await render(host());
     await pasteAndImport(screen, "First line\nSecond line");
     expect(useProjectStore.getState().lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);

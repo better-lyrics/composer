@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 import type { LinkGroup } from "@/domain/group/template";
+import type { LineUpdate } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -10,7 +12,11 @@ import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 // -- Fixtures -----------------------------------------------------------------
 
 const GROUP_COLOR_RGB = "rgb(163, 201, 255)";
-const TIMING_WRITE = { deriveText: false, propagateToSiblings: false };
+const timingWrite = (updates: LineUpdate[]) =>
+  lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
+    derivesText: false,
+    propagateToSiblings: false,
+  });
 
 const chorus = (instanceIdx: number, begin: number) =>
   createLine({
@@ -84,7 +90,7 @@ describe("GroupBanner · shared timing", () => {
     const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
       i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
     );
-    useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words } }], TIMING_WRITE);
+    useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words } }]));
 
     await expect.poll(() => useTimelineStore.getState().pingingGroupId).toBe("g1");
   });
@@ -130,7 +136,7 @@ describe("GroupBanner · shared timing", () => {
       const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
         i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
       );
-      useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words } }], TIMING_WRITE);
+      useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words } }]));
 
       expect(useProjectStore.getState().lines[0].words?.[1].begin).toBeCloseTo(11.2, 6);
       expect(useTimelineStore.getState().pingingGroupId).toBeNull();
@@ -147,7 +153,7 @@ describe("GroupBanner · shared timing", () => {
       const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
         i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
       );
-      useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words } }], TIMING_WRITE);
+      useProjectStore.getState().commit(timingWrite([{ id: "c0", updates: { words } }]));
 
       expect(useProjectStore.getState().lines[1].words?.[1].begin).toBeCloseTo(41.2, 6);
       expect(useTimelineStore.getState().pingingGroupId).toBeNull();

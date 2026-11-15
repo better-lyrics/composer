@@ -10,6 +10,8 @@ import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -379,8 +381,14 @@ describe("bg-init derivation", () => {
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60, isPlaying: false });
     useProjectStore.setState({ activeTab: "sync", granularity: "word", lines: [createLine({ id: "l0", text: "a" })] });
     const store = useProjectStore.getState();
-    store.updateLineWithHistory("l0", { text: "a b" });
-    store.updateLineWithHistory("l0", { begin: 1, end: 2, backgroundText: "oh" }, { deriveText: false });
+    store.commit(pasteLines([{ id: "l0", updates: { text: "a b" } }]));
+    store.commit(
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => [{ id: "l0", updates: { begin: 1, end: 2, backgroundText: "oh" } }],
+        { derivesText: false },
+      ),
+    );
     await render(<SyncPanel />);
     await new Promise((r) => setTimeout(r, 30));
     useProjectStore.getState().undo();

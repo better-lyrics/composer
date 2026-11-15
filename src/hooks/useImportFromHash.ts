@@ -42,7 +42,7 @@ function applyImport(payload: ImportPayload, metadata: ProjectMetadata): void {
   useProjectStore.getState().reset();
   const state = useProjectStore.getState();
   state.setMetadata(metadata);
-  state.setLines(linesFromSaved(payload.lines));
+  state.restoreLyrics({ lines: linesFromSaved(payload.lines) });
   state.setGranularity(payload.granularity);
   for (const agent of payload.agents) {
     if (!useProjectStore.getState().agents.some((existing) => existing.id === agent.id)) {

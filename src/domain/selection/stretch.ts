@@ -26,7 +26,7 @@ function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: numbe
   const mapTime = (x: number) => anchorTime + (x - anchorTime) * k;
 
   // Merge all track updates of one line into a single entry so
-  // updateLinesWithHistory never receives duplicate ids.
+  // the stretch command never receives duplicate ids.
   const updatesByLine = new Map<string, { id: string; updates: Partial<LyricLine> }>();
   const entryFor = (lineId: string) => {
     let entry = updatesByLine.get(lineId);

@@ -5,6 +5,7 @@ import { firstBegin, jumpToRow, key, lineById, load, song, tapAt, undo } from "@
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { beforeEach, describe, expect, it } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -81,10 +82,12 @@ describe("SyncPanel · shared instance anchor", () => {
     const verse = lineById("v1");
     useProjectStore
       .getState()
-      .updateLineWithHistory(
-        "v1",
-        { words: verse?.words?.map((word) => ({ ...word, end: word.end + 0.05 })) },
-        { deriveText: false, propagateToSiblings: false },
+      .commit(
+        lineEditCommand(
+          { command: "edit lines", args: [] },
+          () => [{ id: "v1", updates: { words: verse?.words?.map((word) => ({ ...word, end: word.end + 0.05 })) } }],
+          { derivesText: false, propagateToSiblings: false },
+        ),
       );
     await tapAt(45, () => firstBegin("c1-0"));
     expect(firstBegin("c1-1")).toBe(46);
