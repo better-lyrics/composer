@@ -16,6 +16,7 @@ interface LyricRoot {
 
 type Refusal =
   | { reason: "line-gone"; lineId: string }
+  | { reason: "lyrics-changed" }
   | { reason: "word-gone"; address: SyllableAddress }
   | { reason: "copy-below-zero" }
   | { reason: "placement-out-of-range" }

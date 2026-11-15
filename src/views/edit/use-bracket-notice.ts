@@ -1,4 +1,4 @@
-import { isLinked } from "@/domain/instance/predicates";
+import { removeSectionTagLines } from "@/domain/commands/edit-text";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
 import { useProjectStore } from "@/stores/project";
 import type { NoticeAction, NoticeKind } from "@/ui/notices/notice-model";
@@ -13,14 +13,12 @@ function isRemovableSectionTag(line: ParsedLine): boolean {
   return line.lineId !== "" && line.groupId === undefined && isSectionTagLine(line.text);
 }
 
-function removeSectionTagLines(lineIds: ReadonlySet<string>): void {
-  const { lines, setLinesWithHistory } = useProjectStore.getState();
-  const kept = lines.filter((line) => !(lineIds.has(line.id) && isSectionTagLine(line.text) && !isLinked(line)));
-  if (kept.length !== lines.length) setLinesWithHistory(kept);
-}
-
 function removeAction(label: string, lineIds: readonly string[]): NoticeAction {
-  return { label, icon: IconTrash, run: () => removeSectionTagLines(new Set(lineIds)) };
+  return {
+    label,
+    icon: IconTrash,
+    run: () => useProjectStore.getState().commit(removeSectionTagLines(new Set(lineIds))),
+  };
 }
 
 // -- Hook ---------------------------------------------------------------------

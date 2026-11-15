@@ -1,3 +1,4 @@
+import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
 import type { LyricLine } from "@/domain/line/model";
@@ -92,7 +93,7 @@ async function refreshStaleGeneratedLanguages(signal: AbortSignal, failures: Fai
         edits,
       ),
     );
-    if (updates.length > 0) current.applyLineUpdatesToCurrentStep(updates);
+    if (updates.length > 0) current.commit(refreshGeneratedLanguages(updates), "amend");
   } finally {
     stop();
   }

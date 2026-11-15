@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
-import { shiftCaretPastRewrittenRows } from "@/views/edit/edit-text";
+import { shiftCaretPastRewrittenRows } from "@/domain/edit-text/edit-text";
 
 interface PendingCaret {
   typedText: string;

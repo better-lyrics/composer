@@ -231,6 +231,7 @@ function lineHasInlineParens(line: LyricLine): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { ExtractOptions };
 export {
   classifyLine,
   extractBackgroundVocals,

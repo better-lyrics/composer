@@ -1,13 +1,13 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { textToLyricLines } from "@/utils/lyrics-text";
-import { editTextWithRewrittenRows } from "@/views/edit/edit-text";
+import { editTextWithRewrittenRows } from "@/domain/edit-text/edit-text";
 import {
   diffEditTextChange,
   findStructurallyImpactedInstances,
   type ImpactedInstance,
   propagateContentUpdates,
-} from "@/views/edit/diff-edit-text";
+} from "@/domain/edit-text/diff-edit-text";
 
 // -- Types --------------------------------------------------------------------
 

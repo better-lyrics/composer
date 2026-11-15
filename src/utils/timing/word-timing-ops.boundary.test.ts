@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
-import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
-import { bgWordBoundaryEdit, setBgWordBegin } from "@/utils/timing/bg-word-timing";
+import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
+import { bgWordBoundaryEdit, bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";
 
 describe("createWordTimingOps: setBoundary", () => {
   interface BoundaryCase {
@@ -289,16 +289,16 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
   });
 
   it("setBgWordBegin still writes raw, leaving background provenance untouched", () => {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    setBgWordBegin([bgLine()], 0, 1, 1.5, updateLineWithHistory);
+    const calls: LineUpdate[] = [];
+    retimeInto(calls, bgWordRetimeEdit, "begin", { to: 1.5 }, [bgLine()], 0, 1);
     expect("backgroundTextSource" in calls[0].updates).toBe(false);
     expect("backgroundText" in calls[0].updates).toBe(false);
     expect((calls[0].updates.backgroundWords ?? [])[1].begin).toBe(1.5);
   });
 
   it("an instance without a buildBoundaryUpdate hook writes only the word array", () => {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    bgOps.setBegin([bgLine()], 0, 1, 1.5, updateLineWithHistory);
+    const calls: LineUpdate[] = [];
+    retimeInto(calls, bgOps.retimeEdit, "begin", { to: 1.5 }, [bgLine()], 0, 1);
     expect(Object.keys(calls[0].updates)).toEqual(["backgroundWords"]);
   });
 });
