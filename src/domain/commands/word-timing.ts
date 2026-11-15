@@ -12,7 +12,7 @@ import { partitionNudgeSelections, shiftSelectionsTogether } from "insync/select
 import { resolveAddress, resolveAddresses, resolveLineIndex } from "insync/selection-resolve";
 import { stretchSelections } from "insync/selection-stretch";
 import type { StretchAnchor } from "insync/selection-stretch-targets";
-import type { StepKey } from "@/domain/step-timing/step-write";
+import type { StepKey } from "insync/step-timing-step-write";
 import type { BoundaryEdge } from "insync/word-boundary";
 import type { WordTiming } from "insync/word-timing";
 import { bgWordBoundaryEdit } from "@/utils/timing/bg-word-timing";

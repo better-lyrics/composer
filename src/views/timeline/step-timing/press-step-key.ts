@@ -6,7 +6,7 @@ import { type WordTrack, trackRole } from "insync/line-track";
 import { addressOf, toAddress } from "insync/selection-resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
-import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
+import type { StepKey, StepRefusal } from "insync/step-timing-step-write";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
