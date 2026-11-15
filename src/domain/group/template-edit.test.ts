@@ -1,15 +1,16 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it } from "vitest";
+
 import type { LinkGroup } from "insync/group";
 import { carryTemplateEdits } from "insync/group-template-edit";
-import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { withFields } from "@/test/field-updates";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { describe, expect, it } from "vitest";
+import { withFields } from "@/test/field-updates";
 
 const ownTiming: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
 const shared: LinkGroup = { ...ownTiming, sharesTiming: true };
@@ -227,6 +228,16 @@ describe("carryTemplateEdits · two instances edited at once", () => {
       "first",
       "second",
     ]);
+  });
+
+  it("regression: an instance edited to other text than the first edit becomes its instance's own", () => {
+    const before = [groupLine("L0", 0, { text: "stale" }), groupLine("L1", 1, { text: "stale" })];
+    const after = before
+      .with(0, withFields(before[0], { text: "first" }))
+      .with(1, withFields(before[1], { text: "second" }));
+    const result = carryTemplateEdits({ before, after, groups: [ownTiming], splitChar: DEFAULT_SPLIT_CHARACTER });
+    expect(result.lines.map((line) => !!line.detached)).toEqual([false, true]);
+    expect(result.detachedIds).toEqual(["L1"]);
   });
 });
 

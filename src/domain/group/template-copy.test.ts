@@ -1,20 +1,20 @@
-import { describe, expect, it } from "vitest";
-import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import type { LinkGroup } from "insync/group";
+import { docFromFlatLines } from "insync/group-doc-from-flat-lines";
 import { copyThroughTemplate, instanceAnchors } from "insync/group-template-copy";
 import { instanceBounds } from "insync/instance-bounds";
+import type { LyricLine } from "insync/line";
 import { withManualBackgroundWords, withSeededBackground } from "insync/line-background";
 import { bgBounds, mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "insync/line-drawn-track";
-import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords } from "insync/line-track";
 import { withAgent } from "insync/line-track-writes";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { describe, expect, it } from "vitest";
 import { chorus } from "@/test/chorus-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { type FieldPatch, withFields } from "@/test/field-updates";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // The copy as a commit runs it: the doc read from the lines before the edit, each instance at its anchor.
 function copiedThroughTemplate(before: LyricLine[], after: LyricLine[], groups: LinkGroup[], touched: string[]) {
@@ -160,6 +160,25 @@ describe("copyThroughTemplate", () => {
       const before = [chorus(0, 0, 10), chorus(1, 0, 40), { ...chorus(2, 0, 60), detached: true }, chorus(3, 0)];
       const after = edit(before, "c0-0", nudgeWord(1, 0.1));
       expect(copiedThroughTemplate(before, after, groups, ["c0-0"]).lines).toBe(after);
+    });
+
+    it("regression: never writes the template's words onto an instance whose text differs", () => {
+      const diverged = createLine({
+        id: "c1-0",
+        text: "I want it",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "I", sep: " ", begin: 40, end: 40.4 },
+          { text: "want", sep: " ", begin: 40.5, end: 41 },
+          { text: "it", begin: 41.1, end: 41.5 },
+        ],
+      });
+      const before = [chorus(0, 0, 10), diverged];
+      const after = edit(before, "c0-0", nudgeWord(1, 0.1));
+      const copied = byId(copiedThroughTemplate(before, after, sharing, ["c0-0"]).lines, "c1-0");
+      expect(lineText(copied!, DEFAULT_SPLIT_CHARACTER)).toBe("I want it");
     });
 
     it("skips a source whose instance had no start before the edit", () => {

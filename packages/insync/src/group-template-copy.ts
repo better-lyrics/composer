@@ -1,7 +1,3 @@
-import { sameSharedContent } from "./group-carried-line";
-import { withCopiesInSong } from "./group-copies-in-song";
-import { instanceSlotLine, templateBySlot } from "./group-flatten";
-import { invertedIds, withLineIds } from "./group-line-ids";
 import {
   type Instance,
   instanceSlots,
@@ -10,6 +6,10 @@ import {
   type LyricDoc,
   type TemplateLine,
 } from "./group";
+import { sameSharedContent } from "./group-carried-line";
+import { withCopiesInSong } from "./group-copies-in-song";
+import { instanceSlotLine, templateBySlot } from "./group-flatten";
+import { invertedIds, withLineIds } from "./group-line-ids";
 import { offsetTimingFields } from "./group-offset-timing";
 import { sharesTiming, timingChanged } from "./group-shared-timing";
 import { fittedAnchor, lineContent, toTemplateLine } from "./group-template-line";
@@ -175,6 +175,7 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
       const updates = offsetTimingFields(source, at - sourceAt, target);
       const line = { ...target, ...updates };
       if (!timingChanged(target, line) && line.languages === target.languages) continue;
+      if (!sameSharedContent(line, target)) continue;
       if (lines === after) lines = [...after];
       lines[index] = line;
       copied.add(groupId);
