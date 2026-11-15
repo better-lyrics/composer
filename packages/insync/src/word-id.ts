@@ -1,10 +1,31 @@
 import type { TrackRole } from "./line";
 import type { WordTiming } from "./word-timing";
 
+// -- Constants ----------------------------------------------------------------
+
+const WORD_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+// 60 random bits: a million syllables in one project collide with odds near 4 in 10 million.
+const WORD_ID_LENGTH = 10;
+
+// -- State --------------------------------------------------------------------
+
+// One random fill serves many ids, so a large import costs no more than it did with UUIDs.
+const randomPool = new Uint8Array(WORD_ID_LENGTH * 256);
+let poolOffset = randomPool.length;
+
 // -- Functions ----------------------------------------------------------------
 
 function newWordId(): string {
-  return crypto.randomUUID();
+  if (poolOffset === randomPool.length) {
+    crypto.getRandomValues(randomPool);
+    poolOffset = 0;
+  }
+  let id = "";
+  for (let index = poolOffset; index < poolOffset + WORD_ID_LENGTH; index++) {
+    id += WORD_ID_ALPHABET[randomPool[index] & 63];
+  }
+  poolOffset += WORD_ID_LENGTH;
+  return id;
 }
 
 // A line-synced track shows one word; its id follows the line and track so timing edits keep it.
