@@ -1,4 +1,4 @@
-import { readsAsGeniusLyrics, readsAsGeniusPageCopy } from "@/domain/lyrics-file/genius-text";
+import { readsAsGeniusLyrics, readsAsGeniusPageCopy } from "insync/lyrics-file-genius-text";
 import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectFileContents } from "@/lib/project-file-read";
 import { PARSERS } from "@/utils/lyrics-parsers";

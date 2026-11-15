@@ -1,6 +1,6 @@
-import { DEFAULT_AGENTS } from "insync/agent-colors";
-import type { Agent } from "insync/agent";
-import { createPerformerAgents, dedupeIgnoringCase } from "insync/agent-performer-agents";
+import { DEFAULT_AGENTS } from "./agent-colors";
+import type { Agent } from "./agent";
+import { createPerformerAgents, dedupeIgnoringCase } from "./agent-performer-agents";
 
 // -- Types --------------------------------------------------------------------
 
