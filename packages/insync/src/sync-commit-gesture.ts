@@ -10,7 +10,7 @@ import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from
 import { isSyncableLine } from "./line-sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
-import { closeSlotWords, closingUpdate, previousSlotEnd, tapEnd } from "./sync-slot-close";
+import { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd } from "./sync-slot-close";
 import { withSlotWord } from "./sync-slot-words";
 import type { Bounds } from "./word-bounds";
 import { enforceOrderAround } from "./word-order";
@@ -235,7 +235,10 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 
   if (gesture === "tap-line") {
     const write = writeLine(lines, ctx);
-    if (!write) return null;
+    if (!write) {
+      const closed = lastLineClose(lines, ctx.cursor, ctx.time, ctx.splitChar);
+      return closed && { lineUpdates: [closed], nextCursor: ctx.cursor, nextJumped: false, clampedTo: null };
+    }
     return {
       lineUpdates: slotWriteToUpdates(write),
       nextCursor: advanceCursor(lines, ctx.cursor, "line", ctx.splitChar),
