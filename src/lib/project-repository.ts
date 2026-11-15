@@ -1,4 +1,4 @@
-import type { LanguageTextVariant } from "@/domain/language/display";
+import type { LanguageTextVariant } from "insync/language-display";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
@@ -125,7 +125,11 @@ function restoreProjectRecord(id: string, project: StoredProject, previousVersio
   );
 }
 
-function restoreDeletedProjectRecord(id: string, project: StoredProject, previousVersion?: StoredProject): Promise<void> {
+function restoreDeletedProjectRecord(
+  id: string,
+  project: StoredProject,
+  previousVersion?: StoredProject,
+): Promise<void> {
   return writeProjectRecord(
     (tx, _abort, write) => {
       clearTombstone(tx, id);

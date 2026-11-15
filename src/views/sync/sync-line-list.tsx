@@ -3,7 +3,7 @@ import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { LinkGroup } from "insync/group";
 import { instancePositionsByLineId } from "insync/instance-enumerate";
 import { isLinked } from "insync/instance-predicates";
-import type { LanguageDisplayLine } from "@/domain/language/display";
+import type { LanguageDisplayLine } from "insync/language-display";
 import { effectiveBounds } from "insync/line-bounds";
 import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";

@@ -3,7 +3,7 @@ import { splitWord } from "@/domain/commands/word-structure";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
-} from "@/domain/language/reconcile-syllable-split";
+} from "insync/language-reconcile-syllable-split";
 import type { LanguagePiece } from "insync/language";
 import type { PositionalPieces } from "insync/language-pieces";
 import { splitTransliterationAtBoundaries } from "insync/language-transliteration-format";

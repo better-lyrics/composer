@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getLanguageDisplayLine } from "@/domain/language/display";
+import { getLanguageDisplayLine } from "insync/language-display";
 import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";

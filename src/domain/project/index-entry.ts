@@ -1,5 +1,5 @@
 import type { SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
-import type { LanguageTextVariant } from "@/domain/language/display";
+import type { LanguageTextVariant } from "insync/language-display";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineFromSaved } from "insync/line-saved-line";

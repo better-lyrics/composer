@@ -1,4 +1,4 @@
-import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
+import { splitWordsKeepingTransliteration } from "insync/language-reconcile-syllable-split";
 import type { LineTrack, LyricLine, TrackRole } from "insync/line";
 import { syllablesFromText } from "insync/line-syllables-from-text";
 import { trackText } from "insync/line-text";

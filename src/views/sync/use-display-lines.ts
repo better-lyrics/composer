@@ -1,4 +1,4 @@
-import { type LanguageDisplayLine, type LanguageTextVariant, getLanguageDisplayLine } from "@/domain/language/display";
+import { type LanguageDisplayLine, type LanguageTextVariant, getLanguageDisplayLine } from "insync/language-display";
 import type { LyricLine } from "insync/line";
 import { useSettingsStore } from "@/stores/settings";
 import { useMemo } from "react";

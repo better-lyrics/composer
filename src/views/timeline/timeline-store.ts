@@ -1,4 +1,4 @@
-import type { LanguageTextVariant } from "@/domain/language/display";
+import type { LanguageTextVariant } from "insync/language-display";
 import { hasTransliteration } from "insync/language-has-transliteration";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { LoopRegion } from "@/domain/selection/loop-region";

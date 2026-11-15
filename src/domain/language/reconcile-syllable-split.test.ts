@@ -9,7 +9,7 @@ import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
   type WordSplitResult,
-} from "@/domain/language/reconcile-syllable-split";
+} from "insync/language-reconcile-syllable-split";
 import type { V3TransliterationTrack } from "insync/language-v3-languages";
 import { drawnLanguages, drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";

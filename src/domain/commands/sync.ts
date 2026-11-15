@@ -3,7 +3,7 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { PositionalPieces } from "insync/language-pieces";
-import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
+import { splitWordsKeepingTransliteration } from "insync/language-reconcile-syllable-split";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
 import { shiftLineTiming } from "@/domain/line/shift";

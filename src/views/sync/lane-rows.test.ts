@@ -1,4 +1,4 @@
-import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/language/display";
+import { type LanguageDisplayLine, getLanguageDisplayLine } from "insync/language-display";
 import type { LyricLine } from "insync/line";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";

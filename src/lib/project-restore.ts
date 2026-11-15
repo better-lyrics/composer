@@ -1,4 +1,4 @@
-import { type LanguageTextVariant, isLanguageTextVariant } from "@/domain/language/display";
+import { type LanguageTextVariant, isLanguageTextVariant } from "insync/language-display";
 import { hasTransliteration } from "insync/language-has-transliteration";
 import { type ResumePosition, isResumePosition } from "@/domain/project/resume-position";
 import { type ProjectTab, isProjectTab } from "@/domain/project/tab";

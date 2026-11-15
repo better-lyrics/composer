@@ -1,20 +1,20 @@
-import { roleWords } from "insync/line-track";
-import { backgroundText, lineText } from "insync/line-text";
-import { withAlignedTransliteration } from "insync/language-align";
-import { lineTransliteration } from "insync/language-line-languages";
-import type { LanguagePieces, LineLanguages } from "insync/language";
-import { pieceOf, trackPieces } from "insync/language-pieces";
+import { roleWords } from "./line-track";
+import { backgroundText, lineText } from "./line-text";
+import { withAlignedTransliteration } from "./language-align";
+import { lineTransliteration } from "./language-line-languages";
+import type { LanguagePieces, LineLanguages } from "./language";
+import { pieceOf, trackPieces } from "./language-pieces";
 import {
   normalizeTransliterationForEditing,
   sourceWordCount,
   timedTransliterationSlice,
-} from "insync/language-transliteration-format";
-import type { LyricLine } from "insync/line";
-import { withRoleWords } from "insync/line-track-writes";
-import { spacedText, wordsFromSpaced } from "insync/word-spaced-words";
-import type { WordTiming } from "insync/word-timing";
-import { withoutSplitCharacter } from "insync/split-character-text";
-import { splitIntoWordsWithMeta } from "insync/lyric-words";
+} from "./language-transliteration-format";
+import type { LyricLine } from "./line";
+import { withRoleWords } from "./line-track-writes";
+import { spacedText, wordsFromSpaced } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
+import { withoutSplitCharacter } from "./split-character-text";
+import { splitIntoWordsWithMeta } from "./lyric-words";
 
 type LanguageTextVariant = "original" | "transliteration";
 

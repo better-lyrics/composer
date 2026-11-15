@@ -1,8 +1,8 @@
-import { drawnSyllables } from "insync/line-drawn-track";
-import { withAlignedWords } from "insync/language-align";
-import { languageSourceFingerprint } from "insync/language-fingerprint";
-import { languagesWith, lineTransliteration } from "insync/language-line-languages";
-import { wholeLineSegments } from "insync/language-manual-segments";
+import { drawnSyllables } from "./line-drawn-track";
+import { withAlignedWords } from "./language-align";
+import { languageSourceFingerprint } from "./language-fingerprint";
+import { languagesWith, lineTransliteration } from "./language-line-languages";
+import { wholeLineSegments } from "./language-manual-segments";
 import type {
   LanguagePiece,
   LanguagePieces,
@@ -10,7 +10,7 @@ import type {
   LineLanguage,
   LineLanguages,
   TransliterationAlignmentStatus,
-} from "insync/language";
+} from "./language";
 import {
   type PositionalPieces,
   keyedPieces,
@@ -19,13 +19,13 @@ import {
   pieceOf,
   positionalPieces,
   trackPieces,
-} from "insync/language-pieces";
-import { withPiecesOn, withTrackPieces } from "insync/language-side-pieces";
-import type { LyricLine } from "insync/line";
-import { backgroundText, lineText, syllablesText } from "insync/line-text";
-import { withRoleWords } from "insync/line-track-writes";
-import { trackRole, trackWords, type WordTrack } from "insync/line-track";
-import type { WordTiming } from "insync/word-timing";
+} from "./language-pieces";
+import { withPiecesOn, withTrackPieces } from "./language-side-pieces";
+import type { LyricLine } from "./line";
+import { backgroundText, lineText, syllablesText } from "./line-text";
+import { withRoleWords } from "./line-track-writes";
+import { trackRole, trackWords, type WordTrack } from "./line-track";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

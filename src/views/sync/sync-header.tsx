@@ -1,4 +1,4 @@
-import type { LanguageTextVariant } from "@/domain/language/display";
+import type { LanguageTextVariant } from "insync/language-display";
 import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
