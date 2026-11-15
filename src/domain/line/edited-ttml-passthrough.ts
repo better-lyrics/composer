@@ -1,5 +1,11 @@
+import { withRenamedAnchors } from "insync/passthrough";
 import type { BackgroundTrack, LineTrack, LyricLine, Syllable } from "@/domain/line/model";
-import { linePassthroughOf, withLinePassthrough, withoutKeptData } from "@/domain/line/passthrough";
+import {
+  type LinePassthrough,
+  linePassthroughOf,
+  withLinePassthrough,
+  withoutKeptData,
+} from "@/domain/line/passthrough";
 import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables } from "@/domain/line/track";
 import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 import { withSpansFromMarkup } from "@/utils/lyrics-parsers/ttml-untimed-read";
@@ -40,6 +46,28 @@ function withSpanMarkupOf(track: BackgroundTrack, edited: BackgroundTrack | unde
   return attrs ? withSpansFromMarkup(track, [{ name: "span", attrs, children: [{ text: span.text }] }]) : track;
 }
 
+// Kept elements follow syllables by id; an edited track's timed syllables pair with the merged one's by position.
+function timedIdsOn(edited: LineTrack | undefined, merged: LineTrack | undefined): Map<string, string> {
+  const mergedTimed = timedSyllables(merged);
+  return new Map(
+    timedSyllables(edited).flatMap((syllable, index) => {
+      const partner = mergedTimed[index];
+      return partner ? [[syllable.id, partner.id] as const] : [];
+    }),
+  );
+}
+
+function withAnchorsOn(kept: LinePassthrough | undefined, edited: LyricLine, merged: LyricLine) {
+  if (!kept) return kept;
+  return {
+    ...kept,
+    ...(kept.line && { line: withRenamedAnchors(kept.line, timedIdsOn(mainTrack(edited), mainTrack(merged))) }),
+    ...(kept.background && {
+      background: withRenamedAnchors(kept.background, timedIdsOn(backgroundTrack(edited), backgroundTrack(merged))),
+    }),
+  };
+}
+
 // -- Functions ----------------------------------------------------------------
 
 // The edited file decides what a merged line keeps from TTML: everything the line had is replaced, node by node.
@@ -51,7 +79,7 @@ function withKeptDataOf(line: LyricLine, edited: LyricLine): LyricLine {
     withMainTrack(bare, withTimedPassthroughOf(mainTrack(bare), mainTrack(edited))),
     background && withTimedPassthroughOf(background, backgroundTrack(edited)),
   );
-  const kept = withLinePassthrough(timed, linePassthroughOf(edited));
+  const kept = withLinePassthrough(timed, withAnchorsOn(linePassthroughOf(edited), edited, timed));
   const keptBackground = backgroundTrack(kept);
   return keptBackground ? withBackgroundTrack(kept, withSpanMarkupOf(keptBackground, backgroundTrack(edited))) : kept;
 }

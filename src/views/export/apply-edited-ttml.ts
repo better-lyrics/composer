@@ -1,12 +1,8 @@
-import {
-  holdsEveryLine,
-  mergeEditedTtmlLines,
-  mergedEditedParts,
-  mergedLineIdsByKey,
-} from "@/domain/line/edited-ttml-lines";
+import { mergedEditedKept } from "@/domain/line/edited-ttml-kept";
+import { holdsEveryLine, mergedLineIdsByKey, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "@/domain/line/model";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
-import { type EditedLyrics, type ProjectPart, changedParts, editedLyricsWrite } from "@/domain/project/edited-lyrics";
+import { changedParts, type EditedLyrics, editedLyricsWrite, type ProjectPart } from "@/domain/project/edited-lyrics";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";
 import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
@@ -38,7 +34,7 @@ function editedLyricsFrom(stored: readonly LyricLine[], parsed: ParseResult): Ed
     groups: parsed.groups ?? [],
     agents: parsed.agents,
     metadata: parsed.metadata,
-    kept: { parts: mergedEditedParts(stored, parsed, lines), passthrough: parsed.passthrough ?? {} },
+    kept: mergedEditedKept(stored, parsed, lines),
   };
 }
 

@@ -1,16 +1,16 @@
-import type { Part, PartSection } from "insync/part";
-import { partsAfterLineChange } from "insync/part-membership";
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
-import { type LineFields, fieldsOfLine, lineFromFields, untimedRest } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
 import { hasKeptData, withKeptDataOf } from "@/domain/line/edited-ttml-passthrough";
+import { fieldsOfLine, type LineFields, lineFromFields, untimedRest } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
 import { withoutKeptData } from "@/domain/line/passthrough";
-import { backgroundTrack } from "@/domain/line/track";
+import { isSyncableLine } from "@/domain/line/sync-progress";
 import { trackText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
-import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
 import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
@@ -24,6 +24,7 @@ interface EditedTtmlLines {
   lines: readonly LyricLine[];
   lineKeys?: readonly (string | undefined)[];
   parts?: readonly Part[];
+  passthrough?: DocPassthrough;
 }
 
 // -- Comparison ---------------------------------------------------------------
@@ -243,31 +244,10 @@ function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines)
   return ids;
 }
 
-function onLineIds<T extends PartSection>(section: T, idOf: ReadonlyMap<string, string>): T {
-  return {
-    ...section,
-    lineIds: section.lineIds.map((id) => idOf.get(id) ?? id),
-    ...(section.sections && { sections: section.sections.map((nested) => onLineIds(nested, idOf)) }),
-  };
-}
-
-// The edited file's song parts, on the merged line ids; lines the export skips join a part they sit inside.
-function mergedEditedParts(
-  stored: readonly LyricLine[],
-  edit: EditedTtmlLines,
-  merged: readonly LyricLine[],
-): readonly Part[] {
-  const parts = edit.parts ?? [];
-  if (parts.length === 0) return parts;
+// Each edited line's id, and the id it has after the merge: its stored partner's, or its own when it has none.
+function mergedLineIds(stored: readonly LyricLine[], edit: EditedTtmlLines): Map<string, string> {
   const { partners } = pairedWithStored(stored, edit);
-  const idOf = new Map(edit.lines.map((line, index) => [line.id, partners[index]?.id ?? line.id] as const));
-  const onMergedIds = parts.map((part) => onLineIds(part, idOf));
-  const editedIds = edit.lines.map((line) => idOf.get(line.id) ?? line.id);
-  return partsAfterLineChange(
-    onMergedIds,
-    editedIds,
-    merged.map((line) => line.id),
-  );
+  return new Map(edit.lines.map((line, index) => [line.id, partners[index]?.id ?? line.id] as const));
 }
 
 // Kept times go stale once a line moves and the export writes derived ones instead, so kept data never decides.
@@ -286,4 +266,5 @@ function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricL
 
 // -- Exports ------------------------------------------------------------------
 
-export { holdsEveryLine, mergedEditedParts, mergeEditedTtmlLines, mergedLineIdsByKey };
+export type { EditedTtmlLines };
+export { holdsEveryLine, mergedLineIds, mergedLineIdsByKey, mergeEditedTtmlLines };

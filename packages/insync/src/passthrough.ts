@@ -52,7 +52,18 @@ function keptTimes(
   return kept.envelope[0] === envelope[0] && kept.envelope[1] === envelope[1] ? [kept.begin, kept.end] : null;
 }
 
+// -- Anchors ------------------------------------------------------------------
+
+// The same kept data with each anchor `rename` knows renamed, as when a merge gives lines or syllables other ids.
+function withRenamedAnchors(kept: Passthrough, rename: ReadonlyMap<string, string>): Passthrough {
+  if (!kept.elementsAfter) return kept;
+  return {
+    ...kept,
+    elementsAfter: kept.elementsAfter.map((anchor) => (anchor === null ? null : (rename.get(anchor) ?? anchor))),
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { DocPassthrough, KeptTimes, Passthrough };
-export { isEmptyDocPassthrough, isEmptyPassthrough, keptTimes };
+export { isEmptyDocPassthrough, isEmptyPassthrough, keptTimes, withRenamedAnchors };
