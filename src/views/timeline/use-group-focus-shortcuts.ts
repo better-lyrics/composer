@@ -30,12 +30,12 @@ function escapeBelongsElsewhere(target: EventTarget | null): boolean {
     loopRegion,
     loopRegionDrag,
     stepTiming,
+    isDraggingWord,
   } = useTimelineStore.getState();
-  if (stepTiming) return true;
+  if (stepTiming || isDraggingWord) return true;
   if (contextMenu || editingWord || renamingGroupId !== null) return true;
   if (pasteMode.status !== "idle" || selectedWords.length > 0) return true;
   if (loopRegion !== null || loopRegionDrag !== null) return true;
-  if (document.querySelector('[data-word-block][aria-pressed="true"]') !== null) return true;
   return isInPopover(target);
 }
 

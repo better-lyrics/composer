@@ -16,6 +16,16 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 const lineIds = () => store().lines.map((line) => line.id);
 
+function startWordDrag() {
+  const block = document.querySelector<HTMLElement>('[data-track="word"][data-line-index="2"] [data-word-block]');
+  if (!block) throw new Error("word block not rendered");
+  const rect = block.getBoundingClientRect();
+  const start = { clientX: rect.left + 4, clientY: rect.top + rect.height / 2 };
+  const pointer = { bubbles: true, cancelable: true, isPrimary: true, pointerId: 1, button: 0 };
+  block.dispatchEvent(new PointerEvent("pointerdown", { ...pointer, ...start }));
+  document.dispatchEvent(new PointerEvent("pointermove", { ...pointer, ...start, clientX: start.clientX + 40 }));
+}
+
 beforeEach(seedGroupFocusSong);
 
 // -- Tests --------------------------------------------------------------------
@@ -53,14 +63,7 @@ describe("TimelinePanel · editing lines in an open group", () => {
   describe("word drag", () => {
     it("cancels a word drag with Escape and keeps the group open", async () => {
       await renderOpen(1);
-      const block = document.querySelector<HTMLElement>('[data-track="word"][data-line-index="2"] [data-word-block]');
-      if (!block) throw new Error("word block not rendered");
-      const rect = block.getBoundingClientRect();
-      const start = { clientX: rect.left + 4, clientY: rect.top + rect.height / 2 };
-      const pointer = { bubbles: true, cancelable: true, isPrimary: true, pointerId: 1, button: 0 };
-
-      block.dispatchEvent(new PointerEvent("pointerdown", { ...pointer, ...start }));
-      document.dispatchEvent(new PointerEvent("pointermove", { ...pointer, ...start, clientX: start.clientX + 40 }));
+      startWordDrag();
       await expect.poll(() => document.body.style.cursor).toBe("grabbing");
 
       await userEvent.keyboard("{Escape}");
@@ -72,6 +75,16 @@ describe("TimelinePanel · editing lines in an open group", () => {
       await userEvent.keyboard("{Escape}");
 
       await expect.poll(() => focus()).toBeNull();
+    });
+
+    it("regression: Escape pressed as a word drag starts cancels the drag and keeps the group open", async () => {
+      await renderOpen(1);
+      startWordDrag();
+
+      document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+
+      expect(focus()).toEqual({ groupId: "g1", hearInstanceIdx: 1 });
+      await expect.poll(() => document.body.style.cursor).not.toBe("grabbing");
     });
   });
 

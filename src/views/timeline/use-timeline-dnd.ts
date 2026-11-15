@@ -34,6 +34,7 @@ function useTimelineDnd(lines: LyricLine[]) {
     return () => {
       dragListenersCleanupRef.current?.();
       useTimelineStore.getState().setWordDragHover(null);
+      useTimelineStore.getState().setDraggingWord(false);
     };
   }, []);
 
@@ -45,45 +46,66 @@ function useTimelineDnd(lines: LyricLine[]) {
     }),
   );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const data = event.active.data.current as DragData | undefined;
-    if (!data) return;
-
-    const initialShiftKey = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.shiftKey : false;
-    setActiveDrag({ ...data, initialShiftKey });
-    document.body.style.cursor = "grabbing";
-
+  const handleDragCancel = useCallback(() => {
+    setActiveDrag(null);
+    useTimelineStore.getState().setWordDragHover(null);
+    useTimelineStore.getState().setDraggingWord(false);
+    document.body.style.cursor = "";
     dragListenersCleanupRef.current?.();
-    dragShiftRef.current = initialShiftKey;
-    if (event.activatorEvent instanceof PointerEvent) {
-      pointerXRef.current = event.activatorEvent.clientX;
-      pointerYRef.current = event.activatorEvent.clientY;
-    }
-    const onPointer = (e: PointerEvent) => {
-      dragShiftRef.current = e.shiftKey;
-      pointerXRef.current = e.clientX;
-      pointerYRef.current = e.clientY;
-      useTimelineStore.getState().setWordDragHover(hitTestTrack(e.clientX, e.clientY));
-    };
-    const onKey = (e: KeyboardEvent) => {
-      dragShiftRef.current = e.shiftKey;
-    };
-    useTimelineStore.getState().setWordDragHover(hitTestTrack(pointerXRef.current, pointerYRef.current));
-    window.addEventListener("pointermove", onPointer);
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("keyup", onKey);
-    dragListenersCleanupRef.current = () => {
-      window.removeEventListener("pointermove", onPointer);
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("keyup", onKey);
-    };
+    dragListenersCleanupRef.current = null;
+    dragShiftRef.current = false;
   }, []);
+
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const data = event.active.data.current as DragData | undefined;
+      if (!data) return;
+
+      const initialShiftKey = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.shiftKey : false;
+      setActiveDrag({ ...data, initialShiftKey });
+      useTimelineStore.getState().setDraggingWord(true);
+      document.body.style.cursor = "grabbing";
+
+      dragListenersCleanupRef.current?.();
+      dragShiftRef.current = initialShiftKey;
+      if (event.activatorEvent instanceof PointerEvent) {
+        pointerXRef.current = event.activatorEvent.clientX;
+        pointerYRef.current = event.activatorEvent.clientY;
+      }
+      const onPointer = (e: PointerEvent) => {
+        dragShiftRef.current = e.shiftKey;
+        pointerXRef.current = e.clientX;
+        pointerYRef.current = e.clientY;
+        useTimelineStore.getState().setWordDragHover(hitTestTrack(e.clientX, e.clientY));
+      };
+      const onKey = (e: KeyboardEvent) => {
+        dragShiftRef.current = e.shiftKey;
+        if (e.type === "keydown" && e.code === "Escape") handleDragCancel();
+      };
+      useTimelineStore.getState().setWordDragHover(hitTestTrack(pointerXRef.current, pointerYRef.current));
+      window.addEventListener("pointermove", onPointer);
+      // dnd-kit drops a cancel or release that lands before its drag start commits; these end the drag then.
+      window.addEventListener("pointerup", handleDragCancel);
+      window.addEventListener("pointercancel", handleDragCancel);
+      document.addEventListener("keydown", onKey);
+      document.addEventListener("keyup", onKey);
+      dragListenersCleanupRef.current = () => {
+        window.removeEventListener("pointermove", onPointer);
+        window.removeEventListener("pointerup", handleDragCancel);
+        window.removeEventListener("pointercancel", handleDragCancel);
+        document.removeEventListener("keydown", onKey);
+        document.removeEventListener("keyup", onKey);
+      };
+    },
+    [handleDragCancel],
+  );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       swallowTrailingClick();
       setActiveDrag(null);
       useTimelineStore.getState().setWordDragHover(null);
+      useTimelineStore.getState().setDraggingWord(false);
       document.body.style.cursor = "";
 
       const isShiftDrag = dragShiftRef.current;
@@ -144,15 +166,6 @@ function useTimelineDnd(lines: LyricLine[]) {
     },
     [duration, lines],
   );
-
-  const handleDragCancel = useCallback(() => {
-    setActiveDrag(null);
-    useTimelineStore.getState().setWordDragHover(null);
-    document.body.style.cursor = "";
-    dragListenersCleanupRef.current?.();
-    dragListenersCleanupRef.current = null;
-    dragShiftRef.current = false;
-  }, []);
 
   return { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel };
 }
