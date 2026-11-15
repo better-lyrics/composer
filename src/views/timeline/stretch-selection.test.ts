@@ -74,7 +74,7 @@ describe("planStretchDrag", () => {
     expect(plan).toBeNull();
   });
 
-  it("rejects internal edges — the grip must sit on the selection's own extreme", () => {
+  it("rejects internal edges: the grip must sit on the selection's own extreme", () => {
     const drag = (wordIndex: number, edge: "left" | "right") => ({
       lineId: "L",
       type: "word" as const,
@@ -97,7 +97,7 @@ describe("planStretchDrag", () => {
     expect(plan).toBeNull();
   });
 
-  it("counts word blocks only — line-synced rows never add a grip", () => {
+  it("counts word blocks only; line-synced rows never add a grip", () => {
     const mixed: LyricLine[] = [
       makeLine("A", [{ id: "w4", text: "a", sep: "", begin: 1, end: 2, joinsNext: false }]),
       lineFromFields({ id: "B", text: "y", agentId: "v1", begin: 2, end: 6 }, DEFAULT_SPLIT_CHARACTER),
@@ -277,7 +277,7 @@ describe("stretchSelections · normal scaling", () => {
     expect(lineB[0].end).toBeCloseTo(9);
   });
 
-  it("does NOT expand syllable groups — exactly the selected words stretch", () => {
+  it("does NOT expand syllable groups: exactly the selected words stretch", () => {
     // "hel" + "lo " form a trailing-space syllable group. Only "hel" and "lo"
     // are explicitly selected (with "world" beyond them), so a 2x stretch maps
     // the pair flush onto "world" without touching anything else.
