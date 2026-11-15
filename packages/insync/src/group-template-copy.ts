@@ -128,8 +128,8 @@ function sourceTemplateLine(doc: LyricDoc, source: SlotLine, at: number): Templa
 
 // A timing edit in one shared instance is its group's template timing: it is written to the template, and every other
 // shared instance takes the same timing and readings at its own anchor, on its own syllables. The first edited line of
-// each template line wins, in song order. The edit itself is never changed or refused: a copy with no room in the song
-// moves until it fits.
+// each template line wins, in song order. The edit itself is never changed: a copy with no room in the song moves
+// until it fits, and when that lands it on another instance the copy is blocked, so the command is refused.
 function copyThroughTemplate(input: CopyInput): TemplateCopy {
   const { doc, after, anchors } = input;
   const result: TemplateCopy = {

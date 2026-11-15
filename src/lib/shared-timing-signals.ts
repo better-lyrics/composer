@@ -2,6 +2,8 @@
 
 type SharedTimingCopiedListener = (groupIds: readonly string[]) => void;
 
+type PlacementBlockedListener = () => void;
+
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[SharedTimingSignals]";
@@ -9,6 +11,7 @@ const LOG_PREFIX = "[SharedTimingSignals]";
 // -- Module state -------------------------------------------------------------
 
 const listeners = new Set<SharedTimingCopiedListener>();
+const blockedListeners = new Set<PlacementBlockedListener>();
 
 // -- Signals ------------------------------------------------------------------
 
@@ -30,6 +33,18 @@ function subscribeSharedTimingCopied(listener: SharedTimingCopiedListener): () =
   };
 }
 
+// A command refused because an instance, or a shared copy of it, has no room where it would land.
+function notifyPlacementBlocked(): void {
+  for (const listener of blockedListeners) listener();
+}
+
+function subscribePlacementBlocked(listener: PlacementBlockedListener): () => void {
+  blockedListeners.add(listener);
+  return () => {
+    blockedListeners.delete(listener);
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { notifySharedTimingCopied, subscribeSharedTimingCopied };
+export { notifyPlacementBlocked, notifySharedTimingCopied, subscribePlacementBlocked, subscribeSharedTimingCopied };

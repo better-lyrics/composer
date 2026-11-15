@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import { detachLine, placeInstance } from "insync/commands/instance-edits";
 import { deleteLine } from "insync/commands/instance-rows";
 import { placeLineAt } from "insync/commands/line-timing";
-import { isRefused } from "insync/commands/outcome";
 import { assignSinger } from "insync/commands/singer";
 import { isSharedLine } from "insync/group-shared-timing";
 import { instanceName } from "insync/instance-name";
@@ -15,7 +14,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
+import { showGroupActionToast } from "@/utils/group-toast";
 import { splitIntoWordsWithMeta } from "insync/lyric-words";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
@@ -59,11 +58,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const audio = useAudioStore.getState();
     const playheadTime = livePlaybackTime();
     const { groupId, instanceIdx } = placeAtPlayheadInfo;
-    if (
-      isRefused(useProjectStore.getState().commit(placeInstance(groupId, instanceIdx, playheadTime, audio.duration)))
-    ) {
-      showPlacementBlockedToast();
-    }
+    useProjectStore.getState().commit(placeInstance(groupId, instanceIdx, playheadTime, audio.duration));
     clearContextMenu();
   }, [placeAtPlayheadInfo, clearContextMenu]);
 

@@ -1,6 +1,7 @@
 import { roleWords } from "insync/line-track";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
+import { usePlacementBlockedNotice } from "@/hooks/usePlacementBlockedNotice";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWords } from "@/test/factories";
@@ -69,6 +70,11 @@ async function expectNoPlaceItem() {
 
 // -- Tests --------------------------------------------------------------------
 
+const PlacementBlockedNotice: React.FC = () => {
+  usePlacementBlockedNotice();
+  return null;
+};
+
 describe("TimelineContextMenu · place at playhead", () => {
   it("places an unplaced shared instance at the playhead from the line menu", async () => {
     seed(gutterOf("c1", 1));
@@ -84,6 +90,7 @@ describe("TimelineContextMenu · place at playhead", () => {
     const screen = await render(
       <>
         <TimelineContextMenu />
+        <PlacementBlockedNotice />
         <Toaster />
       </>,
     );

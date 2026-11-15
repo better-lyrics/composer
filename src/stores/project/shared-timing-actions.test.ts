@@ -15,7 +15,7 @@ import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
+import { subscribePlacementBlocked, subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -556,8 +556,15 @@ describe("placeInstance", () => {
         },
       ]);
       useAudioStore.setState({ duration: songLength });
-      expect(isRefused(store().commit(pasteLines(laterStart)))).toBe(true);
+      let blocked = 0;
+      const unsubscribe = subscribePlacementBlocked(() => blocked++);
+      try {
+        expect(isRefused(store().commit(pasteLines(laterStart)))).toBe(true);
+      } finally {
+        unsubscribe();
+      }
       expect(store().lines).toBe(before);
+      expect(blocked).toBe(1);
     });
 
     it("writes nothing and reports false when there is no timed reference", () => {

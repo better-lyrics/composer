@@ -1,4 +1,5 @@
-import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
+import { isRefused } from "insync/commands/outcome";
+import { notifyPlacementBlocked, notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import { notifyTemplateSplit } from "@/lib/template-split-signals";
 import { commitCommand } from "@/stores/project/commit";
 import { writingLyrics } from "@/stores/project/lyric-change-listeners";
@@ -33,6 +34,7 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
     if (patch) writingLyrics(get, "command", () => set(patch));
     if (copiedGroupIds.length) notifySharedTimingCopied(copiedGroupIds);
     if (splits.length) notifyTemplateSplit(splits.map((split) => split.instances));
+    if (isRefused(outcome) && outcome.refused.reason === "placement-out-of-range") notifyPlacementBlocked();
     return outcome;
   },
 

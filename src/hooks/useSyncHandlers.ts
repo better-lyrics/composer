@@ -32,7 +32,6 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showPlacementBlockedToast } from "@/utils/group-toast";
 import { type SyncState, formatTimeMs } from "@/utils/sync-helpers";
 import { splitIntoWords } from "insync/lyric-words";
 import type { RetimeChange } from "insync/timing-word-ops";
@@ -138,10 +137,7 @@ function useSyncHandlers({
       const { duration } = useAudioStore.getState();
       const placing =
         anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates);
-      if (placing && isRefused(useProjectStore.getState().commit(placing))) {
-        showPlacementBlockedToast();
-        return false;
-      }
+      if (placing && isRefused(useProjectStore.getState().commit(placing))) return false;
       if (anchor) {
         const placed = useProjectStore.getState();
         const { redoPreroll } = useSettingsStore.getState();
@@ -176,10 +172,7 @@ function useSyncHandlers({
           planned.commit = commit;
         }),
       );
-      if (isRefused(outcome)) {
-        if (outcome.refused.reason === "placement-out-of-range") showPlacementBlockedToast();
-        return false;
-      }
+      if (isRefused(outcome)) return false;
       const { commit } = planned;
       if (!commit) return false;
       const position = syncAddressAt(useProjectStore.getState().lines, commit.nextCursor);
