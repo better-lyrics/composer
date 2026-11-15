@@ -30,12 +30,14 @@ function withTimedPassthroughOf<T extends LineTrack>(track: T, source: LineTrack
   return { ...track, syllables: track.syllables.map(restore) };
 }
 
-// A background with no timed syllables exports as one timed span holding its kept spans; an edited file reads them
-// back as that span's markup.
+// A background with no timed syllables exports as one timed span holding its kept spans, or carrying the attributes
+// of the one kept span that held all of it; an edited file reads them back as that span's markup or attributes.
 function withSpanMarkupOf(track: BackgroundTrack, edited: BackgroundTrack | undefined): BackgroundTrack {
   const [span, ...rest] = timedSyllables(edited);
-  const markup = span?.passthrough?.markup;
-  return markup && rest.length === 0 && timedSyllables(track).length === 0 ? withSpansFromMarkup(track, markup) : track;
+  if (!span || rest.length > 0 || timedSyllables(track).length > 0) return track;
+  const { markup, attrs } = span.passthrough ?? {};
+  if (markup) return withSpansFromMarkup(track, markup);
+  return attrs ? withSpansFromMarkup(track, [{ name: "span", attrs, children: [{ text: span.text }] }]) : track;
 }
 
 // -- Functions ----------------------------------------------------------------

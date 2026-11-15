@@ -13,7 +13,7 @@ import { BACKGROUND_ANCHOR, TEXT_ANCHOR } from "@/utils/lyrics-parsers/ttml-anch
 import type { Indent } from "@/utils/ttml-head";
 import { backgroundEnvelope, lineEnvelope, partEnvelope, writtenTimes } from "@/utils/ttml-kept-times";
 import { isExportedLine } from "@/utils/ttml-line-keys";
-import { emitWordSpan, spanEndsInSpace, timedSpan } from "@/utils/ttml-markup";
+import { emitWordSpan, spanEndsInSpace } from "@/utils/ttml-markup";
 import {
   anchorResolver,
   keptAmongInline,
@@ -22,7 +22,7 @@ import {
   keptTimesAttributes,
   type Placed,
 } from "@/utils/ttml-passthrough-write";
-import { untimedTrackContent } from "@/utils/ttml-untimed-write";
+import { untimedTrackContent, untimedTrackSpan } from "@/utils/ttml-untimed-write";
 
 // -- Types --------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ function backgroundSpan(line: LyricLine, writesWords: boolean): string {
   const bgTiming = bgBounds(line) ?? effectiveBounds(line);
   if (!bgTiming) return "";
   const explicit = drawnSyllables(line, "bg")[0]?.explicit;
-  const whole = timedSpan({ ...bgTiming, explicit }, untimedTrackContent(background, bgText));
+  const whole = untimedTrackSpan({ ...bgTiming, explicit }, background, bgText);
   return `${open}${keptAmongInline([wholeTrack(whole, background)], kept, order)}</span>`;
 }
 

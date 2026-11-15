@@ -117,7 +117,9 @@ describe("ttml kept data edges", () => {
   it("untimed spans of a line-synced line and background keep their attributes", () => {
     const ttml = exported();
     expect(ttml).toContain('Quiet harbour <span tts:color="red">bright</span>');
-    expect(ttml).toContain('<span x-vendor:echo="2">(far)</span>');
+    expect(ttml).toContain(
+      '<span ttm:role="x-bg"><span begin="0:10.000" end="0:12.000" x-vendor:echo="2">(far)</span></span>',
+    );
   });
 
   it("a singer name holding an element writes its text once", () => {
