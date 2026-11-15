@@ -1,10 +1,7 @@
 import { readFileSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { isTestFile, walkSourceFiles } from "@/test/source-files";
+import { isTestFile, walkScannedSources } from "@/test/source-files";
 
-const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OWNER = "lib/download-file.ts";
 const LOCAL_SCRATCH_DIR = "test/e2e-repro/";
 
@@ -64,8 +61,7 @@ const RULES: Rule[] = [
 
 function offendersOf(rule: Rule): string[] {
   const offenders: string[] = [];
-  for (const file of walkSourceFiles(SRC_ROOT)) {
-    const rel = relative(SRC_ROOT, file).replace(/\\/g, "/");
+  for (const { file, rel } of walkScannedSources()) {
     if (rel.startsWith(LOCAL_SCRATCH_DIR) || rule.allowed(rel)) continue;
     if (!rule.includeTests && isTestFile(rel)) continue;
     readFileSync(file, "utf8")
