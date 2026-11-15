@@ -1,6 +1,6 @@
-import type { LanguagePiece } from "@/domain/language/model";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LanguagePiece } from "insync/language";
+import type { LyricLine } from "insync/line";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types ---------------------------------------------------------------------
 

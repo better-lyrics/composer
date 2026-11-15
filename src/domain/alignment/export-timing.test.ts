@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readExportTiming, withExportTiming } from "@/domain/alignment/export-timing";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";

@@ -1,6 +1,6 @@
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
-import { fieldWords, roleWords, trackField, trackWords } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { fieldWords, roleWords, trackField, trackWords } from "insync/line-track";
 import { describe, expect, it } from "vitest";
 
 function line(extras: Partial<LineFields> = {}): LyricLine {

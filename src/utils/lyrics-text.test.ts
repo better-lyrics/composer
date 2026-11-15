@@ -4,9 +4,9 @@
 
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
 

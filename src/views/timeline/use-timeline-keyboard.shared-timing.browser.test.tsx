@@ -1,9 +1,9 @@
 import { createRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";

@@ -1,5 +1,5 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { fullySyncedLineCount, isSyncableLine, type SyncGap, syncGaps } from "@/domain/line/sync-progress";
 import { type ZeroLengthWordIssue, zeroLengthWordIssues } from "@/domain/line/zero-length-words";
 import { namedArtists } from "@/domain/project/display-title";

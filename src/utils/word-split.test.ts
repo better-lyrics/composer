@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { splitWordIntoWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { type LegacyWord, legacyLine, legacyWords } from "@/test/legacy-languages";
 import { splitWordIntoWords } from "@/utils/word-split";
 

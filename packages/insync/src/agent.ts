@@ -1,4 +1,4 @@
-import type { Passthrough } from "insync/passthrough";
+import type { Passthrough } from "./passthrough";
 
 // -- Types --------------------------------------------------------------------
 

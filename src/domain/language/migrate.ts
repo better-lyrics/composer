@@ -1,15 +1,15 @@
 import { alignTrackToLine } from "@/domain/language/align";
 import { lineTransliteration, withLanguages } from "@/domain/language/line-languages";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
-import type { LanguagePieces, LineLanguage } from "@/domain/language/model";
+import type { LanguagePieces, LineLanguage } from "insync/language";
 import { mappedTransliteration, trackPieces } from "@/domain/language/pieces";
 import { languageSourceText } from "@/domain/language/source-text";
 import { DASHES, normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { spacedText } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 const SOFT_MARKER = "\uE004";
 const WORD_MARKER = "\uE005";

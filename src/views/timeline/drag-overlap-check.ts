@@ -1,5 +1,5 @@
-import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { trackWords } from "insync/line-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 
 // -- Functions ----------------------------------------------------------------

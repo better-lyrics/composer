@@ -1,5 +1,5 @@
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import { bgBounds, effectiveBounds, mainBounds } from "@/domain/line/bounds";
+import { bgBounds, effectiveBounds, mainBounds } from "insync/line-bounds";
 
 import { describe, expect, it } from "vitest";
 

@@ -1,4 +1,4 @@
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";

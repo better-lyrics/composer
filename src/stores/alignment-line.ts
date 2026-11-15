@@ -6,7 +6,7 @@ import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { type AlignmentWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
 import { type WordInterval, retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
 import { lineText } from "@/domain/line/text";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { type PlannedLine, guideTaps, hasTappedEnd, plainWindow, segmentIn } from "@/stores/alignment-plan";
 
 // One planned line through the aligner, as hubertfa-posttrain's step 1

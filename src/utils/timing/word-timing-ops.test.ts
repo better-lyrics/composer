@@ -1,9 +1,9 @@
 import { patchOf, updatedLine } from "@/test/field-updates";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { describe, expect, it } from "vitest";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
-import type { LineUpdate } from "@/domain/line/model";
+import type { LineUpdate } from "insync/line";
 import { wordBoundaryEdit, wordRetimeEdit } from "@/utils/timing/word-timing";
 
 describe("createWordTimingOps: early returns", () => {

@@ -1,6 +1,6 @@
-import type { LyricLine } from "@/domain/line/model";
-import { lineInstanceKey } from "@/domain/instance/key";
-import { effectiveBounds } from "@/domain/line/bounds";
+import type { LyricLine } from "insync/line";
+import { lineInstanceKey } from "insync/instance-key";
+import { effectiveBounds } from "insync/line-bounds";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";

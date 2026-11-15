@@ -1,6 +1,6 @@
 import { alignedPieceOf } from "@/domain/language/aligned-piece";
-import type { LanguagePiece } from "@/domain/language/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LanguagePiece } from "insync/language";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { LazyPopover } from "@/ui/lazy-popover";

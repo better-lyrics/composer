@@ -1,5 +1,5 @@
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { describe, expect, it } from "vitest";
 
 const base = { id: "line", text: "hold me close", agentId: "v1" };

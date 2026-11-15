@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { lineText } from "@/domain/line/text";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import type { ProjectFile } from "@/lib/project-file";
 import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";

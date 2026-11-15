@@ -8,7 +8,7 @@ import { commitGesture } from "@/domain/sync/commit-gesture";
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";

@@ -6,11 +6,11 @@ import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/lan
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
-import type { LineLanguage } from "@/domain/language/model";
+import type { LineLanguage } from "insync/language";
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";

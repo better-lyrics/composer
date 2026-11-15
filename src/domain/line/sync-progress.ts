@@ -1,9 +1,9 @@
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { hasMainLyrics, isLineSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 

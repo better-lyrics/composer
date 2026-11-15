@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { type LoupeCanvas, type LoupeFrame, colour, xOf } from "@/views/timeline/loupe/draw-loupe";
 
 // -- Types --------------------------------------------------------------------

@@ -1,7 +1,7 @@
-import { bgBounds, mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { bgBounds, mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { isWordSynced } from "@/domain/line/predicates";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 
 // -- Functions ----------------------------------------------------------------
 

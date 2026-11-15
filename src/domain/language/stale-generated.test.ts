@@ -1,8 +1,8 @@
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LanguageContentOrigin } from "@/domain/language/model";
+import type { LanguageContentOrigin } from "insync/language";
 import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 
 function lineWithTracks(

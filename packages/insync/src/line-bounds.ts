@@ -1,6 +1,6 @@
-import type { LineTrack, LyricLine } from "@/domain/line/model";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
-import { type Bounds, firstBegin, lastEnd } from "@/domain/word/bounds";
+import type { LineTrack, LyricLine } from "./line";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "./line-track";
+import { type Bounds, firstBegin, lastEnd } from "./word-bounds";
 
 // -- Functions ----------------------------------------------------------------
 

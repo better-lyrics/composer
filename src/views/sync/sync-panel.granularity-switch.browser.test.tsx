@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

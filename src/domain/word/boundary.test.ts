@@ -1,6 +1,6 @@
 import { clampBoundaryTime, isBoundaryFlush } from "@/domain/word/boundary";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { describe, expect, it } from "vitest";
 
 const w = (text: string, begin: number, end: number): WordTiming => wordFromSpaced({ text, begin, end });

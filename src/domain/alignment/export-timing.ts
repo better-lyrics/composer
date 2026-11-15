@@ -1,7 +1,7 @@
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 
 // -- Types --------------------------------------------------------------------

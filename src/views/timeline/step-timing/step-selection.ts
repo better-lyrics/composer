@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { LoopRegion } from "@/domain/selection/loop-region";
 import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";

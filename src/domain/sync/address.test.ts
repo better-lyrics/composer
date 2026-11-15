@@ -1,7 +1,7 @@
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { convertLineToWord } from "@/domain/line/span-to-words";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
 import { createLine } from "@/test/factories";

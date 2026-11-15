@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { findOpenProjectId } from "@/lib/open-project-session";
 import type { ProjectSaveInput } from "@/lib/persistence";
 import { loadProjectAudio, saveProjectAudio } from "@/lib/project-audio";

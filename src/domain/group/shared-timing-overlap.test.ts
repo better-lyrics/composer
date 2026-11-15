@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { shiftLineTiming } from "@/domain/line/shift";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { nudgeSelectedWords } from "@/domain/selection/nudge";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { clampBoundaryTime } from "@/domain/word/boundary";
 import { boundsOverlap } from "@/domain/word/overlap";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";

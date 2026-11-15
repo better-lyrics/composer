@@ -1,8 +1,8 @@
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

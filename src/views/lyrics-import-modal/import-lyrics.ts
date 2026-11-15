@@ -1,5 +1,5 @@
 import { partsAfterLineChange } from "insync/part-membership";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
@@ -9,7 +9,7 @@ import { lineText } from "@/domain/line/text";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { importableMetadata } from "@/domain/project/imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import type { ProjectFile } from "@/lib/project-file";
 import { linesFromSaved } from "@/lib/saved-project";

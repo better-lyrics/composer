@@ -1,5 +1,5 @@
 import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";

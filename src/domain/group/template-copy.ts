@@ -2,15 +2,21 @@ import { sameSharedContent } from "@/domain/group/carried-line";
 import { withCopiesInSong } from "@/domain/group/copies-in-song";
 import { instanceSlotLine, templateBySlot } from "@/domain/group/flatten";
 import { invertedIds, withLineIds } from "@/domain/group/line-ids";
-import { type Instance, instanceSlots, isInstanceSpan, type LyricDoc, type TemplateLine } from "@/domain/group/model";
+import {
+  type Instance,
+  instanceSlots,
+  isInstanceSpan,
+  type LinkGroup,
+  type LyricDoc,
+  type TemplateLine,
+} from "insync/group";
 import { offsetTimingFields } from "@/domain/group/offset-timing";
 import { sharesTiming, timingChanged } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
 import { fittedAnchor, lineContent, toTemplateLine } from "@/domain/group/template-line";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked, type LinkedLine } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceKey } from "insync/instance-key";
+import { isLinked, type LinkedLine } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

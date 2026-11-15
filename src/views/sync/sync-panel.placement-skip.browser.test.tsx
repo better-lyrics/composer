@@ -1,4 +1,4 @@
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";

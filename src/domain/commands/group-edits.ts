@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { LyricCommand } from "@/domain/commands/command";
 import { type LyricRoot, type Outcome, applied, changedLineIds, refused } from "@/domain/commands/outcome";
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/domain/group/group-plans";
 import { unlinkLines } from "@/domain/group/linking";
 import type { SharingOutcome } from "@/domain/group/shared-placement";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -1,9 +1,9 @@
 import { partsAfterLineChange } from "insync/part-membership";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { LyricCommand } from "@/domain/commands/command";
 import { type Applied, applied, isRefused, type LyricRoot, type Outcome } from "@/domain/commands/outcome";
 import { foldLines } from "@/domain/group/fold";
-import type { LyricDoc } from "@/domain/group/model";
+import type { LyricDoc } from "insync/group";
 import type { CarriedSplit } from "@/domain/group/template-edit";
 import { withoutOrphanPieces } from "@/domain/language/pieces";
 import { commandContext } from "@/stores/project/command-context";

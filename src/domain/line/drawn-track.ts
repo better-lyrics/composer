@@ -1,7 +1,7 @@
 import { withAlignedTransliteration } from "@/domain/language/align";
-import type { LanguagePieces, LineLanguages } from "@/domain/language/model";
+import type { LanguagePieces, LineLanguages } from "insync/language";
 import { trackPieces } from "@/domain/language/pieces";
-import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "@/domain/line/model";
+import type { LineTrack, LyricLine, SpanTimedTrack, TrackRole } from "insync/line";
 import { trackText } from "@/domain/line/text";
 import {
   backgroundTrack,
@@ -12,11 +12,11 @@ import {
   type TrackField,
   timedSyllables,
   trackOf,
-} from "@/domain/line/track";
+} from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter, withoutSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

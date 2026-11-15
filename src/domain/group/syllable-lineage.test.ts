@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type LineageCounterpart, syllableLineage } from "@/domain/group/syllable-lineage";
-import type { Syllable } from "@/domain/line/model";
+import type { Syllable } from "insync/line";
 
 const syllable = (id: string, text: string, begin?: number, end?: number): Syllable =>
   begin === undefined || end === undefined

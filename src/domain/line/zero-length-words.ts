@@ -1,9 +1,9 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { type SyncGapTrack, timedWordSlotRanges } from "@/domain/line/sync-progress";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types ---------------------------------------------------------------------
 

@@ -4,12 +4,12 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { markWordsExplicit } from "@/domain/commands/word-edits";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, roleWords, timedSyllables, trackRole } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, roleWords, timedSyllables, trackRole } from "insync/line-track";
 import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { newWordId } from "@/domain/word/id";

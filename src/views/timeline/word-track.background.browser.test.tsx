@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";

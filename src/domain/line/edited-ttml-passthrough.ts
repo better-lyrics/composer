@@ -1,12 +1,12 @@
 import { withRenamedAnchors } from "insync/passthrough";
-import type { BackgroundTrack, LineTrack, LyricLine, Syllable } from "@/domain/line/model";
+import type { BackgroundTrack, LineTrack, LyricLine, Syllable } from "insync/line";
 import {
   type LinePassthrough,
   linePassthroughOf,
   withLinePassthrough,
   withoutKeptData,
 } from "@/domain/line/passthrough";
-import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 import { withSpansFromMarkup } from "@/utils/lyrics-parsers/ttml-untimed-read";
 

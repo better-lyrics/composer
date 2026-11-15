@@ -1,5 +1,5 @@
-import type { LineTrack, LyricLine, Syllable } from "@/domain/line/model";
-import { backgroundTrack, isTimedSyllable, mainTrack } from "@/domain/line/track";
+import type { LineTrack, LyricLine, Syllable } from "insync/line";
+import { backgroundTrack, isTimedSyllable, mainTrack } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 
 // -- Functions ----------------------------------------------------------------

@@ -1,4 +1,4 @@
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

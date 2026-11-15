@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { type LegacyLine, legacyLanguages, legacyLine, legacyView, legacyWords } from "@/test/legacy-languages";
 import { isStructurallyEqual } from "@/utils/structural-equal";

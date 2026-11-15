@@ -1,8 +1,8 @@
 import { isRefused } from "@/domain/commands/outcome";
 import { moveWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { trackRole } from "@/domain/line/track";
+import { trackRole } from "insync/line-track";
 import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "@/domain/selection/resolve";

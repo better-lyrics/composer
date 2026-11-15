@@ -1,10 +1,10 @@
 import { withShownBackground } from "@/domain/edit-text/shown-background";
 import { withoutBackground } from "@/domain/line/background";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { backgroundText, lineText, trackText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { cleanSplitCharacters, getSplitCharacter, withoutSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------

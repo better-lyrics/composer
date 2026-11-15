@@ -1,4 +1,4 @@
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { RESERVED_META_KEYS, fromComposerMeta, toComposerMeta } from "@/domain/project/metadata-ttml";
 import { describe, expect, it } from "vitest";
 

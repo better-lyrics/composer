@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { SyncGranularity } from "@/domain/line/sync-progress";
 import { syncAddressPosition } from "@/domain/sync/address";
 import { storedSyncPosition } from "@/domain/sync/anchor-gesture";

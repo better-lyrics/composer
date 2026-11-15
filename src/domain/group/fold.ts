@@ -1,7 +1,6 @@
 import { docAfterLines, type GroupHint } from "@/domain/group/doc-from-flat-lines";
 import { flattenBody } from "@/domain/group/flatten";
-import type { LyricDoc } from "@/domain/group/model";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup, LyricDoc } from "insync/group";
 import {
   copyThroughTemplate,
   type InstanceAnchors,
@@ -9,7 +8,7 @@ import {
   type TemplateCopy,
 } from "@/domain/group/template-copy";
 import { type CarriedSplit, carryTemplateEdits } from "@/domain/group/template-edit";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

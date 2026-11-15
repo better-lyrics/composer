@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Agent } from "@/domain/agent/model";
-import type { LinkGroup } from "@/domain/group/template";
+import type { Agent } from "insync/agent";
+import type { LinkGroup } from "insync/group";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { ProjectMetadata } from "insync/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { applyCrossLineMove, applySameLineReorder, type DragData } from "@/views/timeline/drag-handlers";

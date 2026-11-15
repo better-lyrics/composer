@@ -1,5 +1,5 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { sourceSwapPatch, undoSourceSwap } from "@/domain/project/source-metadata";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import type { AudioLoadMode } from "@/hooks/useLoadAudioFile";

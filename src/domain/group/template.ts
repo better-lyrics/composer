@@ -1,21 +1,12 @@
-import type { LanguagePiece, LanguagePieces, LineLanguages } from "@/domain/language/model";
+import type { LanguagePiece, LanguagePieces, LineLanguages } from "insync/language";
 import { keyedPieces, pieceOf } from "@/domain/language/pieces";
 import { withPiecesOn } from "@/domain/language/side-pieces";
 import type { LineFields } from "@/domain/line/line-from-fields";
 import type { LinePassthrough } from "@/domain/line/passthrough";
 import { newWordId } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
-
-interface LinkGroup {
-  id: string;
-  label: string;
-  color: string;
-  templateVersion: number;
-  sharesTiming?: true;
-  ownTimingInstances?: number[];
-}
 
 interface WordTemplate {
   text: string;
@@ -104,4 +95,4 @@ function templateBackgroundFields(template: LineTemplate, words: WordTiming[] | 
 // -- Exports ------------------------------------------------------------------
 
 export { languagesToTemplate, offsetTemplateWords, templateBackgroundFields, templateLanguages, wordsToTemplate };
-export type { LinkGroup, WordTemplate, LineTemplate };
+export type { WordTemplate, LineTemplate };

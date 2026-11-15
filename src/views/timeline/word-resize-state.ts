@@ -1,5 +1,5 @@
-import type { Bounds } from "@/domain/word/bounds";
-import type { WordTiming } from "@/domain/word/timing";
+import type { Bounds } from "insync/word-bounds";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

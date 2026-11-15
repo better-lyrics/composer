@@ -1,6 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LyricLine } from "@/domain/line/model";
-import { roleWords } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { roleWords } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";

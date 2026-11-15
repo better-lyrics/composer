@@ -6,9 +6,9 @@ import {
   instancePositionsByLineId,
   linesOfInstance,
   nextInstanceIdx,
-} from "@/domain/instance/enumerate";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+} from "insync/instance-enumerate";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------

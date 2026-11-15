@@ -1,5 +1,5 @@
-import type { LanguagePiece } from "@/domain/language/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LanguagePiece } from "insync/language";
+import type { WordTiming } from "insync/word-timing";
 import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { describe, expect, it } from "vitest";
 

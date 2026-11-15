@@ -1,5 +1,5 @@
 import { DragOverlay } from "@dnd-kit/core";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { cn } from "@/utils/cn";
 import { type WordTrackType, bgTrackHeight, wordInsetPx } from "@/views/timeline/row-geometry";

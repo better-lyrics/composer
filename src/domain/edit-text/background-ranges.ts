@@ -6,7 +6,7 @@ import {
   shiftedRange,
   shownRow,
 } from "@/domain/edit-text/shown-row";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

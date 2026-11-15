@@ -1,9 +1,9 @@
 /**
  * @vitest-environment node
  */
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { newWordId } from "@/domain/word/id";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";

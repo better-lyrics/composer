@@ -1,5 +1,5 @@
 import { wholeSongRange } from "@/domain/group/shared-timing";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 
 // -- Types --------------------------------------------------------------------
 

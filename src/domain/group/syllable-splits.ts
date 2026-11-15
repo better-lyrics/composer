@@ -1,5 +1,5 @@
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
-import type { LineTrack, LyricLine, TrackRole } from "@/domain/line/model";
+import type { LineTrack, LyricLine, TrackRole } from "insync/line";
 import { syllablesFromText } from "@/domain/line/syllables-from-text";
 import { trackText } from "@/domain/line/text";
 import {
@@ -9,9 +9,9 @@ import {
   roleWords,
   untimedSyllable,
   type WordTrack,
-} from "@/domain/line/track";
+} from "insync/line-track";
 import { withRoleTrack, withTrackSyllables, withTrackText } from "@/domain/line/track-writes";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { withoutSplitCharacter } from "@/utils/split-character";
 

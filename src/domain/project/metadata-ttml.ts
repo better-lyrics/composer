@@ -1,4 +1,4 @@
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 
 // -- Types --------------------------------------------------------------------
 

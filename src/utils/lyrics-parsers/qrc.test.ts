@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { fieldsOfLine, type LineFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText, syllablesText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useSettingsStore } from "@/stores/settings";
 import { SICKO_MODE_QRC, SICKO_MODE_WRITERS, WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";

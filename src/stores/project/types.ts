@@ -1,14 +1,13 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
 import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { LyricRoot } from "@/domain/commands/outcome";
-import type { LyricDoc } from "@/domain/group/model";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LinkGroup, LyricDoc } from "insync/group";
+import type { LyricLine } from "insync/line";
 import type { EditedLyrics } from "@/domain/project/edited-lyrics";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { ProjectTab } from "@/domain/project/tab";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";

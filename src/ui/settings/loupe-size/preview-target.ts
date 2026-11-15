@@ -1,6 +1,6 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
-import { trackRole } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { trackRole } from "insync/line-track";
 import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";

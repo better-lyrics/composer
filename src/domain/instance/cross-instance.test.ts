@@ -2,9 +2,9 @@
  * @vitest-environment node
  */
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
-import { wouldDropCrossInstance } from "./cross-instance";
+import { wouldDropCrossInstance } from "insync/cross-instance";
 
 const grouped = (id: string, gid: string, inst: number): LyricLine =>
   lineFromFields({

@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { describe, expect, it } from "vitest";
 

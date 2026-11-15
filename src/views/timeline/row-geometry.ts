@@ -1,5 +1,5 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Types ---------------------------------------------------------------------
 

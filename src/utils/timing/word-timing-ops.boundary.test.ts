@@ -1,8 +1,8 @@
-import { backgroundTrack, roleWords } from "@/domain/line/track";
+import { backgroundTrack, roleWords } from "insync/line-track";
 import { backgroundText } from "@/domain/line/text";
 import { updatedLine, patchOf } from "@/test/field-updates";
 import { describe, expect, it } from "vitest";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";

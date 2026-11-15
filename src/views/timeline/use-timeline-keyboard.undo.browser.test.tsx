@@ -1,5 +1,5 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { createRef } from "react";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { renderHook } from "vitest-browser-react";

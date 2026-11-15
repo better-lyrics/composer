@@ -1,5 +1,5 @@
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { isLinked } from "./instance-predicates";
+import type { LyricLine } from "./line";
 
 // -- Functions ----------------------------------------------------------------
 

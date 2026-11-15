@@ -2,10 +2,10 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand, patchLines } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { lineTranslations, withLanguages } from "@/domain/language/line-languages";
-import type { LanguagePieces } from "@/domain/language/model";
+import type { LanguagePieces } from "insync/language";
 import { confirmTransliterationAlignment } from "@/domain/language/review";
 import { withTrackPieces } from "@/domain/language/side-pieces";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 
 // -- Constants ----------------------------------------------------------------
 

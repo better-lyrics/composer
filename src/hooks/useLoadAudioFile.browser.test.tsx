@@ -1,4 +1,4 @@
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { savedLines } from "@/lib/saved-project";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { usePersistence } from "@/hooks/usePersistence";

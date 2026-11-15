@@ -2,17 +2,17 @@ import { escapeXmlText } from "insync/xml-node";
 import { alignTrackToLine } from "@/domain/language/align";
 import { type BackgroundPlacement, alternateBackgroundPlacement } from "@/domain/language/background-placement";
 import { lineTransliteration } from "@/domain/language/line-languages";
-import type { LanguagePieces, LineLanguage } from "@/domain/language/model";
+import type { LanguagePieces, LineLanguage } from "insync/language";
 import { pieceOf } from "@/domain/language/pieces";
 import {
   hasLexicalBoundaryAfter,
   normalizeTransliterationForEditing,
   timedTransliterationSlice,
 } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { isWordSynced } from "@/domain/line/predicates";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { emitWordSpan } from "@/utils/ttml-markup";
 
 function hasAlternateText(track: LineLanguage | undefined): boolean {

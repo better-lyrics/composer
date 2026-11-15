@@ -5,9 +5,9 @@
 import { describe, expect, it } from "vitest";
 import type { LineTemplate } from "@/domain/group/template";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 
 // -- Fixtures -----------------------------------------------------------------

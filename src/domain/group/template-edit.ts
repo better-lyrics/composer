@@ -1,13 +1,13 @@
 import { carriedLine, sameSharedContent } from "@/domain/group/carried-line";
 import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LineageCounterpart, LineagePair } from "@/domain/group/syllable-lineage";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { InstanceAnchors } from "@/domain/group/template-copy";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked, type LinkedLine } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceKey } from "insync/instance-key";
+import { isLinked, type LinkedLine } from "insync/instance-predicates";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

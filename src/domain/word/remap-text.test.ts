@@ -1,6 +1,6 @@
 import { insertSlot, remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { describe, expect, it } from "vitest";
 
 const flush: WordTiming[] = [

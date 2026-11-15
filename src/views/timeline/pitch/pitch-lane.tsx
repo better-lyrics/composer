@@ -1,12 +1,12 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { trackRole } from "@/domain/line/track";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { trackRole } from "insync/line-track";
+import { effectiveBounds } from "insync/line-bounds";
 import { isLineTimed } from "@/domain/line/sync-progress";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
 import { songWordCoverage, spillRuns, wordCoverage } from "@/domain/pitch/spill";
 import type { PitchPoint } from "@/domain/pitch/track";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import type { Rgb } from "@/domain/spectrum/palettes";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime } from "@/stores/audio";

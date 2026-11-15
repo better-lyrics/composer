@@ -2,10 +2,10 @@ import { editRows, shownWithRewrittenRows } from "@/domain/edit-text/background-
 import { diffEditTextChange, withMovedTextDetached } from "@/domain/edit-text/diff-edit-text";
 import { editTextWithRewrittenRows } from "@/domain/edit-text/edit-text";
 import { type BackgroundRange, NO_RANGES } from "@/domain/edit-text/shown-row";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import type { InstanceAnchors } from "@/domain/group/template-copy";
 import { type CarriedSplit, carryTemplateEdits } from "@/domain/group/template-edit";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { textToLyricLines } from "@/utils/lyrics-text";
 
 // -- Types --------------------------------------------------------------------

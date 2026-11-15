@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { primingMigrationShift, shiftSavedTimings } from "@/lib/priming-migration";
 import { linesFromSaved, savedLines } from "@/lib/saved-project";
 import { createLine } from "@/test/factories";

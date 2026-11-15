@@ -1,8 +1,8 @@
 import { msFromSeconds, secondsFromMs } from "insync/time";
-import type { LanguagePieces } from "@/domain/language/model";
+import type { LanguagePieces } from "insync/language";
 import { sidePieces, withPiecesOn } from "@/domain/language/side-pieces";
-import type { LineTrack, LyricLine, Syllable } from "@/domain/line/model";
-import { backgroundTrack, mainTrack } from "@/domain/line/track";
+import type { LineTrack, LyricLine, Syllable } from "insync/line";
+import { backgroundTrack, mainTrack } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 
 // -- Helpers ------------------------------------------------------------------

@@ -2,7 +2,7 @@ import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-erro
 import type { LanguageAlignmentErrorField } from "@/domain/language/alignment-errors";
 import { getLanguageReviewItems } from "@/domain/language/review";
 import type { LanguageReviewTrack } from "@/domain/language/review";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { LanguageStatusBanner } from "@/views/languages/status-banner";
 import { pluralize } from "@/utils/pluralize";
 

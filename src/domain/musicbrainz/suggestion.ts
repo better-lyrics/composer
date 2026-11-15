@@ -1,5 +1,5 @@
 import type { SongDetails } from "@/domain/musicbrainz/song-details";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { normalizeIsrc } from "@/utils/isrc";
 
 // -- Types --------------------------------------------------------------------

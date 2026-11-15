@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 // discriminated union is the compile-time wall for those cases.
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const INSYNC_ROOT = resolve(SRC_ROOT, "../packages/insync/src");
 
 // Files allowed to contain the raw patterns: only `domain/**`, the modules that
 // legitimately own these derivations. Nothing outside `domain/**` currently
@@ -24,7 +25,7 @@ const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WHITELIST_EXACT = new Set<string>([]);
 
 function isWhitelisted(relPath: string): boolean {
-  if (relPath.startsWith("domain/")) return true;
+  if (relPath.startsWith("domain/") || relPath.startsWith("insync/")) return true;
   return WHITELIST_EXACT.has(relPath);
 }
 
@@ -39,6 +40,13 @@ function* walk(dir: string): Generator<string> {
       yield full;
     }
   }
+}
+
+// Insync holds the domain modules that moved out of `src/domain`, so its files are owners in the same way.
+function* scannedFiles(): Generator<{ file: string; rel: string }> {
+  for (const file of walk(SRC_ROOT)) yield { file, rel: relative(SRC_ROOT, file).replace(/\\/g, "/") };
+  for (const file of walk(INSYNC_ROOT))
+    yield { file, rel: `insync/${relative(INSYNC_ROOT, file).replace(/\\/g, "/")}` };
 }
 
 interface ForbiddenPattern {
@@ -58,27 +66,27 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline first-word-begin access",
     regex: /\bwords\[0\]\.begin\b/,
-    use: "firstBegin from @/domain/word/bounds",
+    use: "firstBegin from insync/word-bounds",
   },
   {
     name: "inline last-word-end access",
     regex: /words\[words\.length - 1\]\.end\b/,
-    use: "lastEnd from @/domain/word/bounds",
+    use: "lastEnd from insync/word-bounds",
   },
   {
     name: "inline standalone check",
     regex: /\.groupId === undefined \|\|\s*[\w.]+\.instanceIdx === undefined/,
-    use: "isLinked from @/domain/instance/predicates",
+    use: "isLinked from insync/instance-predicates",
   },
   {
     name: "inline linked-line check",
     regex: /\.groupId !== undefined &&\s*[\w.]+\.instanceIdx !== undefined/,
-    use: "isLinked from @/domain/instance/predicates",
+    use: "isLinked from insync/instance-predicates",
   },
   {
     name: "inline instance-index enumeration",
     regex: /\.groupId === [\w.]+ &&\s*[\w.]+\.instanceIdx !== undefined/,
-    use: "instanceIndicesOf / nextInstanceIdx from @/domain/instance/enumerate",
+    use: "instanceIndicesOf / nextInstanceIdx from insync/instance-enumerate",
   },
   {
     name: "inline word-selection identity check",
@@ -119,18 +127,18 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline instance ordinal",
     regex: /instanceIdx\b(?:\s*\?\?\s*\d+\))?\s*\+\s*1\b/,
-    use: "instanceOrdinal from @/domain/instance/enumerate",
+    use: "instanceOrdinal from insync/instance-enumerate",
   },
   {
     name: "inline instance count",
     regex: /instanceIndicesOf\((?:[^()]|\([^()]*\))*\)\.length/,
-    use: "instanceCount from @/domain/instance/enumerate",
+    use: "instanceCount from insync/instance-enumerate",
   },
   {
     name: "inline track pick",
     regex: /\.tracks\[[01]\]|\.tracks\.find\(/,
-    use: "mainTrack / backgroundTrack from @/domain/line/track",
-    ownerFile: "domain/line/track.ts",
+    use: "mainTrack / backgroundTrack from insync/line-track",
+    ownerFile: "insync/line-track.ts",
     includeDomain: true,
   },
   {
@@ -147,8 +155,7 @@ describe("no common inline domain derivations outside src/domain", () => {
     it(`has no ${pattern.name} (use ${pattern.use})`, () => {
       const offenders: Array<{ file: string; line: number; text: string }> = [];
 
-      for (const file of walk(SRC_ROOT)) {
-        const rel = relative(SRC_ROOT, file).replace(/\\/g, "/");
+      for (const { file, rel } of scannedFiles()) {
         if (!pattern.includeDomain && isWhitelisted(rel)) continue;
         if (rel === pattern.ownerFile) continue;
         if (rel.endsWith(".test.ts") || rel.endsWith(".test.tsx")) continue;

@@ -2,12 +2,12 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LanguagePieces, LanguageSide } from "@/domain/language/model";
+import type { LanguagePieces, LanguageSide } from "insync/language";
 import { languageSide, pieceOf, withAddedPieces } from "@/domain/language/pieces";
 import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { trackRole, type WordTrack, untimedSyllablesOf } from "@/domain/line/track";
+import type { LineUpdate, LyricLine } from "insync/line";
+import { trackRole, type WordTrack, untimedSyllablesOf } from "insync/line-track";
 import { mainTimingEdit } from "@/domain/line/track-writes";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
@@ -15,7 +15,7 @@ import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { cloneWord } from "@/utils/word-timing";
 
 // -- Types --------------------------------------------------------------------

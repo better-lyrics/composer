@@ -1,9 +1,9 @@
 import { msFromSeconds } from "insync/time";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup } from "@/domain/commands/group-edits";
-import { bgBounds } from "@/domain/line/bounds";
+import { bgBounds } from "insync/line-bounds";
 import { lineText } from "@/domain/line/text";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";

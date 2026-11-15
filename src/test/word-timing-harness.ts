@@ -1,8 +1,8 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { mainTimingWrite, withRoleWords } from "@/domain/line/track-writes";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { type RetimeChange, createWordTimingOps } from "@/utils/timing/word-timing-ops";

@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { createPerformerAgents, dedupeIgnoringCase } from "@/domain/agent/performer-agents";
 
 // -- Types --------------------------------------------------------------------

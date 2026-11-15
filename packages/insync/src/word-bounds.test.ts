@@ -1,5 +1,5 @@
-import { firstBegin, lastEnd } from "@/domain/word/bounds";
-import type { WordTiming } from "@/domain/word/timing";
+import { firstBegin, lastEnd } from "./word-bounds";
+import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
 
 // -- firstBegin ---------------------------------------------------------------

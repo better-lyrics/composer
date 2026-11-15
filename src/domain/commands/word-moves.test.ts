@@ -5,8 +5,8 @@
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { duplicateWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
-import type { LineLanguages } from "@/domain/language/model";
-import { roleWords, type WordTrack } from "@/domain/line/track";
+import type { LineLanguages } from "insync/language";
+import { roleWords, type WordTrack } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";

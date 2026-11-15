@@ -1,4 +1,4 @@
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { AgentManager } from "@/views/edit/agent-manager";

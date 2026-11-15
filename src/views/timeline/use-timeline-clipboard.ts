@@ -1,7 +1,7 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { languageSide, pieceOf } from "@/domain/language/pieces";
 import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
-import { trackRole } from "@/domain/line/track";
+import { trackRole } from "insync/line-track";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { copiedSyllable } from "@/domain/word/syllable-groups";
 import { pluralize } from "@/utils/pluralize";

@@ -1,5 +1,5 @@
-import type { LineTrack, LyricLine, Syllable } from "@/domain/line/model";
-import { backgroundTrack, mainTrack } from "@/domain/line/track";
+import type { LineTrack, LyricLine, Syllable } from "insync/line";
+import { backgroundTrack, mainTrack } from "insync/line-track";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------

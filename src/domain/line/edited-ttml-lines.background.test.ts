@@ -3,7 +3,7 @@ import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";

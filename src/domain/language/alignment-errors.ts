@@ -1,8 +1,8 @@
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { validateTransliterationAlignment } from "@/domain/language/align";
 import { lineTransliteration } from "@/domain/language/line-languages";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 type LanguageAlignmentErrorField = "transliteration" | "background-transliteration";
 

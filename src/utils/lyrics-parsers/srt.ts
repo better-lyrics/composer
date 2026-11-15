@@ -1,5 +1,5 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 

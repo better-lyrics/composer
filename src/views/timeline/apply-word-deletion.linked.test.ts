@@ -5,13 +5,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { deleteWords } from "@/domain/commands/word-structure";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { addressAt } from "@/domain/selection/resolve";
 import type { DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { newWordId } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 
 // -- Fixtures -----------------------------------------------------------------

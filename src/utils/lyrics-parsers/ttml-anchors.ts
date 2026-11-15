@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { elementRole, isLyricTextElement, isTimedWordSpan, LYRIC_ROLES } from "@/utils/lyrics-parsers/ttml-modelled";
 
 // -- Types --------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import type { WordInterval } from "@/domain/alignment/words";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 // Times the syllables of a word the user just split, from the model, without
 // moving the word: only the boundaries inside it change.

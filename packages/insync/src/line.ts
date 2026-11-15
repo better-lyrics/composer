@@ -1,6 +1,6 @@
-import type { Passthrough } from "insync/passthrough";
-import type { LineLanguages } from "@/domain/language/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { Passthrough } from "./passthrough";
+import type { LineLanguages } from "./language";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

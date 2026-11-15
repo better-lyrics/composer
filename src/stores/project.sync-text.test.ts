@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";

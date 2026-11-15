@@ -3,13 +3,13 @@ import type { HanReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
-import { mainBounds } from "@/domain/line/bounds";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { mainBounds } from "insync/line-bounds";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
-import { isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // Which lines a run aligns, and what each one is aligned against.

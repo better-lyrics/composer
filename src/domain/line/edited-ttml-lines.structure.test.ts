@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, roleWords } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords } from "insync/line-track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 

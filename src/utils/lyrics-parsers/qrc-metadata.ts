@@ -1,5 +1,5 @@
 import { dedupeIgnoringCase } from "@/domain/agent/performer-agents";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 
 // -- Constants ----------------------------------------------------------------
 

@@ -1,10 +1,4 @@
-import type {
-  BackgroundLanguage,
-  LanguagePieces,
-  LanguageSide,
-  LineLanguage,
-  LineLanguages,
-} from "@/domain/language/model";
+import type { BackgroundLanguage, LanguagePieces, LanguageSide, LineLanguage, LineLanguages } from "insync/language";
 
 // -- Track sides --------------------------------------------------------------
 

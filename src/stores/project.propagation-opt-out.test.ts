@@ -7,11 +7,11 @@ import { addGroup } from "@/domain/commands/group-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { commitGesture } from "@/domain/sync/commit-gesture";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
 

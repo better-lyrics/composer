@@ -1,5 +1,5 @@
 import { sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

@@ -1,7 +1,7 @@
 import { fieldUpdates } from "@/test/field-updates";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { manualGrid } from "@/domain/tempo/grid-edits";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

@@ -1,11 +1,11 @@
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceKey } from "@/domain/instance/key";
-import { isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
-import { bgBounds, mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceKey } from "insync/instance-key";
+import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
+import { bgBounds, mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { isWordSynced } from "@/domain/line/predicates";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import { withoutWordIds } from "@/domain/word/id";
 import { isStructurallyEqual } from "@/utils/structural-equal";

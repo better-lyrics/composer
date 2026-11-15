@@ -1,8 +1,8 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
-import { trackRole } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { trackRole } from "insync/line-track";
 import type { PitchPoint } from "@/domain/pitch/track";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 
 // -- Constants ----------------------------------------------------------------
 

@@ -1,9 +1,9 @@
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LineUpdate, LyricLine } from "insync/line";
+import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
 import { type SyncSlot, slotBounds } from "@/domain/sync/cursor";
-import type { Bounds } from "@/domain/word/bounds";
-import type { WordTiming } from "@/domain/word/timing";
+import type { Bounds } from "insync/word-bounds";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

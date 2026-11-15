@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { type LegacyWord, legacyLine, legacyWords } from "@/test/legacy-languages";

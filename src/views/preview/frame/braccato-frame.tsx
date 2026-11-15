@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { frameTime } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";

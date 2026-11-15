@@ -1,11 +1,11 @@
-import type { LanguagePiece } from "@/domain/language/model";
+import type { LanguagePiece } from "insync/language";
 import type { PositionalPieces } from "@/domain/language/pieces";
 import {
   leadingUntimedSeparator,
   trailingUntimedSeparator,
   withoutEdgeUntimedSeparators,
 } from "@/domain/language/transliteration-format";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { distributeTiming } from "@/utils/syllable-utils";
 import { splitSourceWord } from "@/utils/word-timing";
 

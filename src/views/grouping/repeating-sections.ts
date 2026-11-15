@@ -1,8 +1,8 @@
 import { repeatKey, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { hasMainLyrics } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 
 interface RepeatingSection {
   starts: number[];

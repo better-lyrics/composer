@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { withSplitMarksFromWords, wordContentSpans } from "@/domain/line/reconstruct-text";
 import { lineText, syllablesText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { wordKey } from "@/domain/word/alignment";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // -- Helpers ------------------------------------------------------------------

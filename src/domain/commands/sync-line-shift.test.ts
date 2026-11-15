@@ -3,7 +3,7 @@ import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
 import { withSeededBackground } from "@/domain/line/background";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 

@@ -1,9 +1,9 @@
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { getAgentColor } from "@/domain/agent/colors";
 import { agentDisplayName } from "@/domain/agent/display-name";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { type LanguageDisplayLine, getLanguageDisplayLine } from "@/domain/language/display";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";

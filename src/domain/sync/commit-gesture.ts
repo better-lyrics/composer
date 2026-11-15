@@ -1,18 +1,18 @@
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { bgBounds, mainBounds } from "@/domain/line/bounds";
+import { bgBounds, mainBounds } from "insync/line-bounds";
 import { withBackgroundSeededFrom, withSeededBackground } from "@/domain/line/background";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { clampShiftDelta, shiftLineTiming, shiftTrack } from "@/domain/line/shift";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { closeSlotWords, closingUpdate, previousSlotEnd, tapEnd } from "@/domain/sync/slot-close";
 import { withSlotWord } from "@/domain/sync/slot-words";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { enforceOrderAround } from "@/domain/word/order";
 
 // -- Types --------------------------------------------------------------------

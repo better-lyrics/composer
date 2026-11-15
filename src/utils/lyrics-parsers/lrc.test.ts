@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { effectiveBounds } from "insync/line-bounds";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { parseLrcClock } from "@/utils/lyrics-parsers/lrc";

@@ -4,7 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { typeWordText } from "@/domain/commands/word-structure";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { trackRole } from "@/domain/line/track";
+import { trackRole } from "insync/line-track";
 import { addressOf } from "@/domain/selection/resolve";
 import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";

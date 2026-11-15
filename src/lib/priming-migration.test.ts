@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { shiftAllTimings } from "@/lib/priming-migration";
 
 // -- Helpers ------------------------------------------------------------------

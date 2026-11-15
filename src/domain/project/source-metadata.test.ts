@@ -1,4 +1,4 @@
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { metadataForNewSource, sourceSwapPatch, undoSourceSwap } from "@/domain/project/source-metadata";
 import { describe, expect, it } from "vitest";
 

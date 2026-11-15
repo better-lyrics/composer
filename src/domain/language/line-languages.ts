@@ -1,6 +1,6 @@
-import type { LineLanguage, LineLanguages, LineTranslations } from "@/domain/language/model";
+import type { LineLanguage, LineLanguages, LineTranslations } from "insync/language";
 import { withHeldReadingsPlaced } from "@/domain/language/side-pieces";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Reads --------------------------------------------------------------------
 

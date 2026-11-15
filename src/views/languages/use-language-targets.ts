@@ -1,6 +1,6 @@
 import { lineTranslations } from "@/domain/language/line-languages";
-import type { LyricLine } from "@/domain/line/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { LyricLine } from "insync/line";
+import type { ProjectMetadata } from "insync/metadata";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 

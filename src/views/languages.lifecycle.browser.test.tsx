@@ -1,7 +1,7 @@
 import { fieldUpdates } from "@/test/field-updates";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { googleLanguageProvider } from "@/services/google-language-provider";
 import { useProjectStore } from "@/stores/project";
 import { LanguagesPanel } from "@/views/languages";

@@ -1,6 +1,6 @@
-import type { LinkGroup } from "@/domain/group/template";
-import { belongsToInstance, isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import type { LinkGroup } from "insync/group";
+import { belongsToInstance, isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 
 // -- Types --------------------------------------------------------------------

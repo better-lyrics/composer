@@ -1,8 +1,8 @@
+import { instanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
+import { isSpanTimed, timedSyllables } from "insync/line-track";
 import { retimedLine } from "@/domain/group/template-line";
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
-import { isSpanTimed, timedSyllables } from "@/domain/line/track";
 
 // -- Helpers ------------------------------------------------------------------
 

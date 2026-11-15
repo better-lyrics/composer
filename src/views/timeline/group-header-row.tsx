@@ -1,6 +1,6 @@
 import { updateGroup } from "@/domain/commands/group-edits";
-import type { LinkGroup } from "@/domain/group/template";
-import { instanceKey } from "@/domain/instance/key";
+import type { LinkGroup } from "insync/group";
+import { instanceKey } from "insync/instance-key";
 import { useProjectStore } from "@/stores/project";
 import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
 import { GroupBanner } from "@/views/timeline/group-banner";

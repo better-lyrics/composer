@@ -1,5 +1,5 @@
 import { sungTransliteration } from "@/domain/alignment/transliteration";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { type LegacyLine, legacyLine } from "@/test/legacy-languages";
 import { describe, expect, it } from "vitest";
 

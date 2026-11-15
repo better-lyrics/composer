@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LineUpdate } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LinkGroup } from "insync/group";
+import type { LineUpdate } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";

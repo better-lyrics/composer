@@ -1,5 +1,5 @@
 import { syllableJoint, syllablesText } from "@/domain/line/text";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { withoutSplitCharacter } from "@/utils/split-character";
 
 // -- Word content spans -------------------------------------------------------

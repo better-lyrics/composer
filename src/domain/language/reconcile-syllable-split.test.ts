@@ -12,9 +12,9 @@ import {
 } from "@/domain/language/reconcile-syllable-split";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables, type WordTrack } from "@/domain/line/track";
+import { mainTrack, timedSyllables, type WordTrack } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import { createWords } from "@/test/factories";
 import {

@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { hasMainLyrics } from "@/domain/line/predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { backgroundText } from "@/domain/line/text";

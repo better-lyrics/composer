@@ -5,7 +5,7 @@ import type {
   LanguageSide,
   LineLanguage,
   TransliterationAlignmentStatus,
-} from "@/domain/language/model";
+} from "insync/language";
 import { mappedTransliteration, slicedPieces, trackPieces } from "@/domain/language/pieces";
 import { withPiecesOn, withSidePieces, withTrackPieces } from "@/domain/language/side-pieces";
 import {
@@ -16,11 +16,11 @@ import {
   transliterationWordGroups,
   twoSpaceSeparatorRegions,
 } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { spacedText } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 interface TransliterationAlignmentPlan {
   pieces: LanguagePieces | undefined;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { linesFromSaved } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { matchesLiveLyric } from "@/lib/unison/live-lyric-match";

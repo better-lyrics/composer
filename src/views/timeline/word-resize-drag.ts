@@ -1,7 +1,7 @@
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useSettingsStore } from "@/stores/settings";

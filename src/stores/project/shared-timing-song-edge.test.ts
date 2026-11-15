@@ -1,13 +1,14 @@
 /**
  * @vitest-environment node
  */
+
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { nudgeSelection } from "@/domain/commands/word-timing";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
-import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";

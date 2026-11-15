@@ -1,5 +1,5 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingWrite } from "@/domain/line/track-writes";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 

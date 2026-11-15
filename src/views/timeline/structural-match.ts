@@ -1,9 +1,9 @@
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { linesOfInstance } from "insync/instance-enumerate";
+import { instanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 
 // -- Helpers -------------------------------------------------------------------
 

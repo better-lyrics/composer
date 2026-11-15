@@ -1,7 +1,7 @@
 import { type Passthrough, withRenamedAnchors } from "insync/passthrough";
 import type { LineContent } from "@/domain/group/template-line";
-import type { LanguagePieces, LineLanguage, LineLanguages } from "@/domain/language/model";
-import type { LineTrack, Syllable } from "@/domain/line/model";
+import type { LanguagePieces, LineLanguage, LineLanguages } from "insync/language";
+import type { LineTrack, Syllable } from "insync/line";
 
 // -- Types --------------------------------------------------------------------
 

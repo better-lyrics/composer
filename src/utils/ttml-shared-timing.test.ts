@@ -1,5 +1,5 @@
-import type { Agent } from "@/domain/agent/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { Agent } from "insync/agent";
+import type { ProjectMetadata } from "insync/metadata";
 import { createGroup } from "@/test/factories";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";

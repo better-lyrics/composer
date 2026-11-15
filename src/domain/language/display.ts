@@ -1,18 +1,18 @@
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { withAlignedTransliteration } from "@/domain/language/align";
 import { lineTransliteration } from "@/domain/language/line-languages";
-import type { LanguagePieces, LineLanguages } from "@/domain/language/model";
+import type { LanguagePieces, LineLanguages } from "insync/language";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import {
   normalizeTransliterationForEditing,
   sourceWordCount,
   timedTransliterationSlice,
 } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { withRoleWords } from "@/domain/line/track-writes";
 import { spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 

@@ -1,8 +1,8 @@
 import type { AlignmentCounts } from "@/domain/alignment/build-tag";
 import { type AlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { coversSpan, mergeRanges, type PlayedRange } from "@/domain/alignment/played-ranges";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { isExportedLine } from "@/utils/ttml-line-keys";
 

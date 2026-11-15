@@ -1,7 +1,7 @@
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables, trackWords } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, timedSyllables, trackWords } from "insync/line-track";
 import { isInSyllableGroup } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

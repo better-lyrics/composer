@@ -1,5 +1,5 @@
 import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack } from "insync/line-track";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";

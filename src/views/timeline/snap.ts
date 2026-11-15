@@ -1,9 +1,9 @@
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { type GridPoint, gridPointLabel } from "@/domain/tempo/grid-points";
 import { SNAP_SWITCH_SETTING, type SnapSettings, type SnapSource, type SnapSwitchKey } from "@/stores/settings-snap";
 

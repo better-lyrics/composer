@@ -1,9 +1,9 @@
 import { firstFullyTimedInstance, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
-import { instanceKey } from "@/domain/instance/key";
+import type { LinkGroup } from "insync/group";
+import { instanceKey } from "insync/instance-key";
 import { instanceName } from "@/domain/instance/name";
 import { drawnLine } from "@/domain/line/drawn-track";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { stepSkippedLineIds } from "@/domain/step-timing/step-skip";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 

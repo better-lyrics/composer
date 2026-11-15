@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { LineTemplate } from "@/domain/group/template";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 /**
  * @vitest-environment node
  */
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import { withFields } from "@/test/field-updates";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";

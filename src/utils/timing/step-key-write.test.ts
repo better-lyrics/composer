@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { pressStepKey } from "@/domain/commands/word-timing";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "insync/line-track";
 import { type ResolvedAddress, resolvedAt, toAddress } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";

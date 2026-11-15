@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { holdsEveryLine, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";

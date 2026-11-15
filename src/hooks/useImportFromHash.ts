@@ -1,8 +1,8 @@
 import type { Part } from "insync/part";
 import type { DocPassthrough } from "insync/passthrough";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { startSongInNewProject } from "@/lib/open-project";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";

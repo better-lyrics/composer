@@ -1,4 +1,4 @@
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { MS_PER_SECOND, readSingerMarker } from "@/utils/lyrics-parsers/qrc-metadata";
 import { type LyricsWriterInput, type WritableLine, songTags, writableLines } from "@/utils/lyrics-writers/shared";
 

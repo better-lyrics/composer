@@ -1,4 +1,4 @@
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";

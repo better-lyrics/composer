@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { duplicateWords } from "@/domain/commands/word-moves";
 import { toAddress } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";

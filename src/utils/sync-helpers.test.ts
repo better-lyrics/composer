@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { convertLineToWord } from "@/domain/line/span-to-words";
 import { lineText, syllablesText } from "@/domain/line/text";
-import { roleWords } from "@/domain/line/track";
+import { roleWords } from "insync/line-track";
 import { lineTimingWordId } from "@/domain/word/id";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useSettingsStore } from "@/stores/settings";

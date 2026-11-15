@@ -1,16 +1,16 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
-import { isLinked } from "@/domain/instance/predicates";
+import { wouldDropCrossInstance } from "insync/cross-instance";
+import { isLinked } from "insync/instance-predicates";
 import { withoutBackground } from "@/domain/line/background";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { isLineSynced } from "@/domain/line/predicates";
-import { trackRole, untimedSyllablesOf } from "@/domain/line/track";
+import { trackRole, untimedSyllablesOf } from "insync/line-track";
 import { mainTimingEdit } from "@/domain/line/track-writes";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 
 // -- Types --------------------------------------------------------------------

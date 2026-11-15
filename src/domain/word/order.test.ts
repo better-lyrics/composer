@@ -1,5 +1,5 @@
 import { enforceOrderAround } from "@/domain/word/order";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------

@@ -3,7 +3,7 @@
  */
 import { withSeededBackground } from "@/domain/line/background";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { gridPoints } from "@/domain/tempo/grid-points";
 import { describe, expect, it } from "vitest";

@@ -1,5 +1,5 @@
-import { mainTrack, timedSyllables } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

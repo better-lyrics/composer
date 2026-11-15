@@ -1,7 +1,7 @@
 import type { SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import type { LanguageTextVariant } from "@/domain/language/display";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineFromSaved } from "@/domain/line/saved-line";
 import { hasAnyTiming, hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
@@ -10,7 +10,7 @@ import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

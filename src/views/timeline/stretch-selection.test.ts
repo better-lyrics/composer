@@ -5,12 +5,12 @@
 import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { newWordId } from "@/domain/word/id";
 import { spacedText } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { patchOf, updatedLine } from "@/test/field-updates";
 import { planStretchDrag } from "./stretch-drag";
 

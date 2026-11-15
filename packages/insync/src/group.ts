@@ -1,6 +1,15 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "./line";
 
 // -- Types --------------------------------------------------------------------
+
+interface LinkGroup {
+  id: string;
+  label: string;
+  color: string;
+  templateVersion: number;
+  sharesTiming?: true;
+  ownTimingInstances?: number[];
+}
 
 type SpanTimes = readonly [number, number];
 
@@ -62,5 +71,5 @@ function instanceSlots(instance: Instance): number[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { BodyItem, Instance, InstanceSpan, LyricDoc, OwnTiming, SpanTimes, TemplateLine };
+export type { BodyItem, Instance, InstanceSpan, LinkGroup, LyricDoc, OwnTiming, SpanTimes, TemplateLine };
 export { instanceSlots, isInstanceSpan };

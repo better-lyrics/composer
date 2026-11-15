@@ -1,9 +1,9 @@
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { syllablesText } from "@/domain/line/text";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { type ParseIssue, type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
 import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";

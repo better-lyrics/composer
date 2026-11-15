@@ -1,9 +1,9 @@
-import type { LanguagePiece, LanguagePieces, LanguageSide, LineLanguages } from "@/domain/language/model";
+import type { LanguagePiece, LanguagePieces, LanguageSide, LineLanguages } from "insync/language";
 import { sidePieces, withPiecesOn } from "@/domain/language/side-pieces";
 import { hasLexicalBoundaryAfter, type TransliterationSlice } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "@/domain/line/track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types --------------------------------------------------------------------
 

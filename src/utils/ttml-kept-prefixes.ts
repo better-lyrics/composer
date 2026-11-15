@@ -1,8 +1,8 @@
 import type { Part, PartSection } from "insync/part";
 import type { DocPassthrough, Passthrough } from "insync/passthrough";
 import { escapeXmlAttribute, type XmlAttr, type XmlChild } from "insync/xml-node";
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
+import type { Agent } from "insync/agent";
+import type { LyricLine } from "insync/line";
 import { COMPOSER_WRITTEN_PREFIXES, UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
 
 // -- Types --------------------------------------------------------------------

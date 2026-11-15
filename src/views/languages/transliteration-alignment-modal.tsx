@@ -1,13 +1,13 @@
 import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { planTransliterationAlignment } from "@/domain/language/align";
-import { fieldWords, type TrackField } from "@/domain/line/track";
+import { fieldWords, type TrackField } from "insync/line-track";
 import { lineTransliteration } from "@/domain/language/line-languages";
-import type { LanguagePiece, LanguagePieces } from "@/domain/language/model";
+import type { LanguagePiece, LanguagePieces } from "insync/language";
 import { keyedPieces, pieceOf, positionalPieces } from "@/domain/language/pieces";
 import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "@/domain/language/transliteration-format";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { spacedText } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";

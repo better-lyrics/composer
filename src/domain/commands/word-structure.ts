@@ -5,7 +5,7 @@ import type { WordWriteExtras } from "@/domain/commands/word-edits";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { syllablesText } from "@/domain/line/text";
 import {
   backgroundTrack,
@@ -15,14 +15,14 @@ import {
   type WordTrack,
   untimedSyllablesOf,
   trackRole,
-} from "@/domain/line/track";
+} from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withTrackText } from "@/domain/line/track-writes";
 import { withFieldWords } from "@/domain/line/word-track-edits";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { applyWordDeletion } from "@/domain/word/apply-word-deletion";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

@@ -8,11 +8,11 @@ import {
   sharedInstancesInLineOrder,
   sharesTiming,
 } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "insync/line";
 import { isWordSynced } from "@/domain/line/predicates";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 

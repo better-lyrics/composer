@@ -1,7 +1,7 @@
 import { shiftInstance } from "@/domain/commands/instance-edits";
 import { useCallback, useRef, useState } from "react";
 import { wholeSongRange } from "@/domain/group/shared-timing";
-import { instanceKey } from "@/domain/instance/key";
+import { instanceKey } from "insync/instance-key";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";

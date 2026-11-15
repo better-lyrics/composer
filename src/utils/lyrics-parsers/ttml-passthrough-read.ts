@@ -1,9 +1,9 @@
 import { type DocPassthrough, isEmptyPassthrough, type Passthrough } from "insync/passthrough";
 import type { XmlAttr, XmlElement } from "insync/xml-node";
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
+import type { Agent } from "insync/agent";
+import type { LyricLine } from "insync/line";
 import { withLinePassthrough } from "@/domain/line/passthrough";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import {
   type AnchorOf,
   noAnchors,

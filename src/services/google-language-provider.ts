@@ -1,4 +1,4 @@
-import type { TransliterationSegment } from "@/domain/language/model";
+import type { TransliterationSegment } from "insync/language";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { DASHES, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";

@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import type { SyllableSplitHandler } from "@/views/sync/use-syllable-splitter-state";
 import { Tooltip } from "@/ui/tooltip";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";

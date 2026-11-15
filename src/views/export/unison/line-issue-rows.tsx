@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { LineIssue } from "@/domain/unison/submit-checks";
 import { useProjectStore } from "@/stores/project";

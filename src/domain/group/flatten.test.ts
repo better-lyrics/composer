@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
 import { flattenBody } from "@/domain/group/flatten";
-import type { Instance, LyricDoc } from "@/domain/group/model";
-import { instanceKey } from "@/domain/instance/key";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { Instance, LyricDoc } from "insync/group";
+import { instanceKey } from "insync/instance-key";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { createLine } from "@/test/factories";
 
 const glow = (id: string, instanceIdx: number, begin: number, groupId = "chorus") =>

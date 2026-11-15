@@ -1,8 +1,8 @@
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instancePositionsByLineId } from "@/domain/instance/enumerate";
-import { lineInstanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { instancePositionsByLineId } from "insync/instance-enumerate";
+import { lineInstanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
 import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 import { timelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 

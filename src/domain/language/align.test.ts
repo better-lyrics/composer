@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "@/domain/language/align";
-import type { LineLanguage, TransliterationAlignmentStatus } from "@/domain/language/model";
+import type { LineLanguage, TransliterationAlignmentStatus } from "insync/language";
 import { mappedTransliteration } from "@/domain/language/pieces";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
 import {
   type LegacyWord,

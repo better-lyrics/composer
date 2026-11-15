@@ -1,8 +1,8 @@
 import { backgroundText, lineText } from "@/domain/line/text";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LanguageContentMeta } from "@/domain/language/model";
+import type { LanguageContentMeta } from "insync/language";
 import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 
 // -- Interfaces ---------------------------------------------------------------
 

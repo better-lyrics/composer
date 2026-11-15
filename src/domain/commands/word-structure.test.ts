@@ -3,10 +3,10 @@
  */
 import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { mainBounds } from "@/domain/line/bounds";
+import { mainBounds } from "insync/line-bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, roleWords } from "@/domain/line/track";
+import { backgroundTrack, roleWords } from "insync/line-track";
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { trackPieces } from "@/domain/language/pieces";

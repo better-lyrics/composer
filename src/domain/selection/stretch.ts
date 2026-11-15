@@ -1,8 +1,8 @@
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { drawnSyllables } from "@/domain/line/drawn-track";
-import { mainTrack, trackRole } from "@/domain/line/track";
+import { mainTrack, trackRole } from "insync/line-track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import {
   STRETCH_EPS,
   type StretchClampOptions,

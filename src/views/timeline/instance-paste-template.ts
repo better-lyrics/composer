@@ -1,7 +1,8 @@
-import { type LineTemplate, type LinkGroup, offsetTemplateWords, type WordTemplate } from "@/domain/group/template";
+import { type LineTemplate, offsetTemplateWords, type WordTemplate } from "@/domain/group/template";
+import type { LinkGroup } from "insync/group";
 import { pickedTemplateSource } from "@/domain/group/template-source";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import type { WordTrack } from "insync/line-track";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";

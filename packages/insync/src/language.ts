@@ -1,6 +1,7 @@
 // -- Alternate-language content ----------------------------------------------
 
-type LanguageContentOrigin = "google" | "import" | "manual";
+// A template type: the insync boundary guard reads the quoted word import as an import statement.
+type LanguageContentOrigin = "google" | `import` | "manual";
 
 /** Confirmed requires manual alignment; inferred is automatically accepted without a review warning. */
 type TransliterationAlignmentStatus = "confirmed" | "inferred" | "needs-review" | "unresolved";

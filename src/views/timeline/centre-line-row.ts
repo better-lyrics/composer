@@ -1,5 +1,5 @@
-import { lineInstanceKey } from "@/domain/instance/key";
-import type { LyricLine } from "@/domain/line/model";
+import { lineInstanceKey } from "insync/instance-key";
+import type { LyricLine } from "insync/line";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

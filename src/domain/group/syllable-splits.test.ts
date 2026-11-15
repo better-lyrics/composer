@@ -4,11 +4,11 @@ import { withEvenSyllableSplits } from "@/domain/group/syllable-splits";
  * @vitest-environment node
  */
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { newWordId } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { createWords } from "@/test/factories";
 import type { FieldPatch } from "@/test/field-updates";
 import { legacyLine, legacyWords } from "@/test/legacy-languages";

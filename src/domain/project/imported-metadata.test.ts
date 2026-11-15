@@ -5,7 +5,7 @@ import {
   isMetadataKey,
   metadataAfterImport,
 } from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { describe, expect, it } from "vitest";
 

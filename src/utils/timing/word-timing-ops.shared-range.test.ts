@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { retimeSyncWord } from "@/domain/commands/sync";
 import { setWordBoundary } from "@/domain/commands/word-timing";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { addressAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";

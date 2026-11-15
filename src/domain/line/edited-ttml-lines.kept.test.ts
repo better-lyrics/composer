@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergedEditedKept } from "@/domain/line/edited-ttml-kept";
 import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { importableMetadata } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";

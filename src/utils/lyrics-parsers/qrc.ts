@@ -1,13 +1,13 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { agentIdAt, createPerformerAgents } from "@/domain/agent/performer-agents";
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { syllablesText } from "@/domain/line/text";
 import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { type SpacedWord, spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import {
   MS_PER_SECOND,
   creditExtraKey,
