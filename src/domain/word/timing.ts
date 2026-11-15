@@ -11,10 +11,6 @@ interface WordTiming {
   explicit?: true;
   /** This syllable and the next one form one word. Set by whoever creates the syllables. */
   joinsNext: boolean;
-  /** Display text paired with this exact timing slot. Timing remains canonical. */
-  transliteration?: string;
-  /** Exact separator to restore between this transliteration fragment and the next when merging syllables. */
-  transliterationJoinerAfter?: string;
 }
 
 // -- Exports ------------------------------------------------------------------

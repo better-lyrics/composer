@@ -1,4 +1,5 @@
 import { applyGeneratedLanguages, removeTranslation } from "@/domain/commands/languages";
+import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
 import { pastedRows } from "@/domain/language/paste-import";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
@@ -137,7 +138,7 @@ const LanguagesPanel: React.FC = () => {
   };
   const trackCount = targets.length + 1;
   const hasLanguageContent = lines.some(
-    (line) => line.transliteration !== undefined || Object.keys(line.translations ?? {}).length > 0,
+    (line) => lineTransliteration(line) !== undefined || Object.keys(lineTranslations(line) ?? {}).length > 0,
   );
   const sourceLanguageLabel =
     SOURCE_SELECT_OPTIONS.find((option) => option.value === (metadata.language ?? ""))?.label ?? metadata.language;

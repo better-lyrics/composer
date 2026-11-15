@@ -1,6 +1,7 @@
 import { memo, useCallback } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { belongsToInstance } from "@/domain/instance/predicates";
+import { trackPieces } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
@@ -103,6 +104,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={mainWords}
+              pieces={trackPieces(line, "main")}
               color={color}
               trackType="word"
               duration={duration}
@@ -131,6 +133,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={bgWords}
+              pieces={trackPieces(line, "bg")}
               color={color}
               trackType="bg"
               duration={duration}

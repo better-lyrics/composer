@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { type PositionalPieces, positionalPieces } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
+import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
+import { type LegacyWord, legacyLine, legacyWords, piecesOfLegacyWords } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { at, mountSyncHandlers, positionOf } from "@/test/sync-handlers-harness";
 import { SyncPanel } from "@/views/sync/sync-panel";
@@ -161,9 +164,14 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
   });
 });
 
+function splitArguments(replacements: LegacyWord[]): [WordTiming[], PositionalPieces] {
+  const { words, pieces } = piecesOfLegacyWords(replacements);
+  return [words, positionalPieces(words, pieces)];
+}
+
 describe("useSyncHandlers.handleSplitWord", () => {
   it("reconciles manually selected transliteration boundaries with the language track", async () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "l0",
       agentId: "v1",
       text: "일단은",
@@ -175,48 +183,49 @@ describe("useSyncHandlers.handleSplitWord", () => {
         origin: "google" as const,
         sourceFingerprint: "source",
       },
-    };
+    });
     useProjectStore.getState().restoreLyrics({ lines: [line] });
     const { result, act } = await mountSyncHandlers();
 
     await act(() => {
-      result.current.handleSplitWord(0, 0, [
-        {
-          id: "w2",
-          text: "일",
-          sep: "",
-          begin: 0,
-          end: 0.3,
-          transliteration: "i",
-          transliterationJoinerAfter: "",
-          joinsNext: true,
-        },
-        {
-          id: "w3",
-          text: "단",
-          sep: "",
-          begin: 0.3,
-          end: 0.6,
-          transliteration: "ldan",
-          transliterationJoinerAfter: " ",
-          joinsNext: true,
-        },
-        { id: "w4", text: "은", sep: "", begin: 0.6, end: 1, transliteration: "eun", joinsNext: false },
-      ]);
+      result.current.handleSplitWord(
+        0,
+        0,
+        ...splitArguments([
+          {
+            id: "w2",
+            text: "일",
+            sep: "",
+            begin: 0,
+            end: 0.3,
+            transliteration: "i",
+            transliterationJoinerAfter: "",
+            joinsNext: true,
+          },
+          {
+            id: "w3",
+            text: "단",
+            sep: "",
+            begin: 0.3,
+            end: 0.6,
+            transliteration: "ldan",
+            transliterationJoinerAfter: " ",
+            joinsNext: true,
+          },
+          { id: "w4", text: "은", sep: "", begin: 0.6, end: 1, transliteration: "eun", joinsNext: false },
+        ]),
+      );
     });
 
     const saved = useProjectStore.getState().lines[0];
-    expect(saved.transliteration?.text).toBe("ildan eun");
-    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
-    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliterationJoinerAfter)).toEqual([
-      "",
-      " ",
-      undefined,
-    ]);
+    const savedWords = legacyWords(timedSyllables(mainTrack(saved)), saved.languages) ?? [];
+    expect(saved.languages?.transliteration?.main.text).toBe("ildan eun");
+    expect(savedWords.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
+    expect(savedWords.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
   });
 
   it("regression: keeps the chosen roman split when stored words lost their pieces (#283)", async () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "l0",
       agentId: "v1",
       text: "Uh 일단은 나",
@@ -232,30 +241,36 @@ describe("useSyncHandlers.handleSplitWord", () => {
         origin: "google" as const,
         sourceFingerprint: "source",
       },
-    };
+    });
     useProjectStore.getState().restoreLyrics({ lines: [line] });
     const { result, act } = await mountSyncHandlers();
 
     await act(() => {
-      result.current.handleSplitWord(0, 1, [
-        {
-          id: "w8",
-          text: "일",
-          sep: "",
-          begin: 0.5,
-          end: 0.8,
-          transliteration: "il",
-          transliterationJoinerAfter: "",
-          joinsNext: true,
-        },
-        { id: "w9", text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "dan eun", joinsNext: false },
-      ]);
+      result.current.handleSplitWord(
+        0,
+        1,
+        ...splitArguments([
+          {
+            id: "w8",
+            text: "일",
+            sep: "",
+            begin: 0.5,
+            end: 0.8,
+            transliteration: "il",
+            transliterationJoinerAfter: "",
+            joinsNext: true,
+          },
+          { id: "w9", text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "dan eun", joinsNext: false },
+        ]),
+      );
     });
 
     const saved = useProjectStore.getState().lines[0];
-    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
-    expect(saved.transliteration?.text).toBe("Uh  ildan eun  na");
-    expect(saved.transliteration?.alignmentStatus).toBe("inferred");
+    expect(legacyWords(timedSyllables(mainTrack(saved)), saved.languages)?.map((word) => word.transliteration)).toEqual(
+      ["Uh", "il", "dan eun", "na"],
+    );
+    expect(saved.languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
+    expect(saved.languages?.transliteration?.main.alignmentStatus).toBe("inferred");
   });
 });
 

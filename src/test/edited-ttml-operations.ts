@@ -1,4 +1,5 @@
 import { expect } from "vitest";
+import { lineTranslations } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
@@ -105,20 +106,22 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "edit a translation",
     edit: (project, ttml) => {
       const line = required(
-        project.lines.find((candidate) => Object.values(candidate.translations ?? {}).some((track) => track.text)),
+        project.lines.find((candidate) =>
+          Object.values(lineTranslations(candidate) ?? {}).some((track) => track.main.text),
+        ),
         "translated line",
       );
       const [language, track] = required(
-        Object.entries(line.translations ?? {}).find(([, candidate]) => candidate.text),
+        Object.entries(lineTranslations(line) ?? {}).find(([, candidate]) => candidate.main.text),
         "translation",
       );
-      const text = `<text for="${keyOf(project, line)}">${track.text}`;
+      const text = `<text for="${keyOf(project, line)}">${track.main.text}`;
       if (!ttml.includes(text)) throw new Error("translation not exported");
       return {
         edited: ttml.replace(text, `${text} again`),
         touched: [line.id],
         expectTaken: (lines) =>
-          expect(lineById(lines, line.id).translations?.[language]?.text).toBe(`${track.text} again`),
+          expect(lineTranslations(lineById(lines, line.id))?.[language]?.main.text).toBe(`${track.main.text} again`),
       };
     },
   },

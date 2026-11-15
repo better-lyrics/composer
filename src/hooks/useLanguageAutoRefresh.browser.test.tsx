@@ -5,6 +5,7 @@ import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -31,25 +32,25 @@ describe("useLanguageAutoRefresh", () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(requests).toEqual([]);
 
-    useProjectStore.getState().commit(
-      pasteLines([
-        {
-          id: "a",
-          updates: {
-            text: "Где ты сейчас",
-            words: [
-              { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde", joinsNext: false },
-              { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty", joinsNext: false },
-              { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4, joinsNext: false },
-            ],
-          },
-        },
-      ]),
-    );
+    const pasted = legacyLine({
+      ...lineById("a"),
+      text: "Где ты сейчас",
+      words: [
+        { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde", joinsNext: false },
+        { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty", joinsNext: false },
+        { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4, joinsNext: false },
+      ],
+      ...legacyLanguages(lineById("a").languages),
+    });
+    useProjectStore
+      .getState()
+      .commit(
+        pasteLines([{ id: "a", updates: { text: pasted.text, words: pasted.words, languages: pasted.languages } }]),
+      );
 
     await vi.advanceTimersByTimeAsync(1000);
     await expect.poll(() => romanizedWords("a"), REFRESH_WAIT).toEqual(["Gde", "ty", "seychas"]);
-    expect(lineById("a").translations?.en.text).toBe("Where are you now");
+    expect(lineById("a").languages?.translations?.en.main.text).toBe("Where are you now");
   });
 
   it("refreshes tracks that were already out of date when the project opened", async () => {
@@ -86,7 +87,7 @@ describe("useLanguageAutoRefresh", () => {
       await vi.advanceTimersByTimeAsync(5000);
 
       expect(requests).toEqual([]);
-      expect(lineById("a").transliteration?.text).toBe("Shumnaya  ulitsa");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Shumnaya  ulitsa");
     });
   });
 });

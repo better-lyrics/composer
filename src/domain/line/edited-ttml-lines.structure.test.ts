@@ -15,7 +15,7 @@ function swapFirstTwoParagraphs(ttml: string): string {
   return ttml.replace(first, "\u0000").replace(second, first).replace("\u0000", second);
 }
 
-const SPANISH = { language: "es", text: "Hola", origin: "manual" as const, sourceFingerprint: "fp-1" };
+const SPANISH = { language: "es", main: { text: "Hola" }, origin: "manual" as const, sourceFingerprint: "fp-1" };
 
 // -- Tests --------------------------------------------------------------------
 
@@ -140,7 +140,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
             backgroundText: "ooh",
             backgroundTextSource: "extraction",
           }),
-          translations: { es: SPANISH },
+          languages: { translations: { es: SPANISH } },
         },
         createLine({ id: "blank", text: "" }),
         createLine({ id: "two", text: "Two", begin: 2, end: 3 }),
@@ -152,7 +152,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
       );
       expect(merged.map((line) => lineText(line))).toEqual(["One!", "", "Two", "Three"]);
       expect(merged.slice(0, 3).map((line) => line.id)).toEqual(["one", "blank", "two"]);
-      expect(merged[0]?.translations?.es).toEqual(SPANISH);
+      expect(merged[0]?.languages?.translations?.es).toEqual(SPANISH);
       expect(backgroundTrack(merged[0]!)?.source).toBe("extraction");
       expect(merged[0]?.backgroundWords).toBeUndefined();
     });

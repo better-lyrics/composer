@@ -1,4 +1,5 @@
 import { expect } from "vitest";
+import { lineTranslations } from "@/domain/language/line-languages";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { lineText } from "@/domain/line/text";
@@ -64,7 +65,9 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
     name: "copy a translated paragraph to add a line",
     edit: (project, ttml) => {
       const line = required(
-        project.lines.find((candidate) => Object.values(candidate.translations ?? {}).some((track) => track.text)),
+        project.lines.find((candidate) =>
+          Object.values(lineTranslations(candidate) ?? {}).some((track) => track.main.text),
+        ),
         "translated line",
       );
       const original = paragraphOf(ttml, project, line);
@@ -81,7 +84,7 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
             "copied line",
           );
           expect(added.id).not.toBe(line.id);
-          expect(added.translations).toBeUndefined();
+          expect(lineTranslations(added)).toBeUndefined();
           expect(lines.indexOf(added)).toBe(lines.indexOf(lineById(lines, line.id)) + 1);
         },
       };

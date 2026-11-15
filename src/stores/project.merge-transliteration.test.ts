@@ -4,11 +4,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { addGroup } from "@/domain/commands/group-edits";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
-import type { TransliterationTrack } from "@/domain/language/model";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
+import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
+import { type LegacyLine, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -17,7 +18,7 @@ beforeEach(() => {
 
 // -- Fixtures -----------------------------------------------------------------
 
-const track: TransliterationTrack = {
+const track: V3TransliterationTrack = {
   language: "ko-Latn",
   text: "Uh  ildan eun  na",
   backgroundText: "geurae  yeah",
@@ -27,8 +28,8 @@ const track: TransliterationTrack = {
   sourceFingerprint: "source",
 };
 
-function splitKoreanLine(overrides: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({
+function splitKoreanLine(overrides: Partial<LegacyLine> = {}): LyricLine {
+  return legacyLine({
     id: "line-1",
     agentId: "v1",
     text: "Uh 일|단은 나",
@@ -58,8 +59,8 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
 
       const merged = lineById("line-1");
       expect(timedSyllables(mainTrack(merged!)).map((word) => word.text + word.sep)).toEqual(["Uh ", "일단은 ", "나"]);
-      expect(timedSyllables(mainTrack(merged!))[1].transliteration).toBe("ildan eun");
-      expect(merged?.transliteration).toEqual(track);
+      expect(legacyWords(timedSyllables(mainTrack(merged!)), merged?.languages)?.[1].transliteration).toBe("ildan eun");
+      expect(legacyLanguages(merged?.languages).transliteration).toEqual(track);
     });
 
     it("regression: keeps the last syllable's joiner on the merged word (#283)", () => {
@@ -102,7 +103,8 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
 
       useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [2]));
 
-      const mergedWord = lineById("line-1")?.words?.[1];
+      const merged = lineById("line-1");
+      const mergedWord = legacyWords(merged?.words, merged?.languages)?.[1];
       expect(mergedWord?.transliteration).toBe("ildan eun");
       expect(mergedWord?.transliterationJoinerAfter).toBe("  ");
     });
@@ -125,8 +127,12 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
 
       const merged = lineById("line-1");
       expect(timedSyllables(backgroundTrack(merged!)).map((word) => word.text + word.sep)).toEqual(["그래 ", "yeah"]);
-      expect(timedSyllables(backgroundTrack(merged!)).map((word) => word.transliteration)).toEqual(["geurae", "yeah"]);
-      expect(merged?.transliteration).toEqual(track);
+      expect(
+        legacyWords(timedSyllables(backgroundTrack(merged!)), merged?.languages, "bg")?.map(
+          (word) => word.transliteration,
+        ),
+      ).toEqual(["geurae", "yeah"]);
+      expect(legacyLanguages(merged?.languages).transliteration).toEqual(track);
     });
   });
 
@@ -156,19 +162,21 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
 
       useProjectStore.getState().commit(mergeSyllableGroup("a0", "words", [1]));
 
-      expect(timedSyllables(mainTrack(lineById("a0")!))[1].transliteration).toBe("ildan eun");
+      const a0 = lineById("a0")!;
+      expect(legacyWords(timedSyllables(mainTrack(a0)), a0.languages)?.[1].transliteration).toBe("ildan eun");
       expect(timedSyllables(mainTrack(lineById("a1")!)).map((word) => word.text + word.sep)).toEqual([
         "Uh ",
         "일단은 ",
         "나",
       ]);
-      expect(timedSyllables(mainTrack(lineById("a1")!))[1].transliteration).toBe("ilttan eun");
+      const a1 = lineById("a1")!;
+      expect(legacyWords(timedSyllables(mainTrack(a1)), a1.languages)?.[1].transliteration).toBe("ilttan eun");
     });
   });
 
   describe("edge cases", () => {
     it("merges a line without a transliteration track as before", () => {
-      const { transliteration: _track, ...line } = splitKoreanLine();
+      const { languages: _languages, ...line } = splitKoreanLine();
       useProjectStore.getState().restoreLyrics({ lines: [line] });
 
       useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { renderTransliterationContent } from "@/utils/ttml-alternate-content";
 
-function lineWithMappings(): LyricLine {
+function lineWithMappings(): LegacyLine {
   return {
     id: "line-1",
     agentId: "v1",
@@ -59,9 +58,10 @@ describe("TTML unresolved transliteration", () => {
       const line = lineWithMappings();
       if (side === "main") line.transliteration!.text = "x";
       else line.transliteration!.backgroundText = "x";
-      const before = structuredClone(line);
+      const stored = legacyLine(line);
+      const before = structuredClone(stored);
 
-      const content = renderTransliterationContent(line);
+      const content = renderTransliterationContent(stored);
 
       if (side === "main") {
         expect(content).toMatch(/^x <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/);
@@ -70,14 +70,14 @@ describe("TTML unresolved transliteration", () => {
         expect(content).toMatch(/^<span[^>]+>kyou-<\/span><span[^>]+>hi<\/span> <span ttm:role="x-bg">x<\/span>$/);
         expect(content).not.toContain("sora");
       }
-      expect(line).toEqual(before);
+      expect(stored).toEqual(before);
 
       const ttml = generateTTML({
         metadata: { title: "Unresolved", artists: [], album: "", duration: 4, language: "ja" },
         agents: [{ id: "v1", type: "person", name: "Lead" }],
-        lines: [line],
+        lines: [stored],
       });
-      const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+      const parsed = legacyView(parseLyricsFile("song.ttml", ttml).lines[0]);
       expect(parsed.transliteration?.text).toBe(line.transliteration!.text);
       expect(parsed.transliteration?.backgroundText).toBe(line.transliteration!.backgroundText);
       const unaffectedWords = side === "main" ? parsed.backgroundWords : parsed.words;
@@ -107,15 +107,15 @@ describe("TTML unresolved transliteration", () => {
     line.transliteration!.text = "&";
     line.transliteration!.backgroundText = "<";
     if (!cached) {
-      line.words = timedSyllables(mainTrack(line)).map(
+      line.words = (line.words ?? []).map(
         ({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word,
       );
-      line.backgroundWords = timedSyllables(backgroundTrack(line)).map(
+      line.backgroundWords = (line.backgroundWords ?? []).map(
         ({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word,
       );
     }
 
-    expect(renderTransliterationContent(line)).toBe('&amp; <span ttm:role="x-bg">&lt;</span>');
+    expect(renderTransliterationContent(legacyLine(line))).toBe('&amp; <span ttm:role="x-bg">&lt;</span>');
   });
 
   it("retains valid timing and visible punctuation even when persisted status is unresolved", () => {
@@ -123,7 +123,7 @@ describe("TTML unresolved transliteration", () => {
     line.transliteration!.alignmentStatus = "unresolved";
     line.transliteration!.backgroundAlignmentStatus = "unresolved";
 
-    expect(renderTransliterationContent(line)).toMatch(
+    expect(renderTransliterationContent(legacyLine(line))).toMatch(
       /^<span[^>]+>kyou-<\/span><span[^>]+>hi<\/span> <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/,
     );
   });

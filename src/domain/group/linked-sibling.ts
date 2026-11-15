@@ -1,5 +1,6 @@
 import { extractLinkedFields } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
+import { withOwnPieces } from "@/domain/language/pieces";
 import { withSeededBackground } from "@/domain/line/background";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 
@@ -7,6 +8,7 @@ import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/mod
 
 function updatedLinkedSibling(sibling: LyricLine, sourceBefore: LyricLine, updates: Partial<LyricLine>): LyricLine {
   const siblingUpdates: Partial<LooseLine> = extractLinkedFields(updates);
+  if ("languages" in siblingUpdates) siblingUpdates.languages = withOwnPieces(siblingUpdates.languages, sibling);
   const words = propagateWordChanges(updates.words, sourceBefore.words, sibling.words);
   if (words) siblingUpdates.words = words;
   const backgroundWords = propagateWordChanges(

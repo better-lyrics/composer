@@ -1,8 +1,9 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine } from "@/domain/line/model";
+import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import {
   linesFromSaved,
   SAVED_PROJECT_VERSION,
+  type SavedLine,
   type SavedProject,
   savedLines,
   upgradeSavedProject,
@@ -17,7 +18,7 @@ function legacyProject(version: SavedProject["version"]): SavedProject {
     agents: DEFAULT_AGENTS,
     granularity: "word",
     lines: [
-      reconcileLine({
+      {
         id: "L1",
         text: "걸음은 Like a dance",
         agentId: "v1",
@@ -28,7 +29,7 @@ function legacyProject(version: SavedProject["version"]): SavedProject {
           origin: "google",
           sourceFingerprint: "legacy",
         },
-      }),
+      },
     ],
   };
 }
@@ -129,5 +130,61 @@ describe("linesFromSaved", () => {
     ]);
     expect(line.words?.map((word) => word.joinsNext)).toEqual([true]);
     expect(line.backgroundWords?.map((word) => word.joinsNext)).toEqual([true]);
+  });
+
+  it("keeps a line's languages and syllable readings where a version 3 record spells them", () => {
+    const saved: SavedLine = {
+      id: "line-1",
+      text: "Paper lanterns",
+      agentId: "v1",
+      words: [
+        { text: "Paper ", begin: 1, end: 1.6, transliteration: "pēpā", transliterationJoinerAfter: "  " },
+        { text: "lanterns", begin: 1.6, end: 2.2, transliteration: "rantan" },
+      ],
+      backgroundText: "drifting",
+      backgroundWords: [{ text: "drifting", begin: 2.2, end: 2.9, transliteration: "dorifuto" }],
+      translations: {
+        fr: { language: "fr", text: "Lanternes", backgroundText: "flottant", origin: "manual", sourceFingerprint: "a" },
+      },
+      transliteration: {
+        language: "ja-Latn",
+        text: "pēpā  rantan",
+        backgroundText: "dorifuto",
+        segments: [{ original: "Paper lanterns", transliteration: "pēpā  rantan" }],
+        backgroundSegments: [{ original: "drifting", transliteration: "dorifuto" }],
+        alignmentStatus: "confirmed",
+        backgroundAlignmentStatus: "inferred",
+        reviewedSourceFingerprint: "b",
+        origin: "manual",
+        sourceFingerprint: "a",
+      },
+    };
+    const [line] = linesFromSaved([saved]);
+    const firstWord = line.words?.[0];
+    expect(firstWord && pieceOf(trackPieces(line, "main"), firstWord)).toEqual({ text: "pēpā", joinerAfter: "  " });
+    expect(line.languages?.transliteration?.bg?.alignmentStatus).toBe("inferred");
+    expect(savedLines([line])).toEqual([saved]);
+  });
+
+  it("keeps syllable readings a version 3 record holds without a romanization side for them", () => {
+    const withoutRomanization: SavedLine = {
+      id: "line-1",
+      text: "Paper",
+      agentId: "v1",
+      words: [{ text: "Paper", begin: 1, end: 1.6, transliteration: "pēpā" }],
+    };
+    const withoutBackground: SavedLine = {
+      id: "line-2",
+      text: "lanterns",
+      agentId: "v1",
+      words: [{ text: "lanterns", begin: 2, end: 2.6, transliteration: "rantan" }],
+      backgroundText: "drifting",
+      backgroundWords: [{ text: "drifting", begin: 2.6, end: 3, transliteration: "dorifuto" }],
+      transliteration: { language: "ja-Latn", text: "rantan", origin: "manual", sourceFingerprint: "a" },
+    };
+    expect(savedLines(linesFromSaved([withoutRomanization, withoutBackground]))).toEqual([
+      withoutRomanization,
+      withoutBackground,
+    ]);
   });
 });

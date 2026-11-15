@@ -11,9 +11,6 @@ import type { WordTiming } from "@/domain/word/timing";
 //                    set explicitly when user marks
 //   joinsNext        structural: set by whoever creates syllables; split pieces join
 //                    except the last, which keeps the source word's join
-//   transliterationJoinerAfter
-//                    structural: assigned and transferred by syllable splitting;
-//                    consumed when the complete syllable group is merged
 //
 //   id               identity: kept by every transform (spread); the first split piece keeps it,
 //                    other pieces and copies into the same track take a new id

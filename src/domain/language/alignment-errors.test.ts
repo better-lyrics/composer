@@ -1,11 +1,12 @@
 import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
 import type { LyricLine } from "@/domain/line/model";
+import { legacyLine } from "@/test/legacy-languages";
 import { describe, expect, it } from "vitest";
 
 describe("getLanguageAlignmentErrorItems", () => {
   it("reports main and background transliteration errors by line", () => {
     const lines: LyricLine[] = [
-      {
+      legacyLine({
         id: "l1",
         text: "가|나",
         agentId: "v1",
@@ -27,7 +28,7 @@ describe("getLanguageAlignmentErrorItems", () => {
           origin: "manual",
           sourceFingerprint: "current",
         },
-      },
+      }),
     ];
 
     expect(getLanguageAlignmentErrorItems(lines)).toEqual([
@@ -52,7 +53,7 @@ describe("getLanguageAlignmentErrorItems", () => {
   it("omits aligned and empty transliterations", () => {
     const lines: LyricLine[] = [
       { id: "empty", text: "가|나", agentId: "v1" },
-      {
+      legacyLine({
         id: "aligned",
         text: "가|나",
         agentId: "v1",
@@ -67,7 +68,7 @@ describe("getLanguageAlignmentErrorItems", () => {
           origin: "manual",
           sourceFingerprint: "current",
         },
-      },
+      }),
     ];
 
     expect(getLanguageAlignmentErrorItems(lines)).toEqual([]);

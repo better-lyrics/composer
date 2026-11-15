@@ -4,6 +4,7 @@ import { placeInstance } from "@/domain/commands/instance-edits";
 import { isRefused } from "@/domain/commands/outcome";
 import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "@/domain/commands/sync";
 import { effectiveBounds } from "@/domain/line/bounds";
+import type { PositionalPieces } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { isSyncableLine } from "@/domain/line/sync-progress";
@@ -329,9 +330,9 @@ function useSyncHandlers({
   );
 
   const handleSplitWord = useCallback(
-    (lineIdx: number, wordIdx: number, newWords: WordTiming[]) => {
+    (lineIdx: number, wordIdx: number, newWords: WordTiming[], pieces?: PositionalPieces) => {
       const lineId = lines[lineIdx]?.id;
-      if (lineId) useProjectStore.getState().commit(splitSyncWord(lineId, wordIdx, newWords));
+      if (lineId) useProjectStore.getState().commit(splitSyncWord(lineId, wordIdx, newWords, pieces));
     },
     [lines],
   );
