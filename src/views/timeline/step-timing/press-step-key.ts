@@ -102,6 +102,7 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
     },
     (plan) => (outcome = plan),
   );
+  const entryBeforePress = project.history[project.historyIndex];
   project.commit(command);
   if (!outcome) return;
   if (outcome.kind === "refused") {
@@ -117,7 +118,7 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
   if (queue && key !== "start" && !next) noteGuideSignal("timeline.stepQueueEnd");
   // The queue outlives its last word, so the keys never leave the chosen words.
   timeline.setSelectedWords([next ?? cursor]);
-  rememberStepPress({ selectedWords: [toAddress(cursor)], stepQueue: queue });
+  rememberStepPress({ selectedWords: [toAddress(cursor)], stepQueue: queue }, entryBeforePress);
 }
 
 function setStepTimingMode(on: boolean): void {
