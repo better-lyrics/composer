@@ -20,6 +20,7 @@ import {
 } from "./line-track";
 import { newBackgroundTrack, withTrackSpan, withTrackSyllables } from "./line-track-writes";
 import { isStructurallyEqual } from "./structural-equal";
+import { lcsPairs, wordKey } from "./word-alignment";
 
 // -- Content ------------------------------------------------------------------
 
@@ -90,8 +91,15 @@ function proportional(
   });
 }
 
+// Every syllable that kept its text kept its place, so the rest only had letters changed.
+function keepsPositions(after: readonly Syllable[], own: readonly Syllable[], splitChar: string): boolean {
+  const key = (syllable: Syllable) => wordKey(syllable.text, splitChar);
+  return lcsPairs(own.map(key), after.map(key)).every(([ownIndex, afterIndex]) => ownIndex === afterIndex);
+}
+
 // An edit made where nothing was timed, on an instance whose syllables are timed: that instance keeps its times and
-// takes only the text, syllable by syllable when the count held, else through the letters or the words they share.
+// takes only the text, syllable by syllable when only letters changed, else through the letters or the words they
+// share.
 function onOwnTiming(
   after: readonly Syllable[],
   own: readonly Syllable[],
@@ -102,6 +110,7 @@ function onOwnTiming(
   if (after.length !== own.length) {
     return lineageByLetters(after, own, counterpart) ?? lineageByText(after, own, counterpart, splitChar, room);
   }
+  if (!keepsPositions(after, own, splitChar)) return lineageByText(after, own, counterpart, splitChar, room);
   return after.map((syllable, index) => {
     const kept = own[index];
     const text = { ...untimedSyllable(syllable), id: kept.id };

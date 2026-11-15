@@ -280,4 +280,16 @@ describe("carryTemplateEdits · untimed instances", () => {
       ["wing", 11.5, 12],
     ]);
   });
+
+  it("regression: a word added at the front in an untimed instance leaves the timed instance's words on their times", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Paper wings fly" }),
+      groupLine("L2", 1, { text: "Paper wings fly", words: words(11, ["Paper", "wings", "fly"]) }),
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { text: "Red Paper wings" })), [shared])[1];
+    expect(spans(out).slice(1)).toEqual([
+      ["Paper", 11, 11.5],
+      ["wings", 11.5, 12],
+    ]);
+  });
 });
