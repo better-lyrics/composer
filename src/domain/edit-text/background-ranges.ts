@@ -175,7 +175,7 @@ function editRows(text: string, ranges: readonly BackgroundRange[]): EditRow[] {
 // Rows the user typed stay verbatim with their tokens; only rows a linked edit rewrote show the committed line.
 function shownWithRewrittenRows(
   typed: ShownEditText,
-  typedLines: readonly LyricLine[],
+  typedLines: readonly (LyricLine | undefined)[],
   finalLines: readonly LyricLine[],
   splitChar: string,
 ): ShownEditText {

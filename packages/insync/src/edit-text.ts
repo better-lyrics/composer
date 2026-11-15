@@ -8,7 +8,7 @@ function linesToEditText(lines: readonly LyricLine[], splitChar: string): string
 // Rows the user typed stay verbatim (spaces mid-typing survive); only rows a linked edit rewrote show the committed text.
 function editTextWithRewrittenRows(
   typedText: string,
-  typedLines: readonly LyricLine[],
+  typedLines: readonly (LyricLine | undefined)[],
   finalLines: readonly LyricLine[],
   splitChar: string,
 ): string {
