@@ -4,7 +4,7 @@ import type { LyricLine } from "./line";
 import { isLineSynced } from "./line-predicates";
 import { backgroundText, syllablesText } from "./line-text";
 import { spreadSpan } from "./line-span-to-words";
-import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "./line-track";
+import { backgroundTrack, isSpanTimed, isTimedSyllable, roleWords, timedSyllables } from "./line-track";
 import { lastEnd } from "./word-bounds";
 import { remapWordTextsPreservingTiming } from "./word-remap-text";
 import type { WordTiming } from "./word-timing";
@@ -56,6 +56,18 @@ function backgroundWords(line: LyricLine): WordTiming[] | undefined {
   return timedSyllables(spreadSpan(line.id, background));
 }
 
+function ownBackground(standalone: LyricLine, splitChar: string): { text: string; words: WordTiming[]; rest: string } {
+  const background = backgroundTrack(standalone);
+  if (!background) return { text: "", words: [], rest: "" };
+  const words = backgroundWords(standalone) ?? [];
+  const rest = isSpanTimed(background) ? [] : background.syllables.filter((syllable) => !isTimedSyllable(syllable));
+  return {
+    text: backgroundText(standalone, splitChar)?.trim() ?? "",
+    words,
+    rest: syllablesText(rest, splitChar).trim(),
+  };
+}
+
 function mergeStandaloneInto(
   prev: LyricLine,
   standalone: LyricLine,
@@ -73,13 +85,18 @@ function mergeStandaloneInto(
   const baseText = prevIsStaleExtraction ? undefined : backgroundText(prev, splitChar);
   // A line-synced background counts as the words it spans, as 3.x stored seeded words for it.
   const storedBaseWords = prevIsStaleExtraction ? undefined : backgroundWords(prev);
-  const carried = carriedBackgroundWords(
+  const sung = carriedBackgroundWords(
     standalone,
     bgText,
     preserveBrackets,
     prevTrailingBracketFromSamePass && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
     splitChar,
   );
+  // The standalone line's own background follows its lyrics: timed words after the carried ones, the rest as text.
+  const own = ownBackground(standalone, splitChar);
+  const carried = sung?.length ? [...sung, ...own.words] : sung;
+  const withOwnRest = (text: string) => (own.rest ? `${text.trimEnd()} ${own.rest}` : text);
+  const sungText = own.text ? `${bgText} ${own.text}` : bgText;
   const baseWords =
     carried?.length && !prevIsStaleExtraction
       ? (roleWords(withSeededBackgroundWords(prev, splitChar), "bg") ?? storedBaseWords)
@@ -98,7 +115,7 @@ function mergeStandaloneInto(
         prev,
         {
           words: combined,
-          text: syllablesText(combined, splitChar),
+          text: withOwnRest(syllablesText(combined, splitChar)),
           source: keptBaseSource,
         },
         splitChar,
@@ -109,7 +126,7 @@ function mergeStandaloneInto(
         prev,
         {
           words: carried,
-          text: syllablesText(carried, splitChar),
+          text: withOwnRest(syllablesText(carried, splitChar)),
           source: "extraction",
         },
         splitChar,
@@ -118,7 +135,7 @@ function mergeStandaloneInto(
     return withBackground(
       prev,
       {
-        text: joinBackgroundText(baseText, bgText, preserveBrackets, prevTrailingBracketFromSamePass),
+        text: joinBackgroundText(baseText, sungText, preserveBrackets, prevTrailingBracketFromSamePass),
         source: keptBaseSource,
       },
       splitChar,
@@ -129,7 +146,7 @@ function mergeStandaloneInto(
   return withBackground(
     prev,
     {
-      text: joinBackgroundText(baseText, bgText, preserveBrackets, prevTrailingBracketFromSamePass),
+      text: joinBackgroundText(baseText, sungText, preserveBrackets, prevTrailingBracketFromSamePass),
       source: baseText ? keptBaseSource : "extraction",
     },
     splitChar,
