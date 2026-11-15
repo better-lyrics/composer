@@ -1,4 +1,4 @@
-import { withFlatLines } from "@/domain/group/flatten";
+import { withFlatLines } from "insync/group-flatten";
 import {
   type BodyItem,
   type Instance,
@@ -7,8 +7,8 @@ import {
   type LyricDoc,
   type TemplateLine,
 } from "insync/group";
-import { readInstance } from "@/domain/group/read-instance";
-import { toTemplateLine } from "@/domain/group/template-line";
+import { readInstance } from "insync/group-read-instance";
+import { toTemplateLine } from "insync/group-template-line";
 import { instanceBounds } from "insync/instance-bounds";
 import { instanceKey } from "insync/instance-key";
 import type { LyricLine } from "insync/line";

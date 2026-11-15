@@ -1,7 +1,7 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { applied, changedLineIds, refused, withLines } from "@/domain/commands/outcome";
-import { unlinkLines } from "@/domain/group/linking";
-import { withNewInstance, withOwnTiming } from "@/domain/group/own-timing";
+import { unlinkLines } from "insync/group-linking";
+import { withNewInstance, withOwnTiming } from "insync/group-own-timing";
 import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
 import { wholeSongRange } from "@/domain/group/shared-timing";
 import {

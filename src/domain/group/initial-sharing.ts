@@ -1,7 +1,7 @@
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainTrack, roleWords } from "insync/line-track";
-import { withSharing } from "@/domain/group/own-timing";
-import { sameTime } from "@/domain/group/same-timing";
+import { withSharing } from "insync/group-own-timing";
+import { sameTime } from "insync/group-same-timing";
 import { type SharingOutcome, realignSharedInstances } from "@/domain/group/shared-placement";
 import {
   attachedLinesOfInstance,

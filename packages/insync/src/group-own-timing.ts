@@ -1,4 +1,4 @@
-import type { LinkGroup } from "insync/group";
+import type { LinkGroup } from "./group";
 
 // -- Types --------------------------------------------------------------------
 

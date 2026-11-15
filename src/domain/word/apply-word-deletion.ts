@@ -1,4 +1,4 @@
-import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
+import { getLinkScope, isLinkedSibling, unlinkLines } from "insync/group-linking";
 import { lineInstanceKey } from "insync/instance-key";
 import { withManualBackgroundWords } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";

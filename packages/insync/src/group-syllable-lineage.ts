@@ -1,8 +1,8 @@
-import type { Syllable } from "insync/line";
-import { isTimedSyllable, untimedSyllable } from "insync/line-track";
-import { lcsPairs, wordKey } from "insync/word-alignment";
-import { newWordId } from "insync/word-id";
-import type { WordTiming } from "insync/word-timing";
+import type { Syllable } from "./line";
+import { isTimedSyllable, untimedSyllable } from "./line-track";
+import { lcsPairs, wordKey } from "./word-alignment";
+import { newWordId } from "./word-id";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

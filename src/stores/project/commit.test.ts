@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup, updateGroup } from "@/domain/commands/group-edits";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { flattenBody } from "@/domain/group/flatten";
+import { flattenBody } from "insync/group-flatten";
 import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";

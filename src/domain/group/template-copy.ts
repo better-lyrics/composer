@@ -1,7 +1,7 @@
 import { sameSharedContent } from "@/domain/group/carried-line";
-import { withCopiesInSong } from "@/domain/group/copies-in-song";
-import { instanceSlotLine, templateBySlot } from "@/domain/group/flatten";
-import { invertedIds, withLineIds } from "@/domain/group/line-ids";
+import { withCopiesInSong } from "insync/group-copies-in-song";
+import { instanceSlotLine, templateBySlot } from "insync/group-flatten";
+import { invertedIds, withLineIds } from "insync/group-line-ids";
 import {
   type Instance,
   instanceSlots,
@@ -12,7 +12,7 @@ import {
 } from "insync/group";
 import { offsetTimingFields } from "@/domain/group/offset-timing";
 import { sharesTiming, timingChanged } from "@/domain/group/shared-timing";
-import { fittedAnchor, lineContent, toTemplateLine } from "@/domain/group/template-line";
+import { fittedAnchor, lineContent, toTemplateLine } from "insync/group-template-line";
 import { instanceBounds } from "insync/instance-bounds";
 import { instanceKey } from "insync/instance-key";
 import { isLinked, type LinkedLine } from "insync/instance-predicates";

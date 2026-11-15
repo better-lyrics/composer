@@ -1,6 +1,6 @@
-import { primeSlotLine, templateSlotLine } from "@/domain/group/flatten";
-import { invertedIds, pairedIds, withLineIds } from "@/domain/group/line-ids";
-import type { Instance, TemplateLine } from "insync/group";
+import { primeSlotLine, templateSlotLine } from "./group-flatten";
+import { invertedIds, pairedIds, withLineIds } from "./group-line-ids";
+import type { Instance, TemplateLine } from "./group";
 import {
   fittedAnchor,
   type LineContent,
@@ -9,9 +9,9 @@ import {
   retimedLine,
   templateContent,
   untimedLine,
-} from "@/domain/group/template-line";
-import type { LyricLine } from "insync/line";
-import { isStructurallyEqual } from "insync/structural-equal";
+} from "./group-template-line";
+import type { LyricLine } from "./line";
+import { isStructurallyEqual } from "./structural-equal";
 
 // -- Types --------------------------------------------------------------------
 

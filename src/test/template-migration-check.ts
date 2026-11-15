@@ -1,7 +1,7 @@
 import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
-import { flattenBody } from "@/domain/group/flatten";
+import { flattenBody } from "insync/group-flatten";
 import { isInstanceSpan, type LyricDoc } from "insync/group";
-import { sameToTheMs } from "@/domain/group/read-instance";
+import { sameToTheMs } from "insync/group-read-instance";
 import type { LyricLine } from "insync/line";
 import { linesFromSaved, type StoredProject, upgradeSavedProject } from "@/lib/saved-project";
 import { compareExports, type ExportDifference } from "@/test/export-equality";

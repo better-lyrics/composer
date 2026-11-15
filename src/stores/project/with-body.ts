@@ -1,5 +1,5 @@
 import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
-import { flattenBody, knownFlatLines } from "@/domain/group/flatten";
+import { flattenBody, knownFlatLines } from "insync/group-flatten";
 import type { LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";
 import { getSplitCharacter } from "@/utils/split-character";

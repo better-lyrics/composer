@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
-import { flattenBody } from "@/domain/group/flatten";
+import { flattenBody } from "insync/group-flatten";
 import { foldLines } from "@/domain/group/fold";
 import type { Instance, LyricDoc } from "insync/group";
 import type { LyricLine } from "insync/line";

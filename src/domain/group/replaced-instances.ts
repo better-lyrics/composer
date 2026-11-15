@@ -1,4 +1,4 @@
-import { sameTime } from "@/domain/group/same-timing";
+import { sameTime } from "insync/group-same-timing";
 import { instanceKey } from "insync/instance-key";
 import { isLinked } from "insync/instance-predicates";
 import { mainBounds } from "insync/line-bounds";

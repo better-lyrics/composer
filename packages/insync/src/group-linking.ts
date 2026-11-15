@@ -1,4 +1,4 @@
-import type { LyricLine } from "insync/line";
+import type { LyricLine } from "./line";
 
 // -- Types --------------------------------------------------------------------
 

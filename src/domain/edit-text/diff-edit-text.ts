@@ -1,5 +1,5 @@
 import { sameSharedContent } from "@/domain/group/carried-line";
-import { withLineIds } from "@/domain/group/line-ids";
+import { withLineIds } from "insync/group-line-ids";
 import { isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
 import { isStructurallyEqual } from "insync/structural-equal";

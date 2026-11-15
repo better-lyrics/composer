@@ -1,6 +1,6 @@
 import { carriedLine, sameSharedContent } from "@/domain/group/carried-line";
 import { sharesTiming } from "@/domain/group/shared-timing";
-import type { LineageCounterpart, LineagePair } from "@/domain/group/syllable-lineage";
+import type { LineageCounterpart, LineagePair } from "insync/group-syllable-lineage";
 import type { LinkGroup } from "insync/group";
 import type { InstanceAnchors } from "@/domain/group/template-copy";
 import { instanceBounds } from "insync/instance-bounds";

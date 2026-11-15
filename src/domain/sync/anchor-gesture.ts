@@ -1,4 +1,4 @@
-import { withOwnTiming } from "@/domain/group/own-timing";
+import { withOwnTiming } from "insync/group-own-timing";
 import { isAttachedToInstance } from "insync/instance-predicates";
 import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { mainBounds } from "insync/line-bounds";
