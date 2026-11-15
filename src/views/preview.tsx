@@ -14,7 +14,7 @@ const PreviewPanel: React.FC = () => {
   if (!source) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" />
+        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" goTo="import" />
       </div>
     );
   }
@@ -22,7 +22,7 @@ const PreviewPanel: React.FC = () => {
   if (lineCount === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to preview" hint="Add lyrics in the Edit tab first" />
+        <EmptyState message="No lyrics to preview" hint="Add lyrics in the Edit tab first" goTo="edit" />
       </div>
     );
   }
@@ -30,7 +30,7 @@ const PreviewPanel: React.FC = () => {
   if (!hasSyncedContent) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" />
+        <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" goTo="sync" />
       </div>
     );
   }
