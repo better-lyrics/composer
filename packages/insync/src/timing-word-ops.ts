@@ -1,9 +1,9 @@
-import type { TimeRange } from "insync/group-shared-timing";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { applyStepKey, type StepKey, type StepRefusal } from "insync/step-timing-step-write";
-import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "insync/word-boundary";
-import { getSyllablePositions } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import type { TimeRange } from "./group-shared-timing";
+import type { LineUpdate, LyricLine } from "./line";
+import { applyStepKey, type StepKey, type StepRefusal } from "./step-timing-step-write";
+import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "./word-boundary";
+import { getSyllablePositions } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

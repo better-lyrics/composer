@@ -1,12 +1,12 @@
-import { isSharedLine, type TimeRange } from "insync/group-shared-timing";
-import type { LinkGroup } from "insync/group";
-import { combinedTrackEdits } from "insync/line-combined-track-edits";
-import type { LineUpdate, LyricLine } from "insync/line";
-import type { ResolvedAddress } from "insync/selection-resolve";
-import type { StepKey, StepRefusal } from "insync/step-timing-step-write";
-import { stepBgWordEdit } from "@/utils/timing/bg-word-timing";
-import { stepWordEdit } from "@/utils/timing/word-timing";
-import type { StepEdit } from "@/utils/timing/word-timing-ops";
+import { isSharedLine, type TimeRange } from "./group-shared-timing";
+import type { LinkGroup } from "./group";
+import { combinedTrackEdits } from "./line-combined-track-edits";
+import type { LineUpdate, LyricLine } from "./line";
+import type { ResolvedAddress } from "./selection-resolve";
+import type { StepKey, StepRefusal } from "./step-timing-step-write";
+import { stepBgWordEdit } from "./timing-bg-word-ops";
+import { stepWordEdit } from "./timing-main-word-ops";
+import type { StepEdit } from "./timing-word-ops";
 
 // -- Types --------------------------------------------------------------------
 

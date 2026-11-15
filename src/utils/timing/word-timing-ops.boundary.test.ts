@@ -6,7 +6,7 @@ import type { LineUpdate, LyricLine } from "insync/line";
 import type { BoundaryEdge } from "insync/word-boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
-import { bgWordBoundaryEdit, bgWordRetimeEdit } from "@/utils/timing/bg-word-timing";
+import { bgWordBoundaryEdit, bgWordRetimeEdit } from "insync/timing-bg-word-ops";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("createWordTimingOps: setBoundary", () => {

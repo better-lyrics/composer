@@ -1,7 +1,7 @@
-import { drawnSyllables } from "insync/line-drawn-track";
-import { mainTrack, timedSyllables } from "insync/line-track";
-import { mainTimingWrite } from "insync/line-track-writes";
-import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { drawnSyllables } from "./line-drawn-track";
+import { mainTrack, timedSyllables } from "./line-track";
+import { mainTimingWrite } from "./line-track-writes";
+import { createWordTimingOps } from "./timing-word-ops";
 
 // Timeline edits read the main track as the Timeline draws it; Sync retimes only its timed syllables.
 const drawnOps = createWordTimingOps({

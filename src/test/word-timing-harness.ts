@@ -5,7 +5,7 @@ import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
 import type { BoundaryEdge } from "insync/word-boundary";
 import { createLine } from "@/test/factories";
-import { type RetimeChange, createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { type RetimeChange, createWordTimingOps } from "insync/timing-word-ops";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Retime seam --------------------------------------------------------------

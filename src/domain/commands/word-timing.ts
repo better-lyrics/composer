@@ -15,9 +15,9 @@ import type { StretchAnchor } from "insync/selection-stretch-targets";
 import type { StepKey } from "insync/step-timing-step-write";
 import type { BoundaryEdge } from "insync/word-boundary";
 import type { WordTiming } from "insync/word-timing";
-import { bgWordBoundaryEdit } from "@/utils/timing/bg-word-timing";
-import { type StepKeyPlan, planStepKey } from "@/utils/timing/step-key-write";
-import { wordBoundaryEdit } from "@/utils/timing/word-timing";
+import { bgWordBoundaryEdit } from "insync/timing-bg-word-ops";
+import { type StepKeyPlan, planStepKey } from "insync/timing-step-key-write";
+import { wordBoundaryEdit } from "insync/timing-main-word-ops";
 import { applyWordPatch } from "insync/word-patch";
 
 // -- Types --------------------------------------------------------------------

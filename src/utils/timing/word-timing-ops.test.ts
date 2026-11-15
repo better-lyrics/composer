@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
 import type { LineUpdate } from "insync/line";
-import { wordBoundaryEdit, wordRetimeEdit } from "@/utils/timing/word-timing";
+import { wordBoundaryEdit, wordRetimeEdit } from "insync/timing-main-word-ops";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("createWordTimingOps: early returns", () => {

@@ -6,7 +6,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack }
 import { type ResolvedAddress, resolvedAt, toAddress } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { planStepKey } from "@/utils/timing/step-key-write";
+import { planStepKey } from "insync/timing-step-key-write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });

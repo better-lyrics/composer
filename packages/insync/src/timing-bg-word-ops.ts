@@ -1,7 +1,7 @@
-import { drawnSyllables } from "insync/line-drawn-track";
-import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
-import { backgroundTimingWrite } from "insync/line-track-writes";
-import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { drawnSyllables } from "./line-drawn-track";
+import { manualBackgroundWordEdit } from "./line-lane-word-edits";
+import { backgroundTimingWrite } from "./line-track-writes";
+import { createWordTimingOps } from "./timing-word-ops";
 
 // Timeline and Sync edits read the background as the Timeline draws it: a line-synced one as one block.
 const drawnOps = createWordTimingOps({

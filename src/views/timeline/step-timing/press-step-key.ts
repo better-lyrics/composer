@@ -11,7 +11,7 @@ import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import type { StepKeyPlan } from "@/utils/timing/step-key-write";
+import type { StepKeyPlan } from "insync/timing-step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
