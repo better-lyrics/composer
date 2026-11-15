@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "insync/agent-colors";
-import { agentsAfterImport } from "@/domain/agent/imported-agents";
+import { agentsAfterImport } from "insync/agent-imported-agents";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { mainTimingWrite } from "insync/line-track-writes";
