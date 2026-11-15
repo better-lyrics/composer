@@ -103,12 +103,13 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
     (plan) => (outcome = plan),
   );
   project.commit(command);
-  if (outcome?.kind === "refused") {
+  if (!outcome) return;
+  if (outcome.kind === "refused") {
     toast(refusalMessage(outcome.refusal));
     timeline.setSelectedWords([cursor]);
     return;
   }
-  if (outcome?.endedPrevious) showEndedPreviousToast(outcome.endedPrevious);
+  if (outcome.endedPrevious) showEndedPreviousToast(outcome.endedPrevious);
   noteGuideSignal("timeline.stepTiming");
   const leftLine = cursor.type === "word" && next?.lineId !== cursor.lineId;
   if (leftLine && drawnSyllables(line, "bg", getSplitCharacter()).length)
