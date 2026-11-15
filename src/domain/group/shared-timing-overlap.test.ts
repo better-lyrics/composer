@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { timeRangeResolver } from "insync/group-shared-timing";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { shiftLineTiming } from "@/domain/line/shift";
+import { shiftLineTiming } from "insync/line-shift";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { nudgeSelectedWords } from "@/domain/selection/nudge";
 import { stretchSelections } from "@/domain/selection/stretch";

@@ -1,7 +1,7 @@
 import { decodePrimingCrop } from "@/audio/decoded-source-audio";
 import type { PrimingCrop } from "@/audio/lame-priming";
 import type { LineTrack, LyricLine } from "insync/line";
-import { shiftWords } from "@/domain/line/shift";
+import { shiftWords } from "insync/line-shift";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withTrackSpan, withTrackWords } from "insync/line-track-writes";
 import { type SnapPoint, shiftedSnapPoints } from "@/domain/snap-point/model";

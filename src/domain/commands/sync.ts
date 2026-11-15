@@ -6,7 +6,7 @@ import type { PositionalPieces } from "insync/language-pieces";
 import { splitWordsKeepingTransliteration } from "insync/language-reconcile-syllable-split";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { shiftLineTiming } from "@/domain/line/shift";
+import { shiftLineTiming } from "insync/line-shift";
 import { withRoleWords, withoutLineTiming } from "insync/line-track-writes";
 import { roleWords, type WordTrack } from "insync/line-track";
 import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";

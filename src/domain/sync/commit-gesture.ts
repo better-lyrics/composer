@@ -4,7 +4,7 @@ import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { bgBounds, mainBounds } from "insync/line-bounds";
 import { withBackgroundSeededFrom, withSeededBackground } from "insync/line-background";
 import type { LineUpdate, LyricLine } from "insync/line";
-import { clampShiftDelta, shiftLineTiming, shiftTrack } from "@/domain/line/shift";
+import { clampShiftDelta, shiftLineTiming, shiftTrack } from "insync/line-shift";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "insync/line-track-writes";
 import { isSyncableLine } from "insync/line-sync-progress";

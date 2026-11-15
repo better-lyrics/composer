@@ -16,7 +16,7 @@ import { applyLineUpdates } from "insync/line-apply-line-updates";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LineUpdate, LyricLine } from "insync/line";
 import { withLinePassthrough } from "insync/line-passthrough";
-import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
+import { clampShiftDelta, shiftLineTiming } from "insync/line-shift";
 import { songEndOrUnbounded } from "insync/song-end";
 
 // -- Constants ----------------------------------------------------------------
