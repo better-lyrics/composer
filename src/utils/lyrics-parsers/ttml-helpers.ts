@@ -1,6 +1,6 @@
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
-import { UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
+import { LYRIC_ROLES, UNBOUND_NAMESPACE_PREFIX } from "@/utils/lyrics-parsers/ttml-modelled";
 import { syllableCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { parseXmlDocument, type XmlParseResult } from "@/utils/xml-document";
 
@@ -98,8 +98,8 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
       const el = node as Element;
       const role = el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
 
-      // Skip x-bg containers (handled separately)
-      if (role === "x-bg" || excludeContainer?.contains(el)) continue;
+      // Skip x-bg containers (handled separately), translations and romanization
+      if (LYRIC_ROLES.has(role ?? "") || excludeContainer?.contains(el)) continue;
 
       // Handle span with timing
       if (el.tagName.toLowerCase() === "span" && el.hasAttribute("begin")) {

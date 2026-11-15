@@ -113,12 +113,29 @@ describe("parseTtml inline translations", () => {
         head,
         '<p begin="1" end="3" itunes:key="L1"><span begin="1" end="2">Salt </span><span begin="2" end="3">air</span>' +
           '<span ttm:role="x-translation" xml:lang="de">Inline Salz</span><span ttm:role="x-translation" xml:lang="fr">Air salin</span>' +
-          '<span ttm:role="x-bg"><span begin="2" end="3">(air)</span><span ttm:role="x-translation" xml:lang="fr">(air)</span></span></p>',
+          '<span ttm:role="x-bg"><span begin="2" end="3">(air)</span><span ttm:role="x-translation" xml:lang="fr">(air)</span><span ttm:role="x-translation" xml:lang="de">(Luft)</span></span></p>',
       ),
     ).lines;
     expect(lineText(line)).toBe("Salt air");
     expect(line.languages?.translations?.de).toMatchObject({ main: { text: "Salz am Fenster" } });
     expect(line.languages?.translations?.de?.bg).toBeUndefined();
     expect(line.languages?.translations?.fr).toMatchObject({ main: { text: "Air salin" }, bg: { text: "(air)" } });
+  });
+
+  it("a translation without its own language takes the nearest one around it", () => {
+    const source = doc("", '<p begin="1" end="3">Salt air<span ttm:role="x-translation">Aire salado</span></p>');
+    const [line] = parseTtml(source.replace("<div>", '<div xml:lang="es">')).lines;
+    expect(line.languages?.translations?.es?.main.text).toBe("Aire salado");
+  });
+
+  it("a second romanization language the line cannot hold is written back where it was", () => {
+    const romanizations =
+      '<span ttm:role="x-roman" xml:lang="ja-Latn">shio</span><span ttm:role="x-roman" xml:lang="ja-Hrkt">しお</span>';
+    const parsed = parseTtml(doc("", `<p begin="1" end="3"><span begin="1" end="3">塩</span>${romanizations}</p>`));
+    expect(parsed.lines[0].languages?.transliteration?.language).toBe("ja-Latn");
+    const ttml = generateTTML({ metadata, agents: [], lines: parsed.lines, passthrough: parsed.passthrough });
+    expect(ttml).toContain(
+      '<span begin="0:01.000" end="0:03.000">塩</span><span ttm:role="x-roman" xml:lang="ja-Hrkt">しお</span></p>',
+    );
   });
 });

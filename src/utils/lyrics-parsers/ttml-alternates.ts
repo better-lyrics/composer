@@ -10,16 +10,15 @@ import { backgroundText, lineText } from "@/domain/line/text";
 import { roleWords } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { ownLanguage, readInlineAlternates } from "@/utils/lyrics-parsers/ttml-modelled";
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
-const XML_NS = "http://www.w3.org/XML/1998/namespace";
 const TTM_NS = "http://www.w3.org/ns/ttml#metadata";
 
 const directChildren = (element: Element, name: string) =>
   Array.from(element.children).filter((child) => child.localName === name);
 const role = (element: Element) => element.getAttribute("ttm:role") || element.getAttributeNS(TTM_NS, "role");
-const languageOf = (element: Element, fallback: string) =>
-  element.getAttribute("xml:lang") || element.getAttributeNS(XML_NS, "lang") || fallback;
+const languageOf = (element: Element, fallback: string) => ownLanguage(element) || fallback;
 
 function textWithoutBackground(element: Element): string {
   let text = "";
@@ -84,8 +83,7 @@ function parseTranslations(root: Element, lines: LyricLine[], lineIndexByKey: Ma
       const sidecarBackground = Array.from(textElement.getElementsByTagName("span")).find(
         (span) => role(span) === "x-bg",
       );
-      const translatedBackground =
-        sidecarBackground?.textContent?.trim() || lineTranslations(line)?.[language]?.bg?.text || undefined;
+      const translatedBackground = sidecarBackground?.textContent?.trim() || undefined;
       const translation: LineLanguage = {
         language,
         main: { text: textWithoutBackground(textElement) },
@@ -159,21 +157,20 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
 
 // -- Inline -------------------------------------------------------------------
 
-// The text of each language a container's direct x-translation or x-roman spans hold; the first span of a language wins.
-function inlineTexts(container: Element | null, wantedRole: string, fallbackLanguage: string): Map<string, string> {
+// The text of each inline span of a role the reader takes from a container, by language.
+function inlineTexts(container: Element | null, wantedRole: string): Map<string, string> {
   const texts = new Map<string, string>();
-  for (const span of container ? directChildren(container, "span") : []) {
-    const language = languageOf(span, fallbackLanguage);
+  for (const [span, language] of container ? readInlineAlternates(container) : []) {
     const text = span.textContent?.trim();
-    if (role(span) === wantedRole && text && !texts.has(language)) texts.set(language, text);
+    if (role(span) === wantedRole && text) texts.set(language, text);
   }
   return texts;
 }
 
 // Inline translations and romanization of a `<p>` and its x-bg container; a `<head>` entry read later wins.
 function withInlineAlternates(line: LyricLine, paragraph: Element, background: Element | null): LyricLine {
-  const main = inlineTexts(paragraph, "x-translation", "und");
-  const bg = inlineTexts(background, "x-translation", "und");
+  const main = inlineTexts(paragraph, "x-translation");
+  const bg = inlineTexts(background, "x-translation");
   const translations: LineTranslations = {};
   for (const language of new Set([...main.keys(), ...bg.keys()])) {
     const bgText = bg.get(language);
@@ -186,8 +183,8 @@ function withInlineAlternates(line: LyricLine, paragraph: Element, background: E
     };
   }
   const withTranslations = main.size + bg.size > 0 ? { ...line, ...withLanguages(line, { translations }) } : line;
-  const romanMain = inlineTexts(paragraph, "x-roman", "und-Latn");
-  const romanBg = inlineTexts(background, "x-roman", "und-Latn");
+  const romanMain = inlineTexts(paragraph, "x-roman");
+  const romanBg = inlineTexts(background, "x-roman");
   const [romanLanguage] = [...romanMain.keys(), ...romanBg.keys()];
   if (romanLanguage === undefined) return withTranslations;
   const text = decodeTransliterationText(romanMain.get(romanLanguage) ?? "");

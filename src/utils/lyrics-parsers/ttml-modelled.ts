@@ -20,6 +20,7 @@ type TtmlNode =
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 const TTM_NS = "http://www.w3.org/ns/ttml#metadata";
+const XML_NS = "http://www.w3.org/XML/1998/namespace";
 const UNBOUND_NAMESPACE_PREFIX = "urn:composer:unbound:";
 
 // The prefixes Composer declares on every export.
@@ -63,12 +64,15 @@ function elementRole(element: Element): string | null {
   return element.getAttribute("ttm:role") || element.getAttributeNS(TTM_NS, "role");
 }
 
+const ownLanguage = (element: Element) =>
+  element.getAttribute("xml:lang") || element.getAttributeNS(XML_NS, "lang") || "";
+
 // A span the reader takes as a timed syllable of its parent.
 function isTimedWordSpan(element: Element): boolean {
   return (
     element.tagName.toLowerCase() === "span" &&
     element.hasAttribute("begin") &&
-    elementRole(element) !== "x-bg" &&
+    !LYRIC_ROLES.has(elementRole(element) ?? "") &&
     (element.textContent ?? "").trim() !== ""
   );
 }
@@ -90,6 +94,52 @@ function hasTimedWordSpans(container: Element): boolean {
   return Array.from(container.children).some(isTimedWordSpan);
 }
 
+// -- Inline alternates ---------------------------------------------------------
+
+// A romanization's own language; a translation's own or the nearest one around it.
+function inlineLanguage(span: Element): string {
+  if (elementRole(span) === "x-roman") return ownLanguage(span) || "und-Latn";
+  for (let at: Element | null = span; at; at = at.parentElement) {
+    const language = ownLanguage(at);
+    if (language) return language;
+  }
+  return "und";
+}
+
+const directWithRole = (container: Element | null | undefined, role: string) =>
+  container ? Array.from(container.children).filter((child) => elementRole(child) === role) : [];
+
+function paragraphOf(container: Element): Element | null {
+  let at: Element | null = container;
+  while (at && at.tagName !== "p") at = at.parentElement;
+  return at;
+}
+
+// The x-bg container the reader takes a line's background from: the first in the `<p>`.
+function backgroundOf(paragraph: Element): Element | undefined {
+  return Array.from(paragraph.getElementsByTagName("span")).find((span) => elementRole(span) === "x-bg");
+}
+
+// The inline translations and romanization of a `<p>` or its x-bg container the reader takes, with their language:
+// the first translation of each language, and the first romanization in the line's one romanization language (that
+// of its first). The rest are kept as they are.
+function readInlineAlternates(container: Element): ReadonlyMap<Element, string> {
+  const read = new Map<Element, string>();
+  for (const span of directWithRole(container, "x-translation")) {
+    const language = inlineLanguage(span);
+    if (![...read.values()].includes(language)) read.set(span, language);
+  }
+  const paragraph = paragraphOf(container);
+  const [romanLanguage] = paragraph
+    ? [...directWithRole(paragraph, "x-roman"), ...directWithRole(backgroundOf(paragraph), "x-roman")].map(
+        inlineLanguage,
+      )
+    : [];
+  const roman = directWithRole(container, "x-roman").find((span) => inlineLanguage(span) === romanLanguage);
+  if (roman && romanLanguage) read.set(roman, romanLanguage);
+  return read;
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function isModelledAttribute(node: TtmlNode, attr: Attr): boolean {
@@ -102,7 +152,12 @@ function isModelledAttribute(node: TtmlNode, attr: Attr): boolean {
   return false;
 }
 
-function isModelledChildOf(node: TtmlNode, child: Element, parentHasTimedWords: boolean): boolean {
+function isModelledChildOf(
+  node: TtmlNode,
+  child: Element,
+  parentHasTimedWords: boolean,
+  readAlternates: ReadonlyMap<Element, string>,
+): boolean {
   if (inComposerNamespace(child)) return true;
   switch (node) {
     case "tt":
@@ -119,11 +174,12 @@ function isModelledChildOf(node: TtmlNode, child: Element, parentHasTimedWords: 
     case "div":
       return isLyricSection(child) || child.tagName === "p";
     case "p":
-    case "background":
-      return (
-        LYRIC_ROLES.has(elementRole(child) ?? "") ||
-        (parentHasTimedWords ? isTimedWordSpan(child) : isLyricTextElement(child))
-      );
+    case "background": {
+      const role = elementRole(child);
+      if (role === "x-bg") return true;
+      if (LYRIC_ROLES.has(role ?? "")) return readAlternates.has(child);
+      return parentHasTimedWords ? isTimedWordSpan(child) : isLyricTextElement(child);
+    }
     default:
       return false;
   }
@@ -131,8 +187,10 @@ function isModelledChildOf(node: TtmlNode, child: Element, parentHasTimedWords: 
 
 // Whether a child of `parent` is modelled; the parent is read once, not per child.
 function modelledChildTest(node: TtmlNode, parent: Element): (child: Element) => boolean {
-  const parentHasTimedWords = (node === "p" || node === "background") && hasTimedWordSpans(parent);
-  return (child) => isModelledChildOf(node, child, parentHasTimedWords);
+  const inLine = node === "p" || node === "background";
+  const parentHasTimedWords = inLine && hasTimedWordSpans(parent);
+  const readAlternates = inLine ? readInlineAlternates(parent) : new Map<Element, string>();
+  return (child) => isModelledChildOf(node, child, parentHasTimedWords, readAlternates);
 }
 
 // The modelled children a kept element is placed among: the ones the writer writes one for one, in source order.
@@ -168,5 +226,7 @@ export {
   isTimedWordSpan,
   LYRIC_ROLES,
   modelledChildTest,
+  ownLanguage,
+  readInlineAlternates,
   UNBOUND_NAMESPACE_PREFIX,
 };
