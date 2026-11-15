@@ -191,6 +191,25 @@ describe("carryTemplateEdits · a word moved to another line", () => {
     ];
     expect(carried(before, moveGlow(before, 0, 1)).slice(2)).toEqual(before.slice(2));
   });
+
+  it("regression: an edit to another instance's detached line under the same ids never splits the move", () => {
+    const templateIds = (line: LyricLine, ids: readonly string[]) =>
+      withFields(line, { words: timedSyllables(mainTrack(line)).map((word, index) => ({ ...word, id: ids[index] })) });
+    const before = [
+      templateIds(slotLine("L1", 0, 0, ["glow", "rain"]), ["glow", "rain"]),
+      templateIds(slotLine("L2", 0, 1, ["fire"]), ["fire"]),
+      templateIds(slotLine("L3", 1, 0, ["glow", "rain"], { detached: true }), ["glow", "rain"]),
+      templateIds(slotLine("L4", 1, 1, ["fire"]), ["fire"]),
+      templateIds(slotLine("L5", 2, 0, ["glow", "rain"]), ["glow", "rain"]),
+      templateIds(slotLine("L6", 2, 1, ["fire"]), ["fire"]),
+    ];
+    const after = moveGlow(before, 0, 1).with(2, withFields(before[2], { text: "glow rain now" }));
+    expect(
+      carried(before, after)
+        .slice(4)
+        .map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER)),
+    ).toEqual(["rain", "glow fire"]);
+  });
 });
 
 describe("carryTemplateEdits · two instances edited at once", () => {
