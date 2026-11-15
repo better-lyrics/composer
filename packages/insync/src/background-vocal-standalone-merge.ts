@@ -83,16 +83,14 @@ function spanOver(first: Bounds | null, second: Bounds | null): Bounds | null {
 
 // A line-synced line takes the standalone row as one span-timed background, the same as the text written inline.
 function mergeIntoLineSynced(
-  prev: LyricLine,
+  base: LyricLine,
   standalone: LyricLine,
   bgText: string,
   sameSession: boolean,
   keptBaseSource: BackgroundSource,
   preserveBrackets: boolean,
   splitChar: string,
-): LyricLine | null {
-  const base = backgroundTrack(prev)?.source === "extraction" && !sameSession ? withoutBackground(prev) : prev;
-  if (!sameSession && bgBounds(base)) return null;
+): LyricLine {
   const baseText = backgroundText(base, splitChar);
   const ownText = backgroundText(standalone, splitChar)?.trim();
   const merged = withBackground(
@@ -126,9 +124,11 @@ function mergeStandaloneInto(
   // is necessarily fresh same-pass output (stale extraction was dropped above),
   // so it stays extraction; manual or legacy-undefined stays manual.
   const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
-  if (isLineSynced(prev)) {
+  const base = prevIsStaleExtraction ? withoutBackground(prev) : prev;
+  // A background timed by hand before this pass keeps its own timing, so the row merges word by word below.
+  if (isLineSynced(prev) && (prevTrailingBracketFromSamePass || !bgBounds(base))) {
     return mergeIntoLineSynced(
-      prev,
+      base,
       standalone,
       bgText,
       prevTrailingBracketFromSamePass,

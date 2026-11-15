@@ -2560,14 +2560,18 @@ describe("regressions", () => {
     ]);
   });
 
-  it("regression: a timed standalone next to a line-synced background keeps both timings", () => {
+  it("regression: a timed standalone merged into a line-synced background keeps both timings", () => {
     const synced = withSeededBackground(
       createLine({ id: "a", text: "hello", begin: 10, end: 14, backgroundText: "ooh", backgroundTextSource: "manual" }),
       DEFAULT_SPLIT_CHARACTER,
     );
     const lines = [synced, createLine({ id: "b", text: "(yeah)", begin: 15, end: 16 })];
-    const extracted = extractBackgroundVocals(lines, options, DEFAULT_SPLIT_CHARACTER);
-    expect(extracted).toEqual(lines);
+    const [merged] = extractBackgroundVocals(lines, options, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(merged)).map((word) => [word.begin, word.end])).toEqual([
+      [12, 14],
+      [15, 16],
+    ]);
   });
 
   it("regression: inline brackets are not extracted into a line-synced background", () => {
