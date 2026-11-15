@@ -104,9 +104,12 @@ export {
   fittedAnchor,
   lineContent,
   ownTimedLine,
+  ownTimedTrack,
   ownTimingOf,
   retimedLine,
+  retimedTrack,
   templateContent,
   toTemplateLine,
   untimedLine,
+  untimedTrack,
 };
