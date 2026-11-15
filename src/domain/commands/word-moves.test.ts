@@ -7,7 +7,7 @@ import { duplicateWords, moveWords, moveWordsAcrossLines } from "insync/commands
 import { pieceOf, trackPieces } from "insync/language-pieces";
 import type { LineLanguages } from "insync/language";
 import { lineText } from "insync/line-text";
-import { mainTrack, roleWords, type WordTrack } from "insync/line-track";
+import { backgroundTrack, mainTrack, roleWords, type WordTrack } from "insync/line-track";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
@@ -248,5 +248,25 @@ describe("word moves in partly timed lines", () => {
       .getState()
       .commit(moveWords({ addresses: [addressOf({ id: "glow" }, "word", terns)], timeDelta: -1, duration: 60 }));
     expect(endsItsWord("glow")).toBe(false);
+  });
+
+  it("regression: a joined syllable moved onto an empty background lane ends that track", () => {
+    const lan = createWord({ text: "Lan", sep: "", begin: 10, end: 10.5, joinsNext: true });
+    const terns = createWord({ text: "terns", sep: "", begin: 10.5, end: 11 });
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "glow", text: "Lanterns", words: [lan, terns] })],
+      groups: [],
+    });
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf({ id: "glow" }, "word", lan)],
+        fromLineId: "glow",
+        targetLineId: "glow",
+        targetTrack: "bg",
+        timeDelta: 0,
+        duration: 60,
+      }),
+    );
+    expect(backgroundTrack(lineById("glow"))?.syllables.at(-1)?.joinsNext).toBe(false);
   });
 });

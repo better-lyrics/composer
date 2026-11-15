@@ -27,7 +27,7 @@ function seamBeforeUntimed(track: LineTrack, last: WordTiming, next: Syllable): 
   return last.sep || last.joinsNext ? last : { ...last, sep: own.sep, joinsNext: own.joinsNext };
 }
 
-function withEndedTrack(syllables: readonly Syllable[]): readonly Syllable[] {
+function withEndedTrack<S extends Syllable>(syllables: readonly S[]): readonly S[] {
   const last = syllables.at(-1);
   return last?.joinsNext ? [...syllables.slice(0, -1), { ...last, joinsNext: false }] : syllables;
 }
@@ -151,6 +151,7 @@ export {
   trackTimingWrite,
   withAgent,
   withBackgroundTrack,
+  withEndedTrack,
   withMainTrack,
   withoutLineTiming,
   withoutTrackTiming,
