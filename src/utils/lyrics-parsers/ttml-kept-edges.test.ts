@@ -89,6 +89,26 @@ describe("ttml kept data edges", () => {
     expect(ttml).toContain('xmlns:y-tool="urn:composer:unbound:y-tool"');
   });
 
+  it("regression: a prefix the source declared below the root is written with the source's namespace", () => {
+    const sources = [
+      `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="0:01.000" end="0:02.000" xmlns:v="urn:v"><span begin="0:01.000" end="0:02.000" v:x="1">Tide</span></p></div></body></tt>`,
+      `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal"><body><div itunes:songPart="Verse" xmlns:v="urn:v"><p begin="0:01.000" end="0:02.000"><span begin="0:01.000" end="0:02.000" v:x="1">Tide</span></p></div></body></tt>`,
+    ];
+    for (const source of sources) {
+      const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+      const ttml = generateTTML({
+        metadata: normalizeLoadedMetadata(parsed.metadata),
+        agents: [],
+        lines: parsed.lines,
+        parts: parsed.parts,
+        passthrough: parsed.passthrough,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      expect(ttml).not.toContain("urn:composer:unbound:v");
+      expect(ttml).toContain('xmlns:v="urn:v"');
+    }
+  });
+
   it("a second round trip changes nothing", () => {
     const once = exported();
     const parsed = parseTtml(once, DEFAULT_SPLIT_CHARACTER);
