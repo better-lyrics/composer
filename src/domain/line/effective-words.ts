@@ -3,6 +3,7 @@ import { mainWordEditFields } from "@/domain/line/main-words";
 import { type LyricLine, effectiveLineBrand, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { trackWords } from "@/domain/line/tracks";
+import { lineTimingWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
@@ -19,7 +20,8 @@ type ReadableLine = LyricLine | EffectiveLine;
 function effectiveWords(line: LyricLine): WordTiming[] {
   if (line.words?.length) return line.words;
   if (isLineSynced(line)) {
-    return [wordFromSpaced({ text: stripSplitCharacter(line.text), begin: line.begin, end: line.end })];
+    const text = stripSplitCharacter(line.text);
+    return [wordFromSpaced({ id: lineTimingWordId(line.id), text, begin: line.begin, end: line.end })];
   }
   return [];
 }

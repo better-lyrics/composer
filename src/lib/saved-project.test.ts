@@ -1,6 +1,6 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { reconcileLine } from "@/domain/line/model";
-import { SAVED_PROJECT_VERSION, type SavedProject, upgradeSavedProject } from "@/lib/saved-project";
+import { linesFromSaved, SAVED_PROJECT_VERSION, type SavedProject, upgradeSavedProject } from "@/lib/saved-project";
 import { describe, expect, it } from "vitest";
 
 function legacyProject(version: SavedProject["version"]): SavedProject {
@@ -65,5 +65,24 @@ describe("upgradeSavedProject", () => {
       expect(upgradeSavedProject(project)).toBe(true);
       expect(project.version).toBe(SAVED_PROJECT_VERSION);
     });
+  });
+});
+
+describe("linesFromSaved", () => {
+  it("gives loaded words new ids even when the file carries some", () => {
+    const [line] = linesFromSaved([
+      {
+        id: "line-1",
+        text: "Paper lanterns",
+        agentId: "v1",
+        words: [
+          { id: "x", text: "Paper ", begin: 1, end: 2 },
+          { id: "x", text: "lanterns", begin: 2, end: 3 },
+        ],
+      },
+    ]);
+    const ids = line.words?.map((word) => word.id) ?? [];
+    expect(new Set(ids).size).toBe(2);
+    expect(ids).not.toContain("x");
   });
 });

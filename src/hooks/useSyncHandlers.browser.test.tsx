@@ -212,7 +212,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
       id: "l0",
       agentId: "v1",
       text: "일단은",
-      words: [{ text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun" }],
+      words: [{ id: "w1", text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun" }],
       transliteration: {
         language: "ko-Latn",
         text: "ildan eun",
@@ -227,6 +227,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
     await act(() => {
       result.current.handleSplitWord(0, 0, [
         {
+          id: "w2",
           text: "일",
           sep: "",
           begin: 0,
@@ -236,6 +237,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
           syllableGroupId: "group",
         },
         {
+          id: "w3",
           text: "단",
           sep: "",
           begin: 0.3,
@@ -244,7 +246,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
           transliterationJoinerAfter: " ",
           syllableGroupId: "group",
         },
-        { text: "은", sep: "", begin: 0.6, end: 1, transliteration: "eun", syllableGroupId: "group" },
+        { id: "w4", text: "은", sep: "", begin: 0.6, end: 1, transliteration: "eun", syllableGroupId: "group" },
       ]);
     });
 
@@ -260,9 +262,9 @@ describe("useSyncHandlers.handleSplitWord", () => {
       agentId: "v1",
       text: "Uh 일단은 나",
       words: [
-        { text: "Uh", sep: " ", begin: 0, end: 0.5 },
-        { text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
-        { text: "나", sep: "", begin: 1.5, end: 2 },
+        { id: "w5", text: "Uh", sep: " ", begin: 0, end: 0.5 },
+        { id: "w6", text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
+        { id: "w7", text: "나", sep: "", begin: 1.5, end: 2 },
       ],
       transliteration: {
         language: "ko-Latn",
@@ -278,6 +280,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
     await act(() => {
       result.current.handleSplitWord(0, 1, [
         {
+          id: "w8",
           text: "일",
           sep: "",
           begin: 0.5,
@@ -286,7 +289,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
           transliterationJoinerAfter: "",
           syllableGroupId: "g",
         },
-        { text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
+        { id: "w9", text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
       ]);
     });
 

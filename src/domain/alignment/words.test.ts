@@ -108,9 +108,9 @@ describe("timingsFromParts", () => {
 describe("retimeWords", () => {
   it("keeps every part's metadata and only changes its times", () => {
     const existing = [
-      { text: "hel", sep: "", begin: 0, end: 1, transliteration: "x" },
-      { text: "lo", sep: " ", begin: 1, end: 2 },
-      { text: "you", sep: "", begin: 2, end: 3 },
+      { id: "w1", text: "hel", sep: "", begin: 0, end: 1, transliteration: "x" },
+      { id: "w2", text: "lo", sep: " ", begin: 1, end: 2 },
+      { id: "w3", text: "you", sep: "", begin: 2, end: 3 },
     ];
     expect(groupTimedWords(existing).map((w) => w.text)).toEqual(["hello", "you"]);
     const retimed = retimeWords(existing, [

@@ -11,6 +11,7 @@ import type { StoredData } from "@/domain/storage/stored-data";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { type SpacedWord, spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
+import type { WordTiming } from "@/domain/word/timing";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
 
@@ -77,12 +78,17 @@ class NewerProjectError extends Error {
 
 // -- Lines ----------------------------------------------------------------------
 
+// Ids are session-only: anything already on saved words came from outside and is never trusted.
+function wordsFromSaved(words: readonly SpacedWord[]): WordTiming[] {
+  return wordsFromSpaced(words.map(({ id: _id, ...word }) => word));
+}
+
 function storeLine(line: SavedLine): LyricLine {
   const { words, backgroundWords, ...fields } = line;
   return reconcileLine({
     ...fields,
-    words: words && wordsFromSpaced(words),
-    ...(backgroundWords && { backgroundWords: wordsFromSpaced(backgroundWords) }),
+    words: words && wordsFromSaved(words),
+    ...(backgroundWords && { backgroundWords: wordsFromSaved(backgroundWords) }),
   });
 }
 

@@ -66,7 +66,7 @@ function copyInstanceTiming(
   );
   const updates = attachedLinesOfInstance(lines, groupId, toIdx).flatMap((target) => {
     const source = sourceByTemplateLine.get(target.templateLineIdx);
-    return source ? [{ id: target.id, updates: offsetTimingFields(source, offset) }] : [];
+    return source ? [{ id: target.id, updates: offsetTimingFields(source, offset, target) }] : [];
   });
   return updates;
 }

@@ -51,10 +51,10 @@ describe("history snapshot integrity", () => {
         id: "L1",
         text: "hello",
         agentId: "v1",
-        words: [{ text: "hello", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1 }],
       },
     ]);
-    store.updateLineWithHistory("L1", { words: [{ text: "hello!", sep: "", begin: 0, end: 1 }] });
+    store.updateLineWithHistory("L1", { words: [{ id: "w2", text: "hello!", sep: "", begin: 0, end: 1 }] });
     const beforeUndo = useProjectStore.getState().lines[0].words?.[0].text;
     expect(beforeUndo).toBe("hello!");
     store.undo();
@@ -97,13 +97,13 @@ describe("history snapshot integrity", () => {
         text: "a",
         agentId: "v1",
         words: [
-          { text: "a", sep: " ", begin: 0, end: 0.5 },
-          { text: "b", sep: "", begin: 0.5, end: 1 },
+          { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5 },
+          { id: "w4", text: "b", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ]);
-    store.updateLineWithHistory("A", { words: [{ text: "ab", sep: "", begin: 0, end: 1 }] });
-    store.updateLineWithHistory("A", { words: [{ text: "ABC", sep: "", begin: 0, end: 1 }] });
+    store.updateLineWithHistory("A", { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1 }] });
+    store.updateLineWithHistory("A", { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1 }] });
     store.undo();
     expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ab");
     store.undo();

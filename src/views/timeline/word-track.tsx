@@ -4,6 +4,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";
 import { shouldRollNeighbour } from "@/domain/word/boundary";
+import { newWordId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -176,7 +177,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const slot = findInsertionSlot(words, time, defaultWordDuration, range, minWordDuration);
     if (!slot) return;
 
-    const newWord: WordTiming = { text: "...", sep: " ", begin: slot.begin, end: slot.end };
+    const newWord: WordTiming = { id: newWordId(), text: "...", sep: " ", begin: slot.begin, end: slot.end };
     const newWords = mergeWordsIntoTrack(words, [newWord]);
     const newIndex = newWords.findIndex((w) => w.begin === newWord.begin);
 

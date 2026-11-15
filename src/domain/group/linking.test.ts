@@ -92,7 +92,7 @@ describe("extractLinkedFields", () => {
   });
 
   it("does not propagate a words update carrying a defined value", () => {
-    expect(extractLinkedFields({ words: [{ text: "a", sep: "", begin: 0, end: 1 }] })).toEqual({});
+    expect(extractLinkedFields({ words: [{ id: "w1", text: "a", sep: "", begin: 0, end: 1 }] })).toEqual({});
   });
 
   it("does not propagate a begin/end update carrying a defined value", () => {
@@ -177,7 +177,7 @@ describe("unlinkLines", () => {
   });
 
   it("keeps timing and content on the unlinked line", () => {
-    const words = [{ text: "Hello", sep: "", begin: 1, end: 2 }];
+    const words = [{ id: "w1", text: "Hello", sep: "", begin: 1, end: 2 }];
     const lines = [line({ id: "a", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, words })];
     expect(unlinkLines(lines, () => true)[0].words).toEqual(words);
   });

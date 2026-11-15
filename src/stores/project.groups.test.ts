@@ -3,6 +3,7 @@ import type { LyricLine } from "@/domain/line/model";
 /**
  * @vitest-environment node
  */
+import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -90,8 +91,8 @@ describe("project store · history captures groups", () => {
           text: "hi there",
           agentId: "v1",
           words: [
-            { text: "hi", sep: " ", begin: 0, end: 1 },
-            { text: "there", sep: "", begin: 1, end: 2 },
+            { id: "w1", text: "hi", sep: " ", begin: 0, end: 1 },
+            { id: "w2", text: "there", sep: "", begin: 1, end: 2 },
           ],
         },
       ],
@@ -217,7 +218,7 @@ describe("project store · instance mutators", () => {
       agentId: "v1",
       relativeBegin: words[0]?.[1] ?? 0,
       relativeEnd: words[words.length - 1]?.[2] ?? 0,
-      words: words.map(([t, b, e]) => ({ text: t, sep: "", relativeBegin: b, relativeEnd: e })),
+      words: words.map(([t, b, e]) => ({ id: newWordId(), text: t, sep: "", relativeBegin: b, relativeEnd: e })),
     };
   }
 
@@ -352,9 +353,9 @@ describe("project store · instance mutators", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 30, end: 30.4 },
-            { text: "love", sep: " ", begin: 30.4, end: 30.8 },
-            { text: "you", sep: "", begin: 30.8, end: 31.2 },
+            { id: "w3", text: "I", sep: " ", begin: 30, end: 30.4 },
+            { id: "w4", text: "love", sep: " ", begin: 30.4, end: 30.8 },
+            { id: "w5", text: "you", sep: "", begin: 30.8, end: 31.2 },
           ],
         },
       ],
@@ -395,8 +396,8 @@ describe("project store · shiftInstance", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "hi", sep: " ", begin: 30, end: 31 },
-            { text: "there", sep: "", begin: 31, end: 32 },
+            { id: "w6", text: "hi", sep: " ", begin: 30, end: 31 },
+            { id: "w7", text: "there", sep: "", begin: 31, end: 32 },
           ],
         },
         {
@@ -407,8 +408,8 @@ describe("project store · shiftInstance", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "hi", sep: " ", begin: 60, end: 61 },
-            { text: "there", sep: "", begin: 61, end: 62 },
+            { id: "w8", text: "hi", sep: " ", begin: 60, end: 61 },
+            { id: "w9", text: "there", sep: "", begin: 61, end: 62 },
           ],
         },
       ],
@@ -439,7 +440,7 @@ describe("project store · shiftInstance", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           backgroundText: "yeah",
-          backgroundWords: [{ text: "yeah", sep: "", begin: 30, end: 31 }],
+          backgroundWords: [{ id: "w10", text: "yeah", sep: "", begin: 30, end: 31 }],
         },
       ],
     });
@@ -465,7 +466,7 @@ describe("project store · shiftInstance", () => {
           begin: 10,
           end: 11,
           backgroundText: "yeah",
-          backgroundWords: [{ text: "yeah", sep: "", begin: 10.25, end: 10.75 }],
+          backgroundWords: [{ id: "w11", text: "yeah", sep: "", begin: 10.25, end: 10.75 }],
         },
       ],
     });
@@ -595,7 +596,7 @@ describe("project store · shiftInstance", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          words: [{ text: "x", sep: "", begin: 10, end: 11 }],
+          words: [{ id: "w12", text: "x", sep: "", begin: 10, end: 11 }],
         },
         {
           id: "stale-detached",
@@ -605,7 +606,7 @@ describe("project store · shiftInstance", () => {
           instanceIdx: 0,
           templateLineIdx: 1,
           detached: true,
-          words: [{ text: "y", sep: "", begin: 10, end: 11 }],
+          words: [{ id: "w13", text: "y", sep: "", begin: 10, end: 11 }],
         },
       ],
     });
@@ -725,9 +726,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 30, end: 30.4 },
-            { text: "love", sep: " ", begin: 30.4, end: 30.8 },
-            { text: "you", sep: "", begin: 30.8, end: 31.2 },
+            { id: "w14", text: "I", sep: " ", begin: 30, end: 30.4 },
+            { id: "w15", text: "love", sep: " ", begin: 30.4, end: 30.8 },
+            { id: "w16", text: "you", sep: "", begin: 30.8, end: 31.2 },
           ],
         },
         {
@@ -738,9 +739,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 60, end: 60.5 },
-            { text: "love", sep: " ", begin: 60.5, end: 61.0 },
-            { text: "you", sep: "", begin: 61.0, end: 61.5 },
+            { id: "w17", text: "I", sep: " ", begin: 60, end: 60.5 },
+            { id: "w18", text: "love", sep: " ", begin: 60.5, end: 61.0 },
+            { id: "w19", text: "you", sep: "", begin: 61.0, end: 61.5 },
           ],
         },
       ],
@@ -748,9 +749,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     useProjectStore.getState().updateLineWithHistory("a0", {
       words: [
-        { text: "I", sep: " ", begin: 30, end: 30.4 },
-        { text: "really", sep: " ", begin: 30.4, end: 30.8 },
-        { text: "you", sep: "", begin: 30.8, end: 31.2 },
+        { id: "w20", text: "I", sep: " ", begin: 30, end: 30.4 },
+        { id: "w21", text: "really", sep: " ", begin: 30.4, end: 30.8 },
+        { id: "w22", text: "you", sep: "", begin: 30.8, end: 31.2 },
       ],
     });
 
@@ -776,8 +777,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           templateLineIdx: 0,
           backgroundText: "ohh ahh",
           backgroundWords: [
-            { text: "ohh", sep: " ", begin: 30, end: 30.5 },
-            { text: "ahh", sep: "", begin: 30.5, end: 31 },
+            { id: "w23", text: "ohh", sep: " ", begin: 30, end: 30.5 },
+            { id: "w24", text: "ahh", sep: "", begin: 30.5, end: 31 },
           ],
         },
         {
@@ -789,8 +790,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           templateLineIdx: 0,
           backgroundText: "ohh ahh",
           backgroundWords: [
-            { text: "ohh", sep: " ", begin: 60, end: 60.7 },
-            { text: "ahh", sep: "", begin: 60.7, end: 61.4 },
+            { id: "w25", text: "ohh", sep: " ", begin: 60, end: 60.7 },
+            { id: "w26", text: "ahh", sep: "", begin: 60.7, end: 61.4 },
           ],
         },
       ],
@@ -798,8 +799,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     useProjectStore.getState().updateLineWithHistory("a0", {
       backgroundWords: [
-        { text: "ooh", sep: " ", begin: 30, end: 30.5 },
-        { text: "yeah", sep: "", begin: 30.5, end: 31 },
+        { id: "w27", text: "ooh", sep: " ", begin: 30, end: 30.5 },
+        { id: "w28", text: "yeah", sep: "", begin: 30.5, end: 31 },
       ],
     });
 
@@ -822,8 +823,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "loving", sep: " ", begin: 0, end: 1 },
-            { text: "you", sep: "", begin: 1, end: 2 },
+            { id: "w29", text: "loving", sep: " ", begin: 0, end: 1 },
+            { id: "w30", text: "you", sep: "", begin: 1, end: 2 },
           ],
         },
         {
@@ -834,8 +835,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "loving", sep: " ", begin: 10, end: 12 },
-            { text: "you", sep: "", begin: 12, end: 14 },
+            { id: "w31", text: "loving", sep: " ", begin: 10, end: 12 },
+            { id: "w32", text: "you", sep: "", begin: 12, end: 14 },
           ],
         },
       ],
@@ -843,9 +844,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     useProjectStore.getState().updateLineWithHistory("a0", {
       words: [
-        { text: "lov", sep: "", begin: 0, end: 0.5 },
-        { text: "ing", sep: " ", begin: 0.5, end: 1 },
-        { text: "you", sep: "", begin: 1, end: 2 },
+        { id: "w33", text: "lov", sep: "", begin: 0, end: 0.5 },
+        { id: "w34", text: "ing", sep: " ", begin: 0.5, end: 1 },
+        { id: "w35", text: "you", sep: "", begin: 1, end: 2 },
       ],
     });
 
@@ -872,9 +873,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "lov", sep: "", begin: 0, end: 0.5 },
-            { text: "ing", sep: " ", begin: 0.5, end: 1 },
-            { text: "you", sep: "", begin: 1, end: 2 },
+            { id: "w36", text: "lov", sep: "", begin: 0, end: 0.5 },
+            { id: "w37", text: "ing", sep: " ", begin: 0.5, end: 1 },
+            { id: "w38", text: "you", sep: "", begin: 1, end: 2 },
           ],
         },
         {
@@ -885,9 +886,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "lov", sep: "", begin: 10, end: 11 },
-            { text: "ing", sep: " ", begin: 11, end: 12 },
-            { text: "you", sep: "", begin: 12, end: 14 },
+            { id: "w39", text: "lov", sep: "", begin: 10, end: 11 },
+            { id: "w40", text: "ing", sep: " ", begin: 11, end: 12 },
+            { id: "w41", text: "you", sep: "", begin: 12, end: 14 },
           ],
         },
       ],
@@ -895,8 +896,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     useProjectStore.getState().updateLineWithHistory("a0", {
       words: [
-        { text: "loving", sep: " ", begin: 0, end: 1 },
-        { text: "you", sep: "", begin: 1, end: 2 },
+        { id: "w42", text: "loving", sep: " ", begin: 0, end: 1 },
+        { id: "w43", text: "you", sep: "", begin: 1, end: 2 },
       ],
     });
 
@@ -920,7 +921,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          words: [{ text: "hi", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w44", text: "hi", sep: "", begin: 0, end: 1 }],
         },
         {
           id: "a1",
@@ -930,15 +931,15 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           detached: true,
-          words: [{ text: "hi", sep: "", begin: 10, end: 11 }],
+          words: [{ id: "w45", text: "hi", sep: "", begin: 10, end: 11 }],
         },
       ],
     });
 
     useProjectStore.getState().updateLineWithHistory("a0", {
       words: [
-        { text: "h", sep: "", begin: 0, end: 0.5 },
-        { text: "i", sep: "", begin: 0.5, end: 1 },
+        { id: "w46", text: "h", sep: "", begin: 0, end: 0.5 },
+        { id: "w47", text: "i", sep: "", begin: 0.5, end: 1 },
       ],
     });
 
@@ -959,9 +960,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 30, end: 30.4 },
-            { text: "love", sep: " ", begin: 30.4, end: 30.8 },
-            { text: "you", sep: "", begin: 30.8, end: 31.2 },
+            { id: "w48", text: "I", sep: " ", begin: 30, end: 30.4 },
+            { id: "w49", text: "love", sep: " ", begin: 30.4, end: 30.8 },
+            { id: "w50", text: "you", sep: "", begin: 30.8, end: 31.2 },
           ],
         },
         {
@@ -972,9 +973,9 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 60, end: 60.5 },
-            { text: "love", sep: " ", begin: 60.5, end: 61.0 },
-            { text: "you", sep: "", begin: 61.0, end: 61.5 },
+            { id: "w51", text: "I", sep: " ", begin: 60, end: 60.5 },
+            { id: "w52", text: "love", sep: " ", begin: 60.5, end: 61.0 },
+            { id: "w53", text: "you", sep: "", begin: 61.0, end: 61.5 },
           ],
         },
       ],
@@ -1013,8 +1014,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           templateLineIdx: 0,
           backgroundText: "ohh ahh",
           backgroundWords: [
-            { text: "ohh", sep: " ", begin: 30, end: 30.5 },
-            { text: "ahh", sep: "", begin: 30.5, end: 31 },
+            { id: "w54", text: "ohh", sep: " ", begin: 30, end: 30.5 },
+            { id: "w55", text: "ahh", sep: "", begin: 30.5, end: 31 },
           ],
         },
         {
@@ -1026,8 +1027,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           templateLineIdx: 0,
           backgroundText: "ohh ahh",
           backgroundWords: [
-            { text: "ohh", sep: " ", begin: 60, end: 60.5 },
-            { text: "ahh", sep: "", begin: 60.5, end: 61 },
+            { id: "w56", text: "ohh", sep: " ", begin: 60, end: 60.5 },
+            { id: "w57", text: "ahh", sep: "", begin: 60.5, end: 61 },
           ],
         },
       ],
@@ -1068,9 +1069,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 0, end: 0.3 },
-            { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-            { text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w58", text: "I", sep: " ", begin: 0, end: 0.3 },
+            { id: "w59", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+            { id: "w60", text: "you", sep: "", begin: 0.6, end: 1 },
           ],
         },
         {
@@ -1082,9 +1083,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           templateLineIdx: 0,
           words: [
             // Sibling B has DIFFERENT rhythm from source A
-            { text: "I", sep: " ", begin: 30, end: 30.4 },
-            { text: "love", sep: " ", begin: 30.4, end: 30.7 },
-            { text: "you", sep: "", begin: 30.7, end: 31.2 },
+            { id: "w61", text: "I", sep: " ", begin: 30, end: 30.4 },
+            { id: "w62", text: "love", sep: " ", begin: 30.4, end: 30.7 },
+            { id: "w63", text: "you", sep: "", begin: 30.7, end: 31.2 },
           ],
         },
       ],
@@ -1093,10 +1094,10 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
 
     useProjectStore.getState().updateLineWithHistory("A", {
       words: [
-        { text: "I", sep: " ", begin: 0, end: 0.3 },
-        { text: "lo", sep: "", begin: 0.3, end: 0.45 },
-        { text: "ve", sep: " ", begin: 0.45, end: 0.6 },
-        { text: "you", sep: "", begin: 0.6, end: 1 },
+        { id: "w64", text: "I", sep: " ", begin: 0, end: 0.3 },
+        { id: "w65", text: "lo", sep: "", begin: 0.3, end: 0.45 },
+        { id: "w66", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
+        { id: "w67", text: "you", sep: "", begin: 0.6, end: 1 },
       ],
     });
 
@@ -1126,9 +1127,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 0, end: 0.3 },
-            { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-            { text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w68", text: "I", sep: " ", begin: 0, end: 0.3 },
+            { id: "w69", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+            { id: "w70", text: "you", sep: "", begin: 0.6, end: 1 },
           ],
         },
         {
@@ -1139,9 +1140,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 30, end: 30.4 },
-            { text: "love", sep: " ", begin: 30.4, end: 30.7 },
-            { text: "you", sep: "", begin: 30.7, end: 31.2 },
+            { id: "w71", text: "I", sep: " ", begin: 30, end: 30.4 },
+            { id: "w72", text: "love", sep: " ", begin: 30.4, end: 30.7 },
+            { id: "w73", text: "you", sep: "", begin: 30.7, end: 31.2 },
           ],
         },
       ],
@@ -1150,8 +1151,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
 
     useProjectStore.getState().updateLineWithHistory("A", {
       words: [
-        { text: "I", sep: " ", begin: 0, end: 0.3 },
-        { text: "loveyou", sep: "", begin: 0.3, end: 1 },
+        { id: "w74", text: "I", sep: " ", begin: 0, end: 0.3 },
+        { id: "w75", text: "loveyou", sep: "", begin: 0.3, end: 1 },
       ],
     });
 
@@ -1172,9 +1173,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 0, end: 0.3 },
-            { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-            { text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w76", text: "I", sep: " ", begin: 0, end: 0.3 },
+            { id: "w77", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+            { id: "w78", text: "you", sep: "", begin: 0.6, end: 1 },
           ],
         },
         {
@@ -1185,9 +1186,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 30, end: 30.3 },
-            { text: "love", sep: " ", begin: 30.3, end: 30.6 },
-            { text: "you", sep: "", begin: 30.6, end: 31 },
+            { id: "w79", text: "I", sep: " ", begin: 30, end: 30.3 },
+            { id: "w80", text: "love", sep: " ", begin: 30.3, end: 30.6 },
+            { id: "w81", text: "you", sep: "", begin: 30.6, end: 31 },
           ],
         },
       ],
@@ -1196,10 +1197,10 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
 
     useProjectStore.getState().updateLineWithHistory("A", {
       words: [
-        { text: "I", sep: " ", begin: 0, end: 0.3 },
-        { text: "lo", sep: "", begin: 0.3, end: 0.45 },
-        { text: "ve", sep: " ", begin: 0.45, end: 0.6 },
-        { text: "you", sep: "", begin: 0.6, end: 1 },
+        { id: "w82", text: "I", sep: " ", begin: 0, end: 0.3 },
+        { id: "w83", text: "lo", sep: "", begin: 0.3, end: 0.45 },
+        { id: "w84", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
+        { id: "w85", text: "you", sep: "", begin: 0.6, end: 1 },
       ],
     });
 
@@ -1221,8 +1222,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           templateLineIdx: 0,
           backgroundText: "ah ah",
           backgroundWords: [
-            { text: "ah", sep: " ", begin: 0, end: 0.3 },
-            { text: "ah", sep: "", begin: 0.3, end: 0.6 },
+            { id: "w86", text: "ah", sep: " ", begin: 0, end: 0.3 },
+            { id: "w87", text: "ah", sep: "", begin: 0.3, end: 0.6 },
           ],
         },
         {
@@ -1234,8 +1235,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           templateLineIdx: 0,
           backgroundText: "ah ah",
           backgroundWords: [
-            { text: "ah", sep: " ", begin: 30, end: 30.4 },
-            { text: "ah", sep: "", begin: 30.4, end: 30.8 },
+            { id: "w88", text: "ah", sep: " ", begin: 30, end: 30.4 },
+            { id: "w89", text: "ah", sep: "", begin: 30.4, end: 30.8 },
           ],
         },
       ],
@@ -1244,9 +1245,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
 
     useProjectStore.getState().updateLineWithHistory("A", {
       backgroundWords: [
-        { text: "ah", sep: " ", begin: 0, end: 0.3 },
-        { text: "a", sep: "", begin: 0.3, end: 0.45 },
-        { text: "h", sep: "", begin: 0.45, end: 0.6 },
+        { id: "w90", text: "ah", sep: " ", begin: 0, end: 0.3 },
+        { id: "w91", text: "a", sep: "", begin: 0.3, end: 0.45 },
+        { id: "w92", text: "h", sep: "", begin: 0.45, end: 0.6 },
       ],
     });
 
@@ -1274,9 +1275,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 0, end: 0.3 },
-            { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-            { text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w93", text: "I", sep: " ", begin: 0, end: 0.3 },
+            { id: "w94", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+            { id: "w95", text: "you", sep: "", begin: 0.6, end: 1 },
           ],
         },
         {
@@ -1288,9 +1289,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
           templateLineIdx: 0,
           detached: true,
           words: [
-            { text: "I", sep: " ", begin: 30, end: 30.4 },
-            { text: "love", sep: " ", begin: 30.4, end: 30.7 },
-            { text: "you", sep: "", begin: 30.7, end: 31.2 },
+            { id: "w96", text: "I", sep: " ", begin: 30, end: 30.4 },
+            { id: "w97", text: "love", sep: " ", begin: 30.4, end: 30.7 },
+            { id: "w98", text: "you", sep: "", begin: 30.7, end: 31.2 },
           ],
         },
       ],
@@ -1299,10 +1300,10 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
 
     useProjectStore.getState().updateLineWithHistory("A", {
       words: [
-        { text: "I", sep: " ", begin: 0, end: 0.3 },
-        { text: "lo", sep: "", begin: 0.3, end: 0.45 },
-        { text: "ve", sep: " ", begin: 0.45, end: 0.6 },
-        { text: "you", sep: "", begin: 0.6, end: 1 },
+        { id: "w99", text: "I", sep: " ", begin: 0, end: 0.3 },
+        { id: "w100", text: "lo", sep: "", begin: 0.3, end: 0.45 },
+        { id: "w101", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
+        { id: "w102", text: "you", sep: "", begin: 0.6, end: 1 },
       ],
     });
 
@@ -1333,9 +1334,9 @@ describe("applyWordCountChange · resolutions", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 0, end: 0.3 },
-            { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-            { text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w103", text: "I", sep: " ", begin: 0, end: 0.3 },
+            { id: "w104", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+            { id: "w105", text: "you", sep: "", begin: 0.6, end: 1 },
           ],
         },
         {
@@ -1346,9 +1347,9 @@ describe("applyWordCountChange · resolutions", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { text: "I", sep: " ", begin: 30, end: 30.4 },
-            { text: "love", sep: " ", begin: 30.4, end: 30.7 },
-            { text: "you", sep: "", begin: 30.7, end: 31.2 },
+            { id: "w106", text: "I", sep: " ", begin: 30, end: 30.4 },
+            { id: "w107", text: "love", sep: " ", begin: 30.4, end: 30.7 },
+            { id: "w108", text: "you", sep: "", begin: 30.7, end: 31.2 },
           ],
         },
       ],
@@ -1357,10 +1358,10 @@ describe("applyWordCountChange · resolutions", () => {
   }
 
   const splitWords = [
-    { text: "I", sep: " ", begin: 0, end: 0.3 },
-    { text: "lo", sep: "", begin: 0.3, end: 0.45 },
-    { text: "ve", sep: " ", begin: 0.45, end: 0.6 },
-    { text: "you", sep: "", begin: 0.6, end: 1 },
+    { id: "w109", text: "I", sep: " ", begin: 0, end: 0.3 },
+    { id: "w110", text: "lo", sep: "", begin: 0.3, end: 0.45 },
+    { id: "w111", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
+    { id: "w112", text: "you", sep: "", begin: 0.6, end: 1 },
   ];
 
   it("'apply' propagates the structural change with smart-sync to all linked siblings", () => {
@@ -1420,7 +1421,7 @@ describe("applyWordCountChange · resolutions", () => {
       ],
       groups: [{ id: "g1", label: "Verse", color: "#aaa", templateVersion: 1 }],
     });
-    const newWords = [{ text: "verse", sep: "", begin: 5, end: 7 }];
+    const newWords = [{ id: "w113", text: "verse", sep: "", begin: 5, end: 7 }];
     useProjectStore.getState().applyWordCountChange("L1", newWords, "words", "detach");
     const after = useProjectStore.getState().lines.find((l) => l.id === "L1");
     expect(after?.words).toEqual(newWords);
@@ -1438,8 +1439,8 @@ describe("applyWordCountChange · resolutions", () => {
   it("apply with extraUpdates: text propagates as a linked field to siblings", () => {
     setupChorus();
     const mergedWords = [
-      { text: "I", sep: " ", begin: 0, end: 0.3 },
-      { text: "loveyou", sep: "", begin: 0.3, end: 1 },
+      { id: "w114", text: "I", sep: " ", begin: 0, end: 0.3 },
+      { id: "w115", text: "loveyou", sep: "", begin: 0.3, end: 1 },
     ];
     useProjectStore.getState().applyWordCountChange("A", mergedWords, "words", "apply", { text: "I loveyou" });
     const after = useProjectStore.getState().lines;
@@ -1450,8 +1451,8 @@ describe("applyWordCountChange · resolutions", () => {
   it("detach with extraUpdates: text only changes on source, not siblings", () => {
     setupChorus();
     const mergedWords = [
-      { text: "I", sep: " ", begin: 0, end: 0.3 },
-      { text: "loveyou", sep: "", begin: 0.3, end: 1 },
+      { id: "w116", text: "I", sep: " ", begin: 0, end: 0.3 },
+      { id: "w117", text: "loveyou", sep: "", begin: 0.3, end: 1 },
     ];
     useProjectStore.getState().applyWordCountChange("A", mergedWords, "words", "detach", { text: "I loveyou" });
     const after = useProjectStore.getState().lines;
@@ -1479,8 +1480,8 @@ describe("applyWordCountChange · resolutions", () => {
           text: "I love",
           agentId: "v1",
           words: [
-            { text: "I", sep: " ", begin: 0, end: 0.3 },
-            { text: "love", sep: "", begin: 0.3, end: 1 },
+            { id: "w118", text: "I", sep: " ", begin: 0, end: 0.3 },
+            { id: "w119", text: "love", sep: "", begin: 0.3, end: 1 },
           ],
         },
       ],
@@ -1489,9 +1490,9 @@ describe("applyWordCountChange · resolutions", () => {
     useProjectStore.getState().applyWordCountChange(
       "X",
       [
-        { text: "I", sep: " ", begin: 0, end: 0.3 },
-        { text: "lo", sep: "", begin: 0.3, end: 0.6 },
-        { text: "ve", sep: "", begin: 0.6, end: 1 },
+        { id: "w120", text: "I", sep: " ", begin: 0, end: 0.3 },
+        { id: "w121", text: "lo", sep: "", begin: 0.3, end: 0.6 },
+        { id: "w122", text: "ve", sep: "", begin: 0.6, end: 1 },
       ],
       "words",
       "apply",
@@ -1512,8 +1513,8 @@ describe("applyWordCountChange · resolutions", () => {
           templateLineIdx: 0,
           backgroundText: "ah ah",
           backgroundWords: [
-            { text: "ah", sep: " ", begin: 0, end: 0.3 },
-            { text: "ah", sep: "", begin: 0.3, end: 0.6 },
+            { id: "w123", text: "ah", sep: " ", begin: 0, end: 0.3 },
+            { id: "w124", text: "ah", sep: "", begin: 0.3, end: 0.6 },
           ],
         },
         {
@@ -1525,8 +1526,8 @@ describe("applyWordCountChange · resolutions", () => {
           templateLineIdx: 0,
           backgroundText: "ah ah",
           backgroundWords: [
-            { text: "ah", sep: " ", begin: 30, end: 30.4 },
-            { text: "ah", sep: "", begin: 30.4, end: 30.8 },
+            { id: "w125", text: "ah", sep: " ", begin: 30, end: 30.4 },
+            { id: "w126", text: "ah", sep: "", begin: 30.4, end: 30.8 },
           ],
         },
       ],
@@ -1535,9 +1536,9 @@ describe("applyWordCountChange · resolutions", () => {
     useProjectStore.getState().applyWordCountChange(
       "A",
       [
-        { text: "ah", sep: " ", begin: 0, end: 0.3 },
-        { text: "a", sep: "", begin: 0.3, end: 0.45 },
-        { text: "h", sep: "", begin: 0.45, end: 0.6 },
+        { id: "w127", text: "ah", sep: " ", begin: 0, end: 0.3 },
+        { id: "w128", text: "a", sep: "", begin: 0.3, end: 0.45 },
+        { id: "w129", text: "h", sep: "", begin: 0.45, end: 0.6 },
       ],
       "backgroundWords",
       "apply",

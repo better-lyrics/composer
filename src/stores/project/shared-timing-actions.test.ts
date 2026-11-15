@@ -398,7 +398,7 @@ describe("placeInstance", () => {
   it("applies the preceding updates and the placement as one undo step", () => {
     const verse = createLine({ id: "v", text: "Walking", words: [{ text: "Walking", begin: 20, end: 21 }] });
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
-    const preceding = [{ id: "v", updates: { words: [{ text: "Walking", sep: "", begin: 20, end: 39 }] } }];
+    const preceding = [{ id: "v", updates: { words: [{ id: "w1", text: "Walking", sep: "", begin: 20, end: 39 }] } }];
     expect(store().placeInstance("g1", 1, 40, SONG_LENGTH, preceding)).toBe(true);
     expect(lineById("v")?.words?.[0]?.end).toBe(39);
     expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(40, 6);
@@ -413,8 +413,8 @@ describe("placeInstance", () => {
       id: "c0",
       updates: {
         words: [
-          { text: "I", sep: " ", begin: 10, end: 10.4 },
-          { text: "want", sep: "", begin: 10.5, end: 12 },
+          { id: "w2", text: "I", sep: " ", begin: 10, end: 10.4 },
+          { id: "w3", text: "want", sep: "", begin: 10.5, end: 12 },
         ],
       },
     };
@@ -456,8 +456,8 @@ describe("placeInstance", () => {
         id: "c0",
         updates: {
           words: [
-            { text: "I", sep: " ", begin: 10, end: 10.4 },
-            { text: "want", sep: "", begin: 10.5, end: 12 },
+            { id: "w4", text: "I", sep: " ", begin: 10, end: 10.4 },
+            { id: "w5", text: "want", sep: "", begin: 10.5, end: 12 },
           ],
         },
       };
@@ -477,7 +477,7 @@ describe("placeInstance", () => {
     it("writes nothing and reports false when there is no timed reference", () => {
       seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0), chorus(1)]);
       const before = store().lines;
-      const firstWordOnly = { id: "c0", updates: { words: [{ text: "I", sep: " ", begin: 1, end: 2 }] } };
+      const firstWordOnly = { id: "c0", updates: { words: [{ id: "w6", text: "I", sep: " ", begin: 1, end: 2 }] } };
       expect(store().placeInstance("g1", 1, 40, SONG_LENGTH, [firstWordOnly])).toBe(false);
       expect(store().lines).toBe(before);
     });

@@ -419,9 +419,9 @@ describe("extractInlineFromLine", () => {
       text: "Hi (ooh) there",
       agentId: "v1",
       words: [
-        { text: "Hi", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "there", sep: "", begin: 2, end: 3 },
+        { id: "w1", text: "Hi", sep: " ", begin: 0, end: 1 },
+        { id: "w2", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w3", text: "there", sep: "", begin: 2, end: 3 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -454,7 +454,7 @@ describe("extractInlineFromLine", () => {
       agentId: "v1",
       begin: 1,
       end: 3,
-      backgroundWords: [{ text: "clap", sep: "", begin: 1.2, end: 1.8 }],
+      backgroundWords: [{ id: "w4", text: "clap", sep: "", begin: 1.2, end: 1.8 }],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
   });
@@ -464,7 +464,7 @@ describe("extractInlineFromLine", () => {
       id: "1",
       text: "Hi (ooh) there",
       agentId: "v1",
-      backgroundWords: [{ text: "clap", sep: "", begin: 1.2, end: 1.8 }],
+      backgroundWords: [{ id: "w5", text: "clap", sep: "", begin: 1.2, end: 1.8 }],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
   });
@@ -493,9 +493,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: " ", begin: 0.5, end: 1.2 },
-        { text: "(ooh)", sep: " ", begin: 1.2, end: 1.9 },
-        { text: "world", sep: "", begin: 1.9, end: 2.7 },
+        { id: "w6", text: "Hello", sep: " ", begin: 0.5, end: 1.2 },
+        { id: "w7", text: "(ooh)", sep: " ", begin: 1.2, end: 1.9 },
+        { id: "w8", text: "world", sep: "", begin: 1.9, end: 2.7 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -515,8 +515,8 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh)",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: "", begin: 1, end: 2 },
+        { id: "w9", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w10", text: "(ooh)", sep: "", begin: 1, end: 2 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -532,10 +532,10 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh yeah) world",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh", sep: " ", begin: 1, end: 1.5 },
-        { text: "yeah)", sep: " ", begin: 1.5, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w11", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w12", text: "(ooh", sep: " ", begin: 1, end: 1.5 },
+        { id: "w13", text: "yeah)", sep: " ", begin: 1.5, end: 2 },
+        { id: "w14", text: "world", sep: "", begin: 2, end: 3 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -554,8 +554,8 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello(ooh) world",
       agentId: "v1",
       words: [
-        { text: "Hello(ooh)", sep: " ", begin: 0, end: 1 },
-        { text: "world", sep: "", begin: 1, end: 2 },
+        { id: "w15", text: "Hello(ooh)", sep: " ", begin: 0, end: 1 },
+        { id: "w16", text: "world", sep: "", begin: 1, end: 2 },
       ],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
@@ -567,9 +567,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1, explicit: true, syllableGroupId: "g1" },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3, explicit: true, syllableGroupId: "g2" },
+        { id: "w17", text: "Hello", sep: " ", begin: 0, end: 1, explicit: true, syllableGroupId: "g1" },
+        { id: "w18", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w19", text: "world", sep: "", begin: 2, end: 3, explicit: true, syllableGroupId: "g2" },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -585,10 +585,10 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hel|lo (ooh) world",
       agentId: "v1",
       words: [
-        { text: "Hel", sep: "", begin: 0, end: 0.5 },
-        { text: "lo", sep: " ", begin: 0.5, end: 1 },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w20", text: "Hel", sep: "", begin: 0, end: 0.5 },
+        { id: "w21", text: "lo", sep: " ", begin: 0.5, end: 1 },
+        { id: "w22", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w23", text: "world", sep: "", begin: 2, end: 3 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -608,11 +608,11 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w24", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w25", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w26", text: "world", sep: "", begin: 2, end: 3 },
       ],
-      backgroundWords: [{ text: "ah", sep: "", begin: 0, end: 1 }],
+      backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 0, end: 1 }],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
   });
@@ -624,9 +624,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       agentId: "v1",
       backgroundText: "ah",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w28", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w29", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w30", text: "world", sep: "", begin: 2, end: 3 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -635,9 +635,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
 
   it("does not mutate the input line or its words array", () => {
     const words = [
-      { text: "Hello", sep: " ", begin: 0, end: 1 },
-      { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-      { text: "world", sep: "", begin: 2, end: 3 },
+      { id: "w31", text: "Hello", sep: " ", begin: 0, end: 1 },
+      { id: "w32", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+      { id: "w33", text: "world", sep: "", begin: 2, end: 3 },
     ];
     const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1", words };
     extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -656,8 +656,8 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "(ooh yeah)",
       agentId: "v1",
       words: [
-        { text: "(ooh", sep: " ", begin: 0, end: 1 },
-        { text: "yeah)", sep: "", begin: 1, end: 2 },
+        { id: "w34", text: "(ooh", sep: " ", begin: 0, end: 1 },
+        { id: "w35", text: "yeah)", sep: "", begin: 1, end: 2 },
       ],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
@@ -1011,8 +1011,8 @@ describe("extractBackgroundVocals: input not mutated", () => {
 
   it("does not mutate a timed standalone line or its words array", () => {
     const standaloneWords = [
-      { text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
+      { id: "w36", text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
+      { id: "w37", text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
     ];
     const lines = [
       createLine({ id: "1", text: "Real line" }),
@@ -1173,9 +1173,9 @@ describe("extractInlineFromLine: provenance", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w38", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w39", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w40", text: "world", sep: "", begin: 2, end: 3 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -1191,9 +1191,9 @@ describe("extractInlineFromLine: provenance", () => {
       backgroundText: "ooh",
       backgroundTextSource: "extraction",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w41", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w42", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w43", text: "world", sep: "", begin: 2, end: 3 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -1209,9 +1209,9 @@ describe("extractInlineFromLine: provenance", () => {
       backgroundText: "clap",
       backgroundTextSource: "manual",
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w44", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w45", text: "(ooh)", sep: " ", begin: 1, end: 2 },
+        { id: "w46", text: "world", sep: "", begin: 2, end: 3 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -1461,8 +1461,8 @@ describe("extractInlineFromLine: linked lines", () => {
       instanceIdx: 1,
       templateLineIdx: 2,
       words: [
-        { text: "Hello", sep: " ", begin: 30, end: 31 },
-        { text: "(ooh)", sep: "", begin: 31, end: 32 },
+        { id: "w47", text: "Hello", sep: " ", begin: 30, end: 31 },
+        { id: "w48", text: "(ooh)", sep: "", begin: 31, end: 32 },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -1504,8 +1504,8 @@ describe("extractBackgroundVocals: linked sibling lines", () => {
       instanceIdx: 0,
       templateLineIdx: 0,
       words: [
-        { text: "Hello", sep: " ", begin: 0, end: 1 },
-        { text: "(ooh)", sep: "", begin: 1, end: 2 },
+        { id: "w49", text: "Hello", sep: " ", begin: 0, end: 1 },
+        { id: "w50", text: "(ooh)", sep: "", begin: 1, end: 2 },
       ],
     };
     const s1: LyricLine = {
@@ -1516,8 +1516,8 @@ describe("extractBackgroundVocals: linked sibling lines", () => {
       instanceIdx: 1,
       templateLineIdx: 0,
       words: [
-        { text: "Hello", sep: " ", begin: 30, end: 31.5 },
-        { text: "(ooh)", sep: "", begin: 31.5, end: 33 },
+        { id: "w51", text: "Hello", sep: " ", begin: 30, end: 31.5 },
+        { id: "w52", text: "(ooh)", sep: "", begin: 31.5, end: 33 },
       ],
     };
 
