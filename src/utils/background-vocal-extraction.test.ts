@@ -1298,11 +1298,14 @@ describe("extractBackgroundVocals: standalone line with its own background", () 
       }),
     ];
     const [merged] = extractBackgroundVocals(lines, merge, DEFAULT_SPLIT_CHARACTER);
-    expect(roleWords(merged, "bg")?.map(({ text, begin, end }) => ({ text, begin, end }))).toEqual([
-      { text: "hey", begin: 5, end: 5.5 },
-      { text: "yeah", begin: 5.5, end: 6 },
-      { text: "oh", begin: 6.2, end: 6.5 },
+    expect(
+      roleWords(merged, "bg")?.map(({ text, sep, joinsNext, begin, end }) => ({ text, sep, joinsNext, begin, end })),
+    ).toEqual([
+      { text: "hey", sep: " ", joinsNext: false, begin: 5, end: 5.5 },
+      { text: "yeah", sep: " ", joinsNext: false, begin: 5.5, end: 6 },
+      { text: "oh", sep: "", joinsNext: false, begin: 6.2, end: 6.5 },
     ]);
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("hey yeah oh");
   });
 });
 
