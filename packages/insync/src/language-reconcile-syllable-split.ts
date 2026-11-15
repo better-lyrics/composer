@@ -78,13 +78,18 @@ function keepsSplitPiece(
   return compactPiece(mappedTransliteration(replacementWords, pieces)) === piece;
 }
 
-function splitKeepingPieces(
+// What every split takes: the word at `wordIndex` of the track becomes `replacementWords`.
+type SplitArguments = [
   line: LyricLine,
   type: WordTrack,
   wordIndex: number,
   replacementWords: WordTiming[],
-  replacementPieces: PositionalPieces | undefined,
   splitChar: string,
+  replacementPieces?: PositionalPieces,
+];
+
+function splitKeepingPieces(
+  ...[line, type, wordIndex, replacementWords, splitChar, replacementPieces]: SplitArguments
 ): PiecedSplit | null {
   const effective = drawnSyllables(line, trackRole(type), splitChar);
   if (!effective?.length) return null;
@@ -128,15 +133,9 @@ function splitLanguages(
   return withPiecesOn(languages, side, split.pieces);
 }
 
-function splitWordsKeepingTransliteration(
-  line: LyricLine,
-  type: WordTrack,
-  wordIndex: number,
-  replacementWords: WordTiming[],
-  splitChar: string,
-  replacementPieces?: PositionalPieces,
-): WordSplitResult | null {
-  const split = splitKeepingPieces(line, type, wordIndex, replacementWords, replacementPieces, splitChar);
+function splitWordsKeepingTransliteration(...args: SplitArguments): WordSplitResult | null {
+  const [line, type] = args;
+  const split = splitKeepingPieces(...args);
   return split && { words: split.words, languages: splitLanguages(line, type, split, split.transliteration) };
 }
 
@@ -144,15 +143,9 @@ function splitWordsKeepingTransliteration(
 // track is re-stamped against the new text. The rejoined text is mechanical, so
 // the track keeps its origin. A track that was already out of date keeps its
 // old fingerprint.
-function splitWordIntoWordsKeepingTransliteration(
-  line: LyricLine,
-  type: WordTrack,
-  wordIndex: number,
-  replacementWords: WordTiming[],
-  splitChar: string,
-  replacementPieces?: PositionalPieces,
-): WordSplitResult | null {
-  const split = splitKeepingPieces(line, type, wordIndex, replacementWords, replacementPieces, splitChar);
+function splitWordIntoWordsKeepingTransliteration(...args: SplitArguments): WordSplitResult | null {
+  const [line, type, , , splitChar] = args;
+  const split = splitKeepingPieces(...args);
   const track = lineTransliteration(line);
   if (!split || !track) return split && { words: split.words, languages: splitLanguages(line, type, split, null) };
 

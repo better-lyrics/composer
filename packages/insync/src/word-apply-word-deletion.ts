@@ -6,6 +6,7 @@ import type { LyricLine } from "./line";
 import { hasAnyTiming, isLineSynced } from "./line-predicates";
 import { mainTrack, roleWords } from "./line-track";
 import { withMainTrack, withoutTrackTiming, withTrackWords } from "./line-track-writes";
+import { selectionIndexesByLine } from "./selection-indexes-by-line";
 import { absorbDeletedSyllablesIntoNeighbors } from "./word-syllable-groups";
 
 interface DeletionSelection {
@@ -30,16 +31,7 @@ function deleteFromLines(
   selections: ReadonlyArray<DeletionSelection>,
   splitChar: string,
 ): Map<string, LyricLine> {
-  const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number> }>();
-  for (const sel of selections) {
-    let entry = byLine.get(sel.lineId);
-    if (!entry) {
-      entry = { mainIdxs: new Set(), bgIdxs: new Set() };
-      byLine.set(sel.lineId, entry);
-    }
-    if (sel.type === "word") entry.mainIdxs.add(sel.wordIndex);
-    else entry.bgIdxs.add(sel.wordIndex);
-  }
+  const byLine = selectionIndexesByLine(selections);
 
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
