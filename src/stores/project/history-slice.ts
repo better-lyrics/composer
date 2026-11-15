@@ -1,4 +1,5 @@
 import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
+import { notifyTemplateSplit } from "@/lib/template-split-signals";
 import { commitCommand } from "@/stores/project/commit";
 import { writingLyrics } from "@/stores/project/lyric-change-listeners";
 import { canUndoFrom, commitPendingEdit, redoState, undoState } from "@/stores/project/history-helpers";
@@ -28,9 +29,10 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
   markClean: () => set({ isDirty: false }),
 
   commit: (command, mode = "step") => {
-    const { patch, outcome, copiedGroupIds } = commitCommand(get(), command, mode);
+    const { patch, outcome, copiedGroupIds, splits } = commitCommand(get(), command, mode);
     if (patch) writingLyrics(get, "command", () => set(patch));
     if (copiedGroupIds.length) notifySharedTimingCopied(copiedGroupIds);
+    if (splits.length) notifyTemplateSplit(splits.map((split) => split.instances));
     return outcome;
   },
 
@@ -59,4 +61,4 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
 
 // -- Exports ------------------------------------------------------------------
 
-export { createHistorySlice, createHistoryInitialState };
+export { createHistoryInitialState, createHistorySlice };
