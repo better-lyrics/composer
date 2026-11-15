@@ -1,6 +1,6 @@
 import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
 import { getLanguageReviewItems } from "@/domain/language/review";
-import { PROJECT_TABS, type ProjectTab } from "@/domain/project/tab";
+import { PROJECT_TABS, type ProjectTab, TAB_LABELS } from "@/domain/project/tab";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -16,16 +16,6 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useId } from "react";
-
-const TAB_LABELS: Record<ProjectTab, string> = {
-  import: "Import",
-  edit: "Edit",
-  languages: "Languages",
-  sync: "Sync",
-  timeline: "Timeline",
-  preview: "Preview",
-  export: "Export",
-};
 
 const TAB_SHORTCUTS: Record<ProjectTab, string> = {
   import: "global.goToImport",
