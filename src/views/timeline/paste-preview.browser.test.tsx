@@ -10,6 +10,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
+import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { PastePreview } from "@/views/timeline/paste-preview";
@@ -68,6 +69,7 @@ function Harness({ clipboard }: { clipboard: ClipboardData }) {
         <PastePreview clipboard={clipboard} scrollContainerRef={ref} />
       </div>
       <ConfirmModalHost />
+      <ChoiceModalHost />
     </>
   );
 }
