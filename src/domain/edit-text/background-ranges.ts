@@ -5,7 +5,7 @@ import {
   type ShownEditText,
   shiftedRange,
   shownRow,
-} from "@/domain/edit-text/shown-row";
+} from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 
 // -- Types --------------------------------------------------------------------

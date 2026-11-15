@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
-import { shiftCaretPastRewrittenRows } from "@/domain/edit-text/edit-text";
-import type { ShownEditText } from "@/domain/edit-text/shown-row";
+import { shiftCaretPastRewrittenRows } from "insync/edit-text";
+import type { ShownEditText } from "insync/edit-text-shown-row";
 
 interface PendingCaret {
   typedText: string;

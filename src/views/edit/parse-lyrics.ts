@@ -1,4 +1,4 @@
-import { shownRow } from "@/domain/edit-text/shown-row";
+import { shownRow } from "insync/edit-text-shown-row";
 import { mainTrack } from "insync/line-track";
 import type { LyricLine } from "insync/line";
 import { isLineSynced, isWordSynced } from "insync/line-predicates";

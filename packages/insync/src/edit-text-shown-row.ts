@@ -1,7 +1,7 @@
-import { alternateBackgroundPlacement } from "insync/language-background-placement";
-import type { LyricLine } from "insync/line";
-import { backgroundText, lineText, syllableJoint } from "insync/line-text";
-import { mainTrack } from "insync/line-track";
+import { alternateBackgroundPlacement } from "./language-background-placement";
+import type { LyricLine } from "./line";
+import { backgroundText, lineText, syllableJoint } from "./line-text";
+import { mainTrack } from "./line-track";
 
 // -- Types --------------------------------------------------------------------
 

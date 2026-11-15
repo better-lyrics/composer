@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
-import { type ShownEditText, shownEditText } from "@/domain/edit-text/shown-row";
+import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { useSettingsStore } from "@/stores/settings";
 import { getSplitCharacter } from "@/utils/split-character";

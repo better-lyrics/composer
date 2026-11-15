@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { editRows, remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
-import { shownEditText } from "@/domain/edit-text/shown-row";
+import { shownEditText } from "insync/edit-text-shown-row";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

@@ -1,7 +1,7 @@
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
 
-import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "@/domain/edit-text/edit-text";
+import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "insync/edit-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);

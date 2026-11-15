@@ -1,5 +1,5 @@
-import type { LyricLine } from "insync/line";
-import { lineText } from "insync/line-text";
+import type { LyricLine } from "./line";
+import { lineText } from "./line-text";
 
 function linesToEditText(lines: readonly LyricLine[], splitChar: string): string {
   return lines.map((line) => lineText(line, splitChar)).join("\n");
