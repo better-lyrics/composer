@@ -28,6 +28,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const LYRIC_ID = 4821;
 const VIDEO_ID = "hArb0urL1te";
 const FAILED_TOAST = "Could not open that lyric from Unison. Check the link and try again.";
+const CREATED_TOAST = "Opened “Harbour Lights” in a new project";
 
 const SESSION: StoredUnisonSession = {
   token: "test-token",
@@ -134,10 +135,13 @@ describe("useImportFromUnisonLyric", () => {
   it("opens the linked lyric as a new linked project and leaves the open one unchanged", async () => {
     await seedOpenAlpha();
     stubUnisonLyric(ownLyric());
-    const { outcome } = await bootWithLink(`?unisonLyric=${LYRIC_ID}`);
+    const { screen, outcome } = await bootWithLink(`?unisonLyric=${LYRIC_ID}`);
     await finishVideoLoad();
 
     await expect.poll(outcome).toBe("created");
+    await expect.element(screen.getByText(CREATED_TOAST)).toBeInTheDocument();
+    expect(screen.getByText(CREATED_TOAST).elements()).toHaveLength(1);
+    expect(useProjectStore.getState().activeTab).toBe("edit");
     expect(openProjectIdSnapshot()).not.toBe("a");
     expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([
       "Paper lanterns over the bay",

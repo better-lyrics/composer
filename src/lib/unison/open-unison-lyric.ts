@@ -98,6 +98,7 @@ async function openUnisonLyricFromLink(
   const link = entries !== null && linksOnOpen(lyric, readUnisonSession()?.keyId ?? null, entries);
   const started = await createUnisonLyricProject(lyric, { link, navigate });
   if (!started) return false;
+  useProjectStore.getState().setActiveTab("edit");
   void loadVideoProject(lyric.videoId, started);
   return true;
 }
