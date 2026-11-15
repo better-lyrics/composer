@@ -41,12 +41,12 @@ describe("ttml kept data edges", () => {
     expect(ttml).toContain("<x-vendor:trailer/>");
   });
 
-  it("several metadata blocks keep the first value of each attribute and every element", () => {
+  it("regression: each metadata block keeps its own attributes and elements, in source order", () => {
     const ttml = exported();
-    expect(occurrences(ttml, "x-vendor:pass=")).toBe(1);
-    expect(ttml).toContain('x-vendor:pass="first"');
-    expect(ttml).toContain('x-vendor:origin="desk"');
-    expect(ttml).toContain("<x-vendor:tag>second block</x-vendor:tag>");
+    expect(ttml).toMatch(/<metadata x-vendor:pass="first">[\s\S]*<\/metadata>\s*<metadata x-vendor:pass="second"/);
+    expect(ttml).toContain(
+      '<metadata x-vendor:pass="second" x-vendor:origin="desk"><x-vendor:tag>second block</x-vendor:tag></metadata>',
+    );
   });
 
   it("a song part holding nested sections covers their lines, and an empty one is kept", () => {

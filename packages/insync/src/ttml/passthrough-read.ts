@@ -1,11 +1,11 @@
 import { storedAttrs, storedChildren, storedElement, type XmlReadDocument, type XmlReadElement } from "./xml-read-tree";
 import { type DocPassthrough, isEmptyPassthrough, type Passthrough } from "../passthrough";
-import type { XmlAttr, XmlElement } from "../xml-node";
+import type { XmlElement } from "../xml-node";
 import type { Agent } from "../agent";
 import type { LyricLine } from "../line";
 import { withLinePassthrough } from "../line-passthrough";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
-import { type AnchorOf, noAnchors, rootAnchors, sectionAnchors, trackAnchors } from "./anchors";
+import { type AnchorOf, headAnchors, noAnchors, rootAnchors, sectionAnchors, trackAnchors } from "./anchors";
 import { ITUNES_NS, isModelledAttribute, modelledChildTest, type TtmlNode } from "./modelled";
 import { backgroundEnvelope, capturedTimes, lineEnvelope } from "./kept-times";
 import { markupBaseText } from "./markup";
@@ -14,6 +14,12 @@ import { markupBaseText } from "./markup";
 
 function withoutEmpty(kept: Passthrough): Passthrough | undefined {
   return isEmptyPassthrough(kept) ? undefined : kept;
+}
+
+// A `<metadata>` after the first, kept whole but for what Composer reads from it and writes in the first.
+function laterMetadata(block: XmlReadElement): XmlElement {
+  const kept = nodePassthrough("metadata", block);
+  return { name: block.tagName, attrs: kept?.attrs ?? [], children: kept?.elements ?? [] };
 }
 
 // The unmodelled children of one node, and the anchor each followed when any came before an anchor.
@@ -28,7 +34,7 @@ function keptChildren(
   let last: string | null = null;
   for (const child of element.childNodes) {
     if (child.kind === "element" && !isModelled(child)) {
-      elements.push(storedElement(child));
+      elements.push(node === "head" && child.tagName === "metadata" ? laterMetadata(child) : storedElement(child));
       elementsAfter.push(last);
     } else last = anchorOf(child) ?? last;
   }
@@ -47,16 +53,6 @@ function nodePassthrough(
   return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...keptChildren(node, element, anchorOf), ...extra });
 }
 
-// Several elements written as one, such as every `<metadata>` of a head; the first value of an attribute wins.
-function mergedPassthrough(node: TtmlNode, elements: readonly XmlReadElement[]): Passthrough | undefined {
-  const captured = elements.flatMap((element) => nodePassthrough(node, element) ?? []);
-  const named = new Map<string, XmlAttr>();
-  for (const attr of captured.flatMap((kept) => kept.attrs ?? [])) if (!named.has(attr[0])) named.set(attr[0], attr);
-  const attrs = [...named.values()];
-  const children = captured.flatMap((kept) => kept.elements ?? []);
-  return withoutEmpty({ ...(attrs.length > 0 && { attrs }), ...(children.length > 0 && { elements: children }) });
-}
-
 const childrenNamed = (parent: XmlReadElement | undefined, name: string) =>
   parent ? Array.from(parent.children).filter((child) => child.tagName === name) : [];
 
@@ -66,12 +62,13 @@ function docPassthrough(doc: XmlReadDocument, lineByParagraph: ReadonlyMap<XmlRe
   const root = doc.documentElement;
   const [head] = childrenNamed(root, "head");
   const [body] = childrenNamed(root, "body");
+  const [metadata] = childrenNamed(head, "metadata");
   const iTunesMetadata =
     doc.getElementsByTagName("iTunesMetadata")[0] ?? doc.getElementsByTagNameNS(ITUNES_NS, "iTunesMetadata")[0];
   const captured: [keyof DocPassthrough, Passthrough | undefined][] = [
     ["tt", nodePassthrough("tt", root, {}, rootAnchors)],
-    ["head", head && nodePassthrough("head", head)],
-    ["metadata", mergedPassthrough("metadata", childrenNamed(head, "metadata"))],
+    ["head", head && nodePassthrough("head", head, {}, headAnchors)],
+    ["metadata", metadata && nodePassthrough("metadata", metadata)],
     ["iTunesMetadata", iTunesMetadata && nodePassthrough("iTunesMetadata", iTunesMetadata)],
     ["body", body && nodePassthrough("body", body, {}, sectionAnchors(lineByParagraph))],
   ];

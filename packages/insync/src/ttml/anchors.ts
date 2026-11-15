@@ -11,6 +11,7 @@ type AnchorOf = (child: XmlReadNode) => string | undefined;
 
 const HEAD_ANCHOR = "head";
 const BODY_ANCHOR = "body";
+const METADATA_ANCHOR = "metadata";
 // A track written whole, as the text of a line-synced line.
 const TEXT_ANCHOR = "text";
 const BACKGROUND_ANCHOR = "x-bg";
@@ -25,6 +26,9 @@ const rootAnchors: AnchorOf = (child) => {
   const tagName = asElement(child)?.tagName;
   return tagName === HEAD_ANCHOR || tagName === BODY_ANCHOR ? tagName : undefined;
 };
+
+// The one `<metadata>` Composer writes; later blocks are kept elements of the head.
+const headAnchors: AnchorOf = (child) => (asElement(child)?.tagName === METADATA_ANCHOR ? METADATA_ANCHOR : undefined);
 
 // Lines and the sections holding them stand for the line written last in them.
 function sectionAnchors(lineByParagraph: ReadonlyMap<XmlReadElement, LyricLine>): AnchorOf {
@@ -63,6 +67,8 @@ export {
   BACKGROUND_ANCHOR,
   BODY_ANCHOR,
   HEAD_ANCHOR,
+  headAnchors,
+  METADATA_ANCHOR,
   noAnchors,
   rootAnchors,
   sectionAnchors,

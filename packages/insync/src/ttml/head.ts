@@ -10,7 +10,8 @@ import { ITUNES_NS } from "./modelled";
 import { hasAlternateText, renderTranslationContent, renderTransliterationContent } from "./alternate-content";
 import type { KeyedLine } from "./line-keys";
 import { keptContent } from "./markup";
-import { keptAttributes, keptElementLines } from "./passthrough-write";
+import { METADATA_ANCHOR } from "./anchors";
+import { keptAmongLines, keptAttributes, keptElementLines } from "./passthrough-write";
 
 // -- Types --------------------------------------------------------------------
 
@@ -118,10 +119,7 @@ function iTunesMetadataLines(source: HeadSource, ind: Indent, splitChar: string)
 
 function headLines(source: HeadSource, ind: Indent, splitChar: string): string[] {
   const { metadata, agents, groups, youtubeVideoId, passthrough } = source;
-  const parts = [
-    `${ind(1)}<head${keptAttributes(passthrough?.head)}>`,
-    `${ind(2)}<metadata${keptAttributes(passthrough?.metadata)}>`,
-  ];
+  const parts = [`${ind(2)}<metadata${keptAttributes(passthrough?.metadata)}>`];
   if (metadata.title) {
     parts.push(`${ind(3)}<ttm:title>${escapeXmlText(metadata.title)}</ttm:title>`);
   }
@@ -146,9 +144,11 @@ function headLines(source: HeadSource, ind: Indent, splitChar: string): string[]
   parts.push(...iTunesMetadataLines(source, ind, splitChar));
   parts.push(...keptElementLines(passthrough?.metadata, ind(3)));
   parts.push(`${ind(2)}</metadata>`);
-  parts.push(...keptElementLines(passthrough?.head, ind(2)));
-  parts.push(`${ind(1)}</head>`);
-  return parts;
+  return [
+    `${ind(1)}<head${keptAttributes(passthrough?.head)}>`,
+    ...keptAmongLines([{ out: parts, anchors: [METADATA_ANCHOR] }], passthrough?.head, ind(2), [METADATA_ANCHOR]),
+    `${ind(1)}</head>`,
+  ];
 }
 
 // -- Exports ------------------------------------------------------------------
