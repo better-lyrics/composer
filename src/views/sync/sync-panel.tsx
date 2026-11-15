@@ -389,7 +389,7 @@ const SyncPanel: React.FC = () => {
   if (!source) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" />
+        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" goTo="import" />
       </div>
     );
   }
@@ -397,7 +397,7 @@ const SyncPanel: React.FC = () => {
   if (lines.length === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to sync" hint="Add lyrics in the Edit tab first" />
+        <EmptyState message="No lyrics to sync" hint="Add lyrics in the Edit tab first" goTo="edit" />
       </div>
     );
   }

@@ -5,15 +5,15 @@ import { bgBounds, mainBounds } from "./line-bounds";
 import { withBackgroundSeededFrom, withSeededBackground } from "./line-background";
 import type { LineUpdate, LyricLine } from "./line";
 import { clampShiftDelta, shiftLineTiming, shiftTrack } from "./line-shift";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "./line-track";
+import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
 import { isSyncableLine } from "./line-sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
+import { closeSlotWords, closingUpdate, previousSlotEnd, tapEnd } from "./sync-slot-close";
 import { withSlotWord } from "./sync-slot-words";
 import type { Bounds } from "./word-bounds";
 import { enforceOrderAround } from "./word-order";
-import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 
@@ -86,42 +86,6 @@ function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureC
   return timeRangeResolver(lines, ctx.groups ?? [], Number.POSITIVE_INFINITY)(line);
 }
 
-function closeSlotWords(words: readonly WordTiming[], index: number, end: number): WordTiming[] {
-  const next = [...words];
-  next[index] = { ...next[index], end: Math.max(end, next[index].begin) };
-  return next;
-}
-
-function closeSlot(line: LyricLine, slot: SyncSlot, end: number): Partial<LyricLine> | null {
-  const main = mainTrack(line);
-  const words = timedSyllables(main);
-  if (words.length && slot.wordIndex !== null) {
-    return { tracks: withRoleWords(line, "main", closeSlotWords(words, slot.wordIndex, end)).tracks };
-  }
-  if (!isSpanTimed(main)) return null;
-  return { tracks: withMainTrack(line, withTrackSpan(main, main.begin, Math.max(end, main.begin))).tracks };
-}
-
-// Forward taps end the previous slot at begin and forward holds close it while open; otherwise only an overlap is trimmed.
-function closingTime(
-  lines: readonly LyricLine[],
-  slot: SyncSlot | null,
-  begin: number,
-  { open, jumped }: { open: boolean; jumped: boolean },
-): number {
-  if (!open && !jumped) return begin;
-  const previous = slot ? slotBounds(lines, slot) : null;
-  if (!previous || (previous.begin === previous.end && !jumped)) return begin;
-  return Math.min(previous.end, begin);
-}
-
-function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: number): LineUpdate | null {
-  if (!slot || slotBounds(lines, slot)?.end === end) return null;
-  const line = lines[slot.lineIndex];
-  const updates = closeSlot(line, slot, end);
-  return updates ? { id: line.id, updates } : null;
-}
-
 // -- Background -----------------------------------------------------------------
 
 function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null, splitChar: string): LyricLine {
@@ -143,27 +107,37 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
 
   const anchor = anchorBefore(lines, ctx, "word");
   const { slot } = anchor;
-  const floor = Math.max(anchor.floor, rangeOfLine(lines, line, ctx).min);
+  const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
+  const floor = Math.max(crossLine ? 0 : anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
   const nextWord = existing[cursor.wordIndex + 1];
-  const provisional = open ? begin : begin + ctx.defaultWordDuration;
+  const provisional = open ? begin : tapEnd(begin, ctx.defaultWordDuration);
   const end = nextWord && nextWord.begin >= begin ? Math.min(provisional, nextWord.begin) : provisional;
 
   let words = withSlotWord(existing, slots, cursor.wordIndex, { begin, end });
 
-  const closeAt = closingTime(lines, slot, begin, { open, jumped: ctx.jumped });
+  const previousEnd = previousSlotEnd(lines, slot, {
+    lineIndex: cursor.lineIndex,
+    keepsSetEnds: true,
+    replacedBegin: cursor.wordIndex === 0 ? mainBounds(line)?.begin : existing[cursor.wordIndex]?.begin,
+    begin,
+    open,
+    jumped: ctx.jumped,
+    defaultWordDuration: ctx.defaultWordDuration,
+  });
   const sameLine = slot && slot.lineIndex === cursor.lineIndex ? slot : null;
-  if (sameLine && sameLine.wordIndex !== null) words = closeSlotWords(words, sameLine.wordIndex, closeAt);
+  if (sameLine && sameLine.wordIndex !== null && previousEnd !== null) {
+    words = closeSlotWords(words, sameLine.wordIndex, previousEnd);
+  }
   words = enforceOrderAround(words, cursor.wordIndex);
 
   const timed = withRoleWords(line, "main", words);
   const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line), ctx.splitChar) : timed;
-  const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
 
   return {
     update: { id: line.id, updates: { tracks: written.tracks } },
     clampedTo: ctx.time < floor ? floor : null,
-    closes: closingUpdate(lines, crossLine, closeAt),
+    closes: closingUpdate(lines, crossLine, previousEnd),
   };
 }
 
@@ -189,7 +163,20 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   return {
     update: { id: line.id, updates: { tracks: written.tracks } },
     clampedTo: ctx.time < floor ? floor : null,
-    closes: closingUpdate(lines, slot, closingTime(lines, slot, begin, { open: false, jumped: ctx.jumped })),
+    closes: closingUpdate(
+      lines,
+      slot,
+      // A Line mode tap shifts the whole line, end included, so an end this pass moved reads as set.
+      previousSlotEnd(lines, slot, {
+        lineIndex: cursor.lineIndex,
+        keepsSetEnds: false,
+        replacedBegin: oldMain?.begin,
+        begin,
+        open: false,
+        jumped: ctx.jumped,
+        defaultWordDuration: ctx.defaultWordDuration,
+      }),
+    ),
   };
 }
 

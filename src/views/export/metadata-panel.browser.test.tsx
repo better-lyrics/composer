@@ -73,11 +73,12 @@ describe("MetadataPanel", () => {
     const screen = await render(<MetadataPanel />);
 
     await screen.getByRole("textbox", { name: "ISRC" }).fill("not-valid");
+    await userEvent.tab();
     await expect.element(screen.getByText(/Invalid ISRC/)).toBeInTheDocument();
     expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
   });
 
-  it("announces the ISRC error and marks the input invalid", async () => {
+  it("shows the ISRC error once the field is left and clears it once valid", async () => {
     seedMetadata();
     const screen = await render(<MetadataPanel />);
 
@@ -85,7 +86,9 @@ describe("MetadataPanel", () => {
     await expect.element(isrc).toHaveAttribute("aria-invalid", "false");
 
     await isrc.fill("not-valid");
-    await expect.element(screen.getByRole("alert")).toHaveTextContent(/Invalid ISRC/);
+    await expect.element(isrc).toHaveAttribute("aria-invalid", "false");
+    await userEvent.tab();
+    await expect.element(isrc).toHaveAccessibleDescription(/Invalid ISRC/);
     await expect.element(isrc).toHaveAttribute("aria-invalid", "true");
 
     await isrc.fill("USQX91700001");
@@ -262,18 +265,20 @@ describe("MetadataPanel · language validation", () => {
     return { screen, language: screen.getByRole("textbox", { name: "Language" }) };
   }
 
-  it("announces an invalid language and marks the input invalid", async () => {
+  it("shows an invalid language once the field is left and clears it once valid", async () => {
     const { screen, language } = await renderLanguageField();
     await expect.element(language).toHaveAttribute("aria-invalid", "false");
 
     await language.fill("not a lang!!");
-    await expect.element(screen.getByRole("alert")).toHaveTextContent(/Invalid language/);
+    await expect.element(language).toHaveAttribute("aria-invalid", "false");
+    await userEvent.tab();
+    await expect.element(language).toHaveAccessibleDescription(/Invalid language/);
     await expect.element(language).toHaveAttribute("aria-invalid", "true");
     expect(useProjectStore.getState().metadata.language).toBeUndefined();
 
     await language.fill("pt-BR");
     await expect.element(language).toHaveAttribute("aria-invalid", "false");
-    await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();
+    await expect.element(screen.getByText(/Invalid language/)).not.toBeInTheDocument();
   });
 
   it("keeps what the user typed and stores the canonical tag", async () => {
