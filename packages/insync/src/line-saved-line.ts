@@ -33,13 +33,15 @@ function savedSyllable(syllable: Syllable, { withIds }: SavedLineOptions): Saved
 }
 
 function savedTrack(track: LineTrack, options: SavedLineOptions): SavedTrack {
-  const saved: SavedTrack = options.withIds
-    ? { id: track.id, role: track.role, syllables: [] }
-    : { role: track.role, syllables: [] };
-  if (track.role === "main") saved.agent = track.agentId;
-  if (track.role === "bg" && track.source) saved.source = track.source;
-  if (isSpanTimed(track)) saved.span = savedSpan(track.begin, track.end);
-  saved.syllables = track.syllables.map((syllable) => savedSyllable(syllable, options));
+  const head: Omit<SavedTrack, "syllables"> = options.withIds
+    ? { id: track.id, role: track.role }
+    : { role: track.role };
+  if (track.role === "main") head.agent = track.agentId;
+  if (track.role === "bg" && track.source) head.source = track.source;
+  if (isSpanTimed(track)) head.span = savedSpan(track.begin, track.end);
+  const saved: SavedTrack = Object.assign(head, {
+    syllables: track.syllables.map((syllable) => savedSyllable(syllable, options)),
+  });
   if (track.role === "bg" && !isEmptyPassthrough(track.passthrough)) saved.passthrough = track.passthrough;
   return saved;
 }
