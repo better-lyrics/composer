@@ -14,6 +14,8 @@ interface ContentUpdate {
 interface MovedText {
   lines: LyricLine[];
   detachedIds: string[];
+  // Group lines the edit removed with nothing in their place: their instance no longer has them.
+  removedIds: string[];
 }
 
 interface DiffResult {
@@ -66,7 +68,8 @@ function rowsTakingTheirPlace(oldLines: readonly LyricLine[], newLines: readonly
 }
 
 // A structural edit moves text between lines: a group line whose text it changed now differs from its template, so
-// it becomes that instance's own line. Its other instances and every other line stay as they were.
+// it becomes that instance's own line, and a group line it removed is gone from that instance only. Its other
+// instances and every other line stay as they were.
 function withMovedTextDetached(oldLines: readonly LyricLine[], newLines: LyricLine[]): MovedText {
   const oldById = new Map(oldLines.map((line) => [line.id, line]));
   const replacing = rowsTakingTheirPlace(oldLines, newLines);
@@ -83,7 +86,12 @@ function withMovedTextDetached(oldLines: readonly LyricLine[], newLines: LyricLi
     detachedIds.push(line.id);
     return { ...line, detached: true };
   });
-  return { lines: detachedIds.length ? lines : newLines, detachedIds };
+  const newIds = new Set(newLines.map((line) => line.id));
+  const replacedIds = new Set([...replacing.values()].map((line) => line.id));
+  const removedIds = oldLines.flatMap((old) =>
+    isLinked(old) && !old.detached && !newIds.has(old.id) && !replacedIds.has(old.id) ? [old.id] : [],
+  );
+  return { lines: detachedIds.length ? lines : newLines, detachedIds, removedIds };
 }
 
 // -- Exports ------------------------------------------------------------------

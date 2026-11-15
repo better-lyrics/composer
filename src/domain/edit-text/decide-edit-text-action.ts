@@ -16,8 +16,9 @@ type EditTextAction =
       finalLines: LyricLine[];
       editText: string;
       editRanges: readonly BackgroundRange[];
-      // Group lines the edit made their instance's own.
+      // Group lines the edit made their instance's own, and ones it removed from their instance.
       detachedIds: readonly string[];
+      removedIds: readonly string[];
     };
 
 interface DecideOptions {
@@ -66,6 +67,7 @@ function decideEditTextAction({
       editText: text,
       editRanges: ranges ?? NO_RANGES,
       detachedIds: moved.detachedIds,
+      removedIds: moved.removedIds,
     };
   }
 
@@ -74,10 +76,10 @@ function decideEditTextAction({
   const finalLines = carryTemplateEdits({ before: lines, after: lyricLines, groups }).lines;
   if (!ranges) {
     const editText = editTextWithRewrittenRows(text, lyricLines, finalLines);
-    return { kind: "apply", finalLines, editText, editRanges: NO_RANGES, detachedIds: [] };
+    return { kind: "apply", finalLines, editText, editRanges: NO_RANGES, detachedIds: [], removedIds: [] };
   }
   const shown = shownWithRewrittenRows({ text, ranges }, lyricLines, finalLines);
-  return { kind: "apply", finalLines, editText: shown.text, editRanges: shown.ranges, detachedIds: [] };
+  return { kind: "apply", finalLines, editText: shown.text, editRanges: shown.ranges, detachedIds: [], removedIds: [] };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -89,9 +89,10 @@ function showSharingBlockedToast(name: string, refusal: RealignRefusal): void {
   toast.error(`${name} keeps its own timing${reason}`);
 }
 
-// A group line an edit made its instance's own; when an edit makes several, the first one is named.
-function showLineDiffersToast(lineIds: readonly string[]): void {
-  const { lines, groups } = useProjectStore.getState();
+// A group line an edit made its instance's own, read from `lines` (a removed line from the lines before the edit); when
+// an edit changes several, the first one is named.
+function showLineDiffersToast(lineIds: readonly string[], lines = useProjectStore.getState().lines): void {
+  const { groups } = useProjectStore.getState();
   const line = lineIds.length > 0 ? lines.find((candidate) => candidate.id === lineIds[0]) : undefined;
   const group = line && groups.find((candidate) => candidate.id === line.groupId);
   if (!line || !group || line.instanceIdx === undefined) return;

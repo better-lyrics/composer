@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
@@ -47,6 +48,9 @@ describe("editor rows of a group instance", () => {
       .toEqual(["Verse one", "Verse two", "Verse one"]);
     expect(screen.container.querySelector("[role=dialog]")).toBeNull();
     expect(useProjectStore.getState().lines.map((l) => l.instanceIdx)).toEqual([0, 0, 1]);
+    expect(toast.getHistory().some((t) => "title" in t && t.title === '"Verse two" now differs in Chorus 2')).toBe(
+      true,
+    );
 
     textarea.focus();
     textarea.blur();

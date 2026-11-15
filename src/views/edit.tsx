@@ -303,7 +303,8 @@ const EditPanel: React.FC = () => {
         }
         finalizeRun();
         commitAndShow(pasteLyrics(lines, finalLines));
-        showLineDiffersToast(action.detachedIds);
+        if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
+        else showLineDiffersToast(action.removedIds, lines);
         noteTypedLyrics(finalLines);
         if (finalLines.length !== pastedLines.length || finalLines.some((line, i) => line !== pastedLines[i])) {
           noteGuideSignal("edit.background");
@@ -316,7 +317,8 @@ const EditPanel: React.FC = () => {
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;
       useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");
-      showLineDiffersToast(action.detachedIds);
+      if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
+      else showLineDiffersToast(action.removedIds, lines);
       scheduleRunFinalize();
     },
     [defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],

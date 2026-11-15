@@ -293,3 +293,63 @@ describe("regressions", () => {
     });
   });
 });
+
+describe("typing in a line-synced instance", () => {
+  it("regression: keeps a word-synced instance's own word timing", () => {
+    const lines: LyricLine[] = [
+      lineFromFields({
+        id: "a",
+        text: "We glow tonight",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        begin: 10,
+        end: 12,
+      }),
+      lineFromFields({
+        id: "b",
+        text: "We glow tonight",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { id: "w1", text: "We", sep: " ", begin: 40, end: 40.5, joinsNext: false },
+          { id: "w2", text: "glow", sep: " ", begin: 40.5, end: 41, joinsNext: false },
+          { id: "w3", text: "tonight", sep: "", begin: 41, end: 41.5, joinsNext: false },
+        ],
+      }),
+    ];
+    for (const text of ["We glow tonight now\nWe glow tonight", "We glow so bright\nWe glow tonight"]) {
+      const action = decideEditTextAction({ text, defaultAgentId: "v1", lines, groups: [groupChorus] });
+      if (action.kind !== "apply") throw new Error(action.kind);
+      const copy = action.finalLines[1];
+      expect(lineText(copy)).toBe(lineText(action.finalLines[0]));
+      expect(
+        timedSyllables(mainTrack(copy))
+          .slice(0, 2)
+          .map((word) => [word.text, word.begin]),
+      ).toEqual([
+        ["We", 40],
+        ["glow", 40.5],
+      ]);
+    }
+  });
+});
+
+describe("removing a group row", () => {
+  it("regression: a group row removed with nothing in its place is named as that instance's own change", () => {
+    const lines = chorusLines();
+    const action = decideEditTextAction({
+      text: ["I love you", "more than words", "verse line", "I love you"].join("\n"),
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.detachedIds).toEqual([]);
+    expect(action.removedIds).toEqual(["c2b"]);
+    expect(action.finalLines.map((line) => line.id)).toEqual(["c1a", "c1b", "v1", "c2a"]);
+  });
+});
