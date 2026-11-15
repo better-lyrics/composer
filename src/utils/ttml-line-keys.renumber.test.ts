@@ -1,8 +1,8 @@
 import { fieldsOfLine } from "insync/line-from-fields";
 import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
-import { generateTTML } from "@/utils/ttml";
-import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
+import { generateTTML } from "insync/ttml/write";
+import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "insync/ttml/line-keys";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

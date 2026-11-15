@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

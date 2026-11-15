@@ -3,7 +3,7 @@ import { type EditCase, lineById } from "@/test/edited-ttml-edits";
 import { LINE_IDENTITY_OPERATIONS } from "@/test/edited-ttml-identity-operations";
 import { COMBINED_OPERATIONS, OPERATIONS } from "@/test/edited-ttml-operations";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { describe, expect, it } from "vitest";

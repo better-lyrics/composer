@@ -7,7 +7,7 @@ import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import type { ParseResult } from "insync/parse-result";
 import {
   type ImportContext,
   type ImportSourceInfo,

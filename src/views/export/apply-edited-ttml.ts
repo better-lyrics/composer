@@ -1,13 +1,13 @@
-import { mergedEditedKept } from "@/domain/line/edited-ttml-kept";
-import { holdsEveryLine, mergedLineIdsByKey, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { mergedEditedKept } from "insync/line-edited-ttml-kept";
+import { holdsEveryLine, mergedLineIdsByKey, mergeEditedTtmlLines } from "insync/line-edited-ttml-lines";
 import type { LyricLine } from "insync/line";
 import { isProjectFullySynced } from "insync/line-sync-progress";
 import { changedParts, type EditedLyrics, editedLyricsWrite, type ProjectPart } from "insync/project-edited-lyrics";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";
-import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
-import { generateProjectTtml } from "@/utils/ttml";
-import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
+import { type ParseResult, skippedLineCount } from "insync/parse-result";
+import { generateProjectTtml } from "insync/ttml/write";
+import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "insync/ttml/line-keys";
 import { crossedProjectChange } from "@/views/export/ttml-edit-state";
 import { readTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 import { getSplitCharacter } from "@/utils/split-character";

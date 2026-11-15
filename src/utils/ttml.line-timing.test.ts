@@ -6,8 +6,8 @@ import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { ProjectMetadata } from "insync/metadata";
 import { legacyLine } from "@/test/legacy-languages";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
-import { generateProjectTtml, generateTTML } from "@/utils/ttml";
+import { parseTtml } from "insync/ttml/read";
+import { generateProjectTtml, generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = { title: "One Step Closer", artists: [], album: "", duration: 60 };

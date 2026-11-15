@@ -27,7 +27,7 @@ import {
   hasUnsupportedTags,
   skippedLineCount,
   skippedLinesMessage,
-} from "@/utils/lyrics-parsers/shared";
+} from "insync/parse-result";
 import { pluralize } from "insync/pluralize";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { getSplitCharacter } from "@/utils/split-character";

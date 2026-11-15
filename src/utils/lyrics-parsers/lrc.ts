@@ -4,7 +4,7 @@ import { syllablesText } from "insync/line-text";
 import type { ProjectMetadata } from "insync/metadata";
 import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { type ParseIssue, type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { type ParseIssue, type ParseResult, generateLineId } from "insync/parse-result";
 import { getSplitCharacter } from "@/utils/split-character";
 import { DEFAULT_MIN_WORD_DURATION } from "insync/word-spaces";
 

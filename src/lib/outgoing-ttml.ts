@@ -4,7 +4,7 @@ import { withExportTiming } from "@/domain/alignment/export-timing";
 import { alignmentBreakdown } from "@/domain/alignment/review-state";
 import type { TimingGranularity } from "insync/project-timing-granularity";
 import { useProjectStore } from "@/stores/project";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

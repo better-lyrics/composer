@@ -7,7 +7,7 @@ import { startVideoProject } from "@/lib/unison/video-project";
 import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
 import type { ParseResult } from "@/utils/lyrics-parsers";
-import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { skippedLinesMessage } from "insync/parse-result";
 import { type LyricsRead, readLyricsFile, replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types ---------------------------------------------------------------------

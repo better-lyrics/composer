@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { type LegacyLine, legacyLine, legacyView } from "@/test/legacy-languages";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
-import { renderTransliterationContent } from "@/utils/ttml-alternate-content";
+import { generateTTML } from "insync/ttml/write";
+import { renderTransliterationContent } from "insync/ttml/alternate-content";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function lineWithMappings(): LegacyLine {

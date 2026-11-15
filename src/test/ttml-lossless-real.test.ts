@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { exportOfImport, missingUnmodelledNodes, readTtmlDocument, unmodelledNodes } from "@/test/ttml-unmodelled";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { parseTtml } from "insync/ttml/read";
 import { parseXmlDocument } from "@/utils/xml-document";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

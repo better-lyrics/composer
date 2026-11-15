@@ -1,7 +1,7 @@
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { hasAnyTiming } from "insync/line-predicates";
-import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { type ParseResult, generateLineId } from "insync/parse-result";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------

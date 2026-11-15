@@ -1,3 +1,4 @@
+import { withUnixLineBreaks } from "./line-breaks";
 import { pluralize } from "./pluralize";
 
 interface PasteAlignment {
@@ -8,7 +9,7 @@ interface PasteAlignment {
 }
 
 function pastedRows(text: string): string[] {
-  const rows = text.replace(/\r\n?/g, "\n").split("\n");
+  const rows = withUnixLineBreaks(text).split("\n");
   while (rows.length > 0 && rows[rows.length - 1] === "") rows.pop();
   return rows;
 }

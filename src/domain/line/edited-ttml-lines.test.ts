@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { holdsEveryLine, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { holdsEveryLine, mergeEditedTtmlLines } from "insync/line-edited-ttml-lines";
 import { fieldsOfLine } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";

@@ -1,8 +1,8 @@
 import { writeXmlChild, writeXmlElement } from "insync/xml-node";
 import { importableMetadata } from "insync/project-imported-metadata";
 import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
-import { parseTtmlDocument } from "@/utils/lyrics-parsers/ttml-helpers";
+import { parseTtml } from "insync/ttml/read";
+import { parseTtmlDocument } from "insync/ttml/read-helpers";
 import {
   elementRole,
   isModelledAttribute,
@@ -10,9 +10,9 @@ import {
   LYRIC_ROLES,
   modelledChildTest,
   type TtmlNode,
-} from "@/utils/lyrics-parsers/ttml-modelled";
-import { xmlChildrenFromDom, xmlElementFromDom } from "@/utils/lyrics-parsers/xml-node-from-dom";
-import { generateTTML } from "@/utils/ttml";
+} from "insync/ttml/modelled";
+import { storedChildren, storedElement, type XmlReadDocument, type XmlReadElement } from "insync/ttml/xml-read-tree";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
@@ -29,14 +29,14 @@ type Found = UnmodelledNode[];
 
 // -- Walk ---------------------------------------------------------------------
 
-function attributesOf(node: TtmlNode, element: Element, anchor: string, found: Found): void {
+function attributesOf(node: TtmlNode, element: XmlReadElement, anchor: string, found: Found): void {
   for (const attr of element.attributes) {
     if (!isModelledAttribute(node, attr)) found.push({ anchor, kind: "attribute", name: attr.name, value: attr.value });
   }
 }
 
 // What a modelled child stands for in its container's order, keyed by its lyric so it compares across a round trip.
-function unitsOf(node: TtmlNode, child: Element): string[] {
+function unitsOf(node: TtmlNode, child: XmlReadElement): string[] {
   switch (node) {
     case "tt":
       return [child.tagName];
@@ -48,7 +48,7 @@ function unitsOf(node: TtmlNode, child: Element): string[] {
     case "p":
     case "background":
       if (elementRole(child) === "x-bg") return ["x-bg"];
-      return isTimedWordSpan(child) ? [`span:${withoutSpaces(child.textContent ?? "")}`] : [];
+      return isTimedWordSpan(child) ? [`span:${withoutSpaces(child.textContent)}`] : [];
     default:
       return [];
   }
@@ -57,14 +57,13 @@ function unitsOf(node: TtmlNode, child: Element): string[] {
 const withoutSpaces = (text: string) => [...text].filter((character) => character.trim() !== "").join("");
 
 // The lyric a `<p>` spells, without its background, translations or kept elements.
-function lyricKey(p: Element): string {
+function lyricKey(p: XmlReadElement): string {
   const isModelled = modelledChildTest("p", p);
   let text = "";
   for (const child of p.childNodes) {
-    if (child.nodeType === Node.TEXT_NODE) text += child.textContent ?? "";
-    const element = child as Element;
-    if (child.nodeType === Node.ELEMENT_NODE && isModelled(element) && !LYRIC_ROLES.has(elementRole(element) ?? "")) {
-      text += element.textContent ?? "";
+    if (child.kind === "text") text += child.text;
+    if (child.kind === "element" && isModelled(child) && !LYRIC_ROLES.has(elementRole(child) ?? "")) {
+      text += child.textContent;
     }
   }
   return withoutSpaces(text);
@@ -76,16 +75,16 @@ const ORDERED_NODES: ReadonlySet<TtmlNode> = new Set(["tt", "body", "div", "p", 
 // are walked by `visit`.
 function childrenOf(
   node: TtmlNode,
-  element: Element,
+  element: XmlReadElement,
   anchor: string,
   found: Found,
-  visit: (child: Element) => void = () => {},
+  visit: (child: XmlReadElement) => void = () => {},
 ): void {
   const isModelled = modelledChildTest(node, element);
   const order: string[] = [];
   for (const child of element.children) {
     if (!isModelled(child)) {
-      const value = writeXmlElement(xmlElementFromDom(child));
+      const value = writeXmlElement(storedElement(child));
       found.push({ anchor, kind: "element", name: child.tagName, value });
       order.push(`kept:${value}`);
     } else {
@@ -96,31 +95,31 @@ function childrenOf(
   if (ORDERED_NODES.has(node)) found.push({ anchor, kind: "order", name: node, value: JSON.stringify(order) });
 }
 
-function nodeOf(node: TtmlNode, element: Element, anchor: string, found: Found, visit?: (child: Element) => void) {
+function nodeOf(node: TtmlNode, element: XmlReadElement, anchor: string, found: Found, visit?: (child: XmlReadElement) => void) {
   attributesOf(node, element, anchor, found);
   childrenOf(node, element, anchor, found, visit);
 }
 
-function syllablesOf(container: Element, anchor: string, found: Found): void {
+function syllablesOf(container: XmlReadElement, anchor: string, found: Found): void {
   Array.from(container.children)
     .filter(isTimedWordSpan)
     .forEach((span, index) => {
       const at = `${anchor}/span[${index}]`;
       attributesOf("syllable", span, at, found);
       if (span.children.length === 0) return;
-      const markup = xmlChildrenFromDom(span).map(writeXmlChild).join("");
+      const markup = storedChildren(span).map(writeXmlChild).join("");
       found.push({ anchor: at, kind: "markup", name: span.tagName, value: markup });
     });
 }
 
-function timesOf(element: Element, anchor: string, found: Found): void {
+function timesOf(element: XmlReadElement, anchor: string, found: Found): void {
   for (const name of ["begin", "end"]) {
     const value = element.getAttribute(name);
     if (value !== null) found.push({ anchor, kind: "times", name, value });
   }
 }
 
-function paragraphOf(p: Element, anchor: string, found: Found, withTimes: boolean): void {
+function paragraphOf(p: XmlReadElement, anchor: string, found: Found, withTimes: boolean): void {
   if (withTimes) timesOf(p, anchor, found);
   nodeOf("p", p, anchor, found, (child) => {
     if (elementRole(child) !== "x-bg") return;
@@ -131,7 +130,7 @@ function paragraphOf(p: Element, anchor: string, found: Found, withTimes: boolea
   syllablesOf(p, anchor, found);
 }
 
-function headOf(head: Element, found: Found): void {
+function headOf(head: XmlReadElement, found: Found): void {
   nodeOf("head", head, "head", found, (metadata) =>
     nodeOf("metadata", metadata, "metadata", found, (child) => {
       if (child.localName === "iTunesMetadata") nodeOf("iTunesMetadata", child, "iTunesMetadata", found);
@@ -142,15 +141,15 @@ function headOf(head: Element, found: Found): void {
   );
 }
 
-function walk(doc: Document, withTimes: boolean): Found {
+function walk(doc: XmlReadDocument, withTimes: boolean): Found {
   const found: Found = [];
-  const paragraphIndex = new Map<Element, number>(
+  const paragraphIndex = new Map<XmlReadElement, number>(
     Array.from(doc.getElementsByTagName("p")).map((p, index) => [p, index]),
   );
-  const anchorOf = (p: Element) => `p[${paragraphIndex.get(p)}]`;
+  const anchorOf = (p: XmlReadElement) => `p[${paragraphIndex.get(p)}]`;
   const root = doc.documentElement;
   // A section is addressed by its first line and its depth, so a nested one keeps its own address.
-  const sectionOf = (div: Element, depth = 0): void => {
+  const sectionOf = (div: XmlReadElement, depth = 0): void => {
     const first = div.getElementsByTagName("p")[0];
     const anchor = `div${depth}@${first ? anchorOf(first) : "none"}`;
     if (withTimes) timesOf(div, anchor, found);
@@ -183,13 +182,13 @@ function withoutRepeatedMetadataAttributes(found: Found): Found {
 
 // -- Functions ----------------------------------------------------------------
 
-function readTtmlDocument(ttml: string): Document {
+function readTtmlDocument(ttml: string): XmlReadDocument {
   const parsed = parseTtmlDocument(ttml);
   if (!parsed.ok) throw new Error("TTML is not well formed");
   return parsed.doc;
 }
 
-function unmodelledNodes(doc: Document): UnmodelledNode[] {
+function unmodelledNodes(doc: XmlReadDocument): UnmodelledNode[] {
   return walk(doc, false).filter((node) => node.kind !== "order");
 }
 

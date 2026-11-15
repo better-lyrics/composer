@@ -4,7 +4,7 @@ import { lineText } from "insync/line-text";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

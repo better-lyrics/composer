@@ -5,7 +5,7 @@ import { outgoingTtml } from "@/lib/outgoing-ttml";
 import { useProjectStore } from "@/stores/project";
 import { FOREIGN_TTML_FIXTURES } from "@/test/ttml-foreign-fixtures";
 import { missingUnmodelledNodes } from "@/test/ttml-unmodelled";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { parseTtml } from "insync/ttml/read";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Tests --------------------------------------------------------------------

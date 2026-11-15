@@ -2,7 +2,7 @@ import type { LyricLine } from "insync/line";
 import { mainTrack, timedSyllables } from "insync/line-track";
 import { withRoleWords } from "insync/line-track-writes";
 import type { WordTiming } from "insync/word-timing";
-import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { parseTtmlTimestamp } from "insync/ttml/read-helpers";
 
 // -- Types --------------------------------------------------------------------
 

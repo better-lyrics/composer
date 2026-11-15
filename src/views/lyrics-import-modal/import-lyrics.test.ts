@@ -8,8 +8,8 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { ConfirmOptions } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
-import { generateTTML } from "@/utils/ttml";
+import type { ParseResult } from "insync/parse-result";
+import { generateTTML } from "insync/ttml/write";
 import { type ImportContext, importLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

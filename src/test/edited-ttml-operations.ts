@@ -22,7 +22,7 @@ import {
 } from "@/test/edited-ttml-edits";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { formatTime } from "insync/format-time";
-import { keyedExportLines } from "@/utils/ttml-line-keys";
+import { keyedExportLines } from "insync/ttml/line-keys";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Operations ---------------------------------------------------------------

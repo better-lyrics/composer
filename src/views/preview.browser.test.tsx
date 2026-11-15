@@ -3,7 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { PreviewPanel } from "@/views/preview";
 import { describe, expect, it } from "vitest";
 import { getSplitCharacter } from "@/utils/split-character";

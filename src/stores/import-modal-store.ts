@@ -1,4 +1,4 @@
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import type { ParseResult } from "insync/parse-result";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import type { ImportSourceInfo } from "@/views/lyrics-import-modal/import-lyrics";
 import { create } from "zustand";

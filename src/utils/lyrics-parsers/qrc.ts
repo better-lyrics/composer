@@ -19,7 +19,7 @@ import {
   parseHeaderTags,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
-import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { type ParseResult, generateLineId } from "insync/parse-result";
 import { getSplitCharacter } from "@/utils/split-character";
 import { parseXmlDocument } from "@/utils/xml-document";
 

@@ -11,7 +11,7 @@ import { trackPieces } from "insync/language-pieces";
 import { roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function chorusLine(id: string, instanceIdx: number, begin: number): LyricLine {
