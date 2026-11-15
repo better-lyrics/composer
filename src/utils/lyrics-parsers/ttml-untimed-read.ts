@@ -1,4 +1,5 @@
 import type { Passthrough } from "insync/passthrough";
+import type { XmlChild } from "insync/xml-node";
 import type { LineTrack, LyricLine } from "@/domain/line/model";
 import { syllableJoint, syllablesText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack } from "@/domain/line/track";
@@ -39,6 +40,29 @@ function untimedLyric(container: Element, skippedRole: string): UntimedLyric {
     if (kept) spans.push({ start: text.length, end: text.length + piece.length, passthrough: kept });
     text += piece;
   }
+  return trimmedLyric(text, spans);
+}
+
+// The same reading over kept markup: what the writer put inside a line-synced background's one timed span.
+function untimedLyricOfMarkup(markup: readonly XmlChild[]): UntimedLyric {
+  let text = "";
+  const spans: KeptSpan[] = [];
+  for (const child of markup) {
+    if ("text" in child) text += child.text;
+    else if (child.name.toLowerCase() === "span") {
+      const inner = child.children.some((node) => !("text" in node)) ? child.children : undefined;
+      const piece = markupBaseText(child.children);
+      if (child.attrs.length > 0 || inner) {
+        const passthrough = { ...(child.attrs.length > 0 && { attrs: child.attrs }), ...(inner && { markup: inner }) };
+        spans.push({ start: text.length, end: text.length + piece.length, passthrough });
+      }
+      text += piece;
+    }
+  }
+  return trimmedLyric(text, spans);
+}
+
+function trimmedLyric(text: string, spans: readonly KeptSpan[]): UntimedLyric {
   const lead = text.length - text.trimStart().length;
   return {
     text: text.trim(),
@@ -72,7 +96,12 @@ function withUntimedSpans(line: LyricLine, main: UntimedLyric | undefined, backg
   return bg ? withBackgroundTrack(withMain, withSpans(bg, background)) : withMain;
 }
 
+// A line-synced background's syllables take back the kept spans its one timed span was written with.
+function withSpansFromMarkup<T extends LineTrack>(track: T, markup: readonly XmlChild[]): T {
+  return withSpans(track, untimedLyricOfMarkup(markup));
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { UntimedLyric };
-export { untimedLyric, withUntimedSpans };
+export { untimedLyric, withSpansFromMarkup, withUntimedSpans };

@@ -1,8 +1,11 @@
+import type { Part, PartSection } from "insync/part";
+import { partsAfterLineChange } from "insync/part-membership";
 import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
-import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import { type LineFields, fieldsOfLine, lineFromFields, untimedRest } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { linePassthroughOf, withLinePassthrough, withoutKeptData } from "@/domain/line/passthrough";
+import { hasKeptData, withKeptDataOf } from "@/domain/line/edited-ttml-passthrough";
+import { withoutKeptData } from "@/domain/line/passthrough";
 import { backgroundTrack } from "@/domain/line/track";
 import { trackText } from "@/domain/line/text";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
@@ -10,7 +13,7 @@ import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
 import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
@@ -20,6 +23,7 @@ import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
 interface EditedTtmlLines {
   lines: readonly LyricLine[];
   lineKeys?: readonly (string | undefined)[];
+  parts?: readonly Part[];
 }
 
 // -- Comparison ---------------------------------------------------------------
@@ -131,8 +135,32 @@ function mergedTiming(stored: LineFields, edited: LineFields): Pick<LineFields, 
   return keepsBounds ? { begin: stored.begin, end: stored.end } : { begin: edited.begin, end: edited.end };
 }
 
+// An export writes only timed syllables, so the stored untimed rest is never part of an edit: it follows whatever the
+// edited words spell. A file that spells the rest itself, timed or not, keeps its own, and a timed word the file
+// dropped stays dropped.
+function withStoredRest(
+  edited: string,
+  words: readonly WordTiming[],
+  stored: string,
+  storedWords: WordTiming[] = [],
+): string {
+  const splitChar = getSplitCharacter();
+  if (untimedRest(edited, words, splitChar) !== "") return edited;
+  const afterEdited = untimedRest(stored, words, splitChar);
+  const untimed = untimedRest(stored, storedWords, splitChar);
+  const rest = afterEdited.length <= untimed.length ? afterEdited : untimed;
+  return rest === "" ? edited : edited.trimEnd() + rest;
+}
+
 function mergedText(stored: LineFields, edited: LineFields): string {
-  return !edited.words && edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
+  if (edited.words) return withStoredRest(edited.text, edited.words, stored.text, stored.words);
+  return edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
+}
+
+function mergedBackgroundText(stored: LineFields, edited: LineFields): string | undefined {
+  const { backgroundText, backgroundWords } = edited;
+  if (backgroundText === undefined || !backgroundWords || stored.backgroundText === undefined) return backgroundText;
+  return withStoredRest(backgroundText, backgroundWords, stored.backgroundText, stored.backgroundWords);
 }
 
 function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLine {
@@ -148,18 +176,21 @@ function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLin
   const merged = lineFromFields({
     ...editedFields,
     text: mergedText(stored, edited),
+    backgroundText: mergedBackgroundText(stored, edited),
     ...background,
     ...timing,
     id: stored.id,
     ...(languages ? { languages } : {}),
   });
-  return withUntimedIdsOf(withLinePassthrough(merged, linePassthroughOf(storedLine)), storedLine);
+  return withKeptDataOf(withUntimedIdsOf(merged, storedLine), editedLine);
 }
 
-// Kept TTML data never decides whether a line merges.
+// A line whose only change is its kept TTML data keeps everything else as stored.
 function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
+  if (generateLineTtml(stored) === generateLineTtml(edited)) return stored;
+  if (!hasKeptData(stored) && !hasKeptData(edited)) return fieldMergedLine(stored, edited);
   return generateLineTtml(withoutKeptData(stored)) === generateLineTtml(withoutKeptData(edited))
-    ? stored
+    ? withKeptDataOf(stored, edited)
     : fieldMergedLine(stored, edited);
 }
 
@@ -212,17 +243,47 @@ function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines)
   return ids;
 }
 
+function onLineIds<T extends PartSection>(section: T, idOf: ReadonlyMap<string, string>): T {
+  return {
+    ...section,
+    lineIds: section.lineIds.map((id) => idOf.get(id) ?? id),
+    ...(section.sections && { sections: section.sections.map((nested) => onLineIds(nested, idOf)) }),
+  };
+}
+
+// The edited file's song parts, on the merged line ids; lines the export skips join a part they sit inside.
+function mergedEditedParts(
+  stored: readonly LyricLine[],
+  edit: EditedTtmlLines,
+  merged: readonly LyricLine[],
+): readonly Part[] {
+  const parts = edit.parts ?? [];
+  if (parts.length === 0) return parts;
+  const { partners } = pairedWithStored(stored, edit);
+  const idOf = new Map(edit.lines.map((line, index) => [line.id, partners[index]?.id ?? line.id] as const));
+  const onMergedIds = parts.map((part) => onLineIds(part, idOf));
+  const editedIds = edit.lines.map((line) => idOf.get(line.id) ?? line.id);
+  return partsAfterLineChange(
+    onMergedIds,
+    editedIds,
+    merged.map((line) => line.id),
+  );
+}
+
+// Kept times go stale once a line moves and the export writes derived ones instead, so kept data never decides.
 function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricLine[]): boolean {
   const exported = stored.filter(isSyncableLine);
   return (
     exported.length === ownExport.length &&
     exported.every((line, index) => {
       const form = ownExport[index];
-      return form !== undefined && isStructurallyEqual(fieldMergedLine(line, form), line);
+      return (
+        form !== undefined && isStructurallyEqual(withoutKeptData(fieldMergedLine(line, form)), withoutKeptData(line))
+      );
     })
   );
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { holdsEveryLine, mergeEditedTtmlLines, mergedLineIdsByKey };
+export { holdsEveryLine, mergedEditedParts, mergeEditedTtmlLines, mergedLineIdsByKey };

@@ -1,4 +1,10 @@
-import { holdsEveryLine, mergeEditedTtmlLines, mergedLineIdsByKey } from "@/domain/line/edited-ttml-lines";
+import {
+  holdsEveryLine,
+  mergeEditedTtmlLines,
+  mergedEditedParts,
+  mergedLineIdsByKey,
+} from "@/domain/line/edited-ttml-lines";
+import type { LyricLine } from "@/domain/line/model";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { type EditedLyrics, type ProjectPart, changedParts, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import { useProjectStore } from "@/stores/project";
@@ -25,15 +31,22 @@ const OWN_EXPORT = "the exported TTML";
 
 // -- Helpers ------------------------------------------------------------------
 
-function editedLyricsFrom(parsed: ParseResult, lines: EditedLyrics["lines"]): EditedLyrics {
-  return { lines, groups: parsed.groups ?? [], agents: parsed.agents, metadata: parsed.metadata };
+function editedLyricsFrom(stored: readonly LyricLine[], parsed: ParseResult): EditedLyrics {
+  const lines = mergeEditedTtmlLines(stored, parsed);
+  return {
+    lines,
+    groups: parsed.groups ?? [],
+    agents: parsed.agents,
+    metadata: parsed.metadata,
+    kept: { parts: mergedEditedParts(stored, parsed, lines), passthrough: parsed.passthrough ?? {} },
+  };
 }
 
 function partNotHeld(project: ProjectStore, audioDuration: number, youtubeVideoId?: string): ProjectPart | undefined {
   const ownExport = generateProjectTtml(project, audioDuration, undefined, youtubeVideoId);
   const own = readTtmlLyrics(ownExport, OWN_EXPORT, audioDuration);
   if (own.status === "unreadable" || !holdsEveryLine(project.lines, own.parsed.lines)) return "lines";
-  const roundTrip = editedLyricsFrom(own.parsed, mergeEditedTtmlLines(project.lines, own.parsed));
+  const roundTrip = editedLyricsFrom(project.lines, own.parsed);
   return changedParts(project, editedLyricsWrite(project, roundTrip))[0];
 }
 
@@ -54,7 +67,7 @@ function applyEditedTtml(content: string, audioDuration: number, youtubeVideoId?
   }
   const notHeld = partNotHeld(project, audioDuration, youtubeVideoId);
   if (notHeld) return { status: "export-only", reason: "not-held", part: notHeld };
-  project.applyEditedLyricsWithHistory(editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed)));
+  project.applyEditedLyricsWithHistory(editedLyricsFrom(project.lines, read.parsed));
   const applied = useProjectStore.getState();
   const regenerated = generateProjectTtml(applied, audioDuration, undefined, youtubeVideoId);
   const keptInExport = canonicalLineKeys(regenerated) !== canonicalLineKeys(content);

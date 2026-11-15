@@ -22,6 +22,7 @@ import {
 } from "@/test/edited-ttml-edits";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { formatTime } from "@/utils/format-time";
+import { keyedExportLines } from "@/utils/ttml-line-keys";
 
 // -- Operations ---------------------------------------------------------------
 
@@ -149,6 +150,45 @@ const OPERATIONS: readonly EditOperation[] = [
       edited: ttml.replace(`<ttm:title>${project.metadata.title}<`, `<ttm:title>${project.metadata.title} (Live)<`),
       touched: [],
       expectTaken: () => expect(useProjectStore.getState().metadata.title).toBe(`${project.metadata.title} (Live)`),
+    }),
+  },
+  {
+    name: "add an unknown attribute to a line",
+    edit: (project, ttml) => {
+      const line = timedAt(project, 1);
+      return {
+        edited: editParagraph(ttml, project, line, (p) => p.replace("<p ", '<p x-cue="intro" ')),
+        touched: [line.id],
+        expectTaken: (lines) => expect(lineById(lines, line.id).passthrough?.attrs).toEqual([["x-cue", "intro"]]),
+      };
+    },
+  },
+  {
+    name: "add a kept head element",
+    edit: (_project, ttml) => ({
+      edited: ttml.replace("</head>", '<songInfo id="7"/></head>'),
+      touched: [],
+      expectTaken: () =>
+        expect(useProjectStore.getState().passthrough.head?.elements).toEqual([
+          { name: "songInfo", attrs: [["id", "7"]], children: [] },
+        ]),
+    }),
+  },
+  {
+    name: "put every line in a song part",
+    edit: (project, ttml) => ({
+      edited: ttml.replace("<div>", '<div itunes:songPart="Verse">'),
+      touched: [],
+      expectTaken: (lines) => {
+        const [part, ...rest] = useProjectStore.getState().parts;
+        expect(rest).toEqual([]);
+        expect(part?.kind).toBe("Verse");
+        const ids = new Set(lines.map((line) => line.id));
+        expect(part?.lineIds.every((id) => ids.has(id))).toBe(true);
+        expect(part?.lineIds).toEqual(
+          expect.arrayContaining(keyedExportLines(project.lines).map(({ line }) => line.id)),
+        );
+      },
     }),
   },
 ];
