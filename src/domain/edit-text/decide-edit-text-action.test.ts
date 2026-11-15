@@ -7,7 +7,9 @@ import type { LinkGroup } from "insync/group";
 import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
-import { mainTrack, timedSyllables } from "insync/line-track";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import { shownEditText } from "insync/edit-text-shown-row";
+import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { decideEditTextAction } from "./decide-edit-text-action";
@@ -417,5 +419,33 @@ describe("typing a split mark in an instance", () => {
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.splits).toEqual([{ groupId: "g1", instances: 2 }]);
+  });
+});
+
+describe("a background-only line", () => {
+  it("regression: a keystroke in another row keeps its background timed and its main text empty", () => {
+    const lines = [
+      createLine({ id: "above", text: "Lanterns drift away" }),
+      createLine({
+        id: "echo",
+        text: "",
+        backgroundWords: [{ id: "bg-1", text: "away", begin: 4, end: 5 }],
+      }),
+    ];
+    const shown = shownEditText(lines, getSplitCharacter());
+    const text = shown.text.replace("drift", "drifts");
+    const ranges = remapBackgroundRanges(shown.text, text, shown.ranges, text.indexOf("drifts") + 6);
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [],
+      splitCharacter: getSplitCharacter(),
+      ranges,
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    const echo = action.finalLines[1];
+    expect(lineText(echo, getSplitCharacter())).toBe("");
+    expect(backgroundTrack(echo)?.syllables.map((syllable) => [syllable.id, syllable.begin])).toEqual([["bg-1", 4]]);
   });
 });

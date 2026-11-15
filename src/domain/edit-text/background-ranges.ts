@@ -149,8 +149,9 @@ function editRow(row: string, rowStart: number, ranges: readonly BackgroundRange
     .filter(Boolean)
     .join(" ");
   const main = segments.reduce(joinedAtSeam);
-  // A row of tokens only stays text, as a typed row of brackets always has.
-  return main ? { text: main, background: background || null } : { text: row, background: null };
+  if (main) return { text: main, background: background || null };
+  // A row of tokens only stays text, as a typed row of brackets always has, unless it shows a line with no main text.
+  return own.every((range) => range.withoutMain) ? { text: "", background } : { text: row, background: null };
 }
 
 // Each row of the Edit text, split into the main text and the background its tokens show.
