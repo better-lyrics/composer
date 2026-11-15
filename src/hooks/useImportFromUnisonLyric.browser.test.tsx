@@ -193,5 +193,17 @@ describe("useImportFromUnisonLyric", () => {
       expect(useProjectStore.getState().metadata.title).toBe("Alpha");
       expect(useAudioStore.getState().source).toBeNull();
     });
+
+    it("shows the failure toast once for a link that is not a lyric id and boots normally", async () => {
+      await seedOpenAlpha();
+      stubUnisonLyric(null);
+      const { screen, outcome } = await bootWithLink("?unisonLyric=abc");
+
+      await expect.element(screen.getByText(FAILED_TOAST)).toBeInTheDocument();
+      expect(screen.getByText(FAILED_TOAST).elements()).toHaveLength(1);
+      await expect.poll(outcome).toBe("none");
+      expect(openProjectIdSnapshot()).toBe("a");
+      expect(window.location.search).toBe("");
+    });
   });
 });

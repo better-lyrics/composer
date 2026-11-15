@@ -24,7 +24,10 @@ function useImportFromUnisonLyric(): void {
   useEffect(() => {
     if (!link.present) return;
     stripQueryParams([UNISON_LYRIC_PARAM]);
-    if (link.id === null) return;
+    if (link.id === null) {
+      showUnisonLyricLinkFailedToast();
+      return;
+    }
     return () => {
       if (!appliedRef.current) markLinkProjectSettled("failed");
     };
