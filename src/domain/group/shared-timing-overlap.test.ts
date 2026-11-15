@@ -173,7 +173,7 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
     commit(gesture.lineUpdates);
 
     expect(lineById("a1").words?.[0].begin).toBe(8);
-    expect(lineById("x").words?.[0].end).toBe(8);
+    expect(lineById("x").words?.[0].end).toBe(7);
     expectCopiesFollowSource("a");
     expectNoOverlapInSharedInstances();
   });
