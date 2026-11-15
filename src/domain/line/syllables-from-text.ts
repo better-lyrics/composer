@@ -2,7 +2,7 @@ import type { LineTrack, Syllable, UntimedSyllable } from "insync/line";
 import { timedSyllables } from "insync/line-track";
 import { lcsPairs, wordKey } from "insync/word-alignment";
 import { newWordId } from "insync/word-id";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
 import { textParts } from "insync/word-text-parts";
 import type { WordTiming } from "insync/word-timing";
 

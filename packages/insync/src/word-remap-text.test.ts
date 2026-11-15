@@ -1,8 +1,8 @@
-import { insertSlot, remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import { computeSyllableGroups } from "insync/word-syllable-groups";
-import type { WordTiming } from "insync/word-timing";
+import { insertSlot, remapWordTextsPreservingTiming } from "./word-remap-text";
+import { computeSyllableGroups } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 const flush: WordTiming[] = [
   { id: "w1", text: "I", sep: " ", begin: 1, end: 2, joinsNext: false },

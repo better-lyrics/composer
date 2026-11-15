@@ -6,7 +6,7 @@ import { backgroundText, syllablesText } from "insync/line-text";
 import { spreadSpan } from "@/domain/line/span-to-words";
 import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "insync/line-track";
 import { lastEnd } from "insync/word-bounds";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
 import type { WordTiming } from "insync/word-timing";
 import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "@/utils/background-vocal-brackets";
 import { createInitialBgWords } from "insync/lyric-words";

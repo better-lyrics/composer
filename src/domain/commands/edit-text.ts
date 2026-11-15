@@ -9,7 +9,7 @@ import { lineText } from "insync/line-text";
 import { backgroundTrack, isSpanTimed, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackText } from "@/domain/line/track-writes";
 import { isSectionTagLine } from "insync/lyrics-file-genius-text";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { remapWordTextsPreservingTiming } from "insync/word-remap-text";
 import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "@/utils/background-vocal-extraction";
 
 // -- Types --------------------------------------------------------------------
