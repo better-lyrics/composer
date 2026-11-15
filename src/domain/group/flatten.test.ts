@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { docFromFlatLines } from "@/domain/group/doc-from-flat-lines";
 import { flattenBody } from "@/domain/group/flatten";
-import { type Instance, isInstance, type LyricDoc } from "@/domain/group/model";
+import type { Instance, LyricDoc } from "@/domain/group/model";
+import { instanceKey } from "@/domain/instance/key";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { createLine } from "@/test/factories";
 
@@ -18,8 +19,12 @@ const glow = (id: string, instanceIdx: number, begin: number, groupId = "chorus"
     ],
   });
 
-const instanceOf = (doc: LyricDoc, idx: number, groupId = "chorus") =>
-  doc.body.find((item): item is Instance => isInstance(item) && item.groupId === groupId && item.idx === idx);
+const instanceOf = (doc: LyricDoc, idx: number, groupId = "chorus") => doc.instances[instanceKey(groupId, idx)];
+
+const withInstance = (doc: LyricDoc, instance: Instance): LyricDoc => ({
+  ...doc,
+  instances: { ...doc.instances, [instanceKey(instance.groupId, instance.idx)]: instance },
+});
 
 const spans = (doc: LyricDoc, lineId: string) =>
   timedSyllables(mainTrack(flattenBody(doc).find((line) => line.id === lineId) ?? glow("x", 0, 0))).map((syllable) => [
@@ -33,7 +38,7 @@ describe("flattenBody", () => {
     const second = instanceOf(doc, 1);
     expect(second).toMatchObject({ at: 44, lineIds: { 0: "second" } });
     expect(second?.ownTiming).toBeUndefined();
-    expect(spans({ ...doc, body: [doc.body[0], { ...(second as Instance), at: 60 }] }, "second")).toEqual([
+    expect(spans(withInstance(doc, { ...second, at: 60 }), "second")).toEqual([
       [60, 60.5],
       [60.5, 61],
       [61, 62],
@@ -42,14 +47,13 @@ describe("flattenBody", () => {
 
   it("an own-timing instance reads its own spans and leaves missing syllables untimed", () => {
     const doc = docFromFlatLines([glow("first", 0, 12), glow("second", 1, 44)]);
-    const first = doc.body[0] as Instance;
     const [we, glowWord] = timedSyllables(mainTrack(flattenBody(doc)[0]));
     const own: Instance = {
-      ...(instanceOf(doc, 1) as Instance),
+      ...instanceOf(doc, 1),
       at: undefined,
       ownTiming: { syllables: { [we.id]: [40, 40.3], [glowWord.id]: [40.3, 41] } },
     };
-    const line = flattenBody({ ...doc, body: [first, own] })[1];
+    const line = flattenBody(withInstance(doc, own))[1];
     expect(timedSyllables(mainTrack(line)).map((syllable) => [syllable.text, syllable.begin, syllable.end])).toEqual([
       ["We", 40, 40.3],
       ["glow", 40.3, 41],
@@ -76,5 +80,23 @@ describe("flattenBody", () => {
       glow("late", 0, 80),
     ];
     expect(flattenBody(structuredClone(docFromFlatLines(lines)))).toEqual(lines);
+  });
+
+  it("renames ids only, never text that starts like one", () => {
+    const line = (id: string, instanceIdx: number, begin: number) =>
+      createLine({
+        id,
+        groupId: "chorus",
+        instanceIdx,
+        templateLineIdx: 0,
+        words: [
+          { text: "intro:", sep: " ", begin, end: begin + 0.5 },
+          { text: "fade", begin: begin + 0.5, end: begin + 1 },
+        ],
+      });
+    const lines = [line("intro", 0, 10), line("outro", 1, 40)];
+    const doc = docFromFlatLines(lines);
+    expect(instanceOf(doc, 1)?.replaced).toBeUndefined();
+    expect(flattenBody(structuredClone(doc))).toEqual(lines);
   });
 });

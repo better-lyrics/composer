@@ -1,15 +1,23 @@
 import { withFlatLines } from "@/domain/group/flatten";
-import { type BodyItem, type Instance, instanceSlots, type LyricDoc, type TemplateLine } from "@/domain/group/model";
+import {
+  type BodyItem,
+  type Instance,
+  type InstanceSpan,
+  instanceSlots,
+  type LyricDoc,
+  type TemplateLine,
+} from "@/domain/group/model";
 import { readInstance } from "@/domain/group/read-instance";
 import { toTemplateLine } from "@/domain/group/template-line";
 import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceKey } from "@/domain/instance/key";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 
 // -- Types --------------------------------------------------------------------
 
-// One instance's lines as they sit in the song: consecutive, in slot order.
+// One instance's lines, wherever they sit, in song order.
 interface InstanceRun {
   groupId: string;
   idx: number;
@@ -21,44 +29,54 @@ interface GroupRead {
   instances: Instance[];
 }
 
-// -- Runs ---------------------------------------------------------------------
+type OpenSpan = InstanceSpan & { slots: number[] };
 
-function slotOf(line: LyricLine): number | undefined {
-  return line.groupId !== undefined && line.instanceIdx !== undefined ? line.templateLineIdx : undefined;
+interface BodyRead {
+  body: BodyItem[];
+  runsByGroup: Map<string, InstanceRun[]>;
 }
 
-// A group line out of slot order or apart from the rest of its instance stays a line of its own in the body.
-function bodyRuns(lines: readonly LyricLine[]): (LyricLine | InstanceRun)[] {
-  const items: (LyricLine | InstanceRun)[] = [];
-  const seen = new Set<string>();
-  let open: InstanceRun | null = null;
+// -- Body ---------------------------------------------------------------------
+
+// An instance is its group and index wherever its lines sit; the body keeps their order as spans. A line repeating a
+// slot its instance already has stays a line of its own.
+function readBody(lines: readonly LyricLine[]): BodyRead {
+  const body: BodyItem[] = [];
+  const runsByGroup = new Map<string, InstanceRun[]>();
+  const runs = new Map<string, InstanceRun>();
+  const takenSlots = new Set<string>();
+  let open: OpenSpan | null = null;
   for (const line of lines) {
-    const slot = slotOf(line);
-    if (slot === undefined || line.groupId === undefined || line.instanceIdx === undefined) {
-      items.push(line);
+    const { groupId, instanceIdx, templateLineIdx: slot } = line;
+    if (groupId === undefined || instanceIdx === undefined || slot === undefined) {
+      body.push(line);
       open = null;
       continue;
     }
-    const lastSlot = open?.lines.at(-1)?.templateLineIdx ?? -1;
-    if (open && open.groupId === line.groupId && open.idx === line.instanceIdx && slot > lastSlot) {
-      open.lines.push(line);
-      continue;
-    }
-    const key = `${line.groupId}\u0000${line.instanceIdx}`;
-    if (seen.has(key)) {
-      items.push(line);
+    const key = instanceKey(groupId, instanceIdx);
+    const slotKey = `${key}\u0000${slot}`;
+    if (takenSlots.has(slotKey)) {
+      body.push(line);
       open = null;
       continue;
     }
-    seen.add(key);
-    open = { groupId: line.groupId, idx: line.instanceIdx, lines: [line] };
-    items.push(open);
+    takenSlots.add(slotKey);
+    let run = runs.get(key);
+    if (!run) {
+      run = { groupId, idx: instanceIdx, lines: [] };
+      runs.set(key, run);
+      runsByGroup.set(groupId, [...(runsByGroup.get(groupId) ?? []), run]);
+    }
+    run.lines.push(line);
+    if (open && open.key === key) {
+      open.slots.push(slot);
+      continue;
+    }
+    const span: OpenSpan = { kind: "instance", key, slots: [slot] };
+    body.push(span);
+    open = span;
   }
-  return items;
-}
-
-function isRun(item: LyricLine | InstanceRun): item is InstanceRun {
-  return "lines" in item && "idx" in item;
+  return { body, runsByGroup };
 }
 
 // -- Templates ----------------------------------------------------------------
@@ -132,30 +150,52 @@ function readGroup(runs: readonly InstanceRun[], hint: GroupHint = {}): GroupRea
 
 // -- Functions ----------------------------------------------------------------
 
-function runsByGroup(items: readonly (LyricLine | InstanceRun)[]): Map<string, InstanceRun[]> {
-  const byGroup = new Map<string, InstanceRun[]>();
-  for (const item of items) {
-    if (isRun(item)) byGroup.set(item.groupId, [...(byGroup.get(item.groupId) ?? []), item]);
+// Reads the given groups of a body; every other group keeps its instances and template from `previous`.
+function docFromBody(
+  { body, runsByGroup }: BodyRead,
+  lines: LyricLine[],
+  reread: (groupId: string) => boolean,
+  previous: LyricDoc | null,
+  hints: ReadonlyMap<string, GroupHint>,
+): LyricDoc {
+  const instances: Record<string, Instance> = {};
+  const templates: Record<string, readonly TemplateLine[]> = {};
+  for (const [groupId, runs] of runsByGroup) {
+    const kept = !reread(groupId) && previous ? previous.templates[groupId] : undefined;
+    if (kept && previous) {
+      templates[groupId] = kept;
+      for (const run of runs) {
+        const key = instanceKey(groupId, run.idx);
+        instances[key] = previous.instances[key];
+      }
+      continue;
+    }
+    const read = readGroup(runs, hints.get(groupId));
+    templates[groupId] = read.template;
+    runs.forEach((run, order) => {
+      instances[instanceKey(groupId, run.idx)] = read.instances[order];
+    });
   }
-  return byGroup;
+  return withFlatLines({ body, instances, templates }, lines);
 }
 
 // The one reader of flat lines into a doc: loads, imports and lines written without their doc. The doc flattens back
-// to exactly these lines.
+// to these lines, to the millisecond, and is kept with these very lines.
 function docFromFlatLines(lines: LyricLine[], hints: ReadonlyMap<string, GroupHint> = new Map()): LyricDoc {
-  const items = bodyRuns(lines);
-  const templates: Record<string, readonly TemplateLine[]> = {};
-  const instanceByRun = new Map<InstanceRun, Instance>();
-  for (const [groupId, runs] of runsByGroup(items)) {
-    const read = readGroup(runs, hints.get(groupId));
-    templates[groupId] = read.template;
-    runs.forEach((run, index) => instanceByRun.set(run, read.instances[index]));
-  }
-  const body: BodyItem[] = items.flatMap<BodyItem>((item) => (isRun(item) ? (instanceByRun.get(item) ?? []) : [item]));
-  return withFlatLines({ body, templates }, lines);
+  return docFromBody(readBody(lines), lines, () => true, null, hints);
+}
+
+// The doc of new lines that keeps the instances and templates of every group whose lines did not change.
+function docAfterLines(
+  previous: LyricDoc,
+  lines: LyricLine[],
+  changedGroups: ReadonlySet<string>,
+  hints: ReadonlyMap<string, GroupHint>,
+): LyricDoc {
+  return docFromBody(readBody(lines), lines, (groupId) => changedGroups.has(groupId), previous, hints);
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export type { GroupHint };
-export { docFromFlatLines, readGroup };
+export { docAfterLines, docFromFlatLines };

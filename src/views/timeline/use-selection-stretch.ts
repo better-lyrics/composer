@@ -1,6 +1,6 @@
 import { stretchSelection } from "@/domain/commands/word-timing";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
-import { copyThroughTemplate } from "@/domain/group/template-copy";
+import { copyThroughTemplate, instanceAnchors } from "@/domain/group/template-copy";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
@@ -64,13 +64,15 @@ function applyStretchUpdates(
   snapshotLines: LyricLine[],
   updates: ReadonlyArray<{ id: string; updates: Partial<LyricLine> }>,
 ): LyricLine[] {
-  const copy = copyThroughTemplate(
-    docOfLines(snapshotLines),
-    snapshotLines,
-    applyLineUpdates(snapshotLines, updates),
-    useProjectStore.getState().groups,
-    updates.map((update) => update.id),
-  );
+  const doc = docOfLines(snapshotLines);
+  const copy = copyThroughTemplate({
+    doc,
+    before: snapshotLines,
+    after: applyLineUpdates(snapshotLines, updates),
+    groups: useProjectStore.getState().groups,
+    touched: updates.map((update) => update.id),
+    anchors: instanceAnchors(doc),
+  });
   return copy.rejected ? snapshotLines.slice() : copy.lines;
 }
 

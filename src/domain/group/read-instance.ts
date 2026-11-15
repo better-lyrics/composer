@@ -23,6 +23,13 @@ interface HeldSlot {
 
 // -- Helpers ------------------------------------------------------------------
 
+// Times compare as whole milliseconds, a millisecond apart at most: what a save keeps and an export writes.
+const withinOneMs = (a: number, b: number) => Math.abs(Math.round(a * 1000) - Math.round(b * 1000)) <= 1;
+
+function sameToTheMs(a: unknown, b: unknown): boolean {
+  return isStructurallyEqual(a, b, withinOneMs);
+}
+
 // The line under its template's ids, when the template holds the same content apart from timing.
 function heldContent(line: LyricLine, template: TemplateLine | undefined) {
   if (!template || line.detached) return null;
@@ -40,10 +47,21 @@ function placement(
 ): Pick<Instance, "at" | "ownTiming"> {
   if (held.every(({ content }) => isStructurallyEqual(content, untimedLine(content)))) return {};
   const placedAt = (at: number) => (slot: HeldSlot) =>
-    isStructurallyEqual(slot.content, retimedLine(templateContent(slot.template), at));
+    sameToTheMs(slot.content, retimedLine(templateContent(slot.template), at));
   const at = anchors.find((anchor) => anchor !== undefined && held.every(placedAt(anchor)));
   if (at !== undefined) return { at };
   return { ownTiming: ownTimingOf(held.map(({ content }) => content)) };
+}
+
+// Where the template sits for the first timed line the instance shares with it, so an instance missing a template
+// line still anchors on the lines it has.
+function fittedAnchor(held: readonly HeldSlot[]): number | undefined {
+  for (const { template, content } of held) {
+    const own = instanceBounds([content]);
+    const relative = instanceBounds([templateContent(template)]);
+    if (own && relative) return own.begin - relative.begin;
+  }
+  return undefined;
 }
 
 function withSlots(
@@ -61,9 +79,8 @@ function withSlots(
 
 // -- Functions ----------------------------------------------------------------
 
-// An instance read from its flat lines (slot order) against its group's template, at `anchor` when it fits, else at
-// its first time. Whatever the template cannot give
-// exactly stays on the instance, so the instance flattens back to the same lines.
+// An instance read from its flat lines against its group's template, at `anchor` when it fits, else where its first
+// timed line meets the template. Whatever the template cannot give to the millisecond stays on the instance.
 function readInstance(
   groupId: string,
   idx: number,
@@ -88,13 +105,8 @@ function readInstance(
     if (Object.keys(read.renames).length) ids[slot] = read.renames;
     held.push({ template: templateLine, line, content: read.content });
   }
-  const start = instanceBounds(lines.filter((line) => !line.detached))?.begin;
-  const draft = withSlots(
-    { kind: "instance", groupId, idx, ...placement(held, [anchor, start]), lineIds },
-    ids,
-    replaced,
-  );
-  const unheld = held.filter(({ template, line }) => !isStructurallyEqual(templateSlotLine(template, draft), line));
+  const draft = withSlots({ groupId, idx, ...placement(held, [anchor, fittedAnchor(held)]), lineIds }, ids, replaced);
+  const unheld = held.filter(({ template, line }) => !sameToTheMs(templateSlotLine(template, draft), line));
   for (const { template, line } of unheld) {
     replaced[template.slot] = line;
     delete ids[template.slot];

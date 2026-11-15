@@ -17,8 +17,8 @@ interface OwnTiming {
   readonly tracks?: Readonly<Record<string, SpanTimes>>;
 }
 
+// One instance of a group: what the template gives it and what it holds itself. Where its lines sit is the body's.
 interface Instance {
-  readonly kind: "instance";
   readonly groupId: string;
   readonly idx: number;
   // Present: the instance is its template placed here. Absent with no own timing: the template untimed.
@@ -31,17 +31,26 @@ interface Instance {
   readonly replaced?: Readonly<Record<number, LyricLine>>;
 }
 
-// A plain line, or a group line outside any instance run (a member out of slot order or apart from its instance).
-type BodyItem = LyricLine | Instance;
+// Consecutive lines of one instance, in the order they sit. An instance with a line between its own lines, or with its
+// lines out of slot order, has several spans.
+interface InstanceSpan {
+  readonly kind: "instance";
+  readonly key: string;
+  readonly slots: readonly number[];
+}
+
+// A plain line, an instance span, or a group line that repeats a slot its instance already has.
+type BodyItem = LyricLine | InstanceSpan;
 
 interface LyricDoc {
   readonly body: readonly BodyItem[];
+  readonly instances: Readonly<Record<string, Instance>>;
   readonly templates: Readonly<Record<string, readonly TemplateLine[]>>;
 }
 
 // -- Functions ----------------------------------------------------------------
 
-function isInstance(item: BodyItem): item is Instance {
+function isInstanceSpan(item: BodyItem): item is InstanceSpan {
   return "kind" in item && item.kind === "instance";
 }
 
@@ -53,5 +62,5 @@ function instanceSlots(instance: Instance): number[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { BodyItem, Instance, LyricDoc, OwnTiming, SpanTimes, TemplateLine };
-export { instanceSlots, isInstance };
+export type { BodyItem, Instance, InstanceSpan, LyricDoc, OwnTiming, SpanTimes, TemplateLine };
+export { instanceSlots, isInstanceSpan };

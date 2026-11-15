@@ -53,11 +53,6 @@ function withPartsSettled(before: LyricRoot, after: LyricRoot): LyricRoot {
   return parts === after.parts ? after : { ...after, parts };
 }
 
-// A command that touched no line keeps the lines array, so line subscribers and history sharing see no change.
-function sameLines(before: readonly LyricLine[], after: readonly LyricLine[]): boolean {
-  return before === after || (before.length === after.length && after.every((line, index) => line === before[index]));
-}
-
 interface Written {
   root: LyricRoot;
   doc: LyricDoc;
@@ -94,7 +89,7 @@ function writeRoot(
   mode: CommitMode,
 ): Partial<ProjectState> {
   const { root } = written;
-  const body = sameLines(state.lines, root.lines) ? { doc: state.doc, lines: state.lines } : withBody(written.doc);
+  const body = withBody(written.doc);
   if (mode === "amend") return amendCurrentStep(state, body);
   if (mode === "pending") {
     return {

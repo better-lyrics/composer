@@ -1,43 +1,104 @@
+import { type Passthrough, withRenamedAnchors } from "insync/passthrough";
 import type { LineContent } from "@/domain/group/template-line";
+import type { LanguagePieces, LineLanguage, LineLanguages } from "@/domain/language/model";
+import type { LineTrack, Syllable } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
 
 type IdRenames = Readonly<Record<string, string>>;
+type Rename = ReadonlyMap<string, string>;
 
-// -- Helpers ------------------------------------------------------------------
+// -- Ids ----------------------------------------------------------------------
 
-// Ids made from a line id (`<line id>:main`, `<line id>:line`) follow the line they are on.
-function lineIdRenamer(fromLineId: string, toLineId: string, renames: IdRenames): (id: string) => string {
-  const prefix = `${fromLineId}:`;
-  return (id) => renames[id] ?? (id.startsWith(prefix) ? `${toLineId}:${id.slice(prefix.length)}` : id);
+// Every id the line holds: its own, its tracks' and its syllables'. Ids made from the line id (`<line id>:main`,
+// `<line id>:line`) follow the line they are on.
+function lineRename(line: LineContent, toLineId: string, renames: IdRenames): Rename {
+  const prefix = `${line.id}:`;
+  const renamed = (id: string) =>
+    renames[id] ?? (id.startsWith(prefix) ? `${toLineId}:${id.slice(prefix.length)}` : id);
+  const rename = new Map<string, string>([[line.id, toLineId]]);
+  for (const track of line.tracks) {
+    rename.set(track.id, renamed(track.id));
+    for (const syllable of track.syllables) rename.set(syllable.id, renamed(syllable.id));
+  }
+  return rename;
 }
 
-function renamedDeep(value: unknown, rename: (id: string) => string): unknown {
-  if (typeof value === "string") return rename(value);
-  if (Array.isArray(value)) return value.map((item) => renamedDeep(item, rename));
-  if (typeof value !== "object" || value === null) return value;
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [rename(key), renamedDeep(item, rename)]));
+// -- Fields -------------------------------------------------------------------
+
+function renamedPassthrough(kept: Passthrough | undefined, rename: Rename): Passthrough | undefined {
+  return kept && withRenamedAnchors(kept, rename);
+}
+
+function renamedPieces(pieces: LanguagePieces | undefined, rename: Rename): LanguagePieces | undefined {
+  return pieces && Object.fromEntries(Object.entries(pieces).map(([id, piece]) => [rename.get(id) ?? id, piece]));
+}
+
+function renamedLanguage(language: LineLanguage, rename: Rename): LineLanguage {
+  const { main, bg } = language;
+  return {
+    ...language,
+    main: main.pieces ? { ...main, pieces: renamedPieces(main.pieces, rename) } : main,
+    ...(bg && { bg: bg.pieces ? { ...bg, pieces: renamedPieces(bg.pieces, rename) } : bg }),
+  };
+}
+
+function renamedLanguages(languages: LineLanguages, rename: Rename): LineLanguages {
+  const { translations, transliteration, heldReadings } = languages;
+  return {
+    ...languages,
+    ...(translations && {
+      translations: Object.fromEntries(
+        Object.entries(translations).map(([tag, language]) => [tag, renamedLanguage(language, rename)]),
+      ),
+    }),
+    ...(transliteration && { transliteration: renamedLanguage(transliteration, rename) }),
+    ...(heldReadings && {
+      heldReadings: {
+        ...(heldReadings.main && { main: renamedPieces(heldReadings.main, rename) }),
+        ...(heldReadings.bg && { bg: renamedPieces(heldReadings.bg, rename) }),
+      },
+    }),
+  };
+}
+
+function renamedSyllable<S extends Syllable>(syllable: S, rename: Rename): S {
+  const passthrough = renamedPassthrough(syllable.passthrough, rename);
+  return { ...syllable, id: rename.get(syllable.id) ?? syllable.id, ...(passthrough && { passthrough }) };
+}
+
+function renamedTrack<T extends LineTrack>(track: T, rename: Rename): T {
+  const syllables: readonly Syllable[] = track.syllables.map((syllable) => renamedSyllable(syllable, rename));
+  const passthrough = track.role === "bg" ? renamedPassthrough(track.passthrough, rename) : undefined;
+  return { ...track, id: rename.get(track.id) ?? track.id, syllables, ...(passthrough && { passthrough }) } as T;
 }
 
 // -- Functions ----------------------------------------------------------------
 
-// The same content under another line's ids. Every id a line holds (tracks, syllables, the keys of syllable readings,
-// the anchors kept TTML elements follow) is renamed wherever it appears; text never holds an id.
+// The same content under another line's ids: tracks, syllables, the keys of syllable readings and the anchors kept
+// TTML elements follow. Text is never touched.
 function withLineIds<T extends LineContent>(line: T, toLineId: string, renames: IdRenames): T {
   if (line.id === toLineId && Object.keys(renames).length === 0) return line;
-  const rename = lineIdRenamer(line.id, toLineId, renames);
-  const { id: _id, ...content } = line;
-  return { id: toLineId, ...(renamedDeep(content, rename) as Omit<T, "id">) } as T;
+  const rename = lineRename(line, toLineId, renames);
+  const [main, background] = line.tracks;
+  const passthrough = renamedPassthrough(line.passthrough, rename);
+  return {
+    ...line,
+    id: toLineId,
+    tracks: background ? [renamedTrack(main, rename), renamedTrack(background, rename)] : [renamedTrack(main, rename)],
+    ...(line.languages && { languages: renamedLanguages(line.languages, rename) }),
+    ...(passthrough && { passthrough }),
+  };
 }
 
-// Track and syllable ids of `from` paired with those of `to` by position, when both have the same shape; ids that the
+// Track and syllable ids of `from` paired with those of `to` by position, when both have the same shape; ids the
 // line id already pairs are left out.
 function pairedIds(from: LineContent, to: LineContent): Record<string, string> | null {
   if (from.tracks.length !== to.tracks.length) return null;
-  const derived = lineIdRenamer(from.id, to.id, {});
+  const derived = lineRename(from, to.id, {});
   const pairs: Record<string, string> = {};
   const pair = (fromId: string, toId: string) => {
-    if (derived(fromId) !== toId) pairs[fromId] = toId;
+    if (derived.get(fromId) !== toId) pairs[fromId] = toId;
   };
   for (const [index, track] of from.tracks.entries()) {
     const other = to.tracks[index];

@@ -4,11 +4,12 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
-import { addGroup } from "@/domain/commands/group-edits";
+import { addGroup, updateGroup } from "@/domain/commands/group-edits";
 import { lineEditCommand } from "@/domain/commands/line-edits";
+import { flattenBody } from "@/domain/group/flatten";
 import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
-import { createLine } from "@/test/factories";
+import { createGroup, createLine } from "@/test/factories";
 import { fieldUpdates } from "@/test/field-updates";
 
 const typed = (text: string) =>
@@ -77,5 +78,15 @@ describe("commit", () => {
 
     expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["l1", "l2"]);
     expect(useProjectStore.getState().parts).toEqual(parts);
+  });
+
+  it("regression: a commit that changes no line still stores the doc of the lines it keeps", () => {
+    const lines = [
+      createLine({ id: "seeded", text: "Rivers in the dark", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+    ];
+    useProjectStore.setState({ lines, groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(updateGroup("g1", { label: "Chorus" }));
+    const { doc, lines: after } = useProjectStore.getState();
+    expect(flattenBody(doc)).toBe(after);
   });
 });
