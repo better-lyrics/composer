@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { retimeWord, setWordBoundary, stretchSelection } from "@/domain/commands/word-timing";
-import { commitGesture } from "@/domain/sync/commit-gesture";
+import { commitGesture } from "insync/sync-commit-gesture";
 import { withSeededBackground } from "insync/line-background";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { lineText } from "insync/line-text";

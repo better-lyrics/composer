@@ -5,7 +5,7 @@ import { instanceName } from "insync/instance-name";
 import type { LyricLine } from "insync/line";
 import { isSyncableLine } from "insync/line-sync-progress";
 import type { SyncCursor } from "insync/sync-cursor";
-import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
+import { sharedAnchorAt } from "insync/sync-shared-anchor";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

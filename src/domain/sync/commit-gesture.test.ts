@@ -7,7 +7,7 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import { lineText } from "insync/line-text";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
-import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { type GestureCommit, type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";

@@ -6,7 +6,7 @@ import { shiftLineTiming } from "insync/line-shift";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { nudgeSelectedWords } from "insync/selection-nudge";
 import { stretchSelections } from "insync/selection-stretch";
-import { commitGesture } from "@/domain/sync/commit-gesture";
+import { commitGesture } from "insync/sync-commit-gesture";
 import { clampBoundaryTime } from "insync/word-boundary";
 import { boundsOverlap } from "insync/word-overlap";
 import type { WordTiming } from "insync/word-timing";

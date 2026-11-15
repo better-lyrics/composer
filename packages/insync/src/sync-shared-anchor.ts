@@ -3,12 +3,12 @@ import {
   instanceStart,
   isSharedLine,
   sharedInstancesInLineOrder,
-} from "insync/group-shared-timing";
-import type { LinkGroup } from "insync/group";
-import { isAttachedToInstance, isLinked } from "insync/instance-predicates";
-import type { LyricLine } from "insync/line";
-import { isSyncableLine } from "insync/line-sync-progress";
-import type { SyncCursor } from "insync/sync-cursor";
+} from "./group-shared-timing";
+import type { LinkGroup } from "./group";
+import { isAttachedToInstance, isLinked } from "./instance-predicates";
+import type { LyricLine } from "./line";
+import { isSyncableLine } from "./line-sync-progress";
+import type { SyncCursor } from "./sync-cursor";
 
 // -- Types --------------------------------------------------------------------
 

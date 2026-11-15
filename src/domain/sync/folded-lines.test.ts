@@ -1,7 +1,7 @@
 import { withFields } from "@/test/field-updates";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import { foldedLineIds } from "@/domain/sync/folded-lines";
+import { foldedLineIds } from "insync/sync-folded-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

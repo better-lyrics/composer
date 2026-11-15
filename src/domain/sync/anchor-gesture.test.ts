@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
 import { type SyncAddress, syncAddressAt } from "insync/sync-address";
-import { type AnchorUndo, anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
-import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { type AnchorUndo, anchorGesture, storedSyncPosition } from "insync/sync-anchor-gesture";
+import { type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
 import type { SyncCursor } from "insync/sync-cursor";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

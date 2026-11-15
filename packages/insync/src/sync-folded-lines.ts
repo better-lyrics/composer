@@ -1,10 +1,10 @@
-import { sharedInstancesInLineOrder } from "insync/group-shared-timing";
-import type { LinkGroup } from "insync/group";
-import { attachedLineIndices } from "insync/instance-enumerate";
-import type { LyricLine } from "insync/line";
-import { isSyncableLine } from "insync/line-sync-progress";
-import type { SyncCursor } from "insync/sync-cursor";
-import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
+import { sharedInstancesInLineOrder } from "./group-shared-timing";
+import type { LinkGroup } from "./group";
+import { attachedLineIndices } from "./instance-enumerate";
+import type { LyricLine } from "./line";
+import { isSyncableLine } from "./line-sync-progress";
+import type { SyncCursor } from "./sync-cursor";
+import { sharedAnchorAt } from "./sync-shared-anchor";
 
 // -- Functions ----------------------------------------------------------------
 

@@ -5,7 +5,7 @@ import { instanceName } from "insync/instance-name";
 import { drawnLine } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { stepSkippedLineIds } from "@/domain/step-timing/step-skip";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { skippedSharedInstances } from "insync/sync-skipped-instances";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------

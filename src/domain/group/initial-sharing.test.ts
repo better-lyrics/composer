@@ -3,7 +3,7 @@ import { initialGroupSharing } from "insync/group-initial-sharing";
 import { fieldsOfLine } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { skippedSharedInstances } from "insync/sync-skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
 import { withFields } from "@/test/field-updates";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

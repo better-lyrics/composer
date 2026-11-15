@@ -4,7 +4,7 @@ import {
   reRecordingAt,
   skippedSharedInstances,
   syncPositionPastSkipped,
-} from "@/domain/sync/skipped-instances";
+} from "insync/sync-skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

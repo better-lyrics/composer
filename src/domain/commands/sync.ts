@@ -9,7 +9,7 @@ import type { LyricLine } from "insync/line";
 import { shiftLineTiming } from "insync/line-shift";
 import { withRoleWords, withoutLineTiming } from "insync/line-track-writes";
 import { roleWords, type WordTrack } from "insync/line-track";
-import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
 import type { WordTiming } from "insync/word-timing";
 import type { BoundaryEdge } from "insync/word-boundary";
 import { bgWordRetimeEdit } from "insync/timing-bg-word-ops";

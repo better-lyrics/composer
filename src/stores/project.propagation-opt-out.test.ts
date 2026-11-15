@@ -10,7 +10,7 @@ import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
 import type { LinkGroup } from "insync/group";
 import { lineFromFields } from "insync/line-from-fields";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { commitGesture } from "@/domain/sync/commit-gesture";
+import { commitGesture } from "insync/sync-commit-gesture";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";

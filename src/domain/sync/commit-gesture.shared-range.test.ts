@@ -2,7 +2,7 @@ import { changedFields, updatedLine } from "@/test/field-updates";
 import { roleWords } from "insync/line-track";
 import type { LinkGroup } from "insync/group";
 import type { LyricLine } from "insync/line";
-import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import { type FactoryLineOptions, createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

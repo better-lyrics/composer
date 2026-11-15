@@ -1,12 +1,12 @@
-import { withOwnTiming } from "insync/group-own-timing";
-import { isAttachedToInstance } from "insync/instance-predicates";
-import { applyLineUpdates } from "insync/line-apply-line-updates";
-import { mainBounds } from "insync/line-bounds";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { type SyncAddress, sameSyncPosition } from "insync/sync-address";
-import { type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import { type SyncCursor, advanceCursor } from "insync/sync-cursor";
-import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
+import { withOwnTiming } from "./group-own-timing";
+import { isAttachedToInstance } from "./instance-predicates";
+import { applyLineUpdates } from "./line-apply-line-updates";
+import { mainBounds } from "./line-bounds";
+import type { LineUpdate, LyricLine } from "./line";
+import { type SyncAddress, sameSyncPosition } from "./sync-address";
+import { type GestureContext, type SyncGesture, commitGesture } from "./sync-commit-gesture";
+import { type SyncCursor, advanceCursor } from "./sync-cursor";
+import { sharedAnchorAt } from "./sync-shared-anchor";
 
 // -- Types --------------------------------------------------------------------
 

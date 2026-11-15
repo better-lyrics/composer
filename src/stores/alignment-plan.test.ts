@@ -1,6 +1,6 @@
 import { mainTrack } from "insync/line-track";
 import type { LyricLine } from "insync/line";
-import { commitGesture } from "@/domain/sync/commit-gesture";
+import { commitGesture } from "insync/sync-commit-gesture";
 import { planLines, plainWindow } from "@/stores/alignment-plan";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

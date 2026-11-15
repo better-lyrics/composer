@@ -1,7 +1,7 @@
 import type { LinkGroup } from "insync/group";
 import { belongsToInstance, isLinked } from "insync/instance-predicates";
 import type { LyricLine } from "insync/line";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { skippedSharedInstances } from "insync/sync-skipped-instances";
 
 // -- Types --------------------------------------------------------------------
 

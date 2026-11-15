@@ -1,6 +1,6 @@
 import { withFields } from "@/test/field-updates";
 import { placeSharedInstance } from "insync/group-shared-placement";
-import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
+import { sharedAnchorAt } from "insync/sync-shared-anchor";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

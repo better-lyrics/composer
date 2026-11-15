@@ -10,7 +10,7 @@ import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import type { SkippedInstance } from "@/domain/sync/skipped-instances";
+import type { SkippedInstance } from "insync/sync-skipped-instances";
 import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";

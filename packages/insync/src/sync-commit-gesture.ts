@@ -1,19 +1,19 @@
-import { type TimeRange, timeRangeResolver } from "insync/group-shared-timing";
-import type { LinkGroup } from "insync/group";
-import { applyLineUpdates } from "insync/line-apply-line-updates";
-import { bgBounds, mainBounds } from "insync/line-bounds";
-import { withBackgroundSeededFrom, withSeededBackground } from "insync/line-background";
-import type { LineUpdate, LyricLine } from "insync/line";
-import { clampShiftDelta, shiftLineTiming, shiftTrack } from "insync/line-shift";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "insync/line-track-writes";
-import { isSyncableLine } from "insync/line-sync-progress";
-import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "insync/sync-cursor";
-import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
-import { withSlotWord } from "insync/sync-slot-words";
-import type { Bounds } from "insync/word-bounds";
-import { enforceOrderAround } from "insync/word-order";
-import type { WordTiming } from "insync/word-timing";
+import { type TimeRange, timeRangeResolver } from "./group-shared-timing";
+import type { LinkGroup } from "./group";
+import { applyLineUpdates } from "./line-apply-line-updates";
+import { bgBounds, mainBounds } from "./line-bounds";
+import { withBackgroundSeededFrom, withSeededBackground } from "./line-background";
+import type { LineUpdate, LyricLine } from "./line";
+import { clampShiftDelta, shiftLineTiming, shiftTrack } from "./line-shift";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "./line-track";
+import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
+import { isSyncableLine } from "./line-sync-progress";
+import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
+import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
+import { withSlotWord } from "./sync-slot-words";
+import type { Bounds } from "./word-bounds";
+import { enforceOrderAround } from "./word-order";
+import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
 

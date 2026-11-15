@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
 import type { SyncGranularity } from "insync/line-sync-progress";
 import { syncAddressPosition } from "insync/sync-address";
-import { storedSyncPosition } from "@/domain/sync/anchor-gesture";
+import { storedSyncPosition } from "insync/sync-anchor-gesture";
 import { resolveSyncCursor } from "insync/sync-cursor";
 import type { SyncCursor } from "insync/sync-cursor";
 import {
@@ -10,7 +10,7 @@ import {
   reRecordingAt,
   skippedSharedInstances,
   syncPositionPastSkipped,
-} from "@/domain/sync/skipped-instances";
+} from "insync/sync-skipped-instances";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
