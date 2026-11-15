@@ -1,6 +1,5 @@
-import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import { isEmptyPassthrough } from "insync/passthrough";
-import { placesKeptElements } from "@/domain/line/passthrough";
+import type { SavedLine, SavedSpan, SavedSyllable, SavedTrack } from "insync/saved-line";
 import { msFromSeconds, secondsFromMs } from "insync/time";
 import { languagesFromSaved, savedLanguages } from "@/domain/language/saved-languages";
 import { groupFieldsOf } from "@/domain/line/group-fields";
@@ -13,6 +12,7 @@ import type {
   TrackTiming,
   UntimedSyllable,
 } from "@/domain/line/model";
+import { placesKeptElements } from "@/domain/line/passthrough";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 
