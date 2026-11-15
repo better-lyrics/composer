@@ -85,4 +85,12 @@ function knownFlatLines(doc: LyricDoc): LyricLine[] | undefined {
 
 // -- Exports ------------------------------------------------------------------
 
-export { flattenBody, instanceSlotLine, knownFlatLines, primeSlotLine, templateSlotLine, withFlatLines };
+export {
+  flattenBody,
+  instanceSlotLine,
+  knownFlatLines,
+  primeSlotLine,
+  templateBySlot,
+  templateSlotLine,
+  withFlatLines,
+};

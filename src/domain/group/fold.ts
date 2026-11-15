@@ -65,7 +65,7 @@ function hintsOf(
     hints.set(groupId, {
       template: copy?.templates.get(groupId) ?? doc.templates[groupId],
       preferredIdx: copy?.sources.get(groupId),
-      anchors: anchors.get(groupId),
+      anchors: anchors(groupId),
     });
   }
   return hints;
