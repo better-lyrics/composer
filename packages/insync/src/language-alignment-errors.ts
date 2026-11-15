@@ -3,6 +3,7 @@ import { backgroundText, lineText } from "./line-text";
 import { validateTransliterationAlignment } from "./language-align";
 import { lineTransliteration } from "./language-line-languages";
 import type { LyricLine } from "./line";
+import { memoBySplitCharacter } from "./memo-by-identity";
 
 type LanguageAlignmentErrorField = "transliteration" | "background-transliteration";
 
@@ -18,7 +19,7 @@ interface LanguageAlignmentErrorItem {
   errors: LanguageAlignmentError[];
 }
 
-function getLanguageAlignmentErrors(line: LyricLine, splitChar: string): LanguageAlignmentError[] {
+function computeLanguageAlignmentErrors(line: LyricLine, splitChar: string): LanguageAlignmentError[] {
   const errors: LanguageAlignmentError[] = [];
   const track = lineTransliteration(line);
   const transliteration = validateTransliterationAlignment(
@@ -41,6 +42,8 @@ function getLanguageAlignmentErrors(line: LyricLine, splitChar: string): Languag
   }
   return errors;
 }
+
+const getLanguageAlignmentErrors = memoBySplitCharacter(computeLanguageAlignmentErrors);
 
 function getLanguageAlignmentErrorItems(lines: LyricLine[], splitChar: string): LanguageAlignmentErrorItem[] {
   return lines.flatMap((line, lineIndex) => {
