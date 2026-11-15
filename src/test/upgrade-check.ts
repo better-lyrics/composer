@@ -19,7 +19,7 @@ import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 interface UpgradeReport {
   name: string;
   lines: number;
-  // Lines whose v4 load is not the v3 load with times in whole ms.
+  // Lines whose v4 load is not the v3 load, seeded as every v3 open seeded it, with times in whole ms.
   changedLines: string[];
   invalidLines: string[];
   exports: ExportDifference[];
@@ -62,7 +62,9 @@ function checkUpgrade(name: string, record: SavedProjectV3): UpgradeReport {
   const before = linesAsV3Opened(record);
   const upgraded = upgradeSavedProject(structuredClone(record));
   const after = linesFromSaved(upgraded.lines);
-  const expected = withPositionIds(withTimesInWholeMs(before));
+  const expected = withPositionIds(
+    withTimesInWholeMs(before.map((line) => withSeededBackground(line, DEFAULT_SPLIT_CHARACTER))),
+  );
   const actual = withPositionIds(after);
   const project = { name, groups: record.groups ?? [], agents: record.agents, metadata: record.metadata };
   const excluded = new Set(before.flatMap((line, index) => (seedsBackgroundSpan(line) ? [index] : [])));
