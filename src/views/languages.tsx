@@ -153,7 +153,7 @@ const LanguagesPanel: React.FC = () => {
   };
 
   if (lines.length === 0) {
-    return <EmptyState message="No lyrics to translate" hint="Add some in the Edit tab first." />;
+    return <EmptyState message="No lyrics to translate" hint="Add some in the Edit tab first." goTo="edit" />;
   }
 
   return (
