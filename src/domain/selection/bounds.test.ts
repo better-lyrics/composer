@@ -1,6 +1,6 @@
 import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
-import { selectionBounds } from "@/domain/selection/bounds";
+import { selectionBounds } from "insync/selection-bounds";
 import type { SyllableAddress } from "insync/selection-model";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";

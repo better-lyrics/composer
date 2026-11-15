@@ -1,7 +1,7 @@
 import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "insync/selection-model";
-import { type ResolvedAddress, resolveAddress, resolvedAt } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolveAddress, resolvedAt } from "insync/selection-resolve";
 import { nextInQueue } from "@/domain/step-timing/step-queue";
 
 // -- Types --------------------------------------------------------------------

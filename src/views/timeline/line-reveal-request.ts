@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
 import { lineInstanceKey } from "insync/instance-key";
 import { effectiveBounds } from "insync/line-bounds";
-import { lineWordSelections } from "@/domain/selection/line-selections";
+import { lineWordSelections } from "insync/selection-line-selections";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";

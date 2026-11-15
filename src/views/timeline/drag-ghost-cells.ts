@@ -2,7 +2,7 @@ import type { LyricLine } from "insync/line";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
 import { sameAddress } from "insync/selection-identity";
-import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
+import { addressAt, resolveAddresses } from "insync/selection-resolve";
 import { type SyllablePosition, expandSelectionToGroupmates, getSyllablePositions } from "insync/word-syllable-groups";
 import type { DragGhostCell } from "@/views/timeline/drag-ghost";
 import { type DragData, type DragWord, draggedWord } from "@/views/timeline/drag-handlers";

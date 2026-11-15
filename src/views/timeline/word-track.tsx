@@ -5,7 +5,7 @@ import { timedTransliterationSlice } from "insync/language-transliteration-forma
 import { insertWord } from "@/domain/commands/word-structure";
 import { isAddressed } from "insync/selection-identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";
-import { addressOf } from "@/domain/selection/resolve";
+import { addressOf } from "insync/selection-resolve";
 import { shouldRollNeighbour } from "@/domain/word/boundary";
 import { newWordId } from "insync/word-id";
 import { computeSyllableGroups, getSyllablePositions } from "insync/word-syllable-groups";

@@ -7,7 +7,7 @@ import type { LineUpdate, LyricLine } from "insync/line";
 import { fieldRole, fieldWords, type TrackField, trackField } from "insync/line-track";
 import { withFieldWords } from "insync/line-word-track-edits";
 import type { SyllableAddress } from "insync/selection-model";
-import { resolveAddresses } from "@/domain/selection/resolve";
+import { resolveAddresses } from "insync/selection-resolve";
 import { mergeWordRun } from "insync/word-merge-run";
 
 // -- Helpers ------------------------------------------------------------------

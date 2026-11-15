@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
 import type { SyllableAddress } from "insync/selection-model";
-import { resolveAddress } from "@/domain/selection/resolve";
+import { resolveAddress } from "insync/selection-resolve";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------

@@ -2,7 +2,7 @@ import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
 import type { SyllableAddress } from "insync/selection-model";
-import { resolveLineIndex } from "@/domain/selection/resolve";
+import { resolveLineIndex } from "insync/selection-resolve";
 import { isInQueueOrder, queueOrder } from "@/domain/step-timing/step-queue";
 import { onLyricsChanged } from "@/stores/project/lyric-change-listeners";
 import { memoByIdentity } from "insync/memo-by-identity";

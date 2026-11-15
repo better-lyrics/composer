@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { splitWord } from "@/domain/commands/word-structure";
 import { mainTrack, timedSyllables } from "insync/line-track";
-import { wordAt } from "@/domain/selection/resolve";
+import { wordAt } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";

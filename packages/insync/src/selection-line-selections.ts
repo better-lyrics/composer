@@ -1,8 +1,8 @@
-import { drawnSyllables } from "insync/line-drawn-track";
-import type { LyricLine } from "insync/line";
-import { trackRole } from "insync/line-track";
-import type { SyllableAddress } from "insync/selection-model";
-import { addressOf } from "@/domain/selection/resolve";
+import { drawnSyllables } from "./line-drawn-track";
+import type { LyricLine } from "./line";
+import { trackRole } from "./line-track";
+import type { SyllableAddress } from "./selection-model";
+import { addressOf } from "./selection-resolve";
 
 // -- Constants ----------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { trackRole } from "insync/line-track";
-import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolvedAt } from "insync/selection-resolve";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
 import { getSplitCharacter } from "@/utils/split-character";

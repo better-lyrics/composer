@@ -2,7 +2,7 @@ import type { LyricLine } from "insync/line";
 import { languageSide, pieceOf } from "insync/language-pieces";
 import { drawnPieces, drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
-import { resolveAddresses } from "@/domain/selection/resolve";
+import { resolveAddresses } from "insync/selection-resolve";
 import { copiedSyllable } from "insync/word-syllable-groups";
 import { pluralize } from "insync/pluralize";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";

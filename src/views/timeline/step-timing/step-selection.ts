@@ -2,7 +2,7 @@ import type { LyricLine } from "insync/line";
 import type { LoopRegion } from "@/domain/selection/loop-region";
 import { sameAddress } from "insync/selection-identity";
 import type { SyllableAddress } from "insync/selection-model";
-import { liveAddresses, resolveAddress, type ResolvedAddress, toAddress } from "@/domain/selection/resolve";
+import { liveAddresses, resolveAddress, type ResolvedAddress, toAddress } from "insync/selection-resolve";
 import { toggleAddress } from "insync/selection-set-ops";
 import { queueOrder } from "@/domain/step-timing/step-queue";
 import { useProjectStore } from "@/stores/project";

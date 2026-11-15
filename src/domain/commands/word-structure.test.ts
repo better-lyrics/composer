@@ -10,7 +10,7 @@ import { backgroundTrack, roleWords } from "insync/line-track";
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { trackPieces } from "insync/language-pieces";
-import { addressOf } from "@/domain/selection/resolve";
+import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";

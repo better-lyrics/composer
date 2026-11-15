@@ -1,4 +1,4 @@
-import type { ResolvedAddress } from "@/domain/selection/resolve";
+import type { ResolvedAddress } from "insync/selection-resolve";
 import { describe, expect, it } from "vitest";
 import { createLine } from "@/test/factories";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";

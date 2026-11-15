@@ -6,7 +6,7 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import type { WordTrack } from "insync/line-track";
-import { addressOf } from "@/domain/selection/resolve";
+import { addressOf } from "insync/selection-resolve";
 import { newWordId } from "insync/word-id";
 import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";

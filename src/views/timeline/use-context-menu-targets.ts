@@ -12,7 +12,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { fieldWords, mainTrack, timedSyllables, trackField, trackWords } from "insync/line-track";
 import { isAddressed } from "insync/selection-identity";
-import { resolveAddress } from "@/domain/selection/resolve";
+import { resolveAddress } from "insync/selection-resolve";
 import { hasIntraGroupGap, isInSyllableGroup } from "insync/word-syllable-groups";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { countAlignableLines } from "@/stores/alignment-plan";

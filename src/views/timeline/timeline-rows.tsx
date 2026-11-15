@@ -1,7 +1,7 @@
 import { instanceKey, lineInstanceKey } from "insync/instance-key";
 import { retimeWord } from "@/domain/commands/word-timing";
 import type { WordTrack } from "insync/line-track";
-import { addressAt } from "@/domain/selection/resolve";
+import { addressAt } from "insync/selection-resolve";
 import type { WordTiming } from "insync/word-timing";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";

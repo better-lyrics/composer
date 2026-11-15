@@ -1,6 +1,6 @@
 import { sameAddress } from "insync/selection-identity";
 import type { SyllableAddress } from "insync/selection-model";
-import { wordAt } from "@/domain/selection/resolve";
+import { wordAt } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

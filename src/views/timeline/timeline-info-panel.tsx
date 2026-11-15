@@ -5,7 +5,7 @@ import { setWordBoundary } from "@/domain/commands/word-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundText } from "insync/line-text";
 import { mainTrack } from "insync/line-track";
-import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolveAddress, toAddress } from "insync/selection-resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";

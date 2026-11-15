@@ -9,7 +9,7 @@ import { drawnSyllables } from "insync/line-drawn-track";
 import type { LineUpdate, LyricLine } from "insync/line";
 import type { SyllableAddress } from "insync/selection-model";
 import { partitionNudgeSelections, shiftSelectionsTogether } from "@/domain/selection/nudge";
-import { resolveAddress, resolveAddresses, resolveLineIndex } from "@/domain/selection/resolve";
+import { resolveAddress, resolveAddresses, resolveLineIndex } from "insync/selection-resolve";
 import { stretchSelections } from "@/domain/selection/stretch";
 import type { StretchAnchor } from "@/domain/selection/stretch-targets";
 import type { StepKey } from "@/domain/step-timing/step-write";

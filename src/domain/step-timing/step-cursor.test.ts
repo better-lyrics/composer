@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
 import type { WordTrack } from "insync/line-track";
-import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolvedAt } from "insync/selection-resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

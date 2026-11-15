@@ -1,4 +1,4 @@
-import type { ResolvedAddress } from "@/domain/selection/resolve";
+import type { ResolvedAddress } from "./selection-resolve";
 
 // -- Types --------------------------------------------------------------------
 

@@ -5,7 +5,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { typeWordText } from "@/domain/commands/word-structure";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { trackRole } from "insync/line-track";
-import { addressOf } from "@/domain/selection/resolve";
+import { addressOf } from "insync/selection-resolve";
 import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";

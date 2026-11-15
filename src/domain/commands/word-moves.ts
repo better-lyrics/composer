@@ -10,7 +10,7 @@ import type { LineUpdate, LyricLine } from "insync/line";
 import { trackRole, type WordTrack, untimedSyllablesOf } from "insync/line-track";
 import { mainTimingEdit } from "insync/line-track-writes";
 import type { SyllableAddress } from "insync/selection-model";
-import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolveAddresses } from "insync/selection-resolve";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
 import { boundsOverlap } from "insync/word-overlap";

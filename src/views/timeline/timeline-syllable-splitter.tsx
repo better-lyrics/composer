@@ -1,6 +1,6 @@
 import { languageSide, pieceOf } from "insync/language-pieces";
 import { drawnPieces } from "insync/line-drawn-track";
-import { toAddress, wordAt } from "@/domain/selection/resolve";
+import { toAddress, wordAt } from "insync/selection-resolve";
 import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { Modal } from "@/ui/modal";

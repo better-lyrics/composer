@@ -2,7 +2,7 @@ import { drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { sameAddress } from "insync/selection-identity";
 import type { SyllableAddress } from "insync/selection-model";
-import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolvedAt } from "insync/selection-resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "insync/word-timing";
 import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";

@@ -5,7 +5,7 @@
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { mergeWords } from "@/domain/commands/word-merge";
 import { deleteWords } from "@/domain/commands/word-structure";
-import { addressOf } from "@/domain/selection/resolve";
+import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";

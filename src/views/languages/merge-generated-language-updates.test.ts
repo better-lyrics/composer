@@ -7,7 +7,7 @@ import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { moveWords } from "@/domain/commands/word-moves";
 import { languageSourceFingerprint } from "insync/language-fingerprint";
 import { roleWords } from "insync/line-track";
-import { addressOf } from "@/domain/selection/resolve";
+import { addressOf } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";

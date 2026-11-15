@@ -1,5 +1,5 @@
 import type { LyricLine } from "insync/line";
-import { wordAt } from "@/domain/selection/resolve";
+import { wordAt } from "insync/selection-resolve";
 import type { LoupeSize } from "@/domain/spectrum/loupe-size";
 import { useProjectStore } from "@/stores/project";
 import { loupeDeltaPopVariants } from "@/utils/animationVariants";

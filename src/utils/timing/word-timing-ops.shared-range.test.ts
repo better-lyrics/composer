@@ -3,7 +3,7 @@ import { retimeSyncWord } from "@/domain/commands/sync";
 import { setWordBoundary } from "@/domain/commands/word-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { addressAt } from "@/domain/selection/resolve";
+import { addressAt } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";

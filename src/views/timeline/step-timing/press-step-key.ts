@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
 import type { LyricLine } from "insync/line";
 import { type WordTrack, trackRole } from "insync/line-track";
-import { addressOf, toAddress } from "@/domain/selection/resolve";
+import { addressOf, toAddress } from "insync/selection-resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";

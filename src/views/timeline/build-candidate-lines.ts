@@ -1,7 +1,7 @@
 import { drawnLine, drawnSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import type { SyllableAddress } from "insync/selection-model";
-import { resolveAddresses } from "@/domain/selection/resolve";
+import { resolveAddresses } from "insync/selection-resolve";
 import { getSplitCharacter } from "@/utils/split-character";
 
 function buildCandidateLines(

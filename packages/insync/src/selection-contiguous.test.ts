@@ -1,5 +1,5 @@
-import { contiguousSelectionRun } from "@/domain/selection/contiguous";
-import type { ResolvedAddress } from "@/domain/selection/resolve";
+import { contiguousSelectionRun } from "./selection-contiguous";
+import type { ResolvedAddress } from "./selection-resolve";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------

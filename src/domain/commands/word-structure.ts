@@ -19,7 +19,7 @@ import {
 import { withBackgroundTrack, withMainTrack, withTrackText } from "insync/line-track-writes";
 import { withFieldWords } from "insync/line-word-track-edits";
 import type { SyllableAddress } from "insync/selection-model";
-import { resolveAddresses } from "@/domain/selection/resolve";
+import { resolveAddresses } from "insync/selection-resolve";
 import { applyWordDeletion } from "@/domain/word/apply-word-deletion";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "insync/word-timing";

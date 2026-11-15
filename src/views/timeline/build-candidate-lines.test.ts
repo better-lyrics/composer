@@ -11,7 +11,7 @@ import { useSettingsStore } from "@/stores/settings";
 import type { SyllableAddress } from "insync/selection-model";
 import { describe, expect, it } from "vitest";
 import { buildCandidateLines } from "./build-candidate-lines";
-import { lineWordSelections } from "@/domain/selection/line-selections";
+import { lineWordSelections } from "insync/selection-line-selections";
 import { getSplitCharacter } from "@/utils/split-character";
 
 const lineA: LyricLine = lineFromFields(

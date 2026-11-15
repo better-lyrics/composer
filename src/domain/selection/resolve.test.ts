@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAddresses, resolveAddresses } from "@/domain/selection/resolve";
+import { liveAddresses, resolveAddresses } from "insync/selection-resolve";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 

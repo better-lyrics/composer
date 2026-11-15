@@ -3,7 +3,7 @@ import { getAgentColor } from "insync/agent-colors";
 import { mainTrack } from "insync/line-track";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { sameAddress } from "insync/selection-identity";
-import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
+import { addressAt, resolveAddresses } from "insync/selection-resolve";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";

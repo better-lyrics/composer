@@ -1,7 +1,7 @@
 import type { LyricLine } from "insync/line";
 import { useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 import type { SyllableAddress } from "insync/selection-model";
-import type { ResolvedAddress } from "@/domain/selection/resolve";
+import type { ResolvedAddress } from "insync/selection-resolve";
 import { nextCursorSlot } from "@/domain/step-timing/step-cursor";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

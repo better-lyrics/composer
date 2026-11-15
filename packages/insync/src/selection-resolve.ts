@@ -1,9 +1,9 @@
-import { drawnSyllables } from "insync/line-drawn-track";
-import type { LyricLine } from "insync/line";
-import { trackRole, type WordTrack } from "insync/line-track";
-import type { SyllableAddress } from "insync/selection-model";
-import type { WordTiming } from "insync/word-timing";
-import { memoByIdentity } from "insync/memo-by-identity";
+import { drawnSyllables } from "./line-drawn-track";
+import type { LyricLine } from "./line";
+import { trackRole, type WordTrack } from "./line-track";
+import type { SyllableAddress } from "./selection-model";
+import type { WordTiming } from "./word-timing";
+import { memoByIdentity } from "./memo-by-identity";
 
 // -- Types --------------------------------------------------------------------
 

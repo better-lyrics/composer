@@ -3,7 +3,7 @@ import { pressStepKey } from "@/domain/commands/word-timing";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "insync/line-track";
-import { type ResolvedAddress, resolvedAt, toAddress } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolvedAt, toAddress } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { planStepKey } from "@/utils/timing/step-key-write";
