@@ -2,7 +2,7 @@ import { matchAllLineHeaders, matchAllWordTags } from "@/domain/lyrics-file/qrc-
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { compareLrc, type LrcComparison } from "@/test/lrc-export-equality";
 import { SRT_CLOCK_REGEX } from "@/utils/lyrics-parsers/srt";
-import { parseTtmlTimestamp } from "insync/ttml/read-helpers";
+import { parseTtmlTimestamp } from "insync/ttml/timestamp";
 import { writeLrc } from "@/utils/lyrics-writers/lrc";
 import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import type { LyricsWriterInput } from "@/utils/lyrics-writers/shared";

@@ -109,6 +109,28 @@ describe("ttml kept data edges", () => {
     }
   });
 
+  it("regression: kept line and background times are written only while they hold the content", () => {
+    const write = (source: string) => {
+      const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+      return generateTTML({
+        metadata: normalizeLoadedMetadata(parsed.metadata),
+        agents: [],
+        lines: parsed.lines,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+    };
+    const backgroundPastLine = write(
+      `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0:01.000" end="0:05.000"><span begin="0:01.000" end="0:03.000">Tide</span><span ttm:role="x-bg"><span begin="0:04.000" end="0:05.200">(in)</span></span></p></div></body></tt>`,
+    );
+    expect(backgroundPastLine).toContain('<p begin="0:01.000" end="0:05.200"');
+    const backgroundAfterItsSpan = write(
+      `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0:01.000" end="0:03.000">Low tide<span ttm:role="x-bg" begin="0:02.000">(low)</span></p></div></body></tt>`,
+    );
+    expect(backgroundAfterItsSpan).toContain(
+      '<span ttm:role="x-bg" begin="0:01.000"><span begin="0:01.000" end="0:03.000">(low)</span></span>',
+    );
+  });
+
   it("a second round trip changes nothing", () => {
     const once = exported();
     const parsed = parseTtml(once, DEFAULT_SPLIT_CHARACTER);
