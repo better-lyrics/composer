@@ -1,6 +1,6 @@
-import { instanceSlotLine } from "@/domain/group/flatten";
+import { instanceSlotLine, templateBySlot } from "@/domain/group/flatten";
 import { invertedIds, withLineIds } from "@/domain/group/line-ids";
-import { instanceSlots, isInstanceSpan, type LyricDoc, type TemplateLine } from "@/domain/group/model";
+import { type Instance, instanceSlots, isInstanceSpan, type LyricDoc, type TemplateLine } from "@/domain/group/model";
 import { hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
 import { sharesTiming, timingChanged } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
@@ -12,8 +12,8 @@ import type { LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
 
-// Each instance's anchor, by group and instance index.
-type InstanceAnchors = ReadonlyMap<string, ReadonlyMap<number, number>>;
+// A group's instance anchors by instance index, worked out the first time a fold asks for that group.
+type InstanceAnchors = (groupId: string) => ReadonlyMap<number, number>;
 
 interface CopyInput {
   doc: LyricDoc;
@@ -39,23 +39,46 @@ type SlotLine = LinkedLine & { templateLineIdx: number };
 
 // An instance's anchor is where its template is placed. One on its own timing, or holding its own lines, anchors where
 // its first line timed in both meets the template, else at its first time.
+function instanceAnchor(doc: LyricDoc, instance: Instance): number | undefined {
+  if (instance.at !== undefined) return instance.at;
+  const template = templateBySlot(doc.templates[instance.groupId] ?? []);
+  const slots = instanceSlots(instance).flatMap((slot) => {
+    const content = instanceSlotLine(doc, instance, slot);
+    const templateLine = template.get(slot);
+    return content && templateLine && !content.detached ? [{ template: templateLine, content }] : [];
+  });
+  return fittedAnchor(slots) ?? instanceBounds(slots.map(({ content }) => content))?.begin;
+}
+
+const instancesByGroup = new WeakMap<LyricDoc, Map<string, Instance[]>>();
+
+function groupInstances(doc: LyricDoc, groupId: string): readonly Instance[] {
+  let byGroup = instancesByGroup.get(doc);
+  if (!byGroup) {
+    byGroup = new Map();
+    for (const instance of Object.values(doc.instances)) {
+      const instances = byGroup.get(instance.groupId);
+      if (instances) instances.push(instance);
+      else byGroup.set(instance.groupId, [instance]);
+    }
+    instancesByGroup.set(doc, byGroup);
+  }
+  return byGroup.get(groupId) ?? [];
+}
+
 function instanceAnchors(doc: LyricDoc): InstanceAnchors {
   const anchors = new Map<string, Map<number, number>>();
-  for (const instance of Object.values(doc.instances)) {
-    const template = doc.templates[instance.groupId] ?? [];
-    const slots = instanceSlots(instance).flatMap((slot) => {
-      const content = instanceSlotLine(doc, instance, slot);
-      const templateLine = template.find((line) => line.slot === slot);
-      return content && templateLine && !content.detached ? [{ template: templateLine, content }] : [];
-    });
-    const lines = slots.map(({ content }) => content);
-    const at = instance.at ?? fittedAnchor(slots) ?? instanceBounds(lines)?.begin;
-    if (at === undefined) continue;
-    const byIdx = anchors.get(instance.groupId) ?? new Map<number, number>();
-    byIdx.set(instance.idx, at);
-    anchors.set(instance.groupId, byIdx);
-  }
-  return anchors;
+  return (groupId) => {
+    const known = anchors.get(groupId);
+    if (known) return known;
+    const byIdx = new Map<number, number>();
+    for (const instance of groupInstances(doc, groupId)) {
+      const at = instanceAnchor(doc, instance);
+      if (at !== undefined) byIdx.set(instance.idx, at);
+    }
+    anchors.set(groupId, byIdx);
+    return byIdx;
+  };
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -107,10 +130,11 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
   };
   if (!input.groups.some((group) => group.sharesTiming)) return result;
   const groups = new Map(input.groups.map((group) => [group.id, group]));
+  const edited = copySources(input, groups);
+  if (edited.length === 0) return result;
   const order = instanceOrder(doc);
   const rank = (line: SlotLine) => order.get(instanceKey(line.groupId, line.instanceIdx)) ?? order.size;
-  const sources = copySources(input, groups).toSorted((a, b) => rank(a) - rank(b));
-  if (sources.length === 0) return result;
+  const sources = edited.toSorted((a, b) => rank(a) - rank(b));
 
   const indexBySlot = new Map<string, number>();
   after.forEach((line, index) => {
@@ -124,7 +148,7 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
     const claim = `${groupId}\u0000${slot}`;
     if (claimed.has(claim)) continue;
     claimed.add(claim);
-    const groupAnchors = anchors.get(groupId);
+    const groupAnchors = anchors(groupId);
     const sourceAt = groupAnchors?.get(instanceIdx);
     if (sourceAt === undefined || !groupAnchors) continue;
     const templateLine = sourceTemplateLine(doc, source, sourceAt);

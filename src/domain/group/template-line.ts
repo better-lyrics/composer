@@ -79,12 +79,14 @@ function ownTimingOf(lines: readonly LineContent[]): OwnTiming {
 // Where the template sits for the instance's first template line, in slot order, that is timed in both, so an
 // instance missing a template line, or holding its own, still anchors on the lines it has.
 function fittedAnchor(slots: readonly { template: TemplateLine; content: LineContent }[]): number | undefined {
-  for (const { template, content } of slots.toSorted((a, b) => a.template.slot - b.template.slot)) {
+  let fitted: { slot: number; anchor: number } | undefined;
+  for (const { template, content } of slots) {
+    if (fitted && fitted.slot < template.slot) continue;
     const own = instanceBounds([content]);
     const relative = instanceBounds([templateContent(template)]);
-    if (own && relative) return own.begin - relative.begin;
+    if (own && relative) fitted = { slot: template.slot, anchor: own.begin - relative.begin };
   }
-  return undefined;
+  return fitted?.anchor;
 }
 
 function toTemplateLine(line: LyricLine, slot: number, at: number | undefined): TemplateLine {
