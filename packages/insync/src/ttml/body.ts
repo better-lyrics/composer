@@ -3,7 +3,7 @@ import type { LineTrack, LyricLine } from "../line";
 import { bgBounds, effectiveBounds, mainBounds } from "../line-bounds";
 import { drawnSyllables } from "../line-drawn-track";
 import { isLineSynced, isWordSynced } from "../line-predicates";
-import { backgroundText, lineText } from "../line-text";
+import { backgroundText, lineText, syllablesText } from "../line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
 import type { Part, PartSection } from "../part";
 import type { DocPassthrough } from "../passthrough";
@@ -51,11 +51,23 @@ interface Run<T> {
 
 // -- Paragraphs ---------------------------------------------------------------
 
-function spanPieces(words: readonly WordTiming[]): Placed<string>[] {
+function spanPieces(words: readonly WordTiming[], followed = false): Placed<string>[] {
   return words.map((word, i) => {
-    const needsSpace = i < words.length - 1 && word.sep.endsWith(" ") && !spanEndsInSpace(word.text, word.passthrough);
+    const needsSpace =
+      (followed || i < words.length - 1) && word.sep.endsWith(" ") && !spanEndsInSpace(word.text, word.passthrough);
     return { out: `${emitWordSpan(word, word.text, word.passthrough)}${needsSpace ? " " : ""}`, anchors: [word.id] };
   });
+}
+
+// A word-synced track: its timed spans, then the untimed rest as plain text, so the lyric is never cut short.
+function syllablePieces(track: LineTrack, splitChar: string, elementAnchors: ReadonlySet<string>): Placed<string>[] {
+  const timed = timedSyllables(track);
+  const rest = track.syllables.slice(timed.length);
+  if (rest.length === 0) return spanPieces(timed);
+  return [
+    ...spanPieces(timed, true),
+    ...untimedTrackPieces({ ...track, syllables: rest }, syllablesText(rest, splitChar), splitChar, elementAnchors),
+  ];
 }
 
 // A track written whole stands for its text and every syllable in it.
@@ -74,7 +86,9 @@ function backgroundSpan(line: LyricLine, writesWords: boolean, splitChar: string
   const kept = background.passthrough;
   const open = `<span ttm:role="x-bg"${keptTimesAttributes(kept?.times, () => backgroundEnvelope(line))}${keptAttributes(kept)}>`;
   const order = trackOrder(background);
-  if (writesWords && bgWords.length) return `${open}${keptAmongInline(spanPieces(bgWords), kept, order)}</span>`;
+  if (writesWords && bgWords.length) {
+    return `${open}${keptAmongInline(syllablePieces(background, splitChar, keptElementAnchors(kept)), kept, order)}</span>`;
+  }
   const bgTiming = bgBounds(line) ?? effectiveBounds(line);
   if (!bgTiming) return "";
   const explicit = drawnSyllables(line, "bg", splitChar)[0]?.explicit;
@@ -106,7 +120,7 @@ function paragraph(line: LyricLine, source: BodySource, indent: string, splitCha
     : "";
   const content =
     source.writesWords && isWordSynced(line)
-      ? spanPieces(timedSyllables(main))
+      ? syllablePieces(main, splitChar, keptElementAnchors(line.passthrough))
       : untimedTrackPieces(main, lineText(line, splitChar), splitChar, keptElementAnchors(line.passthrough)).map(
           (piece, index, pieces) =>
             index === pieces.length - 1 ? { ...piece, anchors: [...piece.anchors, TEXT_ANCHOR] } : piece,

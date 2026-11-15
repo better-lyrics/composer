@@ -7,7 +7,6 @@ import { lineFromFields } from "../line-from-fields";
 import type { LyricLine } from "../line";
 import { isLineSynced, isWordSynced } from "../line-predicates";
 import { mainTrack } from "../line-track";
-import { syllablesText } from "../line-text";
 import { normalizeLanguageTag } from "../project-language";
 import type { ProjectMetadata } from "../metadata";
 import { fromComposerMeta } from "../project-metadata-ttml";
@@ -20,7 +19,7 @@ import { MAIN_BEGIN_ATTRIBUTE, MAIN_END_ATTRIBUTE } from "./main-span";
 import { parseTtmlTimestamp } from "./timestamp";
 import { partsFromDivs } from "./parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "./passthrough-read";
-import { type UntimedLyric, untimedAnchors, untimedLyric, withUntimedSpans } from "./untimed-read";
+import { type UntimedLyric, timedTrackText, untimedAnchors, untimedLyric, withUntimedSpans } from "./untimed-read";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -199,9 +198,10 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     let untimedMain: UntimedLyric | undefined;
 
     if (bgContainer) {
-      backgroundWords = extractTimedWords(bgContainer, null);
+      const timedBackground = timedTrackText(extractTimedWords(bgContainer, null), bgContainer, splitChar);
+      backgroundWords = timedBackground.words;
       if (backgroundWords.length > 0) {
-        backgroundText = syllablesText(backgroundWords, splitChar);
+        backgroundText = timedBackground.text;
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
@@ -216,14 +216,14 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
       backgroundText || (backgroundWords && backgroundWords.length > 0) ? "manual" : undefined;
 
     // Check for word-level timing (span elements NOT inside x-bg)
-    const words = extractTimedWords(p, bgContainer);
+    const { words, text: timedText } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
 
     if (words.length > 0) {
       lines.push(
         lineFromFields(
           {
             id: generateLineId(),
-            text: syllablesText(words, splitChar),
+            text: timedText,
             agentId,
             words,
             backgroundText,

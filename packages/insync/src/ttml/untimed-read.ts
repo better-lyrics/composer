@@ -5,7 +5,8 @@ import type { LineTrack, LyricLine, Syllable } from "../line";
 import { syllableJoint, syllablesText } from "../line-text";
 import { backgroundTrack, mainTrack } from "../line-track";
 import { withBackgroundTrack, withMainTrack } from "../line-track-writes";
-import { elementRole, isLyricTextElement, LYRIC_ROLES } from "./modelled";
+import type { WordTiming } from "../word-timing";
+import { elementRole, isLyricTextElement, isTimedWordSpan, LYRIC_ROLES } from "./modelled";
 import { mixedContentPassthrough } from "./passthrough-read";
 import { markupBaseText } from "./markup";
 
@@ -78,6 +79,31 @@ function trimmedLyric(text: string, spans: readonly KeptSpan[], ends: ReadonlyMa
   };
 }
 
+// -- Untimed rest -------------------------------------------------------------
+
+// The text after a container's last timed span, as written: the untimed rest of a partly synced track.
+function untimedTail(container: XmlReadElement): string {
+  const nodes = container.childNodes;
+  const last = nodes.findLastIndex((node) => node.kind === "element" && isTimedWordSpan(node));
+  let tail = "";
+  for (const node of nodes.slice(last + 1)) if (node.kind === "text") tail += node.text;
+  return tail;
+}
+
+// A word-synced track's words and text, the text running on through the untimed rest after the last span; a rest
+// written straight after that span joins its word.
+function timedTrackText(
+  words: WordTiming[],
+  container: XmlReadElement,
+  splitChar: string,
+): { text: string; words: WordTiming[] } {
+  const tail = untimedTail(container);
+  const closing = words.at(-1);
+  if (!closing || tail.trim() === "") return { text: syllablesText(words, splitChar), words };
+  const read = /^\s/.test(tail) || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
+  return { text: syllablesText(read, splitChar) + tail.trim(), words: read };
+}
+
 // -- Syllables ----------------------------------------------------------------
 
 // Where each syllable sits in the text the syllables spell.
@@ -144,4 +170,4 @@ function untimedAnchors(
 // -- Exports ------------------------------------------------------------------
 
 export type { UntimedLyric };
-export { untimedAnchors, untimedLyric, withSpansFromMarkup, withUntimedSpans };
+export { timedTrackText, untimedAnchors, untimedLyric, withSpansFromMarkup, withUntimedSpans };
