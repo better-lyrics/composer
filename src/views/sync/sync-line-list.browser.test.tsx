@@ -140,6 +140,28 @@ describe("SyncLineList", () => {
     expect(lineRow(screen.container, 301)?.getAttribute("aria-current")).toBe("true");
   });
 
+  it("regression: a partly synced line still shows its untimed words", async () => {
+    useSettingsStore.setState({ syncCountIn: 0 });
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 30, currentTime: 0 });
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          text: "paper lanterns drifting",
+          words: [
+            { text: "paper ", begin: 2, end: 3 },
+            { text: "lanterns ", begin: 3, end: 4 },
+          ],
+        }),
+      ],
+      activeTab: "sync",
+      granularity: "word",
+    });
+    const screen = await renderBoundedPanel();
+    await expect.poll(() => lineRow(screen.container, 1)).not.toBeNull();
+
+    expect(lineRow(screen.container, 1)?.textContent).toContain("drifting");
+  });
+
   it("regression: Enter after clicking a line plays from the rewound time, not the line start", async () => {
     useSettingsStore.setState({ syncCountIn: 0, redoPreroll: 1.5 });
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 30, currentTime: 0 });

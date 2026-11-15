@@ -1,5 +1,6 @@
 import { getAgentColor } from "insync/agent-colors";
 import { computeSyllableGroups } from "insync/word-syllable-groups";
+import type { Syllable } from "insync/line";
 import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
 import { withoutSplitCharacter } from "insync/split-character-text";
@@ -36,7 +37,9 @@ interface ScrollableLineProps {
   displayBackgroundText?: string;
   displayBackgroundWordTexts?: string[];
   backgroundWords?: WordTiming[];
+  untimedBackgroundWords?: readonly Syllable[];
   words?: WordTiming[];
+  untimedWords?: readonly Syllable[];
   lineBegin?: number;
   lineEnd?: number;
   lineSynced?: boolean;
@@ -75,7 +78,9 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   displayBackgroundText,
   displayBackgroundWordTexts,
   backgroundWords,
+  untimedBackgroundWords,
   words,
+  untimedWords,
   lineBegin,
   lineEnd,
   lineSynced,
@@ -103,19 +108,28 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   const wordTexts = useMemo(
     () =>
       displayWordTexts ??
-      (words?.length ? words.map((w) => w.text + w.sep) : splitIntoWords(text, getSplitCharacter())),
-    [displayWordTexts, text, words, splitCharacter],
+      (words?.length
+        ? [...words, ...(untimedWords ?? [])].map((w) => w.text + w.sep)
+        : splitIntoWords(text, getSplitCharacter())),
+    [displayWordTexts, text, words, untimedWords, splitCharacter],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const bgWordTexts = useMemo(
     () =>
       displayBackgroundWordTexts ??
       (backgroundWords?.length
-        ? backgroundWords.map((w) => w.text + w.sep)
+        ? [...backgroundWords, ...(untimedBackgroundWords ?? [])].map((w) => w.text + w.sep)
         : (displayBackgroundText ?? backgroundText)
           ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "", getSplitCharacter())
           : []),
-    [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts, splitCharacter],
+    [
+      backgroundText,
+      backgroundWords,
+      untimedBackgroundWords,
+      displayBackgroundText,
+      displayBackgroundWordTexts,
+      splitCharacter,
+    ],
   );
 
   const renderLineContent = () => {
@@ -339,12 +353,14 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     prev.displayBackgroundText === next.displayBackgroundText &&
     prev.displayBackgroundWordTexts === next.displayBackgroundWordTexts &&
     prev.backgroundWords === next.backgroundWords &&
+    prev.untimedBackgroundWords === next.untimedBackgroundWords &&
     prev.granularity === next.granularity &&
     prev.editMode === next.editMode &&
     prev.lineBegin === next.lineBegin &&
     prev.lineEnd === next.lineEnd &&
     prev.lineSynced === next.lineSynced &&
     prev.words === next.words &&
+    prev.untimedWords === next.untimedWords &&
     prev.linkInfo?.color === next.linkInfo?.color &&
     prev.linkInfo?.label === next.linkInfo?.label &&
     prev.linkInfo?.ordinal === next.linkInfo?.ordinal &&

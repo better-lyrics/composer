@@ -19,6 +19,8 @@ type TrackField = "words" | "backgroundWords";
 
 const NO_TIMED_SYLLABLES: WordTiming[] = [];
 Object.freeze(NO_TIMED_SYLLABLES);
+const NO_UNTIMED_SYLLABLES: Syllable[] = [];
+Object.freeze(NO_UNTIMED_SYLLABLES);
 
 // -- Tracks -------------------------------------------------------------------
 
@@ -67,9 +69,18 @@ function untimedSyllable({ begin: _begin, end: _end, ...syllable }: Syllable): U
   return syllable;
 }
 
-// The untimed syllables of a role's track, the ones new words must not take the ids of.
+const untimedByTrack = new WeakMap<LineTrack, Syllable[]>();
+
+// The untimed syllables of a role's track, the ones new words must not take the ids of. One array per track.
 function untimedSyllablesOf(line: LyricLine, role: TrackRole): Syllable[] {
-  return trackOf(line, role)?.syllables.filter((syllable) => !isTimedSyllable(syllable)) ?? [];
+  const track = trackOf(line, role);
+  if (!track) return NO_UNTIMED_SYLLABLES;
+  const cached = untimedByTrack.get(track);
+  if (cached) return cached;
+  const untimed = track.syllables.filter((syllable) => !isTimedSyllable(syllable));
+  const result = untimed.length === 0 ? NO_UNTIMED_SYLLABLES : untimed;
+  untimedByTrack.set(track, result);
+  return result;
 }
 
 // -- Lanes --------------------------------------------------------------------
