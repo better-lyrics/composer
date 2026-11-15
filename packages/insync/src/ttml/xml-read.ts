@@ -9,14 +9,13 @@ type XmlReadResult = { ok: true; doc: XmlReadDocument } | { ok: false; message: 
 
 type Scope = ReadonlyMap<string | null, string | null>;
 
-type Entities = Readonly<Record<string, string>>;
-
 // -- Constants ----------------------------------------------------------------
 
 const XML_NS = "http://www.w3.org/XML/1998/namespace";
 const XMLNS_NS = "http://www.w3.org/2000/xmlns/";
 
-const PREDEFINED_ENTITIES: Entities = { lt: "<", gt: ">", amp: "&", quot: '"', apos: "'" };
+const MAX_ENTITY_EXPANSION = 1_000_000;
+const PREDEFINED_ENTITIES: Readonly<Record<string, string>> = { lt: "<", gt: ">", amp: "&", quot: '"', apos: "'" };
 const DECLARED_ENTITY = /<!ENTITY\s+([A-Za-z_][\w.-]*)\s+(["'])([\s\S]*?)\2\s*>/g;
 const REFERENCE = /&(?:(#x[0-9A-Fa-f]+|#[0-9]+|[A-Za-z_][\w.-]*);)?/g;
 const ATTRIBUTE_WHITESPACE = /[\t\n\r]/g;
@@ -48,6 +47,23 @@ function fail(message: string): never {
   throw new NotWellFormed(message);
 }
 
+// -- Entities -----------------------------------------------------------------
+
+class Entities {
+  private readonly values: Record<string, string> = { ...PREDEFINED_ENTITIES };
+  private remaining = MAX_ENTITY_EXPANSION;
+
+  declare(name: string, value: string): void {
+    if (!Object.hasOwn(this.values, name)) this.values[name] = value;
+  }
+
+  expand(name: string): string {
+    const value = Object.hasOwn(this.values, name) ? this.values[name] : fail(`entity '${name}' is not defined`);
+    this.remaining -= value.length;
+    return this.remaining >= 0 ? value : fail("entities expand past the size limit");
+  }
+}
+
 // -- Characters ---------------------------------------------------------------
 
 function isXmlCharacter(code: number): boolean {
@@ -64,10 +80,7 @@ function isXmlCharacter(code: number): boolean {
 function decodeReferences(raw: string, entities: Entities): string {
   return raw.replace(REFERENCE, (_whole, reference: string | undefined) => {
     if (reference === undefined) fail("an ampersand starts no reference");
-    if (!reference.startsWith("#")) {
-      const value = Object.hasOwn(entities, reference) ? entities[reference] : undefined;
-      return value ?? fail(`entity '${reference}' is not defined`);
-    }
+    if (!reference.startsWith("#")) return entities.expand(reference);
     const code =
       reference[1] === "x" ? Number.parseInt(reference.slice(2), 16) : Number.parseInt(reference.slice(1), 10);
     return isXmlCharacter(code)
@@ -76,10 +89,11 @@ function decodeReferences(raw: string, entities: Entities): string {
   });
 }
 
+// Expanding each value as it is declared means it can refer only to earlier entities, so no cycle can form.
 function declaredEntities(source: string): Entities {
-  const entities: Record<string, string> = { ...PREDEFINED_ENTITIES };
+  const entities = new Entities();
   for (const [, name, , value] of source.matchAll(DECLARED_ENTITY)) {
-    if (!Object.hasOwn(entities, name)) entities[name] = decodeReferences(value, PREDEFINED_ENTITIES);
+    entities.declare(name, decodeReferences(value, entities));
   }
   return entities;
 }
@@ -133,9 +147,12 @@ function rawAttrs(node: ParsedNode): [string, string][] {
   return isParsedNode(attrs) ? Object.entries(attrs).map(([name, value]) => [name, String(value)]) : [];
 }
 
-function readAttr([name, raw]: readonly [string, string], scope: Scope, entities: Entities): XmlReadAttr {
+function decodedAttr([name, raw]: readonly [string, string], entities: Entities): [string, string] {
   if (raw.includes("<")) fail(`attribute '${name}' holds '<'`);
-  const value = decodeReferences(raw.replace(ATTRIBUTE_WHITESPACE, " "), entities);
+  return [name, decodeReferences(raw.replace(ATTRIBUTE_WHITESPACE, " "), entities)];
+}
+
+function readAttr([name, value]: readonly [string, string], scope: Scope): XmlReadAttr {
   if (name === "xmlns") return { name, value, prefix: null, localName: name, namespaceURI: XMLNS_NS };
   const [prefix, localName] = splitName(name);
   return { name, value, prefix, localName, namespaceURI: prefix === null ? null : resolve(scope, prefix) };
@@ -161,12 +178,12 @@ function readElement(
   entities: Entities,
 ): XmlReadElement {
   const tagName = parsedTagName(node);
-  const attrs = rawAttrs(node);
+  const attrs = rawAttrs(node).map((attr) => decodedAttr(attr, entities));
   const scope = scopeOf(attrs, parentScope);
   const [prefix, localName] = splitName(tagName);
   if (prefix === "xmlns") fail(`element '${tagName}' uses the xmlns prefix`);
   const namespaceURI = prefix === null ? (scope.get(null) ?? null) : resolve(scope, prefix);
-  const attributes = attrs.map((attr) => readAttr(attr, scope, entities));
+  const attributes = attrs.map((attr) => readAttr(attr, scope));
   const element = new XmlReadElement(tagName, prefix, localName, namespaceURI, attributes, parent);
   for (const child of parsedNodes(node[tagName])) {
     const characters = readCharacters(child, entities);

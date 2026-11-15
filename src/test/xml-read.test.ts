@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
+import { lineText } from "insync/line-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { parseTtml } from "insync/ttml/read";
 import { generateProjectTtml } from "insync/ttml/write";
 import { readXmlDocument } from "insync/ttml/xml-read";
 import { describe, expect, it } from "vitest";
@@ -100,5 +102,27 @@ describe("xml reader", () => {
       return JSON.stringify(parserTree(source)) !== JSON.stringify(domTree(source));
     });
     expect(differing).toEqual([]);
+  });
+
+  describe("regressions", () => {
+    it("regression: an entity that refers to an earlier entity reads its full text", () => {
+      const source =
+        '<!DOCTYPE tt [<!ENTITY a "Hello"><!ENTITY b "&a; world">]>' +
+        '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="1" end="2">&b;</p></div></body></tt>';
+      const parsed = parseTtml(source, DEFAULT_SPLIT_CHARACTER);
+      expect(parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Hello world"]);
+    });
+
+    it("regression: a namespace declared with a character reference keeps translations and romanization", () => {
+      const source =
+        '<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" ' +
+        'xmlns:i="http://music.apple.com/lyric&#45;ttml-internal"><head><metadata><i:iTunesMetadata>' +
+        '<i:translations><i:translation xml:lang="es"><i:text for="L1">Hola</i:text></i:translation></i:translations>' +
+        '<i:transliterations><i:transliteration xml:lang="ja-Latn"><i:text for="L1">Konnichiwa</i:text></i:transliteration></i:transliterations>' +
+        '</i:iTunesMetadata></metadata></head><body><div><p begin="1" end="2" itunes:key="L1">Hello</p></div></body></tt>';
+      const languages = parseTtml(source, DEFAULT_SPLIT_CHARACTER).lines[0]?.languages;
+      expect(languages?.translations?.es?.main.text).toBe("Hola");
+      expect(languages?.transliteration?.main.text).toBe("Konnichiwa");
+    });
   });
 });
