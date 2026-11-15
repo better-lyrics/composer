@@ -97,9 +97,12 @@ function keepsPositions(after: readonly Syllable[], own: readonly Syllable[], sp
   return lcsPairs(own.map(key), after.map(key)).every(([ownIndex, afterIndex]) => ownIndex === afterIndex);
 }
 
+const sameSyllableTexts = (a: readonly Syllable[], b: readonly Syllable[]) =>
+  a.length === b.length && a.every((syllable, index) => syllable.text === b[index].text);
+
 // An edit made where nothing was timed, on an instance whose syllables are timed: that instance keeps its times and
-// takes only the text, syllable by syllable when only letters changed, else through the letters or the words they
-// share.
+// takes only the text: syllable by syllable when the texts still match, through the words they share when words moved,
+// else through the letters they spell, else syllable by syllable when the count held.
 function onOwnTiming(
   after: readonly Syllable[],
   own: readonly Syllable[],
@@ -110,7 +113,11 @@ function onOwnTiming(
   if (after.length !== own.length) {
     return lineageByLetters(after, own, counterpart) ?? lineageByText(after, own, counterpart, splitChar, room);
   }
-  if (!keepsPositions(after, own, splitChar)) return lineageByText(after, own, counterpart, splitChar, room);
+  if (!sameSyllableTexts(after, own)) {
+    if (!keepsPositions(after, own, splitChar)) return lineageByText(after, own, counterpart, splitChar, room);
+    const byLetters = lineageByLetters(after, own, counterpart);
+    if (byLetters) return byLetters;
+  }
   return after.map((syllable, index) => {
     const kept = own[index];
     const text = { ...untimedSyllable(syllable), id: kept.id };

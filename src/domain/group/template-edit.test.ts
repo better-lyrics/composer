@@ -292,4 +292,18 @@ describe("carryTemplateEdits · untimed instances", () => {
       ["wings", 11.5, 12],
     ]);
   });
+
+  it("regression: a singer change on an untimed instance moves times onto its split by letters, never by position", () => {
+    const syllables = (begin: number, texts: readonly string[]) =>
+      words(begin, texts, 1).map((word, index) => ({ ...word, sep: "", joinsNext: index < texts.length - 1 }));
+    const before = [
+      groupLine("L1", 0, { text: "beau|ti|ful" }),
+      groupLine("L2", 1, { text: "be|aut|iful", words: syllables(10, ["be", "aut", "iful"]) }),
+    ];
+    const out = carried(before, before.with(0, withFields(before[0], { agentId: "v2" })))[1];
+    const [beau] = spans(out);
+    expect(beau[0]).toBe("beau");
+    expect(beau[1]).toBe(10);
+    expect(beau[2]).toBeCloseTo(11 + 2 / 3);
+  });
 });

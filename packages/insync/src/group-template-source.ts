@@ -1,6 +1,6 @@
 import {
   firstFullyTimedInstance,
-  instanceOffset,
+  offsetBetweenInstanceLines,
   sharedInstancesInLineOrder,
   sharesTiming,
 } from "./group-shared-timing";
@@ -41,32 +41,50 @@ function pickedTemplateSource(
   return templateSourceInstance(lines, group, picked, splitChar);
 }
 
-function attachedSlotsByInstance(lines: readonly LyricLine[], groupId: string): Map<number, Map<number, LyricLine>> {
-  const byInstance = new Map<number, Map<number, LyricLine>>();
+interface AttachedInstances {
+  linesByInstance: Map<number, LyricLine[]>;
+  slotsByInstance: Map<number, Map<number, LyricLine>>;
+}
+
+function attachedInstances(lines: readonly LyricLine[], groupId: string): AttachedInstances {
+  const linesByInstance = new Map<number, LyricLine[]>();
+  const slotsByInstance = new Map<number, Map<number, LyricLine>>();
   for (const line of lines) {
-    if (!isLinked(line) || line.groupId !== groupId || line.detached || line.templateLineIdx === undefined) continue;
-    const slots = byInstance.get(line.instanceIdx) ?? new Map<number, LyricLine>();
+    if (!isLinked(line) || line.groupId !== groupId || line.detached) continue;
+    const attached = linesByInstance.get(line.instanceIdx) ?? [];
+    attached.push(line);
+    linesByInstance.set(line.instanceIdx, attached);
+    if (line.templateLineIdx === undefined) continue;
+    const slots = slotsByInstance.get(line.instanceIdx) ?? new Map<number, LyricLine>();
     if (!slots.has(line.templateLineIdx)) slots.set(line.templateLineIdx, line);
-    byInstance.set(line.instanceIdx, slots);
+    slotsByInstance.set(line.instanceIdx, slots);
   }
-  return byInstance;
+  return { linesByInstance, slotsByInstance };
 }
 
 // Every slot of the group from the picked instance's attached lines. A slot it lost (detached or missing) comes from
 // an instance holding every slot, else from any instance holding that one, moved into the picked instance's time; an
 // instance that shares a timed slot with the pick comes first, as only it can be moved there.
 function templateSlotSources(lines: readonly LyricLine[], groupId: string, picked: number): SlotSource[] {
-  const byInstance = attachedSlotsByInstance(lines, groupId);
+  const { linesByInstance, slotsByInstance: byInstance } = attachedInstances(lines, groupId);
   const slots = [...new Set([...byInstance.values()].flatMap((held) => [...held.keys()]))].toSorted((a, b) => a - b);
   const instances = [...byInstance.keys()].toSorted((a, b) => a - b);
   const isIntact = (idx: number) => byInstance.get(idx)?.size === slots.length;
   const donors = [...instances.filter(isIntact), ...instances.filter((idx) => !isIntact(idx))];
+  const pickedLines = linesByInstance.get(picked) ?? [];
+  const offsets = new Map<number, number | null>();
+  const offsetFrom = (donor: number) => {
+    if (!offsets.has(donor)) {
+      offsets.set(donor, offsetBetweenInstanceLines(linesByInstance.get(donor) ?? [], pickedLines));
+    }
+    return offsets.get(donor) ?? null;
+  };
   return slots.flatMap((slot) => {
     const own = byInstance.get(picked)?.get(slot);
     if (own) return [{ line: own, slot, shift: 0 }];
     const holders = donors.flatMap((idx) => {
       const line = byInstance.get(idx)?.get(slot);
-      return line ? [{ line, slot, shift: instanceOffset(lines, groupId, idx, picked) }] : [];
+      return line ? [{ line, slot, shift: offsetFrom(idx) }] : [];
     });
     const placed = holders.find(({ shift }) => shift !== null);
     return placed ? [placed] : holders.slice(0, 1);
