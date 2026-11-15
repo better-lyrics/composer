@@ -11,16 +11,19 @@ import {
 import { assignSinger } from "@/domain/commands/singer";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { instanceAnchors } from "@/domain/group/template-copy";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
+import { notifyTemplateSplit } from "@/lib/template-split-signals";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import type { LyricBurst } from "@/stores/project/history-types";
+import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
@@ -282,6 +285,7 @@ const EditPanel: React.FC = () => {
         groups,
         splitCharacter,
         ranges,
+        anchors: instanceAnchors(docOfLines(lines)),
       });
 
       useImportModalStore.getState().clearImportResult();
@@ -303,6 +307,7 @@ const EditPanel: React.FC = () => {
         }
         finalizeRun();
         commitAndShow(pasteLyrics(lines, finalLines));
+        if (action.splits.length > 0) notifyTemplateSplit(action.splits.map((split) => split.instances));
         if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
         else showLineDiffersToast(action.removedIds, lines);
         noteTypedLyrics(finalLines);
@@ -317,6 +322,7 @@ const EditPanel: React.FC = () => {
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;
       useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");
+      if (action.splits.length > 0) notifyTemplateSplit(action.splits.map((split) => split.instances));
       if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
       else showLineDiffersToast(action.removedIds, lines);
       scheduleRunFinalize();
