@@ -1,4 +1,10 @@
-import { type LyricsWriterInput, type WritableLine, songTags, writableLines } from "@/utils/lyrics-writers/shared";
+import {
+  type LyricsWriterInput,
+  type WritableLine,
+  songTags,
+  writableLines,
+  writtenWord,
+} from "@/utils/lyrics-writers/shared";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -25,11 +31,11 @@ function lineBody(line: WritableLine): string {
   let lastTag = Number.NEGATIVE_INFINITY;
   let latestEnd = line.bounds.begin;
   const tagged = line.words
-    .map((word) => {
+    .map((word, index) => {
       latestEnd = Math.max(latestEnd, word.end);
-      if (word.begin < lastTag) return word.text + word.sep;
+      if (word.begin < lastTag) return writtenWord(line, index);
       lastTag = word.begin;
-      return `<${lrcClock(word.begin)}>${word.text}${word.sep}`;
+      return `<${lrcClock(word.begin)}>${writtenWord(line, index)}`;
     })
     .join("");
   return `${tagged}<${lrcClock(latestEnd)}>`;

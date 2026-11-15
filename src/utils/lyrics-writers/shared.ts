@@ -1,4 +1,4 @@
-import { drawnSyllables } from "insync/line-drawn-track";
+import { drawnSyllables, drawnUntimedSyllables } from "insync/line-drawn-track";
 import type { Agent } from "insync/agent";
 import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
@@ -20,10 +20,17 @@ interface LyricsWriterInput {
   lines: LyricLine[];
 }
 
+interface UntimedRest {
+  afterWord: number;
+  // Everything written between that word and the next one: its own separator, then the untimed syllables.
+  text: string;
+}
+
 interface WritableLine {
   agentId: string;
   bounds: Bounds;
   words: WordTiming[];
+  untimedRest?: UntimedRest;
   text: string;
   hasWordTiming: boolean;
 }
@@ -47,6 +54,19 @@ function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
     : [];
 }
 
+function untimedRestOf(line: LyricLine, main: readonly WordTiming[]): UntimedRest | undefined {
+  const last = main.at(-1);
+  const rest = spacedText(drawnUntimedSyllables(line, "main")).trimEnd();
+  return last && rest.trim() ? { afterWord: main.length - 1, text: last.sep + rest } : undefined;
+}
+
+// A word as written: the untimed rest of a partly synced line follows its last timed word.
+function writtenWord(line: Pick<WritableLine, "words" | "untimedRest">, index: number): string {
+  const word = line.words[index];
+  if (line.untimedRest?.afterWord !== index) return word.text + word.sep;
+  return word.text + line.untimedRest.text + (index < line.words.length - 1 ? " " : "");
+}
+
 // Background vocals follow the main words in parentheses: every target format
 // holds one text track per line.
 function writableLines(lines: readonly LyricLine[]): WritableLine[] {
@@ -57,12 +77,17 @@ function writableLines(lines: readonly LyricLine[]): WritableLine[] {
     const background = backgroundWordsOf(line, bounds);
     const words = background.length > 0 ? [...withTrailingSpace(main), ...background] : main;
     if (words.length === 0) return [];
+    const untimedRest = untimedRestOf(line, main);
     return [
       {
         agentId: mainTrack(line).agentId,
         bounds,
         words,
-        text: spacedText(words).trim(),
+        ...(untimedRest && { untimedRest }),
+        text: words
+          .map((_, index) => writtenWord({ words, untimedRest }, index))
+          .join("")
+          .trim(),
         hasWordTiming: isWordSynced(line) || Boolean(drawnSyllables(line, "bg", getSplitCharacter()).length),
       },
     ];
@@ -80,5 +105,5 @@ function songTags(metadata: ProjectMetadata): string[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { songTags, writableLines };
+export { songTags, writableLines, writtenWord };
 export type { LyricsWriterInput, WritableLine };
