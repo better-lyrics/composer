@@ -1,3 +1,4 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { withAlignedWords } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { languagesWith, lineTransliteration } from "@/domain/language/line-languages";
@@ -20,7 +21,6 @@ import {
   trackPieces,
 } from "@/domain/language/pieces";
 import { withPiecesOn, withTrackPieces } from "@/domain/language/side-pieces";
-import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText, syllablesText } from "@/domain/line/text";
 import { withRoleWords } from "@/domain/line/track-writes";
@@ -84,7 +84,7 @@ function splitKeepingPieces(
   replacementWords: WordTiming[],
   replacementPieces: PositionalPieces | undefined,
 ): PiecedSplit | null {
-  const effective = effectiveTrackWords(line, type);
+  const effective = drawnSyllables(line, trackRole(type));
   if (!effective?.length) return null;
   const side = languageSide(type);
   const aligned = withAlignedWords(withRoleWords(line, trackRole(type), effective));

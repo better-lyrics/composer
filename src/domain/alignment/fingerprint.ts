@@ -1,4 +1,4 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -13,7 +13,7 @@ function trackFingerprint(words: readonly WordTiming[] | undefined): string {
 }
 
 function timingFingerprint(line: LyricLine): string {
-  return `${trackFingerprint(effectiveTrackWords(line, "word"))}|${trackFingerprint(effectiveTrackWords(line, "bg"))}`;
+  return `${trackFingerprint(drawnSyllables(line, "main"))}|${trackFingerprint(drawnSyllables(line, "bg"))}`;
 }
 
 function fingerprintChanged(before: LyricLine | undefined, after: LyricLine): boolean {

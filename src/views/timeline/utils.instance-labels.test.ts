@@ -3,7 +3,7 @@ import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { resetAllStores } from "@/test/stores";
-import { getEffectiveRows } from "@/views/timeline/effective-rows";
+import { getDrawnRows } from "@/views/timeline/drawn-rows";
 import { beforeEach, describe, expect, it } from "vitest";
 import { detachLine, removeInstance } from "@/domain/commands/instance-edits";
 
@@ -36,14 +36,14 @@ function seed() {
 }
 
 function headerKeys(): string[] {
-  return getEffectiveRows(useProjectStore.getState().lines).flatMap((r) =>
+  return getDrawnRows(useProjectStore.getState().lines).flatMap((r) =>
     r.kind === "group-header" ? [`header:${r.firstLineId}`] : [],
   );
 }
 
 function instanceLabels(): string[] {
   const lines = useProjectStore.getState().lines;
-  return getEffectiveRows(lines).flatMap((r) =>
+  return getDrawnRows(lines).flatMap((r) =>
     r.kind === "group-header"
       ? [`${instanceOrdinal(lines, r.groupId, r.instanceIdx)} of ${instanceCount(lines, r.groupId)}`]
       : [],

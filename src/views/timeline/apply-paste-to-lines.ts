@@ -1,16 +1,11 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LanguagePiece } from "@/domain/language/model";
 import { withAddedPieces } from "@/domain/language/pieces";
-import {
-  type ReadableLine,
-  effectiveMainWordEdit,
-  effectiveTrackWords,
-  effectiveWords,
-  rawLineOf,
-} from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, timedSyllables, type WordTrack, untimedSyllablesOf } from "@/domain/line/track";
+import type { LyricLine, MainTrack } from "@/domain/line/model";
+import { type WordTrack, isSpanTimed, mainTrack, trackRole, untimedSyllablesOf } from "@/domain/line/track";
+import { withMainTrack, withTrackSyllables, withTrackWords } from "@/domain/line/track-writes";
 import { withNewId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -20,7 +15,7 @@ import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-t
 // -- Types --------------------------------------------------------------------
 
 interface PasteInput {
-  lines: readonly ReadableLine[];
+  lines: readonly LyricLine[];
   clipboard: ClipboardData;
   targetLineIndex: number;
   timeDelta: number;
@@ -48,7 +43,7 @@ function pasteOverlaps(
   clipboard: ClipboardData,
   targetLineIndex: number,
   timeDelta: number,
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   rangeOf: (line: LyricLine) => TimeRange,
 ): boolean {
   for (const entry of clipboard.entries) {
@@ -58,10 +53,16 @@ function pasteOverlaps(
     const pasted = pastedWordBounds(entry.word, timeDelta, rangeOf(lines[lineIdx]));
     if (pasted.end <= pasted.begin) return true;
 
-    const existingWords = effectiveTrackWords(lines[lineIdx], entry.trackType) ?? [];
+    const existingWords = drawnSyllables(lines[lineIdx], trackRole(entry.trackType));
     if (existingWords.some((existing) => boundsOverlap(pasted, existing))) return true;
   }
   return false;
+}
+
+// Pasting into a line-synced line writes the words over its whole track: its one drawn block stood for all of it.
+function convertedMainTrack(line: LyricLine, words: readonly WordTiming[]): MainTrack {
+  const main = mainTrack(line);
+  return isSpanTimed(main) ? withTrackSyllables(main, words) : withTrackWords(main, words);
 }
 
 function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, rangeOf }: PasteInput): LineUpdate[] | null {
@@ -93,15 +94,11 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
 
     let lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      const merged = mergeWordsIntoTrack(effectiveWords(line), newWords, untimedSyllablesOf(rawLineOf(line), "main"));
-      lineUpdates = effectiveMainWordEdit(line, merged, { convertLineSynced: true });
+      const merged = mergeWordsIntoTrack(drawnSyllables(line, "main"), newWords, untimedSyllablesOf(line, "main"));
+      lineUpdates = { tracks: withMainTrack(line, convertedMainTrack(line, merged)).tracks };
     }
     if (newBgWords.length > 0) {
-      const merged = mergeWordsIntoTrack(
-        timedSyllables(backgroundTrack(line)),
-        newBgWords,
-        untimedSyllablesOf(rawLineOf(line), "bg"),
-      );
+      const merged = mergeWordsIntoTrack(drawnSyllables(line, "bg"), newBgWords, untimedSyllablesOf(line, "bg"));
       lineUpdates = manualBackgroundWordEdit(line, merged, lineUpdates);
     }
 

@@ -1,6 +1,7 @@
-import { languageSide, pieceOf, trackPieces } from "@/domain/language/pieces";
-import type { ReadableLine } from "@/domain/line/effective-words";
-import { trackWords } from "@/domain/line/track";
+import type { LyricLine } from "@/domain/line/model";
+import { languageSide, pieceOf } from "@/domain/language/pieces";
+import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { copiedSyllable } from "@/domain/word/syllable-groups";
 import { pluralize } from "@/utils/pluralize";
@@ -14,7 +15,7 @@ import { toast } from "sonner";
 
 // -- Hook ---------------------------------------------------------------------
 
-function useTimelineClipboard(lines: readonly ReadableLine[]) {
+function useTimelineClipboard(lines: readonly LyricLine[]) {
   const handleCopy = useCallback(() => {
     const { selectedWords } = useTimelineStore.getState();
     const resolved = resolveAddresses(lines, selectedWords);
@@ -31,10 +32,10 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     for (const sel of resolved) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
-      const wordsArray = trackWords(line, sel.type);
+      const wordsArray = drawnSyllables(line, trackRole(sel.type));
       if (!wordsArray?.[sel.wordIndex]) continue;
 
-      const piece = pieceOf(trackPieces(line, languageSide(sel.type)), wordsArray[sel.wordIndex]);
+      const piece = pieceOf(drawnPieces(line, languageSide(sel.type)), wordsArray[sel.wordIndex]);
       entries.push({
         word: copiedSyllable(wordsArray, sel.wordIndex, copiedByTrack.get(`${sel.lineIndex}:${sel.type}`) ?? new Set()),
         lineOffset: sel.lineIndex - minLineIndex,

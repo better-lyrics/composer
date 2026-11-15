@@ -1,8 +1,7 @@
 import { isSharedLine, type TimeRange } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { combinedTrackEdits } from "@/domain/line/combined-track-edits";
-import { type ReadableLine, rawLineOf } from "@/domain/line/effective-words";
-import type { LineUpdate } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { stepBgWordEdit } from "@/utils/timing/bg-word-timing";
@@ -12,14 +11,14 @@ import type { StepEdit } from "@/utils/timing/word-timing-ops";
 // -- Types --------------------------------------------------------------------
 
 interface StepKeyWriteInput {
-  lines: readonly ReadableLine[];
+  lines: readonly LyricLine[];
   groups: readonly LinkGroup[];
   cursor: ResolvedAddress;
   startNext: ResolvedAddress | null;
   key: StepKey;
   time: number;
   minDuration: number;
-  rangeOf: (line: ReadableLine) => TimeRange;
+  rangeOf: (line: LyricLine) => TimeRange;
 }
 
 type StepKeyPlan =
@@ -57,7 +56,7 @@ function joinedUpdates(input: StepKeyWriteInput, own: LineUpdate, started: LineU
   if (!started) return [own];
   if (started.id !== own.id) return [own, started];
   const line = input.lines[input.cursor.lineIndex];
-  return [{ id: own.id, updates: combinedTrackEdits(rawLineOf(line), [own.updates, started.updates]) }];
+  return [{ id: own.id, updates: combinedTrackEdits(line, [own.updates, started.updates]) }];
 }
 
 // -- Functions ----------------------------------------------------------------

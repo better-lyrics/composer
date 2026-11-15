@@ -1,6 +1,5 @@
 import { mainTrack, roleWords } from "@/domain/line/track";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -22,7 +21,7 @@ async function drag(result: { current: ReturnType<typeof useTimelineDnd> }, opts
   result.current.handleDragEnd(makeCursorTargetingEvent(opts));
 }
 
-describe("drag timing kind on effective lines", () => {
+describe("drag timing kind on drawn lines", () => {
   let host: HTMLDivElement;
   beforeEach(() => {
     useAudioStore.setState({ duration: 30 });
@@ -58,7 +57,7 @@ describe("drag timing kind on effective lines", () => {
         lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 17, end: 20 }),
       ],
     });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));
     await drag(result, {
       lineId: "lA",
@@ -104,7 +103,7 @@ describe("drag timing kind on effective lines", () => {
         lineFromFields({ id: "lB", text: "delta", agentId: "v1", begin: 5.0, end: 5.4 }),
       ],
     });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));
     await drag(result, {
       lineId: "lA",
@@ -138,7 +137,7 @@ describe("drag timing kind on effective lines", () => {
     useProjectStore.setState({
       lines: [lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 5, end: 8 })],
     });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));
     await drag(result, {
       lineId: "lC",

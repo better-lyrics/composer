@@ -1,6 +1,7 @@
 import { type TimeRange, wholeSongRange } from "@/domain/group/shared-timing";
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
+import { trackRole } from "@/domain/line/track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { pastedWordBounds } from "@/views/timeline/apply-paste-to-lines";
 import { bgTrackHeight, wordBlockWidth } from "@/views/timeline/row-geometry";
@@ -59,7 +60,7 @@ function computeGhosts(
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {
-      const existingWords = effectiveTrackWords(targetLine, isBg ? "bg" : "word") ?? [];
+      const existingWords = drawnSyllables(targetLine, trackRole(isBg ? "bg" : "word"));
       overlaps = existingWords.some((existing) => boundsOverlap(pasted, existing));
     }
 

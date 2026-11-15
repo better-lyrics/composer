@@ -1,5 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
-import type { ReadableLine } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
 import { isAddressed } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { getWordsInInstance } from "@/views/timeline/utils";
@@ -14,7 +14,7 @@ interface InstanceRef {
 // -- Functions ----------------------------------------------------------------
 
 function selectedBannerInstance(
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   selectedWords: readonly SyllableAddress[],
 ): InstanceRef | null {
   const first = selectedWords[0];

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { wordAddress } from "@/test/word-address";
@@ -100,7 +99,7 @@ describe("multiSelectionSummary", () => {
   it("spans every selected word and counts line-synced rows as lines", () => {
     const selection = [wordAddress(wordLine, 0), wordAddress(wordLine, 1), wordAddress(syncedRow, 0)];
     const raw = [wordLine, syncedRow];
-    expect(multiSelectionSummary(selection, getEffectiveLines(raw), raw)).toEqual({
+    expect(multiSelectionSummary(selection, raw)).toEqual({
       wordCount: 2,
       lineCount: 1,
       begin: 1,
@@ -110,7 +109,7 @@ describe("multiSelectionSummary", () => {
 
   describe("edge cases", () => {
     it("is null for a single selection", () => {
-      expect(multiSelectionSummary([pick("w", 0)], [wordLine], [wordLine])).toBeNull();
+      expect(multiSelectionSummary([pick("w", 0)], [wordLine])).toBeNull();
     });
   });
 });

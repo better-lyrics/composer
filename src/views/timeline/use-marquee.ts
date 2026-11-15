@@ -1,6 +1,5 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressOf } from "@/domain/selection/resolve";
 import { mergeAddresses } from "@/domain/selection/set-ops";
@@ -93,7 +92,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
   useEffect(() => (autoScrolling ? holdFrames(AUTO_SCROLL_LABEL) : undefined), [autoScrolling]);
 
   const computeSelection = useCallback((rect: MarqueeRect): SyllableAddress[] => {
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
     const layout = computeRowLayout({
       lines,
@@ -114,12 +113,12 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       if (!pos) continue;
 
       const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-      const backgroundWords = timedSyllables(backgroundTrack(line));
+      const backgroundWords = drawnSyllables(line, "bg");
       const mainTop = pos.top;
       const mainBottom = mainTop + mainHeight;
 
       if (mainTop < rectBottom && mainBottom > rect.y) {
-        for (const word of timedSyllables(mainTrack(line))) {
+        for (const word of drawnSyllables(line, "main")) {
           const wordLeft = GUTTER_WIDTH + word.begin * zoom;
           const wordRight = GUTTER_WIDTH + word.end * zoom;
           if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "word", word));
