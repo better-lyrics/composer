@@ -34,11 +34,22 @@ function rootOf(state: ProjectState): LyricRoot {
   };
 }
 
+// Lines in place are compared by position; only a line that moved or changed looks the old lines up.
 function withChangedLinesSettled(before: readonly LyricLine[], after: LyricLine[]): LyricLine[] {
   if (before === after) return after;
-  const unchangedLines = new Set<LyricLine>(before);
-  const settled = after.map((line) => (unchangedLines.has(line) ? line : withoutOrphanPieces(line)));
-  return settled.every((line, index) => line === after[index]) ? after : settled;
+  let unchangedLines: Set<LyricLine> | undefined;
+  let settled: LyricLine[] | undefined;
+  for (let index = 0; index < after.length; index++) {
+    const line = after[index];
+    if (line === before[index]) continue;
+    unchangedLines ??= new Set(before);
+    if (unchangedLines.has(line)) continue;
+    const settledLine = withoutOrphanPieces(line);
+    if (settledLine === line) continue;
+    settled ??= after.slice();
+    settled[index] = settledLine;
+  }
+  return settled ?? after;
 }
 
 function sameLineIds(before: readonly LyricLine[], after: readonly LyricLine[]): boolean {
