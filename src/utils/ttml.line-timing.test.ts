@@ -269,6 +269,20 @@ describe("generateTTML line timing", () => {
       const [line] = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).lines;
       expect([roleWords(line, "main"), mainTrack(line).begin, mainTrack(line).end]).toEqual([undefined, 6.67, 7.514]);
     });
+
+    it("regression: a broken or backwards main span keeps the paragraph times", () => {
+      const read = (mainBegin: string, mainEnd: string) =>
+        mainTrack(
+          parseTtml(
+            `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:composer="https://composer.boidu.dev/ttml"><body><div><p begin="1.000" end="3.000" composer:mainBegin="${mainBegin}" composer:mainEnd="${mainEnd}">wander far</p></div></body></tt>`,
+            DEFAULT_SPLIT_CHARACTER,
+          ).lines[0],
+        );
+      expect([read("oops", "2.000"), read("2.500", "1.500")].map((track) => [track.begin, track.end])).toEqual([
+        [1, 3],
+        [1, 3],
+      ]);
+    });
   });
 
   describe("project export", () => {

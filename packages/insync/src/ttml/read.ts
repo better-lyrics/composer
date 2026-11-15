@@ -39,7 +39,11 @@ function untimedMainSpan(p: XmlReadElement, begin: number, end: number): { begin
   const mainBegin = getComposerAttribute(p, MAIN_BEGIN_ATTRIBUTE);
   const mainEnd = getComposerAttribute(p, MAIN_END_ATTRIBUTE);
   if (mainBegin !== null && mainEnd !== null) {
-    return { begin: parseTtmlTimestamp(mainBegin), end: parseTtmlTimestamp(mainEnd) };
+    const ownBegin = parseTtmlTimestamp(mainBegin);
+    const ownEnd = parseTtmlTimestamp(mainEnd);
+    if (Number.isFinite(ownBegin) && Number.isFinite(ownEnd) && ownBegin <= ownEnd) {
+      return { begin: ownBegin, end: ownEnd };
+    }
   }
   return {
     begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
