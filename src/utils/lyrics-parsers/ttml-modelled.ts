@@ -120,21 +120,57 @@ function backgroundOf(paragraph: Element): Element | undefined {
   return Array.from(paragraph.getElementsByTagName("span")).find((span) => elementRole(span) === "x-bg");
 }
 
+const childrenNamed = (parent: Element | undefined, localName: string) =>
+  parent ? Array.from(parent.children).filter((child) => child.localName === localName) : [];
+
+// Each line key's romanization language in the `<head>`; the last entry for a key wins, as the head reader reads it.
+function headRomanLanguagesOf(doc: Document): ReadonlyMap<string, string> {
+  const root =
+    doc.getElementsByTagName("iTunesMetadata")[0] ?? doc.getElementsByTagNameNS(ITUNES_NS, "iTunesMetadata")[0];
+  const languages = new Map<string, string>();
+  for (const container of childrenNamed(childrenNamed(root, "transliterations")[0], "transliteration")) {
+    const language = ownLanguage(container) || "und-Latn";
+    for (const text of childrenNamed(container, "text")) {
+      const key = text.getAttribute("for");
+      if (key) languages.set(key, language);
+    }
+  }
+  return languages;
+}
+
+const headRomanLanguages = new WeakMap<Document, ReadonlyMap<string, string>>();
+
+function headRomanLanguageOf(paragraph: Element): string | undefined {
+  const doc = paragraph.ownerDocument;
+  const languages = headRomanLanguages.get(doc) ?? headRomanLanguagesOf(doc);
+  headRomanLanguages.set(doc, languages);
+  const key = paragraph.getAttribute("itunes:key") ?? paragraph.getAttributeNS(ITUNES_NS, "key");
+  return key ? languages.get(key) : undefined;
+}
+
+// A line's one romanization language: its `<head>` entry's, else that of its first inline romanization.
+function romanLanguageOf(paragraph: Element): string | undefined {
+  const [firstInline] = [
+    ...directWithRole(paragraph, "x-roman"),
+    ...directWithRole(backgroundOf(paragraph), "x-roman"),
+  ].map(inlineLanguage);
+  return headRomanLanguageOf(paragraph) ?? firstInline;
+}
+
 // The inline translations and romanization of a `<p>` or its x-bg container the reader takes, with their language:
-// the first translation of each language, and the first romanization in the line's one romanization language (that
-// of its first). The rest are kept as they are.
+// the first translation of each language, and the first romanization in the line's one romanization language. The
+// rest are kept as they are.
 function readInlineAlternates(container: Element): ReadonlyMap<Element, string> {
   const read = new Map<Element, string>();
+  const translated = new Set<string>();
   for (const span of directWithRole(container, "x-translation")) {
     const language = inlineLanguage(span);
-    if (![...read.values()].includes(language)) read.set(span, language);
+    if (translated.has(language)) continue;
+    translated.add(language);
+    read.set(span, language);
   }
   const paragraph = paragraphOf(container);
-  const [romanLanguage] = paragraph
-    ? [...directWithRole(paragraph, "x-roman"), ...directWithRole(backgroundOf(paragraph), "x-roman")].map(
-        inlineLanguage,
-      )
-    : [];
+  const romanLanguage = paragraph ? romanLanguageOf(paragraph) : undefined;
   const roman = directWithRole(container, "x-roman").find((span) => inlineLanguage(span) === romanLanguage);
   if (roman && romanLanguage) read.set(roman, romanLanguage);
   return read;

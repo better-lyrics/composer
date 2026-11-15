@@ -137,5 +137,9 @@ describe("parseTtml inline translations", () => {
     expect(ttml).toContain(
       '<span begin="0:01.000" end="0:03.000">塩</span><span ttm:role="x-roman" xml:lang="ja-Hrkt">しお</span></p>',
     );
+    const reopened = parseTtml(ttml);
+    expect(reopened.lines[0].languages?.transliteration).toMatchObject({ language: "ja-Latn", main: { text: "shio" } });
+    const again = generateTTML({ metadata, agents: [], lines: reopened.lines, passthrough: reopened.passthrough });
+    expect(again).toBe(ttml);
   });
 });
