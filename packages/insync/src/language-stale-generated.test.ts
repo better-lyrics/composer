@@ -1,10 +1,10 @@
-import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
-import { languageSourceFingerprint } from "insync/language-fingerprint";
-import type { LanguageContentOrigin } from "insync/language";
-import { staleGeneratedLanguages } from "insync/language-stale-generated";
-import type { LyricLine } from "insync/line";
+import { fieldsOfLine, lineFromFields } from "./line-from-fields";
+import { languageSourceFingerprint } from "./language-fingerprint";
+import type { LanguageContentOrigin } from "./language";
+import { staleGeneratedLanguages } from "./language-stale-generated";
+import type { LyricLine } from "./line";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 function lineWithTracks(
   id: string,

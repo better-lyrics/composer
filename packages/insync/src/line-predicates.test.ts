@@ -1,11 +1,11 @@
-import { isSpanTimed, mainTrack } from "insync/line-track";
-import { fieldsOfLine, type LineFields, lineFromFields } from "insync/line-from-fields";
-import type { LyricLine } from "insync/line";
-import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "insync/line-predicates";
-import { backgroundTrack } from "insync/line-track";
-import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
+import { isSpanTimed, mainTrack } from "./line-track";
+import { fieldsOfLine, type LineFields, lineFromFields } from "./line-from-fields";
+import type { LyricLine } from "./line";
+import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "./line-predicates";
+import { backgroundTrack } from "./line-track";
+import { withBackgroundTrack, withTrackSpan } from "./line-track-writes";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

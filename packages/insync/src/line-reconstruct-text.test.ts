@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { lineFromFields } from "insync/line-from-fields";
-import type { LyricLine } from "insync/line";
-import { withSplitMarksFromWords, wordContentSpans } from "insync/line-reconstruct-text";
-import { lineText, syllablesText } from "insync/line-text";
-import { mainTrack, timedSyllables } from "insync/line-track";
-import { withRoleWords } from "insync/line-track-writes";
-import { wordKey } from "insync/word-alignment";
-import { wordFromSpaced } from "insync/word-spaced-words";
-import type { WordTiming } from "insync/word-timing";
-import { splitIntoWordsWithMeta } from "insync/lyric-words";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { lineFromFields } from "./line-from-fields";
+import type { LyricLine } from "./line";
+import { withSplitMarksFromWords, wordContentSpans } from "./line-reconstruct-text";
+import { lineText, syllablesText } from "./line-text";
+import { mainTrack, timedSyllables } from "./line-track";
+import { withRoleWords } from "./line-track-writes";
+import { wordKey } from "./word-alignment";
+import { wordFromSpaced } from "./word-spaced-words";
+import type { WordTiming } from "./word-timing";
+import { splitIntoWordsWithMeta } from "./lyric-words";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 

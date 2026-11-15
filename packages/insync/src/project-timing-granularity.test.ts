@@ -1,8 +1,8 @@
-import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
-import type { LyricLine } from "insync/line";
-import { timingGranularityOf } from "insync/project-timing-granularity";
+import { fieldsOfLine, lineFromFields } from "./line-from-fields";
+import type { LyricLine } from "./line";
+import { timingGranularityOf } from "./project-timing-granularity";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 const wordSynced: LyricLine = lineFromFields(
   {

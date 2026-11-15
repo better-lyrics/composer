@@ -7,11 +7,11 @@ import {
   regroupedPieces,
   trackPieces,
   withReadingsOf,
-} from "insync/language-pieces";
-import { lineFromFields } from "insync/line-from-fields";
-import { mergeWordRun } from "insync/word-merge-run";
-import type { WordTiming } from "insync/word-timing";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+} from "./language-pieces";
+import { lineFromFields } from "./line-from-fields";
+import { mergeWordRun } from "./word-merge-run";
+import type { WordTiming } from "./word-timing";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 const word = (id: string, text: string, sep: string, begin: number): WordTiming => ({
   id,

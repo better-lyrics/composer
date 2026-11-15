@@ -1,8 +1,8 @@
-import { type LineFields, lineFromFields } from "insync/line-from-fields";
-import { instanceBounds } from "insync/instance-bounds";
-import type { LyricLine } from "insync/line";
+import { type LineFields, lineFromFields } from "./line-from-fields";
+import { instanceBounds } from "./instance-bounds";
+import type { LyricLine } from "./line";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
