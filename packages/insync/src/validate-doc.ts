@@ -1,12 +1,10 @@
 import type { Doc } from "./doc";
-import { type Instance, instanceSlots, isInstanceSpan } from "./group";
-import type { LineTrack, LyricLine } from "./line";
-import { effectiveBounds } from "./line-bounds";
+import { type Instance, isInstanceSpan, type TemplateLine } from "./group";
+import type { LineTrack, LyricLine, Syllable } from "./line";
 import { isTimedSyllable } from "./line-track";
 import type { PartSection } from "./part";
 import { msFromSeconds } from "./time";
 import { type TrackRule, validateTrack } from "./validate-track";
-import type { Bounds } from "./word-bounds";
 
 // -- Types --------------------------------------------------------------------
 
@@ -14,17 +12,19 @@ type DocRule =
   | TrackRule
   | "duplicate-id"
   | "duplicate-line-id"
+  | "duplicate-slot"
   | "track-order"
   | "span-and-syllable-times"
   | "unknown-agent"
   | "unknown-group"
   | "unknown-instance"
   | "unknown-slot"
+  | "unknown-template-line"
   | "unknown-line"
   | "out-of-song";
 
 interface DocFinding {
-  // The node the finding is about: `line <id>`, `template <group>:<slot>`, `body <key>`, `instance <key>`, ...
+  // The node the finding is about: `line <id>`, `template <group>:<slot>`, `body <key>`, `instance <key>:<slot>`, ...
   node: string;
   rule: DocRule;
 }
@@ -39,33 +39,100 @@ interface DocValidationOptions {
   songEnd?: number;
 }
 
+type Span = readonly [number, number];
+
+// A track's times as one line holds them: stored on a plain line, or placed by an instance on a template line.
+interface TrackTimes {
+  span?: Span;
+  syllables: readonly { text: string; sep: string; joinsNext: boolean; span?: Span }[];
+}
+
+// -- Constants ----------------------------------------------------------------
+
 // Imported files bring these in and they are kept, so they never refuse a doc.
 const IMPORTED_SPAN_RULES = new Set<TrackRule>(["begin-after-end", "overlaps-previous"]);
 
-// -- Lines --------------------------------------------------------------------
+// Template times are relative to the anchor, so these are checked only where an instance places them.
+const TIME_RULES = new Set<TrackRule>(["non-finite-time", "negative-begin", "begin-after-end", "overlaps-previous"]);
 
-function trackSpanRules(track: LineTrack): TrackRule[] {
-  if (track.begin === undefined) return [];
-  if (!Number.isFinite(track.begin) || !Number.isFinite(track.end)) return ["non-finite-time"];
+// -- Times --------------------------------------------------------------------
+
+function syllableParts({ text, sep, joinsNext }: Syllable) {
+  return { text, sep, joinsNext };
+}
+
+function storedTimes(track: LineTrack): TrackTimes {
+  return {
+    ...(track.begin !== undefined && { span: [track.begin, track.end] }),
+    syllables: track.syllables.map((syllable: Syllable) => ({
+      ...syllableParts(syllable),
+      ...(isTimedSyllable(syllable) && { span: [syllable.begin, syllable.end] as const }),
+    })),
+  };
+}
+
+// The times flattening gives a template track in an instance: its own times by template id, the template moved to
+// the anchor, or none.
+function placedTimes(track: LineTrack, instance: Instance): TrackTimes {
+  const own = instance.ownTiming;
+  if (own) {
+    const span = own.tracks?.[track.id];
+    const syllables: readonly Syllable[] = track.syllables;
+    return span
+      ? { span, syllables: syllables.map(syllableParts) }
+      : { syllables: syllables.map((syllable) => ({ ...syllableParts(syllable), span: own.syllables[syllable.id] })) };
+  }
+  const { at } = instance;
+  const stored = storedTimes(track);
+  if (at === undefined) return { syllables: stored.syllables.map(({ span: _span, ...parts }) => parts) };
+  const moved = (span: Span | undefined): Span | undefined => span && [span[0] + at, span[1] + at];
+  return {
+    ...(stored.span && { span: moved(stored.span) }),
+    syllables: stored.syllables.map((syllable) => ({ ...syllable, span: moved(syllable.span) })),
+  };
+}
+
+function spanRules([begin, end]: Span): TrackRule[] {
+  if (!Number.isFinite(begin) || !Number.isFinite(end)) return ["non-finite-time"];
+  return [...(begin < 0 ? ["negative-begin" as const] : []), ...(begin > end ? ["begin-after-end" as const] : [])];
+}
+
+function trackRules(times: TrackTimes): TrackRule[] {
+  const report = validateTrack(
+    times.syllables.map(({ span, ...parts }) => ({
+      ...parts,
+      ...(span && { span: [msFromSeconds(span[0]), msFromSeconds(span[1])] as const }),
+    })),
+  );
   return [
-    ...(track.begin < 0 ? ["negative-begin" as const] : []),
-    ...(track.begin > track.end ? ["begin-after-end" as const] : []),
+    ...(times.span ? spanRules(times.span) : []),
+    ...[...report.errors, ...report.warnings].map(({ rule }) => rule),
   ];
 }
 
-function trackRules(track: LineTrack): TrackRule[] {
-  const report = validateTrack(
-    track.syllables.map((syllable) => ({
-      text: syllable.text,
-      sep: syllable.sep,
-      joinsNext: syllable.joinsNext,
-      ...(isTimedSyllable(syllable) && { span: [msFromSeconds(syllable.begin), msFromSeconds(syllable.end)] as const }),
-    })),
-  );
-  return [...trackSpanRules(track), ...[...report.errors, ...report.warnings].map(({ rule }) => rule)];
+// The latest end of any finite time, for the song end check.
+function latestEnd(times: TrackTimes): number {
+  let latest = Number.NEGATIVE_INFINITY;
+  for (const span of [times.span, ...times.syllables.map((syllable) => syllable.span)]) {
+    if (span && Number.isFinite(span[1])) latest = Math.max(latest, span[1]);
+  }
+  return latest;
 }
 
-function lineFindings(line: LyricLine, node: string, agentIds: ReadonlySet<string>, report: DocReport): void {
+function pushRules(rules: readonly TrackRule[], node: string, report: DocReport): void {
+  for (const rule of rules) (IMPORTED_SPAN_RULES.has(rule) ? report.warnings : report.errors).push({ node, rule });
+}
+
+// -- Lines --------------------------------------------------------------------
+
+// Ids, track order, the track span rule and agents; times too unless the line is a template.
+function lineFindings(
+  line: LyricLine,
+  node: string,
+  agentIds: ReadonlySet<string>,
+  report: DocReport,
+  isTemplate = false,
+): void {
   const ids = new Set<string>();
   const fail = (rule: DocRule) => report.errors.push({ node, rule });
   for (const id of [
@@ -78,52 +145,59 @@ function lineFindings(line: LyricLine, node: string, agentIds: ReadonlySet<strin
   line.tracks.forEach((track, index) => {
     if (track.role !== (index === 0 ? "main" : "bg") || index > 1) fail("track-order");
     if (track.begin !== undefined && track.syllables.some(isTimedSyllable)) fail("span-and-syllable-times");
-    for (const rule of trackRules(track))
-      (IMPORTED_SPAN_RULES.has(rule) ? report.warnings : report.errors).push({ node, rule });
+    const rules = trackRules(storedTimes(track));
+    pushRules(isTemplate ? rules.filter((rule) => !TIME_RULES.has(rule)) : rules, node, report);
     if (track.role === "main" && !agentIds.has(track.agentId)) fail("unknown-agent");
   });
 }
 
 // -- Instances ----------------------------------------------------------------
 
-function joinedBounds(all: readonly (Bounds | null)[]): Bounds | null {
-  const known = all.filter((bounds) => bounds !== null);
-  if (known.length === 0) return null;
-  return { begin: Math.min(...known.map(({ begin }) => begin)), end: Math.max(...known.map(({ end }) => end)) };
+interface BodyWalk {
+  doc: Doc;
+  report: DocReport;
+  templateLines: ReadonlyMap<string, ReadonlyMap<number, TemplateLine>>;
+  placedSlots: Map<string, Set<number>>;
+  latestEndByInstance: Map<string, number>;
 }
 
-// Where an instance lands once flattened: its own times, or the template placed at its anchor, and its replaced lines.
-function flattenedBounds(instance: Instance, doc: Doc): Bounds | null {
-  const slots = instanceSlots(instance);
-  const replaced = slots.map((slot) => instance.replaced?.[slot]).filter((line) => line !== undefined);
-  const own = instance.ownTiming && [
-    ...Object.values(instance.ownTiming.syllables),
-    ...Object.values(instance.ownTiming.tracks ?? {}),
-  ];
-  const at = instance.at;
-  const fromTemplate = own
-    ? own.map(([begin, end]) => ({ begin, end }))
-    : at === undefined
-      ? []
-      : (doc.templates[instance.groupId] ?? [])
-          .filter((line) => slots.includes(line.slot) && !instance.replaced?.[line.slot])
-          .map((line) => effectiveBounds(line))
-          .map((bounds) => bounds && { begin: bounds.begin + at, end: bounds.end + at });
-  return joinedBounds([...fromTemplate, ...replaced.map(effectiveBounds)]);
-}
-
-function instanceFindings(
-  key: string,
-  instance: Instance,
-  doc: Doc,
-  songEnd: number | undefined,
-  report: DocReport,
-): void {
-  const node = `instance ${key}`;
-  if (!doc.groups.some((group) => group.id === instance.groupId)) report.errors.push({ node, rule: "unknown-group" });
-  const bounds = songEnd === undefined ? null : flattenedBounds(instance, doc);
-  if (songEnd !== undefined && bounds && (bounds.begin < 0 || msFromSeconds(bounds.end) > msFromSeconds(songEnd))) {
-    report.errors.push({ node, rule: "out-of-song" });
+// One instance span of the body: each slot is placed once and flattens to a replaced or a template line, whose
+// placed times are checked where they land.
+function spanFindings(key: string, slots: readonly number[], walk: BodyWalk): void {
+  const { doc, report } = walk;
+  const node = `body ${key}`;
+  const instance = doc.instances[key];
+  if (!instance) {
+    report.errors.push({ node, rule: "unknown-instance" });
+    return;
+  }
+  for (const slot of slots) {
+    const placed = walk.placedSlots.get(key) ?? new Set<number>();
+    if (placed.has(slot)) report.errors.push({ node, rule: "duplicate-slot" });
+    walk.placedSlots.set(key, placed.add(slot));
+    if (instance.lineIds[slot] === undefined) {
+      report.errors.push({ node, rule: "unknown-slot" });
+      continue;
+    }
+    const replaced = instance.replaced?.[slot];
+    const template = replaced ? undefined : walk.templateLines.get(instance.groupId)?.get(slot);
+    if (!replaced && !template) {
+      report.errors.push({ node, rule: "unknown-template-line" });
+      continue;
+    }
+    const tracks = replaced
+      ? replaced.tracks.map(storedTimes)
+      : (template?.tracks ?? []).map((track) => placedTimes(track, instance));
+    if (template) {
+      for (const times of tracks)
+        pushRules(
+          trackRules(times).filter((rule) => TIME_RULES.has(rule)),
+          `instance ${key}:${slot}`,
+          report,
+        );
+    }
+    const latest = Math.max(walk.latestEndByInstance.get(key) ?? Number.NEGATIVE_INFINITY, ...tracks.map(latestEnd));
+    walk.latestEndByInstance.set(key, latest);
   }
 }
 
@@ -144,13 +218,21 @@ function validateDoc(doc: Doc, { songEnd }: DocValidationOptions = {}): DocRepor
     if (lineIds.has(id)) report.errors.push({ node, rule: "duplicate-line-id" });
     lineIds.add(id);
   };
+  const walk: BodyWalk = {
+    doc,
+    report,
+    templateLines: new Map(
+      Object.entries(doc.templates).map(([groupId, lines]) => [
+        groupId,
+        new Map(lines.map((line) => [line.slot, line])),
+      ]),
+    ),
+    placedSlots: new Map(),
+    latestEndByInstance: new Map(),
+  };
   for (const item of doc.body) {
     if (isInstanceSpan(item)) {
-      const instance = doc.instances[item.key];
-      const node = `body ${item.key}`;
-      if (!instance) report.errors.push({ node, rule: "unknown-instance" });
-      else if (item.slots.some((slot) => instance.lineIds[slot] === undefined))
-        report.errors.push({ node, rule: "unknown-slot" });
+      spanFindings(item.key, item.slots, walk);
       continue;
     }
     const node = `line ${item.id}`;
@@ -160,13 +242,18 @@ function validateDoc(doc: Doc, { songEnd }: DocValidationOptions = {}): DocRepor
   }
   for (const [groupId, template] of Object.entries(doc.templates)) {
     if (!groupIds.has(groupId)) report.errors.push({ node: `template ${groupId}`, rule: "unknown-group" });
-    for (const line of template) lineFindings(line, `template ${groupId}:${line.slot}`, agentIds, report);
+    for (const line of template) lineFindings(line, `template ${groupId}:${line.slot}`, agentIds, report, true);
   }
   for (const [key, instance] of Object.entries(doc.instances)) {
-    for (const id of Object.values(instance.lineIds)) seeLineId(id, `instance ${key}`);
+    const node = `instance ${key}`;
+    for (const id of Object.values(instance.lineIds)) seeLineId(id, node);
     for (const [slot, line] of Object.entries(instance.replaced ?? {}))
-      lineFindings(line, `instance ${key}:${slot}`, agentIds, report);
-    instanceFindings(key, instance, doc, songEnd, report);
+      lineFindings(line, `${node}:${slot}`, agentIds, report);
+    if (!groupIds.has(instance.groupId)) report.errors.push({ node, rule: "unknown-group" });
+    const latest = walk.latestEndByInstance.get(key);
+    if (songEnd !== undefined && latest !== undefined && msFromSeconds(latest) > msFromSeconds(songEnd)) {
+      report.errors.push({ node, rule: "out-of-song" });
+    }
   }
   for (const part of doc.parts) {
     if (sectionLineIds(part).some((id) => !lineIds.has(id)))
