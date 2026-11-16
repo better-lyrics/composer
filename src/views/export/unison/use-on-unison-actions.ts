@@ -16,6 +16,7 @@ interface OnUnisonActions {
   busy: boolean;
   remove: () => Promise<void>;
   withdraw: () => Promise<void>;
+  withdrawSuggestion: () => Promise<void>;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -76,7 +77,13 @@ function useOnUnisonActions(lyric: UnisonLyric, keyId: string): OnUnisonActions 
       await refresh();
     }, "Could not withdraw the edit");
 
-  return { busy, remove, withdraw };
+  const withdrawSuggestion = () =>
+    run(async () => {
+      await withdrawPendingRevision(lyric.id);
+      await refresh();
+    }, "Could not withdraw the suggestion");
+
+  return { busy, remove, withdraw, withdrawSuggestion };
 }
 
 // -- Exports -------------------------------------------------------------------

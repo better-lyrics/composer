@@ -3,7 +3,7 @@ import { unisonLyricPageUrl } from "@/lib/unison/web-urls";
 import { IconButton } from "@/ui/icon-button";
 import { Menu, type MenuAnchor, MenuItem, MenuSeparator } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
-import { IconDots, IconExternalLink, IconTrash } from "@tabler/icons-react";
+import { IconDots, IconExternalLink, IconTrash, IconUnlink } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -12,11 +12,12 @@ interface OnUnisonMenuProps {
   lyric: UnisonLyric;
   disabled: boolean;
   onRemove?: () => void;
+  onUnlink?: () => void;
 }
 
 // -- Components ----------------------------------------------------------------
 
-const OnUnisonMenu: React.FC<OnUnisonMenuProps> = ({ lyric, disabled, onRemove }) => {
+const OnUnisonMenu: React.FC<OnUnisonMenuProps> = ({ lyric, disabled, onRemove, onUnlink }) => {
   const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
   const close = useCallback(() => setAnchor(null), []);
 
@@ -43,6 +44,7 @@ const OnUnisonMenu: React.FC<OnUnisonMenuProps> = ({ lyric, disabled, onRemove }
           label="View on Unison"
           onSelect={() => window.open(unisonLyricPageUrl(lyric.videoId, lyric.id), "_blank", "noopener,noreferrer")}
         />
+        {onUnlink && <MenuItem icon={IconUnlink} label="Unlink" onSelect={onUnlink} />}
         {onRemove && (
           <>
             <MenuSeparator />

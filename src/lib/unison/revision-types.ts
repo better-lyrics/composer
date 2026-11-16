@@ -1,4 +1,4 @@
-import type { PendingReason, UnisonLyricsFormat } from "@/lib/unison/api-types";
+import type { PendingReason, SuggestionDecider, UnisonLyricsFormat } from "@/lib/unison/api-types";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -17,6 +17,8 @@ interface RevisionSummary {
   reviewNote: string | null;
   createdAt: number;
   reviewedAt: number | null;
+  authorKeyId?: string | null;
+  decidedBy?: SuggestionDecider;
 }
 
 type RevisionMetadataField = "language" | "isrc" | "album";
@@ -91,6 +93,14 @@ interface RevisionPreview {
   noChanges: boolean;
   rateLimit: { lyricRemaining: number; lyricLimit: number; userRemaining: number; userLimit: number };
   diff: RevisionDiff;
+  noteMaxLength?: number;
+  ownerDecisionSec?: number;
+  decider?: SuggestionDecider;
+}
+
+interface SavedRevision {
+  revision: RevisionSummary;
+  decider?: SuggestionDecider;
 }
 
 // -- Exports -------------------------------------------------------------------
@@ -104,4 +114,5 @@ export type {
   RevisionPreview,
   RevisionStatus,
   RevisionSummary,
+  SavedRevision,
 };

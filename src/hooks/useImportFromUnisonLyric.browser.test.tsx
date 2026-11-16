@@ -172,21 +172,19 @@ describe("useImportFromUnisonLyric", () => {
     await finishVideoLoad();
   });
 
-  it("opens your own lyric unlinked when a project already carries its link", async () => {
+  it("reopens your project that already carries the lyric's link", async () => {
     await seedOpenAlpha();
     await seedStoredProject("b", { project: { ...songTitled("Bravo"), unisonLyricId: String(LYRIC_ID) } });
     stubUnisonLyric(ownLyric());
-    const { outcome } = await bootWithLink(`?unisonLyric=${LYRIC_ID}`);
-    await finishVideoLoad();
+    const { screen, outcome } = await bootWithLink(`?unisonLyric=${LYRIC_ID}`);
 
-    await expect.poll(outcome).toBe("created");
-    expect(openProjectIdSnapshot()).not.toBe("a");
-    expect(openProjectIdSnapshot()).not.toBe("b");
-    expect(useProjectStore.getState().lines).toHaveLength(2);
-    expect(useProjectStore.getState().unisonLyricId).toBeNull();
+    await expect.poll(outcome).toBe("reopened");
+    await expect.element(screen.getByText("Reopened your project")).toBeInTheDocument();
+    expect(openProjectIdSnapshot()).toBe("b");
+    expect(useProjectStore.getState().unisonLyricId).toBe(String(LYRIC_ID));
   });
 
-  it("opens a lyric with no submitter unlinked", async () => {
+  it("links a lyric with no submitter", async () => {
     await seedOpenAlpha();
     stubUnisonLyric(ownLyric({ submitter: undefined }));
     const { outcome } = await bootWithLink(`?unisonLyric=${LYRIC_ID}`);
@@ -194,7 +192,7 @@ describe("useImportFromUnisonLyric", () => {
 
     await expect.poll(outcome).toBe("created");
     expect(useProjectStore.getState().lines).toHaveLength(2);
-    expect(useProjectStore.getState().unisonLyricId).toBeNull();
+    expect(useProjectStore.getState().unisonLyricId).toBe(String(LYRIC_ID));
   });
 
   describe("error paths", () => {

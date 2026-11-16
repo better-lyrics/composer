@@ -16,6 +16,7 @@ interface ChangesSectionProps {
   upToDate: boolean;
   error: unknown;
   reasonId: string;
+  noChangesText?: string;
   onRetry: () => void;
 }
 
@@ -48,12 +49,12 @@ const ChangesMeta: React.FC<{ label: string }> = ({ label }) => (
   </span>
 );
 
-const ChangesBody: React.FC<ChangesSectionProps> = ({ preview, upToDate, error, reasonId, onRetry }) => {
+const ChangesBody: React.FC<ChangesSectionProps> = ({ preview, upToDate, error, reasonId, noChangesText, onRetry }) => {
   const lines = useMemo(() => (preview ? revisionDiffLines(preview.diff.rows) : []), [preview]);
   if (upToDate || preview?.noChanges) {
     return (
       <p id={reasonId} className="text-[13px] leading-5 text-(--label)">
-        {NO_CHANGES_REASON}
+        {noChangesText ?? NO_CHANGES_REASON}
       </p>
     );
   }
