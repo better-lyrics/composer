@@ -263,6 +263,14 @@ describe("tap-line", () => {
     expect(commit?.nextCursor).toEqual({ lineIndex: 2, wordIndex: 0 });
   });
 
+  it("regression: a tap after the song's last line ends that line instead of leaving it zero length", () => {
+    const lines = [createLine({ id: "l0", text: "first", begin: 2, end: 5 }), createLine({ id: "l1", text: "last" })];
+    const opened = apply(lines, run(lines, "tap-line", [1, 0], 5));
+    const commit = run(opened, "tap-line", [2, 0], 7.2);
+    expect(changedFields(commit!.lineUpdates, opened)).toEqual([{ id: "l1", updates: { end: 7.2 } }]);
+    expect(commit?.nextCursor).toEqual({ lineIndex: 2, wordIndex: 0 });
+  });
+
   it("regression D5: a backwards line tap is clamped and never writes end < begin", () => {
     const lines = [createLine({ id: "l0", text: "first", begin: 5, end: 5 }), createLine({ id: "l1", text: "second" })];
     const commit = run(lines, "tap-line", [1, 0], 2);

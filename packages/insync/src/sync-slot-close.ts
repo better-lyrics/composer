@@ -1,7 +1,7 @@
 import type { LineUpdate, LyricLine } from "./line";
 import { isSpanTimed, mainTrack, timedSyllables } from "./line-track";
 import { withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
-import { type SyncSlot, slotBounds } from "./sync-cursor";
+import { type SyncCursor, type SyncSlot, isCursorPastEnd, previousSlot, slotBounds } from "./sync-cursor";
 import type { Bounds } from "./word-bounds";
 import type { WordTiming } from "./word-timing";
 
@@ -75,6 +75,20 @@ function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: 
   return updates ? { id: line.id, updates } : null;
 }
 
+// Each Line mode tap ends the line before it, so a tap after the last line ends that line if no tap has yet.
+function lastLineClose(
+  lines: readonly LyricLine[],
+  cursor: SyncCursor,
+  time: number,
+  splitChar: string,
+): LineUpdate | null {
+  if (!isCursorPastEnd(lines, cursor)) return null;
+  const slot = previousSlot(lines, cursor, "line", splitChar);
+  const open = slot && slotBounds(lines, slot);
+  if (!open || open.end !== open.begin || time <= open.begin) return null;
+  return closingUpdate(lines, slot, time);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { closeSlotWords, closingUpdate, previousSlotEnd, tapEnd };
+export { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd };

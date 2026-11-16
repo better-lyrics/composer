@@ -6,6 +6,7 @@ import { foldLines } from "insync/group-fold";
 import type { LyricDoc } from "insync/group";
 import type { CarriedSplit } from "insync/group-template-edit";
 import { withoutOrphanPieces } from "insync/language-pieces";
+import { isStructurallyEqual } from "insync/structural-equal";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
 import type { CommitMode } from "@/stores/project/history-types";
@@ -65,6 +66,15 @@ function withPartsSettled(before: LyricRoot, after: LyricRoot): LyricRoot {
   const lineId = (line: LyricLine) => line.id;
   const parts = partsAfterLineChange(after.parts, before.lines.map(lineId), after.lines.map(lineId));
   return parts === after.parts ? after : { ...after, parts };
+}
+
+// A command that writes back the values already there is no step: undo would stop on it and change nothing.
+function changesNothing(before: LyricRoot, after: LyricRoot): boolean {
+  if (after.groups !== before.groups || after.agents !== before.agents || after.parts !== before.parts) return false;
+  if (after.passthrough !== before.passthrough || after.lines.length !== before.lines.length) return false;
+  return after.lines.every(
+    (line, index) => line === before.lines[index] || isStructurallyEqual(line, before.lines[index]),
+  );
 }
 
 interface Written {
@@ -169,6 +179,7 @@ function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitM
           splitChar: ctx.splitChar,
         });
   const parted = withPartsSettled(before, written.root);
+  if (changesNothing(before, parted)) return { ...nothing, outcome };
   return {
     patch: writeRoot(state, { root: parted, doc: written.doc }, command, mode),
     outcome,

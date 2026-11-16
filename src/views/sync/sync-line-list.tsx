@@ -5,7 +5,7 @@ import { instancePositionsByLineId } from "insync/instance-enumerate";
 import { isLinked } from "insync/instance-predicates";
 import type { LanguageDisplayLine } from "insync/language-display";
 import { effectiveBounds } from "insync/line-bounds";
-import { drawnSyllables } from "insync/line-drawn-track";
+import { drawnSyllables, drawnUntimedSyllables } from "insync/line-drawn-track";
 import type { LyricLine } from "insync/line";
 import { isLineSynced } from "insync/line-predicates";
 import { backgroundText, lineText } from "insync/line-text";
@@ -161,7 +161,9 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           displayBackgroundText={displayLine.backgroundText}
           displayBackgroundWordTexts={displayLine.backgroundWordTexts}
           backgroundWords={displayLine.backgroundWords ?? drawnSyllables(line, "bg", getSplitCharacter())}
+          untimedBackgroundWords={drawnUntimedSyllables(line, "bg")}
           words={displayLine.words ?? timedSyllables(mainTrack(line))}
+          untimedWords={drawnUntimedSyllables(line, "main")}
           lineBegin={timing?.begin}
           lineEnd={timing?.end}
           lineSynced={isLineSynced(line)}

@@ -46,6 +46,13 @@ describe("commit", () => {
     expect(useProjectStore.getState().lines).toBe(before);
   });
 
+  it("regression: a command that writes the values a line already has makes no undo step", () => {
+    const { history, lines } = useProjectStore.getState();
+    useProjectStore.getState().commit(typed("Lanterns"));
+    expect(useProjectStore.getState().history).toBe(history);
+    expect(useProjectStore.getState().lines).toBe(lines);
+  });
+
   it("deleting a part's only line drops the part, and undo restores it", () => {
     const store = useProjectStore.getState();
     store.commit(pasteLyrics(store.lines, [createLine({ id: "l1", text: "Lanterns" }), createLine({ id: "l2" })]));

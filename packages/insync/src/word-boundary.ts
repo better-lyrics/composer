@@ -96,7 +96,12 @@ function clampBoundaryTime({
   return Math.min(hardCeiling, Math.max(word.begin + minDuration, Math.min(ceiling, time)));
 }
 
+// An end set exactly where the word starts has nothing to end; writing it would only squeeze the word to the minimum.
+function endsAtOwnStart(word: WordTiming, edge: BoundaryEdge, time: number): boolean {
+  return edge === "end" && time === word.begin;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { clampBoundaryTime, isBoundaryFlush, shouldRollNeighbour };
+export { clampBoundaryTime, endsAtOwnStart, isBoundaryFlush, shouldRollNeighbour };
 export type { BoundaryEdge };
