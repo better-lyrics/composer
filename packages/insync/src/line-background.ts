@@ -2,6 +2,7 @@ import { effectiveBounds } from "./line-bounds";
 import { syllablesFromFields } from "./line-from-fields";
 import type { BackgroundSource, BackgroundTrack, LyricLine } from "./line";
 import { backgroundText } from "./line-text";
+import { isLineSynced } from "./line-predicates";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables, untimedSyllable } from "./line-track";
 import {
   newBackgroundTrack,
@@ -10,6 +11,7 @@ import {
   withEndedTrack,
   withTrackSpan,
   withTrackSyllables,
+  withTrackText,
 } from "./line-track-writes";
 import { firstBegin, lastEnd } from "./word-bounds";
 import type { WordTiming } from "./word-timing";
@@ -111,9 +113,24 @@ function withBackgroundSeededFrom(line: LyricLine, begin: number, songEnd: numbe
   return seededBackground(line, { begin, songEnd }, splitChar);
 }
 
+// Retyped background text keeps its timing the way main text does, before the song's end; a background may run past the
+// main track and over the next line. On a line-synced line a background never goes partly untimed: where the song end
+// leaves no room for the typed words, it is seeded again whole.
+function withRetypedBackground(line: LyricLine, text: string, splitChar: string, songEnd: number): LyricLine {
+  const background = backgroundTrack(line);
+  if (!background) return line;
+  const retyped = { ...withTrackText(background, text, splitChar, songEnd), source: "manual" as const };
+  if (!isLineSynced(line) || isSpanTimed(retyped)) return withBackgroundTrack(line, retyped);
+  const unbounded = withTrackText(background, text, splitChar);
+  if (timedSyllables(retyped).length >= timedSyllables(unbounded).length) return withBackgroundTrack(line, retyped);
+  const untimed = withTrackSyllables(retyped, retyped.syllables.map(untimedSyllable));
+  return withSeededBackground(withBackgroundTrack(line, untimed), splitChar, songEnd);
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
+  withRetypedBackground,
   withBackground,
   withBackgroundSeededFrom,
   withManualBackgroundWords,

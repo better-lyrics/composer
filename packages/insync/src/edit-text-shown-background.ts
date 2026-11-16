@@ -1,4 +1,4 @@
-import { withoutBackground, withSeededBackground } from "./line-background";
+import { withoutBackground, withRetypedBackground, withSeededBackground } from "./line-background";
 import type { LyricLine, MainTrack } from "./line";
 import { trackText } from "./line-text";
 import { backgroundTrack, mainTrack } from "./line-track";
@@ -36,7 +36,7 @@ function withShownBackground(
     const created = withTrackText(newBackgroundTrack(line.id, "manual"), shown, splitChar);
     return withSeededBackground(withBackgroundTrack(line, created), splitChar, songEnd);
   }
-  return withBackgroundTrack(line, { ...withTrackText(track, shown, splitChar, songEnd), source: "manual" });
+  return withRetypedBackground(line, shown, splitChar, songEnd);
 }
 
 // -- Exports ------------------------------------------------------------------

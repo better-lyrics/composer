@@ -730,6 +730,45 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     ]);
   });
 
+  const packedBackground = (main: Parameters<typeof lineFromFields>[0]) =>
+    lineFromFields(
+      {
+        ...main,
+        backgroundText: "(low hum)",
+        backgroundWords: [
+          { id: "bg-low", text: "(low", sep: " ", begin: 29.998, end: 29.999, joinsNext: false },
+          { id: "bg-hum", text: "hum)", sep: "", begin: 29.999, end: 30, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+  const bgTimes = (line: LyricLine) =>
+    backgroundTrack(line)?.syllables.map((syllable) => [syllable.text, "begin" in syllable]);
+
+  it("regression: a word typed into a word-synced background packed at the song end keeps its timed start", () => {
+    const line = packedBackground({
+      id: "bg",
+      text: "dusk tide",
+      agentId: "v1",
+      words: [
+        { id: "m1", text: "dusk", sep: " ", begin: 28, end: 29, joinsNext: false },
+        { id: "m2", text: "tide", sep: "", begin: 29, end: 29.5, joinsNext: false },
+      ],
+    });
+    const [typed] = textToLyricLines("dusk tide", "v1", [line], DEFAULT_SPLIT_CHARACTER, ["(low ember hum)"], 30);
+    expect(bgTimes(typed)).toEqual([
+      ["(low", true],
+      ["ember", false],
+      ["hum)", false],
+    ]);
+  });
+
+  it("regression: a word typed into a background packed at the song end on a line-synced line stays timed", () => {
+    const line = packedBackground({ id: "bg", text: "dusk tide", agentId: "v1", begin: 28, end: 29.5 });
+    const [typed] = textToLyricLines("dusk tide", "v1", [line], DEFAULT_SPLIT_CHARACTER, ["(low ember hum)"], 30);
+    expect(bgTimes(typed)?.every(([, timed]) => timed) || isSpanTimed(backgroundTrack(typed)!)).toBe(true);
+  });
+
   it("regression: typing on a joined row keeps the syllable splits of the row joined onto it", () => {
     const lanterns = timedLine("lanterns", ["Lanterns", "drift", "a"], 1);
     const paper = lineFromFields(

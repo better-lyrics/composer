@@ -74,7 +74,7 @@ function extractInlineWordSynced(
     withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)),
     {
       text: joined,
-      words: remapped && remapped.untimedFrom === remapped.words.length ? remapped.words : undefined,
+      words: remapped?.words.slice(0, remapped.untimedFrom),
       source: base ? "manual" : "extraction",
     },
     splitChar,
