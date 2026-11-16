@@ -59,11 +59,11 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     pendingCaretRef.current = null;
     const splitChar = getSplitCharacter();
     if (pending.replaced) {
-      const at =
-        caretThroughRedraw(pending.typedText, rawText, pending.end, splitChar) ??
+      const mapped = (caret: number) =>
+        caretThroughRedraw(pending.typedText, rawText, caret, splitChar) ??
         changedRegion(pending.typedText, rawText).newEnd;
       textarea.scrollTop = pending.scrollTop;
-      textarea.setSelectionRange(at, at);
+      textarea.setSelectionRange(mapped(pending.start), mapped(pending.end));
       scrollCaretIntoView(textarea);
       return;
     }
