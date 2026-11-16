@@ -83,4 +83,15 @@ describe("ttml · untimed rest of a partly synced line", () => {
       ["home", [["x-cue", "b"]]],
     ]);
   });
+
+  it("regression: a kept element between two kept spans of the untimed rest stays between them", () => {
+    const paragraph =
+      '<p begin="5.200" end="8.000" ttm:agent="v1"><span begin="5.200" end="6.100">Silver</span> <span x-cue="b">birds fly</span><marker/> <span x-cue="c">home</span></p>';
+    const [read] = parseTtml(
+      `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div>${paragraph}</div></body></tt>`,
+      SPLIT,
+    ).lines;
+    expect(lineText(read, SPLIT)).toBe("Silver birds fly home");
+    expect(exported(read)).toMatch(/<span x-cue="b">birds fly<\/span>\s*<marker\/>\s*<span x-cue="c">home<\/span>/);
+  });
 });

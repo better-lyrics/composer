@@ -200,19 +200,20 @@ function withSpansOfTimedSpan<T extends LineTrack>(
 
 // -- Anchors ------------------------------------------------------------------
 
-// The syllable each piece of lyric text reaches into, which kept elements after that piece follow; none when the
-// syllables do not spell the text.
+// The untimed syllable each piece of lyric text reaches into, which kept elements after that piece follow; none when
+// the untimed syllables do not spell the text.
 function untimedAnchors(
   lyric: UntimedLyric | undefined,
   track: LineTrack | undefined,
   splitChar: string,
 ): ReadonlyMap<XmlReadNode, string> {
-  if (!lyric || !track || syllablesText(track.syllables, splitChar) !== lyric.text) return new Map();
-  const ranges = syllableRanges(track.syllables, splitChar);
+  const untimed = track?.syllables.slice(timedSyllables(track).length) ?? [];
+  if (!lyric || syllablesText(untimed, splitChar) !== lyric.text) return new Map();
+  const ranges = syllableRanges(untimed, splitChar);
   const anchors = new Map<XmlReadNode, string>();
   for (const [node, end] of lyric.ends) {
     const reached = ranges.findLastIndex((range) => range.start < end);
-    if (reached >= 0) anchors.set(node, track.syllables[reached].id);
+    if (reached >= 0) anchors.set(node, untimed[reached].id);
   }
   return anchors;
 }
