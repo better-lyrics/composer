@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
-import { shiftCaretPastRewrittenRows } from "insync/edit-text";
+import { caretThroughRedraw, shiftCaretPastRewrittenRows } from "insync/edit-text";
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { changedRegion } from "@/domain/edit-text/background-ranges";
@@ -13,7 +13,8 @@ interface PendingCaret {
   start: number;
   end: number;
   scrollTop: number;
-  // Lines written from outside the text, as undo does: the caret goes to the end of what changed.
+  // Lines written from outside the text, as undo does: the caret goes to the end of what changed, or stays by the same
+  // letters when the new text only redraws the old one.
   replaced?: true;
   // A paste: the view goes back to where it was before the browser scrolled for the pasted text.
   pasted?: true;
@@ -56,16 +57,19 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     const textarea = textareaRef.current;
     if (!pending || !textarea) return;
     pendingCaretRef.current = null;
+    const splitChar = getSplitCharacter();
     if (pending.replaced) {
-      const at = changedRegion(pending.typedText, rawText).newEnd;
+      const at =
+        caretThroughRedraw(pending.typedText, rawText, pending.end, splitChar) ??
+        changedRegion(pending.typedText, rawText).newEnd;
       textarea.scrollTop = pending.scrollTop;
       textarea.setSelectionRange(at, at);
       scrollCaretIntoView(textarea);
       return;
     }
     textarea.setSelectionRange(
-      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.start),
-      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.end),
+      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.start, splitChar),
+      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.end, splitChar),
     );
     // A new value moves the caret to the end and scrolls there; the typed row was in view, so the view stays.
     textarea.scrollTop = pending.scrollTop;
@@ -98,8 +102,8 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
       if (textarea && document.activeElement === textarea && edit.text !== textarea.value) {
         pendingCaretRef.current = {
           typedText: textarea.value,
-          start: 0,
-          end: 0,
+          start: textarea.selectionStart,
+          end: textarea.selectionEnd,
           scrollTop: textarea.scrollTop,
           replaced: true,
         };

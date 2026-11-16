@@ -65,4 +65,28 @@ describe("shiftCaretPastRewrittenRows", () => {
   it("regression: a join that moves the background behind the joined words keeps the caret where the rows met", () => {
     expect(shiftCaretPastRewrittenRows("love (away)you\nlove (away)", "love you (away)\nlove (away)", 11)).toBe(5);
   });
+
+  it("regression: a join that moves a background group before the caret keeps the caret where the rows met", () => {
+    const typed = "bloom (tide) sigh mead|ow sighhar|bor sigh yon|der (sigh hum)";
+    const shown = "bloom sigh mead|ow sighhar|bor sigh yon|der (tide) (sigh hum)";
+    const caret = typed.indexOf("har|bor");
+    expect(shiftCaretPastRewrittenRows(typed, shown, caret)).toBe(shown.indexOf("har|bor"));
+  });
+
+  it("regression: a group extracted as it closes leaves the caret after the main text the user typed", () => {
+    const typed = "rain (tide) glow\nnext";
+    const shown = "rain glow (tide)\nnext";
+    expect(shiftCaretPastRewrittenRows(typed, shown, typed.indexOf(" glow"))).toBe("rain ".length);
+  });
+
+  it("regression: a dangling split mark cleaned at the row start keeps the caret after the same letters", () => {
+    expect(shiftCaretPastRewrittenRows("|rain glow", "rain glow", "|rain gl".length)).toBe("rain gl".length);
+  });
+
+  it("regression: a row the redraw left as typed keeps the caret right after a group typed in it", () => {
+    const typed = "bloom (tide) sigh\nhar|bor";
+    expect(shiftCaretPastRewrittenRows(typed, "bloom (tide) sigh\nharbor", "bloom (tide)".length)).toBe(
+      "bloom (tide)".length,
+    );
+  });
 });
