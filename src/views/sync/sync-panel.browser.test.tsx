@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "insync/commands/instance-rows";
 import { lineEditCommand } from "insync/commands/line-edits";
+import { effectiveBounds } from "insync/line-bounds";
 import { lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
@@ -225,6 +226,39 @@ describe("SyncPanel · touch sync", () => {
 
     await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
     await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[1]?.begin).toBe(7);
+  });
+
+  it("regression: in Line mode a press after the last line gives that line its end", async () => {
+    useAudioStore.setState({
+      source: { type: "file", file: createAudioFile() },
+      duration: 10,
+      currentTime: 0,
+      isPlaying: true,
+    });
+    useProjectStore.setState({
+      activeTab: "sync",
+      granularity: "line",
+      lines: [createLine({ id: "one", text: "One" }), createLine({ id: "two", text: "Two" })],
+    });
+    const screen = await render(<SyncPanel />);
+    const tapCircle = screen.getByRole("button", { name: "Tap to sync" });
+    const bounds = (id: string) => {
+      const line = useProjectStore.getState().lines.find((l) => l.id === id);
+      return line && effectiveBounds(line);
+    };
+
+    setCurrentTime(1);
+    firePointer(tapCircle.element(), "pointerdown");
+    await expect.poll(() => bounds("one")?.begin).toBe(1);
+    setCurrentTime(3);
+    firePointer(tapCircle.element(), "pointerdown");
+    await expect.poll(() => bounds("two")?.begin).toBe(3);
+    setCurrentTime(5);
+    await expect.element(tapCircle).toBeInTheDocument();
+    firePointer(tapCircle.element(), "pointerdown");
+
+    await expect.poll(() => bounds("two")?.end).toBe(5);
+    await expect.poll(() => tapCircle.query()).toBe(null);
   });
 
   it("releases the hold when the pointer is cancelled", async () => {
