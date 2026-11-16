@@ -121,9 +121,8 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     }
     const shownBackground = displayBackgroundText ?? backgroundText;
     if (!shownBackground) return [];
-    return drawsLine
-      ? [withoutSplitCharacter(shownBackground, splitCharacter)]
-      : splitIntoWords(shownBackground, getSplitCharacter());
+    const drawnBackground = drawsLine ? withoutSplitCharacter(shownBackground, splitCharacter) : shownBackground;
+    return splitIntoWords(drawnBackground, getSplitCharacter());
   }, [
     backgroundText,
     backgroundWords,
