@@ -4,6 +4,7 @@ import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { changedRegion } from "@/domain/edit-text/background-ranges";
 import { useProjectStore } from "@/stores/project";
+import { scrollCaretIntoView } from "@/views/edit/textarea-caret-view";
 import { getSplitCharacter } from "@/utils/split-character";
 
 interface PendingCaret {
@@ -29,6 +30,7 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
       const at = changedRegion(pending.typedText, rawText).newEnd;
       textarea.scrollTop = pending.scrollTop;
       textarea.setSelectionRange(at, at);
+      scrollCaretIntoView(textarea);
       return;
     }
     textarea.setSelectionRange(
