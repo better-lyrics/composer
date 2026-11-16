@@ -94,4 +94,19 @@ describe("inline backgrounds in the Edit text", () => {
     const ranges = remapBackgroundRanges(shown.text, typed, shown.ranges, typed.indexOf("(o)") + 1);
     expect(editRows(typed, ranges)[0]).toEqual({ text: "Run (g(o) to the sea", background: null });
   });
+
+  it("regression: a stored background of brackets and text apart keeps its token through an edit elsewhere", () => {
+    const imported = [
+      createLine({
+        id: "imported",
+        text: "Lanterns glow",
+        backgroundText: "(ooh) yeah (ah)",
+        backgroundTextSource: "manual",
+      }),
+    ];
+    const shown = shownEditText(imported, DEFAULT_SPLIT_CHARACTER);
+    const typed = shown.text.replace("Lanterns", "Lanterns bright");
+    const ranges = remapBackgroundRanges(shown.text, typed, shown.ranges, typed.indexOf("bright") + 6);
+    expect(editRows(typed, ranges)).toEqual([{ text: "Lanterns bright glow", background: "(ooh) yeah (ah)" }]);
+  });
 });

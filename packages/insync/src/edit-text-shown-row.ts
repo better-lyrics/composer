@@ -64,6 +64,22 @@ function isOneGroup(token: string): boolean {
   return groups?.length === 1 && groups[0][0] === 0 && groups[0][1] === token.length;
 }
 
+function hasBalancedBrackets(text: string): boolean {
+  let depth = 0;
+  for (const char of text) {
+    if (char === "(") depth++;
+    else if (char === ")" && --depth < 0) return false;
+  }
+  return depth === 0;
+}
+
+// Whether a token typed into still shows a background: one group, or a stored background that was never one group
+// (an import can hold text between its groups) whose brackets still balance.
+function keepsBackgroundToken(oldToken: string, newToken: string): boolean {
+  if (newToken.includes("\n")) return false;
+  return isOneGroup(newToken) || (!isOneGroup(oldToken) && hasBalancedBrackets(newToken));
+}
+
 // The main text's offset after the syllable a middle background follows, when a single space joins it to the next.
 function middleOffset(line: LyricLine, afterIndex: number, splitChar: string): number | null {
   const { syllables } = mainTrack(line);
@@ -125,4 +141,4 @@ function shownEditText(lines: readonly LyricLine[], splitChar: string): ShownEdi
 // -- Exports ------------------------------------------------------------------
 
 export type { BackgroundRange, ShownEditText };
-export { isOneGroup, NO_RANGES, shiftedRange, shownEditText, shownRow };
+export { keepsBackgroundToken, NO_RANGES, shiftedRange, shownEditText, shownRow };
