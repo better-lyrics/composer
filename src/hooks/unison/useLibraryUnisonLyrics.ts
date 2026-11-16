@@ -3,16 +3,22 @@ import { useMemo } from "react";
 import { isOwnLyric } from "@/domain/unison/ownership";
 import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys";
 import { fetchUnisonLyric } from "@/hooks/unison/useUnisonLyric";
-import type { UnisonMineItem } from "@/lib/unison/api-types";
+import type { UnisonLyric, UnisonMineItem } from "@/lib/unison/api-types";
 import { isUnisonNotFound } from "@/lib/unison/client";
 import { fetchMinePages } from "@/lib/unison/endpoints";
 
 // -- Types ---------------------------------------------------------------------
 
-type LinkedLookup = "suggestion" | "own" | "removed" | "unresolved";
+type LibraryLyric = Pick<
+  UnisonMineItem,
+  "id" | "videoId" | "score" | "voteCount" | "hidden" | "marks" | "revision" | "createdAt"
+>;
+
+type LinkedLookup = { found: "own"; lyric: LibraryLyric } | { found: "suggestion" | "removed" | "unresolved" };
 
 interface LibraryUnisonLyrics {
   items: UnisonMineItem[];
+  readById: LibraryLyric[];
   /** True once every page of `/lyrics/mine` loaded, so a linked id that is still missing was removed or is not ours. */
   complete: boolean;
   suggestionIds: ReadonlySet<string>;
@@ -20,7 +26,7 @@ interface LibraryUnisonLyrics {
 }
 
 interface LibraryUnisonState extends LibraryUnisonLyrics {
-  byId: ReadonlyMap<string, UnisonMineItem>;
+  byId: ReadonlyMap<string, LibraryLyric>;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -29,23 +35,25 @@ const NO_IDS: ReadonlySet<string> = new Set();
 
 // -- Fetching ------------------------------------------------------------------
 
+function linkedLookup(result: PromiseSettledResult<UnisonLyric>, keyId: string | null): LinkedLookup {
+  if (result.status === "rejected") return { found: isUnisonNotFound(result.reason) ? "removed" : "unresolved" };
+  const lyric = result.value;
+  if (!isOwnLyric(lyric, keyId)) return { found: "suggestion" };
+  const { createdAt } = lyric;
+  return createdAt === undefined ? { found: "unresolved" } : { found: "own", lyric: { ...lyric, createdAt } };
+}
+
 async function lookUpLinked(
   queryClient: QueryClient,
   ids: readonly string[],
   keyId: string | null,
 ): Promise<Map<string, LinkedLookup>> {
   const results = await Promise.allSettled(ids.map((id) => fetchUnisonLyric(queryClient, Number(id))));
-  return new Map(
-    ids.map((id, index): [string, LinkedLookup] => {
-      const result = results[index];
-      if (result.status === "fulfilled") return [id, isOwnLyric(result.value, keyId) ? "own" : "suggestion"];
-      return [id, isUnisonNotFound(result.reason) ? "removed" : "unresolved"];
-    }),
-  );
+  return new Map(ids.map((id, index) => [id, linkedLookup(results[index], keyId)]));
 }
 
-function idsWhere(lookups: ReadonlyMap<string, LinkedLookup>, wanted: LinkedLookup): Set<string> {
-  return new Set([...lookups].flatMap(([id, found]) => (found === wanted ? [id] : [])));
+function idsWhere(lookups: ReadonlyMap<string, LinkedLookup>, wanted: LinkedLookup["found"]): Set<string> {
+  return new Set([...lookups].flatMap(([id, lookup]) => (lookup.found === wanted ? [id] : [])));
 }
 
 async function fetchMineForLibrary(
@@ -58,7 +66,7 @@ async function fetchMineForLibrary(
 ): Promise<LibraryUnisonLyrics> {
   const missing = new Set(linkedIds);
   const { items, complete } = await fetchMinePages(signal, {
-    maxPages: everyPage ? Number.POSITIVE_INFINITY : undefined,
+    maxPages: everyPage ? Number.POSITIVE_INFINITY : loadAll ? undefined : 1,
     stopAfter: (page) => {
       for (const item of page) missing.delete(String(item.id));
       return missing.size === 0 && !loadAll;
@@ -66,14 +74,12 @@ async function fetchMineForLibrary(
   });
   for (const item of items) missing.delete(String(item.id));
   const lookups = await lookUpLinked(queryClient, [...missing], keyId);
-  const suggestionIds = idsWhere(lookups, "suggestion");
   return {
     items,
+    readById: [...lookups.values()].flatMap((lookup) => (lookup.found === "own" ? [lookup.lyric] : [])),
     complete,
-    suggestionIds,
-    unresolvedIds: complete
-      ? new Set([...missing].filter((id) => !suggestionIds.has(id) && lookups.get(id) !== "removed"))
-      : NO_IDS,
+    suggestionIds: idsWhere(lookups, "suggestion"),
+    unresolvedIds: complete ? idsWhere(lookups, "unresolved") : NO_IDS,
   };
 }
 
@@ -102,7 +108,7 @@ function useLibraryUnisonLyrics(
         ? {
             ...lyrics,
             complete: lyrics.complete && !isPlaceholderData,
-            byId: new Map(lyrics.items.map((item) => [String(item.id), item])),
+            byId: new Map([...lyrics.items, ...lyrics.readById].map((lyric) => [String(lyric.id), lyric])),
           }
         : null,
     [lyrics, isPlaceholderData],

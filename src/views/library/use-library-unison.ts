@@ -60,7 +60,10 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[], sortsByUnison: 
     () => (showColumn ? { lyrics, matches: new Map(matches.map((match) => [match.projectId, match])) } : null),
     [showColumn, lyrics, matches],
   );
-  const linkedVideos = useMemo(() => new Map((items ?? []).map((item) => [String(item.id), item.videoId])), [items]);
+  const linkedVideos = useMemo(
+    () => new Map([...(lyrics?.byId ?? [])].map(([id, lyric]) => [id, lyric.videoId])),
+    [lyrics],
+  );
   const standings = useMemo(
     () =>
       new Map(

@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { unisonQueryKeys } from "@/hooks/unison/query-keys";
 import { fetchMineForLibrary } from "@/hooks/unison/useLibraryUnisonLyrics";
 import type { UnisonLyric, UnisonMineItem } from "@/lib/unison/api-types";
 import { clearUnisonSession, saveUnisonSession } from "@/lib/unison/session";
@@ -47,6 +48,7 @@ function lyricBy(id: number, keyId: string): UnisonLyric {
     voteCount: 5,
     confidence: "medium",
     hidden: false,
+    createdAt: 1_758_900_000,
     userVote: null,
     submitter: {
       keyId,
@@ -108,10 +110,11 @@ describe("fetchMineForLibrary", () => {
     clearUnisonSession();
   });
 
-  it("reads someone else's lyric once paging stops at the cap", async () => {
+  it("stops after the first page when the only other link is someone else's lyric", async () => {
     const calls = stubUnison([[OWN_ID]]);
+    const queryClient = new QueryClient();
     const result = await fetchMineForLibrary(
-      new QueryClient(),
+      queryClient,
       [String(OWN_ID), String(SUGGESTION_ID)],
       false,
       false,
@@ -119,9 +122,25 @@ describe("fetchMineForLibrary", () => {
       OWN_KEY,
     );
 
-    expect(result.complete).toBe(false);
-    expect(calls.lyricReads).toEqual([SUGGESTION_ID]);
+    expect(calls).toEqual({ minePages: 1, lyricReads: [SUGGESTION_ID] });
+    expect(queryClient.getQueryData(unisonQueryKeys.lyric(SUGGESTION_ID))).toMatchObject({ id: SUGGESTION_ID });
     expect([...result.suggestionIds]).toEqual([String(SUGGESTION_ID)]);
+  });
+
+  it("counts an own lyric past the first page as found without reading more pages", async () => {
+    const calls = stubUnison([[1001]]);
+    const result = await fetchMineForLibrary(
+      new QueryClient(),
+      [String(OWN_ID)],
+      false,
+      false,
+      new AbortController().signal,
+      OWN_KEY,
+    );
+
+    expect(calls).toEqual({ minePages: 1, lyricReads: [OWN_ID] });
+    expect(result.readById.map((lyric) => lyric.id)).toEqual([OWN_ID]);
+    expect(result.suggestionIds.size).toBe(0);
   });
 
   it("regression: never reads an own lyric by id when a later page lists it", async () => {
@@ -129,7 +148,7 @@ describe("fetchMineForLibrary", () => {
     const result = await fetchMineForLibrary(
       new QueryClient(),
       [String(OWN_ID), String(SUGGESTION_ID)],
-      false,
+      true,
       false,
       new AbortController().signal,
       OWN_KEY,
