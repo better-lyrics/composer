@@ -216,3 +216,31 @@ describe("auto-extract on blur preserves existing blur behavior", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(0);
   });
 });
+
+describe("brackets pasted into a row", () => {
+  beforeEach(() => {
+    useProjectStore.setState({ activeTab: "edit" });
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
+  });
+
+  it("regression: a group pasted right after a word keeps the caret after the paste", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    setTextareaValue(textarea, "Copper bells are ringing\nHarbour lights go down\nWillow branches sway");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(3);
+
+    const rowEnd = "Copper bells are ringing\nHarbour lights go down".length;
+    textarea.focus();
+    textarea.setSelectionRange(rowEnd, rowEnd);
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "(go down)");
+    textarea.dispatchEvent(new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }));
+    textarea.setRangeText("(go down)", rowEnd, rowEnd, "end");
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("(go down)");
+    await expect.poll(() => textarea.value.split("\n")[1]).toBe("Harbour lights go down (go down)");
+    expect(textarea.selectionStart).toBe(rowEnd + " (go down)".length);
+  });
+});

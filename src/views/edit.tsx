@@ -46,6 +46,7 @@ import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
 import { useShownEditText } from "@/views/edit/use-shown-edit-text";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { settingsExtractOptions, withTypedBackgroundsExtracted } from "@/views/edit/typed-background-extraction";
+import { shownEditText } from "insync/edit-text-shown-row";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -113,16 +114,17 @@ const EditPanel: React.FC = () => {
 
   // Shows the committed lyrics in the textarea only when the command changed them.
   const commitAndShow = useCallback(
-    (command: LyricCommand): boolean => {
+    (command: LyricCommand, typedIn?: HTMLTextAreaElement): boolean => {
       const before = useProjectStore.getState().lines;
       useProjectStore.getState().commit(command);
       const committed = useProjectStore.getState().lines;
       if (committed === before) return false;
       linesSetByUs.current = committed;
-      showLines(committed);
+      if (typedIn) showEditText(typedIn.value, shownEditText(committed, getSplitCharacter()), typedIn);
+      else showLines(committed);
       return true;
     },
-    [showLines],
+    [showLines, showEditText],
   );
 
   const handleExtractBackgroundVocals = useCallback(() => {
@@ -307,7 +309,7 @@ const EditPanel: React.FC = () => {
           finalLines = extractBackgroundVocals(finalLines, settingsExtractOptions(), getSplitCharacter(), songEnd);
         }
         finalizeRun();
-        commitAndShow(pasteLyrics(lines, finalLines));
+        commitAndShow(pasteLyrics(lines, finalLines), textarea);
         if (action.splits.length > 0) notifyTemplateSplit(action.splits.map((split) => split.instances));
         if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
         else showLineDiffersToast(action.removedIds, lines);

@@ -6,6 +6,7 @@ interface PendingCaret {
   typedText: string;
   start: number;
   end: number;
+  scrollTop: number;
 }
 
 function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => void) {
@@ -21,12 +22,19 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
       shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.start),
       shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.end),
     );
+    // A new value moves the caret to the end and scrolls there; the typed row was in view, so the view stays.
+    textarea.scrollTop = pending.scrollTop;
   }, [rawText]);
 
   const showEditText = useCallback(
     (typedText: string, edit: ShownEditText, textarea: HTMLTextAreaElement) => {
       if (edit.text !== typedText) {
-        pendingCaretRef.current = { typedText, start: textarea.selectionStart, end: textarea.selectionEnd };
+        pendingCaretRef.current = {
+          typedText,
+          start: textarea.selectionStart,
+          end: textarea.selectionEnd,
+          scrollTop: textarea.scrollTop,
+        };
       }
       showText(edit);
     },
