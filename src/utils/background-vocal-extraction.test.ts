@@ -1,12 +1,3 @@
-import { describe, expect, it } from "vitest";
-import { withSeededBackground } from "insync/line-background";
-import { bgBounds } from "insync/line-bounds";
-import { lineFromFields } from "insync/line-from-fields";
-import type { LyricLine } from "insync/line";
-import { backgroundText, lineText } from "insync/line-text";
-import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withMainTrack, withTrackText } from "insync/line-track-writes";
-import { createLine } from "@/test/factories";
 import {
   classifyLine,
   extractBackgroundVocals,
@@ -14,7 +5,16 @@ import {
   lineHasInlineParens,
   scanParenGroups,
 } from "insync/background-vocal-extraction";
+import type { LyricLine } from "insync/line";
+import { withSeededBackground } from "insync/line-background";
+import { bgBounds } from "insync/line-bounds";
+import { lineFromFields } from "insync/line-from-fields";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { withMainTrack, withTrackText } from "insync/line-track-writes";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { describe, expect, it } from "vitest";
+import { createLine } from "@/test/factories";
 
 // -- Specification table -------------------------------------------------------
 
@@ -979,6 +979,29 @@ describe("extractBackgroundVocals: specification table", () => {
 });
 
 // -- extractBackgroundVocals: none and skip lines -----------------------------
+
+describe("extractBackgroundVocals: linked instances", () => {
+  it("regression: instances of one template line all keep their brackets when one of them cannot be extracted", () => {
+    const instance = (instanceIdx: number, words?: { text: string; sep?: string; begin: number; end: number }[]) =>
+      createLine({
+        id: `chorus-${instanceIdx}`,
+        text: "ari|ka pelvin (tor zu)",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+        ...(words && { words }),
+      });
+    const lines = [instance(0), instance(1, [{ text: "ari", begin: 0.4, end: 0.6 }]), instance(2)];
+    const result = extractBackgroundVocals(
+      lines,
+      { mergeStandaloneLines: true, preserveBrackets: true },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(result.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(
+      lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER)),
+    );
+  });
+});
 
 describe("extractBackgroundVocals: none and skip lines", () => {
   it("pushes a none line by reference", () => {

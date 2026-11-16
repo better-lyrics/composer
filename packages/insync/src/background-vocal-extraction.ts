@@ -1,6 +1,8 @@
-import { isLinked } from "./instance-predicates";
-import { withBackground, withSeededBackground } from "./line-background";
+import { joinBackgroundText } from "./background-vocal-brackets";
+import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
+import { isLinked, isSlotLine } from "./instance-predicates";
 import type { LineUpdate, LyricLine } from "./line";
+import { withBackground, withSeededBackground } from "./line-background";
 import { bgBounds } from "./line-bounds";
 import { isWordSynced } from "./line-predicates";
 import { wordContentSpans } from "./line-reconstruct-text";
@@ -10,8 +12,6 @@ import { withMainTrack, withTrackSyllables, withTrackText } from "./line-track-w
 import { remapWordTextsPreservingTiming } from "./word-remap-text";
 import { wordFromSpaced } from "./word-spaced-words";
 import type { WordTiming } from "./word-timing";
-import { joinBackgroundText } from "./background-vocal-brackets";
-import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
 
 // -- Types --------------------------------------------------------------------
 
@@ -194,12 +194,18 @@ function extractBackgroundVocals(
 ): LyricLine[] {
   const result: LyricLine[] = [];
   const sameSessionWriteIndices = new Set<number>();
+  const slotLines = new Map<number, LyricLine>();
+  const refusedSlots = new Set<string>();
+  const slotOf = (line: LyricLine) => (isSlotLine(line) ? `${line.groupId}\u0000${line.templateLineIdx}` : null);
   for (const line of lines) {
     const classified = classifyLine(lineText(line, splitChar));
     if (classified.kind === "inline") {
       const extracted = extractInline(line, options, splitChar);
       result.push(extracted);
       if (extracted !== line) sameSessionWriteIndices.add(result.length - 1);
+      const slot = slotOf(line);
+      if (slot !== null) slotLines.set(result.length - 1, line);
+      if (slot !== null && extracted === line) refusedSlots.add(slot);
       continue;
     }
     if (classified.kind === "standalone" && options.mergeStandaloneLines) {
@@ -229,6 +235,12 @@ function extractBackgroundVocals(
       }
     }
     result.push(line);
+  }
+  // Linked instances of one template line show one text, so one instance that cannot be extracted keeps them all.
+  for (const [index, line] of slotLines) {
+    if (!refusedSlots.has(slotOf(line) ?? "")) continue;
+    result[index] = line;
+    sameSessionWriteIndices.delete(index);
   }
   return result.map((line, index) =>
     sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar, songEnd) : line,
