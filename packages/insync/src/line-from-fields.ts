@@ -79,7 +79,8 @@ function untimedRest(text: string, words: readonly WordTiming[], splitChar: stri
     const remainder = original.normalize("NFC").slice(offset);
     const untimed = remainder + rest;
     const splitOff = remainder.startsWith(splitChar);
-    if (untimed.trim() === "" || (coversEveryTextWord && !splitOff && !LETTER.test(untimed))) return "";
+    if (untimed.split(splitChar).join("").trim() === "") return "";
+    if (coversEveryTextWord && !splitOff && !LETTER.test(untimed)) return "";
     return isLetter(remainder[0]) ? splitChar + untimed : untimed;
   }
   return "";
