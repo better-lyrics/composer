@@ -2,15 +2,15 @@
  * @vitest-environment node
  */
 
-import { describe, expect, it } from "vitest";
-import { lineFromFields } from "insync/line-from-fields";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import type { LanguageContentOrigin, TransliterationAlignmentStatus } from "insync/language";
 import type { LyricLine } from "insync/line";
+import { lineFromFields } from "insync/line-from-fields";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { extractBackgroundVocals } from "insync/background-vocal-extraction";
-import { textToLyricLines } from "./lyrics-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { describe, expect, it } from "vitest";
+import { textToLyricLines } from "./lyrics-text";
 
 describe("textToLyricLines · group attrs preservation", () => {
   it("keeps groupId/instanceIdx/templateLineIdx on exact-text match", () => {
@@ -760,5 +760,63 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     ];
     const result = textToLyricLines("Lanterns drift away\nQuiet harbor lights\nPaper wings tonight", "v1", lines);
     expect(result.map((l) => l.id)).toEqual(["lanterns", "quiet", "paper-2"]);
+  });
+});
+
+describe("textToLyricLines · rows outside the edited range keep their own line", () => {
+  const sameText = (): LyricLine[] => [
+    lineFromFields(
+      {
+        id: "r1",
+        text: "tanu da",
+        agentId: "v1",
+        words: [
+          { id: "r1-a", text: "tanu", sep: " ", begin: 6.6, end: 6.76, joinsNext: false },
+          { id: "r1-b", text: "da", sep: "", begin: 6.76, end: 6.94, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields(
+      {
+        id: "r2",
+        text: "tanu da",
+        agentId: "v1",
+        backgroundText: "lovo",
+        words: [
+          { id: "r2-a", text: "tanu", sep: " ", begin: 7.1, end: 7.3, joinsNext: false },
+          { id: "r2-b", text: "da", sep: "", begin: 7.3, end: 7.5, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields({ id: "r3", text: "tanu da", agentId: "v1", begin: 7.76, end: 8.95 }, DEFAULT_SPLIT_CHARACTER),
+  ];
+
+  it("regression: splitting the first of three same-text rows leaves the other two untouched", () => {
+    const lines = sameText();
+    const result = textToLyricLines("ta\nnu da\ntanu da\ntanu da", "v1", lines);
+    expect(result.slice(2)).toEqual(lines.slice(1));
+  });
+
+  it("regression: joining the first two of three same-text rows leaves the third untouched", () => {
+    const lines = sameText();
+    const result = textToLyricLines("tanu da tanu da\ntanu da", "v1", lines);
+    expect(result[1]).toEqual(lines[2]);
+  });
+
+  it("regression: an empty row inserted above an empty row with a background does not take that row's line", () => {
+    const lines = [
+      lineFromFields({ id: "x", text: "tanu da", agentId: "v1", begin: 1, end: 2 }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "bg-only", text: "", agentId: "v1", backgroundText: "lovo" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "blank", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+    ];
+    const result = textToLyricLines(["tanu da", "", "", ""], "v1", lines, DEFAULT_SPLIT_CHARACTER, [
+      null,
+      null,
+      "lovo",
+      null,
+    ]);
+    expect(result.map((line) => line.id).slice(2)).toEqual(["bg-only", "blank"]);
   });
 });

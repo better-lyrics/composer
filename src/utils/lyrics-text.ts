@@ -1,16 +1,16 @@
 import { withShownBackground } from "insync/edit-text-shown-background";
+import type { LyricLine, MainTrack } from "insync/line";
 import { withoutBackground } from "insync/line-background";
 import { lineFromFields } from "insync/line-from-fields";
 import { joinedLines } from "insync/line-joined-lines";
-import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { joinedRowRun, startSearchesByText } from "@/utils/lyrics-text-joined-rows";
-import { getSplitCharacter } from "@/utils/split-character";
-import { type NearestAccepted, nearestAcceptedSearch } from "@/utils/nearest-accepted";
-import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 import { memoBySplitCharacter } from "insync/memo-by-identity";
+import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
+import { joinedRowRun, startSearchesByText } from "@/utils/lyrics-text-joined-rows";
+import { type NearestAccepted, nearestAcceptedSearch } from "@/utils/nearest-accepted";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -112,6 +112,21 @@ function textToLyricLines(
     claimed[index] = line;
     usedExistingIds.add(line.id);
   };
+
+  // An edit changes one contiguous range of rows, so the unchanged rows before and after it keep their own lines by
+  // offset before any row can take a line by text, even when other rows repeat their text.
+  const isUnchanged = (row: number, lineIndex: number) =>
+    cleanedKeys[row] === existingKeys[lineIndex] &&
+    (!shownBackgrounds ||
+      (shownBackgrounds[row] || null) === (backgroundText(existingLines[lineIndex], splitChar)?.trim() || null));
+  const shorter = Math.min(newLines.length, existingLines.length);
+  let unchangedBefore = 0;
+  for (; unchangedBefore < shorter && isUnchanged(unchangedBefore, unchangedBefore); unchangedBefore++)
+    claim(unchangedBefore, existingLines[unchangedBefore]);
+  for (let fromEnd = 1; unchangedBefore + fromEnd <= shorter; fromEnd++) {
+    if (!isUnchanged(newLines.length - fromEnd, existingLines.length - fromEnd)) break;
+    claim(newLines.length - fromEnd, existingLines[existingLines.length - fromEnd]);
+  }
 
   // Rows still showing their own line's text keep that line before any row can
   // match it by text, so fixing a line into a later duplicate cannot steal it.
