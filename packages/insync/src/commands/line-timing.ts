@@ -2,19 +2,19 @@ import type { LyricCommand } from "./command";
 import { lineEditCommand } from "./line-edits";
 import { refused } from "./outcome";
 import type { LineUpdate } from "../line";
+import { withSeededBackground } from "../line-background";
 import { mainTrack } from "../line-track";
 import { withMainTrack, withTrackSpan } from "../line-track-writes";
 
 // -- Commands -----------------------------------------------------------------
 
-// Times an untimed line as one block, sized to its words.
+// Times an untimed line as one block, sized to its words; an untimed background is timed with it.
 function placeLineAt(lineId: string, begin: number, end: number): LyricCommand {
-  return lineEditCommand({ command: "place line", args: [lineId, begin, end] }, (root) => {
+  return lineEditCommand({ command: "place line", args: [lineId, begin, end] }, (root, ctx) => {
     const line = root.lines.find((candidate) => candidate.id === lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
-    return [
-      { id: lineId, updates: { tracks: withMainTrack(line, withTrackSpan(mainTrack(line), begin, end)).tracks } },
-    ];
+    const placed = withSeededBackground(withMainTrack(line, withTrackSpan(mainTrack(line), begin, end)), ctx.splitChar);
+    return [{ id: lineId, updates: { tracks: placed.tracks } }];
   });
 }
 
