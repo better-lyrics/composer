@@ -3,7 +3,7 @@ import { shiftCaretPastRewrittenRows } from "insync/edit-text";
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { changedRegion } from "@/domain/edit-text/background-ranges";
-import { nextFrame } from "@/lib/frame-loop";
+import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { scrollCaretIntoView } from "@/views/edit/textarea-caret-view";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -27,12 +27,15 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
 
   // Read before the browser scrolls for the pasted text; a paste taken over as an import leaves nothing to restore.
   useEffect(() => {
+    let forgetFrame: number | null = null;
     const notePaste = (event: ClipboardEvent) => {
       const textarea = textareaRef.current;
       if (!textarea || event.target !== textarea) return;
       scrollBeforePasteRef.current = textarea.scrollTop;
       // The paste's input comes before the next frame; a paste with no input (an empty clipboard) leaves nothing.
-      nextFrame(() => {
+      if (forgetFrame !== null) cancelNextFrame(forgetFrame);
+      forgetFrame = nextFrame(() => {
+        forgetFrame = null;
         scrollBeforePasteRef.current = null;
       });
     };
@@ -42,6 +45,7 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     window.addEventListener("paste", notePaste, true);
     window.addEventListener("paste", dropTakenOver);
     return () => {
+      if (forgetFrame !== null) cancelNextFrame(forgetFrame);
       window.removeEventListener("paste", notePaste, true);
       window.removeEventListener("paste", dropTakenOver);
     };
