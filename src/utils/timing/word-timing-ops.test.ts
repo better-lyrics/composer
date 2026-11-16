@@ -185,3 +185,39 @@ describe("main-track ops on drawn lines", () => {
     expect(calls).toHaveLength(0);
   });
 });
+
+describe("rolling boundary edits", () => {
+  it("regression: a roll never squeezes or inverts the neighbour it carries", () => {
+    const cases = [
+      {
+        words: [
+          { text: "pel", sep: " ", begin: 10.266, end: 10.3 },
+          { text: "tor", sep: "", begin: 10.227, end: 10.227 },
+        ],
+        time: 10.611,
+      },
+      {
+        words: [
+          { text: "a", sep: " ", begin: 0.99, end: 1 },
+          { text: "b", sep: "", begin: 1, end: 1.02 },
+        ],
+        time: 1.5,
+      },
+    ];
+    for (const { words, time } of cases) {
+      const line = createLine({ text: words.map((w) => w.text).join(" "), words });
+      const edit = wordBoundaryEdit({
+        line,
+        wordIdx: 0,
+        edge: "end",
+        time,
+        minDuration: 0.05,
+        rolling: true,
+        syllablesFollowRolling: true,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      const neighbour = edit && (roleWords(updatedLine(edit.updates), "main") ?? [])[1];
+      if (neighbour) expect(neighbour.end).toBeGreaterThan(neighbour.begin);
+    }
+  });
+});

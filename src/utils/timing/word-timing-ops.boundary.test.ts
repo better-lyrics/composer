@@ -209,12 +209,19 @@ describe("createWordTimingOps: setBoundary", () => {
             { text: "b", begin: 1, end: 1.02 },
           ],
         });
-      const rolledBack = run({ line: tight(), wordIdx: 1, edge: "begin", time: 0.95, minDuration: 0.5, rolling: true });
-      expect(rolledBack.words[1].begin).toBeLessThanOrEqual(rolledBack.words[1].end);
-      expect(rolledBack.words[0].begin).toBeLessThanOrEqual(rolledBack.words[0].end);
-      const rolledOn = run({ line: tight(), wordIdx: 0, edge: "end", time: 0.95, minDuration: 0.5, rolling: true });
-      expect(rolledOn.words[0].begin).toBeLessThanOrEqual(rolledOn.words[0].end);
-      expect(rolledOn.words[1].begin).toBeLessThanOrEqual(rolledOn.words[1].end);
+      // A roll that would leave either word no length is refused, which leaves the words as they were.
+      const wordsAfter = (rolled: ReturnType<typeof run>) =>
+        rolled.calls.length ? rolled.words : (roleWords(tight(), "main") ?? []);
+      const rolledBack = wordsAfter(
+        run({ line: tight(), wordIdx: 1, edge: "begin", time: 0.95, minDuration: 0.5, rolling: true }),
+      );
+      expect(rolledBack[1].begin).toBeLessThanOrEqual(rolledBack[1].end);
+      expect(rolledBack[0].begin).toBeLessThanOrEqual(rolledBack[0].end);
+      const rolledOn = wordsAfter(
+        run({ line: tight(), wordIdx: 0, edge: "end", time: 0.95, minDuration: 0.5, rolling: true }),
+      );
+      expect(rolledOn[0].begin).toBeLessThanOrEqual(rolledOn[0].end);
+      expect(rolledOn[1].begin).toBeLessThanOrEqual(rolledOn[1].end);
     });
 
     it("regression: rolls a syllable boundary with rolling off, so no gap opens inside a word", () => {

@@ -1,7 +1,13 @@
 import type { TimeRange } from "./group-shared-timing";
 import type { LineUpdate, LyricLine } from "./line";
 import { applyStepKey, type StepKey, type StepRefusal } from "./step-timing-step-write";
-import { type BoundaryEdge, clampBoundaryTime, endsAtOwnStart, shouldRollNeighbour } from "./word-boundary";
+import {
+  type BoundaryEdge,
+  clampBoundaryTime,
+  endsAtOwnStart,
+  rollKeepsNeighbour,
+  shouldRollNeighbour,
+} from "./word-boundary";
 import { getSyllablePositions } from "./word-syllable-groups";
 import type { WordTiming } from "./word-timing";
 
@@ -101,6 +107,7 @@ function createWordTimingOps(config: WordFieldConfig) {
       syllablePositions: getSyllablePositions(words),
     });
     const clamped = clampBoundaryTime({ words, wordIndex: wordIdx, edge, time, minDuration, rollNeighbour, range });
+    if (rollNeighbour && !rollKeepsNeighbour(words, wordIdx, edge, clamped)) return null;
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];
 

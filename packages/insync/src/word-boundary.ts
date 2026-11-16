@@ -96,6 +96,21 @@ function clampBoundaryTime({
   return Math.min(hardCeiling, Math.max(word.begin + minDuration, Math.min(ceiling, time)));
 }
 
+// A rolled neighbour takes the boundary as its own edge; a boundary at or past its far edge would leave it no length.
+function rollKeepsNeighbour(
+  words: readonly WordTiming[],
+  wordIndex: number,
+  edge: BoundaryEdge,
+  time: number,
+): boolean {
+  if (edge === "begin") {
+    const prev = words[wordIndex - 1];
+    return !prev || time > prev.begin;
+  }
+  const next = words[wordIndex + 1];
+  return !next || time < next.end;
+}
+
 // An end set exactly where the word starts has nothing to end; writing it would only squeeze the word to the minimum.
 function endsAtOwnStart(word: WordTiming, edge: BoundaryEdge, time: number): boolean {
   return edge === "end" && time === word.begin;
@@ -103,5 +118,5 @@ function endsAtOwnStart(word: WordTiming, edge: BoundaryEdge, time: number): boo
 
 // -- Exports ------------------------------------------------------------------
 
-export { clampBoundaryTime, endsAtOwnStart, isBoundaryFlush, shouldRollNeighbour };
+export { clampBoundaryTime, endsAtOwnStart, isBoundaryFlush, rollKeepsNeighbour, shouldRollNeighbour };
 export type { BoundaryEdge };
