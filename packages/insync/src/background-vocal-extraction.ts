@@ -123,7 +123,7 @@ function extractInlineWordSynced(
       insideCount++;
     }
     if (insideCount === 0) survivors.push(words[i]);
-    else if (hasSungContent(words[i].text, splitChar)) bracketed.push(words[i]);
+    else if (options.preserveBrackets || hasSungContent(words[i].text, splitChar)) bracketed.push(words[i]);
   }
   if (survivors.length === 0) return line;
   const trimmedSurvivors = survivors.map((word, i) =>
