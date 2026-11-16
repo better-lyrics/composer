@@ -34,7 +34,8 @@ function enforceOrderAround(words: WordTiming[], index: number, songEnd = Number
     if (word.begin >= previousEnd && word.end >= word.begin) break;
     const begin = Math.max(word.begin, previousEnd);
     const length = word.end - word.begin;
-    const end = word.end > begin || length <= 0 ? Math.max(word.end, begin) : Math.max(begin, Math.min(begin + length, songEnd));
+    const end =
+      word.end > begin || length <= 0 ? Math.max(word.end, begin) : Math.max(begin, Math.min(begin + length, songEnd));
     copyOnWrite();
     result[i] = { ...word, begin, end };
     previousEnd = end;
