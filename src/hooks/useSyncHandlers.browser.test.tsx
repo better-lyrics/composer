@@ -1109,6 +1109,26 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 
     expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 0 });
   });
+
+  it("regression: resuming before the closing Line mode tap keeps the cursor so the next tap ends the last line", async () => {
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "l0", text: "Paper lanterns rise" }), createLine({ id: "l1", text: "Over the harbor" })],
+    });
+    const { result, rerender, act, getSyncState } = await mountSyncHandlers({ granularity: "line" });
+
+    await act(() => result.current.handleTap());
+    await rerender({ syncState: getSyncState(), currentTime: 1 });
+    await act(() => result.current.handleTap());
+    await rerender({ syncState: getSyncState(), currentTime: 2 });
+
+    await act(() => result.current.handleStartSync());
+    await rerender({ syncState: getSyncState(), currentTime: 2 });
+    await act(() => result.current.handleTap());
+
+    const [first, last] = useProjectStore.getState().lines;
+    expect(mainTrack(first)).toMatchObject({ begin: 0, end: 1 });
+    expect(mainTrack(last)).toMatchObject({ begin: 1, end: 2 });
+  });
 });
 
 describe("sync-panel bg-init contract", () => {
