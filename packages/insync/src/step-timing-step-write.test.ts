@@ -65,11 +65,26 @@ describe("applyStepKey", () => {
     });
   });
 
-  it("refuses a start that would leave the previous word shorter than the minimum", () => {
+  it("refuses a start before the previous word begins", () => {
     const words = [w("the ", 10.0, 10.4), w("wave", 10.4, 11.2)];
-    const refused = { kind: "refused", refusal: { reason: "beforePrevious", previousWord: "the " } };
-    expect(step(words, 1, "start", 10.03)).toEqual(refused);
-    expect(step(words, 1, "start", 9.8)).toEqual(refused);
+    expect(step(words, 1, "start", 9.8)).toEqual({
+      kind: "refused",
+      refusal: { reason: "beforePrevious", previousWord: "the " },
+    });
+  });
+
+  it("regression: a step refused by the minimum word length says so", () => {
+    const steppedPastAt = [w("at ", 30.0, 30.2), w("a ", 30.2, 30.6)];
+    expect(step(steppedPastAt, 1, "step", 30.22)).toEqual({
+      kind: "refused",
+      refusal: { reason: "minDuration", short: "word", word: "a ", previousWord: "at ", minMs: 50 },
+    });
+    const words = [w("the ", 10.0, 10.4), w("wave", 10.4, 11.2)];
+    // This start used to report beforePrevious, though it lands after "the" begins.
+    expect(step(words, 1, "start", 10.03)).toEqual({
+      kind: "refused",
+      refusal: { reason: "minDuration", short: "previous", word: "wave", previousWord: "the ", minMs: 50 },
+    });
   });
 
   it("acts like the end key on the last word of a line and writes nothing after it", () => {
