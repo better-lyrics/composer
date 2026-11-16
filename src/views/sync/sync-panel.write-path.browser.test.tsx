@@ -412,7 +412,7 @@ describe("end of lyrics", () => {
 });
 
 describe("early tap flag (P1)", () => {
-  it("tells the user when a tap was snapped to the previous word", async () => {
+  it("tells the user when a tap was snapped to the end of the previous word", async () => {
     load([createLine({ id: "l0", text: "a b c" })]);
     const screen = await render(
       <>
@@ -423,7 +423,7 @@ describe("early tap flag (P1)", () => {
     await tapAt(5);
     await tapAt(6);
     await tapAt(1);
-    await expect.element(screen.getByText("Early tap snapped to 0:06.000")).toBeVisible();
+    await expect.element(screen.getByText("Early tap snapped to 0:06.300")).toBeVisible();
   });
 });
 

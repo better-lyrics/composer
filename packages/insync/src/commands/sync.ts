@@ -9,7 +9,7 @@ import type { LineUpdate, LyricLine } from "../line";
 import { shiftLineTiming } from "../line-shift";
 import { withRoleWords, withoutLineTiming } from "../line-track-writes";
 import { roleWords, type WordTrack } from "../line-track";
-import { type GestureCommit, type GestureContext, type SyncGesture, commitGesture } from "../sync-commit-gesture";
+import { type GestureCommit, type GestureContext, type SyncGesture, planGesture } from "../sync-commit-gesture";
 import type { WordTiming } from "../word-timing";
 import type { BoundaryEdge } from "../word-boundary";
 import { bgWordRetimeEdit } from "../timing-bg-word-ops";
@@ -41,14 +41,18 @@ function syncGesture(
   return lineEditCommand(
     { command: "sync gesture", args: [gesture, ctx.cursor.lineIndex, ctx.cursor.wordIndex] },
     (root, command) => {
-      const commit = commitGesture(root.lines, gesture, {
+      const plan = planGesture(root.lines, gesture, {
         ...ctx,
         groups: root.groups,
         splitChar: command.splitChar,
         songEnd: command.songEnd,
       });
-      report(commit);
-      return commit?.lineUpdates ?? [];
+      if (plan === "no-room") {
+        report(null);
+        return refused({ reason: "early-tap-no-room" });
+      }
+      report(plan);
+      return plan?.lineUpdates ?? [];
     },
   );
 }

@@ -635,6 +635,37 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     expect(words[1].explicit).toBe(true);
     expect(words[1].joinsNext).toBe(true);
   });
+
+  it("regression: releasing a hold whose start was skipped writes nothing", async () => {
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        createLine({
+          id: "l0",
+          text: REDO_TEXT,
+          words: createWords([
+            { text: "one", sep: " ", begin: 5, end: 5 },
+            { text: "two", sep: " ", begin: 5, end: 5 },
+          ]),
+        }),
+      ],
+    });
+    const before = useProjectStore.getState().lines;
+
+    const { result, rerender, act } = await mountSyncHandlers({
+      initialSyncState: { position: at(0, 1), isActive: true },
+      initialCurrentTime: 4,
+    });
+
+    await act(() => {
+      result.current.handleHoldStart();
+    });
+    await rerender({ syncState: { position: at(0, 1), isActive: true }, currentTime: 6 });
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+
+    expect(useProjectStore.getState().lines).toBe(before);
+  });
 });
 
 describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {

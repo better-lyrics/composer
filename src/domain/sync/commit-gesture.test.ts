@@ -7,7 +7,13 @@ import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/li
 import { lineText } from "insync/line-text";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
-import { type GestureCommit, type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
+import {
+  type GestureCommit,
+  type GestureContext,
+  type SyncGesture,
+  commitGesture,
+  planGesture,
+} from "insync/sync-commit-gesture";
 import { isSyncComplete } from "insync/sync-slot-close";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
@@ -17,14 +23,18 @@ import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const DUR = 0.3;
 
-function run(lines: LyricLine[], gesture: SyncGesture, cursor: [number, number], time: number, jumped = false) {
-  return commitGesture(lines, gesture, {
+function ctxAt(cursor: [number, number], time: number, jumped = false): GestureContext {
+  return {
     cursor: { lineIndex: cursor[0], wordIndex: cursor[1] },
     jumped,
     time,
     defaultWordDuration: DUR,
     splitChar: DEFAULT_SPLIT_CHARACTER,
-  });
+  };
+}
+
+function run(lines: LyricLine[], gesture: SyncGesture, cursor: [number, number], time: number, jumped = false) {
+  return commitGesture(lines, gesture, ctxAt(cursor, time, jumped));
 }
 
 function apply(lines: LyricLine[], commit: GestureCommit | null): LyricLine[] {
@@ -102,11 +112,34 @@ describe("tap-word", () => {
     expect(commit?.lineUpdates).toHaveLength(2);
   });
 
-  it("regression D5: a tap behind the previous word is clamped to its begin and flagged", () => {
+  it("regression D5: a tap behind the previous word is clamped to its end and flagged", () => {
     const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 6), word("b ", 6, 6.3)] })];
     const commit = run(lines, "tap-word", [0, 2], 1);
-    expect(commit?.clampedTo).toBe(6);
+    expect(commit?.clampedTo).toBe(6.3);
     expectMonotonic(apply(lines, commit));
+  });
+
+  it("regression: early taps one after another never leave a word without length", () => {
+    let lines = [createLine({ id: "l0", text: "wait for the morning", words: [word("wait ", 24.2, 24.5)] })];
+    for (const wordIndex of [1, 2, 3]) lines = apply(lines, run(lines, "tap-word", [0, wordIndex], 20));
+    const words = timedSyllables(mainTrack(lines[0]));
+    expect(words).toHaveLength(4);
+    for (const w of words) expect(w.end, w.text).toBeGreaterThan(w.begin);
+    expectMonotonic(lines);
+  });
+
+  it("refuses an early tap when the previous word leaves it no room", () => {
+    const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 5, 5)] })];
+    expect(planGesture(lines, "tap-word", ctxAt([0, 1], 1))).toBe("no-room");
+  });
+
+  it("opens an early hold at the previous word's end even when the next word starts there", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 6), word("b ", 6, 6), word("c", 6, 7)] }),
+    ];
+    const commit = commitGesture(lines, "hold-start", ctxAt([0, 1], 4));
+    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[1]).toEqual(word("b ", 6, 6));
+    expect(commit?.clampedTo).toBe(6);
   });
 
   it("starts a line before the previous line's last word and leaves that word alone", () => {
@@ -287,11 +320,9 @@ describe("tap-line", () => {
     );
   });
 
-  it("regression D5: a backwards line tap is clamped and never writes end < begin", () => {
+  it("regression D5: a backwards line tap behind a line with no length yet is refused", () => {
     const lines = [createLine({ id: "l0", text: "first", begin: 5, end: 5 }), createLine({ id: "l1", text: "second" })];
-    const commit = run(lines, "tap-line", [1, 0], 2);
-    expect(commit?.clampedTo).toBe(5);
-    expectMonotonic(apply(lines, commit));
+    expect(planGesture(lines, "tap-line", ctxAt([1, 0], 2))).toBe("no-room");
   });
 
   it("regression T10: a word-synced line moves as a whole instead of being discarded", () => {
@@ -359,13 +390,13 @@ describe("tap-line", () => {
     });
   });
 
-  it("regression I1: after a word-synced line, the floor is its last word's begin, never its first", () => {
+  it("regression I1: after a word-synced line, the floor is its last word's end, never its first word", () => {
     const lines = [
       createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 5, 6)] }),
       createLine({ id: "l1", text: "c" }),
     ];
     const commit = run(lines, "tap-line", [1, 0], 3);
-    expect(commit?.clampedTo).toBe(5);
+    expect(commit?.clampedTo).toBe(6);
     expectMonotonic(apply(lines, commit));
   });
 
@@ -442,10 +473,26 @@ describe("hold gestures", () => {
     expect(commit?.nextCursor).toEqual({ lineIndex: 0, wordIndex: 1 });
   });
 
+  it("regression: a hold released before its snapped start keeps a tap's length", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 5.3), word("b ", 5.3, 5.3)] })];
+    const commit = run(lines, "hold-end", [0, 1], 5.1);
+    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[1]).toEqual(word("b ", 5.3, 5.3 + DUR));
+    expect(commit?.clampedTo).toBe(5.3);
+  });
+
+  it("regression: a hold-tap before the held word's start never leaves it without length", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 5.3), word("b ", 5.3, 5.3)] })];
+    const commit = run(lines, "hold-tap", [0, 1], 5.1);
+    const words = timedSyllables(mainTrack(apply(lines, commit)[0]));
+    expect(words[1]).toEqual(word("b ", 5.3, 5.3 + DUR));
+    expect(words[2].begin).toBe(5.3 + DUR);
+    expect(commit?.nextCursor).toEqual({ lineIndex: 0, wordIndex: 2 });
+  });
+
   it("hold-end never ends a word before it begins", () => {
     const lines = [createLine({ id: "l0", text: "a", words: [word("a", 3, 3)] })];
     const commit = run(lines, "hold-end", [0, 0], 1);
-    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[0]).toEqual(word("a", 3, 3));
+    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[0]).toEqual(word("a", 3, 3 + DUR));
     expect(commit?.clampedTo).toBe(3);
   });
 

@@ -28,7 +28,8 @@ type Refusal =
   | { reason: "needs-one-word"; selected: number }
   | { reason: "needs-one-run"; across: "lines" | "tracks" }
   | { reason: "step"; refusal: StepRefusal }
-  | { reason: "move"; reject: MoveRejectReason };
+  | { reason: "move"; reject: MoveRejectReason }
+  | { reason: "early-tap-no-room" };
 
 // Refusals are returned, never thrown, so a caller cannot drop one without the type saying so.
 type Applied = { root: LyricRoot; touched: string[] };
