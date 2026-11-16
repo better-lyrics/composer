@@ -162,7 +162,7 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
-    {truncateLabel(backgroundText(line, getSplitCharacter()) ?? "", BG_LABEL_MAX_CHARS) || "BG"}
+    {truncateLabel(stripSplitCharacter(backgroundText(line, getSplitCharacter()) ?? ""), BG_LABEL_MAX_CHARS) || "BG"}
   </div>
 );
 

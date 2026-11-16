@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "insync/line-from-fields";
+import type { LanguageContentOrigin, TransliterationAlignmentStatus } from "insync/language";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
@@ -658,5 +659,92 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     );
     const result = textToLyricLines("New\nX\nX\nY", "v1", [x1, x2, y]);
     expect(result.slice(1).map((l) => l.id)).toEqual(["x1", "x2", "y"]);
+  });
+
+  const timedLine = (id: string, words: string[], begin: number): LyricLine =>
+    lineFromFields(
+      {
+        id,
+        text: words.join(" "),
+        agentId: "v1",
+        words: words.map((text, index) => ({
+          id: `${id}-w${index}`,
+          text,
+          sep: index < words.length - 1 ? " " : "",
+          begin: begin + index,
+          end: begin + index + 1,
+          joinsNext: false,
+        })),
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+
+  it("regression: joining two timed rows keeps the timing of both", () => {
+    const lanterns = timedLine("lanterns", ["Lanterns", "drift", "away"], 1);
+    const paper = timedLine("paper", ["Paper", "wings", "tonight"], 5);
+    const result = textToLyricLines("Lanterns drift awayPaper wings tonight", "v1", [lanterns, paper]);
+    expect(result.map((l) => l.id)).toEqual(["lanterns"]);
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns drift awayPaper wings tonight");
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.begin)).toEqual([1, 2, 3, 5, 6, 7]);
+  });
+
+  it("regression: joining a row timed before the row above keeps every timed syllable in time order", () => {
+    const lanterns = timedLine("lanterns", ["Lanterns", "drift"], 8);
+    const paper = timedLine("paper", ["Paper", "wings"], 2);
+    const [joined] = textToLyricLines("Lanterns driftPaper wings", "v1", [lanterns, paper]);
+    const begins = timedSyllables(mainTrack(joined)).map((w) => w.begin);
+    expect(begins).toEqual(begins.toSorted((a, b) => a - b));
+  });
+
+  it("regression: joining two rows joins their translations and romanizations in order", () => {
+    const languages = (translation: string, romanization: string): LyricLine["languages"] => ({
+      translations: { de: { language: "de", origin: "manual", sourceFingerprint: "", main: { text: translation } } },
+      transliteration: { language: "ja-Latn", origin: "google", sourceFingerprint: "", main: { text: romanization } },
+    });
+    const lanterns = { ...timedLine("lanterns", ["Lanterns"], 1), languages: languages("Laternen", "rantan") };
+    const paper = { ...timedLine("paper", ["Paper"], 5), languages: languages("Papier", "peepaa") };
+    const [joined] = textToLyricLines("LanternsPaper", "v1", [lanterns, paper]);
+    expect(joined.languages?.translations?.de.main.text).toBe("Laternen Papier");
+    expect(joined.languages?.transliteration?.main.text).toBe("rantan peepaa");
+  });
+
+  it("regression: a join holding hand text stays manual and asks for review, so a refresh never overwrites it", () => {
+    const romanization = (origin: LanguageContentOrigin, sourceFingerprint: string): LyricLine["languages"] => ({
+      transliteration: { language: "ja-Latn", origin, sourceFingerprint, main: { text: sourceFingerprint } },
+    });
+    const lanterns = { ...timedLine("lanterns", ["Lanterns"], 1), languages: romanization("google", "rantan") };
+    const paper = { ...timedLine("paper", ["Paper"], 5), languages: romanization("manual", "peepaa") };
+    const [joined] = textToLyricLines("LanternsPaper", "v1", [lanterns, paper]);
+    expect(joined.languages?.transliteration).toMatchObject({
+      origin: "manual",
+      sourceFingerprint: "",
+      main: { alignmentStatus: "needs-review" },
+    });
+  });
+
+  it("regression: a join of a confirmed and a needs-review romanization needs review", () => {
+    const romanization = (alignmentStatus: TransliterationAlignmentStatus): LyricLine["languages"] => ({
+      transliteration: {
+        language: "ja-Latn",
+        origin: "manual",
+        sourceFingerprint: "",
+        main: { text: alignmentStatus, alignmentStatus },
+      },
+    });
+    const lanterns = { ...timedLine("lanterns", ["Lanterns"], 1), languages: romanization("confirmed") };
+    const paper = { ...timedLine("paper", ["Paper"], 5), languages: romanization("needs-review") };
+    const [joined] = textToLyricLines("LanternsPaper", "v1", [lanterns, paper]);
+    expect(joined.languages?.transliteration?.main.alignmentStatus).toBe("needs-review");
+  });
+
+  it("regression: a repeated row keeps the timing of the line nearest its place, not the first one", () => {
+    const lines = [
+      timedLine("lanterns", ["Lanterns", "drift", "away"], 1),
+      timedLine("paper-1", ["Paper", "wings", "tonight"], 5),
+      timedLine("quiet", ["Quiet", "harbor", "lights"], 9),
+      timedLine("paper-2", ["Paper", "wings", "tonight"], 13),
+    ];
+    const result = textToLyricLines("Lanterns drift away\nQuiet harbor lights\nPaper wings tonight", "v1", lines);
+    expect(result.map((l) => l.id)).toEqual(["lanterns", "quiet", "paper-2"]);
   });
 });

@@ -24,7 +24,7 @@ function lineBody(line: WritableLine): string {
   if (!line.hasWordTiming) return line.text;
   let lastTag = Number.NEGATIVE_INFINITY;
   let latestEnd = line.bounds.begin;
-  const tagged = line.words
+  const tagged = line.writtenWords
     .map((word) => {
       latestEnd = Math.max(latestEnd, word.end);
       if (word.begin < lastTag) return word.text + word.sep;

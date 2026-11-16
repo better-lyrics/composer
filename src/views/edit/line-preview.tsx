@@ -205,7 +205,7 @@ const LinePreviewRow: React.FC<LinePreviewProps> = ({
             data-testid="line-preview-background"
             className="min-w-0 truncate pr-0.5 text-[12.5px] italic text-(--muted)"
           >
-            {line.backgroundText}
+            {withoutSplitCharacter(line.backgroundText, splitCharacter)}
           </span>
         )}
 

@@ -228,6 +228,16 @@ describe("carryTemplateEdits · two instances edited at once", () => {
       "second",
     ]);
   });
+
+  it("regression: an instance edited to other text than the first edit becomes its instance's own", () => {
+    const before = [groupLine("L0", 0, { text: "stale" }), groupLine("L1", 1, { text: "stale" })];
+    const after = before
+      .with(0, withFields(before[0], { text: "first" }))
+      .with(1, withFields(before[1], { text: "second" }));
+    const result = carryTemplateEdits({ before, after, groups: [ownTiming], splitChar: DEFAULT_SPLIT_CHARACTER });
+    expect(result.lines.map((line) => !!line.detached)).toEqual([false, true]);
+    expect(result.detachedIds).toEqual(["L1"]);
+  });
 });
 
 describe("carryTemplateEdits · syllable ids", () => {

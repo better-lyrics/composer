@@ -1,11 +1,18 @@
-import { type BackgroundSource, withBackground, withSeededBackgroundWords } from "./line-background";
-import { effectiveBounds, mainBounds } from "./line-bounds";
+import {
+  type BackgroundSource,
+  withBackground,
+  withoutBackground,
+  withSeededBackground,
+  withSeededBackgroundWords,
+} from "./line-background";
+import { bgBounds, effectiveBounds, mainBounds } from "./line-bounds";
 import type { LyricLine } from "./line";
 import { isLineSynced } from "./line-predicates";
 import { backgroundText, syllablesText } from "./line-text";
 import { spreadSpan } from "./line-span-to-words";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, roleWords, timedSyllables } from "./line-track";
-import { lastEnd } from "./word-bounds";
+import { withBackgroundTrack, withTrackSpan } from "./line-track-writes";
+import { type Bounds, lastEnd } from "./word-bounds";
 import { remapWordTextsPreservingTiming } from "./word-remap-text";
 import { withTrailingSpace } from "./word-spaces";
 import type { WordTiming } from "./word-timing";
@@ -69,6 +76,36 @@ function ownBackground(standalone: LyricLine, splitChar: string): { text: string
   };
 }
 
+function spanOver(first: Bounds | null, second: Bounds | null): Bounds | null {
+  if (!first || !second) return first ?? second;
+  return { begin: Math.min(first.begin, second.begin), end: Math.max(first.end, second.end) };
+}
+
+// A line-synced line takes the standalone row as one span-timed background, the same as the text written inline.
+function mergeIntoLineSynced(
+  base: LyricLine,
+  standalone: LyricLine,
+  bgText: string,
+  sameSession: boolean,
+  keptBaseSource: BackgroundSource,
+  preserveBrackets: boolean,
+  splitChar: string,
+): LyricLine {
+  const baseText = backgroundText(base, splitChar);
+  const ownText = backgroundText(standalone, splitChar)?.trim();
+  const merged = withBackground(
+    base,
+    {
+      text: joinBackgroundText(baseText, ownText ? `${bgText} ${ownText}` : bgText, preserveBrackets, sameSession),
+      source: baseText ? keptBaseSource : "extraction",
+    },
+    splitChar,
+  );
+  const span = spanOver(bgBounds(withSeededBackground(base, splitChar)), effectiveBounds(standalone));
+  const background = backgroundTrack(merged);
+  return span && background ? withBackgroundTrack(merged, withTrackSpan(background, span.begin, span.end)) : merged;
+}
+
 function mergeStandaloneInto(
   prev: LyricLine,
   standalone: LyricLine,
@@ -83,6 +120,23 @@ function mergeStandaloneInto(
   // already-merged standalone) is fresh, so further standalones append to it.
   const prevIsExtraction = backgroundTrack(prev)?.source === "extraction";
   const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
+  // Source for a result that keeps the prev base: a surviving extraction base
+  // is necessarily fresh same-pass output (stale extraction was dropped above),
+  // so it stays extraction; manual or legacy-undefined stays manual.
+  const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
+  const base = prevIsStaleExtraction ? withoutBackground(prev) : prev;
+  // A background timed by hand before this pass keeps its own timing, so the row merges word by word below.
+  if (isLineSynced(prev) && (prevTrailingBracketFromSamePass || !bgBounds(base))) {
+    return mergeIntoLineSynced(
+      base,
+      standalone,
+      bgText,
+      prevTrailingBracketFromSamePass,
+      keptBaseSource,
+      preserveBrackets,
+      splitChar,
+    );
+  }
   const baseText = prevIsStaleExtraction ? undefined : backgroundText(prev, splitChar);
   // A line-synced background counts as the words it spans, as 3.x stored seeded words for it.
   const storedBaseWords = prevIsStaleExtraction ? undefined : backgroundWords(prev);
@@ -101,11 +155,6 @@ function mergeStandaloneInto(
     carried?.length && !prevIsStaleExtraction
       ? (roleWords(withSeededBackgroundWords(prev, splitChar), "bg") ?? storedBaseWords)
       : storedBaseWords;
-
-  // Source for a result that keeps the prev base: a surviving extraction base
-  // is necessarily fresh same-pass output (stale extraction was dropped above),
-  // so it stays extraction; manual or legacy-undefined stays manual.
-  const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
 
   if (carried && carried.length > 0) {
     if (baseWords && baseWords.length > 0) {

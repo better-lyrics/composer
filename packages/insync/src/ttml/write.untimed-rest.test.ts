@@ -3,7 +3,7 @@ import type { Syllable } from "../line";
 import { lineFromFields } from "../line-from-fields";
 import { backgroundText, lineText } from "../line-text";
 import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables } from "../line-track";
-import { withMainTrack } from "../line-track-writes";
+import { withMainTrack, withTrackSyllables } from "../line-track-writes";
 import { DEFAULT_SPLIT_CHARACTER } from "../split-character-text";
 import { wordsFromSpaced } from "../word-spaced-words";
 import { parseTtml } from "./read";
@@ -26,11 +26,11 @@ const partlySynced = lineFromFields(
   SPLIT,
 );
 
-const exported = () =>
+const exported = (line = partlySynced) =>
   generateTTML({
     metadata: { title: "Test", artists: [], album: "", duration: 60 },
     agents: [{ id: "v1", type: "person", name: "Lead" }],
-    lines: [partlySynced],
+    lines: [line],
     splitChar: SPLIT,
   });
 
@@ -45,6 +45,20 @@ describe("ttml · untimed rest of a partly synced line", () => {
     expect(backgroundText(read, SPLIT)).toBe(backgroundText(partlySynced, SPLIT));
     expect(timedSyllables(mainTrack(read)).map((word) => word.text)).toEqual(["Silver", "birds"]);
     expect(timedSyllables(backgroundTrack(read)).map((word) => word.text)).toEqual(["wa"]);
+  });
+
+  it("regression: an untimed rest syllable with kept attributes reads back as lyric text", () => {
+    const main = mainTrack(partlySynced);
+    const syllables = main.syllables.map((syllable) =>
+      syllable.text === "fly" ? { ...syllable, passthrough: { attrs: [["class", "soft"] as const] } } : syllable,
+    );
+    const kept = withMainTrack(partlySynced, withTrackSyllables(main, syllables));
+    const ttml = exported(kept);
+    expect(ttml).toContain('birds</span> <span class="soft">fly</span> home');
+
+    const [read] = parseTtml(ttml, SPLIT).lines;
+    expect(lineText(read, SPLIT)).toBe("Silver birds fly home");
+    expect(exported(read)).toBe(ttml);
   });
 
   it("regression: an untimed rest written inside a kept span keeps its words and attributes on a reread", () => {

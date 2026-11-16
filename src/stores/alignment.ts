@@ -224,6 +224,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     if (status === "running" || status === "downloading") return;
     const aligner: Aligner = hubertfaAligner;
     const project = useProjectStore.getState();
+    if (project.lines === before) return;
     // The split's own history step, which the new timing joins if nothing has happened since.
     const step = project.history[project.historyIndex];
     const beforeById = new Map(before.map((line) => [line.id, line]));

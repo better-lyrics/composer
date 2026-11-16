@@ -175,6 +175,7 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
       const updates = offsetTimingFields(source, at - sourceAt, target);
       const line = { ...target, ...updates };
       if (!timingChanged(target, line) && line.languages === target.languages) continue;
+      if (!sameSharedContent(line, target)) continue;
       if (lines === after) lines = [...after];
       lines[index] = line;
       copied.add(groupId);

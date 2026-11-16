@@ -35,6 +35,27 @@ function wordLine(id: string, agentId = "v1"): LyricLine {
   });
 }
 
+const PARTLY_SYNCED = {
+  id: "p",
+  text: "Is it so",
+  words: [
+    { text: "Is", sep: " ", begin: 34.059, end: 34.189 },
+    { text: "it", sep: " ", begin: 34.189, end: 34.309 },
+  ],
+};
+
+function partlySynced(): LyricLine {
+  return createLine(PARTLY_SYNCED);
+}
+
+function partlySyncedWithBackground(): LyricLine {
+  return createLine({
+    ...PARTLY_SYNCED,
+    backgroundText: "ooh ahh",
+    backgroundWords: [{ text: "ooh", sep: " ", begin: 34.4, end: 34.6 }],
+  });
+}
+
 function lineSynced(text: string, begin: number, end: number, agentId = "v1"): LyricLine {
   return createLine({ text, begin, end, agentId });
 }
@@ -64,6 +85,15 @@ describe("writeLrc", () => {
       DEFAULT_SPLIT_CHARACTER,
     );
     expect(writeQrc(doc([line]))).toContain("(ooh)(12000,2000)");
+  });
+
+  it("regression: writes split marks of an untimed background as joined syllables, as it does for main text", () => {
+    const line = createLine({ text: "o|oh ah|ah", begin: 1, end: 3, backgroundText: "o|oh ah|ah" });
+    expect(writeLrc(doc([line]))).toContain("[00:01.00]ooh ahah (ooh ahah)");
+  });
+
+  it("regression: keeps the untimed rest of a partly synced line inside the last word's tags", () => {
+    expect(writeLrc(doc([partlySynced()]))).toContain("[00:34.06]<00:34.06>Is <00:34.19>it so<00:34.31>");
   });
 
   it("writes plain lines for line-synced lyrics", () => {
@@ -168,6 +198,12 @@ describe("writeLrc", () => {
       expect(writeLrc(doc([line]))).toContain("[00:01.00]Main (ooh\tyeah)");
     });
 
+    it("regression: keeps the untimed rest of a partly synced background inside its parentheses", () => {
+      expect(writeLrc(doc([partlySyncedWithBackground()]))).toContain(
+        "[00:34.06]<00:34.06>Is <00:34.19>it so <00:34.40>(ooh ahh)<00:34.60>",
+      );
+    });
+
     it("keeps parentheses the background text already carries", () => {
       const line = createLine({ text: "Main", begin: 1, end: 2, backgroundText: "(oh)" });
 
@@ -187,6 +223,14 @@ describe("writeSrt", () => {
 
   it("joins word-synced words into one cue spanning the words", () => {
     expect(writeSrt(doc([wordLine("a")]))).toBe("1\n00:00:34,059 --> 00:00:34,413\nIs it so\n");
+  });
+
+  it("regression: keeps the untimed rest of a partly synced line in the cue", () => {
+    expect(writeSrt(doc([partlySynced()]))).toBe("1\n00:00:34,059 --> 00:00:34,309\nIs it so\n");
+  });
+
+  it("regression: keeps the untimed rest of a partly synced background in the cue", () => {
+    expect(writeSrt(doc([partlySyncedWithBackground()]))).toContain("\nIs it so (ooh ahh)\n");
   });
 
   it("round-trips through the SRT parser", () => {

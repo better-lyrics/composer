@@ -77,8 +77,15 @@ function mergedWords(stored: WordTiming[] | undefined, edited: WordTiming[] | un
 
 // -- Field merges -------------------------------------------------------------
 
+// The one span an edit wrote a background as: its one timed word, or the span of a background read line synced.
+function editedBackgroundSpan(edited: LineFields): Pick<WordTiming, "begin" | "end" | "explicit"> | undefined {
+  if (edited.backgroundWords) return edited.backgroundWords.length === 1 ? edited.backgroundWords[0] : undefined;
+  const { backgroundBegin: begin, backgroundEnd: end, backgroundExplicit: explicit } = edited;
+  return begin !== undefined && end !== undefined ? { begin, end, explicit } : undefined;
+}
+
 function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined, edited: LineFields): boolean {
-  const words = edited.backgroundWords;
+  const span = editedBackgroundSpan(edited);
   const bounds = edited.words?.length
     ? { begin: edited.words[0].begin, end: edited.words[edited.words.length - 1].end }
     : edited.begin !== undefined && edited.end !== undefined
@@ -86,17 +93,17 @@ function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined
       : null;
   return (
     !storedWords?.length &&
-    words?.length === 1 &&
+    span !== undefined &&
     bounds !== null &&
-    sameExportedTime(words[0]?.begin, bounds.begin) &&
-    sameExportedTime(words[0]?.end, bounds.end)
+    sameExportedTime(span.begin, bounds.begin) &&
+    sameExportedTime(span.end, bounds.end)
   );
 }
 
 // A line-synced background exports as one span; the edit's one span moves it and keeps it line synced.
 function keptBackgroundSpan(stored: LineFields, edited: LineFields): Partial<LineFields> | null {
-  const [span, ...rest] = edited.backgroundWords ?? [];
-  if (stored.backgroundBegin === undefined || !span || rest.length > 0) return null;
+  const span = editedBackgroundSpan(edited);
+  if (stored.backgroundBegin === undefined || !span) return null;
   const same = sameExportedTime(span.begin, stored.backgroundBegin) && sameExportedTime(span.end, stored.backgroundEnd);
   const source = stored.backgroundText === edited.backgroundText ? stored.backgroundTextSource : undefined;
   return {
@@ -108,15 +115,19 @@ function keptBackgroundSpan(stored: LineFields, edited: LineFields): Partial<Lin
   };
 }
 
+const NO_BACKGROUND_SPAN = { backgroundBegin: undefined, backgroundEnd: undefined, backgroundExplicit: undefined };
+
 function mergedBackground(stored: LineFields, edited: LineFields): Partial<LineFields> {
   const span = keptBackgroundSpan(stored, edited);
   if (span) return span;
   const storedWords = stored.backgroundWords;
   const seeded = hasSeededBackgroundWords(storedWords, edited);
+  const droppedSpan = seeded ? NO_BACKGROUND_SPAN : {};
   if (stored.backgroundText !== edited.backgroundText) {
-    return { backgroundWords: seeded ? undefined : mergedWords(storedWords, edited.backgroundWords) };
+    return { backgroundWords: seeded ? undefined : mergedWords(storedWords, edited.backgroundWords), ...droppedSpan };
   }
-  if (seeded) return { backgroundTextSource: stored.backgroundTextSource, backgroundWords: storedWords };
+  if (seeded)
+    return { backgroundTextSource: stored.backgroundTextSource, backgroundWords: storedWords, ...droppedSpan };
   return {
     backgroundTextSource: stored.backgroundTextSource,
     backgroundWords: mergedWords(storedWords, edited.backgroundWords),

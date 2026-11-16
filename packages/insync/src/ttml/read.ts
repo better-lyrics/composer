@@ -20,7 +20,9 @@ import { parseTtmlTimestamp } from "./timestamp";
 import { partsFromDivs } from "./parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "./passthrough-read";
 import {
+  type BackgroundSpan,
   type UntimedLyric,
+  lineSyncedBackground,
   timedTrackText,
   untimedAnchors,
   untimedBackgroundSpan,
@@ -192,20 +194,19 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     let backgroundText: string | undefined;
     let backgroundWords: WordTiming[] | undefined;
     let untimedBackground: UntimedLyric | undefined;
-    let backgroundSpan: { backgroundBegin?: number; backgroundEnd?: number } = {};
-    let untimedMain: UntimedLyric | undefined;
-    const {
-      words,
-      text: timedText,
-      lyric: timedMain,
-    } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
+    let backgroundSpan: BackgroundSpan = {};
+    const { words, text: timedText, rest } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
+    let untimedMain: UntimedLyric | undefined = rest;
 
     if (bgContainer) {
       const timedBackground = timedTrackText(extractTimedWords(bgContainer, null), bgContainer, splitChar);
-      backgroundWords = timedBackground.words;
-      if (backgroundWords.length > 0) {
-        backgroundText = timedBackground.text;
-        untimedBackground = timedBackground.lyric;
+      const lineSynced = lineSyncedBackground(bgContainer, timedBackground, splitChar);
+      backgroundWords = lineSynced ? undefined : timedBackground.words;
+      if (lineSynced) {
+        ({ lyric: untimedBackground, span: backgroundSpan } = lineSynced);
+        backgroundText = untimedBackground.text;
+      } else if (timedBackground.words.length > 0) {
+        ({ text: backgroundText, rest: untimedBackground } = timedBackground);
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
@@ -220,7 +221,6 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
       backgroundText || (backgroundWords && backgroundWords.length > 0) ? "manual" : undefined;
 
     if (words.length > 0) {
-      untimedMain = timedMain;
       lines.push(
         lineFromFields(
           {

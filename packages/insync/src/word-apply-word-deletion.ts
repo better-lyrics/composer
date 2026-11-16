@@ -8,6 +8,7 @@ import { mainTrack, roleWords } from "./line-track";
 import { withMainTrack, withoutTrackTiming, withTrackWords } from "./line-track-writes";
 import { selectionIndexesByLine } from "./selection-indexes-by-line";
 import { absorbDeletedSyllablesIntoNeighbors } from "./word-syllable-groups";
+import type { WordTiming } from "./word-timing";
 
 interface DeletionSelection {
   lineId: string;
@@ -19,6 +20,21 @@ interface DeletionSelection {
 
 function isLineFullyEmpty(line: LyricLine): boolean {
   return !hasAnyTiming(line);
+}
+
+// The word left before deleted words takes the seam of the last of them only when that one ended a word, so the track reads as if they were never there.
+function remainingWords(words: readonly WordTiming[], deleted: ReadonlySet<number>): WordTiming[] {
+  const remaining: WordTiming[] = [];
+  words.forEach((word, index) => {
+    if (!deleted.has(index)) remaining.push(word);
+    else if (remaining.length > 0 && (!word.joinsNext || remaining[remaining.length - 1].joinsNext))
+      remaining[remaining.length - 1] = {
+        ...remaining[remaining.length - 1],
+        sep: word.sep,
+        joinsNext: word.joinsNext,
+      };
+  });
+  return remaining;
 }
 
 function trackLength(line: LyricLine, type: "word" | "bg", splitChar: string): number {
@@ -48,8 +64,7 @@ function deleteFromLines(
     if (isLineSynced(line) && mainIdxs.has(0)) {
       updatedLine = withMainTrack(line, withoutTrackTiming(main));
     } else if (mainWords.length > 0 && mainIdxs.size > 0) {
-      const absorbed = absorbDeletedSyllablesIntoNeighbors(mainWords, mainIdxs);
-      const nextMain = absorbed.filter((_, i) => !mainIdxs.has(i));
+      const nextMain = remainingWords(absorbDeletedSyllablesIntoNeighbors(mainWords, mainIdxs), mainIdxs);
       updatedLine = withMainTrack(
         line,
         nextMain.length > 0 ? withTrackWords(main, nextMain) : withoutTrackTiming(main),
@@ -58,8 +73,7 @@ function deleteFromLines(
 
     const bgWords = drawnSyllables(line, "bg", splitChar);
     if (bgWords.length > 0 && bgIdxs.size > 0) {
-      const absorbed = absorbDeletedSyllablesIntoNeighbors(bgWords, bgIdxs);
-      const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));
+      const remaining = remainingWords(absorbDeletedSyllablesIntoNeighbors(bgWords, bgIdxs), bgIdxs);
       updatedLine = withManualBackgroundWords(updatedLine, remaining, splitChar);
     }
 

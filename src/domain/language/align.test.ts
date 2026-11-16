@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { alignTrackToLine, planTransliterationAlignment, withAlignedWords } from "insync/language-align";
+import {
+  alignTrackToLine,
+  planTransliterationAlignment,
+  withAlignedTransliteration,
+  withAlignedWords,
+} from "insync/language-align";
 import type { LineLanguage, TransliterationAlignmentStatus } from "insync/language";
 import { mappedTransliteration } from "insync/language-pieces";
 import { lineFromFields } from "insync/line-from-fields";
@@ -284,6 +289,44 @@ describe("withAlignedWords", () => {
     expect(aligned.languages?.transliteration?.main.alignmentStatus).toBe("inferred");
     expect(aligned.languages?.transliteration?.bg?.alignmentStatus).toBe("inferred");
     expect(aligned.languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
+  });
+
+  it("regression: a mapping that needs review keeps its readings after the lyrics gain a syllable", () => {
+    const syllable = (id: string, text: string, begin: number, transliteration?: string): LegacyWord => ({
+      id,
+      text,
+      sep: " ",
+      begin,
+      end: begin + 1,
+      joinsNext: false,
+      ...(transliteration !== undefined && { transliteration, transliterationJoinerAfter: " " }),
+    });
+    const line = legacyLine({
+      id: "line",
+      agentId: "v1",
+      text: "ほし の こえ を きく よ",
+      words: [
+        syllable("w30", "ほし", 0, "hoshi"),
+        syllable("w31", "の", 1, "no"),
+        syllable("w32", "こえ", 2, "koe"),
+        syllable("w33", "を", 3, "wo"),
+        syllable("w34", "きく", 4, "kiku"),
+        { ...syllable("w35", "よ", 5), sep: "" },
+      ],
+      transliteration: {
+        language: "ja-Latn",
+        text: "hoshi no koe wo kiku",
+        origin: "manual",
+        sourceFingerprint: "",
+        alignmentStatus: "needs-review",
+      },
+    });
+    const pieces = line.languages?.transliteration?.main.pieces;
+    const track = line.languages?.transliteration;
+    const exported = track && alignTrackToLine(line, track, DEFAULT_SPLIT_CHARACTER);
+    const shown = withAlignedTransliteration(line, DEFAULT_SPLIT_CHARACTER);
+    expect(exported?.languages?.transliteration?.main).toMatchObject({ pieces, alignmentStatus: "needs-review" });
+    expect(shown.languages?.transliteration?.main.pieces).toEqual(pieces);
   });
 
   it("does not mutate the input line", () => {

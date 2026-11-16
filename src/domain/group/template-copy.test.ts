@@ -162,6 +162,25 @@ describe("copyThroughTemplate", () => {
       expect(copiedThroughTemplate(before, after, groups, ["c0-0"]).lines).toBe(after);
     });
 
+    it("regression: never writes the template's words onto an instance whose text differs", () => {
+      const diverged = createLine({
+        id: "c1-0",
+        text: "I want it",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "I", sep: " ", begin: 40, end: 40.4 },
+          { text: "want", sep: " ", begin: 40.5, end: 41 },
+          { text: "it", begin: 41.1, end: 41.5 },
+        ],
+      });
+      const before = [chorus(0, 0, 10), diverged];
+      const after = edit(before, "c0-0", nudgeWord(1, 0.1));
+      const copied = byId(copiedThroughTemplate(before, after, sharing, ["c0-0"]).lines, "c1-0");
+      expect(lineText(copied!, DEFAULT_SPLIT_CHARACTER)).toBe("I want it");
+    });
+
     it("skips a source whose instance had no start before the edit", () => {
       const before = [chorus(0, 0), chorus(1, 0, 40)];
       const after = edit(before, "c0-0", () => ({

@@ -19,7 +19,7 @@ import { isSyncableLine } from "insync/line-sync-progress";
 import { lineText } from "insync/line-text";
 import { mainTrack, timedSyllables, type WordTrack } from "insync/line-track";
 import { SYNC_START, syncAddressAt } from "insync/sync-address";
-import { anchorGesture } from "insync/sync-anchor-gesture";
+import { anchorGesture, placingEntries } from "insync/sync-anchor-gesture";
 import type { GestureCommit, SyncGesture } from "insync/sync-commit-gesture";
 import { nextSyncableLineIndex, previousSlot } from "insync/sync-cursor";
 import { isSyncComplete } from "insync/sync-slot-close";
@@ -138,6 +138,7 @@ function useSyncHandlers({
       const { duration } = useAudioStore.getState();
       const placing =
         anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates);
+      const entryBefore = useProjectStore.getState().history[useProjectStore.getState().historyIndex];
       if (placing && isRefused(useProjectStore.getState().commit(placing))) return false;
       if (anchor) {
         const placed = useProjectStore.getState();
@@ -148,19 +149,14 @@ function useSyncHandlers({
           onPlacementSkip?.(skip, anchor.resumeCursor.lineIndex);
         }
         const resume = syncAddressAt(placed.lines, anchor.resumeCursor);
-        const anchorUndo = {
-          resume,
-          anchor: syncAddressAt(lines, anchor.anchorCursor),
-          jumped,
-          placedEntry: placed.history[placed.historyIndex],
-          previousEntry: placed.history[placed.historyIndex - 1],
-        };
+        const entries = placingEntries(entryBefore, placed);
+        const anchorUndo = entries && { resume, anchor: syncAddressAt(lines, anchor.anchorCursor), jumped, ...entries };
         // Jumped, so the next tap trims an overlap with the placed instance instead of stretching its shared last word.
         setSyncState((prev) => ({
           ...prev,
           position: resume,
           jumpedToPosition: true,
-          anchorUndo,
+          anchorUndo: anchorUndo ?? undefined,
           reRecording: keptSyncReRecording(prev.reRecording, lines, anchor.resumeCursor),
         }));
         ignoreNextHoldEndRef.current = gesture === "hold-start";

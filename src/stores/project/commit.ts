@@ -5,7 +5,7 @@ import { type Applied, applied, isRefused, type LyricRoot, type Outcome, refused
 import { foldLines } from "insync/group-fold";
 import type { LyricDoc } from "insync/group";
 import type { CarriedSplit } from "insync/group-template-edit";
-import { withoutOrphanPieces } from "insync/language-pieces";
+import { withSettledReadings } from "insync/language-settled-readings";
 import { isStructurallyEqual } from "insync/structural-equal";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
@@ -39,13 +39,15 @@ function rootOf(state: ProjectState): LyricRoot {
 function withChangedLinesSettled(before: readonly LyricLine[], after: LyricLine[]): LyricLine[] {
   if (before === after) return after;
   let unchangedLines: Set<LyricLine> | undefined;
+  let beforeById: Map<string, LyricLine> | undefined;
   let settled: LyricLine[] | undefined;
   for (let index = 0; index < after.length; index++) {
     const line = after[index];
     if (line === before[index]) continue;
     unchangedLines ??= new Set(before);
     if (unchangedLines.has(line)) continue;
-    const settledLine = withoutOrphanPieces(line);
+    beforeById ??= new Map(before.map((beforeLine) => [beforeLine.id, beforeLine]));
+    const settledLine = withSettledReadings(beforeById.get(line.id), line);
     if (settledLine === line) continue;
     settled ??= after.slice();
     settled[index] = settledLine;
@@ -68,13 +70,15 @@ function withPartsSettled(before: LyricRoot, after: LyricRoot): LyricRoot {
   return parts === after.parts ? after : { ...after, parts };
 }
 
-// A command that writes back the values already there is no step: undo would stop on it and change nothing.
-function changesNothing(before: LyricRoot, after: LyricRoot): boolean {
+// A command that writes back the values already there is no step: undo would stop on it and change nothing. The fold
+// builds a new doc for any rewritten line, so the doc is compared by value, and only once every line matched.
+function changesNothing(before: LyricRoot, after: LyricRoot, beforeDoc: LyricDoc, afterDoc: LyricDoc): boolean {
   if (after.groups !== before.groups || after.agents !== before.agents || after.parts !== before.parts) return false;
   if (after.passthrough !== before.passthrough || after.lines.length !== before.lines.length) return false;
-  return after.lines.every(
+  const sameLines = after.lines.every(
     (line, index) => line === before.lines[index] || isStructurallyEqual(line, before.lines[index]),
   );
+  return sameLines && isStructurallyEqual(afterDoc, beforeDoc);
 }
 
 interface Written {
@@ -179,7 +183,7 @@ function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitM
           splitChar: ctx.splitChar,
         });
   const parted = withPartsSettled(before, written.root);
-  if (changesNothing(before, parted)) return { ...nothing, outcome };
+  if (changesNothing(before, parted, doc, written.doc)) return { ...nothing, outcome };
   return {
     patch: writeRoot(state, { root: parted, doc: written.doc }, command, mode),
     outcome,

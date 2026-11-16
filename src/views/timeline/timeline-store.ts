@@ -79,6 +79,7 @@ interface TimelineState {
   renamingInstanceIdx: number | null;
   draggedGroupShift: { groupId: string; instanceIdx: number; offsetPx: number } | null;
   wordDragHover: TrackHit | null;
+  isDraggingWord: boolean;
   isBypassing: boolean;
   snappedBlockId: string | null;
   snappedAnchorTime: number | null;
@@ -128,6 +129,7 @@ interface TimelineActions {
   setRenamingGroupId: (groupId: string | null, instanceIdx?: number | null) => void;
   setDraggedGroupShift: (shift: { groupId: string; instanceIdx: number; offsetPx: number } | null) => void;
   setWordDragHover: (hover: TrackHit | null) => void;
+  setDraggingWord: (isDraggingWord: boolean) => void;
   setIsBypassing: (v: boolean) => void;
   setSnappedBlockId: (id: string | null) => void;
   setSnappedAnchorTime: (t: number | null) => void;
@@ -184,6 +186,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     renamingInstanceIdx: null,
     draggedGroupShift: null,
     wordDragHover: null,
+    isDraggingWord: false,
     isBypassing: false,
     snappedBlockId: null,
     snappedAnchorTime: null,
@@ -270,6 +273,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
           ? s
           : { wordDragHover },
       ),
+    setDraggingWord: (isDraggingWord) => set({ isDraggingWord }),
     setIsBypassing: (v) => set({ isBypassing: v }),
     setSnappedBlockId: (id) => set((s) => (s.snappedBlockId === id ? s : { snappedBlockId: id })),
     setSnappedAnchorTime: (t) => set((s) => (s.snappedAnchorTime === t ? s : { snappedAnchorTime: t })),

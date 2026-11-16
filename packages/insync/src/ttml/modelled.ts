@@ -90,19 +90,16 @@ function isLyricSection(element: XmlReadElement): boolean {
   return element.attributes.length === 0 && element.children.length === 0;
 }
 
+// The children after a container's last timed span: the untimed rest of a partly synced track.
+function untimedRestNodes(container: XmlReadElement): readonly XmlReadNode[] {
+  const nodes = container.childNodes;
+  return nodes.slice(nodes.findLastIndex((node) => node.kind === "element" && isTimedWordSpan(node)) + 1);
+}
+
 // A paragraph or background container with timed syllables; without them, its spans are lyric text.
 function hasTimedWordSpans(container: XmlReadElement): boolean {
   return Array.from(container.children).some(isTimedWordSpan);
 }
-
-function untimedTailNodes(container: XmlReadElement): readonly XmlReadNode[] {
-  const nodes = container.childNodes;
-  const last = nodes.findLastIndex((node) => node.kind === "element" && isTimedWordSpan(node));
-  return nodes.slice(last + 1);
-}
-
-const isLyricTailSpan = (node: XmlReadNode) =>
-  node.kind === "element" && isLyricTextElement(node) && !LYRIC_ROLES.has(elementRole(node) ?? "");
 
 // -- Inline alternates ---------------------------------------------------------
 
@@ -203,6 +200,7 @@ function isModelledChildOf(
   child: XmlReadElement,
   parentHasTimedWords: boolean,
   readAlternates: ReadonlyMap<XmlReadElement, string>,
+  untimedRest: ReadonlySet<XmlReadNode>,
 ): boolean {
   if (inComposerNamespace(child)) return true;
   switch (node) {
@@ -222,7 +220,8 @@ function isModelledChildOf(
       const role = elementRole(child);
       if (role === "x-bg") return true;
       if (LYRIC_ROLES.has(role ?? "")) return readAlternates.has(child);
-      return parentHasTimedWords ? isTimedWordSpan(child) : isLyricTextElement(child);
+      if (!parentHasTimedWords) return isLyricTextElement(child);
+      return isTimedWordSpan(child) || (untimedRest.has(child) && isLyricTextElement(child));
     }
     default:
       return false;
@@ -238,8 +237,8 @@ function modelledChildTest(node: TtmlNode, parent: XmlReadElement): (child: XmlR
   const inLine = node === "p" || node === "background";
   const parentHasTimedWords = inLine && hasTimedWordSpans(parent);
   const readAlternates = inLine ? readInlineAlternates(parent) : new Map<XmlReadElement, string>();
-  const tailSpans = new Set(parentHasTimedWords ? untimedTailNodes(parent).filter(isLyricTailSpan) : []);
-  return (child) => tailSpans.has(child) || isModelledChildOf(node, child, parentHasTimedWords, readAlternates);
+  const untimedRest: ReadonlySet<XmlReadNode> = new Set(parentHasTimedWords ? untimedRestNodes(parent) : []);
+  return (child) => isModelledChildOf(node, child, parentHasTimedWords, readAlternates, untimedRest);
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -254,8 +253,8 @@ export {
   isTimedWordSpan,
   LYRIC_ROLES,
   modelledChildTest,
+  untimedRestNodes,
   ownLanguage,
   readInlineAlternates,
   UNBOUND_NAMESPACE_PREFIX,
-  untimedTailNodes,
 };

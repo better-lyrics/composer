@@ -37,7 +37,7 @@ function spacedFromWords(words: readonly WordTiming[]): SpacedWord[] {
 }
 
 // The words as typed: each word's text followed by its separator.
-function spacedText(words: readonly WordTiming[]): string {
+function spacedText(words: readonly Pick<WordTiming, "text" | "sep">[]): string {
   return words.map((word) => word.text + word.sep).join("");
 }
 

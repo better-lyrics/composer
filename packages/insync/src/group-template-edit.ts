@@ -29,6 +29,8 @@ interface CarriedSplit {
 interface TemplateEdits {
   lines: LyricLine[];
   splits: CarriedSplit[];
+  // Group lines the command edited to other content than their template line's edit, made their instance's own.
+  detachedIds: string[];
 }
 
 interface Edit {
@@ -184,11 +186,12 @@ function isSplit(edit: Edit): boolean {
 
 // An edit to a group line's content is an edit to its template line, so every other instance that follows the
 // template and was not edited itself gets it: on the shared timing where both instances share it, else on its own
-// timing. Detached lines, and instances the same command edited differently, keep their own content, and so does an
-// instance missing a line the command moved words to or from. Work grows with the lines and the edited template lines.
+// timing. Detached lines keep their own content, and so does an instance missing a line the command moved words to or
+// from. An instance the same command edited differently keeps its edit as its own line. Work grows with the lines and
+// the edited template lines.
 function carryTemplateEdits({ before, after, groups, anchors, splitChar }: TemplateEditInput): TemplateEdits {
   const { edits, edited, previousOf } = templateLineEdits(before, after);
-  if (edits.length === 0) return { lines: after, splits: [] };
+  if (edits.length === 0) return { lines: after, splits: [], detachedIds: [] };
   const groupsById = new Map(groups.map((group) => [group.id, group]));
   const byInstance = linesByInstance(before, new Set(edits.map((edit) => edit.after.groupId)));
   const anchorsOf = anchors ?? firstTimes(byInstance);
@@ -220,11 +223,19 @@ function carryTemplateEdits({ before, after, groups, anchors, splitChar }: Templ
       return other !== undefined && !edited.has(other.id);
     });
   const splits = new Map<string, Set<number>>();
+  const detachedIds: string[] = [];
   let lines = after;
   after.forEach((line, index) => {
     if (!isSlotLine(line)) return;
     const edit = bySlot.get(slotKey(line.groupId, line.templateLineIdx));
-    if (!edit || edited.has(line.id) || sameSharedContent(line, edit.after) || !takesWholeMove(line)) return;
+    if (!edit || sameSharedContent(line, edit.after)) return;
+    if (edited.has(line.id)) {
+      if (lines === after) lines = [...after];
+      lines[index] = { ...line, detached: true };
+      detachedIds.push(line.id);
+      return;
+    }
+    if (!takesWholeMove(line)) return;
     const { groupId, instanceIdx: from } = edit.after;
     const group = groupsById.get(groupId);
     const shared = sharesTiming(group, from) && sharesTiming(group, line.instanceIdx);
@@ -242,7 +253,11 @@ function carryTemplateEdits({ before, after, groups, anchors, splitChar }: Templ
     lines[index] = carried;
     if (isSplit(edit)) splits.set(groupId, (splits.get(groupId) ?? new Set([from])).add(line.instanceIdx));
   });
-  return { lines, splits: [...splits].map(([groupId, instances]) => ({ groupId, instances: instances.size })) };
+  return {
+    lines,
+    splits: [...splits].map(([groupId, instances]) => ({ groupId, instances: instances.size })),
+    detachedIds,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
