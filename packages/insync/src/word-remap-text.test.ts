@@ -202,6 +202,20 @@ describe("remapWordTextsPreservingTiming", () => {
       expect([result[0].begin, result.at(-1)?.end]).toEqual([6.5, 6.596]);
     });
 
+    it("regression: a split mark typed in a word that ran into the next with no space keeps the split", () => {
+      const words: WordTiming[] = [
+        { id: "w60", text: "am", sep: "", begin: 1, end: 1.2, joinsNext: true },
+        { id: "w61", text: "ber", sep: "", begin: 1.2, end: 1.4, joinsNext: false },
+        { id: "w62", text: "rain", sep: "", begin: 1.4, end: 1.8, joinsNext: false },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "am|berra|in", DEFAULT_SPLIT_CHARACTER);
+      expect(result.map((word) => [word.text, word.joinsNext])).toEqual([
+        ["am", true],
+        ["berra", true],
+        ["in", false],
+      ]);
+    });
+
     it("regression: words inserted on both sides of one word do not overlap it", () => {
       const result = remapWordTextsPreservingTiming(
         [{ id: "w11", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],

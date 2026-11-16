@@ -48,7 +48,9 @@ function joinedToTypedText(
   return words.map((word, i) => {
     const old = oldIndexOf[i];
     const untouched = old !== undefined && oldIndexOf[i + 1] === old + 1 && oldWords[old].sep === word.sep;
-    if (untouched) return word;
+    // A word end the text never shows, on a word the edit retyped, takes the split mark the typed text has there.
+    const hidden = old !== undefined && oldWords[old].sep === "" && !oldWords[old].joinsNext;
+    if (untouched && !(hidden && oldWords[old].text !== word.text)) return word;
     return { ...word, joinsNext: i < texts.length - 1 && !texts[i].endsWith(" ") && !glued.has(i) };
   });
 }
