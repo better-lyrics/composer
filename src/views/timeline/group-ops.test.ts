@@ -2,17 +2,18 @@
  * @vitest-environment node
  */
 
-import { describe, expect, it } from "vitest";
 import { addInstance } from "insync/commands/instance-edits";
 import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
 import { withSeededBackground } from "insync/line-background";
+import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
-import type { LyricLine } from "insync/line";
-import { backgroundTrack, timedSyllables } from "insync/line-track";
-import { mainBounds } from "insync/line-bounds";
 import { lineText } from "insync/line-text";
+import { backgroundTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import {
@@ -21,7 +22,6 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "./group-ops";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const lines = (overrides: Partial<LineFields>[]): LyricLine[] =>
   overrides.map((o, i) => lineFromFields({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }, DEFAULT_SPLIT_CHARACTER));
@@ -140,7 +140,8 @@ describe("instanceToTemplate", () => {
       DEFAULT_SPLIT_CHARACTER,
     );
     const [template] = instanceToTemplate([line], "g1", 0);
-    expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[0, 2]]);
+    // The instance starts where the line's own span starts, so the seeded second-half background sits 2 s in.
+    expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[2, 4]]);
   });
 
   it("regression: an instance added from a line-synced background keeps a background span", () => {
@@ -164,7 +165,8 @@ describe("instanceToTemplate", () => {
     useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
     useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
     const added = useProjectStore.getState().lines[1];
-    expect(backgroundTrack(added)).toMatchObject({ begin: 40, end: 42 });
+    // The added instance's line starts at 40, so its second-half background keeps its place in the line.
+    expect(backgroundTrack(added)).toMatchObject({ begin: 42, end: 44 });
     expect(timedSyllables(backgroundTrack(added))).toEqual([]);
   });
 

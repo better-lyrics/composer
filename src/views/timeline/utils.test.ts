@@ -1,27 +1,26 @@
-import { withSeededBackground } from "insync/line-background";
-import { mainBounds } from "insync/line-bounds";
-/**
- * @vitest-environment node
- */
-import { patchOf, updatedLine } from "@/test/field-updates";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { type LineFields, lineFromFields } from "insync/line-from-fields";
-import { describe, expect, it } from "vitest";
 import type { TimeRange } from "insync/group-shared-timing";
 import { instanceBounds } from "insync/instance-bounds";
-import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
+import { withSeededBackground } from "insync/line-background";
+import { effectiveBounds, mainBounds } from "insync/line-bounds";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import {
   nudgeSelectedWords,
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 } from "insync/selection-nudge";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
+import { describe, expect, it } from "vitest";
+/**
+ * @vitest-environment node
+ */
+import { patchOf, updatedLine } from "@/test/field-updates";
 import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
 
@@ -524,7 +523,8 @@ describe("instanceBounds (legacy call site coverage)", () => {
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
-  it("ignores stale line.begin/end when only bg words are present", () => {
+  // A line-synced span is the line's own timing, never a stale cache, so it counts beside the background words.
+  it("counts a line-synced span beside its background words", () => {
     const lines: LyricLine[] = [
       lineFromFields(
         {
@@ -538,7 +538,7 @@ describe("instanceBounds (legacy call site coverage)", () => {
         DEFAULT_SPLIT_CHARACTER,
       ),
     ];
-    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 6 });
+    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 20 });
   });
 
   it("falls back to line.begin/end ONLY when the line is truly line-synced (no words and no bg words)", () => {
