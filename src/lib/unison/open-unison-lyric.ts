@@ -3,7 +3,9 @@ import { artistCredit } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { linksOnOpen } from "@/domain/unison/linked-projects";
+import { projectsByLyricId } from "@/domain/unison/linked-projects";
+import { isOwnLyric, lyricOwnerName } from "@/domain/unison/ownership";
+import { openProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { getQueryImportSettled } from "@/lib/persistence-settled";
 import type { UnisonLyric, UnisonLyricsFormat } from "@/lib/unison/api-types";
@@ -16,9 +18,12 @@ import {
   startVideoProject,
 } from "@/lib/unison/video-project";
 import { useProjectStore } from "@/stores/project";
+import { EDITOR_PATH } from "@/utils/app-routes";
 import { normalizeIsrc } from "@/utils/isrc";
 import type { ParseResult } from "@/utils/lyrics-parsers";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { ownerLyric } from "@/utils/unison-suggest-copy";
+import { showLinkedProjectReopenedToast, showSuggestOpenedToast } from "@/utils/unison-toast";
 import { type LyricsRead, readLyricsFile, replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types ---------------------------------------------------------------------
@@ -92,24 +97,42 @@ async function openUnisonLyric(lyric: UnisonLyric, options: OpenUnisonLyricOptio
   if (start) await startVideoProject(start);
 }
 
-// Resolves before the video loads, as ?v= does, so link details never reach a project opened mid-download.
-// Null entries mean the index could not be read, so no project is known to lack the link.
+type LinkOpenOutcome = "created" | "reopened" | "failed";
+
+function linkedLyricLabel(lyric: UnisonLyric): string | null {
+  return isOwnLyric(lyric, readUnisonSession()?.keyId ?? null) ? null : ownerLyric(lyricOwnerName(lyric));
+}
+
+async function reopenLinkedProject(
+  lyric: UnisonLyric,
+  projectId: string,
+  navigate: (path: string) => void,
+): Promise<LinkOpenOutcome> {
+  await openProject(projectId);
+  navigate(EDITOR_PATH);
+  showLinkedProjectReopenedToast(linkedLyricLabel(lyric));
+  return "reopened";
+}
+
 async function openUnisonLyricFromLink(
   lyric: UnisonLyric,
   entries: readonly ProjectIndexEntry[] | null,
   navigate: (path: string) => void,
-): Promise<boolean> {
-  const link = entries !== null && linksOnOpen(lyric, readUnisonSession()?.keyId ?? null, entries);
-  const start = unisonLyricStart(lyric, { link, navigate });
+): Promise<LinkOpenOutcome> {
+  const linked = entries ? projectsByLyricId(entries).get(String(lyric.id)) : undefined;
+  if (linked) return reopenLinkedProject(lyric, linked.id, navigate);
+  const start = unisonLyricStart(lyric, { link: true, navigate });
   const started = start && (await createVideoProject(start));
-  if (!started) return false;
+  if (!started) return "failed";
   useProjectStore.getState().setActiveTab("edit");
-  // A project with lyrics outlives a failed video, so the announcement does not wait for the load.
   void getQueryImportSettled().then(() => {
-    if (openProjectIdSnapshot() === started.newId) announceVideoProject(started);
+    if (openProjectIdSnapshot() !== started.newId) return;
+    const label = linkedLyricLabel(lyric);
+    if (label === null) announceVideoProject(started);
+    else showSuggestOpenedToast(label);
   });
   void loadVideoProject(lyric.videoId, started);
-  return true;
+  return "created";
 }
 
 // -- Exports -------------------------------------------------------------------
