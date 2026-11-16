@@ -8,7 +8,7 @@ import {
   openProjectIdSnapshot,
 } from "@/lib/open-project-session";
 import { buildSavedProject } from "@/lib/persistence";
-import { cancelPendingSave, flushPendingSaveQuietly } from "@/lib/persistence-debounce";
+import { cancelPendingSave, flushPendingSaveQuietly, holdSaves } from "@/lib/persistence-debounce";
 import { saveProjectAudio } from "@/lib/project-audio";
 import {
   createProjectId,
@@ -73,7 +73,7 @@ function markOpenProjectChanged(): void {
 
 // -- Boot ---------------------------------------------------------------------
 
-async function restoreOpenProject(): Promise<void> {
+async function restoreStoredProject(): Promise<void> {
   const baseline = openProjectChanges;
   const id = await findOpenProjectId();
   if (!id) return;
@@ -85,10 +85,20 @@ async function restoreOpenProject(): Promise<void> {
     throw error;
   }
   if (openProjectChanges !== baseline || !hasRestorableContent(payload)) return;
-  // The restore replaces whatever the stores held before it, so a save of that state would overwrite the record.
   cancelPendingSave();
   applyProjectToStores(payload);
   markProjectOpened(id, Date.now()).catch(logFailure("could not record when the project was opened"));
+}
+
+// The restore replaces whatever the stores held before it, so no save of that state may write while it loads.
+async function restoreOpenProject(): Promise<void> {
+  cancelPendingSave();
+  const releaseSaves = holdSaves();
+  try {
+    await restoreStoredProject();
+  } finally {
+    releaseSaves();
+  }
 }
 
 // -- Switching ----------------------------------------------------------------

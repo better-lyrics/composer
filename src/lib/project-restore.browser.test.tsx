@@ -250,6 +250,17 @@ describe("project-restore", () => {
       expect((await loadProjectRecord("p1"))?.savedAt).toBe(444);
     });
 
+    it("regression: a save that comes due while the boot restore loads never writes over the project", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 0 });
+      await seedStoredProject("p1", { open: true, project: { savedAt: 555, lines: savedLines([createLine()]) } });
+      debouncedSave(currentSaveInput());
+      const restoring = restoreOpenProject();
+      debouncedSave(currentSaveInput());
+      await restoring;
+      await flushPendingSave();
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(555);
+    });
+
     it("regression: switching tabs after boot remembers the tab without saving the record", async () => {
       useSettingsStore.setState({ autoSaveDelay: 20 });
       await seedStoredProject("p1", { open: true, project: { savedAt: 222 } });
