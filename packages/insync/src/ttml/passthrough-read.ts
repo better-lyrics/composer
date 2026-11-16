@@ -107,13 +107,13 @@ function withParagraphCapture(
   line: LyricLine,
   paragraph: XmlReadElement,
   background: XmlReadElement | null,
-  untimedMain: ReadonlyMap<XmlReadNode, string>,
+  untimed: { main: ReadonlyMap<XmlReadNode, string>; background: ReadonlyMap<XmlReadNode, string> },
 ): LyricLine {
   const kept = nodePassthrough(
     "p",
     paragraph,
     withTimes(capturedTimes(paragraph, lineEnvelope(line), true)),
-    trackAnchors(paragraph, timedSyllables(mainTrack(line)), true, untimedMain),
+    trackAnchors(paragraph, timedSyllables(mainTrack(line)), true, untimed.main),
   );
   const keptBackground =
     background &&
@@ -121,7 +121,7 @@ function withParagraphCapture(
       "background",
       background,
       withTimes(capturedTimes(background, backgroundEnvelope(line), false)),
-      trackAnchors(background, timedSyllables(backgroundTrack(line)), false, new Map()),
+      trackAnchors(background, timedSyllables(backgroundTrack(line)), false, untimed.background),
     );
   if (!kept && !keptBackground) return line;
   return withLinePassthrough(line, {

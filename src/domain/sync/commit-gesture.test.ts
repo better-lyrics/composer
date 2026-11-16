@@ -8,6 +8,7 @@ import { lineText } from "insync/line-text";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
 import { type GestureCommit, type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
+import { isSyncComplete } from "insync/sync-slot-close";
 import { wordFromSpaced } from "insync/word-spaced-words";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";
@@ -269,6 +270,21 @@ describe("tap-line", () => {
     const commit = run(opened, "tap-line", [2, 0], 7.2);
     expect(changedFields(commit!.lineUpdates, opened)).toEqual([{ id: "l1", updates: { end: 7.2 } }]);
     expect(commit?.nextCursor).toEqual({ lineIndex: 2, wordIndex: 0 });
+  });
+
+  it("regression: a tap after a re-recorded zero-length word-synced last line ends its word", () => {
+    const lines = [
+      createLine({ id: "l0", text: "first", begin: 2, end: 5 }),
+      createLine({ id: "l1", text: "last", words: [word("last", 8, 8)] }),
+    ];
+    const opened = apply(lines, run(lines, "tap-line", [1, 0], 5));
+    const commit = run(opened, "tap-line", [2, 0], 7.2);
+    expect(changedFields(commit!.lineUpdates, opened)).toEqual([
+      { id: "l1", updates: { words: [word("last", 5, 7.2)] } },
+    ]);
+    expect(isSyncComplete(apply(opened, commit), { lineIndex: 2, wordIndex: 0 }, "line", DEFAULT_SPLIT_CHARACTER)).toBe(
+      true,
+    );
   });
 
   it("regression D5: a backwards line tap is clamped and never writes end < begin", () => {

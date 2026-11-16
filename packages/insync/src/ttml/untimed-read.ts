@@ -218,15 +218,27 @@ function untimedAnchors(
   return anchors;
 }
 
+function untimedTrackAnchors(
+  line: LyricLine,
+  main: UntimedLyric | undefined,
+  background: UntimedLyric | undefined,
+  splitChar: string,
+): { main: ReadonlyMap<XmlReadNode, string>; background: ReadonlyMap<XmlReadNode, string> } {
+  return {
+    main: untimedAnchors(main, mainTrack(line), splitChar),
+    background: untimedAnchors(background, backgroundTrack(line), splitChar),
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { BackgroundSpan, UntimedLyric };
 export {
   lineSyncedBackground,
   timedTrackText,
-  untimedAnchors,
   untimedBackgroundSpan,
   untimedLyric,
+  untimedTrackAnchors,
   withSpansOfTimedSpan,
   withUntimedSpans,
 };

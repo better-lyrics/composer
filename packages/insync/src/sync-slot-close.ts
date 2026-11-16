@@ -62,8 +62,9 @@ function closeSlotWords(words: readonly WordTiming[], index: number, end: number
 function closeSlot(line: LyricLine, slot: SyncSlot, end: number): Partial<LyricLine> | null {
   const main = mainTrack(line);
   const words = timedSyllables(main);
-  if (words.length && slot.wordIndex !== null) {
-    return { tracks: withRoleWords(line, "main", closeSlotWords(words, slot.wordIndex, end)).tracks };
+  if (words.length) {
+    const index = slot.wordIndex ?? words.length - 1;
+    return { tracks: withRoleWords(line, "main", closeSlotWords(words, index, end)).tracks };
   }
   if (!isSpanTimed(main)) return null;
   return { tracks: withMainTrack(line, withTrackSpan(main, main.begin, Math.max(end, main.begin))).tracks };
