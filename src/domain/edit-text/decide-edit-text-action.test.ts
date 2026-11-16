@@ -488,3 +488,33 @@ describe("breaking an instance line", () => {
     expect(action.editText.split("\n")[2]).toBe("verse line ");
   });
 });
+
+describe("a keystroke in a long song", () => {
+  it("keeps every line it did not touch, so per-keystroke work reads only the changed line", () => {
+    const lines = Array.from({ length: 100 }, (_, index) =>
+      lineFromFields(
+        {
+          id: `l${index}`,
+          text: `Lantern light number ${index}`,
+          agentId: "v1",
+          ...(index % 7 === 0 && { backgroundText: `(glow ${index})` }),
+        },
+        getSplitCharacter(),
+      ),
+    );
+    const shown = shownEditText(lines, getSplitCharacter());
+    const caret = shown.text.indexOf("number 50") + "number".length;
+    const text = `${shown.text.slice(0, caret)}s${shown.text.slice(caret)}`;
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [],
+      splitCharacter: getSplitCharacter(),
+      ranges: remapBackgroundRanges(shown.text, text, shown.ranges, caret + 1),
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    const changed = action.finalLines.flatMap((line, index) => (line === lines[index] ? [] : [line.id]));
+    expect(changed).toEqual(["l50"]);
+  });
+});
