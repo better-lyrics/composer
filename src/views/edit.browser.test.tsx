@@ -343,14 +343,15 @@ describe("regressions: hand edits keep sync", () => {
     await expect
       .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
       .toBe("Wish I could now");
+    // A word typed after the last timed word stays untimed, so no zero-length word is written.
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
-    expect(words.map((w) => w.text + w.sep)).toEqual(["Wish ", "I ", "could ", "now"]);
+    expect(words.map((w) => w.text + w.sep)).toEqual(["Wish ", "I ", "could "]);
     expect(words.slice(0, 2)).toEqual([
       { text: "Wish", sep: " ", begin: 1, end: 2, joinsNext: false },
       { text: "I", sep: " ", begin: 2, end: 3, joinsNext: false },
     ]);
     expect(words[2].begin).toBe(3);
-    expect(words[3].end).toBe(4);
+    expect(words[2].end).toBe(4);
   });
 
   it("regression: adding a word to timed background vocals in the popover keeps their timing", async () => {
