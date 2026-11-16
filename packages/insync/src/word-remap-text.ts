@@ -96,12 +96,12 @@ function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: n
 
 function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar: string): WordTiming[] {
   const { texts, glued } = withTypedGroupsApart(tokenizeWordTexts(newText, splitChar), oldWords, splitChar);
-  const pairs = lcsPairs(
-    oldWords.map((w) => wordKey(w.text, splitChar)),
-    texts.map((value) => wordKey(value, splitChar)),
-  );
+  const oldKeys = oldWords.map((w) => wordKey(w.text, splitChar));
+  const newKeys = texts.map((value) => wordKey(value, splitChar));
+  const sameCount = texts.length === oldWords.length;
+  const pairs = sameCount && newKeys.every((key, i) => key === oldKeys[i]) ? null : lcsPairs(oldKeys, newKeys);
   // Same count with every kept word in its place is a rename; a word that moved means words merged and others came.
-  if (texts.length === oldWords.length && pairs.every(([oldIdx, newIdx]) => oldIdx === newIdx)) {
+  if (sameCount && (!pairs || pairs.every(([oldIdx, newIdx]) => oldIdx === newIdx))) {
     const remapped = oldWords.map((oldWord, i) => ({ ...oldWord, ...splitTrailingWhitespace(texts[i]) }));
     return joinedToTypedText(
       remapped,
@@ -113,7 +113,7 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
   }
 
   const oldIndexOf: Array<number | undefined> = new Array(texts.length);
-  for (const [oldIdx, newIdx] of pairs) oldIndexOf[newIdx] = oldIdx;
+  for (const [oldIdx, newIdx] of pairs ?? []) oldIndexOf[newIdx] = oldIdx;
 
   const result: WordTiming[] = [];
   const retimed = new Map<number, { begin: number; end: number }>();
