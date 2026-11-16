@@ -157,7 +157,7 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   const delta = oldMain ? clampShiftDelta([line], Math.max(ctx.time, floor) - oldMain.begin, range) : 0;
   const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
   // A line the song end pulls back onto the previous slot would end that slot before it begins.
-  if (begin < floor || (anchor.previous && begin <= anchor.previous.begin)) return "no-room";
+  if (begin < floor || begin >= range.max || (anchor.previous && begin <= anchor.previous.begin)) return "no-room";
   const written = oldMain
     ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) }, ctx.splitChar, ctx.songEnd)
     : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null, ctx);

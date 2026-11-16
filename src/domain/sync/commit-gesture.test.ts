@@ -939,6 +939,14 @@ describe("song end", () => {
     expect(Math.max(...backgroundEnds)).toBeLessThanOrEqual(SONG_END);
   });
 
+  it("regression: a Line mode tap refuses to open a line at the song end", () => {
+    const lines = [
+      createLine({ id: "l0", text: "first", begin: 16, end: SONG_END }),
+      createLine({ id: "l1", text: "second" }),
+    ];
+    expect(planGesture(lines, "tap-line", { ...ctxAt([1, 0], 15), songEnd: SONG_END })).toBe("no-room");
+  });
+
   it("regression: a Line mode tap refuses a line that no longer fits before the song end", () => {
     const lines = [
       createLine({ id: "l0", text: "first", begin: 10, end: 14 }),
