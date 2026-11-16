@@ -138,7 +138,8 @@ describe("TimelineContextMenu · delete word", () => {
       });
       await clickDelete();
 
-      expect(timedSyllables(mainTrack(lineById("l1")!)).map((word) => word.text + word.sep)).toEqual(["one ", "two "]);
+      // Deleting the last word leaves no trailing space on the word before it.
+      expect(timedSyllables(mainTrack(lineById("l1")!)).map((word) => word.text + word.sep)).toEqual(["one ", "two"]);
       expect(useTimelineStore.getState().selectedWords).toEqual([]);
     });
   });
