@@ -68,7 +68,17 @@ function contentOf(text: string, splitChar: string) {
   }
   const letters = positions.map((index) => text[index]).join("");
   const groupTexts = groups.map((group) => text.slice(group.start, group.end));
-  return { positions, groups, groupTexts, key: `${letters}\u0000${groupTexts.toSorted().join("\u0000")}` };
+  const byStart = new Map(groups.map((group) => [group.start, group]));
+  // Each group's place among the groups showing the same text, and those groups by text, in order.
+  const sameText = new Map<string, Group[]>();
+  const ordinals = groups.map((group, index) => {
+    const same = sameText.get(groupTexts[index]) ?? [];
+    same.push(group);
+    sameText.set(groupTexts[index], same);
+    return same.length - 1;
+  });
+  const key = `${letters}\u0000${groupTexts.toSorted().join("\u0000")}`;
+  return { positions, groups, groupTexts, byStart, sameText, ordinals, key };
 }
 
 // Where the caret goes when a redraw only moved things around (bracket groups, spaces, split marks, row breaks): after
@@ -83,10 +93,7 @@ function caretThroughRedraw(typed: string, displayed: string, caret: number, spl
   if (before.key !== after.key) return null;
   const inGroup = before.groups.findIndex((group) => group.start < caret && caret < group.end);
   if (inGroup >= 0) {
-    const text = before.groupTexts[inGroup];
-    const nth = before.groupTexts.slice(0, inGroup).filter((other) => other === text).length;
-    const matching = after.groups.filter((_, index) => after.groupTexts[index] === text);
-    const target = matching[nth];
+    const target = after.sameText.get(before.groupTexts[inGroup])?.[before.ordinals[inGroup]];
     return target ? target.start + caret - before.groups[inGroup].start : null;
   }
   const count = before.positions.filter((position) => position < caret).length;
@@ -94,7 +101,7 @@ function caretThroughRedraw(typed: string, displayed: string, caret: number, spl
   let at = count > 0 ? after.positions[count - 1] + 1 : 0;
   // The spaces and breaks after that letter come along; a group there comes along too when the redraw left it there.
   for (let index = typedFrom; index < caret; index++) {
-    const group = before.groups.find((candidate) => candidate.start === index);
+    const group = before.byStart.get(index);
     if (group) {
       const text = typed.slice(group.start, group.end);
       let next = at;
