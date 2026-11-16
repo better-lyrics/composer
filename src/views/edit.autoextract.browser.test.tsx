@@ -41,9 +41,10 @@ describe("auto-extract background vocals on blur", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Take me home (country roads)");
+    // A closed bracket group now becomes the background as it is typed; blur keeps it.
     await expect
       .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
-      .toEqual(["Take me home (country roads)"]);
+      .toEqual(["Take me home"]);
 
     blurTextarea(textarea);
 
@@ -158,24 +159,17 @@ describe("undo after auto-extract on blur", () => {
     useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
   });
 
-  it("reverts the extraction on the first undo and the typing on the second", async () => {
+  // Typed brackets now extract with the keystroke that closes them, so typing and extraction are one undo step.
+  it("reverts the typing and its extraction in one undo", async () => {
     useProjectStore.setState({ lines: [] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Take me home (country roads)");
-    await expect
-      .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
-      .toBe("Take me home (country roads)");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
 
     blurTextarea(textarea);
     await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
-
-    useProjectStore.getState().undo();
-    await expect
-      .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
-      .toBe("Take me home (country roads)");
-    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBeUndefined();
 
     useProjectStore.getState().undo();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(0);
@@ -190,10 +184,9 @@ describe("undo after auto-extract on blur", () => {
     blurTextarea(textarea);
     await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
 
+    // The typing and its extraction are one undo step.
     useProjectStore.getState().undo();
-    await expect
-      .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
-      .toBe("Take me home (country roads)");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(0);
 
     useProjectStore.getState().redo();
     await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");

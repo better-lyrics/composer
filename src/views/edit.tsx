@@ -45,6 +45,7 @@ import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-ed
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
 import { useShownEditText } from "@/views/edit/use-shown-edit-text";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
+import { settingsExtractOptions, withTypedBackgroundsExtracted } from "@/views/edit/typed-background-extraction";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -248,10 +249,7 @@ const EditPanel: React.FC = () => {
       if (current.some((value) => lineHasInlineParens(value, getSplitCharacter()))) noteGuideSignal("edit.parenInLine");
       return;
     }
-    const extracted = extractBackground({
-      mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
-      preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
-    });
+    const extracted = extractBackground(settingsExtractOptions());
     if (commitAndShow(extracted)) noteGuideSignal("edit.background");
   }, [commitAndShow, finalizeRun]);
 
@@ -306,15 +304,7 @@ const EditPanel: React.FC = () => {
       if (wasPaste) {
         const pastedLines = finalLines;
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
-          finalLines = extractBackgroundVocals(
-            finalLines,
-            {
-              mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
-              preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
-            },
-            getSplitCharacter(),
-            songEnd,
-          );
+          finalLines = extractBackgroundVocals(finalLines, settingsExtractOptions(), getSplitCharacter(), songEnd);
         }
         finalizeRun();
         commitAndShow(pasteLyrics(lines, finalLines));
@@ -328,7 +318,14 @@ const EditPanel: React.FC = () => {
         return;
       }
 
-      showEditText(text, { text: action.editText, ranges: action.editRanges }, textarea);
+      const typed = withTypedBackgroundsExtracted(
+        lines,
+        { finalLines, shown: { text: action.editText, ranges: action.editRanges } },
+        splitCharacter,
+        songEnd,
+      );
+      finalLines = typed.finalLines;
+      showEditText(text, typed.shown, textarea);
 
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;

@@ -9,6 +9,7 @@ import { withMainTrack, withTrackText } from "insync/line-track-writes";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { createLine } from "@/test/factories";
 import { backgroundBracketRefusals } from "insync/background-vocal-refusals";
+import { extractBackgroundVocalsOnLines } from "insync/background-vocal-typed-extraction";
 import {
   classifyLine,
   extractBackgroundVocals,
@@ -1097,6 +1098,57 @@ describe("extractBackgroundVocals: linked instances", () => {
         ["boat-1", "linked"],
       ]),
     );
+  });
+});
+
+describe("extractBackgroundVocalsOnLines", () => {
+  const options = { mergeStandaloneLines: true, preserveBrackets: true };
+
+  it("regression: extracts only the typed lines and the linked instances that move with them", () => {
+    const typed = createLine({ id: "typed", text: "Ember lights are falling (falling)" });
+    const untouched = createLine({ id: "untouched", text: "Copper bells (ring) tonight" });
+    const instance = (instanceIdx: number) =>
+      createLine({ id: `river-${instanceIdx}`, text: "River runs (slow)", groupId: "g1", instanceIdx, templateLineIdx: 0 });
+    const lines = [typed, untouched, instance(0), instance(1)];
+
+    const result = extractBackgroundVocalsOnLines(lines, new Set(["typed", "river-0"]), options, DEFAULT_SPLIT_CHARACTER);
+
+    expect(result.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "Ember lights are falling",
+      "Copper bells (ring) tonight",
+      "River runs",
+      "River runs",
+    ]);
+    expect(result[1]).toBe(untouched);
+    expect(result.map((line) => backgroundText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "(falling)",
+      undefined,
+      "(slow)",
+      "(slow)",
+    ]);
+  });
+
+  it("regression: keeps typed brackets on every instance when a linked copy has a timed background", () => {
+    const words = [
+      { text: "River", sep: " ", begin: 3, end: 3.5 },
+      { text: "runs", begin: 3.5, end: 4 },
+    ];
+    const instance = (instanceIdx: number, backgroundWords?: { text: string; begin: number; end: number }[]) =>
+      reconcileMatchedTiming(
+        createLine({
+          id: `river-${instanceIdx}`,
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          words,
+          ...(backgroundWords && { backgroundText: "deep", backgroundWords }),
+        }),
+        "River runs (slow)",
+        DEFAULT_SPLIT_CHARACTER,
+      );
+    const lines = [instance(0), instance(1, [{ text: "deep", begin: 3.5, end: 4 }])];
+
+    expect(extractBackgroundVocalsOnLines(lines, new Set(["river-0"]), options, DEFAULT_SPLIT_CHARACTER)).toBe(lines);
   });
 });
 
