@@ -208,8 +208,7 @@ function lineModeGesture(gesture: SyncGesture, granularity: SyncGranularity | un
 function planGesture(lines: readonly LyricLine[], requested: SyncGesture, ctx: GestureContext): GesturePlan {
   const gesture = lineModeGesture(requested, ctx.granularity);
   if (gesture === "hold-end" && ctx.granularity === "line") {
-    const release = { ...ctx, rangeEnd: ctx.songEnd ?? Number.POSITIVE_INFINITY };
-    const closed = closeHeldLine(lines, release, ctx.splitChar);
+    const closed = closeHeldLine(lines, ctx, (held) => rangeOfLine(lines, held, ctx).max, ctx.splitChar);
     return (
       closed && { lineUpdates: [closed.update], nextCursor: ctx.cursor, nextJumped: false, clampedTo: closed.clampedTo }
     );

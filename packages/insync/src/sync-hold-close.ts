@@ -43,11 +43,16 @@ function closeHeld(
 }
 
 // In Line mode a hold opens a whole line, so its release ends that line while it is still open.
-function closeHeldLine(lines: readonly LyricLine[], release: HoldRelease, splitChar: string): ClosedHold | null {
-  const slot = previousSlot(lines, release.cursor, "line", splitChar);
+function closeHeldLine(
+  lines: readonly LyricLine[],
+  { cursor, time, defaultWordDuration }: Omit<HoldRelease, "rangeEnd">,
+  rangeEndOf: (line: LyricLine) => number,
+  splitChar: string,
+): ClosedHold | null {
+  const slot = previousSlot(lines, cursor, "line", splitChar);
   const held = slot && slotBounds(lines, slot);
   if (!slot || !held || held.begin !== held.end) return null;
-  const { time, defaultWordDuration, rangeEnd } = release;
+  const rangeEnd = rangeEndOf(lines[slot.lineIndex]);
   const closeEnd = Math.min(time > held.begin ? time : tapEnd(held.begin, defaultWordDuration), rangeEnd);
   const update = closingUpdate(lines, slot, closeEnd);
   return update && { update, clampedTo: time < held.begin ? held.begin : null, closeEnd };
