@@ -1,4 +1,5 @@
 import type { LyricLine } from "./line";
+import { hasLetterOrDigit } from "./letter-or-digit";
 import { lineText } from "./line-text";
 import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
@@ -75,6 +76,8 @@ function contentOf(text: string, splitChar: string) {
 // still follow it; inside a group, at the same place in that group. Null when the redraw changed the text itself.
 function caretThroughRedraw(typed: string, displayed: string, caret: number, splitChar: string): number | null {
   if (typed === displayed) return caret;
+  // A split character that is a letter or digit is lyric text too, so dropping it would hide a real edit.
+  if (hasLetterOrDigit(splitChar)) return null;
   const before = contentOf(typed, splitChar);
   const after = contentOf(displayed, splitChar);
   if (before.key !== after.key) return null;
