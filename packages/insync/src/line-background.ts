@@ -69,14 +69,14 @@ function secondHalf(line: LyricLine): { begin: number; end?: number } | null {
 // span track takes the seeded words' bounds. A background that has any timing is never seeded.
 function seededBackground(
   line: LyricLine,
-  span: { begin: number; end?: number } | null,
+  span: { begin: number; end?: number; songEnd?: number } | null,
   splitChar: string,
   asSpan = isSpanTimed(mainTrack(line)),
 ): LyricLine {
   const background = backgroundTrack(line);
   const text = backgroundText(line, splitChar);
   if (!background || !text || !span || isSpanTimed(background) || timedSyllables(background).length > 0) return line;
-  const words = createInitialBgWords(text, span.begin, span.end, splitChar);
+  const words = createInitialBgWords(text, span.begin, span.end, splitChar, span.songEnd);
   if (words.length === 0) return line;
   if (asSpan) return withBackgroundTrack(line, withTrackSpan(background, firstBegin(words), lastEnd(words)));
   const untimed = background.syllables.map(untimedSyllable);
@@ -98,9 +98,9 @@ function withSeededBackgroundWords(line: LyricLine, splitChar: string): LyricLin
   return seededBackground(line, secondHalf(line), splitChar, false);
 }
 
-// Untimed background lyrics are timed from where the line's first syllable was tapped.
-function withBackgroundSeededFrom(line: LyricLine, begin: number, splitChar: string): LyricLine {
-  return seededBackground(line, { begin }, splitChar);
+// Untimed background lyrics are timed from where the line's first syllable was tapped, ending by the song's end.
+function withBackgroundSeededFrom(line: LyricLine, begin: number, songEnd: number, splitChar: string): LyricLine {
+  return seededBackground(line, { begin, songEnd }, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

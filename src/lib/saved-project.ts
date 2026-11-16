@@ -144,7 +144,8 @@ function upgradeSavedProject(project: StoredProject): SavedProject {
   const loaded = linesFromSavedV3(project.lines);
   const before =
     project.version < 3 ? loaded.map((value) => migrateLegacyTransliterationLine(value, getSplitCharacter())) : loaded;
-  const lines = savedLines(before);
+  // 3.x seeded untimed background vocals on every open; the upgrade does it once, so later opens keep what was saved.
+  const lines = savedLines(before.map((line) => withSeededBackground(line, getSplitCharacter())));
   const alignedTimings = rekeyedAlignedTimings(project.alignedTimings, before, linesFromSaved(lines));
   return {
     ...project,

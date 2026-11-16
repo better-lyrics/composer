@@ -10,10 +10,11 @@ import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
 import { buildSavedProject } from "@/lib/persistence";
 import { buildSaveInput, currentSaveInput } from "@/lib/project-snapshot";
-import type { SavedLine, SavedProject } from "@/lib/saved-project";
-import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
+import type { SavedLine, SavedProject, SavedProjectV3 } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines, upgradeSavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
+import { savedLinesV3 } from "@/test/saved-v3";
 import { resetAllStores } from "@/test/stores";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
@@ -76,14 +77,23 @@ describe("applySavedProject", () => {
 
     it("regression: stores timing for background vocals saved on a synced line without words", () => {
       const legacy = createLine({ id: "l1", text: "hello", begin: 10, end: 14, backgroundText: "ooh" });
+      const record: SavedProjectV3 = { ...projectFile(), version: 3, lines: savedLinesV3([legacy]) };
 
       for (const origin of ["storage", "file"] as const) {
-        applySavedProject(projectFile({ lines: savedLines([legacy]) }), origin);
+        applySavedProject(upgradeSavedProject(structuredClone(record)), origin);
 
         const state = useProjectStore.getState();
         expect(bgBounds(state.lines[0])).toEqual({ begin: 12, end: 14 });
         expect(state.isDirty).toBe(false);
       }
+    });
+
+    it("regression: a saved background with no timing of its own stays untimed when the project opens", () => {
+      const line = createLine({ id: "l1", text: "hello", begin: 10, end: 14, backgroundText: "ooh" });
+
+      applySavedProject(projectFile({ lines: savedLines([line]) }), "storage");
+
+      expect(bgBounds(useProjectStore.getState().lines[0])).toBeNull();
     });
 
     it("regression: a line-synced background keeps its own span when a format 4 record opens", () => {
