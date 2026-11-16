@@ -14,6 +14,7 @@ interface PendingCaret {
 function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => void) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaretRef = useRef<PendingCaret | null>(null);
+  const shownTextRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     const pending = pendingCaretRef.current;
@@ -38,29 +39,34 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
           scrollTop: textarea.scrollTop,
         };
       }
+      shownTextRef.current = edit.text;
       showText(edit);
     },
     [showText],
   );
 
-  return { textareaRef, showEditText };
+  return { textareaRef, showEditText, shownTextRef };
 }
 
 function useComposedTextareaChange(
   setRawText: (text: string, caret?: number) => void,
   applyTextareaText: (textarea: HTMLTextAreaElement) => void,
+  shownTextRef: React.RefObject<string | null>,
 ) {
   const composingRef = useRef(false);
-  const appliedAtEndRef = useRef<{ value: string; lines: readonly LyricLine[] } | null>(null);
+  const appliedAtEndRef = useRef<{ values: readonly string[]; lines: readonly LyricLine[] } | null>(null);
 
   // Rewriting textarea.value mid-composition cancels the IME, so the text is applied once at compositionend. Safari
-  // can send the final input after compositionend; that input carries the value already applied.
+  // can send the final input after compositionend; that input carries the value already applied, as typed or as shown.
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const appliedAtEnd = appliedAtEndRef.current;
       appliedAtEndRef.current = null;
       if (composingRef.current) setRawText(e.target.value, e.target.selectionEnd);
-      else if (appliedAtEnd?.value !== e.target.value || appliedAtEnd.lines !== useProjectStore.getState().lines) {
+      else if (
+        !appliedAtEnd?.values.includes(e.target.value) ||
+        appliedAtEnd.lines !== useProjectStore.getState().lines
+      ) {
         applyTextareaText(e.target);
       }
     },
@@ -74,11 +80,13 @@ function useComposedTextareaChange(
   const onCompositionEnd = useCallback(
     (e: React.CompositionEvent<HTMLTextAreaElement>) => {
       composingRef.current = false;
-      const value = e.currentTarget.value;
+      const typed = e.currentTarget.value;
+      shownTextRef.current = null;
       applyTextareaText(e.currentTarget);
-      appliedAtEndRef.current = { value, lines: useProjectStore.getState().lines };
+      const shown = shownTextRef.current ?? typed;
+      appliedAtEndRef.current = { values: [typed, shown], lines: useProjectStore.getState().lines };
     },
-    [applyTextareaText],
+    [applyTextareaText, shownTextRef],
   );
 
   return { onChange, onCompositionStart, onCompositionEnd };

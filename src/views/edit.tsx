@@ -82,7 +82,7 @@ const EditPanel: React.FC = () => {
 
   const { shownText, setRawText, showEditText: showShownText, showLines } = useShownEditText(lines);
   const rawText = shownText.text;
-  const { textareaRef, showEditText } = useEditTextCaret(rawText, showShownText);
+  const { textareaRef, showEditText, shownTextRef } = useEditTextCaret(rawText, showShownText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const pastedRef = useRef(false);
@@ -346,7 +346,7 @@ const EditPanel: React.FC = () => {
     },
     [defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
   );
-  const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
+  const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText, shownTextRef);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });
 
   const importTriggers = useDualClickImport(openImportModal);
