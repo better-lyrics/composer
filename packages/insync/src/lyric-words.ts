@@ -59,7 +59,6 @@ function distributeWordsInLine(text: string, begin: number, end: number, splitCh
 
 // -- BG Word Creation ---------------------------------------------------------
 
-// Without an end, each word gets the default length, ending no later than the song.
 function createInitialBgWords(
   backgroundText: string,
   begin: number,
