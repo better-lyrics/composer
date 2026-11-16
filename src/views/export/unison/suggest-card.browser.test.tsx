@@ -241,4 +241,21 @@ describe("Unison suggest card", () => {
     await expect.element(screen.getByRole("heading", { name: "Suggest an edit to this lyric" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send update" }).query()).toBeNull();
   });
+
+  it("shows the waiting suggestion with its note and withdraws it", async () => {
+    const state = stubUnison(MIRELLE);
+    state.sent.push({ lyrics: copiedTtml(), note: NOTE });
+    loadLinkedProject();
+    const screen = await renderPanel();
+
+    await expect.element(screen.getByRole("heading", { name: "Your suggestion is waiting" })).toBeInTheDocument();
+    await expect.element(screen.getByText(NOTE)).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Withdraw suggestion" }).click();
+
+    await expect.poll(() => state.withdrawn).toBe(true);
+    await expect
+      .element(screen.getByRole("heading", { name: "Suggest an edit to Mirelle's lyric" }))
+      .toBeInTheDocument();
+    await expect.element(screen.getByText("You withdrew your suggestion. Rev 3 stays live.")).toBeInTheDocument();
+  });
 });

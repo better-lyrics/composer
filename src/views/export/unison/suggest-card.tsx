@@ -1,5 +1,7 @@
 import { lyricOwnerName } from "@/domain/unison/ownership";
+import { type SuggestionOutcome, suggestionOutcome } from "@/domain/unison/suggestion-outcome";
 import { useRevisionPreview } from "@/hooks/unison/useRevisionPreview";
+import { useRevisions } from "@/hooks/unison/useRevisions";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { UnisonError } from "@/lib/unison/client";
 import { INPUT_STYLES } from "@/ui/input-styles";
@@ -13,6 +15,8 @@ import {
   ONE_ALREADY_WAITING,
   SEND_SUGGESTION_LABEL,
   suggestTitle,
+  supersededLine,
+  withdrawnLine,
 } from "@/utils/unison-suggest-copy";
 import { ChangesSection } from "@/views/export/unison/changes-section";
 import { DIVIDED_SECTION_STYLES } from "@/views/export/unison/panel-section";
@@ -30,6 +34,7 @@ import {
   useSubmitChecks,
 } from "@/views/export/unison/submit-card-shell";
 import { SubmitFooter } from "@/views/export/unison/submit-footer";
+import { SuggestionOutcomeCard, SuggestionWaitingCard } from "@/views/export/unison/suggestion-status";
 import { UNISON_CARD_TEXT_STYLES } from "@/views/export/unison/unison-card-styles";
 import { WhoDecides } from "@/views/export/unison/who-decides";
 import { useId, useState } from "react";
@@ -162,7 +167,30 @@ const SuggestForm: React.FC<SuggestCardProps & { lead?: React.ReactNode }> = (pr
   );
 };
 
-const SuggestCard: React.FC<SuggestCardProps> = (props) => <SuggestForm {...props} />;
+function outcomeLead(outcome: SuggestionOutcome | null, lyric: UnisonLyric): string | null {
+  if (outcome?.kind === "withdrawn") return withdrawnLine(lyric.revision.revNo);
+  const owner = lyricOwnerName(lyric);
+  return outcome?.kind === "superseded" && owner ? supersededLine(owner) : null;
+}
+
+const SuggestCard: React.FC<SuggestCardProps> = (props) => {
+  const { lyric, session } = props;
+  const history = useRevisions(lyric.id).data;
+  const waiting = lyric.revision.suggestion;
+  if (waiting && waiting.authorKeyId === session.keyId) {
+    return <SuggestionWaitingCard lyric={lyric} suggestion={waiting} keyId={session.keyId} />;
+  }
+  const outcome = history ? suggestionOutcome(history, session.keyId) : null;
+  const leadText = outcomeLead(outcome, lyric);
+  return (
+    <>
+      {(outcome?.kind === "approved" || outcome?.kind === "rejected") && (
+        <SuggestionOutcomeCard outcome={outcome} lyric={lyric} />
+      )}
+      <SuggestForm {...props} lead={leadText ? <p className={UNISON_CARD_TEXT_STYLES}>{leadText}</p> : undefined} />
+    </>
+  );
+};
 
 // -- Exports -------------------------------------------------------------------
 
