@@ -125,9 +125,10 @@ function mergeStandaloneInto(
   // so it stays extraction; manual or legacy-undefined stays manual.
   const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
   const base = prevIsStaleExtraction ? withoutBackground(prev) : prev;
-  // A background timed by hand before this pass, or a row with its own word timing, keeps that timing, so the row
-  // merges word by word below.
-  if (isLineSynced(prev) && !isWordSynced(standalone) && (prevTrailingBracketFromSamePass || !bgBounds(base))) {
+  // A background timed by hand before this pass, a background with word timing, or a row with its own word timing
+  // keeps that timing, so the row merges word by word below.
+  const keepsWordTiming = isWordSynced(standalone) || timedSyllables(backgroundTrack(base)).length > 0;
+  if (isLineSynced(prev) && !keepsWordTiming && (prevTrailingBracketFromSamePass || !bgBounds(base))) {
     return mergeIntoLineSynced(
       base,
       standalone,

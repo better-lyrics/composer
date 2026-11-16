@@ -2679,6 +2679,36 @@ describe("regressions", () => {
     ]);
   });
 
+  it("regression: a later standalone row never erases the word timing of a line-synced line's background", () => {
+    const wordTimed = createLine({
+      id: "b",
+      text: "(ooh yeah)",
+      words: [
+        { text: "(ooh", sep: " ", begin: 5, end: 5.6 },
+        { text: "yeah)", begin: 6, end: 7 },
+      ],
+    });
+    for (const later of [
+      createLine({ id: "c", text: "(hey)" }),
+      createLine({ id: "c", text: "(hey)", begin: 8, end: 9 }),
+    ]) {
+      const [merged] = extractBackgroundVocals(
+        [createLine({ id: "a", text: "hello", begin: 1, end: 4 }), wordTimed, later],
+        options,
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah hey");
+      expect(
+        timedSyllables(backgroundTrack(merged))
+          .slice(0, 2)
+          .map((word) => [word.begin, word.end]),
+      ).toEqual([
+        [5, 5.6],
+        [6, 7],
+      ]);
+    }
+  });
+
   it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
     const lines = [
       createLine({
