@@ -226,8 +226,9 @@ describe("textToLyricLines · group attrs preservation", () => {
     const result = textToLyricLines("I really love you", "v1", existing);
     expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("I really love you");
     expect(timedSyllables(mainTrack(result[0])).map((w) => w.text + w.sep)).toEqual(["I ", "really ", "love ", "you"]);
+    // The inserted word shares the next word's slot, so "love" keeps its end and gives up part of its start.
     expect(timedSyllables(mainTrack(result[0])).slice(2)).toEqual([
-      { text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
+      { text: "love", sep: " ", begin: expect.closeTo(0.64), end: 0.8, joinsNext: false },
       { text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
     ]);
   });

@@ -2,18 +2,18 @@
  * @vitest-environment node
  */
 
-import { describe, expect, it } from "vitest";
+import { NO_RANGES, shownEditText } from "insync/edit-text-shown-row";
 import type { LinkGroup } from "insync/group";
-import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { NO_RANGES, shownEditText } from "insync/edit-text-shown-row";
+import { describe, expect, it } from "vitest";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
-import { decideEditTextAction } from "./decide-edit-text-action";
 import { getSplitCharacter } from "@/utils/split-character";
+import { decideEditTextAction } from "./decide-edit-text-action";
 
 const groupChorus: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
 
@@ -290,8 +290,16 @@ describe("regressions", () => {
       splitCharacter: getSplitCharacter(),
     });
     if (step2.kind !== "apply") throw new Error(step2.kind);
-    expect(timedSyllables(mainTrack(step2.finalLines[0]))).toEqual(timedSyllables(mainTrack(lines[0])));
-    expect(timedSyllables(mainTrack(step2.finalLines[1]))).toEqual(timedSyllables(mainTrack(lines[1])));
+    // A word typed with no room shares the next word's slot, so after its removal that word keeps all but its begin.
+    lines.forEach((line, lineIndex) => {
+      const restored = timedSyllables(mainTrack(step2.finalLines[lineIndex]));
+      expect(restored).toEqual(
+        timedSyllables(mainTrack(line)).map((word, index) =>
+          index === 1 ? { ...word, begin: restored[1].begin } : word,
+        ),
+      );
+      expect(restored[1].begin).toBeLessThan(restored[1].end);
+    });
   });
   it("keeps every untouched line as the same object through a keystroke", () => {
     const lines: LyricLine[] = [

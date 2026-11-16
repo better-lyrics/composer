@@ -1,4 +1,5 @@
 import { newWordId } from "./word-id";
+import { letterSlots } from "./word-letter-slots";
 import { textParts } from "./word-text-parts";
 import type { WordTiming } from "./word-timing";
 
@@ -17,21 +18,21 @@ function withTypedBoundaries(words: readonly WordTiming[], splitChar: string): W
     const previous = bounded.at(-1);
     if (previous && word.text.trimStart() !== word.text)
       bounded[bounded.length - 1] = { ...previous, sep: previous.sep || " ", joinsNext: false };
-    const letters = parts.reduce((count, part) => count + part.text.length, 0);
-    let begin = word.begin;
+    const slots = letterSlots(
+      parts.map((part) => part.text.length),
+      word.begin,
+      word.end,
+    );
     parts.forEach((part, index) => {
       const last = index === parts.length - 1;
-      const end = last ? word.end : begin + ((word.end - word.begin) * part.text.length) / letters;
       bounded.push({
         ...word,
         id: index === 0 ? word.id : newWordId(),
         text: part.text,
         sep: last ? part.sep || word.sep : part.sep,
         joinsNext: last ? !part.sep && word.joinsNext : part.joinsNext,
-        begin,
-        end,
+        ...slots[index],
       });
-      begin = end;
     });
   }
   return bounded;

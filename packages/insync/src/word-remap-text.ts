@@ -1,8 +1,9 @@
 import { splitTrailingWhitespace } from "./from-words";
-import { lcsPairs, wordKey } from "./word-alignment";
-import type { WordTiming } from "./word-timing";
 import { splitIntoWordsWithMeta } from "./lyric-words";
+import { lcsPairs, wordKey } from "./word-alignment";
 import { synthesizeBracketedWord } from "./word-clone";
+import { letterSlots } from "./word-letter-slots";
+import type { WordTiming } from "./word-timing";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -58,11 +59,17 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
   for (const [oldIdx, newIdx] of pairs) oldIndexOf[newIdx] = oldIdx;
 
   const result: WordTiming[] = [];
+  let sharedBegin: number | undefined;
   let i = 0;
   while (i < texts.length) {
     const matched = oldIndexOf[i];
     if (matched !== undefined) {
-      result.push({ ...oldWords[matched], ...splitTrailingWhitespace(texts[i]) });
+      result.push({
+        ...oldWords[matched],
+        ...splitTrailingWhitespace(texts[i]),
+        ...(sharedBegin !== undefined && { begin: sharedBegin }),
+      });
+      sharedBegin = undefined;
       i++;
       continue;
     }
@@ -76,15 +83,27 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
 
     const runTexts = texts.slice(i, runEnd);
     let slot: { begin: number; end: number };
+    let runSlots: { text: string; begin: number; end: number }[] | undefined;
 
     if (prevOld + 1 < nextOld) {
       slot = { begin: oldWords[prevOld + 1].begin, end: oldWords[nextOld - 1].end };
     } else {
       const prevEnd = leftBracket ? leftBracket.end : rightBracket.begin;
       slot = insertSlot(prevEnd, rightBracket ? rightBracket.begin : prevEnd);
+      // With no room before the next word, the typed words share its slot by letters, the way a typed split does.
+      if (slot.end === slot.begin && rightBracket && slot.begin < rightBracket.end) {
+        const shared = [...runTexts, texts[runEnd]];
+        const slots = letterSlots(
+          shared.map((text) => Math.max(1, text.trim().length)),
+          slot.begin,
+          rightBracket.end,
+        );
+        runSlots = runTexts.map((text, index) => ({ text, ...slots[index] }));
+        sharedBegin = slots[runTexts.length].begin;
+      }
     }
 
-    for (const { text, begin, end } of spreadEvenly(runTexts, slot.begin, slot.end)) {
+    for (const { text, begin, end } of runSlots ?? spreadEvenly(runTexts, slot.begin, slot.end)) {
       result.push(
         synthesizeBracketedWord({ ...splitTrailingWhitespace(text), begin, end, joinsNext: false, explicit: false }),
       );
