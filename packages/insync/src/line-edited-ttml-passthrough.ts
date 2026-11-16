@@ -3,7 +3,7 @@ import type { BackgroundTrack, LineTrack, LyricLine, Syllable } from "./line";
 import { type LinePassthrough, linePassthroughOf, withLinePassthrough, withoutKeptData } from "./line-passthrough";
 import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables } from "./line-track";
 import { withBackgroundTrack, withMainTrack } from "./line-track-writes";
-import { withSpansFromMarkup } from "./ttml/untimed-read";
+import { withSpansOfTimedSpan } from "./ttml/untimed-read";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -40,11 +40,7 @@ function withSpanMarkupOf(
 ): BackgroundTrack {
   const [span, ...rest] = timedSyllables(edited);
   if (!span || rest.length > 0 || timedSyllables(track).length > 0) return track;
-  const { markup, attrs } = span.passthrough ?? {};
-  if (markup) return withSpansFromMarkup(track, markup, splitChar);
-  return attrs
-    ? withSpansFromMarkup(track, [{ name: "span", attrs, children: [{ text: span.text }] }], splitChar)
-    : track;
+  return withSpansOfTimedSpan(track, span, splitChar);
 }
 
 // Kept elements follow syllables by id; an edited track's timed syllables pair with the merged one's by position.

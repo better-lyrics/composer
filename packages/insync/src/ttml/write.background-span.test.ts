@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { drawnSyllables } from "../line-drawn-track";
 import type { LyricLine } from "../line";
+import { backgroundText } from "../line-text";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "../line-track";
 import { DEFAULT_SPLIT_CHARACTER } from "../split-character-text";
 import { parseTtml } from "./read";
@@ -56,6 +57,21 @@ describe("line-synced background read back", () => {
       splitChar: SPLIT,
     });
     expect(ttml).toContain('<span ttm:role="x-bg"><span begin="0:02.500" end="0:04.000">(ooh ahah)</span></span>');
+  });
+
+  it("regression: a line-synced background keeps the ruby and attributes of its one timed span", () => {
+    const line = readLine(
+      '<p begin="1.000" end="4.000" ttm:agent="v1">Lanterns drift<span ttm:role="x-bg"><span begin="2.500" end="4.000" xml:lang="ja"><ruby>(ooh ahah)<rt>reading</rt></ruby></span></span></p>',
+    );
+    expect(backgroundText(line, SPLIT)).toBe("(ooh ahah)");
+    const ttml = generateTTML({
+      metadata: { title: "Test", artists: [], album: "", duration: 30 },
+      agents: [{ id: "v1", type: "person", name: "Lead" }],
+      lines: [line],
+      splitChar: SPLIT,
+    });
+    expect(ttml).toContain('xml:lang="ja"');
+    expect(ttml).toContain("<ruby>(ooh ahah)<rt>reading</rt></ruby>");
   });
 
   it("a background written as one timed span of one word stays a timed word", () => {

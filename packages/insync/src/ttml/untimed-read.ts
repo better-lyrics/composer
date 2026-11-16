@@ -81,6 +81,16 @@ function untimedLyricOfMarkup(markup: readonly XmlChild[]): UntimedLyric {
   return trimmedLyric(text, spans, new Map());
 }
 
+// A line-synced background's one timed span read as its kept spans; content other than text and spans, or attributes
+// beside markup, is read as one kept span around all of it, so nothing it held is dropped.
+function untimedLyricOfTimedSpan(text: string, kept: Passthrough | undefined): UntimedLyric {
+  const { markup, attrs = [] } = kept ?? {};
+  const readsAsSpans = (content: readonly XmlChild[]) =>
+    attrs.length === 0 && content.every((child) => "text" in child || child.name.toLowerCase() === "span");
+  if (markup && readsAsSpans(markup)) return untimedLyricOfMarkup(markup);
+  return untimedLyricOfMarkup([{ name: "span", attrs, children: markup ?? [{ text }] }]);
+}
+
 function trimmedLyric(text: string, spans: readonly KeptSpan[], ends: ReadonlyMap<XmlReadNode, number>): UntimedLyric {
   const lead = text.length - text.trimStart().length;
   return {
@@ -118,9 +128,8 @@ function lineSyncedBackground(
   if (!span || others.length > 0 || timed.rest.text !== "" || container.children.length !== 1) return null;
   const { trailingSpace } = splitIntoWordsWithMeta(span.text, splitChar);
   if (!trailingSpace.slice(0, -1).some(Boolean)) return null;
-  const { markup, attrs = [] } = span.passthrough ?? {};
   return {
-    lyric: untimedLyricOfMarkup(markup ?? [{ name: "span", attrs, children: [{ text: span.text }] }]),
+    lyric: untimedLyricOfTimedSpan(span.text, span.passthrough),
     span: { backgroundBegin: span.begin, backgroundEnd: span.end, ...(span.explicit && { backgroundExplicit: true }) },
   };
 }
@@ -181,8 +190,12 @@ function withUntimedSpans(
 }
 
 // A line-synced background's syllables take back the kept spans its one timed span was written with.
-function withSpansFromMarkup<T extends LineTrack>(track: T, markup: readonly XmlChild[], splitChar: string): T {
-  return withSpans(track, untimedLyricOfMarkup(markup), splitChar);
+function withSpansOfTimedSpan<T extends LineTrack>(
+  track: T,
+  span: Pick<WordTiming, "text" | "passthrough">,
+  splitChar: string,
+): T {
+  return withSpans(track, untimedLyricOfTimedSpan(span.text, span.passthrough), splitChar);
 }
 
 // -- Anchors ------------------------------------------------------------------
@@ -213,6 +226,6 @@ export {
   untimedAnchors,
   untimedBackgroundSpan,
   untimedLyric,
-  withSpansFromMarkup,
+  withSpansOfTimedSpan,
   withUntimedSpans,
 };
