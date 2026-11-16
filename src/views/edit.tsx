@@ -80,9 +80,9 @@ const EditPanel: React.FC = () => {
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
-  const { shownText, setRawText, showEditText: showShownText, showLines } = useShownEditText(lines);
+  const { shownText, setRawText, showEditText: showShownText } = useShownEditText(lines);
   const rawText = shownText.text;
-  const { textareaRef, showEditText, shownTextRef } = useEditTextCaret(rawText, showShownText);
+  const { textareaRef, showEditText, shownTextRef, showLines } = useEditTextCaret(rawText, showShownText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const pastedRef = useRef(false);

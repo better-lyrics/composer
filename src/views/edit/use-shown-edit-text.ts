@@ -41,11 +41,7 @@ function useShownEditText(lines: readonly LyricLine[]) {
       ),
     [],
   );
-  const showLines = useCallback(
-    (shownLines: readonly LyricLine[]) => showEditText(shownEditText(shownLines, getSplitCharacter())),
-    [showEditText],
-  );
-  return { shownText, setRawText, showEditText, showLines };
+  return { shownText, setRawText, showEditText };
 }
 
 // -- Exports ------------------------------------------------------------------

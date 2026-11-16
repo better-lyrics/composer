@@ -214,4 +214,4 @@ function shownWithRewrittenRows(
 
 // -- Exports ------------------------------------------------------------------
 
-export { editRows, remapBackgroundRanges, shownWithRewrittenRows };
+export { changedRegion, editRows, remapBackgroundRanges, shownWithRewrittenRows };

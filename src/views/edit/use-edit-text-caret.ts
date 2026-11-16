@@ -1,14 +1,18 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { shiftCaretPastRewrittenRows } from "insync/edit-text";
-import type { ShownEditText } from "insync/edit-text-shown-row";
+import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
+import { changedRegion } from "@/domain/edit-text/background-ranges";
 import { useProjectStore } from "@/stores/project";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface PendingCaret {
   typedText: string;
   start: number;
   end: number;
   scrollTop: number;
+  // Lines written from outside the text, as undo does: the caret goes to the end of what changed.
+  replaced?: true;
 }
 
 function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => void) {
@@ -21,6 +25,12 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     const textarea = textareaRef.current;
     if (!pending || !textarea) return;
     pendingCaretRef.current = null;
+    if (pending.replaced) {
+      const at = changedRegion(pending.typedText, rawText).newEnd;
+      textarea.scrollTop = pending.scrollTop;
+      textarea.setSelectionRange(at, at);
+      return;
+    }
     textarea.setSelectionRange(
       shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.start),
       shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.end),
@@ -45,7 +55,25 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     [showText],
   );
 
-  return { textareaRef, showEditText, shownTextRef };
+  const showLines = useCallback(
+    (lines: readonly LyricLine[]) => {
+      const edit = shownEditText(lines, getSplitCharacter());
+      const textarea = textareaRef.current;
+      if (textarea && document.activeElement === textarea && edit.text !== textarea.value) {
+        pendingCaretRef.current = {
+          typedText: textarea.value,
+          start: 0,
+          end: 0,
+          scrollTop: textarea.scrollTop,
+          replaced: true,
+        };
+      }
+      showText(edit);
+    },
+    [showText],
+  );
+
+  return { textareaRef, showEditText, shownTextRef, showLines };
 }
 
 function useComposedTextareaChange(
