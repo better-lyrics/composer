@@ -75,15 +75,14 @@ const EditSection: React.FC = () => {
           instances are linked.
         </p>
         <p className={`${PROSE} mt-2`}>
-          Edits you make to a grouped line's text, agent, or background vocals fan out to every other instance of the
-          same template line. Word-level timings survive when the new text has the same word count: each word keeps its
-          begin and end, and only its text changes. If the word count changes, sibling timings clear so you can re-sync
-          them in the Sync view.
+          Edits you make to a grouped line's text, agent, or background vocals reach every other instance of the same
+          template line. Each instance keeps the timing of the words that didn't change. In a group that shares timing,
+          the other instances take the timing of the one you edited.
         </p>
         <p className={`${PROSE} mt-2`}>
-          Adding or removing rows inside a grouped instance asks you to confirm: that one instance detaches from the
-          group so the structural change can land, while every sibling instance stays linked. Decline to revert. Edits
-          to non-grouped lines never prompt.
+          Breaking, joining, or deleting rows inside a grouped instance changes that instance only: each line it changes
+          stops following the group, and the other instances stay linked. A notice names the line that now differs, with
+          Undo. Lines outside a group never show this notice.
         </p>
       </HelpTopic>
     </div>

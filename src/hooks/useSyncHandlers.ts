@@ -63,6 +63,10 @@ function toastEarlyTap(clampedTo: number | null): void {
   noteGuideSignal("sync.earlyTap");
 }
 
+function toastEarlyTapRefused(): void {
+  toast("Early tap skipped: no room after the previous word", { id: EARLY_TAP_TOAST_ID });
+}
+
 function triggerPulse(setShowPulse: (show: boolean) => void): void {
   setShowPulse(true);
   setTimeout(() => setShowPulse(false), 100);
@@ -169,7 +173,13 @@ function useSyncHandlers({
           planned.commit = commit;
         }),
       );
-      if (isRefused(outcome)) return false;
+      if (isRefused(outcome)) {
+        if (outcome.refused.reason === "early-tap-no-room") {
+          ignoreNextHoldEndRef.current = gesture === "hold-start";
+          toastEarlyTapRefused();
+        }
+        return false;
+      }
       const { commit } = planned;
       if (!commit) return false;
       const position = syncAddressAt(useProjectStore.getState().lines, commit.nextCursor);
