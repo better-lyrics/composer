@@ -23,6 +23,7 @@ import type {
   RevisionInput,
   RevisionPreview,
   RevisionSummary,
+  SavedRevision,
 } from "@/lib/unison/revision-types";
 import { blobToDataUrl } from "@/utils/blob-data-url";
 
@@ -154,14 +155,18 @@ async function compareWithLive(id: number, input: RevisionInput, options: CallOp
   return same;
 }
 
-async function saveRevision(id: number, input: RevisionInput, options: CallOptions = {}): Promise<RevisionSummary> {
-  const { revision } = await unisonFetch<{ revision: RevisionSummary }>(`/lyrics/${id}/revisions`, {
+function saveRevision(
+  id: number,
+  input: RevisionInput,
+  note?: string,
+  options: CallOptions = {},
+): Promise<SavedRevision> {
+  return unisonFetch<SavedRevision>(`/lyrics/${id}/revisions`, {
     ...options,
     method: "POST",
-    body: input,
+    body: note ? { ...input, note } : input,
     auth: true,
   });
-  return revision;
 }
 
 async function revertRevision(id: number, revId: number, options: CallOptions = {}): Promise<RevisionSummary> {

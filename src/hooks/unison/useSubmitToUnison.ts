@@ -71,7 +71,7 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
   };
 
   const sendUpdate = async (lyricId: number, input: RevisionInput) => {
-    const revision = await saveRevision(lyricId, input);
+    const { revision } = await saveRevision(lyricId, input);
     showUpdateSentToast(revision.status === "live");
     noteGuideSignal("export.unisonUpdate");
     await refresh(lyricId);
