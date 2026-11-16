@@ -91,7 +91,7 @@ function summary(id: number, revNo: number, status: RevisionStatus, authorKeyId:
   };
 }
 
-function stubUnison(submitter: UnisonLyric["submitter"]): StubState {
+function stubUnison(submitter: UnisonLyric["submitter"], suggestedAt = SUGGESTED_AT_SEC): StubState {
   const state: StubState = { sent: [], withdrawn: false };
   const waiting = () => state.sent.length > 0 && !state.withdrawn;
   const lyric = (): UnisonLyric => ({
@@ -125,8 +125,8 @@ function stubUnison(submitter: UnisonLyric["submitter"]): StubState {
               authorAvatarUrl: null,
               pendingReason: "suggested",
               sealed: false,
-              createdAt: SUGGESTED_AT_SEC,
-              councilDecidesAt: SUGGESTED_AT_SEC + WEEK_SEC,
+              createdAt: suggestedAt,
+              councilDecidesAt: suggestedAt + WEEK_SEC,
               note: state.sent.at(-1)?.note ?? null,
               rejectNoteMaxLength: 1000,
               decider: "owner",
@@ -262,5 +262,16 @@ describe("Unison suggest card", () => {
       .element(screen.getByRole("heading", { name: "Suggest an edit to Mirelle's lyric" }))
       .toBeInTheDocument();
     await expect.element(screen.getByText("You withdrew your suggestion. Rev 3 stays live.")).toBeInTheDocument();
+  });
+
+  it("regression: a suggestion stamped a moment ahead never shows more than the full owner window", async () => {
+    const state = stubUnison(MIRELLE, Date.now() / 1000 + 1);
+    state.sent.push({ lyrics: copiedTtml(), note: NOTE });
+    loadLinkedProject();
+    const screen = await renderPanel();
+
+    await expect
+      .element(screen.getByText("Mirelle has 7 days to decide. After that, the council can too."))
+      .toBeInTheDocument();
   });
 });

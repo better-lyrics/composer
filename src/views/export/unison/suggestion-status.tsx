@@ -46,7 +46,10 @@ const QuotedNote: React.FC<{ label: string; text: string }> = ({ label, text }) 
 const SuggestionWaitingCard: React.FC<WaitingCardProps> = ({ lyric, suggestion, keyId }) => {
   const actions = useOnUnisonActions(lyric, keyId);
   const headingId = useId();
-  const ownerSecLeft = suggestion.councilDecidesAt === null ? 0 : suggestion.councilDecidesAt - Date.now() / 1000;
+  const ownerSecLeft =
+    suggestion.councilDecidesAt === null
+      ? 0
+      : suggestion.councilDecidesAt - Math.max(Date.now() / 1000, suggestion.createdAt);
   return (
     <section aria-labelledby={headingId} aria-busy={actions.busy} className={UNISON_CARD_STYLES}>
       <h3 id={headingId} className={UNISON_CARD_HEADING_STYLES}>
