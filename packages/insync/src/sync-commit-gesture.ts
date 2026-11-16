@@ -7,10 +7,10 @@ import type { LineUpdate, LyricLine } from "./line";
 import { clampShiftDelta, shiftLineTiming, shiftTrack } from "./line-shift";
 import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
-import { isSyncableLine } from "./line-sync-progress";
+import { type SyncGranularity, isSyncableLine } from "./line-sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
-import { closeHeld } from "./sync-hold-close";
+import { closeHeld, closeHeldLine } from "./sync-hold-close";
 import { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd } from "./sync-slot-close";
 import { withSlotWord } from "./sync-slot-words";
 import type { Bounds } from "./word-bounds";
@@ -30,6 +30,8 @@ interface GestureContext {
   splitChar: string;
   // Where the song ends; unbounded when not given.
   songEnd?: number;
+  // Holds time single words unless the pass is in Line mode.
+  granularity?: SyncGranularity;
 }
 
 interface GestureCommit {
@@ -230,7 +232,20 @@ function slotWriteToUpdates(write: SlotWrite): LineUpdate[] {
 
 // -- Dispatcher -------------------------------------------------------------------
 
-function planGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: GestureContext): GesturePlan {
+// A Line mode hold starts its line the way a tap does; only its release differs.
+function lineModeGesture(gesture: SyncGesture, granularity: SyncGranularity | undefined): SyncGesture {
+  return granularity === "line" && (gesture === "hold-start" || gesture === "hold-tap") ? "tap-line" : gesture;
+}
+
+function planGesture(lines: readonly LyricLine[], requested: SyncGesture, ctx: GestureContext): GesturePlan {
+  const gesture = lineModeGesture(requested, ctx.granularity);
+  if (gesture === "hold-end" && ctx.granularity === "line") {
+    const release = { ...ctx, rangeEnd: ctx.songEnd ?? Number.POSITIVE_INFINITY };
+    const closed = closeHeldLine(lines, release, ctx.splitChar);
+    return (
+      closed && { lineUpdates: [closed.update], nextCursor: ctx.cursor, nextJumped: false, clampedTo: closed.clampedTo }
+    );
+  }
   if (gesture === "tap-word" || gesture === "hold-start") {
     const open = gesture === "hold-start";
     const write = writeWord(lines, ctx, open);
@@ -283,4 +298,4 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 // -- Exports ------------------------------------------------------------------
 
 export type { GestureCommit, GestureContext, GesturePlan, SyncGesture };
-export { commitGesture, planGesture };
+export { commitGesture, lineModeGesture, planGesture };

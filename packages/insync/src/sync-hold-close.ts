@@ -1,8 +1,8 @@
 import type { LineUpdate, LyricLine } from "./line";
 import { mainTrack, timedSyllables } from "./line-track";
 import { withRoleWords } from "./line-track-writes";
-import type { SyncCursor } from "./sync-cursor";
-import { closeSlotWords, tapEnd } from "./sync-slot-close";
+import { type SyncCursor, previousSlot, slotBounds } from "./sync-cursor";
+import { closeSlotWords, closingUpdate, tapEnd } from "./sync-slot-close";
 import { enforceOrderAround } from "./word-order";
 
 // -- Types --------------------------------------------------------------------
@@ -42,6 +42,17 @@ function closeHeld(
   };
 }
 
+// In Line mode a hold opens a whole line, so its release ends that line while it is still open.
+function closeHeldLine(lines: readonly LyricLine[], release: HoldRelease, splitChar: string): ClosedHold | null {
+  const slot = previousSlot(lines, release.cursor, "line", splitChar);
+  const held = slot && slotBounds(lines, slot);
+  if (!slot || !held || held.begin !== held.end) return null;
+  const { time, defaultWordDuration, rangeEnd } = release;
+  const closeEnd = Math.min(time > held.begin ? time : tapEnd(held.begin, defaultWordDuration), rangeEnd);
+  const update = closingUpdate(lines, slot, closeEnd);
+  return update && { update, clampedTo: time < held.begin ? held.begin : null, closeEnd };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { closeHeld };
+export { closeHeld, closeHeldLine };

@@ -947,3 +947,25 @@ describe("song end", () => {
     expect(planGesture(lines, "tap-line", { ...ctxAt([1, 0], 15), songEnd: SONG_END })).toBe("no-room");
   });
 });
+
+describe("holds in Line mode", () => {
+  it("regression: holds time whole lines and never leave a syllable without length", () => {
+    let lines = [createLine({ id: "l0", text: "ka lo mi" }), createLine({ id: "l1", text: "vo da" })];
+    const steps: [SyncGesture, number][] = [
+      ["hold-start", 1],
+      ["hold-tap", 1.5],
+      ["hold-end", 2],
+    ];
+    let cursor: [number, number] = [0, 0];
+    for (const [gesture, time] of steps) {
+      const commit = commitGesture(lines, gesture, { ...ctxAt(cursor, time), granularity: "line" });
+      lines = apply(lines, commit);
+      if (commit) cursor = [commit.nextCursor.lineIndex, commit.nextCursor.wordIndex];
+    }
+    expect(lines.flatMap((line) => timedSyllables(mainTrack(line)))).toEqual([]);
+    expect(lines.map((line) => mainBounds(line))).toEqual([
+      { begin: 1, end: 1.5 },
+      { begin: 1.5, end: 2 },
+    ]);
+  });
+});

@@ -127,6 +127,7 @@ function useSyncHandlers({
         time: livePlaybackTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
         skippedInstances,
+        granularity,
       };
       const anchor = anchorGesture(lines, gesture, {
         ...ctx,
@@ -192,7 +193,7 @@ function useSyncHandlers({
       toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [lines, cursor, jumped, skippedInstances, setSyncState, seekTo, onPlacementSkip],
+    [lines, cursor, jumped, skippedInstances, granularity, setSyncState, seekTo, onPlacementSkip],
   );
 
   const handleTap = useCallback(() => {
