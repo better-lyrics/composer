@@ -1,3 +1,4 @@
+import { textSlots } from "./word-letter-slots";
 import type { WordTiming } from "./word-timing";
 
 // -- Functions ----------------------------------------------------------------
@@ -46,15 +47,26 @@ function enforceOrderAround(words: WordTiming[], index: number, songEnd = Number
   return result;
 }
 
-// A split inside a span that overlaps the next syllable moves its boundary back to where that syllable begins.
+// Split parts of a syllable that overlaps the next one are spread again between the syllable's begin and where the next
+// one begins, the last part keeping its end; they stay as they were when that room cannot give each part a millisecond.
 function withSplitPartsInOrder(words: WordTiming[]): WordTiming[] {
   let result = words;
-  for (let i = words.length - 2; i >= 1; i--) {
-    const [before, part, next] = [result[i - 1], result[i], result[i + 1]];
-    if (part.begin <= next.begin || before.end !== part.begin || next.begin <= before.begin) continue;
+  for (let last = 0; last < words.length - 1; last++) {
+    const next = words[last + 1];
+    if (words[last].begin <= next.begin) continue;
+    let first = last;
+    while (first > 0 && words[first - 1].joinsNext && words[first - 1].end === words[first].begin) first--;
+    const parts = words.slice(first, last + 1);
+    const slots = textSlots(
+      parts.map((part) => part.text),
+      parts[0].begin,
+      next.begin,
+    );
+    if (!slots) continue;
     if (result === words) result = [...words];
-    result[i - 1] = { ...before, end: next.begin };
-    result[i] = { ...part, begin: next.begin };
+    parts.forEach((part, index) => {
+      result[first + index] = { ...part, ...slots[index], ...(index === parts.length - 1 && { end: part.end }) };
+    });
   }
   return result;
 }

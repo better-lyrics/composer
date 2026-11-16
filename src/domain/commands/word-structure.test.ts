@@ -135,6 +135,29 @@ describe("word structure commands", () => {
     expect(begins).toEqual(begins.toSorted((a, b) => a - b));
   });
 
+  it("regression: a three-part split of a syllable overlapping the next one leaves no part without length", () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l4",
+          text: "tanuda totr",
+          words: [
+            { text: "tanuda", sep: " ", begin: 1, end: 4 },
+            { text: "totr", begin: 1.5, end: 2 },
+          ],
+        }),
+      ],
+    });
+    const [tanuda, totr] = roleWords(useProjectStore.getState().lines[0], "main") ?? [];
+    const pieces = splitWordIntoSyllables({ word: tanuda, splitPoints: [2, 4] });
+    useProjectStore.getState().commit(splitWord("l4", "words", [...pieces, totr], {}));
+    const words = roleWords(useProjectStore.getState().lines[0], "main") ?? [];
+    const begins = words.map((word) => word.begin);
+    expect(begins).toEqual(begins.toSorted((a, b) => a - b));
+    for (const word of words.slice(0, 3))
+      expect(Math.round(word.end * 1000) - Math.round(word.begin * 1000)).toBeGreaterThan(0);
+  });
+
   it("regression: renaming the block of a line-synced row updates text and keeps it line-synced", () => {
     useProjectStore
       .getState()
