@@ -2709,6 +2709,29 @@ describe("regressions", () => {
     }
   });
 
+  it("regression: a later standalone row keeps the untimed words of a partly timed background in order", () => {
+    const partlyTimed = createLine({
+      id: "b",
+      text: "(ooh yeah)",
+      words: [
+        { text: "(ooh", sep: " ", begin: 5, end: 5.6 },
+        { text: "yeah)", begin: 6, end: 7 },
+      ],
+      backgroundText: "hmm",
+      backgroundTextSource: "manual",
+    });
+    const [merged] = extractBackgroundVocals(
+      [createLine({ id: "a", text: "hello", begin: 1, end: 4 }), partlyTimed, createLine({ id: "c", text: "(hey)" })],
+      options,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah hmm hey");
+    expect(timedSyllables(backgroundTrack(merged)).map((word) => [word.text, word.begin, word.end])).toEqual([
+      ["ooh", 5, 5.6],
+      ["yeah", 6, 7],
+    ]);
+  });
+
   it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
     const lines = [
       createLine({

@@ -158,7 +158,20 @@ function mergeStandaloneInto(
       ? (roleWords(withSeededBackgroundWords(prev, splitChar), "bg") ?? storedBaseWords)
       : storedBaseWords;
 
+  // Untimed words already after the base's timed ones stay before the row, so the row joins that untimed rest.
+  const baseRest = prevIsStaleExtraction ? "" : ownBackground(prev, splitChar).rest;
   if (carried && carried.length > 0) {
+    if (baseWords && baseWords.length > 0 && baseRest) {
+      return withBackground(
+        prev,
+        {
+          words: baseWords,
+          text: joinBackgroundText(baseText, sungText, preserveBrackets, prevTrailingBracketFromSamePass),
+          source: keptBaseSource,
+        },
+        splitChar,
+      );
+    }
     if (baseWords && baseWords.length > 0) {
       const canSeamStrip = preserveBrackets && prevTrailingBracketFromSamePass;
       const combined = joinBracketedCarriedWords(baseWords, carried, canSeamStrip);
