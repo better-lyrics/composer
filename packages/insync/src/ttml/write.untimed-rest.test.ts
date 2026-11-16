@@ -131,3 +131,23 @@ describe("ttml · untimed rest of a partly synced line", () => {
     expect(reread.indexOf('x-cue="c"')).toBeGreaterThan(marker);
   });
 });
+
+describe("ttml · untimed rest after a punctuation syllable", () => {
+  it("regression: a punctuation syllable before the untimed rest reads back once", () => {
+    const line = lineFromFields(
+      {
+        id: "p",
+        text: "ba|, tor",
+        agentId: "v1",
+        words: [
+          { id: "p1", text: "ba", sep: "", begin: 1, end: 2, joinsNext: true },
+          { id: "p2", text: ",", sep: " ", begin: 2, end: 3, joinsNext: false },
+        ],
+      },
+      SPLIT,
+    );
+    const ttml = exported(line);
+    const [reread] = parseTtml(ttml, SPLIT).lines;
+    expect([lineText(line, SPLIT), lineText(reread, SPLIT)]).toEqual(["ba|, tor", "ba|, tor"]);
+  });
+});
