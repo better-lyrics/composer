@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { pasteLines } from "insync/commands/instance-rows";
 import { lineEditCommand } from "insync/commands/line-edits";
 import { effectiveBounds } from "insync/line-bounds";
+import { hasAnyTiming } from "insync/line-predicates";
 import { lineText } from "insync/line-text";
 import { roleWords } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
@@ -39,6 +41,18 @@ describe("SyncPanel", () => {
     useProjectStore.setState({ lines: [] });
     const screen = await render(<SyncPanel />);
     await expect.element(screen.getByText("No audio loaded")).toBeInTheDocument();
+  });
+
+  it("regression: taps write no timing while no audio is loaded", async () => {
+    useAudioStore.setState({ source: null, isPlaying: false, currentTime: 0 });
+    useProjectStore.setState({ activeTab: "sync", granularity: "word", lines: [createLine({ text: "Hello world" })] });
+    const screen = await render(<SyncPanel />);
+    await expect.element(screen.getByText("No audio loaded")).toBeInTheDocument();
+
+    await userEvent.keyboard("{ }{ }{ }");
+
+    expect(useProjectStore.getState().lines.some(hasAnyTiming)).toBe(false);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 
   it("toggles the Sync display between original and transliteration text", async () => {
