@@ -70,6 +70,34 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
   });
 });
 
+describe("SyncPanel · skipped hold", () => {
+  it("regression: a hold whose start was skipped never holds, so a tap during it writes a closed word", async () => {
+    loadPlayingProject();
+    const zeroLength = [
+      { text: "one", sep: " ", begin: 5, end: 5 },
+      { text: "two", sep: " ", begin: 5, end: 5 },
+    ];
+    useProjectStore.setState({ lines: [createLine({ text: "one two three", words: zeroLength })] });
+    const screen = await render(<SyncPanel />);
+    setIsPlaying(false);
+    await screen.getByRole("button", { name: "two", exact: true }).click();
+    setIsPlaying(true);
+    setCurrentTime(4);
+
+    const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
+    firePointer(holdCircle.element(), "pointerdown");
+    await expect.poll(() => holdCircle.element().getAttribute("aria-pressed")).toBe("false");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1]).toMatchObject({ begin: 5, end: 5 });
+
+    setCurrentTime(6);
+    firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown");
+    await expect.poll(() => timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1]?.begin).toBe(6);
+    for (const word of timedSyllables(mainTrack(useProjectStore.getState().lines[0])).slice(1)) {
+      expect(word.end).toBeGreaterThan(word.begin);
+    }
+  });
+});
+
 describe("SyncPanel · hold pointer ownership", () => {
   it("ignores a release from a pointer that did not start the hold", async () => {
     loadPlayingProject();
