@@ -182,14 +182,22 @@ function textToLyricLines(
     if (nearest) claim(index, nearest.value);
   });
 
-  const endLimit = (line: LyricLine) =>
-    Math.min(songEnd, nextLineStart(existingLines, existingIndex.get(line.id) ?? existingLines.length));
+  // Only a row whose text changed reads where its line must end, so unchanged rows cost nothing per keystroke.
+  const reconciled = (line: LyricLine, cleanedText: string) =>
+    mainTrackKeys(mainTrack(line), splitChar).text === cleanedText
+      ? line
+      : reconcileMatchedTiming(
+          line,
+          cleanedText,
+          splitChar,
+          Math.min(songEnd, nextLineStart(existingLines, existingIndex.get(line.id) ?? existingLines.length)),
+        );
   const sources: Array<LyricLine | undefined> = new Array(newLines.length);
   const mapped = cleanedTexts.map((cleanedText, index) => {
     const matched = claimed[index];
     if (matched) {
       sources[index] = matched;
-      return reconcileMatchedTiming(matched, cleanedText, splitChar, endLimit(matched));
+      return reconciled(matched, cleanedText);
     }
 
     if (allowPositionMatch) {
@@ -197,7 +205,7 @@ function textToLyricLines(
       if (!usedExistingIds.has(positionMatch.id)) {
         usedExistingIds.add(positionMatch.id);
         sources[index] = positionMatch;
-        return reconcileMatchedTiming(positionMatch, cleanedText, splitChar, endLimit(positionMatch));
+        return reconciled(positionMatch, cleanedText);
       }
     }
 
