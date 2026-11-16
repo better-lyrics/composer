@@ -1,20 +1,16 @@
-import type { LyricCommand } from "./command";
-import { lineEditCommand } from "./line-edits";
-import { refused, withLines } from "./outcome";
-import type { WordWriteExtras } from "./word-edits";
-import { withBackground, withSeededBackground, withoutBackground } from "../line-background";
+import type { LyricLine } from "../line";
+import { withBackground, withoutBackground, withSeededBackground } from "../line-background";
 import { drawnSyllables } from "../line-drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "../line-lane-word-edits";
-import type { LyricLine } from "../line";
 import { syllablesText } from "../line-text";
 import {
   backgroundTrack,
   isSpanTimed,
   mainTrack,
   type TrackField,
-  type WordTrack,
-  untimedSyllablesOf,
   trackRole,
+  untimedSyllablesOf,
+  type WordTrack,
 } from "../line-track";
 import { withBackgroundTrack, withMainTrack, withTrackText } from "../line-track-writes";
 import { withFieldWords } from "../line-word-track-edits";
@@ -24,6 +20,10 @@ import { applyWordDeletion } from "../word-apply-word-deletion";
 import { mergeWordsIntoTrack } from "../word-merge-track";
 import type { WordTiming } from "../word-timing";
 import { withTypedBoundaries } from "../word-typed-boundaries";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused, withLines } from "./outcome";
+import type { WordWriteExtras } from "./word-edits";
 
 // -- Types --------------------------------------------------------------------
 
@@ -59,7 +59,12 @@ function deleteWords(addresses: readonly SyllableAddress[]): LyricCommand {
     run: (root, ctx) =>
       withLines(
         root,
-        applyWordDeletion(root.lines, resolveAddresses(root.lines, addresses, ctx.splitChar), ctx.splitChar),
+        applyWordDeletion(
+          root.lines,
+          resolveAddresses(root.lines, addresses, ctx.splitChar),
+          ctx.splitChar,
+          ctx.songEnd,
+        ),
       ),
   };
 }
