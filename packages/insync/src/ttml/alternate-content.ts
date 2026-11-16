@@ -60,18 +60,26 @@ function emitTransliterationSpans(word: WordTiming, text: string): string {
   return emitWordSpan(word, text.trim());
 }
 
+interface TransliterationChunk {
+  readonly out: string;
+  readonly wordIndex?: number;
+}
+
 // A syllable with no reading writes nothing; the joiner into the next reading is the one before its syllable.
-function alignedTransliterationChunks(words: WordTiming[], pieces: LanguagePieces | undefined): string[] {
+function alignedTransliterationChunks(words: WordTiming[], pieces: LanguagePieces | undefined): TransliterationChunk[] {
   const read = words.flatMap((word, index) => {
     const text = pieceOf(pieces, word)?.text?.trim();
     return text ? [{ word, index, text }] : [];
   });
-  return read.map(({ word, text }, at) => {
-    if (at === read.length - 1) return emitTransliterationSpans(word, text);
+  return read.map(({ word, index, text }, at) => {
+    if (at === read.length - 1) return { out: emitTransliterationSpans(word, text), wordIndex: index };
     const before = read[at + 1].index - 1;
     const joiner = pieceOf(pieces, words[before])?.joinerAfter ?? (hasLexicalBoundaryAfter(words, before) ? "  " : " ");
     const timed = timedTransliterationSlice({ text, joinerAfter: joiner });
-    return `${emitTransliterationSpans(word, timed.text)}${escapeXmlText(timed.joinerAfter ?? "")}`;
+    return {
+      out: `${emitTransliterationSpans(word, timed.text)}${escapeXmlText(timed.joinerAfter ?? "")}`,
+      wordIndex: index,
+    };
   });
 }
 
@@ -79,7 +87,7 @@ function emitUntimedTransliteration(text: string): string {
   return normalizeTransliterationForEditing(text);
 }
 
-function transliterationChunks(line: LyricLine, timed: boolean, background = false): string[] {
+function transliterationChunks(line: LyricLine, timed: boolean, background = false): TransliterationChunk[] {
   const words = timedSyllables(background ? backgroundTrack(line) : mainTrack(line));
   const side = lineTransliteration(line)?.[background ? "bg" : "main"];
   const text = side?.text;
@@ -87,18 +95,25 @@ function transliterationChunks(line: LyricLine, timed: boolean, background = fal
   if (timed && side?.alignmentStatus !== "unresolved" && words.some((word) => pieceOf(side?.pieces, word)?.text)) {
     return alignedTransliterationChunks(words, side?.pieces);
   }
-  return text ? [escapeXmlText(emitUntimedTransliteration(text))] : [];
+  return text ? [{ out: escapeXmlText(emitUntimedTransliteration(text)) }] : [];
 }
 
 function renderTransliterationContent(rawLine: LyricLine, splitChar: string, timed = true): string {
   const track = lineTransliteration(rawLine);
   const line = track ? { ...rawLine, ...alignTrackToLine(rawLine, track, splitChar) } : rawLine;
-  const mainChunks = transliterationChunks(line, timed);
+  const chunks = transliterationChunks(line, timed);
+  const mainChunks = chunks.map((chunk) => chunk.out);
   if (!lineTransliteration(line)?.bg?.text?.trim()) return mainChunks.join("");
 
-  const backgroundContent = transliterationChunks(line, timed, true).join("");
+  const backgroundContent = transliterationChunks(line, timed, true)
+    .map((chunk) => chunk.out)
+    .join("");
   const placement = alternateBackgroundPlacement(line);
-  const insertionIndex = backgroundInsertionIndex(placement, mainChunks.length);
+  const readIndexes = chunks.flatMap((chunk) => (chunk.wordIndex === undefined ? [] : [chunk.wordIndex]));
+  const insertionIndex =
+    placement.position === "middle" && readIndexes.length === chunks.length
+      ? readIndexes.filter((index) => index <= placement.afterWordIndex).length
+      : backgroundInsertionIndex(placement, mainChunks.length);
   return mergeBackgroundMarkup(mainChunks, backgroundContent, insertionIndex);
 }
 

@@ -167,4 +167,74 @@ describe("TTML unresolved transliteration", () => {
     expect(content).toContain("koe</span>");
     expect(content).not.toContain("よ");
   });
+
+  it("regression: a background placed after a syllable stays after its reading when earlier syllables have none", () => {
+    const stored = legacyLine({
+      id: "line-1",
+      agentId: "v1",
+      text: "月 の 声 よ 空",
+      words: [
+        {
+          id: "w1",
+          text: "月",
+          sep: " ",
+          begin: 1,
+          end: 1.5,
+          transliteration: "",
+          transliterationJoinerAfter: "",
+          joinsNext: false,
+        },
+        {
+          id: "w2",
+          text: "の",
+          sep: " ",
+          begin: 1.5,
+          end: 2,
+          transliteration: "",
+          transliterationJoinerAfter: "",
+          joinsNext: false,
+        },
+        {
+          id: "w3",
+          text: "声",
+          sep: " ",
+          begin: 2,
+          end: 2.5,
+          transliteration: "koe",
+          transliterationJoinerAfter: " ",
+          joinsNext: false,
+        },
+        {
+          id: "w4",
+          text: "よ",
+          sep: " ",
+          begin: 3,
+          end: 3.5,
+          transliteration: "yo",
+          transliterationJoinerAfter: " ",
+          joinsNext: false,
+        },
+        { id: "w5", text: "空", sep: "", begin: 3.5, end: 4, transliteration: "sora", joinsNext: false },
+      ],
+      backgroundText: "青",
+      backgroundWords: [
+        { id: "w6", text: "青", sep: "", begin: 2.6, end: 2.9, transliteration: "ao", joinsNext: false },
+      ],
+      backgroundTextSource: "manual",
+      transliteration: {
+        language: "ja-Latn",
+        text: "koe yo sora",
+        backgroundText: "ao",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: "test",
+        alignmentStatus: "needs-review",
+        backgroundAlignmentStatus: "needs-review",
+      },
+    });
+
+    const content = renderTransliterationContent(stored, DEFAULT_SPLIT_CHARACTER);
+
+    expect(content).toMatch(/koe<\/span> <span ttm:role="x-bg">.*ao.*<\/span><span[^>]+>yo<\/span>/);
+  });
 });
