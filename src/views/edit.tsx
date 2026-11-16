@@ -45,8 +45,12 @@ import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-ed
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
 import { useShownEditText } from "@/views/edit/use-shown-edit-text";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
-import { settingsExtractOptions, withTypedBackgroundsExtracted } from "@/views/edit/typed-background-extraction";
-import { shownEditText } from "insync/edit-text-shown-row";
+import {
+  settingsExtractOptions,
+  shownAfterCommit,
+  type TypedEdit,
+  withTypedBackgroundsExtracted,
+} from "@/views/edit/typed-background-extraction";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -114,14 +118,16 @@ const EditPanel: React.FC = () => {
 
   // Shows the committed lyrics in the textarea only when the command changed them.
   const commitAndShow = useCallback(
-    (command: LyricCommand, typedIn?: HTMLTextAreaElement): boolean => {
+    (command: LyricCommand, typedIn?: { textarea: HTMLTextAreaElement; typed: TypedEdit }): boolean => {
       const before = useProjectStore.getState().lines;
       useProjectStore.getState().commit(command);
       const committed = useProjectStore.getState().lines;
       if (committed === before) return false;
       linesSetByUs.current = committed;
-      if (typedIn) showEditText(typedIn.value, shownEditText(committed, getSplitCharacter()), typedIn);
-      else showLines(committed);
+      if (typedIn) {
+        const shown = shownAfterCommit(typedIn.typed, committed, getSplitCharacter());
+        showEditText(typedIn.textarea.value, shown, typedIn.textarea);
+      } else showLines(committed);
       return true;
     },
     [showLines, showEditText],
@@ -309,7 +315,8 @@ const EditPanel: React.FC = () => {
           finalLines = extractBackgroundVocals(finalLines, settingsExtractOptions(), getSplitCharacter(), songEnd);
         }
         finalizeRun();
-        commitAndShow(pasteLyrics(lines, finalLines), textarea);
+        const typed = { finalLines: pastedLines, shown: { text: action.editText, ranges: action.editRanges } };
+        commitAndShow(pasteLyrics(lines, finalLines), { textarea, typed });
         if (action.splits.length > 0) notifyTemplateSplit(action.splits.map((split) => split.instances));
         if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
         else showLineDiffersToast(action.removedIds, lines);
