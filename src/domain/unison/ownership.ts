@@ -9,6 +9,10 @@ function isOtherAccountLyric(lyric: { submitter?: { keyId: string } }, keyId: st
   return lyric.submitter !== undefined && lyric.submitter.keyId !== keyId;
 }
 
+function lyricOwnerName(lyric: { submitter?: { displayName: string } }): string | null {
+  return lyric.submitter?.displayName ?? null;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { isOtherAccountLyric, isOwnLyric };
+export { isOtherAccountLyric, isOwnLyric, lyricOwnerName };
