@@ -1,5 +1,5 @@
-import type { LyricLine } from "./line";
 import { bgBounds, mainBounds } from "./line-bounds";
+import type { LyricLine } from "./line";
 import type { Bounds } from "./word-bounds";
 
 // -- Functions ----------------------------------------------------------------

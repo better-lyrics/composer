@@ -1,8 +1,8 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "./group-linking";
 import { lineInstanceKey } from "./instance-key";
-import type { LyricLine } from "./line";
 import { withManualBackgroundWords, withSeededBackground } from "./line-background";
 import { drawnSyllables } from "./line-drawn-track";
+import type { LyricLine } from "./line";
 import { hasAnyTiming, isLineSynced } from "./line-predicates";
 import { mainTrack, roleWords } from "./line-track";
 import { withMainTrack, withoutTrackTiming, withTrackWords } from "./line-track-writes";

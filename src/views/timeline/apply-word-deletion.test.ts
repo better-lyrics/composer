@@ -4,17 +4,17 @@ import { fieldsOfLine } from "insync/line-from-fields";
  * @vitest-environment node
  */
 
+import { describe, expect, it } from "vitest";
 import { pasteLines } from "insync/commands/instance-rows";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { bgBounds } from "insync/line-bounds";
-import { lineFromFields } from "insync/line-from-fields";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { applyWordDeletion, type DeletionSelection } from "insync/word-apply-word-deletion";
-import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("applyWordDeletion", () => {
   it("regression: deleting the last syllable of a word leaves the new last syllable ending the track", () => {

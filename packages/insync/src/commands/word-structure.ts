@@ -1,16 +1,20 @@
-import type { LyricLine } from "../line";
-import { withBackground, withoutBackground, withSeededBackground } from "../line-background";
+import type { LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { refused, withLines } from "./outcome";
+import type { WordWriteExtras } from "./word-edits";
+import { withBackground, withSeededBackground, withoutBackground } from "../line-background";
 import { drawnSyllables } from "../line-drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "../line-lane-word-edits";
+import type { LyricLine } from "../line";
 import { syllablesText } from "../line-text";
 import {
   backgroundTrack,
   isSpanTimed,
   mainTrack,
   type TrackField,
-  trackRole,
-  untimedSyllablesOf,
   type WordTrack,
+  untimedSyllablesOf,
+  trackRole,
 } from "../line-track";
 import { withBackgroundTrack, withMainTrack, withTrackText } from "../line-track-writes";
 import { withFieldWords } from "../line-word-track-edits";
@@ -20,10 +24,6 @@ import { applyWordDeletion } from "../word-apply-word-deletion";
 import { mergeWordsIntoTrack } from "../word-merge-track";
 import type { WordTiming } from "../word-timing";
 import { withTypedBoundaries } from "../word-typed-boundaries";
-import type { LyricCommand } from "./command";
-import { lineEditCommand } from "./line-edits";
-import { refused, withLines } from "./outcome";
-import type { WordWriteExtras } from "./word-edits";
 
 // -- Types --------------------------------------------------------------------
 

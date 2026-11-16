@@ -1,8 +1,6 @@
-import { joinBackgroundText } from "./background-vocal-brackets";
-import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
 import { isLinked, isSlotLine } from "./instance-predicates";
-import type { LineUpdate, LyricLine } from "./line";
 import { withBackground, withSeededBackground } from "./line-background";
+import type { LineUpdate, LyricLine } from "./line";
 import { bgBounds } from "./line-bounds";
 import { isWordSynced } from "./line-predicates";
 import { wordContentSpans } from "./line-reconstruct-text";
@@ -12,6 +10,8 @@ import { withMainTrack, withTrackSyllables, withTrackText } from "./line-track-w
 import { remapWordTextsPreservingTiming } from "./word-remap-text";
 import { wordFromSpaced } from "./word-spaced-words";
 import type { WordTiming } from "./word-timing";
+import { joinBackgroundText } from "./background-vocal-brackets";
+import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
 
 // -- Types --------------------------------------------------------------------
 

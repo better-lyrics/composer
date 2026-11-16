@@ -2,18 +2,18 @@
  * @vitest-environment node
  */
 
-import { NO_RANGES, shownEditText } from "insync/edit-text-shown-row";
+import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "insync/group";
-import type { LyricLine } from "insync/line";
 import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
-import { describe, expect, it } from "vitest";
+import { NO_RANGES, shownEditText } from "insync/edit-text-shown-row";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
-import { getSplitCharacter } from "@/utils/split-character";
 import { decideEditTextAction } from "./decide-edit-text-action";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const groupChorus: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
 

@@ -1,3 +1,12 @@
+import { describe, expect, it } from "vitest";
+import { withSeededBackground } from "insync/line-background";
+import { bgBounds } from "insync/line-bounds";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { withMainTrack, withTrackText } from "insync/line-track-writes";
+import { createLine } from "@/test/factories";
 import {
   classifyLine,
   extractBackgroundVocals,
@@ -5,16 +14,7 @@ import {
   lineHasInlineParens,
   scanParenGroups,
 } from "insync/background-vocal-extraction";
-import type { LyricLine } from "insync/line";
-import { withSeededBackground } from "insync/line-background";
-import { bgBounds } from "insync/line-bounds";
-import { lineFromFields } from "insync/line-from-fields";
-import { backgroundText, lineText } from "insync/line-text";
-import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withMainTrack, withTrackText } from "insync/line-track-writes";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
-import { describe, expect, it } from "vitest";
-import { createLine } from "@/test/factories";
 
 // -- Specification table -------------------------------------------------------
 

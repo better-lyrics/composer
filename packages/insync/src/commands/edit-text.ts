@@ -1,15 +1,15 @@
-import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "../background-vocal-extraction";
+import type { LyricLine } from "../line";
+import type { CommandContext, HistoryNote, LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { type LyricRoot, type Refusal, applied, refused } from "./outcome";
 import type { LinkGroup } from "../group";
 import { isLinked } from "../instance-predicates";
-import type { LyricLine } from "../line";
-import { withBackground, withoutBackground, withSeededBackground } from "../line-background";
+import { withBackground, withSeededBackground, withoutBackground } from "../line-background";
 import { lineText } from "../line-text";
 import { backgroundTrack, isSpanTimed, timedSyllables } from "../line-track";
 import { withBackgroundTrack, withTrackText } from "../line-track-writes";
 import { isSectionTagLine } from "../lyrics-file-genius-text";
-import type { CommandContext, HistoryNote, LyricCommand } from "./command";
-import { lineEditCommand } from "./line-edits";
-import { applied, type LyricRoot, type Refusal, refused } from "./outcome";
+import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "../background-vocal-extraction";
 
 // -- Types --------------------------------------------------------------------
 

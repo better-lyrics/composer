@@ -2,15 +2,15 @@
  * @vitest-environment node
  */
 
-import { extractBackgroundVocals } from "insync/background-vocal-extraction";
+import { describe, expect, it } from "vitest";
+import { lineFromFields } from "insync/line-from-fields";
 import type { LanguageContentOrigin, TransliterationAlignmentStatus } from "insync/language";
 import type { LyricLine } from "insync/line";
-import { lineFromFields } from "insync/line-from-fields";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
-import { describe, expect, it } from "vitest";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("textToLyricLines · group attrs preservation", () => {
   it("keeps groupId/instanceIdx/templateLineIdx on exact-text match", () => {

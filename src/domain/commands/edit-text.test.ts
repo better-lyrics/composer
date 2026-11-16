@@ -1,20 +1,19 @@
 /**
  * @vitest-environment node
  */
-
+import { beforeEach, describe, expect, it } from "vitest";
 import { editBackgroundText, typeLyrics } from "insync/commands/edit-text";
 import { syncGesture } from "insync/commands/sync";
-import { withSeededBackground } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";
+import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { withSeededBackground } from "insync/line-background";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
-import { beforeEach, describe, expect, it } from "vitest";
-import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { getSplitCharacter } from "@/utils/split-character";
 
 beforeEach(() => {

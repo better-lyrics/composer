@@ -2,18 +2,17 @@
  * @vitest-environment node
  */
 
+import { describe, expect, it } from "vitest";
 import { addInstance } from "insync/commands/instance-edits";
 import type { LinkGroup } from "insync/group";
-import type { LyricLine } from "insync/line";
 import { withSeededBackground } from "insync/line-background";
-import { mainBounds } from "insync/line-bounds";
 import { drawnSyllables } from "insync/line-drawn-track";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
-import { lineText } from "insync/line-text";
+import type { LyricLine } from "insync/line";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
+import { mainBounds } from "insync/line-bounds";
+import { lineText } from "insync/line-text";
 import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
-import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import {
@@ -22,6 +21,7 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "./group-ops";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const lines = (overrides: Partial<LineFields>[]): LyricLine[] =>
   overrides.map((o, i) => lineFromFields({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }, DEFAULT_SPLIT_CHARACTER));

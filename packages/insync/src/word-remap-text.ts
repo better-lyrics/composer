@@ -1,9 +1,9 @@
 import { splitTrailingWhitespace } from "./from-words";
-import { splitIntoWordsWithMeta } from "./lyric-words";
 import { lcsPairs, wordKey } from "./word-alignment";
-import { synthesizeBracketedWord } from "./word-clone";
-import { letterSlots } from "./word-letter-slots";
 import type { WordTiming } from "./word-timing";
+import { splitIntoWordsWithMeta } from "./lyric-words";
+import { letterSlots } from "./word-letter-slots";
+import { synthesizeBracketedWord } from "./word-clone";
 
 // -- Helpers ------------------------------------------------------------------
 

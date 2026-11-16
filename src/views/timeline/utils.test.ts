@@ -1,26 +1,27 @@
+import { withSeededBackground } from "insync/line-background";
+import { mainBounds } from "insync/line-bounds";
+/**
+ * @vitest-environment node
+ */
+import { patchOf, updatedLine } from "@/test/field-updates";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import { describe, expect, it } from "vitest";
 import type { TimeRange } from "insync/group-shared-timing";
 import { instanceBounds } from "insync/instance-bounds";
+import { effectiveBounds } from "insync/line-bounds";
 import type { LyricLine } from "insync/line";
-import { withSeededBackground } from "insync/line-background";
-import { effectiveBounds, mainBounds } from "insync/line-bounds";
-import { type LineFields, lineFromFields } from "insync/line-from-fields";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import {
   nudgeSelectedWords,
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 } from "insync/selection-nudge";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { spacedText } from "insync/word-spaced-words";
 import type { WordTiming } from "insync/word-timing";
-import { describe, expect, it } from "vitest";
-/**
- * @vitest-environment node
- */
-import { patchOf, updatedLine } from "@/test/field-updates";
 import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
 

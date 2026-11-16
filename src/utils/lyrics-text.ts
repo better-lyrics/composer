@@ -1,16 +1,16 @@
 import { withShownBackground } from "insync/edit-text-shown-background";
-import type { LyricLine, MainTrack } from "insync/line";
 import { withoutBackground } from "insync/line-background";
 import { lineFromFields } from "insync/line-from-fields";
 import { joinedLines } from "insync/line-joined-lines";
+import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { memoBySplitCharacter } from "insync/memo-by-identity";
-import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 import { joinedRowRun, startSearchesByText } from "@/utils/lyrics-text-joined-rows";
-import { type NearestAccepted, nearestAcceptedSearch } from "@/utils/nearest-accepted";
 import { getSplitCharacter } from "@/utils/split-character";
+import { type NearestAccepted, nearestAcceptedSearch } from "@/utils/nearest-accepted";
+import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
+import { memoBySplitCharacter } from "insync/memo-by-identity";
 
 // -- Types --------------------------------------------------------------------
 
