@@ -37,8 +37,8 @@ function joinedTrack(tracks: readonly MainTrack[], seams: readonly string[]): Ma
   const syllables = seamedSyllables(tracks, seams);
   if (tracks.every(isSpanTimed)) {
     if (!inTimeOrder(tracks.map((track) => track.begin))) return null;
-    const last = tracks[tracks.length - 1];
-    return withTrackSpan(withTrackSyllables(first, syllables), first.begin ?? 0, last.end ?? 0);
+    const end = Math.max(...tracks.map((track) => track.end ?? 0));
+    return withTrackSpan(withTrackSyllables(first, syllables), first.begin ?? 0, end);
   }
   if (tracks.some(isSpanTimed)) return null;
   const firstUntimed = syllables.findIndex((syllable) => !isTimedSyllable(syllable));

@@ -7,7 +7,7 @@ import { lineFromFields } from "insync/line-from-fields";
 import type { LanguageContentOrigin, TransliterationAlignmentStatus } from "insync/language";
 import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
@@ -694,6 +694,20 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     const [joined] = textToLyricLines("Lanterns driftPaper wings", "v1", [lanterns, paper]);
     const begins = timedSyllables(mainTrack(joined)).map((w) => w.begin);
     expect(begins).toEqual(begins.toSorted((a, b) => a - b));
+  });
+
+  it("regression: joining a line-synced row inside the span of the row above keeps the longer span", () => {
+    const lanterns = lineFromFields(
+      { id: "lanterns", text: "Lanterns drift", agentId: "v1", begin: 1, end: 10 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const paper = lineFromFields(
+      { id: "paper", text: "Paper wings", agentId: "v1", begin: 2, end: 3 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const [joined] = textToLyricLines("Lanterns driftPaper wings", "v1", [lanterns, paper]);
+    const track = mainTrack(joined);
+    expect(isSpanTimed(track) && [track.begin, track.end]).toEqual([1, 10]);
   });
 
   it("regression: joining two rows joins their translations and romanizations in order", () => {
