@@ -133,6 +133,13 @@ describe("tap-word", () => {
     expect(planGesture(lines, "tap-word", ctxAt([0, 1], 1))).toBe("no-room");
   });
 
+  it("opens an early hold at the previous word's end even when the next word starts there", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 6), word("b ", 6, 6), word("c", 6, 7)] })];
+    const commit = commitGesture(lines, "hold-start", ctxAt([0, 1], 4));
+    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[1]).toEqual(word("b ", 6, 6));
+    expect(commit?.clampedTo).toBe(6);
+  });
+
   it("starts a line before the previous line's last word and leaves that word alone", () => {
     const lines = [
       createLine({ id: "l0", text: "a b", words: [word("a ", 5, 6), word("b", 6, 6.3)] }),

@@ -174,7 +174,10 @@ function useSyncHandlers({
         }),
       );
       if (isRefused(outcome)) {
-        if (outcome.refused.reason === "early-tap-no-room") toastEarlyTapRefused();
+        if (outcome.refused.reason === "early-tap-no-room") {
+          ignoreNextHoldEndRef.current = gesture === "hold-start";
+          toastEarlyTapRefused();
+        }
         return false;
       }
       const { commit } = planned;

@@ -130,7 +130,8 @@ function writeWord(
   const { slot } = anchor;
   const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
   const nextWord = existing[cursor.wordIndex + 1];
-  if (!crossLine && earlyWithoutRoom(anchor, nextWord?.begin)) return "no-room";
+  // An open hold gets its length on release, so only a tap needs room before the next word.
+  if (!crossLine && earlyWithoutRoom(anchor, open ? undefined : nextWord?.begin)) return "no-room";
   const floor = Math.max(crossLine ? 0 : anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
   const provisional = open ? begin : tapEnd(begin, ctx.defaultWordDuration);
