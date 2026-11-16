@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
+import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { formatTimeMs } from "@/utils/sync-helpers";
 
@@ -32,6 +33,23 @@ describe("ScrollableLine", () => {
   it("shows background text alongside the main line when provided", async () => {
     const screen = await render(<ScrollableLine {...BASE_PROPS} backgroundText="(echo)" />);
     expect(screen.container.textContent).toContain("(echo)");
+  });
+
+  it("regression: a long untimed background on a line-drawn row wraps inside the row, joined at split marks", async () => {
+    const background = `(${"far ech|o call ".repeat(12).trim()})`;
+    const row = (
+      <div style={{ width: 320 }}>
+        <ScrollableLine {...BASE_PROPS} granularity="line" backgroundText={background} />
+      </div>
+    );
+    const first = await render(row);
+    await installUtilitiesUsedIn(first.container);
+    await first.unmount();
+    const screen = await render(row);
+    const backgroundRow = screen.container.querySelectorAll(".flex-wrap")[0] as HTMLElement;
+
+    expect([...backgroundRow.children].slice(0, 3).map((word) => word.textContent)).toEqual(["(far", "echo", "call"]);
+    expect(backgroundRow.scrollWidth).toBeLessThanOrEqual(backgroundRow.clientWidth);
   });
 
   it("renders only the line-number gutter when text is empty", async () => {
