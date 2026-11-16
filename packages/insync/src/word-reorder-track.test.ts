@@ -146,6 +146,23 @@ describe("reorderWordTrack", () => {
     expect(move?.end).toBeLessThanOrEqual(10);
   });
 
+  it("regression: a word moved into the song end keeps its syllables in order", () => {
+    const track: WordTiming[] = [
+      { id: "w26a", text: "sa", sep: "", begin: 8.3, end: 8.4, joinsNext: true },
+      { id: "w26b", text: "or", sep: "", begin: 8.4, end: 8.5, joinsNext: true },
+      { id: "w26c", text: "ari", sep: "", begin: 8.5, end: 8.6, joinsNext: false },
+    ];
+
+    const result = reorderWordTrack(track, new Set([0, 1, 2]), 0.6, { min: 0, max: 8.9 });
+
+    expect(result.map((w) => w.text)).toEqual(["sa", "or", "ari"]);
+    result.forEach((w, i) => {
+      expect(w.begin).toBeLessThan(w.end);
+      expect(w.end).toBeLessThanOrEqual(8.9);
+      if (i > 0) expect(w.begin).toBeGreaterThanOrEqual(result[i - 1].end);
+    });
+  });
+
   it("clamps a word's begin to zero when a negative timeDelta would push it before zero", () => {
     const track: WordTiming[] = [
       { id: "w27", text: "early", sep: " ", begin: 3, end: 4, joinsNext: false },

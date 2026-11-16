@@ -552,7 +552,8 @@ describe("ported behaviour", () => {
     expect(timedSyllables(mainTrack(after[0]))).toEqual([
       word("one ", 0, 5),
       word("two ", 5, 5 + DUR),
-      word("three", 5 + DUR, 5 + DUR),
+      // Squeezed words keep their length instead of collapsing to zero.
+      word("three", 5 + DUR, 6 + DUR),
     ]);
   });
 
@@ -609,7 +610,8 @@ describe("ported behaviour", () => {
       }),
     ];
     const after = apply(lines, run(lines, "hold-start", [0, 1], 5, true));
-    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 5, 5), word("three", 5, 5)]);
+    // Squeezed words keep their length instead of collapsing to zero.
+    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 5, 5), word("three", 5, 6)]);
   });
 
   it("regression: preserves explicit and joinsNext when re-holding a mid-line word", () => {
@@ -647,7 +649,8 @@ describe("ported behaviour", () => {
       }),
     ];
     const after = apply(lines, run(lines, "hold-end", [0, 1], 5));
-    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 1, 5), word("three", 5, 5)]);
+    // Squeezed words keep their length instead of collapsing to zero.
+    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 1, 5), word("three", 5, 6)]);
   });
 
   it("preserves explicit and joinsNext on the word hold-end closes", () => {
@@ -870,5 +873,134 @@ describe("how a gesture ends the previous slot", () => {
       [4.5, 5],
     ]);
     expect(timedSyllables(mainTrack(lines[0]))[2].end).toBe(4);
+  });
+});
+
+describe("zero-length neighbours", () => {
+  const lengths = (line: LyricLine) => timedSyllables(mainTrack(line)).map((w) => w.end - w.begin);
+
+  it("regression: a re-recorded word never squeezes the next timed word to zero length", () => {
+    const tapped = [
+      createLine({ id: "l0", text: "pel shivo toquolo", words: [word("pel ", 6.5, 6.7), word("shivo ", 6.86, 7.15)] }),
+    ];
+    for (const length of lengths(apply(tapped, run(tapped, "tap-word", [0, 0], 7.04, true))[0])) {
+      expect(length).toBeGreaterThan(0);
+    }
+    const atNextBegin = [
+      createLine({ id: "l0", text: "pel shivo", words: [word("pel ", 6.5, 6.7), word("shivo", 7, 7.2)] }),
+    ];
+    for (const length of lengths(apply(atNextBegin, run(atNextBegin, "tap-word", [0, 0], 7, true))[0])) {
+      expect(length).toBeGreaterThan(0);
+    }
+    const held = [
+      createLine({
+        id: "l0",
+        text: "nu hiren shi ta",
+        words: [word("nu ", 1.2, 1.5), word("hiren ", 1.9, 1.9), word("shi ", 1.9, 2.2)],
+      }),
+    ];
+    for (const length of lengths(apply(held, run(held, "hold-end", [0, 1], 2.3))[0])) {
+      expect(length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("song end", () => {
+  const SONG_END = 18;
+  const runToEnd = (lines: LyricLine[], gesture: SyncGesture, cursor: [number, number], time: number) =>
+    apply(lines, commitGesture(lines, gesture, { ...ctxAt(cursor, time), songEnd: SONG_END }));
+  const latestEnd = (lines: LyricLine[]) => Math.max(...flatTimings(lines).map((w) => w.end));
+
+  it("regression: no gesture writes timing past the song end", () => {
+    const snapped = [createLine({ id: "l0", text: "vo vin da", words: [word("vo ", 17.5, 17.9)] })];
+    expect(latestEnd(runToEnd(snapped, "tap-word", [0, 1], 3))).toBeLessThanOrEqual(SONG_END);
+
+    const shifted = [
+      createLine({ id: "l0", text: "first", begin: 10, end: 14 }),
+      createLine({ id: "l1", text: "a b", words: [word("a ", 2, 4), word("b", 4, 8)] }),
+    ];
+    expect(latestEnd(runToEnd(shifted, "tap-line", [1, 0], 15))).toBeLessThanOrEqual(SONG_END);
+
+    const held = [createLine({ id: "l0", text: "vo vin", words: [word("vo ", 17.9, 17.9)] })];
+    expect(latestEnd(runToEnd(held, "hold-end", [0, 0], 17.5))).toBeLessThanOrEqual(SONG_END);
+
+    const openAbove = [
+      createLine({ id: "l0", text: "vin", begin: 17.9, end: 17.9 }),
+      createLine({ id: "l1", text: "ex vin" }),
+    ];
+    expect(latestEnd(runToEnd(openAbove, "hold-start", [1, 0], 17.5))).toBeLessThanOrEqual(SONG_END);
+
+    const withBackground = [
+      createLine({ id: "l0", text: "fen lo", words: [word("fen ", 2, 2.2)], backgroundText: "ta" }),
+    ];
+    const seeded = runToEnd(withBackground, "tap-word", [0, 0], 2);
+    const moved = runToEnd(seeded, "tap-word", [0, 0], 17.8);
+    const backgroundEnds = (roleWords(moved[0], "bg") ?? []).map((w) => w.end);
+    expect(Math.max(...backgroundEnds)).toBeLessThanOrEqual(SONG_END);
+  });
+
+  it("regression: later words with no room left before the song end become untimed instead of zero length", () => {
+    const lines = [
+      createLine({ id: "l0", text: "ka lo mi", words: [word("ka ", 1, 2), word("lo ", 2, 3), word("mi", 3, 4)] }),
+    ];
+    const after = apply(lines, commitGesture(lines, "tap-word", { ...ctxAt([0, 0], 17.5, true), songEnd: SONG_END }));
+    const timed = timedSyllables(mainTrack(after[0]));
+    expect(timed.map((w) => w.text.trim())).toEqual(["ka", "lo"]);
+    for (const w of timed) {
+      expect(w.end).toBeGreaterThan(w.begin);
+      expect(w.end).toBeLessThanOrEqual(SONG_END);
+    }
+    expect(lineText(after[0], DEFAULT_SPLIT_CHARACTER)).toBe("ka lo mi");
+  });
+
+  it("regression: a hold-tap at the song end still ends the held word", () => {
+    const lines = [createLine({ id: "l0", text: "vo vin", words: [word("vo ", 17.9, 17.9)] })];
+    const after = runToEnd(lines, "hold-tap", [0, 0], 17.5);
+    expect(timedSyllables(mainTrack(after[0]))[0]).toMatchObject({ begin: 17.9, end: SONG_END });
+  });
+
+  it("regression: a Line mode tap refuses to open a line at the song end", () => {
+    const lines = [
+      createLine({ id: "l0", text: "first", begin: 16, end: SONG_END }),
+      createLine({ id: "l1", text: "second" }),
+    ];
+    expect(planGesture(lines, "tap-line", { ...ctxAt([1, 0], 15), songEnd: SONG_END })).toBe("no-room");
+  });
+
+  it("regression: a Line mode tap refuses a line that no longer fits before the song end", () => {
+    const lines = [
+      createLine({ id: "l0", text: "first", begin: 10, end: 14 }),
+      createLine({ id: "l1", text: "a b", words: [word("a ", 1, 4), word("b", 4, 9)] }),
+    ];
+    expect(planGesture(lines, "tap-line", { ...ctxAt([1, 0], 15), songEnd: SONG_END })).toBe("no-room");
+  });
+});
+
+describe("holds in Line mode", () => {
+  it("regression: holds time whole lines and never leave a syllable without length", () => {
+    let lines = [createLine({ id: "l0", text: "ka lo mi" }), createLine({ id: "l1", text: "vo da" })];
+    const steps: [SyncGesture, number][] = [
+      ["hold-start", 1],
+      ["hold-tap", 1.5],
+      ["hold-end", 2],
+    ];
+    let cursor: [number, number] = [0, 0];
+    for (const [gesture, time] of steps) {
+      const commit = commitGesture(lines, gesture, { ...ctxAt(cursor, time), granularity: "line" });
+      lines = apply(lines, commit);
+      if (commit) cursor = [commit.nextCursor.lineIndex, commit.nextCursor.wordIndex];
+    }
+    expect(lines.flatMap((line) => timedSyllables(mainTrack(line)))).toEqual([]);
+    expect(lines.map((line) => mainBounds(line))).toEqual([
+      { begin: 1, end: 1.5 },
+      { begin: 1.5, end: 2 },
+    ]);
+  });
+});
+
+describe("closing tap on the last line", () => {
+  it("regression: an early closing tap is refused like any early tap instead of doing nothing", () => {
+    const lines = [createLine({ id: "l0", text: "ren da", begin: 9.9, end: 9.9 })];
+    expect(planGesture(lines, "tap-line", ctxAt([1, 0], 9.1))).toBe("no-room");
   });
 });

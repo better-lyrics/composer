@@ -6,7 +6,7 @@ import { mainBounds } from "./line-bounds";
 import type { LineUpdate, LyricLine } from "./line";
 import { previousMainEnd } from "./line-neighbour-bounds";
 import { type SyncAddress, sameSyncPosition } from "./sync-address";
-import { type GestureContext, type SyncGesture, commitGesture } from "./sync-commit-gesture";
+import { type GestureContext, type SyncGesture, commitGesture, lineModeGesture } from "./sync-commit-gesture";
 import { type SyncCursor, advanceCursor } from "./sync-cursor";
 import { sharedAnchorAt } from "./sync-shared-anchor";
 
@@ -57,7 +57,7 @@ function anchorSlotOf(
 
 // The anchor instance is written as if it had its own timing, so the shared range of its old position does not floor the tap.
 function anchorGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: GestureContext): AnchorGesture | null {
-  const anchorCursor = anchorSlotOf(lines, gesture, ctx.cursor, ctx.splitChar);
+  const anchorCursor = anchorSlotOf(lines, lineModeGesture(gesture, ctx.granularity), ctx.cursor, ctx.splitChar);
   const anchor = anchorCursor ? sharedAnchorAt(lines, ctx.groups ?? [], anchorCursor, ctx.splitChar) : null;
   if (!anchorCursor || !anchor) return null;
   const { groupId, instanceIdx } = anchor;

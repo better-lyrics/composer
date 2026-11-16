@@ -1283,6 +1283,33 @@ describe("useSyncHandlers with shared timing", () => {
     expect(timedSyllables(mainTrack(lineById("c0")!))[0].end).toBe(5);
   });
 
+  it("regression: releasing a hold whose start was refused leaves the line above open", async () => {
+    useAudioStore.setState({ duration: 180 });
+    useProjectStore.setState({
+      lines: [
+        createLine({ id: "c0", text: "chorus", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, begin: 10, end: 30 }),
+        createLine({ id: "x", text: "verse", begin: 170, end: 170 }),
+        createLine({ id: "c1", text: "chorus", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+      ],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    const { result, act } = await mountSyncHandlers({
+      granularity: "line",
+      initialSyncState: { position: at(2, 0), isActive: true },
+      initialCurrentTime: 172,
+    });
+
+    await act(() => {
+      expect(result.current.handleHoldStart()).toBe(false);
+    });
+    useAudioStore.setState({ currentTime: 173 });
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+
+    expect(fieldsOfLine(lineById("x")!, getSplitCharacter())).toMatchObject({ begin: 170, end: 170 });
+  });
+
   it("regression: nudges a line of an old group by the whole delta", async () => {
     seedSharedChorus(false);
     const { result, act } = await mountSyncHandlers({

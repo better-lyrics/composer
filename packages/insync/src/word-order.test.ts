@@ -27,14 +27,22 @@ describe("enforceOrderAround", () => {
   it("squeezes a single overlapping successor forward", () => {
     const words: WordTiming[] = [
       { id: "w4", text: "one", sep: " ", begin: 0.5, end: 0.8, joinsNext: false },
-      { id: "w5", text: "two", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
-      { id: "w6", text: "three", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
+      { id: "w5", text: "two", sep: " ", begin: 0.5, end: 1, joinsNext: false },
+      { id: "w6", text: "three", sep: "", begin: 1, end: 1.5, joinsNext: false },
     ];
     expect(enforceOrderAround(words, 0)).toEqual([
       { text: "one", sep: " ", begin: 0.5, end: 0.8, joinsNext: false },
-      { text: "two", sep: " ", begin: 0.8, end: 0.8, joinsNext: false },
-      { text: "three", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
+      { text: "two", sep: " ", begin: 0.8, end: 1, joinsNext: false },
+      { text: "three", sep: "", begin: 1, end: 1.5, joinsNext: false },
     ]);
+  });
+
+  it("moves a successor that would be squeezed to zero length after the anchor, keeping its length", () => {
+    const words: WordTiming[] = [
+      { id: "w4b", text: "one", sep: " ", begin: 0.5, end: 1, joinsNext: false },
+      { id: "w5b", text: "two", sep: " ", begin: 0.25, end: 0.75, joinsNext: false },
+    ];
+    expect(enforceOrderAround(words, 0)[1]).toEqual({ text: "two", sep: " ", begin: 1, end: 1.5, joinsNext: false });
   });
 
   it("cascades when the anchor lands past the whole tail", () => {
@@ -45,8 +53,9 @@ describe("enforceOrderAround", () => {
     ];
     expect(enforceOrderAround(words, 0)).toEqual([
       { text: "one", sep: " ", begin: 30, end: 30.3, joinsNext: false },
-      { text: "two", sep: " ", begin: 30.3, end: 30.3, joinsNext: false },
-      { text: "three", sep: "", begin: 30.3, end: 30.3, joinsNext: false },
+      // Squeezed words keep their length instead of collapsing to zero.
+      { text: "two", sep: " ", begin: 30.3, end: 31.3, joinsNext: false },
+      { text: "three", sep: "", begin: 31.3, end: 32.3, joinsNext: false },
     ]);
   });
 
@@ -86,7 +95,8 @@ describe("enforceOrderAround", () => {
       ];
       expect(enforceOrderAround(words, 0)).toEqual([
         { text: "one", sep: " ", begin: 5, end: 5, joinsNext: false },
-        { text: "two", sep: "", begin: 5, end: 5, joinsNext: false },
+        // Squeezed words keep their length instead of collapsing to zero.
+        { text: "two", sep: "", begin: 5, end: 6, joinsNext: false },
       ]);
     });
   });

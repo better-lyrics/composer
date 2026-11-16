@@ -16,16 +16,16 @@ function reorderWordTrack(
   timeDelta: number,
   range: TimeRange,
 ): WordTiming[] {
+  const moving = track.filter((_, index) => draggedIndices.has(index));
+  const earliest = Math.min(...moving.map((word) => word.begin));
+  const latest = Math.max(...moving.map((word) => word.end));
+  // The dragged words move as one block, so clamping never reorders them.
+  const delta = Math.max(range.min - earliest, Math.min(range.max - latest, timeDelta));
   const dragged: WordTiming[] = [];
   const rest: WordTiming[] = [];
   track.forEach((word, index) => {
-    if (draggedIndices.has(index)) {
-      const wordDuration = word.end - word.begin;
-      const newBegin = Math.max(range.min, Math.min(range.max - wordDuration, word.begin + timeDelta));
-      dragged.push({ ...word, begin: newBegin, end: newBegin + wordDuration });
-    } else {
-      rest.push({ ...word });
-    }
+    if (draggedIndices.has(index)) dragged.push({ ...word, begin: word.begin + delta, end: word.end + delta });
+    else rest.push({ ...word });
   });
   return resolveOverlapsForward(mergeWordsIntoTrack(rest, dragged), range.max);
 }

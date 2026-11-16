@@ -58,6 +58,20 @@ describe("createProject", () => {
     await expect.poll(async () => (await loadProjectRecord("a"))?.metadata.title).toBe("Alpha (edited)");
   });
 
+  it("regression: a project made during the startup restore keeps its edits when another is made", async () => {
+    await seedStoredProject("a", { open: true, project: { ...songTitled("Alpha"), savedAt: 777 } });
+    const restoring = restoreOpenProject();
+    debouncedSave(saveInputTitled("Typed before the restore"));
+    const first = createProject();
+    debouncedSave(saveInputTitled("First (edited)"));
+    createProject();
+    debouncedSave(saveInputTitled("Second"));
+    await restoring;
+    await flushPendingSave();
+    expect((await loadProjectRecord(first))?.metadata.title).toBe("First (edited)");
+    expect((await loadProjectRecord("a"))?.savedAt).toBe(777);
+  });
+
   it("a project switch that was still loading does not replace the new project", async () => {
     await seedOpenProject();
     await seedStoredProject("b", { project: songTitled("Bravo") });

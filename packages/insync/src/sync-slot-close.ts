@@ -16,6 +16,7 @@ interface SlotWriteIntent {
   open: boolean;
   jumped: boolean;
   defaultWordDuration: number;
+  songEnd: number;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -50,7 +51,8 @@ function previousSlotEnd(lines: readonly LyricLine[], slot: SyncSlot | null, int
     return slot.lineIndex === intent.lineIndex ? Math.min(previous.end, intent.begin) : null;
   }
   if (intent.begin >= previous.begin) return forwardEnd(previous, intent);
-  return previous.begin === previous.end ? tapEnd(previous.begin, intent.defaultWordDuration) : null;
+  if (previous.begin !== previous.end) return null;
+  return Math.min(tapEnd(previous.begin, intent.defaultWordDuration), Math.max(previous.begin, intent.songEnd));
 }
 
 function closeSlotWords(words: readonly WordTiming[], index: number, end: number): WordTiming[] {
@@ -85,14 +87,16 @@ function openLastLine(lines: readonly LyricLine[], cursor: SyncCursor, splitChar
   return slot && bounds && bounds.end === bounds.begin ? { slot, begin: bounds.begin } : null;
 }
 
+// A closing tap at or before the line starts has no room, the same as any early tap.
 function lastLineClose(
   lines: readonly LyricLine[],
   cursor: SyncCursor,
   time: number,
   splitChar: string,
-): LineUpdate | null {
+): LineUpdate | "no-room" | null {
   const open = openLastLine(lines, cursor, splitChar);
-  if (!open || time <= open.begin) return null;
+  if (!open) return null;
+  if (time <= open.begin) return "no-room";
   return closingUpdate(lines, open.slot, time);
 }
 
