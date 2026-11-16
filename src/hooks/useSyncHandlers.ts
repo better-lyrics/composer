@@ -175,10 +175,7 @@ function useSyncHandlers({
         }),
       );
       if (isRefused(outcome)) {
-        if (outcome.refused.reason === "early-tap-no-room") {
-          ignoreNextHoldEndRef.current = gesture === "hold-start";
-          toastEarlyTapRefused();
-        }
+        if (outcome.refused.reason === "early-tap-no-room") toastEarlyTapRefused();
         return false;
       }
       const { commit } = planned;
@@ -205,7 +202,9 @@ function useSyncHandlers({
   const handleHoldStart = useCallback((): boolean => {
     ignoreNextHoldEndRef.current = false;
     const started = runGesture("hold-start");
-    if (started) noteGuideSignal("sync.hold");
+    // A hold that never started has nothing to release, whatever refused it.
+    if (!started) ignoreNextHoldEndRef.current = true;
+    else noteGuideSignal("sync.hold");
     return started;
   }, [runGesture]);
 
