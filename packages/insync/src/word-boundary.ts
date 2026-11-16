@@ -96,19 +96,27 @@ function clampBoundaryTime({
   return Math.min(hardCeiling, Math.max(word.begin + minDuration, Math.min(ceiling, time)));
 }
 
-// A rolled neighbour takes the boundary as its own edge; a boundary at or past its far edge would leave it no length.
-function rollKeepsNeighbour(
+// A roll moves the edge both words share; at or past either word's far edge one of them is left no length.
+function rollKeepsBothWords(
   words: readonly WordTiming[],
   wordIndex: number,
   edge: BoundaryEdge,
   time: number,
 ): boolean {
+  const word = words[wordIndex];
   if (edge === "begin") {
     const prev = words[wordIndex - 1];
-    return !prev || time > prev.begin;
+    return !prev || (time > prev.begin && time < word.end);
   }
   const next = words[wordIndex + 1];
-  return !next || time < next.end;
+  return !next || (time < next.end && time > word.begin);
+}
+
+// Where a boundary edit lands, or null when its roll would leave either word no length. Drag and command share it.
+function boundaryTarget(input: BoundaryClampInput): number | null {
+  const clamped = clampBoundaryTime(input);
+  const { words, wordIndex, edge, rollNeighbour } = input;
+  return rollNeighbour && !rollKeepsBothWords(words, wordIndex, edge, clamped) ? null : clamped;
 }
 
 // An end set exactly where the word starts has nothing to end; writing it would only squeeze the word to the minimum.
@@ -118,5 +126,5 @@ function endsAtOwnStart(word: WordTiming, edge: BoundaryEdge, time: number): boo
 
 // -- Exports ------------------------------------------------------------------
 
-export { clampBoundaryTime, endsAtOwnStart, isBoundaryFlush, rollKeepsNeighbour, shouldRollNeighbour };
+export { boundaryTarget, clampBoundaryTime, endsAtOwnStart, isBoundaryFlush, shouldRollNeighbour };
 export type { BoundaryEdge };

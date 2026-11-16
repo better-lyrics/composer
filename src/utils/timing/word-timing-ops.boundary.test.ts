@@ -244,9 +244,9 @@ describe("createWordTimingOps: setBoundary", () => {
     it("regression: never inverts a word whose begin is past a shorter audio duration", () => {
       const lastWord = run({ wordIdx: 2, edge: "end", time: 99, rolling: false, duration: 1.5 });
       expect(lastWord.words[2].begin).toBeLessThanOrEqual(lastWord.words[2].end);
+      // A roll that would leave either word no length is refused, so nothing is written.
       const rolled = run({ wordIdx: 1, edge: "end", time: 99, rolling: true, duration: 0.5 });
-      expect(rolled.words[1].begin).toBeLessThanOrEqual(rolled.words[1].end);
-      expect(rolled.words[2].begin).toBeLessThanOrEqual(rolled.words[2].end);
+      expect(rolled.calls).toEqual([]);
     });
   });
 

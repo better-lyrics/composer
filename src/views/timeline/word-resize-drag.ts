@@ -1,4 +1,4 @@
-import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "insync/word-boundary";
+import { type BoundaryEdge, boundaryTarget, shouldRollNeighbour } from "insync/word-boundary";
 import { boundsOverlap } from "insync/word-overlap";
 import type { SyllablePosition } from "insync/word-syllable-groups";
 import type { WordTiming } from "insync/word-timing";
@@ -157,7 +157,7 @@ function useWordResizeDrag({
 
         const edgeAtStart = edge === "left" ? originalWord.begin : originalWord.end;
         const snapShiftPx = computeShiftPx(rawDeltaPx, [edgeAtStart]);
-        const clamped = clampBoundaryTime({
+        const target = boundaryTarget({
           words,
           wordIndex,
           edge: boundaryEdge,
@@ -166,9 +166,10 @@ function useWordResizeDrag({
           rollNeighbour: adjacentWordIndex !== null,
           range,
         });
+        const clamped = target ?? edgeAtStart;
 
         const adjacent =
-          adjacentWordIndex === null
+          adjacentWordIndex === null || target === null
             ? null
             : {
                 adjacentWordIndex,
