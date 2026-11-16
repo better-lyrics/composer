@@ -85,6 +85,7 @@ function parseTranslations(
   if (!translations) return;
   for (const container of directChildren(translations, "translation")) {
     const language = languageOf(container, "und");
+    const translationType = container.getAttribute("type") || undefined;
     for (const textElement of directChildren(container, "text")) {
       const key = textElement.getAttribute("for");
       const index = key ? lineIndexByKey.get(key) : undefined;
@@ -96,6 +97,7 @@ function parseTranslations(
       const translatedBackground = sidecarBackground?.textContent.trim() || undefined;
       const translation: LineLanguage = {
         language,
+        ...(translationType !== undefined && { translationType }),
         main: { text: textWithoutBackground(textElement) },
         ...(translatedBackground !== undefined && { bg: { text: translatedBackground } }),
         origin: "import",
