@@ -121,13 +121,14 @@ async function openUnisonLyricFromLink(
 ): Promise<LinkOpenOutcome> {
   const linked = entries ? projectsByLyricId(entries).get(String(lyric.id)) : undefined;
   if (linked) return reopenLinkedProject(lyric, linked.id, navigate);
-  const start = unisonLyricStart(lyric, { link: true, navigate });
+  const link = entries !== null;
+  const start = unisonLyricStart(lyric, { link, navigate });
   const started = start && (await createVideoProject(start));
   if (!started) return "failed";
   useProjectStore.getState().setActiveTab("edit");
   void getQueryImportSettled().then(() => {
     if (openProjectIdSnapshot() !== started.newId) return;
-    const label = linkedLyricLabel(lyric);
+    const label = link ? linkedLyricLabel(lyric) : null;
     if (label === null) announceVideoProject(started);
     else showSuggestOpenedToast(label);
   });
