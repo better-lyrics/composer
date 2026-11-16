@@ -1,4 +1,4 @@
-import type { XmlReadAttr, XmlReadDocument, XmlReadElement } from "./xml-read-tree";
+import type { XmlReadAttr, XmlReadDocument, XmlReadElement, XmlReadNode } from "./xml-read-tree";
 import { COMPOSER_NAMESPACES } from "./composer-namespace";
 
 // -- Types --------------------------------------------------------------------
@@ -94,6 +94,15 @@ function isLyricSection(element: XmlReadElement): boolean {
 function hasTimedWordSpans(container: XmlReadElement): boolean {
   return Array.from(container.children).some(isTimedWordSpan);
 }
+
+function untimedTailNodes(container: XmlReadElement): readonly XmlReadNode[] {
+  const nodes = container.childNodes;
+  const last = nodes.findLastIndex((node) => node.kind === "element" && isTimedWordSpan(node));
+  return nodes.slice(last + 1);
+}
+
+const isLyricTailSpan = (node: XmlReadNode) =>
+  node.kind === "element" && isLyricTextElement(node) && !LYRIC_ROLES.has(elementRole(node) ?? "");
 
 // -- Inline alternates ---------------------------------------------------------
 
@@ -229,7 +238,8 @@ function modelledChildTest(node: TtmlNode, parent: XmlReadElement): (child: XmlR
   const inLine = node === "p" || node === "background";
   const parentHasTimedWords = inLine && hasTimedWordSpans(parent);
   const readAlternates = inLine ? readInlineAlternates(parent) : new Map<XmlReadElement, string>();
-  return (child) => isModelledChildOf(node, child, parentHasTimedWords, readAlternates);
+  const tailSpans = new Set(parentHasTimedWords ? untimedTailNodes(parent).filter(isLyricTailSpan) : []);
+  return (child) => tailSpans.has(child) || isModelledChildOf(node, child, parentHasTimedWords, readAlternates);
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -247,4 +257,5 @@ export {
   ownLanguage,
   readInlineAlternates,
   UNBOUND_NAMESPACE_PREFIX,
+  untimedTailNodes,
 };

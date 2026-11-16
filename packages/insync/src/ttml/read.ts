@@ -194,13 +194,18 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     let untimedBackground: UntimedLyric | undefined;
     let backgroundSpan: { backgroundBegin?: number; backgroundEnd?: number } = {};
     let untimedMain: UntimedLyric | undefined;
-    const { words, text: timedText } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
+    const {
+      words,
+      text: timedText,
+      lyric: timedMain,
+    } = timedTrackText(extractTimedWords(p, bgContainer), p, splitChar);
 
     if (bgContainer) {
       const timedBackground = timedTrackText(extractTimedWords(bgContainer, null), bgContainer, splitChar);
       backgroundWords = timedBackground.words;
       if (backgroundWords.length > 0) {
         backgroundText = timedBackground.text;
+        untimedBackground = timedBackground.lyric;
       } else {
         untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
@@ -215,6 +220,7 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
       backgroundText || (backgroundWords && backgroundWords.length > 0) ? "manual" : undefined;
 
     if (words.length > 0) {
+      untimedMain = timedMain;
       lines.push(
         lineFromFields(
           {

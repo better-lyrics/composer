@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { Syllable } from "../line";
 import { lineFromFields } from "../line-from-fields";
 import { backgroundText, lineText } from "../line-text";
-import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
+import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables } from "../line-track";
+import { withMainTrack } from "../line-track-writes";
 import { DEFAULT_SPLIT_CHARACTER } from "../split-character-text";
 import { wordsFromSpaced } from "../word-spaced-words";
 import { parseTtml } from "./read";
@@ -43,5 +45,28 @@ describe("ttml · untimed rest of a partly synced line", () => {
     expect(backgroundText(read, SPLIT)).toBe(backgroundText(partlySynced, SPLIT));
     expect(timedSyllables(mainTrack(read)).map((word) => word.text)).toEqual(["Silver", "birds"]);
     expect(timedSyllables(backgroundTrack(read)).map((word) => word.text)).toEqual(["wa"]);
+  });
+
+  it("regression: an untimed rest written inside a kept span keeps its words and attributes on a reread", () => {
+    const main = mainTrack(partlySynced);
+    const syllables: Syllable[] = main.syllables.map((syllable) =>
+      isTimedSyllable(syllable) ? syllable : { ...syllable, passthrough: { attrs: [["x-cue", "b"]] } },
+    );
+    const cued = withMainTrack(partlySynced, { id: main.id, role: "main", agentId: main.agentId, syllables });
+    const ttml = generateTTML({
+      metadata: { title: "Test", artists: [], album: "", duration: 60 },
+      agents: [{ id: "v1", type: "person", name: "Lead" }],
+      lines: [cued],
+      splitChar: SPLIT,
+    });
+    expect(ttml).toContain('<span x-cue="b">fly home</span>');
+
+    const [read] = parseTtml(ttml, SPLIT).lines;
+    expect(lineText(read, SPLIT)).toBe("Silver birds fly home");
+    const rest = mainTrack(read).syllables.filter((syllable) => !isTimedSyllable(syllable));
+    expect(rest.map((syllable) => [syllable.text, syllable.passthrough?.attrs])).toEqual([
+      ["fly", [["x-cue", "b"]]],
+      ["home", [["x-cue", "b"]]],
+    ]);
   });
 });
