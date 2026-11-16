@@ -92,6 +92,11 @@ function classifyLine(text: string): LineClassification {
 
 // -- Extraction ---------------------------------------------------------------
 
+// A timed background already shows as its own bracket group in Edit, so brackets typed beside it stay as text.
+function backgroundRefuses(line: LyricLine, classified: LineClassification): boolean {
+  return classified.kind === "inline" && bgBounds(line) !== null;
+}
+
 function hasSungContent(text: string, splitChar: string): boolean {
   return [...text].some((char) => !"() ".includes(char) && char !== splitChar);
 }
@@ -145,7 +150,7 @@ function extractInlineWordSynced(
 
 function extractInline(line: LyricLine, options: ExtractOptions, splitChar: string): LyricLine {
   const classified = classifyLine(lineText(line, splitChar));
-  if (classified.kind !== "inline" || bgBounds(line)) return line;
+  if (classified.kind !== "inline" || backgroundRefuses(line, classified)) return line;
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar);
   const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
   return withBackground(
@@ -198,9 +203,8 @@ function refusesExtraction(line: LyricLine, options: ExtractOptions, splitChar: 
   );
 }
 
-// A timed background already shows as its own bracket group in Edit, so brackets typed beside it stay as text.
 function keepsTypedBackgroundGroups(line: LyricLine, splitChar: string): boolean {
-  return bgBounds(line) !== null && lineHasInlineParens(line, splitChar);
+  return bgBounds(line) !== null && backgroundRefuses(line, classifyLine(lineText(line, splitChar)));
 }
 
 // -- Whole-list transform -----------------------------------------------------

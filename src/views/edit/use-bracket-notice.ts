@@ -1,3 +1,4 @@
+import type { BackgroundBracketRefusal } from "insync/background-vocal-refusals";
 import { removeSectionTagLines } from "insync/commands/edit-text";
 import { isSectionTagLine } from "insync/lyrics-file-genius-text";
 import { useProjectStore } from "@/stores/project";
@@ -6,6 +7,13 @@ import { pluralWord, pluralize } from "insync/pluralize";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconTrash } from "@tabler/icons-react";
 import { useMemo } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const BACKGROUND_REFUSAL_DETAIL: Record<BackgroundBracketRefusal, string> = {
+  own: "This line already has background vocals. Type inside their brackets to add to them.",
+  linked: "A linked copy of this line already has background vocals. Type inside their brackets to add to them.",
+};
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -56,7 +64,7 @@ function useBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
 // Brackets typed beside a timed background stay as text: extraction would make a second background group.
 function useBackgroundBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
   return useMemo(() => {
-    const keptLines = parsed.filter((line) => line.keepsTypedBackgroundGroups);
+    const keptLines = parsed.filter((line) => line.backgroundBracketRefusal);
     if (keptLines.length === 0) return null;
     return {
       id: "background-brackets",
@@ -67,7 +75,7 @@ function useBackgroundBracketNotice(parsed: readonly ParsedLine[]): NoticeKind |
         key: line.lineId,
         fingerprints: [],
         title: `Line ${line.lineNumber} · ${line.text.trim()}`,
-        detail: "This line already has background vocals. Type inside their brackets to add to them.",
+        detail: BACKGROUND_REFUSAL_DETAIL[line.backgroundBracketRefusal ?? "own"],
         dismissedLabel: `Line ${line.lineNumber}`,
       })),
       dismissedFingerprints: [],

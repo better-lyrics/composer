@@ -8,6 +8,7 @@ import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } fr
 import { withMainTrack, withTrackText } from "insync/line-track-writes";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { createLine } from "@/test/factories";
+import { backgroundBracketRefusals } from "insync/background-vocal-refusals";
 import {
   classifyLine,
   extractBackgroundVocals,
@@ -1063,6 +1064,38 @@ describe("extractBackgroundVocals: linked instances", () => {
     );
     expect(result.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(
       lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER)),
+    );
+  });
+
+  it("regression: a linked copy of a line with a timed background keeps its brackets for that reason", () => {
+    const words = [
+      { text: "Hold", sep: " ", begin: 7.8, end: 8.1 },
+      { text: "the", sep: " ", begin: 8.1, end: 8.4 },
+      { text: "boat", begin: 8.4, end: 8.8 },
+    ];
+    const instance = (instanceIdx: number, backgroundWords?: { text: string; begin: number; end: number }[]) =>
+      reconcileMatchedTiming(
+        createLine({
+          id: `boat-${instanceIdx}`,
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          words,
+          ...(backgroundWords && { backgroundText: "steady", backgroundWords }),
+        }),
+        "Hold the boat (row on)",
+        DEFAULT_SPLIT_CHARACTER,
+      );
+    const lines = [instance(0, [{ text: "steady", begin: 8.4, end: 8.8 }]), instance(1)];
+
+    expect(
+      extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true }, DEFAULT_SPLIT_CHARACTER),
+    ).toEqual(lines);
+    expect(backgroundBracketRefusals(lines, DEFAULT_SPLIT_CHARACTER)).toEqual(
+      new Map([
+        ["boat-0", "own"],
+        ["boat-1", "linked"],
+      ]),
     );
   });
 });

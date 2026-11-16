@@ -1,4 +1,4 @@
-import { keepsTypedBackgroundGroups } from "insync/background-vocal-extraction";
+import { type BackgroundBracketRefusal, backgroundBracketRefusals } from "insync/background-vocal-refusals";
 import { shownRow } from "insync/edit-text-shown-row";
 import { mainTrack } from "insync/line-track";
 import type { LyricLine } from "insync/line";
@@ -12,7 +12,7 @@ interface ParsedLine {
   text: string;
   isEmpty: boolean;
   hasBrackets: boolean;
-  keepsTypedBackgroundGroups: boolean;
+  backgroundBracketRefusal?: BackgroundBracketRefusal;
   hasTiming: boolean;
   agentId: string;
   backgroundText?: string;
@@ -24,6 +24,7 @@ interface ParsedLine {
 function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): ParsedLine[] {
   const textLines = text.split("\n");
   const nonEmptyStored = lines.filter((l) => shownRow(l, getSplitCharacter()).text !== "");
+  const backgroundRefusals = backgroundBracketRefusals(lines, getSplitCharacter());
   let nonEmptyIndex = 0;
 
   return textLines.map((line, index) => {
@@ -38,7 +39,7 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
       text: lyricLine ? lineText(lyricLine, getSplitCharacter()) : line,
       isEmpty,
       hasBrackets: /\[.*?\]/.test(line),
-      keepsTypedBackgroundGroups: lyricLine !== undefined && keepsTypedBackgroundGroups(lyricLine, getSplitCharacter()),
+      backgroundBracketRefusal: lyricLine && backgroundRefusals.get(lyricLine.id),
       hasTiming,
       agentId: (lyricLine && mainTrack(lyricLine).agentId) ?? defaultAgentId,
       backgroundText: lyricLine && backgroundText(lyricLine, getSplitCharacter()),
