@@ -3,6 +3,7 @@ import { shiftCaretPastRewrittenRows } from "insync/edit-text";
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { changedRegion } from "@/domain/edit-text/background-ranges";
+import { nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { scrollCaretIntoView } from "@/views/edit/textarea-caret-view";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -28,7 +29,12 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
   useEffect(() => {
     const notePaste = (event: ClipboardEvent) => {
       const textarea = textareaRef.current;
-      if (textarea && event.target === textarea) scrollBeforePasteRef.current = textarea.scrollTop;
+      if (!textarea || event.target !== textarea) return;
+      scrollBeforePasteRef.current = textarea.scrollTop;
+      // The paste's input comes before the next frame; a paste with no input (an empty clipboard) leaves nothing.
+      nextFrame(() => {
+        scrollBeforePasteRef.current = null;
+      });
     };
     const dropTakenOver = (event: ClipboardEvent) => {
       if (event.defaultPrevented) scrollBeforePasteRef.current = null;
