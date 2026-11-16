@@ -4,7 +4,7 @@ import { isTimedSyllable, untimedSyllable } from "./line-track";
 import { lcsPairs, wordKey } from "./word-alignment";
 import { newWordId } from "./word-id";
 import { msFromSeconds } from "./time";
-import { letterSlots } from "./word-letter-slots";
+import { textSlots } from "./word-letter-slots";
 import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
@@ -185,14 +185,9 @@ function withGapsFilled(after: readonly Syllable[], times: readonly CarriedTimes
     const to = Math.max(from, next?.[0] ?? from);
     // With under a millisecond each before the next syllable, the added ones share its slot by letters, as typed words do.
     if (msFromSeconds(to) - msFromSeconds(from) <= end - start && next && from < next[1]) {
-      const slots = letterSlots(
-        after.slice(start, end + 2).map((syllable) => Math.max(1, syllable.text.trim().length)),
-        from,
-        next[1],
-      );
-      slots.forEach((slot, offset) => {
+      const texts = after.slice(start, end + 2).map((syllable) => syllable.text);
+      for (const [offset, slot] of textSlots(texts, from, next[1]).entries())
         filled[start + offset] = [tidy(slot.begin), tidy(slot.end)];
-      });
       start = end;
       continue;
     }

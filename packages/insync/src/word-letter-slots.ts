@@ -12,6 +12,15 @@ function letterSlots(letters: readonly number[], begin: number, end: number): { 
   });
 }
 
+// Slots for typed texts, each sharing by its letters and never by less than one.
+function textSlots(texts: readonly string[], begin: number, end: number): { begin: number; end: number }[] {
+  return letterSlots(
+    texts.map((text) => Math.max(1, text.trim().length)),
+    begin,
+    end,
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { letterSlots };
+export { letterSlots, textSlots };
