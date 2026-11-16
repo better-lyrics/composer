@@ -4,7 +4,7 @@ import { useUnisonSession } from "@/hooks/useUnisonSession";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { useProjectStore } from "@/stores/project";
 import { OnUnisonCard } from "@/views/export/unison/on-unison-card";
-import { SignedOutCard } from "@/views/export/unison/signed-out-card";
+import { SignedOutCard, SignedOutSuggestCard } from "@/views/export/unison/signed-out-card";
 import { SubmitCard } from "@/views/export/unison/submit-card";
 import { SuggestCard } from "@/views/export/unison/suggest-card";
 import { NewSubmission } from "@/views/export/unison/submit-videos";
@@ -65,7 +65,7 @@ const UnisonPanel: React.FC<UnisonPanelProps> = ({ source }) => {
   if (!shownSession) {
     return (
       <PanelCards>
-        <SignedOutCard />
+        {unisonLyricId ? <SignedOutSuggestCard key={unisonLyricId} lyricId={unisonLyricId} /> : <SignedOutCard />}
       </PanelCards>
     );
   }

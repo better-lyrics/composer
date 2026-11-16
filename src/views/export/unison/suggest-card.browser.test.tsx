@@ -264,6 +264,20 @@ describe("Unison suggest card", () => {
     await expect.element(screen.getByText("You withdrew your suggestion. Rev 3 stays live.")).toBeInTheDocument();
   });
 
+  it("asks a signed-out user on a linked lyric to connect for a suggestion", async () => {
+    stubUnison(MIRELLE);
+    loadLinkedProject();
+    const screen = await render(<ExportPanel />);
+
+    await expect
+      .element(screen.getByRole("heading", { name: "Suggest an edit to Mirelle's lyric" }))
+      .toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Connect to suggest" })).toBeInTheDocument();
+
+    useProjectStore.setState({ unisonLyricId: null });
+    await expect.element(screen.getByRole("button", { name: "Connect to submit" })).toBeInTheDocument();
+  });
+
   it("regression: a suggestion stamped a moment ahead never shows more than the full owner window", async () => {
     const state = stubUnison(MIRELLE, Date.now() / 1000 + 1);
     state.sent.push({ lyrics: copiedTtml(), note: NOTE });

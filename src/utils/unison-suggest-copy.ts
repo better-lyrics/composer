@@ -14,6 +14,9 @@ const NOTHING_TO_SEND = "Nothing to send yet. Your project matches the live vers
 const WAITING_TITLE = "Your suggestion is waiting";
 const YOUR_NOTE_LABEL = "Your note";
 const COUNCIL_DECIDES = "The council decides this one.";
+const CONNECT_TO_SUGGEST_TEXT = "Connect your Better Lyrics account to send your fix as a suggestion.";
+const CONNECT_TO_SUGGEST_LABEL = "Connect to suggest";
+const CONNECT_TO_SUGGEST_REASON = "Connect to send your fix as a suggestion.";
 
 // -- Copy ----------------------------------------------------------------------
 
@@ -99,6 +102,9 @@ function rejectNoteLabel(decidedBy: SuggestionDecider, owner: string | null): st
 export {
   approvedLine,
   approvedTitle,
+  CONNECT_TO_SUGGEST_LABEL,
+  CONNECT_TO_SUGGEST_REASON,
+  CONNECT_TO_SUGGEST_TEXT,
   liveLine,
   NEEDS_OWN_LYRIC,
   NOTE_PLACEHOLDER,
