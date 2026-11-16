@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { shiftCaretPastRewrittenRows } from "insync/edit-text";
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
@@ -14,12 +14,32 @@ interface PendingCaret {
   scrollTop: number;
   // Lines written from outside the text, as undo does: the caret goes to the end of what changed.
   replaced?: true;
+  // A paste: the view goes back to where it was before the browser scrolled for the pasted text.
+  pasted?: true;
 }
 
 function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => void) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaretRef = useRef<PendingCaret | null>(null);
   const shownTextRef = useRef<string | null>(null);
+  const scrollBeforePasteRef = useRef<number | null>(null);
+
+  // Read before the browser scrolls for the pasted text; a paste taken over as an import leaves nothing to restore.
+  useEffect(() => {
+    const notePaste = (event: ClipboardEvent) => {
+      const textarea = textareaRef.current;
+      if (textarea && event.target === textarea) scrollBeforePasteRef.current = textarea.scrollTop;
+    };
+    const dropTakenOver = (event: ClipboardEvent) => {
+      if (event.defaultPrevented) scrollBeforePasteRef.current = null;
+    };
+    window.addEventListener("paste", notePaste, true);
+    window.addEventListener("paste", dropTakenOver);
+    return () => {
+      window.removeEventListener("paste", notePaste, true);
+      window.removeEventListener("paste", dropTakenOver);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const pending = pendingCaretRef.current;
@@ -39,16 +59,20 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     );
     // A new value moves the caret to the end and scrolls there; the typed row was in view, so the view stays.
     textarea.scrollTop = pending.scrollTop;
+    if (pending.pasted) scrollCaretIntoView(textarea);
   }, [rawText]);
 
   const showEditText = useCallback(
     (typedText: string, edit: ShownEditText, textarea: HTMLTextAreaElement) => {
-      if (edit.text !== typedText) {
+      const scrollBeforePaste = scrollBeforePasteRef.current;
+      scrollBeforePasteRef.current = null;
+      if (edit.text !== typedText || scrollBeforePaste !== null) {
         pendingCaretRef.current = {
           typedText,
           start: textarea.selectionStart,
           end: textarea.selectionEnd,
-          scrollTop: textarea.scrollTop,
+          scrollTop: scrollBeforePaste ?? textarea.scrollTop,
+          ...(scrollBeforePaste !== null && { pasted: true }),
         };
       }
       shownTextRef.current = edit.text;
