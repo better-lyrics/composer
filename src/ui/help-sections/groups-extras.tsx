@@ -15,9 +15,8 @@ const GroupsExtras: React.FC = () => (
         <li>Agent assignments.</li>
         <li>Background vocal text.</li>
         <li>
-          Word splits and merges. Siblings get the new word structure, and Composer keeps the timing of every word that
-          didn't actually change. Only the split or merged word's slot is divided up. Sibling rhythms you carefully
-          synced earlier survive.
+          Word splits and merges. Every instance gets the new words, and each one keeps the timing of the words that
+          didn't change.
         </li>
         <li>Moving a word between main and background tracks.</li>
       </ul>
@@ -82,17 +81,16 @@ const GroupsExtras: React.FC = () => (
       </p>
     </HelpTopic>
 
-    <HelpTopic title="The split-or-merge prompt">
+    <HelpTopic title="When one instance differs">
       <p className={PROSE}>
-        When a split or merge on a linked line would actually shift sibling word timings (sibling rhythms differ from
-        the source), Composer pops a three-button modal: <strong>Apply to all</strong> (propagate and keep the timing),{" "}
-        <strong>Detach</strong> (keep the change on this line only, unlink it from the group), or{" "}
-        <strong>Cancel</strong>. The modal is skipped when sibling rhythms already match the source, because propagating
-        changes nothing for the unchanged words.
+        A split or merge on a linked line reaches every instance right away. The first time a split reaches other
+        instances, a notice says how many changed, with Undo.
       </p>
       <p className={`${PROSE} mt-2`}>
-        Tick "Don't ask again" in the modal to default to your choice next time. Reset the preference from{" "}
-        <SettingLink section="confirmations" />.
+        When one edit gives the same line different text in two instances, such as a pasted song whose last chorus adds
+        a word, each instance keeps the text it was given and those lines stop following the group. Breaking, joining,
+        or deleting lines inside an instance does the same, for that instance only. A notice names the line that now
+        differs, with Undo.
       </p>
     </HelpTopic>
 
