@@ -1,15 +1,16 @@
-import type { LinkGroup } from "./group";
 import { type TimeRange, timeRangeResolver } from "./group-shared-timing";
-import type { LineUpdate, LyricLine } from "./line";
+import type { LinkGroup } from "./group";
 import { applyLineUpdates } from "./line-apply-line-updates";
-import { withBackgroundSeededFrom, withSeededBackground } from "./line-background";
 import { bgBounds, mainBounds } from "./line-bounds";
+import { withBackgroundSeededFrom, withSeededBackground } from "./line-background";
+import type { LineUpdate, LyricLine } from "./line";
 import { clampShiftDelta, shiftLineTiming, shiftTrack } from "./line-shift";
-import { isSyncableLine } from "./line-sync-progress";
 import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
-import { advanceCursor, previousSlot, type SyncCursor, type SyncSlot, slotBounds } from "./sync-cursor";
+import { isSyncableLine } from "./line-sync-progress";
+import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
+import { closeHeld } from "./sync-hold-close";
 import { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd } from "./sync-slot-close";
 import { withSlotWord } from "./sync-slot-words";
 import type { Bounds } from "./word-bounds";
@@ -98,17 +99,20 @@ function withJumpPastSkipped(lines: readonly LyricLine[], ctx: GestureContext, g
 }
 
 function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureContext): TimeRange {
-  return timeRangeResolver(lines, ctx.groups ?? [], Number.POSITIVE_INFINITY)(line);
+  return timeRangeResolver(lines, ctx.groups ?? [], ctx.songEnd ?? Number.POSITIVE_INFINITY)(line);
 }
 
 // -- Background -----------------------------------------------------------------
 
 function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null, ctx: GestureContext): LyricLine {
   const background = backgroundTrack(line);
-  if (!background || !bgBounds(line)) {
-    return withBackgroundSeededFrom(line, begin, ctx.songEnd ?? Number.POSITIVE_INFINITY, ctx.splitChar);
-  }
-  return oldMain ? withBackgroundTrack(line, shiftTrack(background, begin - oldMain.begin)) : line;
+  const songEnd = ctx.songEnd ?? Number.POSITIVE_INFINITY;
+  const bounds = bgBounds(line);
+  if (!background || !bounds) return withBackgroundSeededFrom(line, begin, songEnd, ctx.splitChar);
+  if (!oldMain) return line;
+  const delta = begin - oldMain.begin;
+  const room = Math.max(0, songEnd - bounds.end);
+  return withBackgroundTrack(line, shiftTrack(background, delta > 0 ? Math.min(delta, room) : delta));
 }
 
 // -- Word slot writing ----------------------------------------------------------
@@ -131,9 +135,11 @@ function writeWord(
   const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
   const nextWord = existing[cursor.wordIndex + 1];
   if (!crossLine && earlyWithoutRoom(anchor, open ? undefined : nextWord?.begin)) return "no-room";
-  const floor = Math.max(crossLine ? 0 : anchor.floor, rangeOfLine(lines, line, ctx).min);
+  const range = rangeOfLine(lines, line, ctx);
+  const floor = Math.max(crossLine ? 0 : anchor.floor, range.min);
   const begin = Math.max(ctx.time, floor);
-  const provisional = open ? begin : tapEnd(begin, ctx.defaultWordDuration);
+  if (begin >= range.max) return "no-room";
+  const provisional = open ? begin : Math.min(tapEnd(begin, ctx.defaultWordDuration), range.max);
   const end = nextWord && nextWord.begin > begin ? Math.min(provisional, nextWord.begin) : provisional;
 
   let words = withSlotWord(existing, slots, cursor.wordIndex, { begin, end });
@@ -146,12 +152,13 @@ function writeWord(
     open,
     jumped: ctx.jumped,
     defaultWordDuration: ctx.defaultWordDuration,
+    songEnd: ctx.songEnd ?? Number.POSITIVE_INFINITY,
   });
   const sameLine = slot && slot.lineIndex === cursor.lineIndex ? slot : null;
   if (sameLine && sameLine.wordIndex !== null && previousEnd !== null) {
     words = closeSlotWords(words, sameLine.wordIndex, previousEnd);
   }
-  words = enforceOrderAround(words, cursor.wordIndex);
+  words = enforceOrderAround(words, cursor.wordIndex, range.max);
 
   const timed = withRoleWords(line, "main", words);
   const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line), ctx) : timed;
@@ -179,6 +186,8 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   const oldMain = mainBounds(line);
   const delta = oldMain ? clampShiftDelta([line], Math.max(ctx.time, floor) - oldMain.begin, range) : 0;
   const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
+  // A line the song end pulls back onto the previous slot would end that slot before it begins.
+  if (begin < floor || (anchor.previous && begin <= anchor.previous.begin)) return "no-room";
   const written = oldMain
     ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) }, ctx.splitChar, ctx.songEnd)
     : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null, ctx);
@@ -198,33 +207,9 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
         open: false,
         jumped: ctx.jumped,
         defaultWordDuration: ctx.defaultWordDuration,
+        songEnd: ctx.songEnd ?? Number.POSITIVE_INFINITY,
       }),
     ),
-  };
-}
-
-// -- Hold close -------------------------------------------------------------------
-
-interface ClosedHold {
-  update: LineUpdate;
-  clampedTo: number | null;
-  closeEnd: number;
-}
-
-function closeHeld(lines: readonly LyricLine[], ctx: GestureContext): ClosedHold | null {
-  const { cursor, time, defaultWordDuration } = ctx;
-  const line = lines[cursor.lineIndex];
-  if (!line) return null;
-  const timed = timedSyllables(mainTrack(line));
-  const held = timed[cursor.wordIndex];
-  if (!held || held.begin !== held.end) return null;
-
-  const closeEnd = time > held.begin ? time : tapEnd(held.begin, defaultWordDuration);
-  const words = enforceOrderAround(closeSlotWords(timed, cursor.wordIndex, closeEnd), cursor.wordIndex);
-  return {
-    update: { id: line.id, updates: { tracks: withRoleWords(line, "main", words).tracks } },
-    clampedTo: time < held.begin ? held.begin : null,
-    closeEnd,
   };
 }
 
@@ -273,7 +258,9 @@ function planGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: Ges
     };
   }
 
-  const closed = closeHeld(lines, ctx);
+  const held = lines[ctx.cursor.lineIndex];
+  const rangeEnd = held ? rangeOfLine(lines, held, ctx).max : Number.POSITIVE_INFINITY;
+  const closed = closeHeld(lines, { ...ctx, rangeEnd });
   if (!closed) return null;
   const nextCursor = advanceCursor(lines, ctx.cursor, "word", ctx.splitChar);
 

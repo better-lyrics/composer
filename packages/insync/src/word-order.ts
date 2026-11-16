@@ -8,7 +8,7 @@ import type { WordTiming } from "./word-timing";
 // are squeezed to the nearest times that restore the order. A later word that
 // would be squeezed to zero length keeps its length and moves after the edited
 // one instead; words never get dropped, so `words` keeps the line's length.
-function enforceOrderAround(words: WordTiming[], index: number): WordTiming[] {
+function enforceOrderAround(words: WordTiming[], index: number, songEnd = Number.POSITIVE_INFINITY): WordTiming[] {
   const anchor = words[index];
   if (!anchor) return words;
 
@@ -34,7 +34,7 @@ function enforceOrderAround(words: WordTiming[], index: number): WordTiming[] {
     if (word.begin >= previousEnd && word.end >= word.begin) break;
     const begin = Math.max(word.begin, previousEnd);
     const length = word.end - word.begin;
-    const end = word.end > begin || length <= 0 ? Math.max(word.end, begin) : begin + length;
+    const end = word.end > begin || length <= 0 ? Math.max(word.end, begin) : Math.max(begin, Math.min(begin + length, songEnd));
     copyOnWrite();
     result[i] = { ...word, begin, end };
     previousEnd = end;

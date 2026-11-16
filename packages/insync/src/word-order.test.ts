@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { enforceOrderAround } from "./word-order";
 import type { WordTiming } from "./word-timing";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

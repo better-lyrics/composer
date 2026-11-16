@@ -1,24 +1,24 @@
-import type { LyricLine } from "insync/line";
 import { withSeededBackground } from "insync/line-background";
-import { mainBounds } from "insync/line-bounds";
-import { fieldsOfLine } from "insync/line-from-fields";
-import { lineText } from "insync/line-text";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { mainBounds } from "insync/line-bounds";
+import { changedFields, updatedLine } from "@/test/field-updates";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { lineText } from "insync/line-text";
+import { describe, expect, it } from "vitest";
+import type { LyricLine } from "insync/line";
 import {
-  commitGesture,
   type GestureCommit,
   type GestureContext,
-  planGesture,
   type SyncGesture,
+  commitGesture,
+  planGesture,
 } from "insync/sync-commit-gesture";
 import { isSyncComplete } from "insync/sync-slot-close";
 import { wordFromSpaced } from "insync/word-spaced-words";
-import { describe, expect, it } from "vitest";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";
-import { changedFields, updatedLine } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const DUR = 0.3;
@@ -902,5 +902,48 @@ describe("zero-length neighbours", () => {
     for (const length of lengths(apply(held, run(held, "hold-end", [0, 1], 2.3))[0])) {
       expect(length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("song end", () => {
+  const SONG_END = 18;
+  const runToEnd = (lines: LyricLine[], gesture: SyncGesture, cursor: [number, number], time: number) =>
+    apply(lines, commitGesture(lines, gesture, { ...ctxAt(cursor, time), songEnd: SONG_END }));
+  const latestEnd = (lines: LyricLine[]) => Math.max(...flatTimings(lines).map((w) => w.end));
+
+  it("regression: no gesture writes timing past the song end", () => {
+    const snapped = [createLine({ id: "l0", text: "vo vin da", words: [word("vo ", 17.5, 17.9)] })];
+    expect(latestEnd(runToEnd(snapped, "tap-word", [0, 1], 3))).toBeLessThanOrEqual(SONG_END);
+
+    const shifted = [
+      createLine({ id: "l0", text: "first", begin: 10, end: 14 }),
+      createLine({ id: "l1", text: "a b", words: [word("a ", 2, 4), word("b", 4, 8)] }),
+    ];
+    expect(latestEnd(runToEnd(shifted, "tap-line", [1, 0], 15))).toBeLessThanOrEqual(SONG_END);
+
+    const held = [createLine({ id: "l0", text: "vo vin", words: [word("vo ", 17.9, 17.9)] })];
+    expect(latestEnd(runToEnd(held, "hold-end", [0, 0], 17.5))).toBeLessThanOrEqual(SONG_END);
+
+    const openAbove = [
+      createLine({ id: "l0", text: "vin", begin: 17.9, end: 17.9 }),
+      createLine({ id: "l1", text: "ex vin" }),
+    ];
+    expect(latestEnd(runToEnd(openAbove, "hold-start", [1, 0], 17.5))).toBeLessThanOrEqual(SONG_END);
+
+    const withBackground = [
+      createLine({ id: "l0", text: "fen lo", words: [word("fen ", 2, 2.2)], backgroundText: "ta" }),
+    ];
+    const seeded = runToEnd(withBackground, "tap-word", [0, 0], 2);
+    const moved = runToEnd(seeded, "tap-word", [0, 0], 17.8);
+    const backgroundEnds = (roleWords(moved[0], "bg") ?? []).map((w) => w.end);
+    expect(Math.max(...backgroundEnds)).toBeLessThanOrEqual(SONG_END);
+  });
+
+  it("regression: a Line mode tap refuses a line that no longer fits before the song end", () => {
+    const lines = [
+      createLine({ id: "l0", text: "first", begin: 10, end: 14 }),
+      createLine({ id: "l1", text: "a b", words: [word("a ", 1, 4), word("b", 4, 9)] }),
+    ];
+    expect(planGesture(lines, "tap-line", { ...ctxAt([1, 0], 15), songEnd: SONG_END })).toBe("no-room");
   });
 });

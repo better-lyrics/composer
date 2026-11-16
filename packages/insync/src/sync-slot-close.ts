@@ -16,6 +16,7 @@ interface SlotWriteIntent {
   open: boolean;
   jumped: boolean;
   defaultWordDuration: number;
+  songEnd: number;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -50,7 +51,8 @@ function previousSlotEnd(lines: readonly LyricLine[], slot: SyncSlot | null, int
     return slot.lineIndex === intent.lineIndex ? Math.min(previous.end, intent.begin) : null;
   }
   if (intent.begin >= previous.begin) return forwardEnd(previous, intent);
-  return previous.begin === previous.end ? tapEnd(previous.begin, intent.defaultWordDuration) : null;
+  if (previous.begin !== previous.end) return null;
+  return Math.min(tapEnd(previous.begin, intent.defaultWordDuration), Math.max(previous.begin, intent.songEnd));
 }
 
 function closeSlotWords(words: readonly WordTiming[], index: number, end: number): WordTiming[] {
