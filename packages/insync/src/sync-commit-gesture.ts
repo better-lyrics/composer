@@ -6,7 +6,7 @@ import { withBackgroundSeededFrom, withSeededBackground } from "./line-backgroun
 import type { LineUpdate, LyricLine } from "./line";
 import { clampShiftDelta, shiftLineTiming, shiftTrack } from "./line-shift";
 import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
-import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
+import { withBackgroundTrack, withMainTrack, withRoleWordsUntimingRest, withTrackSpan } from "./line-track-writes";
 import { type SyncGranularity, isSyncableLine } from "./line-sync-progress";
 import { type SyncCursor, advanceCursor, previousSlot } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
@@ -130,7 +130,7 @@ function writeWord(
   }
   words = enforceOrderAround(words, cursor.wordIndex, range.max);
 
-  const timed = withRoleWords(line, "main", words);
+  const timed = withRoleWordsUntimingRest(line, "main", words);
   const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line), ctx) : timed;
 
   return {

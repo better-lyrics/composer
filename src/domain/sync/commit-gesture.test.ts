@@ -939,6 +939,20 @@ describe("song end", () => {
     expect(Math.max(...backgroundEnds)).toBeLessThanOrEqual(SONG_END);
   });
 
+  it("regression: later words with no room left before the song end become untimed instead of zero length", () => {
+    const lines = [
+      createLine({ id: "l0", text: "ka lo mi", words: [word("ka ", 1, 2), word("lo ", 2, 3), word("mi", 3, 4)] }),
+    ];
+    const after = apply(lines, commitGesture(lines, "tap-word", { ...ctxAt([0, 0], 17.5, true), songEnd: SONG_END }));
+    const timed = timedSyllables(mainTrack(after[0]));
+    expect(timed.map((w) => w.text.trim())).toEqual(["ka", "lo"]);
+    for (const w of timed) {
+      expect(w.end).toBeGreaterThan(w.begin);
+      expect(w.end).toBeLessThanOrEqual(SONG_END);
+    }
+    expect(lineText(after[0], DEFAULT_SPLIT_CHARACTER)).toBe("ka lo mi");
+  });
+
   it("regression: a hold-tap at the song end still ends the held word", () => {
     const lines = [createLine({ id: "l0", text: "vo vin", words: [word("vo ", 17.9, 17.9)] })];
     const after = runToEnd(lines, "hold-tap", [0, 0], 17.5);

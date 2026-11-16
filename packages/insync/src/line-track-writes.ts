@@ -137,6 +137,17 @@ function withRoleWords(line: LyricLine, role: TrackRole, words: readonly WordTim
   return withRoleTrack(line, role, (track) => withTrackWords(track, words));
 }
 
+// Timed syllables the words leave out stay in the track untimed, where `withRoleWords` would drop them.
+function withRoleWordsUntimingRest(line: LyricLine, role: TrackRole, words: readonly WordTiming[]): LyricLine {
+  const taken = new Set(words.map((word) => word.id));
+  const leftOut = (syllable: Syllable) => isTimedSyllable(syllable) && !taken.has(syllable.id);
+  return withRoleTrack(line, role, (track) => {
+    if (!track.syllables.some(leftOut)) return withTrackWords(track, words);
+    const syllables = track.syllables.map((syllable) => (leftOut(syllable) ? untimedSyllable(syllable) : syllable));
+    return withTrackWords(syllableTimed(track, syllables), words);
+  });
+}
+
 function backgroundTimingWrite(line: LyricLine, syllables: readonly WordTiming[]): Partial<LyricLine> {
   return { tracks: withRoleTrack(line, "bg", (track) => trackTimingWrite(track, syllables)).tracks };
 }
@@ -157,6 +168,7 @@ export {
   withoutTrackTiming,
   withRoleTrack,
   withRoleWords,
+  withRoleWordsUntimingRest,
   withTrackExplicit,
   withTrackSpan,
   withTrackSyllables,

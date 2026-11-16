@@ -1,6 +1,6 @@
 import type { LineUpdate, LyricLine } from "./line";
 import { mainTrack, timedSyllables } from "./line-track";
-import { withRoleWords } from "./line-track-writes";
+import { withRoleWordsUntimingRest } from "./line-track-writes";
 import { type SyncCursor, previousSlot, slotBounds } from "./sync-cursor";
 import { closeSlotWords, closingUpdate, tapEnd } from "./sync-slot-close";
 import { enforceOrderAround } from "./word-order";
@@ -36,7 +36,7 @@ function closeHeld(
   const closeEnd = Math.min(time > held.begin ? time : tapEnd(held.begin, defaultWordDuration), rangeEnd);
   const words = enforceOrderAround(closeSlotWords(timed, cursor.wordIndex, closeEnd), cursor.wordIndex, rangeEnd);
   return {
-    update: { id: line.id, updates: { tracks: withRoleWords(line, "main", words).tracks } },
+    update: { id: line.id, updates: { tracks: withRoleWordsUntimingRest(line, "main", words).tracks } },
     clampedTo: time < held.begin ? held.begin : null,
     closeEnd,
   };
