@@ -98,13 +98,14 @@ function timedTrackText(
   if (!closing || tail.text.trim() === "") return { text: syllablesText(words, splitChar), words };
   const read = /^\s/.test(tail.text) || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
   const timedText = syllablesText(read, splitChar);
-  const rest = trimmedLyric(tail.text, tail.spans, new Map());
+  const rest = trimmedLyric(tail.text, tail.spans, tail.ends);
   const spans = rest.spans.map((span) => ({
     ...span,
     start: span.start + timedText.length,
     end: span.end + timedText.length,
   }));
-  return { text: timedText + rest.text, words: read, lyric: { text: timedText + rest.text, spans, ends: new Map() } };
+  const ends = new Map([...rest.ends].map(([node, end]) => [node, end + timedText.length]));
+  return { text: timedText + rest.text, words: read, lyric: { text: timedText + rest.text, spans, ends } };
 }
 
 // An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`; one that
