@@ -72,4 +72,26 @@ describe("inline backgrounds in the Edit text", () => {
       { text: "Quite now", background: null },
     ]);
   });
+
+  it("regression: text typed between two bracket groups of one background is main text", () => {
+    const twoGroups = [
+      createLine({
+        id: "two",
+        text: "Meadow cinder",
+        backgroundText: "(echo back) (low tide)",
+        backgroundTextSource: "extraction",
+      }),
+    ];
+    const shown = shownEditText(twoGroups, DEFAULT_SPLIT_CHARACTER);
+    const typed = shown.text.replace(") (", ") drift (");
+    const ranges = remapBackgroundRanges(shown.text, typed, shown.ranges, typed.indexOf("drift") + 6);
+    expect(editRows(typed, ranges)).toEqual([{ text: "Meadow cinder drift", background: "(echo back) (low tide)" }]);
+  });
+
+  it("regression: a bracket typed inside a token turns the token into text, never an unbalanced background", () => {
+    const shown = shownEditText(lines, DEFAULT_SPLIT_CHARACTER);
+    const typed = shown.text.replace("(go)", "(g(o)");
+    const ranges = remapBackgroundRanges(shown.text, typed, shown.ranges, typed.indexOf("(o)") + 1);
+    expect(editRows(typed, ranges)[0]).toEqual({ text: "Run (g(o) to the sea", background: null });
+  });
 });

@@ -1,6 +1,7 @@
 import { diffChars } from "diff";
 import {
   type BackgroundRange,
+  isOneGroup,
   NO_RANGES,
   type ShownEditText,
   shiftedRange,
@@ -103,7 +104,8 @@ function remappedRange(range: BackgroundRange, runs: readonly ChangedRegion[], n
     else growth += delta;
   }
   const moved = { ...range, start: range.start + shift, end: range.end + shift + growth };
-  return newText.slice(moved.start, moved.end).includes("\n") ? null : moved;
+  const token = newText.slice(moved.start, moved.end);
+  return !token.includes("\n") && isOneGroup(token) ? moved : null;
 }
 
 function remapBackgroundRanges(
@@ -199,7 +201,7 @@ function shownWithRewrittenRows(
       keptFrom = rowEnd;
     }
     const shownLength = rewritten ? rewritten.text.length : rowEnd - oldStart;
-    if (rewritten?.background) ranges.push(shiftedRange(rewritten.background, newStart));
+    for (const background of rewritten?.backgrounds ?? NO_RANGES) ranges.push(shiftedRange(background, newStart));
     for (; next < sorted.length && sorted[next].end <= rowEnd; next++) {
       if (!rewritten && sorted[next].start >= oldStart) ranges.push(shiftedRange(sorted[next], newStart - oldStart));
     }
