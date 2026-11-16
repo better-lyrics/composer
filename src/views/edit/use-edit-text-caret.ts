@@ -1,6 +1,8 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { shiftCaretPastRewrittenRows } from "insync/edit-text";
 import type { ShownEditText } from "insync/edit-text-shown-row";
+import type { LyricLine } from "insync/line";
+import { useProjectStore } from "@/stores/project";
 
 interface PendingCaret {
   typedText: string;
@@ -49,12 +51,18 @@ function useComposedTextareaChange(
   applyTextareaText: (textarea: HTMLTextAreaElement) => void,
 ) {
   const composingRef = useRef(false);
+  const appliedAtEndRef = useRef<{ value: string; lines: readonly LyricLine[] } | null>(null);
 
-  // Rewriting textarea.value mid-composition cancels the IME, so the text is applied once at compositionend.
+  // Rewriting textarea.value mid-composition cancels the IME, so the text is applied once at compositionend. Safari
+  // can send the final input after compositionend; that input carries the value already applied.
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const appliedAtEnd = appliedAtEndRef.current;
+      appliedAtEndRef.current = null;
       if (composingRef.current) setRawText(e.target.value, e.target.selectionEnd);
-      else applyTextareaText(e.target);
+      else if (appliedAtEnd?.value !== e.target.value || appliedAtEnd.lines !== useProjectStore.getState().lines) {
+        applyTextareaText(e.target);
+      }
     },
     [setRawText, applyTextareaText],
   );
@@ -66,7 +74,9 @@ function useComposedTextareaChange(
   const onCompositionEnd = useCallback(
     (e: React.CompositionEvent<HTMLTextAreaElement>) => {
       composingRef.current = false;
+      const value = e.currentTarget.value;
       applyTextareaText(e.currentTarget);
+      appliedAtEndRef.current = { value, lines: useProjectStore.getState().lines };
     },
     [applyTextareaText],
   );
