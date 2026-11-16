@@ -11,7 +11,7 @@ type SuggestionOutcome =
 // -- Derivations ---------------------------------------------------------------
 
 function newestFirst(history: readonly RevisionSummary[]): RevisionSummary[] {
-  return [...history].sort((a, b) => b.revNo - a.revNo);
+  return history.toSorted((a, b) => b.revNo - a.revNo);
 }
 
 function suggestionOutcome(history: readonly RevisionSummary[], keyId: string): SuggestionOutcome | null {
