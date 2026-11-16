@@ -93,6 +93,11 @@ describe("word structure commands", () => {
     ]);
   });
 
+  it("regression: a space typed at the end of a word counts once", () => {
+    useProjectStore.getState().commit(typeWordText(tideAddress, "tide "));
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("tide turns");
+  });
+
   it("regression: a split inside a block of several words leaves no space inside a syllable", () => {
     useProjectStore
       .getState()

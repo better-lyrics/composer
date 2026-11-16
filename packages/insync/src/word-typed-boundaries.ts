@@ -26,7 +26,7 @@ function withTypedBoundaries(words: readonly WordTiming[], splitChar: string): W
         ...word,
         id: index === 0 ? word.id : newWordId(),
         text: part.text,
-        sep: last ? part.sep + word.sep : part.sep,
+        sep: last ? part.sep || word.sep : part.sep,
         joinsNext: last ? !part.sep && word.joinsNext : part.joinsNext,
         begin,
         end,
