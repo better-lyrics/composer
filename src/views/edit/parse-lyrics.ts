@@ -1,3 +1,4 @@
+import { keepsTypedBackgroundGroups } from "insync/background-vocal-extraction";
 import { shownRow } from "insync/edit-text-shown-row";
 import { mainTrack } from "insync/line-track";
 import type { LyricLine } from "insync/line";
@@ -11,6 +12,7 @@ interface ParsedLine {
   text: string;
   isEmpty: boolean;
   hasBrackets: boolean;
+  keepsTypedBackgroundGroups: boolean;
   hasTiming: boolean;
   agentId: string;
   backgroundText?: string;
@@ -36,6 +38,7 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
       text: lyricLine ? lineText(lyricLine, getSplitCharacter()) : line,
       isEmpty,
       hasBrackets: /\[.*?\]/.test(line),
+      keepsTypedBackgroundGroups: lyricLine !== undefined && keepsTypedBackgroundGroups(lyricLine, getSplitCharacter()),
       hasTiming,
       agentId: (lyricLine && mainTrack(lyricLine).agentId) ?? defaultAgentId,
       backgroundText: lyricLine && backgroundText(lyricLine, getSplitCharacter()),

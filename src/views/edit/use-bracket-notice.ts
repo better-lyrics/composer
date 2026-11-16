@@ -53,6 +53,29 @@ function useBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
   }, [parsed]);
 }
 
+// Brackets typed beside a timed background stay as text: extraction would make a second background group.
+function useBackgroundBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
+  return useMemo(() => {
+    const keptLines = parsed.filter((line) => line.keepsTypedBackgroundGroups);
+    if (keptLines.length === 0) return null;
+    return {
+      id: "background-brackets",
+      icon: IconAlertTriangle,
+      tone: "warn",
+      summary: `${pluralize(keptLines.length, "line")} ${pluralWord(keptLines.length, "keeps", "keep")} (brackets) as text`,
+      rows: keptLines.map((line) => ({
+        key: line.lineId,
+        fingerprints: [],
+        title: `Line ${line.lineNumber} · ${line.text.trim()}`,
+        detail: "This line already has background vocals. Type inside their brackets to add to them.",
+        dismissedLabel: `Line ${line.lineNumber}`,
+      })),
+      dismissedFingerprints: [],
+      modalTitle: "Brackets beside background vocals",
+    };
+  }, [parsed]);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { useBracketNotice };
+export { useBackgroundBracketNotice, useBracketNotice };
