@@ -216,7 +216,8 @@ interface LineCarry {
 }
 
 // Another instance's line after an edit to its template line: the edit's content, that instance's own timing and
-// ids, and its own background and readings unless the edit rewrote them.
+// ids, and its own background and readings unless the edit rewrote them. An instance on the shared timing also takes
+// the background timing the edit moved.
 function carriedLine({ before, after, own, offset, counterpart, room, splitChar, songEnd }: LineCarry): LyricLine {
   const ownMain = mainTrack(own);
   const afterMain = mainTrack(after);
@@ -236,7 +237,10 @@ function carriedLine({ before, after, own, offset, counterpart, room, splitChar,
   const afterBackground = backgroundTrack(after);
   const ownBackground = backgroundTrack(own);
   const backgroundBase: BackgroundTrack = ownBackground ?? newBackgroundTrack(own.id);
-  const background = sameBackgroundContent(beforeBackground, afterBackground)
+  const keepsOwnBackground =
+    sameBackgroundContent(beforeBackground, afterBackground) &&
+    (offset === null || isStructurallyEqual(beforeBackground, afterBackground));
+  const background = keepsOwnBackground
     ? ownBackground
     : afterBackground &&
       withTiming(
