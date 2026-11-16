@@ -298,8 +298,8 @@ const EditPanel: React.FC = () => {
         ranges,
         anchors: instanceAnchors(docOfLines(lines)),
         songEnd,
+        runStartLines: runBurstRef.current?.lines,
       });
-
       useImportModalStore.getState().clearImportResult();
 
       if (action.kind === "noop") {

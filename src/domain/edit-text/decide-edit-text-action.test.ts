@@ -474,6 +474,33 @@ describe("breaking an instance line", () => {
     expect(action.editText.split("\n")[4]).toBe("you");
   });
 
+  it("regression: Enter after a tag typed on a linked line moves the tag to its own line and back off the other copies", () => {
+    const base = chorusLines();
+    const decide = (text: string, lines: LyricLine[]) =>
+      decideEditTextAction({
+        text,
+        defaultAgentId: "v1",
+        lines,
+        groups: [groupChorus],
+        splitCharacter: getSplitCharacter(),
+        ranges: NO_RANGES,
+        runStartLines: base,
+      });
+    const tagged = decide(`[Verse]${baseText(base)}`, base);
+    if (tagged.kind !== "apply") throw new Error(`expected apply, got ${tagged.kind}`);
+    const broken = decide(tagged.editText.replace("[Verse]", "[Verse]\n"), tagged.finalLines);
+    if (broken.kind !== "apply") throw new Error(`expected apply, got ${broken.kind}`);
+    const rows = broken.finalLines.map((line) => [lineText(line, getSplitCharacter()), line.groupId, line.detached]);
+    expect(rows).toEqual([
+      ["[Verse]", undefined, undefined],
+      ["I love you", "g1", undefined],
+      ["more than words", "g1", undefined],
+      ["verse line", undefined, undefined],
+      ["I love you", "g1", undefined],
+      ["more than words", "g1", undefined],
+    ]);
+  });
+
   it("regression: rows the break left alone keep the text as typed", () => {
     const typed = ["I love you", "more than words", "verse line ", "I love", " you", "more than words"].join("\n");
     const action = decideEditTextAction({
