@@ -63,6 +63,28 @@ describe("applyWordDeletion", () => {
     expect(lineText(syllable[0], "|")).toBe("me sha we're heart");
   });
 
+  it("regression: deleting the first syllable of a word keeps the space before the rest of it", () => {
+    const lines: LyricLine[] = [
+      lineFromFields(
+        {
+          id: "l1",
+          text: "me sha|dow we're heart",
+          agentId: "v1",
+          words: [
+            { id: "w1", text: "me", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w2", text: "sha", sep: "", begin: 0.3, end: 0.5, joinsNext: true },
+            { id: "w3", text: "dow", sep: " ", begin: 0.5, end: 0.8, joinsNext: false },
+            { id: "w4", text: "we're", sep: " ", begin: 0.8, end: 1.1, joinsNext: false },
+            { id: "w5", text: "heart", sep: "", begin: 1.1, end: 1.5, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+    ];
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 1 }], DEFAULT_SPLIT_CHARACTER);
+    expect(lineText(result[0], "|")).toBe("me dow we're heart");
+  });
+
   it("regression: deleting a timed word on a partly synced line keeps the untimed lyrics", () => {
     const lines: LyricLine[] = [
       lineFromFields(

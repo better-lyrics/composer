@@ -23,11 +23,12 @@ function isLineFullyEmpty(line: LyricLine): boolean {
 }
 
 // The word left before deleted words takes the seam the last of them had, so the track reads as if they were never there.
+// A deleted syllable that does not end its word hands no seam back, so the survivor keeps the space before the word's rest.
 function remainingWords(words: readonly WordTiming[], deleted: ReadonlySet<number>): WordTiming[] {
   const remaining: WordTiming[] = [];
   words.forEach((word, index) => {
     if (!deleted.has(index)) remaining.push(word);
-    else if (remaining.length > 0)
+    else if (remaining.length > 0 && (!word.joinsNext || remaining[remaining.length - 1].joinsNext))
       remaining[remaining.length - 1] = {
         ...remaining[remaining.length - 1],
         sep: word.sep,
