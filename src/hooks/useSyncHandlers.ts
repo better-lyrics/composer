@@ -21,7 +21,7 @@ import { mainTrack, timedSyllables, type WordTrack } from "insync/line-track";
 import { SYNC_START, syncAddressAt } from "insync/sync-address";
 import { anchorGesture } from "insync/sync-anchor-gesture";
 import type { GestureCommit, SyncGesture } from "insync/sync-commit-gesture";
-import { nextSyncableLineIndex, previousSlot } from "insync/sync-cursor";
+import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "insync/sync-cursor";
 import { isSyncComplete } from "insync/sync-slot-close";
 import { type PlacementSkip, placementSkipTarget } from "insync/sync-placement-skip";
 import type { BoundaryEdge } from "insync/word-boundary";
@@ -234,9 +234,11 @@ function useSyncHandlers({
 
   const handleStartSync = useCallback(() => {
     const { lineIndex: cursorLine, wordIndex: cursorWord } = cursor;
-    const startLine = isSyncableLine(lines[cursorLine], getSplitCharacter())
-      ? cursorLine
-      : nextSyncableLineIndex(lines, -1, getSplitCharacter());
+    const owesClosingTap = isCursorPastEnd(lines, cursor) && !isComplete;
+    const startLine =
+      owesClosingTap || isSyncableLine(lines[cursorLine], getSplitCharacter())
+        ? cursorLine
+        : nextSyncableLineIndex(lines, -1, getSplitCharacter());
     const startWord = startLine === cursorLine ? cursorWord : 0;
     // Pressing play is how a re-record actually starts, so it has to carry the
     // jump forward. Only a cursor that had to be relocated counts as a fresh
@@ -248,7 +250,7 @@ function useSyncHandlers({
       jumpedToPosition: startLine === cursorLine ? jumped : false,
     }));
     return requestPlayback();
-  }, [lines, cursor, jumped, setSyncState]);
+  }, [lines, cursor, jumped, isComplete, setSyncState]);
 
   // Re-recording seeks back and waits for the user to start playback. Edit mode
   // is the exception: there a click is a scrub for auditioning timings, so
