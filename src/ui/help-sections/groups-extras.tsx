@@ -84,13 +84,14 @@ const GroupsExtras: React.FC = () => (
     <HelpTopic title="When one instance differs">
       <p className={PROSE}>
         A split or merge on a linked line reaches every instance right away. The first time a split reaches other
-        instances, a notice says how many changed, with Undo.
+        instances, a notice says how many instances have it now, with Undo.
       </p>
       <p className={`${PROSE} mt-2`}>
         When one edit gives the same line different text in two instances, such as a pasted song whose last chorus adds
-        a word, each instance keeps the text it was given and those lines stop following the group. Breaking, joining,
-        or deleting lines inside an instance does the same, for that instance only. A notice names the line that now
-        differs, with Undo.
+        a word, the first changed instance in the song sets the group's text. Instances that got the same text stay
+        linked, and any instance given different text keeps it and stops following the group. Breaking, joining, or
+        deleting lines inside an instance makes the lines it changes stop following the group, for that instance only. A
+        notice names the line that now differs, with Undo.
       </p>
     </HelpTopic>
 
