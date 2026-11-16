@@ -150,4 +150,28 @@ describe("ttml · untimed rest after a punctuation syllable", () => {
     const [reread] = parseTtml(ttml, SPLIT).lines;
     expect([lineText(line, SPLIT), lineText(reread, SPLIT)]).toEqual(["ba|, tor", "ba|, tor"]);
   });
+
+  it("regression: a punctuation syllable split off after the last timed syllable is kept on a reread", () => {
+    const timed = lineFromFields(
+      {
+        id: "q",
+        text: "p(mi|vin",
+        agentId: "v1",
+        words: [
+          { id: "q1", text: "p(mi", sep: "", begin: 1, end: 2, joinsNext: true },
+          { id: "q2", text: "vin", sep: "", begin: 2, end: 2.5, joinsNext: true },
+        ],
+      },
+      SPLIT,
+    );
+    const line = withMainTrack(
+      timed,
+      withTrackSyllables(mainTrack(timed), [
+        ...mainTrack(timed).syllables,
+        { id: "q3", text: ")", sep: "", joinsNext: false },
+      ]),
+    );
+    const [reread] = parseTtml(exported(line), SPLIT).lines;
+    expect([lineText(line, SPLIT), lineText(reread, SPLIT)]).toEqual(["p(mi|vin|)", "p(mi|vin|)"]);
+  });
 });
