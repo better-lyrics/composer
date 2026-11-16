@@ -46,18 +46,20 @@ function agentLines(agent: Agent, position: number, ind: Indent): string[] {
 // -- Languages ----------------------------------------------------------------
 
 function translationLines(keyedLines: readonly KeyedLine[], ind: Indent): string[] {
-  const translationLanguages = new Set<string>();
+  const typeByLanguage = new Map<string, string | undefined>();
   for (const { line } of keyedLines) {
     for (const [language, track] of Object.entries(lineTranslations(line) ?? {})) {
       if (hasAlternateText(track)) {
-        translationLanguages.add(language);
+        typeByLanguage.set(language, typeByLanguage.get(language) ?? track.translationType);
       }
     }
   }
-  if (translationLanguages.size === 0) return [];
+  if (typeByLanguage.size === 0) return [];
   const parts = [`${ind(4)}<translations>`];
-  for (const language of translationLanguages) {
-    parts.push(`${ind(5)}<translation xml:lang="${escapeXmlText(language)}" type="subtitle">`);
+  for (const [language, type] of typeByLanguage) {
+    parts.push(
+      `${ind(5)}<translation xml:lang="${escapeXmlText(language)}" type="${escapeXmlAttribute(type ?? "subtitle")}">`,
+    );
     for (const { line, key } of keyedLines) {
       const track = lineTranslations(line)?.[language];
       if (track && hasAlternateText(track)) {

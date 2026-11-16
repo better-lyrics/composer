@@ -318,7 +318,7 @@ const SyncPanel: React.FC = () => {
     if (runHistoryShortcut(e, runHistory, { scope: "sync" })) return;
 
     const matched = findMatchingShortcut(e, "sync");
-    if (!matched || focusedControlOwnsKey(e)) return;
+    if (!matched || !source || focusedControlOwnsKey(e)) return;
 
     switch (matched) {
       case "sync.tap":

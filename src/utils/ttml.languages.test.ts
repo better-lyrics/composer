@@ -102,6 +102,20 @@ describe("TTML alternate-language sidecars", () => {
     expect(ttml).toMatch(/>hi<\/span> <span ttm:role="x-bg">/);
   });
 
+  it("regression: keeps an imported translation's type on export", () => {
+    const source = generateTTML({
+      metadata,
+      agents,
+      lines: [legacyLine(languageLine())],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    }).replace('type="subtitle"', 'type="replacement"');
+
+    const imported = parseLyricsFile("song.ttml", source).lines;
+    const ttml = generateTTML({ metadata, agents, lines: imported, splitChar: DEFAULT_SPLIT_CHARACTER });
+
+    expect(ttml).toContain('<translation xml:lang="en" type="replacement">');
+  });
+
   it("places alternate background text first when it begins before the foreground", () => {
     const line = languageLine();
     line.backgroundWords = [

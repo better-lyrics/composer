@@ -42,6 +42,8 @@ type BackgroundLanguage = Omit<TrackLanguage, "text"> & { text?: string };
 
 interface LineLanguage extends LanguageContentMeta {
   language: string;
+  /** The `type` a TTML translation was read with, written back on export. */
+  translationType?: string;
   main: TrackLanguage;
   bg?: BackgroundLanguage;
 }

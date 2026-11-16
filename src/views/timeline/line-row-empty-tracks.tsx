@@ -153,7 +153,7 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     data-line-index={lineIndex}
     data-track="bg"
     className={cn(
-      "flex items-center px-2 text-xs font-mono truncate border-t border-(--divider) cursor-pointer",
+      "flex items-center text-xs font-mono border-t border-(--divider) cursor-pointer",
       isOver
         ? "bg-composer-accent/20 text-composer-text"
         : "text-composer-text-muted/50 bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
@@ -162,7 +162,9 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
-    {truncateLabel(stripSplitCharacter(backgroundText(line, getSplitCharacter()) ?? ""), BG_LABEL_MAX_CHARS) || "BG"}
+    <span className="sticky left-[48px] max-w-[calc(100%-48px)] px-3 truncate">
+      {truncateLabel(stripSplitCharacter(backgroundText(line, getSplitCharacter()) ?? ""), BG_LABEL_MAX_CHARS) || "BG"}
+    </span>
   </div>
 );
 
