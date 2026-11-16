@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { isOwnLyric } from "@/domain/unison/ownership";
 import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys";
+import { fetchUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import { isUnisonNotFound } from "@/lib/unison/client";
-import { fetchLyric, fetchMinePages } from "@/lib/unison/endpoints";
+import { fetchMinePages } from "@/lib/unison/endpoints";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -29,11 +30,11 @@ const NO_IDS: ReadonlySet<string> = new Set();
 // -- Fetching ------------------------------------------------------------------
 
 async function lookUpLinked(
+  queryClient: QueryClient,
   ids: readonly string[],
   keyId: string | null,
-  signal: AbortSignal,
 ): Promise<Map<string, LinkedLookup>> {
-  const results = await Promise.allSettled(ids.map((id) => fetchLyric(Number(id), { signal })));
+  const results = await Promise.allSettled(ids.map((id) => fetchUnisonLyric(queryClient, Number(id))));
   return new Map(
     ids.map((id, index): [string, LinkedLookup] => {
       const result = results[index];
@@ -48,6 +49,7 @@ function idsWhere(lookups: ReadonlyMap<string, LinkedLookup>, wanted: LinkedLook
 }
 
 async function fetchMineForLibrary(
+  queryClient: QueryClient,
   linkedIds: readonly string[],
   loadAll: boolean,
   everyPage: boolean,
@@ -55,32 +57,23 @@ async function fetchMineForLibrary(
   keyId: string | null,
 ): Promise<LibraryUnisonLyrics> {
   const missing = new Set(linkedIds);
-  const lookups = new Map<string, LinkedLookup>();
-  let lookedUp = false;
   const { items, complete } = await fetchMinePages(signal, {
     maxPages: everyPage ? Number.POSITIVE_INFINITY : undefined,
-    stopAfter: async (page) => {
+    stopAfter: (page) => {
       for (const item of page) missing.delete(String(item.id));
-      if (!lookedUp && missing.size > 0) {
-        lookedUp = true;
-        for (const [id, found] of await lookUpLinked([...missing], keyId, signal)) {
-          lookups.set(id, found);
-          if (found === "suggestion") missing.delete(id);
-        }
-      }
       return missing.size === 0 && !loadAll;
     },
   });
   for (const item of items) missing.delete(String(item.id));
-  if (complete) {
-    const unchecked = [...missing].filter((id) => !lookups.has(id));
-    for (const [id, found] of await lookUpLinked(unchecked, keyId, signal)) lookups.set(id, found);
-  }
+  const lookups = await lookUpLinked(queryClient, [...missing], keyId);
+  const suggestionIds = idsWhere(lookups, "suggestion");
   return {
     items,
     complete,
-    suggestionIds: idsWhere(lookups, "suggestion"),
-    unresolvedIds: complete ? new Set([...missing].filter((id) => lookups.get(id) !== "removed")) : NO_IDS,
+    suggestionIds,
+    unresolvedIds: complete
+      ? new Set([...missing].filter((id) => !suggestionIds.has(id) && lookups.get(id) !== "removed"))
+      : NO_IDS,
   };
 }
 
@@ -92,9 +85,10 @@ function useLibraryUnisonLyrics(
   loadAll: boolean,
   everyPage: boolean,
 ): LibraryUnisonState | null {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: unisonQueryKeys.mineForLibrary(keyId ?? "", linkedIds, loadAll, everyPage),
-    queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, loadAll, everyPage, signal, keyId),
+    queryFn: ({ signal }) => fetchMineForLibrary(queryClient, linkedIds, loadAll, everyPage, signal, keyId),
     staleTime: UNISON_STALE_TIME_MS,
     // Another account's list must never stand in for this one.
     placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === keyId ? previous : undefined),

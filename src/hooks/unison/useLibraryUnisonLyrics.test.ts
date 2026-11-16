@@ -1,3 +1,4 @@
+import { QueryClient } from "@tanstack/react-query";
 import { fetchMineForLibrary } from "@/hooks/unison/useLibraryUnisonLyrics";
 import type { UnisonLyric, UnisonMineItem } from "@/lib/unison/api-types";
 import { clearUnisonSession, saveUnisonSession } from "@/lib/unison/session";
@@ -32,9 +33,9 @@ function mineItem(id: number): UnisonMineItem {
   };
 }
 
-function someoneElsesLyric(): UnisonLyric {
+function lyricBy(id: number, keyId: string): UnisonLyric {
   return {
-    id: SUGGESTION_ID,
+    id,
     videoId: "pAperLantrn",
     song: "Paper Lanterns",
     artist: "Hollow Coast",
@@ -48,7 +49,7 @@ function someoneElsesLyric(): UnisonLyric {
     hidden: false,
     userVote: null,
     submitter: {
-      keyId: OWNER_KEY,
+      keyId,
       displayName: "Mirelle",
       tier: null,
       level: 4,
@@ -62,18 +63,27 @@ function someoneElsesLyric(): UnisonLyric {
   };
 }
 
-function stubUnison(): { minePages: number; lyricReads: number } {
-  const calls = { minePages: 0, lyricReads: 0 };
+function stubUnison(
+  pages: readonly (readonly number[])[],
+  lastPage = false,
+): { minePages: number; lyricReads: number[] } {
+  const calls = { minePages: 0, lyricReads: [] as number[] };
   vi.stubGlobal("fetch", async (url: string) => {
     const { pathname } = new URL(url);
     if (pathname.endsWith("/lyrics/mine")) {
       calls.minePages += 1;
-      const items = calls.minePages === 1 ? [mineItem(OWN_ID)] : [mineItem(1000 + calls.minePages)];
-      return Response.json({ success: true, data: items, nextCursor: `page-${calls.minePages + 1}` });
+      const ids = pages[calls.minePages - 1] ?? [1000 + calls.minePages];
+      const ended = lastPage && calls.minePages >= pages.length;
+      return Response.json({
+        success: true,
+        data: ids.map(mineItem),
+        nextCursor: ended ? null : `page-${calls.minePages + 1}`,
+      });
     }
-    if (pathname.endsWith(`/lyrics/${SUGGESTION_ID}`)) {
-      calls.lyricReads += 1;
-      return Response.json({ success: true, data: someoneElsesLyric() });
+    const id = Number(pathname.split("/").at(-1));
+    if (id === SUGGESTION_ID || id === OWN_ID) {
+      calls.lyricReads.push(id);
+      return Response.json({ success: true, data: lyricBy(id, id === OWN_ID ? OWN_KEY : OWNER_KEY) });
     }
     throw new Error(`Unexpected request in the library reader test: ${pathname}`);
   });
@@ -98,9 +108,10 @@ describe("fetchMineForLibrary", () => {
     clearUnisonSession();
   });
 
-  it("stops after the first page when the only other link is someone else's lyric", async () => {
-    const calls = stubUnison();
+  it("reads someone else's lyric once paging stops at the cap", async () => {
+    const calls = stubUnison([[OWN_ID]]);
     const result = await fetchMineForLibrary(
+      new QueryClient(),
       [String(OWN_ID), String(SUGGESTION_ID)],
       false,
       false,
@@ -108,7 +119,23 @@ describe("fetchMineForLibrary", () => {
       OWN_KEY,
     );
 
-    expect(calls).toEqual({ minePages: 1, lyricReads: 1 });
+    expect(result.complete).toBe(false);
+    expect(calls.lyricReads).toEqual([SUGGESTION_ID]);
+    expect([...result.suggestionIds]).toEqual([String(SUGGESTION_ID)]);
+  });
+
+  it("regression: never reads an own lyric by id when a later page lists it", async () => {
+    const calls = stubUnison([[1001], [OWN_ID]], true);
+    const result = await fetchMineForLibrary(
+      new QueryClient(),
+      [String(OWN_ID), String(SUGGESTION_ID)],
+      false,
+      false,
+      new AbortController().signal,
+      OWN_KEY,
+    );
+
+    expect(calls.lyricReads).toEqual([SUGGESTION_ID]);
     expect([...result.suggestionIds]).toEqual([String(SUGGESTION_ID)]);
   });
 });
