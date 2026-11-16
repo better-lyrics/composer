@@ -11,6 +11,8 @@ import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { settingEntry } from "@/stores/settings-catalog";
+import { useUIStore } from "@/stores/ui";
 import type { StepKeyPlan } from "insync/timing-step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
@@ -30,8 +32,20 @@ function refusalMessage(refusal: StepRefusal): string {
     const word = refusal.previousWord.trim();
     return `This time is before “${word}” ends. Click “${word}” to retime it.`;
   }
+  if (refusal.reason === "minDuration") {
+    const previous = refusal.previousWord.trim();
+    const remedy = `Retime “${previous}”, or lower ${settingEntry("minWordDuration").label}.`;
+    if (refusal.short === "previous") return `“${previous}” would be shorter than ${refusal.minMs} ms. ${remedy}`;
+    return `“${refusal.word.trim()}” needs at least ${refusal.minMs} ms, and “${previous}” is in the way. ${remedy}`;
+  }
   if (refusal.reason === "songStart") return "This word can't start before the song does.";
   return "There is no room for the words after this one before the song ends.";
+}
+
+function refusalAction(refusal: StepRefusal) {
+  if (refusal.reason !== "minDuration") return undefined;
+  const openSetting = () => useUIStore.getState().openSettings({ target: { setting: "minWordDuration" } });
+  return { label: "Open setting", onClick: openSetting };
 }
 
 // The toast's Undo stays only while the press is still the latest step, so it never undoes a later edit.
@@ -106,7 +120,7 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
   project.commit(command);
   if (!outcome) return;
   if (outcome.kind === "refused") {
-    toast(refusalMessage(outcome.refusal));
+    toast(refusalMessage(outcome.refusal), { action: refusalAction(outcome.refusal) });
     timeline.setSelectedWords([cursor]);
     return;
   }
