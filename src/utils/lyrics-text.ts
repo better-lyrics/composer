@@ -6,9 +6,9 @@ import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { joinedRowRun, linesByText } from "@/utils/lyrics-text-joined-rows";
+import { joinedRowRun, startSearchesByText } from "@/utils/lyrics-text-joined-rows";
 import { getSplitCharacter } from "@/utils/split-character";
-import { nearestAccepted } from "@/utils/nearest-accepted";
+import { type NearestAccepted, nearestAcceptedSearch } from "@/utils/nearest-accepted";
 import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 import { memoBySplitCharacter } from "insync/memo-by-identity";
 
@@ -135,12 +135,12 @@ function textToLyricLines(
   // Rows joined in Edit spell the text of adjacent lines with no line of their own, so they keep those lines' timing.
   if (newLines.length < existingLines.length) {
     const lineTexts = existingTrackKeys.map((keys) => keys.text.trim());
-    const byText = linesByText(lineTexts);
     const isFree = (lineIndex: number) => !usedExistingIds.has(existingLines[lineIndex].id);
+    const startSearches = startSearchesByText(lineTexts, isFree);
     const joinPlacement = rowPlacement(claimed, existingIndex, joinedCounts);
     cleanedTexts.forEach((row, index) => {
       if (claimed[index] || textToCandidates.has(cleanedKeys[index])) return;
-      const run = joinedRowRun(row, lineTexts, byText, isFree, joinPlacement(index));
+      const run = joinedRowRun(row, lineTexts, startSearches, isFree, joinPlacement(index));
       const joined = run && joinedLines(existingLines.slice(run.start, run.end + 1), run.seams);
       if (!run || !joined) return;
       claim(index, joined);
@@ -150,14 +150,18 @@ function textToLyricLines(
   }
 
   const expectedIndex = rowPlacement(claimed, existingIndex, joinedCounts);
-  const freeLine = (lineIndex: number) => {
-    const line = existingLines[lineIndex];
-    return usedExistingIds.has(line.id) ? null : line;
-  };
+  const isUsed = (lineIndex: number) => usedExistingIds.has(existingLines[lineIndex].id);
+  const freeLine = (lineIndex: number) => (isUsed(lineIndex) ? null : existingLines[lineIndex]);
+  const candidateSearches = new Map<string, NearestAccepted>();
   cleanedKeys.forEach((key, index) => {
     const candidates = textToCandidates.get(key);
     if (claimed[index] || !candidates) return;
-    const nearest = nearestAccepted(candidates, expectedIndex(index), freeLine);
+    let search = candidateSearches.get(key);
+    if (!search) {
+      search = nearestAcceptedSearch(candidates, isUsed);
+      candidateSearches.set(key, search);
+    }
+    const nearest = search(expectedIndex(index), freeLine);
     if (nearest) claim(index, nearest.value);
   });
 

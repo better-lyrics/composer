@@ -1,4 +1,4 @@
-import { nearestAccepted } from "@/utils/nearest-accepted";
+import { type NearestAccepted, nearestAcceptedSearch } from "@/utils/nearest-accepted";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -45,8 +45,12 @@ function runFrom(
 
 // -- Functions -----------------------------------------------------------------
 
-// Each non-empty line text and the lines holding it, so a row looks up its starts instead of scanning every line.
-function linesByText(lineTexts: readonly string[]): Map<string, number[]> {
+// A search per non-empty line text over the free lines holding it, so a row looks up the lines it can start with
+// instead of scanning every line, and lines already used are skipped for every later row.
+function startSearchesByText(
+  lineTexts: readonly string[],
+  isFree: (index: number) => boolean,
+): Map<string, NearestAccepted> {
   const byText = new Map<string, number[]>();
   lineTexts.forEach((text, index) => {
     if (!text) return;
@@ -54,7 +58,8 @@ function linesByText(lineTexts: readonly string[]): Map<string, number[]> {
     if (lines) lines.push(index);
     else byText.set(text, [index]);
   });
-  return byText;
+  const isUsed = (index: number) => !isFree(index);
+  return new Map([...byText].map(([text, lines]) => [text, nearestAcceptedSearch(lines, isUsed)]));
 }
 
 // Two or more adjacent free lines whose texts spell the row, the run starting nearest `expected` winning and the
@@ -62,15 +67,15 @@ function linesByText(lineTexts: readonly string[]): Map<string, number[]> {
 function joinedRowRun(
   row: string,
   lineTexts: readonly string[],
-  byText: ReadonlyMap<string, readonly number[]>,
+  startSearches: ReadonlyMap<string, NearestAccepted>,
   isFree: (index: number) => boolean,
   expected: number,
 ): JoinedRun | null {
   let nearest: JoinedRun | null = null;
   const distance = (run: JoinedRun) => Math.abs(run.start - expected);
   for (let length = 1; length <= row.length; length++) {
-    const starts = byText.get(row.slice(0, length));
-    const found = starts && nearestAccepted(starts, expected, (start) => runFrom(start, row, lineTexts, isFree));
+    const search = startSearches.get(row.slice(0, length));
+    const found = search?.(expected, (start) => runFrom(start, row, lineTexts, isFree));
     if (!found) continue;
     const run = found.value;
     if (
@@ -85,4 +90,4 @@ function joinedRowRun(
 
 // -- Exports -------------------------------------------------------------------
 
-export { joinedRowRun, linesByText };
+export { joinedRowRun, startSearchesByText };
