@@ -6,7 +6,7 @@ import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { joinedRowRun } from "@/utils/lyrics-text-joined-rows";
+import { joinedRowRun, linesByText } from "@/utils/lyrics-text-joined-rows";
 import { getSplitCharacter } from "@/utils/split-character";
 import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 import { memoBySplitCharacter } from "insync/memo-by-identity";
@@ -125,10 +125,11 @@ function textToLyricLines(
   // Rows joined in Edit spell the text of adjacent lines with no line of their own, so they keep those lines' timing.
   if (newLines.length < existingLines.length) {
     const lineTexts = existingTrackKeys.map((keys) => keys.text.trim());
+    const byText = linesByText(lineTexts);
     const isFree = (lineIndex: number) => !usedExistingIds.has(existingLines[lineIndex].id);
     cleanedTexts.forEach((row, index) => {
       if (claimed[index] || textToCandidates.has(cleanedKeys[index])) return;
-      const run = joinedRowRun(row, lineTexts, isFree, expectedIndex(index));
+      const run = joinedRowRun(row, lineTexts, byText, isFree, expectedIndex(index));
       const joined = run && joinedLines(existingLines.slice(run.start, run.end + 1), run.seams);
       if (!run || !joined) return;
       claim(index, joined);

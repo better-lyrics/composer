@@ -24,18 +24,38 @@ function joinSeams(texts: readonly string[], row: string): string[] | null {
   return at === row.length ? seams : null;
 }
 
+// The lines a row can start with, in line order: those whose text is a prefix of the row.
+function startsOf(row: string, linesByText: ReadonlyMap<string, readonly number[]>): number[] {
+  const starts: number[] = [];
+  for (let length = 1; length <= row.length; length++) starts.push(...(linesByText.get(row.slice(0, length)) ?? []));
+  return starts.toSorted((a, b) => a - b);
+}
+
 // -- Functions -----------------------------------------------------------------
+
+// Each non-empty line text and the lines holding it, so a row looks up its starts instead of scanning every line.
+function linesByText(lineTexts: readonly string[]): Map<string, number[]> {
+  const byText = new Map<string, number[]>();
+  lineTexts.forEach((text, index) => {
+    if (!text) return;
+    const lines = byText.get(text);
+    if (lines) lines.push(index);
+    else byText.set(text, [index]);
+  });
+  return byText;
+}
 
 // Two or more adjacent free lines whose texts spell the row, the run starting nearest `expected` winning.
 function joinedRowRun(
   row: string,
   lineTexts: readonly string[],
+  byText: ReadonlyMap<string, readonly number[]>,
   isFree: (index: number) => boolean,
   expected: number,
 ): JoinedRun | null {
   let nearest: JoinedRun | null = null;
-  for (let start = 0; start < lineTexts.length; start++) {
-    if (!isFree(start) || !lineTexts[start] || !row.startsWith(lineTexts[start])) continue;
+  for (const start of startsOf(row, byText)) {
+    if (!isFree(start)) continue;
     let spelled = lineTexts[start].length;
     for (let end = start + 1; end < lineTexts.length && isFree(end) && spelled < row.length; end++) {
       spelled += lineTexts[end].length;
@@ -50,4 +70,4 @@ function joinedRowRun(
 
 // -- Exports -------------------------------------------------------------------
 
-export { joinedRowRun };
+export { joinedRowRun, linesByText };
