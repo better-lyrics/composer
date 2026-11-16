@@ -113,24 +113,26 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         : splitIntoWords(text, getSplitCharacter())),
     [displayWordTexts, text, words, untimedWords, splitCharacter],
   );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
-  const bgWordTexts = useMemo(
-    () =>
-      displayBackgroundWordTexts ??
-      (backgroundWords?.length
-        ? [...backgroundWords, ...(untimedBackgroundWords ?? [])].map((w) => w.text + w.sep)
-        : (displayBackgroundText ?? backgroundText)
-          ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "", getSplitCharacter())
-          : []),
-    [
-      backgroundText,
-      backgroundWords,
-      untimedBackgroundWords,
-      displayBackgroundText,
-      displayBackgroundWordTexts,
-      splitCharacter,
-    ],
-  );
+  const drawsLine = granularity === "line" || lineSynced;
+  const bgWordTexts = useMemo(() => {
+    if (displayBackgroundWordTexts) return displayBackgroundWordTexts;
+    if (backgroundWords?.length) {
+      return [...backgroundWords, ...(untimedBackgroundWords ?? [])].map((w) => w.text + w.sep);
+    }
+    const shownBackground = displayBackgroundText ?? backgroundText;
+    if (!shownBackground) return [];
+    return drawsLine
+      ? [withoutSplitCharacter(shownBackground, splitCharacter)]
+      : splitIntoWords(shownBackground, getSplitCharacter());
+  }, [
+    backgroundText,
+    backgroundWords,
+    untimedBackgroundWords,
+    displayBackgroundText,
+    displayBackgroundWordTexts,
+    drawsLine,
+    splitCharacter,
+  ]);
 
   const renderLineContent = () => {
     const renderedText = withoutSplitCharacter(displayText ?? text, splitCharacter);
@@ -298,7 +300,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       </span>
       <span className="flex flex-1 min-w-0 items-start gap-4 pt-2.5 pb-3 px-5 border-b border-(--divider) transition-colors group-hover/row:bg-(--layer-1)">
         <div className="flex flex-col flex-1 min-w-0 gap-2 text-[17px] font-medium leading-6">
-          {granularity === "line" || lineSynced ? (
+          {drawsLine ? (
             <div className="flex items-center justify-between gap-3">
               {renderLineContent()}
               {lineBegin !== undefined && onNudgeLine && onSetLineTime && (

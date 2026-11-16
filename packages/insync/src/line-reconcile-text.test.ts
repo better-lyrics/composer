@@ -4,6 +4,7 @@ import type { LyricLine } from "./line";
 import { reconcileMatchedTiming } from "./line-reconcile-text";
 import { backgroundText, lineText } from "./line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "./line-track";
+import { withTrackText } from "./line-track-writes";
 import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 const timedSpans = (line: LyricLine) =>
@@ -85,7 +86,7 @@ describe("reconcileMatchedTiming", () => {
     );
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra", DEFAULT_SPLIT_CHARACTER);
     expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("Dengar|lah|extra");
-    expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Dengar", "lah", "extra"]);
+    expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Dengar", "lah"]);
     expect(timedSyllables(mainTrack(result))[0]).toEqual({
       text: "Dengar",
       sep: "",
@@ -93,7 +94,7 @@ describe("reconcileMatchedTiming", () => {
       end: 0.5,
       joinsNext: true,
     });
-    expect(timedSyllables(mainTrack(result))[2].end).toBe(1);
+    expect(timedSyllables(mainTrack(result))[1].end).toBe(1);
   });
 
   it("keeps begin/end on a line-synced line whose text content changed", () => {
@@ -320,14 +321,90 @@ describe("reconcileMatchedTiming · regressions", () => {
       { text: "Wish", sep: " ", begin: 1, end: 2, joinsNext: false },
       { text: "I", sep: " ", begin: 2, end: 3, joinsNext: false },
     ]);
-    expect(timedSyllables(mainTrack(result)).map((w) => w.text + w.sep)).toEqual([
-      "Wish ",
-      "I ",
-      "could ",
-      "get ",
-      "it",
+    expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Wish", "I", "could"]);
+    expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("Wish I could get it");
+    expect(timedSyllables(mainTrack(result))[2].end).toBe(4);
+  });
+
+  describe("regression: a repeated word typed at the end stays an untimed tail", () => {
+    const spans = (words: readonly { text: string; begin: number; end: number }[]) =>
+      words.map((word) => [word.text, word.begin, word.end]);
+    const cases = [
+      {
+        text: "la la",
+        typed: "la la la",
+        words: [
+          { id: "w1", text: "la", sep: " ", begin: 1, end: 2, joinsNext: false },
+          { id: "w2", text: "la", sep: "", begin: 2, end: 3, joinsNext: false },
+        ],
+        timed: [
+          ["la", 1, 2],
+          ["la", 2, 3],
+        ],
+      },
+      {
+        text: "morning light",
+        typed: "morning light light",
+        words: [
+          { id: "w1", text: "morning", sep: " ", begin: 5, end: 6, joinsNext: false },
+          { id: "w2", text: "light", sep: "", begin: 6, end: 7, joinsNext: false },
+        ],
+        timed: [
+          ["morning", 5, 6],
+          ["light", 6, 7],
+        ],
+      },
+      {
+        text: "la la far",
+        typed: "la la la far",
+        words: [
+          { id: "w1", text: "la", sep: " ", begin: 1, end: 2, joinsNext: false },
+          { id: "w2", text: "la", sep: " ", begin: 2, end: 3, joinsNext: false },
+        ],
+        timed: [
+          ["la", 1, 2],
+          ["la", 2, 3],
+        ],
+      },
+    ];
+
+    it.each(cases)("on the main track: $text to $typed", ({ text, typed, words, timed }) => {
+      const line = lineFromFields({ id: "r", text, agentId: "v1", words }, DEFAULT_SPLIT_CHARACTER);
+      const result = reconcileMatchedTiming(line, typed, DEFAULT_SPLIT_CHARACTER);
+      expect(timedSpans(result)).toEqual(timed);
+      expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe(typed);
+    });
+
+    it.each(cases)("on the background track: $text to $typed", ({ text, typed, words, timed }) => {
+      const line = lineFromFields(
+        { id: "r", text: "steady rain", agentId: "v1", backgroundText: text, backgroundWords: words },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const before = backgroundTrack(line);
+      if (!before) throw new Error("no background");
+      expect(spans(timedSyllables(withTrackText(before, typed, DEFAULT_SPLIT_CHARACTER)))).toEqual(timed);
+    });
+  });
+
+  it("regression: words typed after the last word of a fully timed line stay untimed, never zero length", () => {
+    const line = lineFromFields(
+      {
+        id: "L2",
+        text: "morning light",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "morning", sep: " ", begin: 5, end: 6, joinsNext: false },
+          { id: "w2", text: "light", sep: "", begin: 6, end: 7, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = reconcileMatchedTiming(line, "morning light (glo|wing sky)", DEFAULT_SPLIT_CHARACTER);
+    expect(timedSpans(result)).toEqual([
+      ["morning", 5, 6],
+      ["light", 6, 7],
     ]);
-    expect(timedSyllables(mainTrack(result))[4].end).toBe(4);
+    expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("morning light (glo|wing sky)");
   });
 
   it("regression: deleting a word from a word-synced line keeps the remaining timing exactly", () => {
