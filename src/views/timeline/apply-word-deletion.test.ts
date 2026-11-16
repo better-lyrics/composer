@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import { pasteLines } from "insync/commands/instance-rows";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
+import { bgBounds } from "insync/line-bounds";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { applyWordDeletion, type DeletionSelection } from "insync/word-apply-word-deletion";
@@ -276,6 +277,26 @@ describe("applyWordDeletion", () => {
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }], DEFAULT_SPLIT_CHARACTER);
     expect(roleWords(result[0], "bg")).toBeUndefined();
     expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("with me");
+  });
+
+  it("regression: deleting the only timed bg word of a line-synced line times the background left behind", () => {
+    const lines: LyricLine[] = [
+      lineFromFields(
+        {
+          id: "l1",
+          text: "lishi nu",
+          agentId: "v1",
+          begin: 4,
+          end: 6,
+          backgroundText: "fennu vin|ta",
+          backgroundWords: [{ id: "w21", text: "fennu", sep: " ", begin: 4.5, end: 4.8, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+    ];
+    const [line] = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }], DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(line, DEFAULT_SPLIT_CHARACTER)).toBe("vin|ta");
+    expect(bgBounds(line)).not.toBeNull();
   });
 
   it("does not remove the line when only some bg words are removed", () => {

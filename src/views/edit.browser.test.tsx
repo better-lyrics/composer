@@ -383,9 +383,10 @@ describe("regressions: hand edits keep sync", () => {
       .poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter()))
       .toBe("ooh ah yeah");
     const bg = timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]));
-    expect(bg.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah ", "yeah"]);
+    // A word added after the last timed background word stays untimed, as in main text, instead of zero length.
+    expect(bg.map((w) => w.text)).toEqual(["ooh", "ah"]);
     expect(bg[0]).toEqual({ text: "ooh", sep: " ", begin: 0.5, end: 1, joinsNext: false });
-    expect(bg[2].end).toBe(1.5);
+    expect(bg[1].end).toBe(1.5);
   });
 });
 

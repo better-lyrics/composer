@@ -72,12 +72,13 @@ describe("remapWordTextsPreservingTiming", () => {
     ]);
   });
 
-  it("gives an inserted word with no gap a zero-length slot and leaves the left neighbour intact", () => {
+  // A typed word is never zero length: with no gap it shares the next word's slot by letters.
+  it("regression: an inserted word with no gap shares the next word's slot and leaves the left neighbour intact", () => {
     const result = remapWordTextsPreservingTiming(flush, "I really can't wait", DEFAULT_SPLIT_CHARACTER);
     expect(timings(result)).toEqual([
       ["I ", 1, 2],
-      ["really ", 2, 2],
-      ["can't ", 2, 3],
+      ["really ", 2, 2 + 6 / 11],
+      ["can't ", 2 + 6 / 11, 3],
       ["wait", 3, 4],
     ]);
   });
@@ -92,11 +93,12 @@ describe("remapWordTextsPreservingTiming", () => {
     ]);
   });
 
-  it("gives a word prepended with no gap before it a zero-length slot at the first word's begin", () => {
+  // A typed word is never zero length: a prepended word shares the first word's slot by letters.
+  it("regression: a word prepended with no gap before it shares the first word's slot", () => {
     const result = remapWordTextsPreservingTiming(flush, "Oh I can't wait", DEFAULT_SPLIT_CHARACTER);
     expect(timings(result)).toEqual([
-      ["Oh ", 1, 1],
-      ["I ", 1, 2],
+      ["Oh ", 1, 1 + 2 / 3],
+      ["I ", 1 + 2 / 3, 2],
       ["can't ", 2, 3],
       ["wait", 3, 4],
     ]);
@@ -147,30 +149,43 @@ describe("remapWordTextsPreservingTiming", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a word inserted into a gap shorter than a millisecond shares the next word's slot", () => {
+      const words: WordTiming[] = [
+        { id: "w40", text: "o", sep: " ", begin: 3.283, end: 3.333, joinsNext: false },
+        { id: "w41", text: "ta", sep: "", begin: 3.33325, end: 3.45075, joinsNext: false },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "o ka ta", DEFAULT_SPLIT_CHARACTER);
+      expect(result[1].end - result[1].begin).toBeGreaterThan(0.001);
+      expect(result[1].end).toBe(result[2].begin);
+      expect(result[2].end).toBe(3.45075);
+    });
+
     it("regression: words inserted on both sides of one word do not overlap it", () => {
       const result = remapWordTextsPreservingTiming(
         [{ id: "w11", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
         "oh hello there",
         DEFAULT_SPLIT_CHARACTER,
       );
+      // The prepended word shares the next word's slot; the appended one stays for the untimed tail.
       expect(timings(result)).toEqual([
-        ["oh ", 0, 0],
-        ["hello ", 0, 1],
+        ["oh ", 0, 2 / 7],
+        ["hello ", 2 / 7, 1],
         ["there", 1, 1],
       ]);
     });
 
-    it("regression: an insert after a prepended run leaves every original word's timing intact", () => {
+    it("regression: an insert after a prepended run keeps every original word's end", () => {
       const words: WordTiming[] = [
         { id: "w12", text: "a", sep: " ", begin: 0, end: 1, joinsNext: false },
         { id: "w13", text: "b", sep: "", begin: 1, end: 2, joinsNext: false },
       ];
       const result = remapWordTextsPreservingTiming(words, "x a y b", DEFAULT_SPLIT_CHARACTER);
+      // Each inserted word shares the slot of the word after it, the original words keep their ends.
       expect(timings(result)).toEqual([
-        ["x ", 0, 0],
-        ["a ", 0, 1],
-        ["y ", 1, 1],
-        ["b", 1, 2],
+        ["x ", 0, 0.5],
+        ["a ", 0.5, 1],
+        ["y ", 1, 1.5],
+        ["b", 1.5, 2],
       ]);
     });
 
@@ -259,11 +274,8 @@ describe("remapWordTextsPreservingTiming", () => {
   });
 
   describe("invariants", () => {
-    for (const [position, withInsert] of [
-      ["start", "Oh I can't wait"],
-      ["middle", "I really can't wait"],
-      ["end", "I can't wait now"],
-    ]) {
+    // A word inserted with no gap takes a share of the next word's slot, so only an appended word leaves no trace.
+    for (const [position, withInsert] of [["end", "I can't wait now"]]) {
       it(`restores every word's timing exactly after inserting then deleting a word at the ${position}`, () => {
         const inserted = remapWordTextsPreservingTiming(flush, withInsert, DEFAULT_SPLIT_CHARACTER);
         expect(remapWordTextsPreservingTiming(inserted, "I can't wait", DEFAULT_SPLIT_CHARACTER)).toEqual(flush);

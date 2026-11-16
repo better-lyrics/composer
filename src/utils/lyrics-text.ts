@@ -113,6 +113,21 @@ function textToLyricLines(
     usedExistingIds.add(line.id);
   };
 
+  // An edit changes one contiguous range of rows, so the unchanged rows before and after it keep their own lines by
+  // offset before any row can take a line by text, even when other rows repeat their text.
+  const isUnchanged = (row: number, lineIndex: number) =>
+    cleanedKeys[row] === existingKeys[lineIndex] &&
+    (!shownBackgrounds ||
+      (shownBackgrounds[row] || null) === (backgroundText(existingLines[lineIndex], splitChar)?.trim() || null));
+  const shorter = Math.min(newLines.length, existingLines.length);
+  let unchangedBefore = 0;
+  for (; unchangedBefore < shorter && isUnchanged(unchangedBefore, unchangedBefore); unchangedBefore++)
+    claim(unchangedBefore, existingLines[unchangedBefore]);
+  for (let fromEnd = 1; unchangedBefore + fromEnd <= shorter; fromEnd++) {
+    if (!isUnchanged(newLines.length - fromEnd, existingLines.length - fromEnd)) break;
+    claim(newLines.length - fromEnd, existingLines[existingLines.length - fromEnd]);
+  }
+
   // Rows still showing their own line's text keep that line before any row can
   // match it by text, so fixing a line into a later duplicate cannot steal it.
   if (allowPositionMatch) {

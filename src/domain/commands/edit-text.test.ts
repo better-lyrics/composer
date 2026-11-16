@@ -72,6 +72,35 @@ describe("editBackgroundText", () => {
 
     expect(bgBounds(useProjectStore.getState().lines[0])).toEqual({ begin: 9.9, end: 10 });
   });
+
+  it("regression: a word added after the last timed background word stays untimed, as in main text", () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l1",
+          text: "Paper boats",
+          words: [
+            { text: "Paper", sep: " ", begin: 1, end: 2 },
+            { text: "boats", begin: 2, end: 3 },
+          ],
+          backgroundText: "mel ren",
+          backgroundWords: [
+            { text: "mel", sep: " ", begin: 1.5, end: 2 },
+            { text: "ren", begin: 2, end: 2.5 },
+          ],
+        }),
+      ],
+    });
+
+    useProjectStore.getState().commit(editBackgroundText("l1", "mel ren ka"));
+
+    const [line] = useProjectStore.getState().lines;
+    expect(backgroundText(line, getSplitCharacter())).toBe("mel ren ka");
+    expect(timedSyllables(backgroundTrack(line)).map((word) => [word.text, word.begin, word.end])).toEqual([
+      ["mel", 1.5, 2],
+      ["ren", 2, 2.5],
+    ]);
+  });
 });
 
 describe("typing in one instance of a group", () => {

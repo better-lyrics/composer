@@ -89,6 +89,15 @@ describe("a load never drops the untimed rest", () => {
       expect(loaded("cafe\u0301 noir", words("caf\u00e9", "noir"))).toEqual(["caf\u00e9", "noir"]);
     });
 
+    it("regression: a trailing split mark with nothing after it adds no syllable and no join", () => {
+      for (const text of ["word|", "word|  "]) {
+        const line = lineFromFields({ id: "l1", agentId: "v1", text, words: words("word") }, "|");
+        expect(mainTrack(line).syllables.map((syllable) => [syllable.text, syllable.joinsNext])).toEqual([
+          ["word", false],
+        ]);
+      }
+    });
+
     it("regression: text with punctuation the words do not carry", () => {
       expect(loaded("hello world!", words("hello", "world"))).toEqual(["hello", "world"]);
     });

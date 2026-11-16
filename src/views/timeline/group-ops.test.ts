@@ -140,7 +140,8 @@ describe("instanceToTemplate", () => {
       DEFAULT_SPLIT_CHARACTER,
     );
     const [template] = instanceToTemplate([line], "g1", 0);
-    expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[0, 2]]);
+    // The instance starts where the line's own span starts, so the seeded second-half background sits 2 s in.
+    expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[2, 4]]);
   });
 
   it("regression: an instance added from a line-synced background keeps a background span", () => {
@@ -164,7 +165,8 @@ describe("instanceToTemplate", () => {
     useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
     useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
     const added = useProjectStore.getState().lines[1];
-    expect(backgroundTrack(added)).toMatchObject({ begin: 40, end: 42 });
+    // The added instance's line starts at 40, so its second-half background keeps its place in the line.
+    expect(backgroundTrack(added)).toMatchObject({ begin: 42, end: 44 });
     expect(timedSyllables(backgroundTrack(added))).toEqual([]);
   });
 

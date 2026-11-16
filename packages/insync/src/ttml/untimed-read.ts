@@ -113,8 +113,9 @@ function timedTrackText(
   const rest = trimmedLyric(tail.text, tail.spans, tail.ends);
   const closing = words.at(-1);
   if (!closing || rest.text === "") return { text: syllablesText(words, splitChar), words, rest };
-  const read = /^\s/.test(tail.text) || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
-  return { text: syllablesText(read, splitChar) + rest.text, words: read, rest };
+  const glued = !/^\s/.test(tail.text);
+  const read = !glued || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
+  return { text: syllablesText(read, splitChar) + (glued ? splitChar : "") + rest.text, words: read, rest };
 }
 
 // A background written as one timed span of more than one word is line synced, its syllables read from its text as a

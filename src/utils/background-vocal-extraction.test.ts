@@ -980,6 +980,53 @@ describe("extractBackgroundVocals: specification table", () => {
 
 // -- extractBackgroundVocals: none and skip lines -----------------------------
 
+describe("extractBackgroundVocals: bracket syllables", () => {
+  it("regression: a timed closing bracket syllable keeps its time when brackets are kept", () => {
+    const line = createLine({
+      id: "l1",
+      text: "lo ren (quo|)",
+      words: [
+        { text: "lo", sep: " ", begin: 8, end: 8.3 },
+        { text: "ren", sep: " ", begin: 8.3, end: 8.6 },
+        { text: "(quo", sep: "", begin: 9.742, end: 9.855, joinsNext: true },
+        { text: ")", sep: "", begin: 9.855, end: 9.883 },
+      ],
+    });
+    const [extracted] = extractBackgroundVocals(
+      [line],
+      { mergeStandaloneLines: false, preserveBrackets: true },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(timedSyllables(backgroundTrack(extracted)).map((word) => [word.text, word.begin, word.end])).toEqual([
+      ["(quo", 9.742, 9.855],
+      [")", 9.855, 9.883],
+    ]);
+  });
+});
+
+describe("extractBackgroundVocals: linked instances", () => {
+  it("regression: instances of one template line all keep their brackets when one of them cannot be extracted", () => {
+    const instance = (instanceIdx: number, words?: { text: string; sep?: string; begin: number; end: number }[]) =>
+      createLine({
+        id: `chorus-${instanceIdx}`,
+        text: "ari|ka pelvin (tor zu)",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+        ...(words && { words }),
+      });
+    const lines = [instance(0), instance(1, [{ text: "ari", begin: 0.4, end: 0.6 }]), instance(2)];
+    const result = extractBackgroundVocals(
+      lines,
+      { mergeStandaloneLines: true, preserveBrackets: true },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(result.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(
+      lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER)),
+    );
+  });
+});
+
 describe("extractBackgroundVocals: none and skip lines", () => {
   it("pushes a none line by reference", () => {
     const lines = [createLine({ id: "1", text: "Plain line" })];

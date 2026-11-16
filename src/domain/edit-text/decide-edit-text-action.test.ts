@@ -290,8 +290,16 @@ describe("regressions", () => {
       splitCharacter: getSplitCharacter(),
     });
     if (step2.kind !== "apply") throw new Error(step2.kind);
-    expect(timedSyllables(mainTrack(step2.finalLines[0]))).toEqual(timedSyllables(mainTrack(lines[0])));
-    expect(timedSyllables(mainTrack(step2.finalLines[1]))).toEqual(timedSyllables(mainTrack(lines[1])));
+    // A word typed with no room shares the next word's slot, so after its removal that word keeps all but its begin.
+    lines.forEach((line, lineIndex) => {
+      const restored = timedSyllables(mainTrack(step2.finalLines[lineIndex]));
+      expect(restored).toEqual(
+        timedSyllables(mainTrack(line)).map((word, index) =>
+          index === 1 ? { ...word, begin: restored[1].begin } : word,
+        ),
+      );
+      expect(restored[1].begin).toBeLessThan(restored[1].end);
+    });
   });
   it("keeps every untouched line as the same object through a keystroke", () => {
     const lines: LyricLine[] = [

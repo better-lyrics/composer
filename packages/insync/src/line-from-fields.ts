@@ -65,15 +65,22 @@ function untimedRest(text: string, words: readonly WordTiming[], splitChar: stri
     let offset = 0;
     for (; offset < token.length && at < letters.length; offset++) {
       const char = token[offset];
-      while (at < letters.length && letters[at] !== char && !isLetter(letters[at])) at++;
+      if (letters[at] === char) {
+        at++;
+        continue;
+      }
+      if (!isLetter(char)) continue;
+      while (at < letters.length && !isLetter(letters[at])) at++;
       if (letters[at] === char) at++;
-      else if (isLetter(char)) return textAfterWords(text, covered);
+      else return textAfterWords(text, covered);
     }
     if (at < letters.length) continue;
     const rest = text.slice(index + original.length);
     const remainder = original.normalize("NFC").slice(offset);
     const untimed = remainder + rest;
-    if (untimed.trim() === "" || (coversEveryTextWord && !LETTER.test(untimed))) return "";
+    const splitOff = remainder.startsWith(splitChar);
+    if (untimed.split(splitChar).join("").trim() === "") return "";
+    if (coversEveryTextWord && !splitOff && !LETTER.test(untimed)) return "";
     return isLetter(remainder[0]) ? splitChar + untimed : untimed;
   }
   return "";
@@ -176,5 +183,5 @@ function fieldsOfLine(line: LyricLine, splitChar: string): LineFields {
 
 // -- Exports ------------------------------------------------------------------
 
-export { fieldsOfLine, lineFromFields, syllablesFromFields, untimedRest };
 export type { LineFields };
+export { fieldsOfLine, lineFromFields, syllablesFromFields, untimedRest };

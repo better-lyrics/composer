@@ -1,6 +1,6 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "./group-linking";
 import { lineInstanceKey } from "./instance-key";
-import { withManualBackgroundWords } from "./line-background";
+import { withManualBackgroundWords, withSeededBackground } from "./line-background";
 import { drawnSyllables } from "./line-drawn-track";
 import type { LyricLine } from "./line";
 import { hasAnyTiming, isLineSynced } from "./line-predicates";
@@ -46,6 +46,7 @@ function deleteFromLines(
   lines: LyricLine[],
   selections: ReadonlyArray<DeletionSelection>,
   splitChar: string,
+  songEnd: number,
 ): Map<string, LyricLine> {
   const byLine = selectionIndexesByLine(selections);
 
@@ -75,6 +76,8 @@ function deleteFromLines(
     if (bgWords.length > 0 && bgIdxs.size > 0) {
       const remaining = remainingWords(absorbDeletedSyllablesIntoNeighbors(bgWords, bgIdxs), bgIdxs);
       updatedLine = withManualBackgroundWords(updatedLine, remaining, splitChar);
+      // A line-synced line's background is always timed, so lyrics left with no timed word are seeded again.
+      if (isLineSynced(updatedLine)) updatedLine = withSeededBackground(updatedLine, splitChar, songEnd);
     }
 
     updatedById.set(lineId, updatedLine);
@@ -129,12 +132,13 @@ function applyWordDeletion(
   lines: LyricLine[],
   selectedWords: ReadonlyArray<DeletionSelection>,
   splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine[] {
   if (selectedWords.length === 0) return lines;
 
-  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords, splitChar));
+  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords, splitChar, songEnd));
   const selections = withLinkedSiblings(lines, selectedWords, emptied, splitChar);
-  const updatedById = deleteFromLines(lines, selections, splitChar);
+  const updatedById = deleteFromLines(lines, selections, splitChar, songEnd);
 
   const result = lines.map((line) => updatedById.get(line.id) ?? line);
   if (emptied.size === 0) return result;

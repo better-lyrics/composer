@@ -89,7 +89,8 @@ describe("instanceBounds", () => {
     expect(instanceBounds(lines)).toEqual({ begin: 2, end: 5 });
   });
 
-  it("ignores stale line.begin/end when bg words present (no main timing)", () => {
+  // A line-synced span is the line's own timing, never a stale cache, so it counts beside the background words.
+  it("counts a line-synced span beside its background words", () => {
     const lines: LyricLine[] = [
       line({
         id: "a",
@@ -98,7 +99,15 @@ describe("instanceBounds", () => {
         backgroundWords: [{ id: "w12", text: "b", sep: "", begin: 4, end: 5, joinsNext: false }],
       }),
     ];
-    expect(instanceBounds(lines)).toEqual({ begin: 4, end: 5 });
+    expect(instanceBounds(lines)).toEqual({ begin: 0, end: 999 });
+  });
+
+  it("regression: a line-synced line with a timed background starts where its own span starts", () => {
+    const lines: LyricLine[] = [
+      line({ id: "a", begin: 0, end: 0.276, backgroundText: "vin|or", backgroundBegin: 0.138, backgroundEnd: 0.276 }),
+      line({ id: "b", words: [{ id: "w14", text: "nu", sep: "", begin: 1.67, end: 2.4, joinsNext: false }] }),
+    ];
+    expect(instanceBounds(lines)).toEqual({ begin: 0, end: 2.4 });
   });
 
   it("skips untimed lines when others are timed", () => {

@@ -59,7 +59,12 @@ function deleteWords(addresses: readonly SyllableAddress[]): LyricCommand {
     run: (root, ctx) =>
       withLines(
         root,
-        applyWordDeletion(root.lines, resolveAddresses(root.lines, addresses, ctx.splitChar), ctx.splitChar),
+        applyWordDeletion(
+          root.lines,
+          resolveAddresses(root.lines, addresses, ctx.splitChar),
+          ctx.splitChar,
+          ctx.songEnd,
+        ),
       ),
   };
 }

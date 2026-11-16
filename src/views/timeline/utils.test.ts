@@ -524,7 +524,8 @@ describe("instanceBounds (legacy call site coverage)", () => {
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
-  it("ignores stale line.begin/end when only bg words are present", () => {
+  // A line-synced span is the line's own timing, never a stale cache, so it counts beside the background words.
+  it("counts a line-synced span beside its background words", () => {
     const lines: LyricLine[] = [
       lineFromFields(
         {
@@ -538,7 +539,7 @@ describe("instanceBounds (legacy call site coverage)", () => {
         DEFAULT_SPLIT_CHARACTER,
       ),
     ];
-    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 6 });
+    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 20 });
   });
 
   it("falls back to line.begin/end ONLY when the line is truly line-synced (no words and no bg words)", () => {
