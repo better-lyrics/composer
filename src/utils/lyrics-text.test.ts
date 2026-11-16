@@ -689,6 +689,47 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     expect(timedSyllables(mainTrack(result[0])).map((w) => w.begin)).toEqual([1, 2, 3, 5, 6, 7]);
   });
 
+  const packedLine = (id: string, texts: string[], begin: number) =>
+    lineFromFields(
+      {
+        id,
+        text: texts.join(" "),
+        agentId: "v1",
+        words: texts.map((text, index) => ({
+          id: `${id}-w${index}`,
+          text,
+          sep: index < texts.length - 1 ? " " : "",
+          begin: begin + index / 1000,
+          end: begin + (index + 1) / 1000,
+          joinsNext: false,
+        })),
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+  const timedTexts = (line: LyricLine) =>
+    mainTrack(line).syllables.map((syllable) => [syllable.text, "begin" in syllable ? syllable.end : null]);
+
+  it("regression: a word typed into a line packed against the song end leaves the rest untimed, not past the end", () => {
+    const packed = packedLine("packed", ["dusk", "tide"], 29.998);
+    const [typed] = textToLyricLines("dusk low tide", "v1", [packed], DEFAULT_SPLIT_CHARACTER, undefined, 30);
+    expect(timedTexts(typed)).toEqual([
+      ["dusk", 29.999],
+      ["low", null],
+      ["tide", null],
+    ]);
+  });
+
+  it("regression: a word typed into a line packed against the next line never runs into it", () => {
+    const packed = packedLine("packed", ["dusk", "tide"], 1);
+    const next = packedLine("next", ["ember"], 1.002);
+    const [typed] = textToLyricLines("dusk low tide\nember", "v1", [packed, next], DEFAULT_SPLIT_CHARACTER, undefined, 30);
+    expect(timedTexts(typed)).toEqual([
+      ["dusk", 1.001],
+      ["low", null],
+      ["tide", null],
+    ]);
+  });
+
   it("regression: typing on a joined row keeps the syllable splits of the row joined onto it", () => {
     const lanterns = timedLine("lanterns", ["Lanterns", "drift", "a"], 1);
     const paper = lineFromFields(

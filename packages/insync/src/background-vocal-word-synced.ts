@@ -8,7 +8,7 @@ import { wordContentSpans } from "./line-reconstruct-text";
 import { backgroundText } from "./line-text";
 import { backgroundTrack, isTimedSyllable, mainTrack } from "./line-track";
 import { withMainTrack, withTrackSyllables } from "./line-track-writes";
-import { remapWordTextsPreservingTiming } from "./word-remap-text";
+import { remapWordTextsWithinLimit } from "./word-remap-text";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -29,6 +29,7 @@ function extractInlineWordSynced(
   classified: LineClassification,
   options: ExtractOptions,
   splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine {
   const words = mainTrack(line).syllables;
   const spans = wordContentSpans(words, splitChar);
@@ -68,11 +69,12 @@ function extractInlineWordSynced(
   const joined = joinBackgroundText(base, bgText, options.preserveBrackets, false);
   const timedBracketed = bracketed.filter(isTimedSyllable);
   const carried = base || timedBracketed.length < bracketed.length ? undefined : timedBracketed;
+  const remapped = carried && remapWordTextsWithinLimit(carried, joined, splitChar, songEnd);
   return withBackground(
     withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)),
     {
       text: joined,
-      words: carried && remapWordTextsPreservingTiming(carried, joined, splitChar),
+      words: remapped && remapped.untimedFrom === remapped.words.length ? remapped.words : undefined,
       source: base ? "manual" : "extraction",
     },
     splitChar,

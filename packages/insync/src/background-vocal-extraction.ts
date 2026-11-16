@@ -92,10 +92,15 @@ function backgroundRefuses(line: LyricLine, classified: LineClassification): boo
   return classified.kind === "inline" && bgBounds(line) !== null;
 }
 
-function extractInline(line: LyricLine, options: ExtractOptions, splitChar: string): LyricLine {
+function extractInline(
+  line: LyricLine,
+  options: ExtractOptions,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): LyricLine {
   const classified = classifyLine(lineText(line, splitChar));
   if (classified.kind !== "inline" || backgroundRefuses(line, classified)) return line;
-  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar);
+  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar, songEnd);
   const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
   return withBackground(
     withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar)),
@@ -113,7 +118,7 @@ function extractInlineFromLine(
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine {
-  const extracted = extractInline(line, options, splitChar);
+  const extracted = extractInline(line, options, splitChar, songEnd);
   return extracted === line ? line : withSeededBackground(extracted, splitChar, songEnd);
 }
 
@@ -166,7 +171,7 @@ function extractBackgroundVocals(
   for (const line of lines) {
     const classified = classifyLine(lineText(line, splitChar));
     if (classified.kind === "inline") {
-      const extracted = extractInline(line, options, splitChar);
+      const extracted = extractInline(line, options, splitChar, songEnd);
       result.push(extracted);
       if (extracted !== line) sameSessionWriteIndices.add(result.length - 1);
       const slot = extractionSlot(line);

@@ -2,7 +2,7 @@ import type { LineTrack, Syllable, UntimedSyllable } from "./line";
 import { timedSyllables, untimedSyllable } from "./line-track";
 import { lcsPairs, wordKey } from "./word-alignment";
 import { newWordId } from "./word-id";
-import { remapWordTextsPreservingTiming } from "./word-remap-text";
+import { remapWordTextsWithinLimit } from "./word-remap-text";
 import { textParts } from "./word-text-parts";
 import type { WordTiming } from "./word-timing";
 
@@ -55,12 +55,19 @@ function timedLength(remapped: readonly WordTiming[], timedIds: ReadonlySet<stri
 
 // The timed syllables take the typed text the way timed words always have; the parts they never reach stay an untimed
 // tail, keeping the ids of the untimed syllables they match.
-function syllablesFromText(text: string, track: LineTrack | undefined, splitChar: string): Syllable[] {
+function syllablesFromText(
+  text: string,
+  track: LineTrack | undefined,
+  splitChar: string,
+  limit = Number.POSITIVE_INFINITY,
+): Syllable[] {
   const next = textSyllables(text, splitChar);
   const old = track?.syllables ?? [];
   const timed = timedSyllables(track);
   if (timed.length === 0) return untimedKeepingIds(next, old, matchedOldIndices(old, next, splitChar));
-  const remapped = remapWordTextsPreservingTiming(timed, text, splitChar);
+  const { words: remapped, untimedFrom } = remapWordTextsWithinLimit(timed, text, splitChar, limit);
+  if (untimedFrom < remapped.length)
+    return [...remapped.slice(0, untimedFrom), ...remapped.slice(untimedFrom).map(untimedSyllable)];
   const length = timedLength(remapped, new Set(timed.map((syllable) => syllable.id)));
   if (length === remapped.length) return remapped;
   if (remapped.length !== next.length)

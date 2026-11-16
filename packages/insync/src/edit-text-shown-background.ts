@@ -36,7 +36,7 @@ function withShownBackground(
     const created = withTrackText(newBackgroundTrack(line.id, "manual"), shown, splitChar);
     return withSeededBackground(withBackgroundTrack(line, created), splitChar, songEnd);
   }
-  return withBackgroundTrack(line, { ...withTrackText(track, shown, splitChar), source: "manual" });
+  return withBackgroundTrack(line, { ...withTrackText(track, shown, splitChar, songEnd), source: "manual" });
 }
 
 // -- Exports ------------------------------------------------------------------

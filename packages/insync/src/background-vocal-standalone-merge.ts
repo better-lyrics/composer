@@ -13,7 +13,7 @@ import { spreadSpan } from "./line-span-to-words";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, roleWords, timedSyllables } from "./line-track";
 import { withBackgroundTrack, withTrackSpan } from "./line-track-writes";
 import { type Bounds, lastEnd } from "./word-bounds";
-import { remapWordTextsPreservingTiming } from "./word-remap-text";
+import { remapWordTextsWithinLimit } from "./word-remap-text";
 import { withTrailingSpace } from "./word-spaces";
 import type { WordTiming } from "./word-timing";
 import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "./background-vocal-brackets";
@@ -34,11 +34,13 @@ function carriedBackgroundWords(
   preserveBrackets: boolean,
   untimedSpan: TimeSpan | null,
   splitChar: string,
+  songEnd: number,
 ): WordTiming[] | null {
   const words = roleWords(standalone, "main");
   let carry: WordTiming[] | null;
   if (words && words.length > 0) {
-    carry = remapWordTextsPreservingTiming(words, bgText, splitChar);
+    const remapped = remapWordTextsWithinLimit(words, bgText, splitChar, songEnd);
+    carry = remapped.untimedFrom === remapped.words.length ? remapped.words : null;
   } else if (isLineSynced(standalone)) {
     const span = mainBounds(standalone);
     carry = span && createInitialBgWords(bgText, span.begin, span.end, splitChar);
@@ -151,6 +153,7 @@ function mergeStandaloneInto(
     preserveBrackets,
     prevTrailingBracketFromSamePass && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
     splitChar,
+    songEnd,
   );
   const own = ownBackground(standalone, splitChar);
   const carried = sung?.length && own.words.length ? [...withTrailingSpace(sung), ...own.words] : sung;

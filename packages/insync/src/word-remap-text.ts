@@ -60,10 +60,24 @@ function spreadEvenly(texts: string[], begin: number, end: number) {
   return texts.map((text, k) => ({ text, begin: begin + step * k, end: begin + step * (k + 1) }));
 }
 
+interface Delay {
+  // The first word that moves later, the first shared word, and the first typed word of the run.
+  from: number;
+  start: number;
+  run: number;
+  ms: number;
+}
+
+interface LimitedWords {
+  words: WordTiming[];
+  // Words from here on are left untimed: the line had no room for them before its limit.
+  untimedFrom: number;
+}
+
 interface SharedSlots {
   slots: Map<number, { begin: number; end: number }>;
   // Milliseconds everything after the shared words moves later, when even all of them had no time to give.
-  delay: { from: number; ms: number } | null;
+  delay: Delay | null;
 }
 
 // The fewest kept words next to a typed run whose time, with the run's slot, gives every word a millisecond: first the
@@ -98,7 +112,7 @@ function sharedSlots(
   const end = endAt(to - 1);
   const ms = to - from - (msFromSeconds(end) - msFromSeconds(beginAt(from)));
   const slots = textSlots(texts.slice(from, to), beginAt(from), atMs(end, ms)) ?? [];
-  return { slots: byIndex(slots), delay: { from: to, ms } };
+  return { slots: byIndex(slots), delay: { from: to, start: from, run: runStart, ms } };
 }
 
 const atMs = (seconds: number, ms: number) => Math.round((seconds + ms / 1000) * 1e9) / 1e9;
@@ -109,7 +123,14 @@ function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: n
   return { begin: prevEnd, end: Math.max(prevEnd, nextBegin) };
 }
 
-function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar: string): WordTiming[] {
+// Words moved later for room stay before `limit`, where the line must end (the song's end, the next line's start): spread
+// at a millisecond each from the first moved word when that fits, else the typed run and every word after it untimed.
+function remapWordTextsWithinLimit(
+  oldWords: WordTiming[],
+  newText: string,
+  splitChar: string,
+  limit = Number.POSITIVE_INFINITY,
+): LimitedWords {
   const { texts, glued } = withTypedGroupsApart(tokenizeWordTexts(newText, splitChar), oldWords, splitChar);
   const oldKeys = oldWords.map((w) => wordKey(w.text, splitChar));
   const newKeys = texts.map((value) => wordKey(value, splitChar));
@@ -118,13 +139,14 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
   // Same count with every kept word in its place is a rename; a word that moved means words merged and others came.
   if (sameCount && (!pairs || pairs.every(([oldIdx, newIdx]) => oldIdx === newIdx))) {
     const remapped = oldWords.map((oldWord, i) => ({ ...oldWord, ...splitTrailingWhitespace(texts[i]) }));
-    return joinedToTypedText(
+    const words = joinedToTypedText(
       remapped,
       texts,
       oldWords,
       oldWords.map((_, i) => i),
       glued,
     );
+    return { words, untimedFrom: words.length };
   }
 
   const oldIndexOf: Array<number | undefined> = new Array(texts.length);
@@ -132,7 +154,7 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
 
   const result: WordTiming[] = [];
   const retimed = new Map<number, { begin: number; end: number }>();
-  const delays: { from: number; ms: number }[] = [];
+  const delays: Delay[] = [];
   let i = 0;
   while (i < texts.length) {
     const matched = oldIndexOf[i];
@@ -180,9 +202,36 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
     const placed = slot ? { ...word, ...slot } : word;
     return delayMs > 0 ? { ...placed, begin: atMs(placed.begin, delayMs), end: atMs(placed.end, delayMs) } : placed;
   });
-  return joinedToTypedText(shared, texts, oldWords, oldIndexOf, glued);
+  return withinLimit(joinedToTypedText(shared, texts, oldWords, oldIndexOf, glued), delays, limit);
+}
+
+function withinLimit(words: WordTiming[], delays: readonly Delay[], limit: number): LimitedWords {
+  const whole = { words, untimedFrom: words.length };
+  if (delays.length === 0) return whole;
+  const timedEnd = Math.max(...words.flatMap((word) => (word.end > word.begin ? [word.end] : [])));
+  if (msFromSeconds(timedEnd) <= msFromSeconds(limit)) return whole;
+  const start = Math.min(...delays.map((delay) => delay.start));
+  let count = words.length - start;
+  while (count > 0 && words[start + count - 1].end <= words[start + count - 1].begin) count--;
+  const fromMs = msFromSeconds(words[start].begin);
+  const roomMs = msFromSeconds(limit) - fromMs;
+  if (roomMs < count) return { words, untimedFrom: Math.min(...delays.map((delay) => delay.run)) };
+  const spread = words.map((word, index) => {
+    const k = index - start;
+    if (k < 0 || k >= count) return word;
+    return {
+      ...word,
+      begin: (fromMs + Math.floor((k * roomMs) / count)) / 1000,
+      end: (fromMs + Math.floor(((k + 1) * roomMs) / count)) / 1000,
+    };
+  });
+  return { words: spread, untimedFrom: words.length };
+}
+
+function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar: string): WordTiming[] {
+  return remapWordTextsWithinLimit(oldWords, newText, splitChar).words;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { insertSlot, remapWordTextsPreservingTiming };
+export { insertSlot, remapWordTextsPreservingTiming, remapWordTextsWithinLimit };

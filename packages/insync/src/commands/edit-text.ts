@@ -8,6 +8,7 @@ import { withBackground, withSeededBackground, withoutBackground } from "../line
 import { lineText } from "../line-text";
 import { backgroundTrack, isSpanTimed, timedSyllables } from "../line-track";
 import { withBackgroundTrack, withTrackText } from "../line-track-writes";
+import { nextLineStart } from "../line-neighbour-bounds";
 import { isSectionTagLine } from "../lyrics-file-genius-text";
 import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "../background-vocal-extraction";
 
@@ -91,13 +92,15 @@ function extractLineBackground(lineId: string, preserveBrackets: boolean): Lyric
 // Retyped background text keeps its timing the way main text does; a new background is seeded.
 function editBackgroundText(lineId: string, text: string): LyricCommand {
   return lineEditCommand({ command: "edit background text", args: [lineId, text] }, (root, ctx) => {
-    const target = root.lines.find((line) => line.id === lineId);
+    const index = root.lines.findIndex((line) => line.id === lineId);
+    const target = root.lines[index];
     if (!target) return refused({ reason: "line-gone", lineId });
     const background = backgroundTrack(target);
+    const limit = Math.min(ctx.songEnd, nextLineStart(root.lines, index));
     const edited = !text
       ? withoutBackground(target)
       : background && (isSpanTimed(background) || timedSyllables(background).length > 0)
-        ? withBackgroundTrack(target, { ...withTrackText(background, text, ctx.splitChar), source: "manual" })
+        ? withBackgroundTrack(target, { ...withTrackText(background, text, ctx.splitChar, limit), source: "manual" })
         : withSeededBackground(
             withBackground(target, { text, source: "manual" }, ctx.splitChar),
             ctx.splitChar,

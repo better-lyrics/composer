@@ -80,9 +80,14 @@ function withoutTrackTiming<T extends LineTrack>(track: T): T {
   return syllableTimed(track, track.syllables.map(untimedSyllable));
 }
 
-// Typed text replaces a track's syllables; a span stays when there is still text to time.
-function withTrackText<T extends LineTrack>(track: T, text: string, splitChar: string): T {
-  const syllables = syllablesFromText(text, track, splitChar);
+// Typed text replaces a track's syllables; a span stays when there is still text to time. Timing stays before `limit`.
+function withTrackText<T extends LineTrack>(
+  track: T,
+  text: string,
+  splitChar: string,
+  limit = Number.POSITIVE_INFINITY,
+): T {
+  const syllables = syllablesFromText(text, track, splitChar, limit);
   if (isSpanTimed(track) && syllables.length > 0) {
     return { ...track, syllables: syllables.map(untimedSyllable) };
   }
