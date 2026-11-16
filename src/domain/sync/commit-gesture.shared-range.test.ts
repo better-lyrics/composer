@@ -140,3 +140,24 @@ describe("commitGesture with a shared time range", () => {
     });
   });
 });
+
+describe("Line mode hold release with a shared time range", () => {
+  it("regression: ends the held line where its shared range ends, as word holds do", () => {
+    const lines = [
+      chorusLine("c0", 0, { begin: 3, end: 3 }),
+      createLine({ id: "x", text: "verse" }),
+      chorusLine("c1", 1, { begin: 10, end: 10 }),
+    ];
+    const commit = commitGesture(lines, "hold-end", {
+      cursor: { lineIndex: 1, wordIndex: 0 },
+      jumped: false,
+      time: 9,
+      defaultWordDuration: 0.3,
+      groups: sharing,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+      songEnd: 15,
+      granularity: "line",
+    });
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([{ id: "c0", updates: { end: 8 } }]);
+  });
+});
