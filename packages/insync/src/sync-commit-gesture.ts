@@ -130,7 +130,6 @@ function writeWord(
   const { slot } = anchor;
   const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
   const nextWord = existing[cursor.wordIndex + 1];
-  // An open hold gets its length on release, so only a tap needs room before the next word.
   if (!crossLine && earlyWithoutRoom(anchor, open ? undefined : nextWord?.begin)) return "no-room";
   const floor = Math.max(crossLine ? 0 : anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
@@ -212,18 +211,20 @@ interface ClosedHold {
   closeEnd: number;
 }
 
-function closeHeld(lines: readonly LyricLine[], cursor: SyncCursor, time: number): ClosedHold | null {
+function closeHeld(lines: readonly LyricLine[], ctx: GestureContext): ClosedHold | null {
+  const { cursor, time, defaultWordDuration } = ctx;
   const line = lines[cursor.lineIndex];
   if (!line) return null;
   const timed = timedSyllables(mainTrack(line));
   const held = timed[cursor.wordIndex];
   if (!held || held.begin !== held.end) return null;
 
-  const words = enforceOrderAround(closeSlotWords(timed, cursor.wordIndex, time), cursor.wordIndex);
+  const closeEnd = time > held.begin ? time : tapEnd(held.begin, defaultWordDuration);
+  const words = enforceOrderAround(closeSlotWords(timed, cursor.wordIndex, closeEnd), cursor.wordIndex);
   return {
     update: { id: line.id, updates: { tracks: withRoleWords(line, "main", words).tracks } },
     clampedTo: time < held.begin ? held.begin : null,
-    closeEnd: Math.max(time, held.begin),
+    closeEnd,
   };
 }
 
@@ -272,7 +273,7 @@ function planGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: Ges
     };
   }
 
-  const closed = closeHeld(lines, ctx.cursor, ctx.time);
+  const closed = closeHeld(lines, ctx);
   if (!closed) return null;
   const nextCursor = advanceCursor(lines, ctx.cursor, "word", ctx.splitChar);
 
@@ -282,7 +283,8 @@ function planGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: Ges
 
   const linesAfterClose = applyLineUpdates(lines, [closed.update]);
   const opened = writeWord(linesAfterClose, { ...ctx, cursor: nextCursor, jumped: true, time: closed.closeEnd }, true);
-  const lineUpdates = opened && opened !== "no-room" ? mergeUpdates([closed.update], [opened.update]) : [closed.update];
+  if (opened === "no-room") return opened;
+  const lineUpdates = opened ? mergeUpdates([closed.update], [opened.update]) : [closed.update];
   return { lineUpdates, nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
 }
 

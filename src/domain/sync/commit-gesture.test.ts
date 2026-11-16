@@ -134,7 +134,9 @@ describe("tap-word", () => {
   });
 
   it("opens an early hold at the previous word's end even when the next word starts there", () => {
-    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 6), word("b ", 6, 6), word("c", 6, 7)] })];
+    const lines = [
+      createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 6), word("b ", 6, 6), word("c", 6, 7)] }),
+    ];
     const commit = commitGesture(lines, "hold-start", ctxAt([0, 1], 4));
     expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[1]).toEqual(word("b ", 6, 6));
     expect(commit?.clampedTo).toBe(6);
@@ -471,10 +473,26 @@ describe("hold gestures", () => {
     expect(commit?.nextCursor).toEqual({ lineIndex: 0, wordIndex: 1 });
   });
 
+  it("regression: a hold released before its snapped start keeps a tap's length", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 5.3), word("b ", 5.3, 5.3)] })];
+    const commit = run(lines, "hold-end", [0, 1], 5.1);
+    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[1]).toEqual(word("b ", 5.3, 5.3 + DUR));
+    expect(commit?.clampedTo).toBe(5.3);
+  });
+
+  it("regression: a hold-tap before the held word's start never leaves it without length", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 5, 5.3), word("b ", 5.3, 5.3)] })];
+    const commit = run(lines, "hold-tap", [0, 1], 5.1);
+    const words = timedSyllables(mainTrack(apply(lines, commit)[0]));
+    expect(words[1]).toEqual(word("b ", 5.3, 5.3 + DUR));
+    expect(words[2].begin).toBe(5.3 + DUR);
+    expect(commit?.nextCursor).toEqual({ lineIndex: 0, wordIndex: 2 });
+  });
+
   it("hold-end never ends a word before it begins", () => {
     const lines = [createLine({ id: "l0", text: "a", words: [word("a", 3, 3)] })];
     const commit = run(lines, "hold-end", [0, 0], 1);
-    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[0]).toEqual(word("a", 3, 3));
+    expect(timedSyllables(mainTrack(apply(lines, commit)[0]))[0]).toEqual(word("a", 3, 3 + DUR));
     expect(commit?.clampedTo).toBe(3);
   });
 
