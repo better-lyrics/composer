@@ -1,9 +1,24 @@
 import type { LyricLine } from "./line";
 import { extractionSlot, keepsTypedBackgroundGroups, lineHasInlineParens } from "./background-vocal-extraction";
+import { memoBySplitCharacter } from "./memo-by-identity";
 
 // -- Types --------------------------------------------------------------------
 
 type BackgroundBracketRefusal = "own" | "linked";
+
+interface LineBrackets {
+  keepsOwn: boolean;
+  hasInline: boolean;
+}
+
+// -- Helpers ------------------------------------------------------------------
+
+const lineBrackets = memoBySplitCharacter(
+  (line: LyricLine, splitChar: string): LineBrackets => ({
+    keepsOwn: keepsTypedBackgroundGroups(line, splitChar),
+    hasInline: lineHasInlineParens(line, splitChar),
+  }),
+);
 
 // -- Functions ----------------------------------------------------------------
 
@@ -16,7 +31,7 @@ function backgroundBracketRefusals(
   const refusals = new Map<string, BackgroundBracketRefusal>();
   const refusedSlots = new Set<string>();
   for (const line of lines) {
-    if (!keepsTypedBackgroundGroups(line, splitChar)) continue;
+    if (!lineBrackets(line, splitChar).keepsOwn) continue;
     refusals.set(line.id, "own");
     const slot = extractionSlot(line);
     if (slot !== null) refusedSlots.add(slot);
@@ -25,7 +40,7 @@ function backgroundBracketRefusals(
   for (const line of lines) {
     const slot = extractionSlot(line);
     if (slot === null || !refusedSlots.has(slot) || refusals.has(line.id)) continue;
-    if (lineHasInlineParens(line, splitChar)) refusals.set(line.id, "linked");
+    if (lineBrackets(line, splitChar).hasInline) refusals.set(line.id, "linked");
   }
   return refusals;
 }
