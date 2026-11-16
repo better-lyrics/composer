@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type LineageCounterpart, syllableLineage } from "./group-syllable-lineage";
+import { type LineageCounterpart, lineageByText, syllableLineage } from "./group-syllable-lineage";
 import type { Syllable } from "./line";
 
 const syllable = (id: string, text: string, begin?: number, end?: number): Syllable =>
@@ -125,6 +125,29 @@ describe("syllableLineage · a word moved back from a later line", () => {
       ["glow", 11, 12],
       ["fire", 12, 13],
       ["rain", 13, 14],
+    ]);
+  });
+});
+
+describe("lineageByText", () => {
+  it("regression: a syllable added where the instance's syllables touch shares the next syllable's slot", () => {
+    const own = [syllable("x", "drift", 1, 2), syllable("y", "lantern", 2, 3)];
+    const after = [syllable("a", "drift"), syllable("n", "paper"), syllable("b", "lantern")];
+    const carried = lineageByText(after, own, () => undefined, "|");
+    expect(spans(carried)).toEqual([
+      ["drift", 1, 2],
+      ["paper", 2, expect.closeTo(2 + 5 / 12)],
+      ["lantern", expect.closeTo(2 + 5 / 12), 3],
+    ]);
+  });
+
+  it("regression: a syllable added before the first one with no room before it shares that syllable's slot", () => {
+    const own = [syllable("x", "drift", 1, 2)];
+    const after = [syllable("n", "oh"), syllable("a", "drift")];
+    const carried = lineageByText(after, own, () => undefined, "|", { floor: 1, limit: 9 });
+    expect(spans(carried)).toEqual([
+      ["oh", 1, expect.closeTo(1 + 2 / 7)],
+      ["drift", expect.closeTo(1 + 2 / 7), 2],
     ]);
   });
 });
