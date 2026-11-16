@@ -6,6 +6,7 @@ import {
   linkedFileName,
   readLinkedFileUrl,
   readTrimmed,
+  readUnisonLyricParam,
 } from "@/utils/incoming-link";
 import { describe, expect, it } from "vitest";
 
@@ -50,6 +51,28 @@ describe("hasIncomingLink: linked files", () => {
     for (const name of LINKED_FILE_PARAM_NAMES) {
       expect(hasIncomingLink({ search: `?${name}=https%3A%2F%2Fcdn.example.com%2Fsong.mp3`, hash: "" })).toBe(true);
     }
+  });
+});
+
+describe("hasIncomingLink: Unison lyric", () => {
+  it("recognizes a Unison lyric id and ignores one that is not an id", () => {
+    expect(hasIncomingLink({ search: "?unisonLyric=11633", hash: "" })).toBe(true);
+    expect(hasIncomingLink({ search: "?unisonLyric=abc", hash: "" })).toBe(false);
+  });
+});
+
+describe("readUnisonLyricParam", () => {
+  it("reads a positive integer id", () => {
+    expect(readUnisonLyricParam(new URLSearchParams("?unisonLyric=%2011633%20"))).toBe(11633);
+  });
+
+  describe("edge cases", () => {
+    it("rejects anything that is not a positive integer id", () => {
+      for (const raw of ["abc", "0", "-3", "1.5", "1e3", "0x1f", "12abc", "99999999999999999999", ""]) {
+        expect(readUnisonLyricParam(new URLSearchParams({ unisonLyric: raw }))).toBeNull();
+      }
+      expect(readUnisonLyricParam(new URLSearchParams(""))).toBeNull();
+    });
   });
 });
 

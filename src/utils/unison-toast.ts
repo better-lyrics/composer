@@ -114,6 +114,10 @@ function showRevisionRestoredToast(revNo: number, goesLive: boolean): void {
   toast.success(goesLive ? `Revision ${revNo} is live again.` : `Revision ${revNo} sent to the council.`);
 }
 
+function showUnisonLyricLinkFailedToast(): void {
+  toast.error("Could not open that lyric from Unison. Check the link and try again.");
+}
+
 function showUnisonFailureToast(title: string, error: unknown): void {
   toast.error(title, { description: unisonFailureReason(error) });
 }
@@ -134,6 +138,7 @@ export {
   showRevisionRestoredToast,
   showSubmittedToast,
   showUnisonFailureToast,
+  showUnisonLyricLinkFailedToast,
   showUpdateSentToast,
   showWantedShelfHiddenToast,
   unisonFailureReason,

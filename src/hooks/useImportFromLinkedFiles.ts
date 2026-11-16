@@ -13,6 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import {
   LINKED_FILE_PARAM_NAMES,
   type LinkedFileParam,
+  hasBootUnisonLyric,
   hasLinkedFileParams,
   linkedFileName,
   readLinkedFileUrl,
@@ -70,7 +71,7 @@ function readBootLinkedFiles(): BootLinkedFiles {
   return {
     present: true,
     blankParams: false,
-    skippedForVideo: readYouTubeParam(params) !== null,
+    skippedForVideo: readYouTubeParam(params) !== null || hasBootUnisonLyric(),
     audioUrl: readLinkedFileUrl(params, "audioUrl"),
     lyricsUrl: readLinkedFileUrl(params, "lyricsUrl"),
     invalid: LINKED_FILE_PARAM_NAMES.filter(
