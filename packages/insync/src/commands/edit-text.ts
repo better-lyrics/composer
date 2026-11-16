@@ -1,16 +1,15 @@
-import type { LyricLine } from "../line";
-import type { CommandContext, HistoryNote, LyricCommand } from "./command";
-import { lineEditCommand } from "./line-edits";
-import { type LyricRoot, type Refusal, applied, refused } from "./outcome";
+import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "../background-vocal-extraction";
 import type { LinkGroup } from "../group";
 import { isLinked } from "../instance-predicates";
-import { withBackground, withSeededBackground, withoutBackground } from "../line-background";
+import type { LyricLine } from "../line";
+import { withBackground, withoutBackground, withSeededBackground } from "../line-background";
 import { lineText } from "../line-text";
 import { backgroundTrack, isSpanTimed, timedSyllables } from "../line-track";
 import { withBackgroundTrack, withTrackText } from "../line-track-writes";
 import { isSectionTagLine } from "../lyrics-file-genius-text";
-import { remapWordTextsPreservingTiming } from "../word-remap-text";
-import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "../background-vocal-extraction";
+import type { CommandContext, HistoryNote, LyricCommand } from "./command";
+import { lineEditCommand } from "./line-edits";
+import { applied, type LyricRoot, type Refusal, refused } from "./outcome";
 
 // -- Types --------------------------------------------------------------------
 
@@ -89,28 +88,21 @@ function extractLineBackground(lineId: string, preserveBrackets: boolean): Lyric
   );
 }
 
-// Retyped background words keep their timing, a line-synced background keeps its span; a new background is seeded.
+// Retyped background text keeps its timing the way main text does; a new background is seeded.
 function editBackgroundText(lineId: string, text: string): LyricCommand {
   return lineEditCommand({ command: "edit background text", args: [lineId, text] }, (root, ctx) => {
     const target = root.lines.find((line) => line.id === lineId);
     if (!target) return refused({ reason: "line-gone", lineId });
     const background = backgroundTrack(target);
-    const timed = timedSyllables(background);
     const edited = !text
       ? withoutBackground(target)
-      : background && isSpanTimed(background)
+      : background && (isSpanTimed(background) || timedSyllables(background).length > 0)
         ? withBackgroundTrack(target, { ...withTrackText(background, text, ctx.splitChar), source: "manual" })
-        : timed.length > 0
-          ? withBackground(
-              target,
-              { text, words: remapWordTextsPreservingTiming(timed, text, ctx.splitChar), source: "manual" },
-              ctx.splitChar,
-            )
-          : withSeededBackground(
-              withBackground(target, { text, source: "manual" }, ctx.splitChar),
-              ctx.splitChar,
-              ctx.songEnd,
-            );
+        : withSeededBackground(
+            withBackground(target, { text, source: "manual" }, ctx.splitChar),
+            ctx.splitChar,
+            ctx.songEnd,
+          );
     return [{ id: lineId, updates: { tracks: edited.tracks } }];
   });
 }
