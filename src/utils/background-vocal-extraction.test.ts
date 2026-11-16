@@ -2656,6 +2656,29 @@ describe("regressions", () => {
     expect(bgBounds(timed)).toEqual({ begin: 14, end: 17 });
   });
 
+  it("regression: a word-timed standalone row merged into a line-synced line keeps its word timing", () => {
+    const [merged] = extractBackgroundVocals(
+      [
+        createLine({ id: "a", text: "hello", begin: 1, end: 4 }),
+        createLine({
+          id: "b",
+          text: "(ooh yeah)",
+          words: [
+            { text: "(ooh", sep: " ", begin: 5, end: 5.6 },
+            { text: "yeah)", begin: 6, end: 7 },
+          ],
+        }),
+      ],
+      options,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(merged)).map((word) => [word.begin, word.end])).toEqual([
+      [5, 5.6],
+      [6, 7],
+    ]);
+  });
+
   it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
     const lines = [
       createLine({

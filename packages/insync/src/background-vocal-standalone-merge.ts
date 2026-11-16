@@ -7,7 +7,7 @@ import {
 } from "./line-background";
 import { bgBounds, effectiveBounds, mainBounds } from "./line-bounds";
 import type { LyricLine } from "./line";
-import { isLineSynced } from "./line-predicates";
+import { isLineSynced, isWordSynced } from "./line-predicates";
 import { backgroundText, syllablesText } from "./line-text";
 import { spreadSpan } from "./line-span-to-words";
 import { backgroundTrack, isSpanTimed, isTimedSyllable, roleWords, timedSyllables } from "./line-track";
@@ -125,8 +125,9 @@ function mergeStandaloneInto(
   // so it stays extraction; manual or legacy-undefined stays manual.
   const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
   const base = prevIsStaleExtraction ? withoutBackground(prev) : prev;
-  // A background timed by hand before this pass keeps its own timing, so the row merges word by word below.
-  if (isLineSynced(prev) && (prevTrailingBracketFromSamePass || !bgBounds(base))) {
+  // A background timed by hand before this pass, or a row with its own word timing, keeps that timing, so the row
+  // merges word by word below.
+  if (isLineSynced(prev) && !isWordSynced(standalone) && (prevTrailingBracketFromSamePass || !bgBounds(base))) {
     return mergeIntoLineSynced(
       base,
       standalone,
