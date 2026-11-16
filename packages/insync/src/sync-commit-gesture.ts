@@ -248,13 +248,13 @@ function planGesture(lines: readonly LyricLine[], requested: SyncGesture, ctx: G
   if (!closed) return null;
   const nextCursor = advanceCursor(lines, ctx.cursor, "word", ctx.splitChar);
 
-  if (gesture === "hold-end") {
-    return { lineUpdates: [closed.update], nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
-  }
+  const ended = { lineUpdates: [closed.update], nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
+  if (gesture === "hold-end") return ended;
 
   const linesAfterClose = applyLineUpdates(lines, [closed.update]);
   const opened = writeWord(linesAfterClose, { ...ctx, cursor: nextCursor, jumped: true, time: closed.closeEnd }, true);
-  if (opened === "no-room") return opened;
+  // At the song end nothing more can open, so the tap only ends the held word.
+  if (opened === "no-room") return closed.closeEnd >= rangeEnd ? ended : opened;
   const lineUpdates = opened ? mergeUpdates([closed.update], [opened.update]) : [closed.update];
   return { lineUpdates, nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
 }

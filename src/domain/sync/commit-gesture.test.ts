@@ -939,6 +939,12 @@ describe("song end", () => {
     expect(Math.max(...backgroundEnds)).toBeLessThanOrEqual(SONG_END);
   });
 
+  it("regression: a hold-tap at the song end still ends the held word", () => {
+    const lines = [createLine({ id: "l0", text: "vo vin", words: [word("vo ", 17.9, 17.9)] })];
+    const after = runToEnd(lines, "hold-tap", [0, 0], 17.5);
+    expect(timedSyllables(mainTrack(after[0]))[0]).toMatchObject({ begin: 17.9, end: SONG_END });
+  });
+
   it("regression: a Line mode tap refuses to open a line at the song end", () => {
     const lines = [
       createLine({ id: "l0", text: "first", begin: 16, end: SONG_END }),
