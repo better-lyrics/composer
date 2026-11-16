@@ -59,12 +59,11 @@ function syllablesFromText(text: string, track: LineTrack | undefined, splitChar
   const next = textSyllables(text, splitChar);
   const old = track?.syllables ?? [];
   const timed = timedSyllables(track);
-  if (timed.length === old.length && timed.length > 0) return remapWordTextsPreservingTiming(timed, text, splitChar);
-  const oldIndexOf = matchedOldIndices(old, next, splitChar);
-  const untimed = untimedKeepingIds(next, old, oldIndexOf);
-  if (timed.length === 0) return untimed;
+  if (timed.length === 0) return untimedKeepingIds(next, old, matchedOldIndices(old, next, splitChar));
   const remapped = remapWordTextsPreservingTiming(timed, text, splitChar);
   const length = timedLength(remapped, new Set(timed.map((syllable) => syllable.id)));
+  if (length === remapped.length) return remapped;
+  const untimed = untimedKeepingIds(next, old, matchedOldIndices(old, next, splitChar));
   return [...remapped.slice(0, length), ...untimed.slice(length)];
 }
 

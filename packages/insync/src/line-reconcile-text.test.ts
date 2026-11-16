@@ -85,7 +85,7 @@ describe("reconcileMatchedTiming", () => {
     );
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra", DEFAULT_SPLIT_CHARACTER);
     expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("Dengar|lah|extra");
-    expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Dengar", "lah", "extra"]);
+    expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Dengar", "lah"]);
     expect(timedSyllables(mainTrack(result))[0]).toEqual({
       text: "Dengar",
       sep: "",
@@ -93,7 +93,7 @@ describe("reconcileMatchedTiming", () => {
       end: 0.5,
       joinsNext: true,
     });
-    expect(timedSyllables(mainTrack(result))[2].end).toBe(1);
+    expect(timedSyllables(mainTrack(result))[1].end).toBe(1);
   });
 
   it("keeps begin/end on a line-synced line whose text content changed", () => {
@@ -320,14 +320,30 @@ describe("reconcileMatchedTiming · regressions", () => {
       { text: "Wish", sep: " ", begin: 1, end: 2, joinsNext: false },
       { text: "I", sep: " ", begin: 2, end: 3, joinsNext: false },
     ]);
-    expect(timedSyllables(mainTrack(result)).map((w) => w.text + w.sep)).toEqual([
-      "Wish ",
-      "I ",
-      "could ",
-      "get ",
-      "it",
+    expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Wish", "I", "could"]);
+    expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("Wish I could get it");
+    expect(timedSyllables(mainTrack(result))[2].end).toBe(4);
+  });
+
+  it("regression: words typed after the last word of a fully timed line stay untimed, never zero length", () => {
+    const line = lineFromFields(
+      {
+        id: "L2",
+        text: "morning light",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "morning", sep: " ", begin: 5, end: 6, joinsNext: false },
+          { id: "w2", text: "light", sep: "", begin: 6, end: 7, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = reconcileMatchedTiming(line, "morning light (glo|wing sky)", DEFAULT_SPLIT_CHARACTER);
+    expect(timedSpans(result)).toEqual([
+      ["morning", 5, 6],
+      ["light", 6, 7],
     ]);
-    expect(timedSyllables(mainTrack(result))[4].end).toBe(4);
+    expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("morning light (glo|wing sky)");
   });
 
   it("regression: deleting a word from a word-synced line keeps the remaining timing exactly", () => {
