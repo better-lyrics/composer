@@ -20,7 +20,12 @@ function hasTypedGroups(line: LyricLine, splitChar: string): boolean {
 // The background a typed row shows becomes the line's background track. Retyped syllables keep their ids and timing
 // the way main text does; a background typed in place, or shown beside new bracketed text that extraction will join to
 // it, is the user's own.
-function withShownBackground(line: LyricLine, shown: string | null, splitChar: string): LyricLine {
+function withShownBackground(
+  line: LyricLine,
+  shown: string | null,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): LyricLine {
   const track = backgroundTrack(line);
   if (!shown) return track ? withoutBackground(line) : line;
   if (track && trackText(track, splitChar).trim() === shown) {
@@ -29,7 +34,7 @@ function withShownBackground(line: LyricLine, shown: string | null, splitChar: s
   }
   if (!track) {
     const created = withTrackText(newBackgroundTrack(line.id, "manual"), shown, splitChar);
-    return withSeededBackground(withBackgroundTrack(line, created), splitChar);
+    return withSeededBackground(withBackgroundTrack(line, created), splitChar, songEnd);
   }
   return withBackgroundTrack(line, { ...withTrackText(track, shown, splitChar), source: "manual" });
 }

@@ -82,6 +82,7 @@ function textToLyricLines(
   existingLines: LyricLine[] = [],
   splitChar = getSplitCharacter(),
   shownBackgrounds?: readonly (string | null)[],
+  songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine[] {
   const textToCandidates = new Map<string, number[]>();
   const existingTrackKeys = existingLines.map((line) => mainTrackKeys(mainTrack(line), splitChar));
@@ -186,7 +187,7 @@ function textToLyricLines(
   });
 
   if (shownBackgrounds) {
-    return mapped.map((line, index) => withShownBackground(line, shownBackgrounds[index] ?? null, splitChar));
+    return mapped.map((line, index) => withShownBackground(line, shownBackgrounds[index] ?? null, splitChar, songEnd));
   }
   // Parentheses in a row stand for its background vocals, so a carried-over background would double on
   // re-extraction. Timed background words on a row the edit left unchanged are kept.

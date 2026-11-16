@@ -13,7 +13,11 @@ function placeLineAt(lineId: string, begin: number, end: number): LyricCommand {
   return lineEditCommand({ command: "place line", args: [lineId, begin, end] }, (root, ctx) => {
     const line = root.lines.find((candidate) => candidate.id === lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
-    const placed = withSeededBackground(withMainTrack(line, withTrackSpan(mainTrack(line), begin, end)), ctx.splitChar);
+    const placed = withSeededBackground(
+      withMainTrack(line, withTrackSpan(mainTrack(line), begin, end)),
+      ctx.splitChar,
+      ctx.songEnd,
+    );
     return [{ id: lineId, updates: { tracks: placed.tracks } }];
   });
 }

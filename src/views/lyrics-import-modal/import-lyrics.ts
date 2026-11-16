@@ -29,6 +29,7 @@ import {
   skippedLinesMessage,
 } from "insync/parse-result";
 import { pluralize } from "insync/pluralize";
+import { songEndOrUnbounded } from "insync/song-end";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -130,6 +131,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
 
   if (!(await confirmReplace(ctx.confirm))) return false;
 
+  const songEnd = songEndOrUnbounded(ctx.audioDuration);
   let workingLines = ctx.applyBackgroundExtraction
     ? extractBackgroundVocals(
         parsed.lines,
@@ -138,12 +140,13 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
           preserveBrackets: ctx.backgroundExtractionPreserveBrackets,
         },
         getSplitCharacter(),
+        songEnd,
       )
     : parsed.lines;
 
   if (!parsed.hasTimingData && ctx.audioDuration > 0) {
     workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map((value) =>
-      withSeededBackground(value, getSplitCharacter()),
+      withSeededBackground(value, getSplitCharacter(), songEnd),
     );
   }
 

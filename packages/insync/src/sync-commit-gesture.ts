@@ -180,7 +180,7 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   const delta = oldMain ? clampShiftDelta([line], Math.max(ctx.time, floor) - oldMain.begin, range) : 0;
   const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
   const written = oldMain
-    ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) }, ctx.splitChar)
+    ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) }, ctx.splitChar, ctx.songEnd)
     : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null, ctx);
 
   return {

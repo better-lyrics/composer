@@ -160,9 +160,14 @@ function extractInline(line: LyricLine, options: ExtractOptions, splitChar: stri
   );
 }
 
-function extractInlineFromLine(line: LyricLine, options: ExtractOptions, splitChar: string): LyricLine {
+function extractInlineFromLine(
+  line: LyricLine,
+  options: ExtractOptions,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): LyricLine {
   const extracted = extractInline(line, options, splitChar);
-  return extracted === line ? line : withSeededBackground(extracted, splitChar);
+  return extracted === line ? line : withSeededBackground(extracted, splitChar, songEnd);
 }
 
 // Other instances of a group line take the extraction from its template.
@@ -171,16 +176,22 @@ function extractInlineOnLine(
   lineId: string,
   options: ExtractOptions,
   splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
 ): LineUpdate[] {
   const target = lines.find((line) => line.id === lineId);
   if (!target) return [];
-  const extracted = extractInlineFromLine(target, options, splitChar);
+  const extracted = extractInlineFromLine(target, options, splitChar, songEnd);
   return extracted === target ? [] : [{ id: lineId, updates: { tracks: extracted.tracks } }];
 }
 
 // -- Whole-list transform -----------------------------------------------------
 
-function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions, splitChar: string): LyricLine[] {
+function extractBackgroundVocals(
+  lines: LyricLine[],
+  options: ExtractOptions,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): LyricLine[] {
   const result: LyricLine[] = [];
   const sameSessionWriteIndices = new Set<number>();
   for (const line of lines) {
@@ -208,6 +219,7 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions, sp
           sameSessionWriteIndices.has(prevIndex),
           options.preserveBrackets,
           splitChar,
+          songEnd,
         );
         if (merged) {
           result[prevIndex] = merged;
@@ -219,7 +231,7 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions, sp
     result.push(line);
   }
   return result.map((line, index) =>
-    sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar) : line,
+    sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar, songEnd) : line,
   );
 }
 

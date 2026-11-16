@@ -18,6 +18,8 @@ interface TemplateEditInput {
   // Where each instance sits, from the doc; read from the lines when left out.
   anchors?: InstanceAnchors;
   splitChar: string;
+  // Where the song ends; unbounded when not given.
+  songEnd?: number;
 }
 
 // A split that reached other instances, with how many instances have it now.
@@ -189,7 +191,14 @@ function isSplit(edit: Edit): boolean {
 // timing. Detached lines keep their own content, and so does an instance missing a line the command moved words to or
 // from. An instance the same command edited differently keeps its edit as its own line. Work grows with the lines and
 // the edited template lines.
-function carryTemplateEdits({ before, after, groups, anchors, splitChar }: TemplateEditInput): TemplateEdits {
+function carryTemplateEdits({
+  before,
+  after,
+  groups,
+  anchors,
+  splitChar,
+  songEnd = Number.POSITIVE_INFINITY,
+}: TemplateEditInput): TemplateEdits {
   const { edits, edited, previousOf } = templateLineEdits(before, after);
   if (edits.length === 0) return { lines: after, splits: [], detachedIds: [] };
   const groupsById = new Map(groups.map((group) => [group.id, group]));
@@ -248,6 +257,7 @@ function carryTemplateEdits({ before, after, groups, anchors, splitChar }: Templ
       counterpart: counterpartFor(groupId, from, line.instanceIdx),
       room: { floor: previousLineEnd(after, index), limit: nextLineStart(after, index) },
       splitChar,
+      songEnd,
     });
     if (lines === after) lines = [...after];
     lines[index] = carried;

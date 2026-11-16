@@ -208,11 +208,12 @@ interface LineCarry {
   counterpart: LineageCounterpart;
   room: LineRoom;
   splitChar: string;
+  songEnd: number;
 }
 
 // Another instance's line after an edit to its template line: the edit's content, that instance's own timing and
 // ids, and its readings unless the edit rewrote them.
-function carriedLine({ before, after, own, offset, counterpart, room, splitChar }: LineCarry): LyricLine {
+function carriedLine({ before, after, own, offset, counterpart, room, splitChar, songEnd }: LineCarry): LyricLine {
   const ownMain = mainTrack(own);
   const afterMain = mainTrack(after);
   const main: MainTrack = withTiming(
@@ -247,7 +248,7 @@ function carriedLine({ before, after, own, offset, counterpart, room, splitChar 
   const tracks: LineTracks = background ? [main, background] : [main];
   const languages = carriedLanguages(before, after, own, tracks, splitChar);
   const { languages: _languages, ...rest } = own;
-  return withSeededBackground({ ...rest, tracks, ...(languages && { languages }) }, splitChar);
+  return withSeededBackground({ ...rest, tracks, ...(languages && { languages }) }, splitChar, songEnd);
 }
 
 // -- Exports ------------------------------------------------------------------

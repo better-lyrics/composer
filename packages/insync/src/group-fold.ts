@@ -80,7 +80,7 @@ function foldLines(input: FoldInput): Folded {
   const before = flattenBody(doc);
   const anchors = instanceAnchors(doc);
   const edited = carriesTemplateEdits
-    ? carryTemplateEdits({ before, after, groups, anchors, splitChar })
+    ? carryTemplateEdits({ before, after, groups, anchors, splitChar, songEnd })
     : { lines: after, splits: [] };
   const copy = copiesSharedTiming
     ? copyThroughTemplate({ doc, before, after: edited.lines, groups, touched, anchors, songEnd })

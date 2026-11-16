@@ -65,7 +65,7 @@ function pasteLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): Lyric
 
 function extractBackground(options: ExtractOptions): LyricCommand {
   return wholeLinesEdit({ command: "extract background", args: [] }, (root, ctx) => ({
-    lines: extractBackgroundVocals(root.lines, options, ctx.splitChar),
+    lines: extractBackgroundVocals(root.lines, options, ctx.splitChar, ctx.songEnd),
   }));
 }
 
@@ -79,7 +79,13 @@ function removeSectionTagLines(lineIds: ReadonlySet<string>): LyricCommand {
 
 function extractLineBackground(lineId: string, preserveBrackets: boolean): LyricCommand {
   return lineEditCommand({ command: "extract line background", args: [lineId] }, (root, ctx) =>
-    extractInlineOnLine(root.lines, lineId, { mergeStandaloneLines: false, preserveBrackets }, ctx.splitChar),
+    extractInlineOnLine(
+      root.lines,
+      lineId,
+      { mergeStandaloneLines: false, preserveBrackets },
+      ctx.splitChar,
+      ctx.songEnd,
+    ),
   );
 }
 
@@ -100,7 +106,11 @@ function editBackgroundText(lineId: string, text: string): LyricCommand {
               { text, words: remapWordTextsPreservingTiming(timed, text, ctx.splitChar), source: "manual" },
               ctx.splitChar,
             )
-          : withSeededBackground(withBackground(target, { text, source: "manual" }, ctx.splitChar), ctx.splitChar);
+          : withSeededBackground(
+              withBackground(target, { text, source: "manual" }, ctx.splitChar),
+              ctx.splitChar,
+              ctx.songEnd,
+            );
     return [{ id: lineId, updates: { tracks: edited.tracks } }];
   });
 }

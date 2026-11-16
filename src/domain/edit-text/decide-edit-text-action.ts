@@ -35,6 +35,8 @@ interface DecideOptions {
   ranges?: readonly BackgroundRange[];
   /** Where each group instance sits, from the project's doc; read from the lines when left out. */
   anchors?: InstanceAnchors;
+  /** Where the song ends; unbounded when left out. */
+  songEnd?: number;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -45,12 +47,13 @@ function typedLyricLines(
   defaultAgentId: string,
   lines: LyricLine[],
   splitCharacter: string,
+  songEnd: number | undefined,
 ): LyricLine[] {
   if (!ranges) return textToLyricLines(text, defaultAgentId, lines, splitCharacter);
   const rows = editRows(text, ranges);
   const mainTexts = rows.map((row) => row.text);
   const backgrounds = rows.map((row) => row.background);
-  return textToLyricLines(mainTexts, defaultAgentId, lines, splitCharacter, backgrounds);
+  return textToLyricLines(mainTexts, defaultAgentId, lines, splitCharacter, backgrounds, songEnd);
 }
 
 // A structural commit rewrites only the rows that no longer show a line the project held before it.
@@ -79,8 +82,9 @@ function decideEditTextAction({
   splitCharacter,
   ranges,
   anchors,
+  songEnd,
 }: DecideOptions): EditTextAction {
-  const lyricLines = typedLyricLines(text, ranges, defaultAgentId, lines, splitCharacter);
+  const lyricLines = typedLyricLines(text, ranges, defaultAgentId, lines, splitCharacter, songEnd);
   const diff = diffEditTextChange(lines, lyricLines);
 
   if (diff.hasStructuralChange) {
@@ -113,6 +117,7 @@ function decideEditTextAction({
     groups,
     anchors,
     splitChar: splitCharacter,
+    songEnd,
   });
   const shown = rewrittenEditText(text, ranges, lyricLines, finalLines, splitCharacter);
   return {

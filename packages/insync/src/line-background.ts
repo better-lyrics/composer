@@ -88,15 +88,16 @@ function seededBackground(
 }
 
 // A line with no length yet, as a Line mode tap leaves it, seeds from its begin the way the tap seeds.
-function seedSpan(line: LyricLine): { begin: number; end?: number } | null {
+function seedSpan(line: LyricLine, songEnd: number): { begin: number; end?: number; songEnd?: number } | null {
   const bounds = effectiveBounds(line);
-  if (bounds && bounds.end === bounds.begin) return { begin: bounds.begin };
+  if (bounds && bounds.end === bounds.begin) return { begin: bounds.begin, songEnd };
   return secondHalf(line);
 }
 
-// Untimed background lyrics are timed over the second half of a timed line, at the main track's sync level.
-function withSeededBackground(line: LyricLine, splitChar: string): LyricLine {
-  return seededBackground(line, seedSpan(line), splitChar);
+// Untimed background lyrics are timed over the second half of a timed line, at the main track's sync level. An open
+// line's background ends by the song's end, unbounded when not given.
+function withSeededBackground(line: LyricLine, splitChar: string, songEnd = Number.POSITIVE_INFINITY): LyricLine {
+  return seededBackground(line, seedSpan(line, songEnd), splitChar);
 }
 
 // Seeded as words whatever the main track's level, as 3.x seeded every line: for joining background words that

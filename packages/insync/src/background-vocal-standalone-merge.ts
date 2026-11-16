@@ -90,6 +90,7 @@ function mergeIntoLineSynced(
   keptBaseSource: BackgroundSource,
   preserveBrackets: boolean,
   splitChar: string,
+  songEnd: number,
 ): LyricLine {
   const baseText = backgroundText(base, splitChar);
   const ownText = backgroundText(standalone, splitChar)?.trim();
@@ -101,7 +102,7 @@ function mergeIntoLineSynced(
     },
     splitChar,
   );
-  const span = spanOver(bgBounds(withSeededBackground(base, splitChar)), effectiveBounds(standalone));
+  const span = spanOver(bgBounds(withSeededBackground(base, splitChar, songEnd)), effectiveBounds(standalone));
   const background = backgroundTrack(merged);
   return span && background ? withBackgroundTrack(merged, withTrackSpan(background, span.begin, span.end)) : merged;
 }
@@ -113,6 +114,7 @@ function mergeStandaloneInto(
   prevTrailingBracketFromSamePass: boolean,
   preserveBrackets: boolean,
   splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine | null {
   // On re-paste, prev's extraction-sourced background is stale output from a
   // prior pass, so the standalone line replaces it. Manual background is kept.
@@ -137,6 +139,7 @@ function mergeStandaloneInto(
       keptBaseSource,
       preserveBrackets,
       splitChar,
+      songEnd,
     );
   }
   const baseText = prevIsStaleExtraction ? undefined : backgroundText(prev, splitChar);

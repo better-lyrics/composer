@@ -21,6 +21,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { notifyTemplateSplit } from "@/lib/template-split-signals";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricBurst } from "@/stores/project/history-types";
 import { docOfLines } from "@/stores/project/with-body";
@@ -31,6 +32,7 @@ import { extractBackgroundVocals, lineHasInlineParens } from "insync/background-
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { pluralWord } from "insync/pluralize";
+import { songEndOrUnbounded } from "insync/song-end";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
 import { EditNotices } from "@/views/edit/edit-notices";
@@ -280,6 +282,7 @@ const EditPanel: React.FC = () => {
       const text = textarea.value;
       const { splitCharacter } = shownText;
       const ranges = remapBackgroundRanges(shownText.text, text, shownText.ranges, textarea.selectionEnd);
+      const songEnd = songEndOrUnbounded(useAudioStore.getState().duration);
       const action = decideEditTextAction({
         text,
         defaultAgentId,
@@ -288,6 +291,7 @@ const EditPanel: React.FC = () => {
         splitCharacter,
         ranges,
         anchors: instanceAnchors(docOfLines(lines)),
+        songEnd,
       });
 
       useImportModalStore.getState().clearImportResult();
@@ -309,6 +313,7 @@ const EditPanel: React.FC = () => {
               preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
             },
             getSplitCharacter(),
+            songEnd,
           );
         }
         finalizeRun();

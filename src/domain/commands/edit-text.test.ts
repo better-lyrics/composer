@@ -10,12 +10,16 @@ import { withSeededBackground } from "insync/line-background";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { getSplitCharacter } from "@/utils/split-character";
 
-beforeEach(() => useProjectStore.getState().reset());
+beforeEach(() => {
+  useProjectStore.getState().reset();
+  useAudioStore.getState().reset();
+});
 
 describe("editBackgroundText", () => {
   it("regression: a line-synced background keeps its moved span when its text is retyped", () => {
@@ -49,6 +53,24 @@ describe("editBackgroundText", () => {
     useProjectStore.getState().commit(tapLine(1, 5));
 
     expect(bgBounds(useProjectStore.getState().lines[0])?.begin).toBe(2);
+  });
+
+  it("regression: a background added to a line left open near the song's end ends with the song", () => {
+    useAudioStore.setState({ duration: 10 });
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "l1", text: "Paper boats" })] });
+    useProjectStore
+      .getState()
+      .commit(
+        syncGesture(
+          "tap-line",
+          { cursor: { lineIndex: 0, wordIndex: 0 }, jumped: false, time: 9.9, defaultWordDuration: 0.5 },
+          () => {},
+        ),
+      );
+
+    useProjectStore.getState().commit(editBackgroundText("l1", "drifting away"));
+
+    expect(bgBounds(useProjectStore.getState().lines[0])).toEqual({ begin: 9.9, end: 10 });
   });
 });
 

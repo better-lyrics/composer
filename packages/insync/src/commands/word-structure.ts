@@ -121,6 +121,7 @@ function setBackgroundText(lineId: string, text: string): LyricCommand {
     const written = withSeededBackground(
       withBackground(line, { text, source: "manual" }, ctx.splitChar),
       ctx.splitChar,
+      ctx.songEnd,
     );
     return [{ id: lineId, updates: { tracks: written.tracks } }];
   });
