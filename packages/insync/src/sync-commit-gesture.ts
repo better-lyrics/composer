@@ -38,6 +38,9 @@ interface GestureCommit {
   clampedTo: number | null;
 }
 
+// An early tap snaps to the previous slot's end; with no room left there it is refused.
+type GesturePlan = GestureCommit | "no-room" | null;
+
 interface SlotWrite {
   update: LineUpdate;
   clampedTo: number | null;
@@ -49,6 +52,8 @@ interface SlotWrite {
 interface Anchor {
   slot: SyncSlot | null;
   floor: number;
+  early: boolean;
+  previous: Bounds | null;
 }
 
 function closableSlot(lines: readonly LyricLine[], slot: SyncSlot): SyncSlot {
@@ -57,14 +62,22 @@ function closableSlot(lines: readonly LyricLine[], slot: SyncSlot): SyncSlot {
   return slot.wordIndex === null && words.length ? { lineIndex: slot.lineIndex, wordIndex: words.length - 1 } : slot;
 }
 
-// A re-record may start inside the previous slot; one that lands before that slot begins is early and snaps to its end.
+const NO_ANCHOR: Anchor = { slot: null, floor: 0, early: false, previous: null };
+
+// A tap may start inside the previous slot; one that lands at or before that slot begins is early and snaps to its end.
 function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word"): Anchor {
   const previous = previousSlot(lines, ctx.cursor, granularity, ctx.splitChar);
-  if (!previous) return { slot: null, floor: 0 };
+  if (!previous) return NO_ANCHOR;
   const slot = closableSlot(lines, previous);
   const bounds = slotBounds(lines, slot);
-  if (!bounds) return { slot: null, floor: 0 };
-  return { slot, floor: ctx.jumped && ctx.time <= bounds.begin ? bounds.end : bounds.begin };
+  if (!bounds) return NO_ANCHOR;
+  const early = ctx.time <= bounds.begin;
+  return { slot, floor: early ? bounds.end : bounds.begin, early, previous: bounds };
+}
+
+function earlyWithoutRoom(anchor: Anchor, nextBegin: number | undefined): boolean {
+  if (!anchor.early || !anchor.previous) return false;
+  return anchor.previous.end <= anchor.previous.begin || (nextBegin !== undefined && nextBegin <= anchor.floor);
 }
 
 // A placed shared instance keeps the shared end of its last word, even when an undo lost the jump past it.
@@ -100,7 +113,11 @@ function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | nu
 
 // -- Word slot writing ----------------------------------------------------------
 
-function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open: boolean): SlotWrite | null {
+function writeWord(
+  lines: readonly LyricLine[],
+  gestureCtx: GestureContext,
+  open: boolean,
+): SlotWrite | "no-room" | null {
   const ctx = withJumpPastSkipped(lines, gestureCtx, "word");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
@@ -112,9 +129,10 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   const anchor = anchorBefore(lines, ctx, "word");
   const { slot } = anchor;
   const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
+  const nextWord = existing[cursor.wordIndex + 1];
+  if (!crossLine && earlyWithoutRoom(anchor, nextWord?.begin)) return "no-room";
   const floor = Math.max(crossLine ? 0 : anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
-  const nextWord = existing[cursor.wordIndex + 1];
   const provisional = open ? begin : tapEnd(begin, ctx.defaultWordDuration);
   const end = nextWord && nextWord.begin >= begin ? Math.min(provisional, nextWord.begin) : provisional;
 
@@ -147,13 +165,14 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
 
 // -- Line slot writing ------------------------------------------------------------
 
-function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): SlotWrite | null {
+function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): SlotWrite | "no-room" | null {
   const ctx = withJumpPastSkipped(lines, gestureCtx, "line");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line, ctx.splitChar)) return null;
 
   const anchor = anchorBefore(lines, ctx, "line");
+  if (earlyWithoutRoom(anchor, undefined)) return "no-room";
   const { slot } = anchor;
   const range = rangeOfLine(lines, line, ctx);
   const floor = Math.max(anchor.floor, range.min);
@@ -224,11 +243,11 @@ function slotWriteToUpdates(write: SlotWrite): LineUpdate[] {
 
 // -- Dispatcher -------------------------------------------------------------------
 
-function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: GestureContext): GestureCommit | null {
+function planGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: GestureContext): GesturePlan {
   if (gesture === "tap-word" || gesture === "hold-start") {
     const open = gesture === "hold-start";
     const write = writeWord(lines, ctx, open);
-    if (!write) return null;
+    if (!write || write === "no-room") return write;
     return {
       lineUpdates: slotWriteToUpdates(write),
       nextCursor: open ? ctx.cursor : advanceCursor(lines, ctx.cursor, "word", ctx.splitChar),
@@ -239,6 +258,7 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 
   if (gesture === "tap-line") {
     const write = writeLine(lines, ctx);
+    if (write === "no-room") return write;
     if (!write) {
       const closed = lastLineClose(lines, ctx.cursor, ctx.time, ctx.splitChar);
       return closed && { lineUpdates: [closed], nextCursor: ctx.cursor, nextJumped: false, clampedTo: null };
@@ -261,11 +281,16 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 
   const linesAfterClose = applyLineUpdates(lines, [closed.update]);
   const opened = writeWord(linesAfterClose, { ...ctx, cursor: nextCursor, jumped: true, time: closed.closeEnd }, true);
-  const lineUpdates = opened ? mergeUpdates([closed.update], [opened.update]) : [closed.update];
+  const lineUpdates = opened && opened !== "no-room" ? mergeUpdates([closed.update], [opened.update]) : [closed.update];
   return { lineUpdates, nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
+}
+
+function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: GestureContext): GestureCommit | null {
+  const plan = planGesture(lines, gesture, ctx);
+  return plan === "no-room" ? null : plan;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export type { GestureCommit, GestureContext, SyncGesture };
-export { commitGesture };
+export type { GestureCommit, GestureContext, GesturePlan, SyncGesture };
+export { commitGesture, planGesture };
