@@ -5,7 +5,18 @@ function caretLineBottom(textarea: HTMLTextAreaElement): { bottom: number; lineH
   const style = getComputedStyle(textarea);
   const copy = document.createElement("textarea");
   for (const property of style) copy.style.setProperty(property, style.getPropertyValue(property));
-  Object.assign(copy.style, { position: "absolute", visibility: "hidden", top: "0", left: "-9999px", height: "0" });
+  Object.assign(copy.style, {
+    position: "absolute",
+    visibility: "hidden",
+    top: "0",
+    left: "-9999px",
+    height: "0",
+    overflow: "hidden",
+    boxSizing: "border-box",
+    borderLeftWidth: "0",
+    borderRightWidth: "0",
+    width: `${textarea.clientWidth}px`,
+  });
   copy.value = textarea.value.slice(0, textarea.selectionEnd);
   document.body.appendChild(copy);
   const bottom = copy.scrollHeight - Number.parseFloat(style.paddingBottom);
