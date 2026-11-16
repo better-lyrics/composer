@@ -689,6 +689,27 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
     expect(timedSyllables(mainTrack(result[0])).map((w) => w.begin)).toEqual([1, 2, 3, 5, 6, 7]);
   });
 
+  it("regression: typing on a joined row keeps the syllable splits of the row joined onto it", () => {
+    const lanterns = timedLine("lanterns", ["Lanterns", "drift", "a"], 1);
+    const paper = lineFromFields(
+      {
+        id: "paper",
+        text: "way|ward wings",
+        agentId: "v1",
+        words: [
+          { id: "way", text: "way", sep: "", begin: 5, end: 5.5, joinsNext: true },
+          { id: "ward", text: "ward", sep: " ", begin: 5.5, end: 6, joinsNext: false },
+          { id: "wings", text: "wings", sep: "", begin: 6, end: 7, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const joined = textToLyricLines("Lanterns drift away|ward wings", "v1", [lanterns, paper]);
+    const [typed] = textToLyricLines("Lanterns drift away|ward wings glow", "v1", joined);
+    expect(lineText(typed, DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns drift away|ward wings glow");
+    expect(timedSyllables(mainTrack(typed)).map((w) => w.begin)).toEqual([1, 2, 3, 5.5, 6]);
+  });
+
   it("regression: joining a row timed before the row above keeps every timed syllable in time order", () => {
     const lanterns = timedLine("lanterns", ["Lanterns", "drift"], 8);
     const paper = timedLine("paper", ["Paper", "wings"], 2);
