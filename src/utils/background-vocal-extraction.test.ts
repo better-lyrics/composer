@@ -1307,6 +1307,24 @@ describe("extractBackgroundVocals: standalone line with its own background", () 
     ]);
     expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("hey yeah oh");
   });
+
+  it("regression: the standalone line's own timed background starts a new word after its lyrics", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(hey yeah)",
+        words: [
+          { text: "(hey", sep: " ", begin: 5, end: 5.5 },
+          { text: "yeah)", begin: 5.5, end: 6 },
+        ],
+        backgroundText: "oh",
+        backgroundWords: [{ text: "oh", begin: 6.2, end: 6.5 }],
+      }),
+    ];
+    const [merged] = extractBackgroundVocals(lines, merge, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("hey yeah oh");
+  });
 });
 
 // -- extractBackgroundVocals: input not mutated -------------------------------

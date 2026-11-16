@@ -1,4 +1,5 @@
 import type { LineUpdate, LyricLine } from "./line";
+import type { SyncGranularity } from "./line-sync-progress";
 import { isSpanTimed, mainTrack, timedSyllables } from "./line-track";
 import { withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
 import { type SyncCursor, type SyncSlot, isCursorPastEnd, previousSlot, slotBounds } from "./sync-cursor";
@@ -75,20 +76,35 @@ function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: 
   return updates ? { id: line.id, updates } : null;
 }
 
-// Each Line mode tap ends the line before it, so a tap after the last line ends that line if no tap has yet.
+// Each Line mode tap ends the line before it, so after the last line one more tap is owed while that line has no end.
+function openLastLine(lines: readonly LyricLine[], cursor: SyncCursor, splitChar: string) {
+  if (!isCursorPastEnd(lines, cursor)) return null;
+  const slot = previousSlot(lines, cursor, "line", splitChar);
+  const bounds = slot && slotBounds(lines, slot);
+  return slot && bounds && bounds.end === bounds.begin ? { slot, begin: bounds.begin } : null;
+}
+
 function lastLineClose(
   lines: readonly LyricLine[],
   cursor: SyncCursor,
   time: number,
   splitChar: string,
 ): LineUpdate | null {
-  if (!isCursorPastEnd(lines, cursor)) return null;
-  const slot = previousSlot(lines, cursor, "line", splitChar);
-  const open = slot && slotBounds(lines, slot);
-  if (!open || open.end !== open.begin || time <= open.begin) return null;
-  return closingUpdate(lines, slot, time);
+  const open = openLastLine(lines, cursor, splitChar);
+  if (!open || time <= open.begin) return null;
+  return closingUpdate(lines, open.slot, time);
+}
+
+function isSyncComplete(
+  lines: readonly LyricLine[],
+  cursor: SyncCursor,
+  granularity: SyncGranularity,
+  splitChar: string,
+): boolean {
+  if (!isCursorPastEnd(lines, cursor)) return false;
+  return granularity !== "line" || openLastLine(lines, cursor, splitChar) === null;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd };
+export { closeSlotWords, closingUpdate, isSyncComplete, lastLineClose, previousSlotEnd, tapEnd };

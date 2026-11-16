@@ -14,8 +14,8 @@ import { backgroundTrack, isSpanTimed, isTimedSyllable, roleWords, timedSyllable
 import { withBackgroundTrack, withTrackSpan } from "./line-track-writes";
 import { type Bounds, lastEnd } from "./word-bounds";
 import { remapWordTextsPreservingTiming } from "./word-remap-text";
-import type { WordTiming } from "./word-timing";
 import { withTrailingSpace } from "./word-spaces";
+import type { WordTiming } from "./word-timing";
 import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "./background-vocal-brackets";
 import { createInitialBgWords } from "./lyric-words";
 
@@ -147,7 +147,6 @@ function mergeStandaloneInto(
     prevTrailingBracketFromSamePass && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
     splitChar,
   );
-  // The standalone line's own background follows its lyrics: timed words after the carried ones, the rest as text.
   const own = ownBackground(standalone, splitChar);
   const carried = sung?.length && own.words.length ? [...withTrailingSpace(sung), ...own.words] : sung;
   const withOwnRest = (text: string) => (own.rest ? `${text.trimEnd()} ${own.rest}` : text);

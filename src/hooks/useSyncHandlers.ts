@@ -21,7 +21,8 @@ import { mainTrack, timedSyllables, type WordTrack } from "insync/line-track";
 import { SYNC_START, syncAddressAt } from "insync/sync-address";
 import { anchorGesture, placingEntries } from "insync/sync-anchor-gesture";
 import type { GestureCommit, SyncGesture } from "insync/sync-commit-gesture";
-import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "insync/sync-cursor";
+import { nextSyncableLineIndex, previousSlot } from "insync/sync-cursor";
+import { isSyncComplete } from "insync/sync-slot-close";
 import { type PlacementSkip, placementSkipTarget } from "insync/sync-placement-skip";
 import type { BoundaryEdge } from "insync/word-boundary";
 import type { WordTiming } from "insync/word-timing";
@@ -112,7 +113,7 @@ function useSyncHandlers({
   const { cursor, jumped, skippedInstances } = useSyncCursor(lines, syncState, granularity);
   const { lineIndex, wordIndex } = cursor;
   const currentLine = lines[lineIndex];
-  const isComplete = isCursorPastEnd(lines, cursor);
+  const isComplete = isSyncComplete(lines, cursor, granularity, getSplitCharacter());
 
   const runGesture = useCallback(
     (gesture: SyncGesture): boolean => {
