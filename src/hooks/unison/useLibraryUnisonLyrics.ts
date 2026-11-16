@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { isOwnLyric } from "@/domain/unison/ownership";
 import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import { isUnisonNotFound } from "@/lib/unison/client";
@@ -7,11 +8,13 @@ import { fetchLyric, fetchMinePages } from "@/lib/unison/endpoints";
 
 // -- Types ---------------------------------------------------------------------
 
+type LinkedLookup = "suggestion" | "own" | "removed" | "unresolved";
+
 interface LibraryUnisonLyrics {
   items: UnisonMineItem[];
   /** True once every page of `/lyrics/mine` loaded, so a linked id that is still missing was removed or is not ours. */
   complete: boolean;
-  otherAccountIds: ReadonlySet<string>;
+  suggestionIds: ReadonlySet<string>;
   unresolvedIds: ReadonlySet<string>;
 }
 
@@ -25,40 +28,60 @@ const NO_IDS: ReadonlySet<string> = new Set();
 
 // -- Fetching ------------------------------------------------------------------
 
-// Past the page cap, unresolved links read as unknown instead of removed.
-// Link suggestions need every lyric, since one on a later page can make a match ambiguous.
+async function lookUpLinked(
+  ids: readonly string[],
+  keyId: string | null,
+  signal: AbortSignal,
+): Promise<Map<string, LinkedLookup>> {
+  const results = await Promise.allSettled(ids.map((id) => fetchLyric(Number(id), { signal })));
+  return new Map(
+    ids.map((id, index): [string, LinkedLookup] => {
+      const result = results[index];
+      if (result.status === "fulfilled") return [id, isOwnLyric(result.value, keyId) ? "own" : "suggestion"];
+      return [id, isUnisonNotFound(result.reason) ? "removed" : "unresolved"];
+    }),
+  );
+}
+
+function idsWhere(lookups: ReadonlyMap<string, LinkedLookup>, wanted: LinkedLookup): Set<string> {
+  return new Set([...lookups].flatMap(([id, found]) => (found === wanted ? [id] : [])));
+}
+
 async function fetchMineForLibrary(
   linkedIds: readonly string[],
   loadAll: boolean,
   everyPage: boolean,
   signal: AbortSignal,
+  keyId: string | null,
 ): Promise<LibraryUnisonLyrics> {
   const missing = new Set(linkedIds);
+  const lookups = new Map<string, LinkedLookup>();
+  let lookedUp = false;
   const { items, complete } = await fetchMinePages(signal, {
     maxPages: everyPage ? Number.POSITIVE_INFINITY : undefined,
-    stopAfter: (page) => {
+    stopAfter: async (page) => {
       for (const item of page) missing.delete(String(item.id));
+      if (!lookedUp && missing.size > 0) {
+        lookedUp = true;
+        for (const [id, found] of await lookUpLinked([...missing], keyId, signal)) {
+          lookups.set(id, found);
+          if (found === "suggestion") missing.delete(id);
+        }
+      }
       return missing.size === 0 && !loadAll;
     },
   });
-  if (complete) return { items, complete, ...(await lookUpMissing(missing, signal)) };
-  return { items, complete, otherAccountIds: NO_IDS, unresolvedIds: NO_IDS };
-}
-
-// A linked lyric missing from a complete `/lyrics/mine` was removed (404) or belongs to another account.
-async function lookUpMissing(
-  missing: ReadonlySet<string>,
-  signal: AbortSignal,
-): Promise<Pick<LibraryUnisonLyrics, "otherAccountIds" | "unresolvedIds">> {
-  const ids = [...missing];
-  const results = await Promise.allSettled(ids.map((id) => fetchLyric(Number(id), { signal })));
-  const otherAccountIds = new Set<string>();
-  const unresolvedIds = new Set<string>();
-  results.forEach((result, index) => {
-    if (result.status === "fulfilled") otherAccountIds.add(ids[index]);
-    else if (!isUnisonNotFound(result.reason)) unresolvedIds.add(ids[index]);
-  });
-  return { otherAccountIds, unresolvedIds };
+  for (const item of items) missing.delete(String(item.id));
+  if (complete) {
+    const unchecked = [...missing].filter((id) => !lookups.has(id));
+    for (const [id, found] of await lookUpLinked(unchecked, keyId, signal)) lookups.set(id, found);
+  }
+  return {
+    items,
+    complete,
+    suggestionIds: idsWhere(lookups, "suggestion"),
+    unresolvedIds: complete ? new Set([...missing].filter((id) => lookups.get(id) !== "removed")) : NO_IDS,
+  };
 }
 
 // -- Hook ----------------------------------------------------------------------
@@ -71,7 +94,7 @@ function useLibraryUnisonLyrics(
 ): LibraryUnisonState | null {
   const query = useQuery({
     queryKey: unisonQueryKeys.mineForLibrary(keyId ?? "", linkedIds, loadAll, everyPage),
-    queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, loadAll, everyPage, signal),
+    queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, loadAll, everyPage, signal, keyId),
     staleTime: UNISON_STALE_TIME_MS,
     // Another account's list must never stand in for this one.
     placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === keyId ? previous : undefined),
@@ -94,4 +117,4 @@ function useLibraryUnisonLyrics(
 
 // -- Exports -------------------------------------------------------------------
 
-export { useLibraryUnisonLyrics };
+export { fetchMineForLibrary, useLibraryUnisonLyrics };

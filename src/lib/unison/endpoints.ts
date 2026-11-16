@@ -77,7 +77,7 @@ const MAX_MINE_PAGES = 6;
 interface MinePagesOptions {
   /** Defaults to 6 pages of 50, enough for checks that only need most of the list. */
   maxPages?: number;
-  stopAfter?: (page: readonly UnisonMineItem[]) => boolean;
+  stopAfter?: (page: readonly UnisonMineItem[]) => boolean | Promise<boolean>;
 }
 
 /** Walks `/lyrics/mine` page by page. `complete` is true only when the last page was reached. */
@@ -92,7 +92,7 @@ async function fetchMinePages(
     const result = await fetchMine({ cursor, limit: MINE_PAGE_LIMIT, signal });
     items.push(...result.items);
     if (result.nextCursor === null) return { items, complete: true };
-    if (stopAfter(result.items) || seenCursors.has(result.nextCursor)) break;
+    if ((await stopAfter(result.items)) || seenCursors.has(result.nextCursor)) break;
     seenCursors.add(result.nextCursor);
     cursor = result.nextCursor;
   }
