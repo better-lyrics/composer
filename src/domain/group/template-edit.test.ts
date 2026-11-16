@@ -136,6 +136,22 @@ describe("carryTemplateEdits", () => {
     expect(backgroundTrack(out[1])).toBeUndefined();
   });
 
+  it("regression: a main text edit keeps another instance's own background", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Hold the lantern", words: words(10, ["Hold", "the", "lantern"]) }),
+      groupLine("L2", 1, {
+        text: "Hold the lantern",
+        words: words(30, ["Hold", "the", "lantern"]),
+        backgroundText: "(burn on)",
+        backgroundWords: words(31, ["(burn", "on)"]),
+      }),
+    ];
+    const after = before.with(0, withFields(before[0], { text: "Hold the lantern high" }));
+    const out = carried(before, after)[1];
+    expect(lineText(out, DEFAULT_SPLIT_CHARACTER)).toBe("Hold the lantern high");
+    expect(backgroundTrack(out)).toEqual(backgroundTrack(before[1]));
+  });
+
   it("leaves detached lines, other groups and other template lines alone", () => {
     const before = [
       groupLine("L1", 0, { text: "stale" }),

@@ -34,14 +34,18 @@ function sameSyllableContent(a: readonly Syllable[], b: readonly Syllable[]): bo
   return true;
 }
 
+function sameBackgroundContent(a: BackgroundTrack | undefined, b: BackgroundTrack | undefined): boolean {
+  if (!a || !b) return a === b;
+  return a.source === b.source && sameSyllableContent(a.syllables, b.syllables);
+}
+
 // What a group line gives every instance: the syllables' text, separators, joins and marks, the singer, and the
 // background and where it came from. Timing, ids and readings are each instance's own.
 function sameSharedContent(a: LyricLine, b: LyricLine): boolean {
   const [aMain, aBackground] = a.tracks;
   const [bMain, bBackground] = b.tracks;
   if (aMain.agentId !== bMain.agentId || !sameSyllableContent(aMain.syllables, bMain.syllables)) return false;
-  if (!aBackground || !bBackground) return aBackground === bBackground;
-  return aBackground.source === bBackground.source && sameSyllableContent(aBackground.syllables, bBackground.syllables);
+  return sameBackgroundContent(aBackground, bBackground);
 }
 
 // -- Tracks -------------------------------------------------------------------
@@ -212,7 +216,7 @@ interface LineCarry {
 }
 
 // Another instance's line after an edit to its template line: the edit's content, that instance's own timing and
-// ids, and its readings unless the edit rewrote them.
+// ids, and its own background and readings unless the edit rewrote them.
 function carriedLine({ before, after, own, offset, counterpart, room, splitChar, songEnd }: LineCarry): LyricLine {
   const ownMain = mainTrack(own);
   const afterMain = mainTrack(after);
@@ -228,23 +232,25 @@ function carriedLine({ before, after, own, offset, counterpart, room, splitChar,
       splitChar,
     }),
   );
+  const beforeBackground = backgroundTrack(before);
   const afterBackground = backgroundTrack(after);
   const ownBackground = backgroundTrack(own);
   const backgroundBase: BackgroundTrack = ownBackground ?? newBackgroundTrack(own.id);
-  const background =
-    afterBackground &&
-    withTiming(
-      afterBackground.source ? { ...backgroundBase, source: afterBackground.source } : backgroundBase,
-      carriedTrackTiming({
-        before: backgroundTrack(before),
-        after: afterBackground,
-        own: ownBackground,
-        offset,
-        counterpart,
-        room,
-        splitChar,
-      }),
-    );
+  const background = sameBackgroundContent(beforeBackground, afterBackground)
+    ? ownBackground
+    : afterBackground &&
+      withTiming(
+        afterBackground.source ? { ...backgroundBase, source: afterBackground.source } : backgroundBase,
+        carriedTrackTiming({
+          before: beforeBackground,
+          after: afterBackground,
+          own: ownBackground,
+          offset,
+          counterpart,
+          room,
+          splitChar,
+        }),
+      );
   const tracks: LineTracks = background ? [main, background] : [main];
   const languages = carriedLanguages(before, after, own, tracks, splitChar);
   const { languages: _languages, ...rest } = own;
