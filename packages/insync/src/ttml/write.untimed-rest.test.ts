@@ -87,4 +87,22 @@ describe("ttml · untimed rest of a partly synced line", () => {
     expect(marker).toBeGreaterThan(first);
     expect(reread.indexOf('x-cue="c"')).toBeGreaterThan(marker);
   });
+
+  it("regression: a kept element between kept spans of a background's untimed rest stays between them on a reread", () => {
+    const source = exported().replace(
+      "wa</span>ter keeps on</span>",
+      'wa</span>ter <span x-cue="b">keeps</span> <marker/><span x-cue="c">on</span></span>',
+    );
+    const reread = generateTTML({
+      metadata: { title: "Test", artists: [], album: "", duration: 60 },
+      agents: [{ id: "v1", type: "person", name: "Lead" }],
+      lines: parseTtml(source, SPLIT).lines,
+      splitChar: SPLIT,
+    });
+    const first = reread.indexOf('x-cue="b"');
+    const marker = reread.indexOf("<marker/>");
+    expect(first).toBeGreaterThan(-1);
+    expect(marker).toBeGreaterThan(first);
+    expect(reread.indexOf('x-cue="c"')).toBeGreaterThan(marker);
+  });
 });

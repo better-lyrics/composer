@@ -96,16 +96,16 @@ function timedTrackText(
   const tail = lyricOfNodes(untimedTailNodes(container));
   const closing = words.at(-1);
   if (!closing || tail.text.trim() === "") return { text: syllablesText(words, splitChar), words };
-  const read = /^\s/.test(tail.text) || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
+  const joinsClosing = !/^\s/.test(tail.text);
+  const read = !joinsClosing || closing.sep === "" ? words : words.with(-1, { ...closing, sep: "" });
   const timedText = syllablesText(read, splitChar);
   const rest = trimmedLyric(tail.text, tail.spans, tail.ends);
-  const spans = rest.spans.map((span) => ({
-    ...span,
-    start: span.start + timedText.length,
-    end: span.end + timedText.length,
-  }));
-  const ends = new Map([...rest.ends].map(([node, end]) => [node, end + timedText.length]));
-  return { text: timedText + rest.text, words: read, lyric: { text: timedText + rest.text, spans, ends } };
+  // The syllables spell a rest that joins the closing word with the split character between them.
+  const restStart = timedText.length + (joinsClosing ? splitChar.length : 0);
+  const spans = rest.spans.map((span) => ({ ...span, start: span.start + restStart, end: span.end + restStart }));
+  const ends = new Map([...rest.ends].map(([node, end]) => [node, end + restStart]));
+  const spelled = timedText + (joinsClosing ? splitChar : "") + rest.text;
+  return { text: timedText + rest.text, words: read, lyric: { text: spelled, spans, ends } };
 }
 
 // An untimed background's own span when its container wrote one, each missing bound taken from the `<p>`; one that
@@ -185,7 +185,26 @@ function untimedAnchors(
   return anchors;
 }
 
+function untimedTrackAnchors(
+  line: LyricLine,
+  main: UntimedLyric | undefined,
+  background: UntimedLyric | undefined,
+  splitChar: string,
+): { main: ReadonlyMap<XmlReadNode, string>; background: ReadonlyMap<XmlReadNode, string> } {
+  return {
+    main: untimedAnchors(main, mainTrack(line), splitChar),
+    background: untimedAnchors(background, backgroundTrack(line), splitChar),
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { UntimedLyric };
-export { timedTrackText, untimedAnchors, untimedBackgroundSpan, untimedLyric, withSpansFromMarkup, withUntimedSpans };
+export {
+  timedTrackText,
+  untimedBackgroundSpan,
+  untimedLyric,
+  untimedTrackAnchors,
+  withSpansFromMarkup,
+  withUntimedSpans,
+};

@@ -6,7 +6,6 @@ import type { LinkGroup } from "../group";
 import { lineFromFields } from "../line-from-fields";
 import type { LyricLine } from "../line";
 import { isLineSynced, isWordSynced } from "../line-predicates";
-import { mainTrack } from "../line-track";
 import { normalizeLanguageTag } from "../project-language";
 import type { ProjectMetadata } from "../metadata";
 import { fromComposerMeta } from "../project-metadata-ttml";
@@ -22,9 +21,9 @@ import { docPassthrough, withAgentCapture, withParagraphCapture } from "./passth
 import {
   type UntimedLyric,
   timedTrackText,
-  untimedAnchors,
   untimedBackgroundSpan,
   untimedLyric,
+  untimedTrackAnchors,
   withUntimedSpans,
 } from "./untimed-read";
 
@@ -262,8 +261,9 @@ function parseTtml(content: string, splitChar: string, _fallbackDuration?: numbe
     }
     if (lines.length > lineCountBefore) {
       const captured = withUntimedSpans(lines[lines.length - 1], untimedMain, untimedBackground, splitChar);
+      const anchors = untimedTrackAnchors(captured, untimedMain, untimedBackground, splitChar);
       lines[lines.length - 1] = withInlineAlternates(
-        withParagraphCapture(captured, p, bgContainer, untimedAnchors(untimedMain, mainTrack(captured), splitChar)),
+        withParagraphCapture(captured, p, bgContainer, anchors),
         p,
         bgContainer,
         splitChar,
