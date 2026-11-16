@@ -150,4 +150,12 @@ describe("lineageByText", () => {
       ["drift", expect.closeTo(1 + 2 / 7), 2],
     ]);
   });
+
+  it("regression: a syllable added into a gap shorter than a millisecond shares the next syllable's slot", () => {
+    const own = [syllable("x", "o", 3.283, 3.333), syllable("y", "ta", 3.33325, 3.45075)];
+    const after = [syllable("a", "o"), syllable("n", "ka"), syllable("b", "ta")];
+    const [, [, addedBegin, addedEnd], [, , nextEnd]] = spans(lineageByText(after, own, () => undefined, "|"));
+    expect(Number(addedEnd) - Number(addedBegin)).toBeGreaterThan(0.001);
+    expect(nextEnd).toBe(3.45075);
+  });
 });

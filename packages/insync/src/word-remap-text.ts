@@ -2,6 +2,7 @@ import { splitTrailingWhitespace } from "./from-words";
 import { lcsPairs, wordKey } from "./word-alignment";
 import type { WordTiming } from "./word-timing";
 import { splitIntoWordsWithMeta } from "./lyric-words";
+import { msFromSeconds } from "./time";
 import { letterSlots } from "./word-letter-slots";
 import { synthesizeBracketedWord } from "./word-clone";
 
@@ -90,8 +91,9 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
     } else {
       const prevEnd = leftBracket ? leftBracket.end : rightBracket.begin;
       slot = insertSlot(prevEnd, rightBracket ? rightBracket.begin : prevEnd);
-      // With no room before the next word, the typed words share its slot by letters, the way a typed split does.
-      if (slot.end === slot.begin && rightBracket && slot.begin < rightBracket.end) {
+      // With under a millisecond each before the next word, the typed words share its slot by letters, as a typed split does.
+      const roomMs = msFromSeconds(slot.end) - msFromSeconds(slot.begin);
+      if (roomMs < runTexts.length && rightBracket && slot.begin < rightBracket.end) {
         const shared = [...runTexts, texts[runEnd]];
         const slots = letterSlots(
           shared.map((text) => Math.max(1, text.trim().length)),

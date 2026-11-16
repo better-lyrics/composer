@@ -149,6 +149,17 @@ describe("remapWordTextsPreservingTiming", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a word inserted into a gap shorter than a millisecond shares the next word's slot", () => {
+      const words: WordTiming[] = [
+        { id: "w40", text: "o", sep: " ", begin: 3.283, end: 3.333, joinsNext: false },
+        { id: "w41", text: "ta", sep: "", begin: 3.33325, end: 3.45075, joinsNext: false },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "o ka ta", DEFAULT_SPLIT_CHARACTER);
+      expect(result[1].end - result[1].begin).toBeGreaterThan(0.001);
+      expect(result[1].end).toBe(result[2].begin);
+      expect(result[2].end).toBe(3.45075);
+    });
+
     it("regression: words inserted on both sides of one word do not overlap it", () => {
       const result = remapWordTextsPreservingTiming(
         [{ id: "w11", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
