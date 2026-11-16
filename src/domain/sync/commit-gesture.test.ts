@@ -969,3 +969,10 @@ describe("holds in Line mode", () => {
     ]);
   });
 });
+
+describe("closing tap on the last line", () => {
+  it("regression: an early closing tap is refused like any early tap instead of doing nothing", () => {
+    const lines = [createLine({ id: "l0", text: "ren da", begin: 9.9, end: 9.9 })];
+    expect(planGesture(lines, "tap-line", ctxAt([1, 0], 9.1))).toBe("no-room");
+  });
+});

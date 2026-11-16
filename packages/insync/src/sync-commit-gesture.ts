@@ -8,8 +8,9 @@ import { clampShiftDelta, shiftLineTiming, shiftTrack } from "./line-shift";
 import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
 import { type SyncGranularity, isSyncableLine } from "./line-sync-progress";
-import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
+import { type SyncCursor, advanceCursor, previousSlot } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
+import { anchorBefore, earlyWithoutRoom } from "./sync-early-tap";
 import { closeHeld, closeHeldLine } from "./sync-hold-close";
 import { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd } from "./sync-slot-close";
 import { withSlotWord } from "./sync-slot-words";
@@ -48,39 +49,6 @@ interface SlotWrite {
   update: LineUpdate;
   clampedTo: number | null;
   closes: LineUpdate | null;
-}
-
-// -- Floor ----------------------------------------------------------------
-
-interface Anchor {
-  slot: SyncSlot | null;
-  floor: number;
-  early: boolean;
-  previous: Bounds | null;
-}
-
-function closableSlot(lines: readonly LyricLine[], slot: SyncSlot): SyncSlot {
-  const line = lines[slot.lineIndex];
-  const words = line ? timedSyllables(mainTrack(line)) : [];
-  return slot.wordIndex === null && words.length ? { lineIndex: slot.lineIndex, wordIndex: words.length - 1 } : slot;
-}
-
-const NO_ANCHOR: Anchor = { slot: null, floor: 0, early: false, previous: null };
-
-// A tap may start inside the previous slot; one that lands at or before that slot begins is early and snaps to its end.
-function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word"): Anchor {
-  const previous = previousSlot(lines, ctx.cursor, granularity, ctx.splitChar);
-  if (!previous) return NO_ANCHOR;
-  const slot = closableSlot(lines, previous);
-  const bounds = slotBounds(lines, slot);
-  if (!bounds) return NO_ANCHOR;
-  const early = ctx.time <= bounds.begin;
-  return { slot, floor: early ? bounds.end : bounds.begin, early, previous: bounds };
-}
-
-function earlyWithoutRoom(anchor: Anchor, nextBegin: number | undefined): boolean {
-  if (!anchor.early || !anchor.previous) return false;
-  return anchor.previous.end <= anchor.previous.begin || (nextBegin !== undefined && nextBegin <= anchor.floor);
 }
 
 // A placed shared instance keeps the shared end of its last word, even when an undo lost the jump past it.
@@ -263,7 +231,8 @@ function planGesture(lines: readonly LyricLine[], requested: SyncGesture, ctx: G
     if (write === "no-room") return write;
     if (!write) {
       const closed = lastLineClose(lines, ctx.cursor, ctx.time, ctx.splitChar);
-      return closed && { lineUpdates: [closed], nextCursor: ctx.cursor, nextJumped: false, clampedTo: null };
+      if (closed === "no-room" || !closed) return closed;
+      return { lineUpdates: [closed], nextCursor: ctx.cursor, nextJumped: false, clampedTo: null };
     }
     return {
       lineUpdates: slotWriteToUpdates(write),

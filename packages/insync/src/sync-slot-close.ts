@@ -87,14 +87,16 @@ function openLastLine(lines: readonly LyricLine[], cursor: SyncCursor, splitChar
   return slot && bounds && bounds.end === bounds.begin ? { slot, begin: bounds.begin } : null;
 }
 
+// A closing tap at or before the line starts has no room, the same as any early tap.
 function lastLineClose(
   lines: readonly LyricLine[],
   cursor: SyncCursor,
   time: number,
   splitChar: string,
-): LineUpdate | null {
+): LineUpdate | "no-room" | null {
   const open = openLastLine(lines, cursor, splitChar);
-  if (!open || time <= open.begin) return null;
+  if (!open) return null;
+  if (time <= open.begin) return "no-room";
   return closingUpdate(lines, open.slot, time);
 }
 
