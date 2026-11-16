@@ -46,7 +46,7 @@ const QuotedNote: React.FC<{ label: string; text: string }> = ({ label, text }) 
 const SuggestionWaitingCard: React.FC<WaitingCardProps> = ({ lyric, suggestion, keyId }) => {
   const actions = useOnUnisonActions(lyric, keyId);
   const headingId = useId();
-  const ownerWindow = suggestion.councilDecidesAt === null ? null : suggestion.councilDecidesAt - suggestion.createdAt;
+  const ownerSecLeft = suggestion.councilDecidesAt === null ? 0 : suggestion.councilDecidesAt - Date.now() / 1000;
   return (
     <section aria-labelledby={headingId} aria-busy={actions.busy} className={UNISON_CARD_STYLES}>
       <h3 id={headingId} className={UNISON_CARD_HEADING_STYLES}>
@@ -54,7 +54,11 @@ const SuggestionWaitingCard: React.FC<WaitingCardProps> = ({ lyric, suggestion, 
       </h3>
       <p className={UNISON_CARD_TEXT_STYLES}>{waitingMeta(suggestion.revNo, suggestion.createdAt, Date.now())}</p>
       {suggestion.note && <QuotedNote label={YOUR_NOTE_LABEL} text={suggestion.note} />}
-      <WhoDecides decider={suggestion.decider} owner={lyricOwnerName(lyric)} ownerDecisionSec={ownerWindow} />
+      <WhoDecides
+        decider={suggestion.decider}
+        owner={lyricOwnerName(lyric)}
+        ownerDecisionSec={ownerSecLeft > 0 ? ownerSecLeft : null}
+      />
       <div className="flex gap-2">
         <Button
           size="sm"

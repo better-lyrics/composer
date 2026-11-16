@@ -39,7 +39,7 @@ function noteLabel(owner: string | null, decider: SuggestionDecider | undefined)
 }
 
 function ownerWindowText(owner: string, ownerDecisionSec: number): string {
-  return `${owner} has ${pluralize(Math.round(ownerDecisionSec / DAY_SEC), "day")} to decide.`;
+  return `${owner} has ${pluralize(Math.ceil(ownerDecisionSec / DAY_SEC), "day")} to decide.`;
 }
 
 function whoDecidesText(

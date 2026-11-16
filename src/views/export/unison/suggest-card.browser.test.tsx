@@ -19,7 +19,9 @@ const VIDEO_ID = "hArb0urL1te";
 const SONG_SECONDS = 200;
 const LYRIC_ID = 4217;
 const NOW_SEC = Math.floor(Date.now() / 1000);
-const WEEK_SEC = 604_800;
+const DAY_SEC = 86_400;
+const WEEK_SEC = 7 * DAY_SEC;
+const SUGGESTED_AT_SEC = NOW_SEC - 3 * DAY_SEC - 7200;
 const NOTE = "Line 1 came in late";
 
 const SESSION: StoredUnisonSession = {
@@ -123,8 +125,8 @@ function stubUnison(submitter: UnisonLyric["submitter"]): StubState {
               authorAvatarUrl: null,
               pendingReason: "suggested",
               sealed: false,
-              createdAt: NOW_SEC - 7200,
-              councilDecidesAt: NOW_SEC - 7200 + WEEK_SEC,
+              createdAt: SUGGESTED_AT_SEC,
+              councilDecidesAt: SUGGESTED_AT_SEC + WEEK_SEC,
               note: state.sent.at(-1)?.note ?? null,
               rejectNoteMaxLength: 1000,
               decider: "owner",
@@ -250,6 +252,9 @@ describe("Unison suggest card", () => {
 
     await expect.element(screen.getByRole("heading", { name: "Your suggestion is waiting" })).toBeInTheDocument();
     await expect.element(screen.getByText(NOTE)).toBeInTheDocument();
+    await expect
+      .element(screen.getByText("Mirelle has 4 days to decide. After that, the council can too."))
+      .toBeInTheDocument();
     await screen.getByRole("button", { name: "Withdraw suggestion" }).click();
 
     await expect.poll(() => state.withdrawn).toBe(true);
