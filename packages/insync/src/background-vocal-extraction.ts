@@ -184,6 +184,22 @@ function extractInlineOnLine(
   return extracted === target ? [] : [{ id: lineId, updates: { tracks: extracted.tracks } }];
 }
 
+// -- Linked instances ---------------------------------------------------------
+
+// Linked instances of one template line show one text, so extraction changes all of them or none.
+function extractionSlot(line: LyricLine): string | null {
+  return isSlotLine(line) ? `${line.groupId}\u0000${line.templateLineIdx}` : null;
+}
+
+// A linked line with inline brackets that extraction leaves as it is keeps every instance of its template line.
+function refusesExtraction(line: LyricLine, options: ExtractOptions, splitChar: string): boolean {
+  return (
+    extractionSlot(line) !== null &&
+    classifyLine(lineText(line, splitChar)).kind === "inline" &&
+    extractInline(line, options, splitChar) === line
+  );
+}
+
 // -- Whole-list transform -----------------------------------------------------
 
 function extractBackgroundVocals(
@@ -196,14 +212,13 @@ function extractBackgroundVocals(
   const sameSessionWriteIndices = new Set<number>();
   const slotLines = new Map<number, LyricLine>();
   const refusedSlots = new Set<string>();
-  const slotOf = (line: LyricLine) => (isSlotLine(line) ? `${line.groupId}\u0000${line.templateLineIdx}` : null);
   for (const line of lines) {
     const classified = classifyLine(lineText(line, splitChar));
     if (classified.kind === "inline") {
       const extracted = extractInline(line, options, splitChar);
       result.push(extracted);
       if (extracted !== line) sameSessionWriteIndices.add(result.length - 1);
-      const slot = slotOf(line);
+      const slot = extractionSlot(line);
       if (slot !== null) slotLines.set(result.length - 1, line);
       if (slot !== null && extracted === line) refusedSlots.add(slot);
       continue;
@@ -238,7 +253,7 @@ function extractBackgroundVocals(
   }
   // Linked instances of one template line show one text, so one instance that cannot be extracted keeps them all.
   for (const [index, line] of slotLines) {
-    if (!refusedSlots.has(slotOf(line) ?? "")) continue;
+    if (!refusedSlots.has(extractionSlot(line) ?? "")) continue;
     result[index] = line;
     sameSessionWriteIndices.delete(index);
   }
@@ -259,6 +274,8 @@ export {
   extractBackgroundVocals,
   extractInlineFromLine,
   extractInlineOnLine,
+  extractionSlot,
   lineHasInlineParens,
+  refusesExtraction,
   scanParenGroups,
 };
