@@ -173,6 +173,35 @@ describe("remapWordTextsPreservingTiming", () => {
       expect(result[2].end).toBe(3.45075);
     });
 
+    it("regression: words typed between two short words with no room share the time of the words around them", () => {
+      const words: WordTiming[] = [
+        { id: "w50", text: "(sway", sep: " ", begin: 6.5, end: 6.59, joinsNext: false },
+        { id: "w51", text: "mor", sep: "", begin: 6.59, end: 6.592, joinsNext: true },
+        { id: "w52", text: "row", sep: " ", begin: 6.592, end: 6.594, joinsNext: false },
+        { id: "w53", text: "lan", sep: "", begin: 6.594, end: 6.595, joinsNext: true },
+        { id: "w54", text: "tern)", sep: "", begin: 6.595, end: 6.596, joinsNext: false },
+      ];
+      const result = remapWordTextsPreservingTiming(
+        words,
+        "(sway mor|row morrow glimmer river lan|tern)",
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const exportedMs = (word: WordTiming) => Math.round(word.end * 1000) - Math.round(word.begin * 1000);
+      expect(result.map((word) => word.text)).toEqual([
+        "(sway",
+        "mor",
+        "row",
+        "morrow",
+        "glimmer",
+        "river",
+        "lan",
+        "tern)",
+      ]);
+      expect(result.every((word) => exportedMs(word) >= 1)).toBe(true);
+      expect(result.every((word, index) => index === 0 || word.begin === result[index - 1].end)).toBe(true);
+      expect([result[0].begin, result.at(-1)?.end]).toEqual([6.5, 6.596]);
+    });
+
     it("regression: words inserted on both sides of one word do not overlap it", () => {
       const result = remapWordTextsPreservingTiming(
         [{ id: "w11", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],

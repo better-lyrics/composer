@@ -34,6 +34,34 @@ function spreadEvenly(texts: string[], begin: number, end: number) {
   return texts.map((text, k) => ({ text, begin: begin + step * k, end: begin + step * (k + 1) }));
 }
 
+// The fewest kept words next to a typed run whose time, with the run's slot, gives every word a millisecond: first the
+// words after it, then the words before it. Slots by text index; null when no kept words around it make room.
+function sharedSlots(
+  texts: readonly string[],
+  oldIndexOf: readonly (number | undefined)[],
+  oldWords: readonly WordTiming[],
+  slot: { begin: number; end: number },
+  runStart: number,
+  runEnd: number,
+): Map<number, { begin: number; end: number }> | null {
+  let from = runStart;
+  let to = runEnd;
+  const kept = (index: number) => oldIndexOf[index] !== undefined;
+  const beginAt = (index: number) => (index === runStart ? slot.begin : oldWords[oldIndexOf[index] as number].begin);
+  const endAt = (index: number) => (index === runEnd - 1 ? slot.end : oldWords[oldIndexOf[index] as number].end);
+  while (to < texts.length && kept(to)) {
+    to++;
+    const slots = textSlots(texts.slice(from, to), beginAt(from), endAt(to - 1));
+    if (slots) return new Map(slots.map((shared, index) => [from + index, shared]));
+  }
+  while (from > 0 && kept(from - 1)) {
+    from--;
+    const slots = textSlots(texts.slice(from, to), beginAt(from), endAt(to - 1));
+    if (slots) return new Map(slots.map((shared, index) => [from + index, shared]));
+  }
+  return null;
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: number } {
@@ -61,17 +89,12 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
   for (const [oldIdx, newIdx] of pairs) oldIndexOf[newIdx] = oldIdx;
 
   const result: WordTiming[] = [];
-  let sharedBegin: number | undefined;
+  const retimed = new Map<number, { begin: number; end: number }>();
   let i = 0;
   while (i < texts.length) {
     const matched = oldIndexOf[i];
     if (matched !== undefined) {
-      result.push({
-        ...oldWords[matched],
-        ...splitTrailingWhitespace(texts[i]),
-        ...(sharedBegin !== undefined && { begin: sharedBegin }),
-      });
-      sharedBegin = undefined;
+      result.push({ ...oldWords[matched], ...splitTrailingWhitespace(texts[i]) });
       i++;
       continue;
     }
@@ -85,23 +108,21 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
 
     const runTexts = texts.slice(i, runEnd);
     let slot: { begin: number; end: number };
-    let runSlots: { text: string; begin: number; end: number }[] | undefined;
-
     if (prevOld + 1 < nextOld) {
       slot = { begin: oldWords[prevOld + 1].begin, end: oldWords[nextOld - 1].end };
     } else {
       const prevEnd = leftBracket ? leftBracket.end : rightBracket.begin;
       slot = insertSlot(prevEnd, rightBracket ? rightBracket.begin : prevEnd);
-      // With under a millisecond each before the next word, the typed words share its slot by letters, as a typed split does.
-      const roomMs = msFromSeconds(slot.end) - msFromSeconds(slot.begin);
-      if (roomMs < runTexts.length && rightBracket && slot.begin < rightBracket.end) {
-        const slots = textSlots([...runTexts, texts[runEnd]], slot.begin, rightBracket.end);
-        runSlots = slots?.slice(0, -1).map((slot, index) => ({ text: runTexts[index], ...slot }));
-        sharedBegin = slots?.at(-1)?.begin;
-      }
+    }
+    // With under a millisecond each, the typed words share the time of the kept words around them by letters, as a
+    // typed split does; a run after every kept word stays for the untimed tail.
+    const roomMs = msFromSeconds(slot.end) - msFromSeconds(slot.begin);
+    if (roomMs < runTexts.length && rightBracket) {
+      for (const [index, shared] of sharedSlots(texts, oldIndexOf, oldWords, slot, i, runEnd) ?? [])
+        retimed.set(index, shared);
     }
 
-    for (const { text, begin, end } of runSlots ?? spreadEvenly(runTexts, slot.begin, slot.end)) {
+    for (const { text, begin, end } of spreadEvenly(runTexts, slot.begin, slot.end)) {
       result.push(
         synthesizeBracketedWord({ ...splitTrailingWhitespace(text), begin, end, joinsNext: false, explicit: false }),
       );
@@ -109,7 +130,11 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
     i = runEnd;
   }
 
-  return joinedToTypedText(result, texts, oldWords, oldIndexOf);
+  const shared = result.map((word, index) => {
+    const slot = retimed.get(index);
+    return slot ? { ...word, ...slot } : word;
+  });
+  return joinedToTypedText(shared, texts, oldWords, oldIndexOf);
 }
 
 // -- Exports ------------------------------------------------------------------
