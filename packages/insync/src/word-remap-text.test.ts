@@ -1,4 +1,4 @@
-import { insertSlot, remapWordTextsPreservingTiming } from "./word-remap-text";
+import { insertSlot, remapWordTextsPreservingTiming, remapWordTextsWithinLimit } from "./word-remap-text";
 import { computeSyllableGroups } from "./word-syllable-groups";
 import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
@@ -218,6 +218,21 @@ describe("remapWordTextsPreservingTiming", () => {
         ["berra", true],
         ["in", false],
       ]);
+    });
+
+    it("regression: words moved for room never end past the limit, zero-length tail words included", () => {
+      const packed: WordTiming[] = [
+        { id: "w80", text: "a", sep: " ", begin: 1, end: 1.001, joinsNext: false },
+        { id: "w81", text: "b", sep: " ", begin: 1.001, end: 1.002, joinsNext: false },
+        { id: "w82", text: "c", sep: "", begin: 1.002, end: 1.003, joinsNext: false },
+      ];
+      for (const limit of [1.003, 1.004, 1.005, 1.006]) {
+        const { words, untimedFrom } = remapWordTextsWithinLimit(packed, "a x b z c tail", DEFAULT_SPLIT_CHARACTER, limit);
+        const ms = (seconds: number) => Math.round(seconds * 1000);
+        const timed = words.slice(0, untimedFrom).filter((word) => word.end > word.begin);
+        expect(words.slice(0, untimedFrom).every((word) => ms(word.end) <= ms(limit))).toBe(true);
+        expect(timed.every((word, index) => index === 0 || ms(word.begin) >= ms(timed[index - 1].end))).toBe(true);
+      }
     });
 
     it("regression: words inserted on both sides of one word do not overlap it", () => {

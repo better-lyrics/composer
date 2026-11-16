@@ -205,27 +205,51 @@ function remapWordTextsWithinLimit(
   return withinLimit(joinedToTypedText(shared, texts, oldWords, oldIndexOf, glued), delays, limit);
 }
 
-function withinLimit(words: WordTiming[], delays: readonly Delay[], limit: number): LimitedWords {
-  const whole = { words, untimedFrom: words.length };
-  if (delays.length === 0) return whole;
-  const timedEnd = Math.max(...words.flatMap((word) => (word.end > word.begin ? [word.end] : [])));
-  if (msFromSeconds(timedEnd) <= msFromSeconds(limit)) return whole;
-  const start = Math.min(...delays.map((delay) => delay.start));
-  let count = words.length - start;
-  while (count > 0 && words[start + count - 1].end <= words[start + count - 1].begin) count--;
-  const fromMs = msFromSeconds(words[start].begin);
-  const roomMs = msFromSeconds(limit) - fromMs;
-  if (roomMs < count) return { words, untimedFrom: Math.min(...delays.map((delay) => delay.run)) };
-  const spread = words.map((word, index) => {
-    const k = index - start;
-    if (k < 0 || k >= count) return word;
-    return {
-      ...word,
-      begin: (fromMs + Math.floor((k * roomMs) / count)) / 1000,
-      end: (fromMs + Math.floor(((k + 1) * roomMs) / count)) / 1000,
-    };
+// Words moved by more than one run settle in order: none starts before the one ahead of it ends, none is under a
+// millisecond, and a word left for the untimed tail sits where the timed ones end.
+function settled(words: readonly WordTiming[]): WordTiming[] {
+  let endMs = Number.NEGATIVE_INFINITY;
+  return words.map((word) => {
+    const beginMs = Math.max(msFromSeconds(word.begin), endMs);
+    const isTail = word.end <= word.begin;
+    const nextEndMs = isTail ? beginMs : Math.max(msFromSeconds(word.end), beginMs + 1);
+    if (!isTail) endMs = nextEndMs;
+    if (beginMs === msFromSeconds(word.begin) && nextEndMs === msFromSeconds(word.end)) return word;
+    return { ...word, begin: beginMs / 1000, end: nextEndMs / 1000 };
   });
-  return { words: spread, untimedFrom: words.length };
+}
+
+// Words from `from` on, spread at a millisecond or more each over what is left before the limit; null when they do
+// not fit or there are none.
+function spreadToLimit(words: readonly WordTiming[], from: number, limit: number): WordTiming[] | null {
+  let count = words.length - from;
+  while (count > 0 && words[from + count - 1].end <= words[from + count - 1].begin) count--;
+  if (count <= 0) return null;
+  const fromMs = msFromSeconds(words[from].begin);
+  const limitMs = msFromSeconds(limit);
+  if (from > 0 && msFromSeconds(words[from - 1].end) > fromMs) return null;
+  const roomMs = limitMs - fromMs;
+  if (roomMs < count) return null;
+  const at = (k: number) => (fromMs + Math.floor((k * roomMs) / count)) / 1000;
+  return words.map((word, index) => {
+    const k = index - from;
+    if (k < 0) return word;
+    if (k >= count) return { ...word, begin: limitMs / 1000, end: limitMs / 1000 };
+    return { ...word, begin: at(k), end: at(k + 1) };
+  });
+}
+
+function withinLimit(moved: WordTiming[], delays: readonly Delay[], limit: number): LimitedWords {
+  if (delays.length === 0) return { words: moved, untimedFrom: moved.length };
+  const words = settled(moved);
+  const limitMs = msFromSeconds(limit);
+  if (words.every((word) => msFromSeconds(word.end) <= limitMs)) return { words, untimedFrom: words.length };
+  const from = Math.min(...delays.map((delay) => delay.from));
+  const start = Math.min(...delays.map((delay) => delay.start));
+  const spread = (from < words.length && spreadToLimit(words, from, limit)) || spreadToLimit(words, start, limit);
+  if (spread) return { words: spread, untimedFrom: spread.length };
+  const pastLimit = words.findIndex((word) => msFromSeconds(word.end) > limitMs);
+  return { words, untimedFrom: Math.min(pastLimit, ...delays.map((delay) => delay.run)) };
 }
 
 function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar: string): WordTiming[] {
