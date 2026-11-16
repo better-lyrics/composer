@@ -176,6 +176,15 @@ describe("carryTemplateEdits", () => {
     ]);
   });
 
+  it("gives a background added in one instance to another instance in place of its own", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Hold the lantern" }),
+      groupLine("L2", 1, { text: "Hold the lantern", backgroundText: "(burn on)" }),
+    ];
+    const after = before.with(0, withFields(before[0], { backgroundText: "(glow)", backgroundTextSource: "manual" }));
+    expect(backgroundText(carried(before, after)[1], DEFAULT_SPLIT_CHARACTER)).toBe("(glow)");
+  });
+
   it("leaves detached lines, other groups and other template lines alone", () => {
     const before = [
       groupLine("L1", 0, { text: "stale" }),
