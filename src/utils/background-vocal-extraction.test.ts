@@ -6,11 +6,13 @@ import type { LyricLine } from "insync/line";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { withMainTrack, withTrackText } from "insync/line-track-writes";
+import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { createLine } from "@/test/factories";
 import {
   classifyLine,
   extractBackgroundVocals,
   extractInlineFromLine,
+  keepsTypedBackgroundGroups,
   lineHasInlineParens,
   scanParenGroups,
 } from "insync/background-vocal-extraction";
@@ -844,6 +846,43 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false }, DEFAULT_SPLIT_CHARACTER),
     ).toBe(line);
   });
+
+  it("regression: brackets typed after a word-synced line become its background, with no timing of their own", () => {
+    const synced = createLine({
+      id: "1",
+      words: [
+        { text: "Paper", sep: " ", begin: 4, end: 4.6 },
+        { text: "lanterns", begin: 4.6, end: 5.4 },
+      ],
+    });
+    const typed = reconcileMatchedTiming(synced, "Paper lanterns (drift|ing on)", DEFAULT_SPLIT_CHARACTER);
+    const result = extractInlineFromLine(
+      typed,
+      { mergeStandaloneLines: false, preserveBrackets: false },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("Paper lanterns");
+    expect(timedSyllables(mainTrack(result))).toEqual(timedSyllables(mainTrack(synced)));
+    expect(backgroundText(result, DEFAULT_SPLIT_CHARACTER)).toBe("drift|ing on");
+    expect(timedSyllables(backgroundTrack(result)).every((word) => word.end > word.begin)).toBe(true);
+  });
+
+  it("regression: a second bracket group typed on a word-synced line with a background is refused", () => {
+    const synced = createLine({
+      id: "1",
+      words: [
+        { text: "Paper", sep: " ", begin: 4, end: 4.6 },
+        { text: "lanterns", begin: 4.6, end: 5.4 },
+      ],
+      backgroundText: "glow",
+      backgroundWords: [{ text: "glow", begin: 5, end: 5.4 }],
+    });
+    const typed = reconcileMatchedTiming(synced, "Paper lanterns (drift)", DEFAULT_SPLIT_CHARACTER);
+    const options = { mergeStandaloneLines: true, preserveBrackets: false };
+    expect(extractInlineFromLine(typed, options, DEFAULT_SPLIT_CHARACTER)).toBe(typed);
+    expect(extractBackgroundVocals([typed], options, DEFAULT_SPLIT_CHARACTER)).toEqual([typed]);
+    expect(keepsTypedBackgroundGroups(typed, DEFAULT_SPLIT_CHARACTER)).toBe(true);
+  });
 });
 
 // -- extractBackgroundVocals: specification table ------------------------------
@@ -1006,16 +1045,17 @@ describe("extractBackgroundVocals: bracket syllables", () => {
 
 describe("extractBackgroundVocals: linked instances", () => {
   it("regression: instances of one template line all keep their brackets when one of them cannot be extracted", () => {
-    const instance = (instanceIdx: number, words?: { text: string; sep?: string; begin: number; end: number }[]) =>
+    const instance = (instanceIdx: number, backgroundWords?: { text: string; begin: number; end: number }[]) =>
       createLine({
         id: `chorus-${instanceIdx}`,
         text: "ari|ka pelvin (tor zu)",
         groupId: "g1",
         instanceIdx,
         templateLineIdx: 0,
-        ...(words && { words }),
+        ...(backgroundWords && { backgroundText: "sel", backgroundWords }),
       });
-    const lines = [instance(0), instance(1, [{ text: "ari", begin: 0.4, end: 0.6 }]), instance(2)];
+    // A partly timed instance now extracts its typed brackets; a timed background still refuses them.
+    const lines = [instance(0), instance(1, [{ text: "sel", begin: 0.4, end: 0.6 }]), instance(2)];
     const result = extractBackgroundVocals(
       lines,
       { mergeStandaloneLines: true, preserveBrackets: true },

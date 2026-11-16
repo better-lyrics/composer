@@ -1,4 +1,5 @@
 import { syllableJoint, syllablesText } from "./line-text";
+import type { Syllable } from "./line";
 import type { WordTiming } from "./word-timing";
 import { withoutSplitCharacter } from "./split-character-text";
 
@@ -11,7 +12,7 @@ interface WordContentSpan {
 
 // Maps each word to the half-open char range [start, end) of its non-whitespace content within
 // syllablesText's output, reading the joints from the same owner.
-function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSpan[] {
+function wordContentSpans(words: readonly Syllable[], splitChar: string): WordContentSpan[] {
   const spans: WordContentSpan[] = [];
   let cursor = 0;
   for (let i = 0; i < words.length; i++) {

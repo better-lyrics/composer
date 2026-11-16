@@ -1,15 +1,14 @@
 import { isLinked, isSlotLine } from "./instance-predicates";
 import { withBackground, withSeededBackground } from "./line-background";
-import type { LineUpdate, LyricLine } from "./line";
+import type { LineUpdate, LyricLine, Syllable } from "./line";
 import { bgBounds } from "./line-bounds";
 import { isWordSynced } from "./line-predicates";
 import { wordContentSpans } from "./line-reconstruct-text";
-import { backgroundText, lineText, syllablesText } from "./line-text";
-import { backgroundTrack, mainTrack, roleWords } from "./line-track";
+import { backgroundText, lineText } from "./line-text";
+import { backgroundTrack, isTimedSyllable, mainTrack } from "./line-track";
 import { withMainTrack, withTrackSyllables, withTrackText } from "./line-track-writes";
 import { remapWordTextsPreservingTiming } from "./word-remap-text";
-import { wordFromSpaced } from "./word-spaced-words";
-import type { WordTiming } from "./word-timing";
+import { splitTrailingWhitespace } from "./from-words";
 import { joinBackgroundText } from "./background-vocal-brackets";
 import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
 
@@ -97,19 +96,17 @@ function hasSungContent(text: string, splitChar: string): boolean {
   return [...text].some((char) => !"() ".includes(char) && char !== splitChar);
 }
 
+// Typed syllables sit untimed after the timed ones; bracketed ones keep timing only when every one has it.
 function extractInlineWordSynced(
   line: LyricLine,
   classified: LineClassification,
   options: ExtractOptions,
   splitChar: string,
 ): LyricLine {
-  const words = roleWords(line, "main");
-  if (!words || words.length === 0) return line;
-  if (bgBounds(line)) return line;
-  if (syllablesText(words, splitChar) !== lineText(line, splitChar)) return line;
+  const words = mainTrack(line).syllables;
   const spans = wordContentSpans(words, splitChar);
-  const survivors: WordTiming[] = [];
-  const bracketed: WordTiming[] = [];
+  const survivors: Syllable[] = [];
+  const bracketed: Syllable[] = [];
   for (let i = 0; i < words.length; i++) {
     const span = spans[i];
     let insideCount = 0;
@@ -128,16 +125,18 @@ function extractInlineWordSynced(
   if (survivors.length === 0) return line;
   const trimmedSurvivors = survivors.map((word, i) =>
     i === survivors.length - 1
-      ? wordFromSpaced({ ...word, text: (word.text + word.sep).replace(/ +$/, ""), joinsNext: false })
+      ? { ...word, ...splitTrailingWhitespace((word.text + word.sep).replace(/ +$/, "")), joinsNext: false }
       : word,
   );
   const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
   const joined = joinBackgroundText(base, classified.bgText, options.preserveBrackets, false);
+  const timedBracketed = bracketed.filter(isTimedSyllable);
+  const carried = base || timedBracketed.length < bracketed.length ? undefined : timedBracketed;
   return withBackground(
     withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)),
     {
       text: joined,
-      words: base ? undefined : remapWordTextsPreservingTiming(bracketed, joined, splitChar),
+      words: carried && remapWordTextsPreservingTiming(carried, joined, splitChar),
       source: base ? "manual" : "extraction",
     },
     splitChar,
@@ -146,9 +145,8 @@ function extractInlineWordSynced(
 
 function extractInline(line: LyricLine, options: ExtractOptions, splitChar: string): LyricLine {
   const classified = classifyLine(lineText(line, splitChar));
-  if (classified.kind !== "inline") return line;
+  if (classified.kind !== "inline" || bgBounds(line)) return line;
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar);
-  if (bgBounds(line)) return line;
   const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
   return withBackground(
     withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar)),
@@ -198,6 +196,11 @@ function refusesExtraction(line: LyricLine, options: ExtractOptions, splitChar: 
     classifyLine(lineText(line, splitChar)).kind === "inline" &&
     extractInline(line, options, splitChar) === line
   );
+}
+
+// A timed background already shows as its own bracket group in Edit, so brackets typed beside it stay as text.
+function keepsTypedBackgroundGroups(line: LyricLine, splitChar: string): boolean {
+  return bgBounds(line) !== null && lineHasInlineParens(line, splitChar);
 }
 
 // -- Whole-list transform -----------------------------------------------------
@@ -275,6 +278,7 @@ export {
   extractInlineFromLine,
   extractInlineOnLine,
   extractionSlot,
+  keepsTypedBackgroundGroups,
   lineHasInlineParens,
   refusesExtraction,
   scanParenGroups,
