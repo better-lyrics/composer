@@ -28,6 +28,8 @@ interface SubmitCardShellProps {
   busy: boolean;
   source: UnisonExportSource;
   checks: SubmitChecks;
+  title?: string;
+  lead?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -111,14 +113,15 @@ function useRevisionInput(content: string): RevisionInput {
 
 // -- Components ----------------------------------------------------------------
 
-const SubmitCardShell: React.FC<SubmitCardShellProps> = ({ mode, busy, source, checks, children }) => {
+const SubmitCardShell: React.FC<SubmitCardShellProps> = ({ mode, busy, source, checks, title, lead, children }) => {
   const headingId = useId();
   const isrc = useProjectStore((state) => state.metadata.isrc);
   return (
     <section aria-labelledby={headingId} aria-busy={busy} className={UNISON_CARD_STYLES}>
       <h3 id={headingId} className={UNISON_CARD_HEADING_STYLES}>
-        {CARD_TITLES[mode]}
+        {title ?? CARD_TITLES[mode]}
       </h3>
+      {lead}
       <div className="flex flex-col">
         <PanelSection first title="Checks">
           <CheckList
@@ -137,5 +140,5 @@ const SubmitCardShell: React.FC<SubmitCardShellProps> = ({ mode, busy, source, c
 
 // -- Exports -------------------------------------------------------------------
 
-export { CHECKS_FAILED_REASON, SubmitCardShell, useLyricsSubmission, useRevisionInput, useSubmitChecks };
 export type { UnisonExportSource };
+export { CHECKS_FAILED_REASON, SubmitCardShell, useLyricsSubmission, useRevisionInput, useSubmitChecks };

@@ -23,6 +23,7 @@ interface SubmitFooterProps {
   pending: boolean;
   disabled: boolean;
   blockedReasonId?: string;
+  footnote?: React.ReactNode;
   onSend: () => void;
 }
 
@@ -82,6 +83,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
   pending,
   disabled,
   blockedReasonId,
+  footnote,
   onSend,
 }) => {
   const failureId = useId();
@@ -108,11 +110,12 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
         <IconCloudUpload aria-hidden="true" className="size-4" />
         {pending ? "Sending…" : label}
       </Button>
+      {footnote}
     </div>
   );
 };
 
 // -- Exports -------------------------------------------------------------------
 
-export { SubmitFooter };
 export type { SubmitIdentity };
+export { SubmitFooter };

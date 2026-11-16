@@ -52,9 +52,9 @@ function useImportFromUnisonLyric(): void {
     }
     if (!persistenceSettled || (!index.entries && !index.error)) return;
     appliedRef.current = true;
-    if (!index.entries) console.warn(LOG_PREFIX, "project index unread, opening the Unison lyric unlinked");
+    if (!index.entries) console.warn(LOG_PREFIX, "project index unread, opening the Unison lyric as a new project");
     openUnisonLyricFromLink(lyricQuery.data, index.entries ?? null, navigate)
-      .then((opened) => markLinkProjectSettled(opened ? "created" : "failed"))
+      .then((outcome) => markLinkProjectSettled(outcome))
       .catch((error: unknown) => {
         console.error(LOG_PREFIX, "could not open the linked Unison lyric", error);
         showUnisonLyricLinkFailedToast();

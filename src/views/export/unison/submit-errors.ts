@@ -1,5 +1,6 @@
 import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
 import { isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
+import { NEEDS_OWN_LYRIC, ONE_ALREADY_WAITING } from "@/utils/unison-suggest-copy";
 import { unisonFailureReason } from "@/utils/unison-toast";
 
 // -- Types ---------------------------------------------------------------------
@@ -15,6 +16,8 @@ const SUBMIT_ERROR_COPY: Record<string, string> = {
   TTML_ZERO_DURATION_WORDS: "Most words start and end at the same time. Give each word its own timing, then try again.",
   RATE_LIMITED: "Too many sends in a row. Wait a minute, then try again.",
   NO_CHANGES: "Nothing changed since the live version.",
+  SUGGEST_NEEDS_LYRIC: NEEDS_OWN_LYRIC,
+  PROPOSAL_OPEN: ONE_ALREADY_WAITING,
 };
 
 // -- Functions -----------------------------------------------------------------

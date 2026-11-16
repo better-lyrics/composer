@@ -23,6 +23,7 @@ import type {
   RevisionInput,
   RevisionPreview,
   RevisionSummary,
+  SavedRevision,
 } from "@/lib/unison/revision-types";
 import { blobToDataUrl } from "@/utils/blob-data-url";
 
@@ -76,7 +77,7 @@ const MAX_MINE_PAGES = 6;
 interface MinePagesOptions {
   /** Defaults to 6 pages of 50, enough for checks that only need most of the list. */
   maxPages?: number;
-  stopAfter?: (page: readonly UnisonMineItem[]) => boolean;
+  stopAfter?: (page: readonly UnisonMineItem[]) => boolean | Promise<boolean>;
 }
 
 /** Walks `/lyrics/mine` page by page. `complete` is true only when the last page was reached. */
@@ -91,7 +92,7 @@ async function fetchMinePages(
     const result = await fetchMine({ cursor, limit: MINE_PAGE_LIMIT, signal });
     items.push(...result.items);
     if (result.nextCursor === null) return { items, complete: true };
-    if (stopAfter(result.items) || seenCursors.has(result.nextCursor)) break;
+    if ((await stopAfter(result.items)) || seenCursors.has(result.nextCursor)) break;
     seenCursors.add(result.nextCursor);
     cursor = result.nextCursor;
   }
@@ -154,14 +155,18 @@ async function compareWithLive(id: number, input: RevisionInput, options: CallOp
   return same;
 }
 
-async function saveRevision(id: number, input: RevisionInput, options: CallOptions = {}): Promise<RevisionSummary> {
-  const { revision } = await unisonFetch<{ revision: RevisionSummary }>(`/lyrics/${id}/revisions`, {
+function saveRevision(
+  id: number,
+  input: RevisionInput,
+  note?: string,
+  options: CallOptions = {},
+): Promise<SavedRevision> {
+  return unisonFetch<SavedRevision>(`/lyrics/${id}/revisions`, {
     ...options,
     method: "POST",
-    body: input,
+    body: note ? { ...input, note } : input,
     auth: true,
   });
-  return revision;
 }
 
 async function revertRevision(id: number, revId: number, options: CallOptions = {}): Promise<RevisionSummary> {

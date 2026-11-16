@@ -3,7 +3,8 @@ import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { loadProjectRecord } from "@/lib/project-storage";
 import type { UnisonLyric } from "@/lib/unison/api-types";
-import { openUnisonLyric } from "@/lib/unison/open-unison-lyric";
+import { listProjectIndex } from "@/lib/project-repository";
+import { openUnisonLyric, openUnisonLyricFromLink } from "@/lib/unison/open-unison-lyric";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { seedStoredProject, songTitled } from "@/test/projects";
@@ -14,6 +15,18 @@ import { describe, expect, it } from "vitest";
 // -- Constants ----------------------------------------------------------------
 
 const VIDEO_ID = "dQw4w9WgXcQ";
+
+const MIRELLE: NonNullable<UnisonLyric["submitter"]> = {
+  keyId: "key-mirelle",
+  displayName: "Mirelle",
+  tier: null,
+  level: 4,
+  badgeCount: 0,
+  topBadge: null,
+  featured: [],
+  avatarUrl: null,
+  reputation: 1,
+};
 
 const TTML = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" itunes:timing="Line">
   <body dur="00:20.000">
@@ -126,5 +139,38 @@ describe("openUnisonLyric", () => {
       expect(paths).toEqual([]);
       expect(useAudioStore.getState().source).toBeNull();
     });
+  });
+});
+
+describe("openUnisonLyricFromLink", () => {
+  it("links someone else's lyric to the new project", async () => {
+    await openLinkedAlpha();
+    const outcome = await openUnisonLyricFromLink(
+      unisonLyric({ submitter: MIRELLE }),
+      await listProjectIndex(),
+      () => {},
+    );
+    await expect.poll(() => isYouTubeSourceFor(useAudioStore.getState().source, VIDEO_ID)).toBe(true);
+    useAudioStore.getState().setYouTubeFile(videoFile());
+
+    expect(outcome).toBe("created");
+    expect(openProjectIdSnapshot()).not.toBe("a");
+    expect(useProjectStore.getState().unisonLyricId).toBe("4821");
+  });
+
+  it("reopens the project that already links the lyric instead of making a copy", async () => {
+    await openLinkedAlpha();
+    await seedStoredProject("b", { project: { ...songTitled("Bravo"), unisonLyricId: "4821" } });
+    const paths: string[] = [];
+    const outcome = await openUnisonLyricFromLink(
+      unisonLyric({ submitter: MIRELLE }),
+      await listProjectIndex(),
+      (path) => paths.push(path),
+    );
+
+    expect(outcome).toBe("reopened");
+    expect(openProjectIdSnapshot()).toBe("b");
+    expect(paths).toEqual([EDITOR_PATH]);
+    expect(await listProjectIndex()).toHaveLength(2);
   });
 });

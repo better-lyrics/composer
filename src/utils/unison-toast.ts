@@ -1,9 +1,11 @@
 import { toast } from "sonner";
+import type { SuggestionDecider } from "@/lib/unison/api-types";
 import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
 import { settingEntry } from "@/stores/settings-catalog";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
+import { sentDetail } from "@/utils/unison-suggest-copy";
 
 // -- Types --------------------------------------------------------------------
 
@@ -103,6 +105,24 @@ function showUpdateSentToast(goesLive: boolean): void {
   toast.success(goesLive ? "Update is live on Unison." : "Edit sent to the council.");
 }
 
+function showSuggestOpenedToast(lyricLabel: string): void {
+  toast(`Opened ${lyricLabel}`, { description: "Fix it, then send your suggestion from Export." });
+}
+
+function showLinkedProjectReopenedToast(lyricLabel: string | null): void {
+  toast(lyricLabel ? `Reopened your project for ${lyricLabel}` : "Reopened your project", {
+    description: "Your earlier changes are still here.",
+  });
+}
+
+function showSuggestionSentToast(
+  decider: SuggestionDecider | undefined,
+  owner: string | null,
+  ownerDecisionSec: number | null,
+): void {
+  toast.success("Suggestion sent", { description: sentDetail(decider, owner, ownerDecisionSec) });
+}
+
 function showRevisionLoadedToast(revNo: number, skippedLines: number): void {
   toast.success(`Loaded revision ${revNo}`, {
     description: skippedLines > 0 ? skippedLinesMessage(skippedLines) : undefined,
@@ -129,6 +149,7 @@ export {
   showConnectedToast,
   showDisconnectedToast,
   showEditWithdrawnToast,
+  showLinkedProjectReopenedToast,
   showLinkFailedToast,
   showLyricsAddedToProjectsToast,
   showNothingAddedToProjectsToast,
@@ -137,6 +158,8 @@ export {
   showRevisionLoadedToast,
   showRevisionRestoredToast,
   showSubmittedToast,
+  showSuggestionSentToast,
+  showSuggestOpenedToast,
   showUnisonFailureToast,
   showUnisonLyricLinkFailedToast,
   showUpdateSentToast,

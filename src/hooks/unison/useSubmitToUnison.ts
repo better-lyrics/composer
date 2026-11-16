@@ -4,7 +4,7 @@ import type { LyricsSubmission } from "@/lib/unison/api-types";
 import { linkVideo, saveRevision, submitLyrics } from "@/lib/unison/endpoints";
 import { captureLinkTarget, linkProjectToLyric } from "@/lib/unison/project-link";
 import type { RevisionInput } from "@/lib/unison/revision-types";
-import { showSubmittedToast, showUpdateSentToast } from "@/utils/unison-toast";
+import { showSubmittedToast, showSuggestionSentToast, showUpdateSentToast } from "@/utils/unison-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 
@@ -12,7 +12,17 @@ import { useRef, useState } from "react";
 
 type UnisonSendRequest =
   | { kind: "new"; submission: LyricsSubmission; videoIds?: readonly string[] }
-  | { kind: "update"; lyricId: number; input: RevisionInput };
+  | { kind: "update"; lyricId: number; input: RevisionInput }
+  | {
+      kind: "suggest";
+      lyricId: number;
+      input: RevisionInput;
+      note?: string;
+      owner: string | null;
+      ownerDecisionSec: number | null;
+    };
+
+type SuggestRequest = Extract<UnisonSendRequest, { kind: "suggest" }>;
 
 interface SendFailure {
   error: unknown;
@@ -28,6 +38,12 @@ interface UnisonSend {
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[UnisonSubmit]";
+
+const FAILURE_VERBS: Record<UnisonSendRequest["kind"], string> = {
+  new: "submit",
+  update: "send the update",
+  suggest: "send the suggestion",
+};
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -71,9 +87,15 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
   };
 
   const sendUpdate = async (lyricId: number, input: RevisionInput) => {
-    const revision = await saveRevision(lyricId, input);
+    const { revision } = await saveRevision(lyricId, input);
     showUpdateSentToast(revision.status === "live");
     noteGuideSignal("export.unisonUpdate");
+    await refresh(lyricId);
+  };
+
+  const sendSuggestion = async ({ lyricId, input, note, owner, ownerDecisionSec }: SuggestRequest) => {
+    const { decider } = await saveRevision(lyricId, input, note);
+    showSuggestionSentToast(decider, owner, ownerDecisionSec);
     await refresh(lyricId);
   };
 
@@ -84,9 +106,10 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
     setFailure(null);
     try {
       if (request.kind === "new") await submitNew(request.submission, request.videoIds ?? []);
-      else await sendUpdate(request.lyricId, request.input);
+      else if (request.kind === "update") await sendUpdate(request.lyricId, request.input);
+      else await sendSuggestion(request);
     } catch (error) {
-      console.warn(LOG_PREFIX, `Could not ${request.kind === "new" ? "submit" : "send the update"}`, error);
+      console.warn(LOG_PREFIX, `Could not ${FAILURE_VERBS[request.kind]}`, error);
       const lyrics = request.kind === "new" ? request.submission.lyrics : request.input.lyrics;
       setFailure({ error, lyrics });
       onError(error);
