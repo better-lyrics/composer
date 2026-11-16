@@ -46,6 +46,19 @@ function enforceOrderAround(words: WordTiming[], index: number, songEnd = Number
   return result;
 }
 
+// A split inside a span that overlaps the next syllable moves its boundary back to where that syllable begins.
+function withSplitPartsInOrder(words: WordTiming[]): WordTiming[] {
+  let result = words;
+  for (let i = words.length - 2; i >= 1; i--) {
+    const [before, part, next] = [result[i - 1], result[i], result[i + 1]];
+    if (part.begin <= next.begin || before.end !== part.begin || next.begin <= before.begin) continue;
+    if (result === words) result = [...words];
+    result[i - 1] = { ...before, end: next.begin };
+    result[i] = { ...part, begin: next.begin };
+  }
+  return result;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { enforceOrderAround };
+export { enforceOrderAround, withSplitPartsInOrder };

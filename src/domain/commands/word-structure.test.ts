@@ -115,6 +115,26 @@ describe("word structure commands", () => {
     ]);
   });
 
+  it("regression: splitting a syllable that overlaps the next one keeps the syllables in time order", () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l3",
+          text: "tornu totr",
+          words: [
+            { text: "tornu", sep: " ", begin: 1, end: 3 },
+            { text: "totr", begin: 1.5, end: 2 },
+          ],
+        }),
+      ],
+    });
+    const [tornu, totr] = roleWords(useProjectStore.getState().lines[0], "main") ?? [];
+    const pieces = splitWordIntoSyllables({ word: tornu, splitPoints: [3] });
+    useProjectStore.getState().commit(splitWord("l3", "words", [...pieces, totr], {}));
+    const begins = (roleWords(useProjectStore.getState().lines[0], "main") ?? []).map((word) => word.begin);
+    expect(begins).toEqual(begins.toSorted((a, b) => a - b));
+  });
+
   it("regression: renaming the block of a line-synced row updates text and keeps it line-synced", () => {
     useProjectStore
       .getState()

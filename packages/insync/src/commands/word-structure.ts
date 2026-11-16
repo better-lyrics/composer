@@ -23,6 +23,7 @@ import { resolveAddresses } from "../selection-resolve";
 import { applyWordDeletion } from "../word-apply-word-deletion";
 import { mergeWordsIntoTrack } from "../word-merge-track";
 import type { WordTiming } from "../word-timing";
+import { withSplitPartsInOrder } from "../word-order";
 import { withTypedBoundaries } from "../word-typed-boundaries";
 
 // -- Types --------------------------------------------------------------------
@@ -151,7 +152,12 @@ function splitWord(lineId: string, field: TrackField, words: WordTiming[], extra
         id: lineId,
         updates: {
           ...extras,
-          tracks: withFieldWords(line, field, withTypedBoundaries(words, ctx.splitChar), ctx.splitChar).tracks,
+          tracks: withFieldWords(
+            line,
+            field,
+            withSplitPartsInOrder(withTypedBoundaries(words, ctx.splitChar)),
+            ctx.splitChar,
+          ).tracks,
         },
       },
     ];
