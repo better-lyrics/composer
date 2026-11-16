@@ -1108,10 +1108,21 @@ describe("extractBackgroundVocalsOnLines", () => {
     const typed = createLine({ id: "typed", text: "Ember lights are falling (falling)" });
     const untouched = createLine({ id: "untouched", text: "Copper bells (ring) tonight" });
     const instance = (instanceIdx: number) =>
-      createLine({ id: `river-${instanceIdx}`, text: "River runs (slow)", groupId: "g1", instanceIdx, templateLineIdx: 0 });
+      createLine({
+        id: `river-${instanceIdx}`,
+        text: "River runs (slow)",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+      });
     const lines = [typed, untouched, instance(0), instance(1)];
 
-    const result = extractBackgroundVocalsOnLines(lines, new Set(["typed", "river-0"]), options, DEFAULT_SPLIT_CHARACTER);
+    const result = extractBackgroundVocalsOnLines(
+      lines,
+      new Set(["typed", "river-0"]),
+      options,
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     expect(result.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
       "Ember lights are falling",
@@ -2927,5 +2938,52 @@ describe("regressions", () => {
     });
     expect(backgroundText(extracted[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah");
     expect(timedSyllables(backgroundTrack(extracted[0])).map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
+  });
+
+  it("regression: a group typed glued onto a timed word becomes the background and the word keeps its timing", () => {
+    const timed = createLine({
+      id: "glued",
+      text: "rain glow bloom",
+      words: [
+        { text: "rain", sep: " ", begin: 0.5, end: 0.6 },
+        { text: "glow", sep: " ", begin: 0.6, end: 0.7 },
+        { text: "bloom", begin: 0.7, end: 0.8 },
+      ],
+    });
+    const typed = reconcileMatchedTiming(timed, "rain glow bloom(cinder hush) and (low tide)", DEFAULT_SPLIT_CHARACTER);
+    const keepBrackets = { ...options, preserveBrackets: true };
+    const [extracted] = extractBackgroundVocalsOnLines(
+      [typed],
+      new Set(["glued"]),
+      keepBrackets,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(lineText(extracted, DEFAULT_SPLIT_CHARACTER)).toBe("rain glow bloom and");
+    expect(backgroundText(extracted, DEFAULT_SPLIT_CHARACTER)).toBe("(cinder hush low tide)");
+    expect(timedSyllables(mainTrack(extracted)).map((word) => [word.text, word.begin, word.end])).toEqual([
+      ["rain", 0.5, 0.6],
+      ["glow", 0.6, 0.7],
+      ["bloom", 0.7, 0.8],
+    ]);
+  });
+
+  it("regression: a timed word that holds a bracket keeps that group as text without blocking the other groups", () => {
+    const imported = createLine({
+      id: "imported",
+      text: "rain bloom(cinder hush) and (low tide)",
+      words: [
+        { text: "rain", sep: " ", begin: 0.5, end: 0.6 },
+        { text: "bloom(cinder", sep: " ", begin: 0.6, end: 0.7 },
+        { text: "hush)", sep: " ", begin: 0.7, end: 0.8 },
+        { text: "and", sep: " ", begin: 0.8, end: 0.9 },
+        { text: "(low", sep: " ", begin: 0.9, end: 1 },
+        { text: "tide)", begin: 1, end: 1.1 },
+      ],
+    });
+    const keepBrackets = { ...options, preserveBrackets: true };
+    const [extracted] = extractBackgroundVocals([imported], keepBrackets, DEFAULT_SPLIT_CHARACTER);
+    expect(lineText(extracted, DEFAULT_SPLIT_CHARACTER)).toBe("rain bloom(cinder hush) and");
+    expect(backgroundText(extracted, DEFAULT_SPLIT_CHARACTER)).toBe("(low tide)");
+    expect(backgroundBracketRefusals([imported], DEFAULT_SPLIT_CHARACTER).get("imported")).toBe("glued");
   });
 });

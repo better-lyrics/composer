@@ -13,6 +13,7 @@ import { useMemo } from "react";
 const BACKGROUND_REFUSAL_DETAIL: Record<BackgroundBracketRefusal, string> = {
   own: "This line already has background vocals. Type inside their brackets to add to them.",
   linked: "A linked copy of this line already has background vocals. Type inside their brackets to add to them.",
+  glued: "Put a space before the bracket to make it a background vocal.",
 };
 
 // -- Helpers ------------------------------------------------------------------

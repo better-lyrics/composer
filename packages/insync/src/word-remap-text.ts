@@ -13,6 +13,29 @@ function tokenizeWordTexts(text: string, splitChar: string): string[] {
   return parts.map((part, i) => part + (trailingSpace[i] ? " " : ""));
 }
 
+// A bracket typed straight after a word starts a part of its own, so the word keeps its timing and the bracket can
+// become a background. A part a timed word already holds whole, bracket and all, stays one part. Returns the parts and
+// the indices of the parts that run into the next with no space and no split mark.
+function withTypedGroupsApart(
+  texts: readonly string[],
+  oldWords: readonly WordTiming[],
+  splitChar: string,
+): { texts: string[]; glued: ReadonlySet<number> } {
+  const oldKeys = new Set(oldWords.map((word) => wordKey(word.text, splitChar)));
+  const parts: string[] = [];
+  const glued = new Set<number>();
+  for (const text of texts) {
+    const open = text.indexOf("(", 1);
+    if (open < 1 || oldKeys.has(wordKey(text, splitChar))) {
+      parts.push(text);
+      continue;
+    }
+    glued.add(parts.length);
+    parts.push(text.slice(0, open), text.slice(open));
+  }
+  return { texts: parts, glued };
+}
+
 // A boundary the edit left alone keeps its join (a word can end without a space); elsewhere the typed
 // text decides: a part runs into the next one unless a space ends it.
 function joinedToTypedText(
@@ -20,12 +43,13 @@ function joinedToTypedText(
   texts: readonly string[],
   oldWords: readonly WordTiming[],
   oldIndexOf: readonly (number | undefined)[],
+  glued: ReadonlySet<number>,
 ): WordTiming[] {
   return words.map((word, i) => {
     const old = oldIndexOf[i];
     const untouched = old !== undefined && oldIndexOf[i + 1] === old + 1 && oldWords[old].sep === word.sep;
     if (untouched) return word;
-    return { ...word, joinsNext: i < texts.length - 1 && !texts[i].endsWith(" ") };
+    return { ...word, joinsNext: i < texts.length - 1 && !texts[i].endsWith(" ") && !glued.has(i) };
   });
 }
 
@@ -69,7 +93,7 @@ function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: n
 }
 
 function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string, splitChar: string): WordTiming[] {
-  const texts = tokenizeWordTexts(newText, splitChar);
+  const { texts, glued } = withTypedGroupsApart(tokenizeWordTexts(newText, splitChar), oldWords, splitChar);
   const pairs = lcsPairs(
     oldWords.map((w) => wordKey(w.text, splitChar)),
     texts.map((value) => wordKey(value, splitChar)),
@@ -82,6 +106,7 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
       texts,
       oldWords,
       oldWords.map((_, i) => i),
+      glued,
     );
   }
 
@@ -134,7 +159,7 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
     const slot = retimed.get(index);
     return slot ? { ...word, ...slot } : word;
   });
-  return joinedToTypedText(shared, texts, oldWords, oldIndexOf);
+  return joinedToTypedText(shared, texts, oldWords, oldIndexOf, glued);
 }
 
 // -- Exports ------------------------------------------------------------------

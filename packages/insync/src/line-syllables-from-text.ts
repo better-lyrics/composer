@@ -1,5 +1,5 @@
 import type { LineTrack, Syllable, UntimedSyllable } from "./line";
-import { timedSyllables } from "./line-track";
+import { timedSyllables, untimedSyllable } from "./line-track";
 import { lcsPairs, wordKey } from "./word-alignment";
 import { newWordId } from "./word-id";
 import { remapWordTextsPreservingTiming } from "./word-remap-text";
@@ -63,6 +63,8 @@ function syllablesFromText(text: string, track: LineTrack | undefined, splitChar
   const remapped = remapWordTextsPreservingTiming(timed, text, splitChar);
   const length = timedLength(remapped, new Set(timed.map((syllable) => syllable.id)));
   if (length === remapped.length) return remapped;
+  if (remapped.length !== next.length)
+    return [...remapped.slice(0, length), ...remapped.slice(length).map(untimedSyllable)];
   const untimed = untimedKeepingIds(next, old, matchedOldIndices(old, next, splitChar));
   return [...remapped.slice(0, length), ...untimed.slice(length)];
 }
