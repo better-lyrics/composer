@@ -2,7 +2,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { IconHistory } from "@tabler/icons-react";
 import { useId, useState } from "react";
 import type { UnisonStatus } from "@/domain/unison/lyric-status";
-import { isOtherAccountLyric } from "@/domain/unison/ownership";
+import { isOwnLyric } from "@/domain/unison/ownership";
 import { useLinkedLyric } from "@/hooks/unison/useLinkedLyric";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { useProjectStore } from "@/stores/project";
@@ -49,7 +49,6 @@ const ACTION_HINTS: Partial<Record<UnisonStatus, string>> = {
   hidden: "Fix the sync and send an update.",
   removed: "No longer on Unison.",
 };
-const OTHER_ACCOUNT_HINT = "Sent from another Better Lyrics account. Sign in with that account to change it.";
 
 // -- Components ----------------------------------------------------------------
 
@@ -96,7 +95,7 @@ const RemovedCard: React.FC = () => (
 
 const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) => {
   const actions = useOnUnisonActions(lyric, keyId);
-  const owned = !isOtherAccountLyric(lyric, keyId);
+  const owned = isOwnLyric(lyric, keyId);
   const requestedRevNo = useHistoryRequest(lyric.id);
   const [history, setHistory] = useState<{ revNo: number | null } | null>(null);
   const shownHistory = history ?? (requestedRevNo === null ? null : { revNo: requestedRevNo });
@@ -109,9 +108,16 @@ const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) =
     <CardShell
       status={status}
       busy={actions.busy}
-      trailing={<OnUnisonMenu lyric={lyric} disabled={actions.busy} onRemove={owned ? actions.remove : undefined} />}
+      trailing={
+        <OnUnisonMenu
+          lyric={lyric}
+          disabled={actions.busy}
+          onRemove={owned ? actions.remove : undefined}
+          onUnlink={owned ? undefined : () => useProjectStore.getState().unlinkUnisonLyric()}
+        />
+      }
     >
-      {owned ? <ActionHint status={status} /> : <p className={UNISON_CARD_TEXT_STYLES}>{OTHER_ACCOUNT_HINT}</p>}
+      {owned && <ActionHint status={status} />}
       <div className="flex items-center justify-between gap-3">
         <ScoreLabel score={lyric.score} voteCount={lyric.voteCount} />
         <ConfidenceMeter confidence={lyric.confidence} label="long" />
@@ -130,11 +136,6 @@ const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) =
           <IconHistory aria-hidden="true" className="size-4" />
           {declinedRevNo === null ? "History" : "Read the council's note"}
         </Button>
-        {!owned && (
-          <Button size="sm" variant="secondary" onClick={() => useProjectStore.getState().unlinkUnisonLyric()}>
-            Unlink
-          </Button>
-        )}
         {owned && status === "pending" && (
           <Button size="sm" variant="secondary" disabled={actions.busy} onClick={actions.withdraw}>
             Withdraw edit

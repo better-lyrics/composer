@@ -1,11 +1,12 @@
 import { useLinkedLyric } from "@/hooks/unison/useLinkedLyric";
-import { isOtherAccountLyric } from "@/domain/unison/ownership";
+import { isOwnLyric } from "@/domain/unison/ownership";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { useProjectStore } from "@/stores/project";
 import { OnUnisonCard } from "@/views/export/unison/on-unison-card";
 import { SignedOutCard } from "@/views/export/unison/signed-out-card";
 import { SubmitCard } from "@/views/export/unison/submit-card";
+import { SuggestCard } from "@/views/export/unison/suggest-card";
 import { NewSubmission } from "@/views/export/unison/submit-videos";
 import type { UnisonExportSource } from "@/views/export/unison/submit-card-shell";
 import { VideosRow } from "@/views/export/unison/videos-row";
@@ -31,7 +32,7 @@ const PanelCards: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const LinkedCards: React.FC<SignedInCardsProps & { lyricId: string }> = ({ lyricId, ...props }) => {
   const linked = useLinkedLyric(lyricId);
-  const owned = linked.kind === "found" && !isOtherAccountLyric(linked.lyric, props.session.keyId);
+  const owned = linked.kind === "found" && isOwnLyric(linked.lyric, props.session.keyId);
   return (
     <>
       <OnUnisonCard
@@ -43,7 +44,12 @@ const LinkedCards: React.FC<SignedInCardsProps & { lyricId: string }> = ({ lyric
           )
         }
       />
-      {linked.kind === "found" && owned && <SubmitCard key={lyricId} lyricId={linked.lyric.id} {...props} />}
+      {linked.kind === "found" &&
+        (owned ? (
+          <SubmitCard key={lyricId} lyricId={linked.lyric.id} {...props} />
+        ) : (
+          <SuggestCard key={lyricId} lyric={linked.lyric} {...props} />
+        ))}
     </>
   );
 };
