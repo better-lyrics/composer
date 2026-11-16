@@ -3,7 +3,7 @@ import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { usePersistence } from "@/hooks/usePersistence";
 import { createProject, restoreOpenProject } from "@/lib/open-project";
-import { flushPendingSave } from "@/lib/persistence-debounce";
+import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import {
@@ -21,6 +21,7 @@ import {
   isRestoringProject,
   loadProjectForRestore,
 } from "@/lib/project-restore";
+import { currentSaveInput } from "@/lib/project-snapshot";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { getSaveStatus } from "@/lib/save-status";
 import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
@@ -238,6 +239,15 @@ describe("project-restore", () => {
       await flushPendingSave();
       expect((await loadProjectRecord("p1"))?.savedAt).toBe(111);
       expect((await loadProjectIndexEntry("p1"))?.updatedAt).toBe(111);
+    });
+
+    it("regression: a save scheduled before the boot restore never overwrites the restored project", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 60_000 });
+      await seedStoredProject("p1", { open: true, project: { savedAt: 444, lines: savedLines([createLine()]) } });
+      debouncedSave(currentSaveInput());
+      await restoreOpenProject();
+      await flushPendingSave();
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(444);
     });
 
     it("regression: switching tabs after boot remembers the tab without saving the record", async () => {

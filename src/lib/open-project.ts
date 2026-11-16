@@ -85,6 +85,8 @@ async function restoreOpenProject(): Promise<void> {
     throw error;
   }
   if (openProjectChanges !== baseline || !hasRestorableContent(payload)) return;
+  // The restore replaces whatever the stores held before it, so a save of that state would overwrite the record.
+  cancelPendingSave();
   applyProjectToStores(payload);
   markProjectOpened(id, Date.now()).catch(logFailure("could not record when the project was opened"));
 }
