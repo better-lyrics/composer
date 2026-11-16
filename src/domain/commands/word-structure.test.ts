@@ -10,6 +10,7 @@ import { backgroundTrack, mainTrack, roleWords, untimedSyllable } from "insync/l
 import { withMainTrack, withTrackSyllables } from "insync/line-track-writes";
 import { deleteWords, insertWord, splitWord, typeWordText } from "insync/commands/word-structure";
 import { splitWordIntoSyllables } from "insync/single-word-syllable-split";
+import { splitWordIntoWords } from "@/utils/word-split";
 import { syncClosingTap, syncGesture } from "insync/commands/sync";
 import { withAlignedTransliteration } from "insync/language-align";
 import { pasteLyrics } from "insync/commands/edit-text";
@@ -156,6 +157,26 @@ describe("word structure commands", () => {
     expect(begins).toEqual(begins.toSorted((a, b) => a - b));
     for (const word of words.slice(0, 3))
       expect(Math.round(word.end * 1000) - Math.round(word.begin * 1000)).toBeGreaterThan(0);
+  });
+
+  it("regression: splitting an overlapping syllable into separate words keeps every begin in order", () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l5",
+          text: "tanu totr",
+          words: [
+            { text: "tanu", sep: " ", begin: 1, end: 3 },
+            { text: "totr", begin: 1.5, end: 2 },
+          ],
+        }),
+      ],
+    });
+    const [tanu, totr] = roleWords(useProjectStore.getState().lines[0], "main") ?? [];
+    const pieces = splitWordIntoWords(tanu, [2]);
+    useProjectStore.getState().commit(splitWord("l5", "words", [...pieces, totr], {}));
+    const begins = (roleWords(useProjectStore.getState().lines[0], "main") ?? []).map((word) => word.begin);
+    expect(begins).toEqual(begins.toSorted((a, b) => a - b));
   });
 
   it("regression: renaming the block of a line-synced row updates text and keeps it line-synced", () => {

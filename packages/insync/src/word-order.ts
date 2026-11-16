@@ -47,27 +47,23 @@ function enforceOrderAround(words: WordTiming[], index: number, songEnd = Number
   return result;
 }
 
-// Split parts of a syllable that overlaps the next one are spread again between the syllable's begin and where the next
-// one begins, the last part keeping its end; they stay as they were when that room cannot give each part a millisecond.
-function withSplitPartsInOrder(words: WordTiming[]): WordTiming[] {
-  let result = words;
-  for (let last = 0; last < words.length - 1; last++) {
-    const next = words[last + 1];
-    if (words[last].begin <= next.begin) continue;
-    let first = last;
-    while (first > 0 && words[first - 1].joinsNext && words[first - 1].end === words[first].begin) first--;
-    const parts = words.slice(first, last + 1);
-    const slots = textSlots(
-      parts.map((part) => part.text),
-      parts[0].begin,
-      next.begin,
-    );
-    if (!slots) continue;
-    if (result === words) result = [...words];
-    parts.forEach((part, index) => {
-      result[first + index] = { ...part, ...slots[index], ...(index === parts.length - 1 && { end: part.end }) };
-    });
-  }
+// The pieces of one split, `first` to `last`, spread again between the split syllable's begin and where the next
+// syllable begins when a piece would begin after it; the last piece keeps its end. Left as they are when that room
+// cannot give each piece a millisecond.
+function withSplitPartsInOrder(words: WordTiming[], first: number, last: number): WordTiming[] {
+  const next = words[last + 1];
+  const pieces = words.slice(first, last + 1);
+  if (!next || pieces.every((piece) => piece.begin <= next.begin)) return words;
+  const slots = textSlots(
+    pieces.map((piece) => piece.text),
+    pieces[0].begin,
+    next.begin,
+  );
+  if (!slots) return words;
+  const result = [...words];
+  pieces.forEach((piece, index) => {
+    result[first + index] = { ...piece, ...slots[index], ...(index === pieces.length - 1 && { end: piece.end }) };
+  });
   return result;
 }
 

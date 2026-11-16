@@ -47,6 +47,17 @@ function wordTextEdit(line: LyricLine, type: WordTrack, words: WordTiming[], spl
   return { tracks: withBackgroundTrack(line, { ...text, source: "manual" }).tracks };
 }
 
+// The pieces a split made are the syllable that kept its id and the new syllables right after it.
+function splitPiecesInOrder(line: LyricLine, field: TrackField, words: WordTiming[]): WordTiming[] {
+  const track = field === "words" ? mainTrack(line) : backgroundTrack(line);
+  const before = new Set(track?.syllables.map((syllable) => syllable.id));
+  const first = words.findIndex((word) => !before.has(word.id)) - 1;
+  if (first < 0) return words;
+  let last = first + 1;
+  while (last + 1 < words.length && !before.has(words[last + 1].id)) last++;
+  return withSplitPartsInOrder(words, first, last);
+}
+
 function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefined {
   return lines.find((line) => line.id === lineId);
 }
@@ -155,7 +166,7 @@ function splitWord(lineId: string, field: TrackField, words: WordTiming[], extra
           tracks: withFieldWords(
             line,
             field,
-            withSplitPartsInOrder(withTypedBoundaries(words, ctx.splitChar)),
+            splitPiecesInOrder(line, field, withTypedBoundaries(words, ctx.splitChar)),
             ctx.splitChar,
           ).tracks,
         },
