@@ -95,8 +95,8 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
       const roomMs = msFromSeconds(slot.end) - msFromSeconds(slot.begin);
       if (roomMs < runTexts.length && rightBracket && slot.begin < rightBracket.end) {
         const slots = textSlots([...runTexts, texts[runEnd]], slot.begin, rightBracket.end);
-        runSlots = runTexts.map((text, index) => ({ text, ...slots[index] }));
-        sharedBegin = slots[runTexts.length].begin;
+        runSlots = slots?.slice(0, -1).map((slot, index) => ({ text: runTexts[index], ...slot }));
+        sharedBegin = slots?.at(-1)?.begin;
       }
     }
 

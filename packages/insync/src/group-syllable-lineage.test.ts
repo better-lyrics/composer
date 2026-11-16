@@ -158,4 +158,28 @@ describe("lineageByText", () => {
     expect(Number(addedEnd) - Number(addedBegin)).toBeGreaterThan(0.001);
     expect(nextEnd).toBe(3.45075);
   });
+
+  it("regression: a shared slot never leaves the next syllable under a millisecond once exported", () => {
+    const exportedMs = ([, begin, end]: unknown[]) => Math.round(Number(end) * 1000) - Math.round(Number(begin) * 1000);
+    const shared = spans(
+      lineageByText(
+        [syllable("n", "hello"), syllable("a", "I")],
+        [syllable("x", "I", 1, 1.002)],
+        () => undefined,
+        "|",
+        { floor: 1, limit: 9 },
+      ),
+    );
+    expect(shared.map(exportedMs)).toEqual([1, 1]);
+    const tooShort = spans(
+      lineageByText(
+        [syllable("n", "hello"), syllable("a", "I")],
+        [syllable("x", "I", 1, 1.001)],
+        () => undefined,
+        "|",
+        { floor: 1, limit: 9 },
+      ),
+    );
+    expect(tooShort[1]).toEqual(["I", 1, 1.001]);
+  });
 });

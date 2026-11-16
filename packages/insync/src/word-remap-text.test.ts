@@ -77,8 +77,8 @@ describe("remapWordTextsPreservingTiming", () => {
     const result = remapWordTextsPreservingTiming(flush, "I really can't wait", DEFAULT_SPLIT_CHARACTER);
     expect(timings(result)).toEqual([
       ["I ", 1, 2],
-      ["really ", 2, 2 + 6 / 11],
-      ["can't ", 2 + 6 / 11, 3],
+      ["really ", 2, 2.545],
+      ["can't ", 2.545, 3],
       ["wait", 3, 4],
     ]);
   });
@@ -97,8 +97,8 @@ describe("remapWordTextsPreservingTiming", () => {
   it("regression: a word prepended with no gap before it shares the first word's slot", () => {
     const result = remapWordTextsPreservingTiming(flush, "Oh I can't wait", DEFAULT_SPLIT_CHARACTER);
     expect(timings(result)).toEqual([
-      ["Oh ", 1, 1 + 2 / 3],
-      ["I ", 1 + 2 / 3, 2],
+      ["Oh ", 1, 1.666],
+      ["I ", 1.666, 2],
       ["can't ", 2, 3],
       ["wait", 3, 4],
     ]);
@@ -149,6 +149,19 @@ describe("remapWordTextsPreservingTiming", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a shared slot never leaves the next word under a millisecond once exported", () => {
+      const words: WordTiming[] = [{ id: "w42", text: "I", sep: "", begin: 1, end: 1.002, joinsNext: false }];
+      const exportedMs = (word: WordTiming) => Math.round(word.end * 1000) - Math.round(word.begin * 1000);
+      const shared = remapWordTextsPreservingTiming(words, "hello I", DEFAULT_SPLIT_CHARACTER);
+      expect(shared.map(exportedMs)).toEqual([1, 1]);
+      const tooShort = remapWordTextsPreservingTiming(
+        [{ ...words[0], end: 1.001 }],
+        "hello I",
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      expect(tooShort.map((word) => [word.text, word.begin, word.end])[1]).toEqual(["I", 1, 1.001]);
+    });
+
     it("regression: a word inserted into a gap shorter than a millisecond shares the next word's slot", () => {
       const words: WordTiming[] = [
         { id: "w40", text: "o", sep: " ", begin: 3.283, end: 3.333, joinsNext: false },
@@ -168,8 +181,8 @@ describe("remapWordTextsPreservingTiming", () => {
       );
       // The prepended word shares the next word's slot; the appended one stays for the untimed tail.
       expect(timings(result)).toEqual([
-        ["oh ", 0, 2 / 7],
-        ["hello ", 2 / 7, 1],
+        ["oh ", 0, 0.286],
+        ["hello ", 0.286, 1],
         ["there", 1, 1],
       ]);
     });
