@@ -109,7 +109,8 @@ function shiftCaretPastRewrittenRows(
 ): number {
   const typedRows = typedText.split("\n");
   const displayedRows = displayedText.split("\n");
-  if (typedRows.length !== displayedRows.length) return caret;
+  if (typedRows.length !== displayedRows.length)
+    return caretThroughRedraw(typedText, displayedText, caret, splitChar) ?? caret;
   let displayedStart = 0;
   let rowStart = 0;
   for (let i = 0; i < typedRows.length; i++) {

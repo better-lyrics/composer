@@ -83,6 +83,12 @@ describe("shiftCaretPastRewrittenRows", () => {
     expect(shiftCaretPastRewrittenRows("|rain glow", "rain glow", "|rain gl".length)).toBe("rain gl".length);
   });
 
+  it("regression: a background row merged into the row above keeps the caret on the row it was on", () => {
+    const typed = "dusk tide\n  (low hum)\nember";
+    const shown = "dusk tide (low hum)\nember";
+    expect(shiftCaretPastRewrittenRows(typed, shown, typed.indexOf("ember"))).toBe(shown.indexOf("ember"));
+  });
+
   it("regression: a row the redraw left as typed keeps the caret right after a group typed in it", () => {
     const typed = "bloom (tide) sigh\nhar|bor";
     expect(shiftCaretPastRewrittenRows(typed, "bloom (tide) sigh\nharbor", "bloom (tide)".length)).toBe(
