@@ -159,7 +159,11 @@ describe("remapWordTextsPreservingTiming", () => {
         "hello I",
         DEFAULT_SPLIT_CHARACTER,
       );
-      expect(tooShort.map((word) => [word.text, word.begin, word.end])[1]).toEqual(["I", 1, 1.001]);
+      // No word is ever written under a millisecond: with no time around it, "I" moves a millisecond later.
+      expect(tooShort.map((word) => [word.text, word.begin, word.end])).toEqual([
+        ["hello", 1, 1.001],
+        ["I", 1.001, 1.002],
+      ]);
     });
 
     it("regression: a word inserted into a gap shorter than a millisecond shares the next word's slot", () => {

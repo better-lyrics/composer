@@ -60,8 +60,16 @@ function spreadEvenly(texts: string[], begin: number, end: number) {
   return texts.map((text, k) => ({ text, begin: begin + step * k, end: begin + step * (k + 1) }));
 }
 
+interface SharedSlots {
+  slots: Map<number, { begin: number; end: number }>;
+  // Milliseconds everything after the shared words moves later, when even all of them had no time to give.
+  delay: { from: number; ms: number } | null;
+}
+
 // The fewest kept words next to a typed run whose time, with the run's slot, gives every word a millisecond: first the
-// words after it, then the words before it. Slots by text index; null when no kept words around it make room.
+// words after it, then the words before it. Slots by text index. Where all the kept words around it have no time to
+// give, the last of them ends that many milliseconds later and every word after it moves with it, so no word is ever
+// under a millisecond.
 function sharedSlots(
   texts: readonly string[],
   oldIndexOf: readonly (number | undefined)[],
@@ -69,24 +77,31 @@ function sharedSlots(
   slot: { begin: number; end: number },
   runStart: number,
   runEnd: number,
-): Map<number, { begin: number; end: number }> | null {
+): SharedSlots {
   let from = runStart;
   let to = runEnd;
   const kept = (index: number) => oldIndexOf[index] !== undefined;
   const beginAt = (index: number) => (index === runStart ? slot.begin : oldWords[oldIndexOf[index] as number].begin);
   const endAt = (index: number) => (index === runEnd - 1 ? slot.end : oldWords[oldIndexOf[index] as number].end);
+  const byIndex = (slots: readonly { begin: number; end: number }[]) =>
+    new Map(slots.map((shared, index) => [from + index, shared]));
   while (to < texts.length && kept(to)) {
     to++;
     const slots = textSlots(texts.slice(from, to), beginAt(from), endAt(to - 1));
-    if (slots) return new Map(slots.map((shared, index) => [from + index, shared]));
+    if (slots) return { slots: byIndex(slots), delay: null };
   }
   while (from > 0 && kept(from - 1)) {
     from--;
     const slots = textSlots(texts.slice(from, to), beginAt(from), endAt(to - 1));
-    if (slots) return new Map(slots.map((shared, index) => [from + index, shared]));
+    if (slots) return { slots: byIndex(slots), delay: null };
   }
-  return null;
+  const end = endAt(to - 1);
+  const ms = to - from - (msFromSeconds(end) - msFromSeconds(beginAt(from)));
+  const slots = textSlots(texts.slice(from, to), beginAt(from), atMs(end, ms)) ?? [];
+  return { slots: byIndex(slots), delay: { from: to, ms } };
 }
+
+const atMs = (seconds: number, ms: number) => Math.round((seconds + ms / 1000) * 1e9) / 1e9;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -117,6 +132,7 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
 
   const result: WordTiming[] = [];
   const retimed = new Map<number, { begin: number; end: number }>();
+  const delays: { from: number; ms: number }[] = [];
   let i = 0;
   while (i < texts.length) {
     const matched = oldIndexOf[i];
@@ -145,8 +161,9 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
     // typed split does; a run after every kept word stays for the untimed tail.
     const roomMs = msFromSeconds(slot.end) - msFromSeconds(slot.begin);
     if (roomMs < runTexts.length && rightBracket) {
-      for (const [index, shared] of sharedSlots(texts, oldIndexOf, oldWords, slot, i, runEnd) ?? [])
-        retimed.set(index, shared);
+      const shared = sharedSlots(texts, oldIndexOf, oldWords, slot, i, runEnd);
+      for (const [index, span] of shared.slots) retimed.set(index, span);
+      if (shared.delay) delays.push(shared.delay);
     }
 
     for (const { text, begin, end } of spreadEvenly(runTexts, slot.begin, slot.end)) {
@@ -159,7 +176,9 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string,
 
   const shared = result.map((word, index) => {
     const slot = retimed.get(index);
-    return slot ? { ...word, ...slot } : word;
+    const delayMs = delays.reduce((sum, delay) => (index >= delay.from ? sum + delay.ms : sum), 0);
+    const placed = slot ? { ...word, ...slot } : word;
+    return delayMs > 0 ? { ...placed, begin: atMs(placed.begin, delayMs), end: atMs(placed.end, delayMs) } : placed;
   });
   return joinedToTypedText(shared, texts, oldWords, oldIndexOf, glued);
 }
