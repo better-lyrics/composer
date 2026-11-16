@@ -1,24 +1,24 @@
-import { withSeededBackground } from "insync/line-background";
-import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
-import { fieldsOfLine } from "insync/line-from-fields";
-import { mainBounds } from "insync/line-bounds";
-import { changedFields, updatedLine } from "@/test/field-updates";
-import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
-import { lineText } from "insync/line-text";
-import { describe, expect, it } from "vitest";
 import type { LyricLine } from "insync/line";
+import { withSeededBackground } from "insync/line-background";
+import { mainBounds } from "insync/line-bounds";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { withBackgroundTrack, withTrackSpan } from "insync/line-track-writes";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import {
+  commitGesture,
   type GestureCommit,
   type GestureContext,
-  type SyncGesture,
-  commitGesture,
   planGesture,
+  type SyncGesture,
 } from "insync/sync-commit-gesture";
 import { isSyncComplete } from "insync/sync-slot-close";
 import { wordFromSpaced } from "insync/word-spaced-words";
+import { describe, expect, it } from "vitest";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { createLine } from "@/test/factories";
-import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { changedFields, updatedLine } from "@/test/field-updates";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const DUR = 0.3;
@@ -552,7 +552,8 @@ describe("ported behaviour", () => {
     expect(timedSyllables(mainTrack(after[0]))).toEqual([
       word("one ", 0, 5),
       word("two ", 5, 5 + DUR),
-      word("three", 5 + DUR, 5 + DUR),
+      // Squeezed words keep their length instead of collapsing to zero.
+      word("three", 5 + DUR, 6 + DUR),
     ]);
   });
 
@@ -609,7 +610,8 @@ describe("ported behaviour", () => {
       }),
     ];
     const after = apply(lines, run(lines, "hold-start", [0, 1], 5, true));
-    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 5, 5), word("three", 5, 5)]);
+    // Squeezed words keep their length instead of collapsing to zero.
+    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 5, 5), word("three", 5, 6)]);
   });
 
   it("regression: preserves explicit and joinsNext when re-holding a mid-line word", () => {
@@ -647,7 +649,8 @@ describe("ported behaviour", () => {
       }),
     ];
     const after = apply(lines, run(lines, "hold-end", [0, 1], 5));
-    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 1, 5), word("three", 5, 5)]);
+    // Squeezed words keep their length instead of collapsing to zero.
+    expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 1, 5), word("three", 5, 6)]);
   });
 
   it("preserves explicit and joinsNext on the word hold-end closes", () => {
@@ -870,5 +873,34 @@ describe("how a gesture ends the previous slot", () => {
       [4.5, 5],
     ]);
     expect(timedSyllables(mainTrack(lines[0]))[2].end).toBe(4);
+  });
+});
+
+describe("zero-length neighbours", () => {
+  const lengths = (line: LyricLine) => timedSyllables(mainTrack(line)).map((w) => w.end - w.begin);
+
+  it("regression: a re-recorded word never squeezes the next timed word to zero length", () => {
+    const tapped = [
+      createLine({ id: "l0", text: "pel shivo toquolo", words: [word("pel ", 6.5, 6.7), word("shivo ", 6.86, 7.15)] }),
+    ];
+    for (const length of lengths(apply(tapped, run(tapped, "tap-word", [0, 0], 7.04, true))[0])) {
+      expect(length).toBeGreaterThan(0);
+    }
+    const atNextBegin = [
+      createLine({ id: "l0", text: "pel shivo", words: [word("pel ", 6.5, 6.7), word("shivo", 7, 7.2)] }),
+    ];
+    for (const length of lengths(apply(atNextBegin, run(atNextBegin, "tap-word", [0, 0], 7, true))[0])) {
+      expect(length).toBeGreaterThan(0);
+    }
+    const held = [
+      createLine({
+        id: "l0",
+        text: "nu hiren shi ta",
+        words: [word("nu ", 1.2, 1.5), word("hiren ", 1.9, 1.9), word("shi ", 1.9, 2.2)],
+      }),
+    ];
+    for (const length of lengths(apply(held, run(held, "hold-end", [0, 1], 2.3))[0])) {
+      expect(length).toBeGreaterThan(0);
+    }
   });
 });

@@ -1,14 +1,14 @@
-import { type TimeRange, timeRangeResolver } from "./group-shared-timing";
 import type { LinkGroup } from "./group";
-import { applyLineUpdates } from "./line-apply-line-updates";
-import { bgBounds, mainBounds } from "./line-bounds";
-import { withBackgroundSeededFrom, withSeededBackground } from "./line-background";
+import { type TimeRange, timeRangeResolver } from "./group-shared-timing";
 import type { LineUpdate, LyricLine } from "./line";
+import { applyLineUpdates } from "./line-apply-line-updates";
+import { withBackgroundSeededFrom, withSeededBackground } from "./line-background";
+import { bgBounds, mainBounds } from "./line-bounds";
 import { clampShiftDelta, shiftLineTiming, shiftTrack } from "./line-shift";
+import { isSyncableLine } from "./line-sync-progress";
 import { backgroundTrack, mainTrack, timedSyllables } from "./line-track";
 import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "./line-track-writes";
-import { isSyncableLine } from "./line-sync-progress";
-import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "./sync-cursor";
+import { advanceCursor, previousSlot, type SyncCursor, type SyncSlot, slotBounds } from "./sync-cursor";
 import { type SkippedInstance, skippedSharedInstances } from "./sync-skipped-instances";
 import { closeSlotWords, closingUpdate, lastLineClose, previousSlotEnd, tapEnd } from "./sync-slot-close";
 import { withSlotWord } from "./sync-slot-words";
@@ -134,7 +134,7 @@ function writeWord(
   const floor = Math.max(crossLine ? 0 : anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
   const provisional = open ? begin : tapEnd(begin, ctx.defaultWordDuration);
-  const end = nextWord && nextWord.begin >= begin ? Math.min(provisional, nextWord.begin) : provisional;
+  const end = nextWord && nextWord.begin > begin ? Math.min(provisional, nextWord.begin) : provisional;
 
   let words = withSlotWord(existing, slots, cursor.wordIndex, { begin, end });
 
