@@ -116,6 +116,31 @@ describe("TTML alternate-language sidecars", () => {
     expect(ttml).toContain('<translation xml:lang="en" type="replacement">');
   });
 
+  it("regression: keeps two translation containers of one language apart by type", () => {
+    const second: LegacyLine = { ...languageLine(), id: "line-2" };
+    second.translations = { en: { ...second.translations!.en, text: "Tonight", backgroundText: undefined } };
+    const lines = [legacyLine(languageLine()), legacyLine(second)];
+    const generated = generateTTML({ metadata, agents, lines, splitChar: DEFAULT_SPLIT_CHARACTER });
+    const subtitle = '<translation xml:lang="en" type="subtitle">';
+    const source = generated.replace(
+      /(\s*)<text for="L2">Tonight<\/text>/,
+      `$1</translation>$1${subtitle.replace("subtitle", "replacement")}$1<text for="L2">Tonight</text>`,
+    );
+    expect(source.match(/<translation /g)).toHaveLength(2);
+
+    const ttml = generateTTML({
+      metadata,
+      agents,
+      lines: parseLyricsFile("song.ttml", source).lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
+
+    expect(ttml).toMatch(
+      /type="subtitle">\s*<text for="L1">Today <span ttm:role="x-bg">Sky<\/span><\/text>\s*<\/translation>/,
+    );
+    expect(ttml).toMatch(/type="replacement">\s*<text for="L2">Tonight<\/text>\s*<\/translation>/);
+  });
+
   it("places alternate background text first when it begins before the foreground", () => {
     const line = languageLine();
     line.backgroundWords = [

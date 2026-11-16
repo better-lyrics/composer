@@ -27,6 +27,12 @@ interface HeadSource {
 
 type Indent = (depth: number) => string;
 
+interface TranslationContainer {
+  language: string;
+  type: string;
+  texts: string[];
+}
+
 // -- Agents -------------------------------------------------------------------
 
 function agentLines(agent: Agent, position: number, ind: Indent): string[] {
@@ -46,29 +52,27 @@ function agentLines(agent: Agent, position: number, ind: Indent): string[] {
 // -- Languages ----------------------------------------------------------------
 
 function translationLines(keyedLines: readonly KeyedLine[], ind: Indent): string[] {
-  const typeByLanguage = new Map<string, string | undefined>();
-  for (const { line } of keyedLines) {
+  const containers = new Map<string, TranslationContainer>();
+  for (const { line, key } of keyedLines) {
     for (const [language, track] of Object.entries(lineTranslations(line) ?? {})) {
-      if (hasAlternateText(track)) {
-        typeByLanguage.set(language, typeByLanguage.get(language) ?? track.translationType);
-      }
+      if (!hasAlternateText(track)) continue;
+      const type = track.translationType ?? "subtitle";
+      const containerKey = JSON.stringify([language, type]);
+      const container = containers.get(containerKey) ?? { language, type, texts: [] };
+      container.texts.push(
+        `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.main.text, track.bg?.text)}</text>`,
+      );
+      containers.set(containerKey, container);
     }
   }
-  if (typeByLanguage.size === 0) return [];
+  if (containers.size === 0) return [];
   const parts = [`${ind(4)}<translations>`];
-  for (const [language, type] of typeByLanguage) {
+  for (const { language, type, texts } of containers.values()) {
     parts.push(
-      `${ind(5)}<translation xml:lang="${escapeXmlText(language)}" type="${escapeXmlAttribute(type ?? "subtitle")}">`,
+      `${ind(5)}<translation xml:lang="${escapeXmlText(language)}" type="${escapeXmlAttribute(type)}">`,
+      ...texts,
+      `${ind(5)}</translation>`,
     );
-    for (const { line, key } of keyedLines) {
-      const track = lineTranslations(line)?.[language];
-      if (track && hasAlternateText(track)) {
-        parts.push(
-          `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.main.text, track.bg?.text)}</text>`,
-        );
-      }
-    }
-    parts.push(`${ind(5)}</translation>`);
   }
   parts.push(`${ind(4)}</translations>`);
   return parts;
