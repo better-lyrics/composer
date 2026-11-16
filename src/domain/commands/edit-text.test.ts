@@ -3,6 +3,8 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { editBackgroundText, typeLyrics } from "insync/commands/edit-text";
+import { syncGesture } from "insync/commands/sync";
+import { bgBounds } from "insync/line-bounds";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { withSeededBackground } from "insync/line-background";
 import { backgroundText, lineText } from "insync/line-text";
@@ -29,6 +31,24 @@ describe("editBackgroundText", () => {
     const [line] = useProjectStore.getState().lines;
     expect(backgroundText(line, getSplitCharacter())).toBe("ooh yeah");
     expect(backgroundTrack(line)).toMatchObject({ begin: 4.5, end: 5.5, source: "manual" });
+  });
+
+  it("regression: a background typed on a line a Line mode tap left open is timed from the tap", () => {
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "l1", text: "Paper boats" }), createLine({ id: "l2", text: "Harbour lights" })],
+    });
+    const tapLine = (lineIndex: number, time: number) =>
+      syncGesture(
+        "tap-line",
+        { cursor: { lineIndex, wordIndex: 0 }, jumped: false, time, defaultWordDuration: 0.5 },
+        () => {},
+      );
+
+    useProjectStore.getState().commit(tapLine(0, 2));
+    useProjectStore.getState().commit(editBackgroundText("l1", "drifting"));
+    useProjectStore.getState().commit(tapLine(1, 5));
+
+    expect(bgBounds(useProjectStore.getState().lines[0])?.begin).toBe(2);
   });
 });
 

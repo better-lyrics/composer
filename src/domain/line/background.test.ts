@@ -285,9 +285,8 @@ describe("withSeededBackground", () => {
     const withWords = withFields(timed, { backgroundWords: [bgWord] });
     const untimed = withFields(timed, { begin: undefined, end: undefined });
     const noText = withFields(timed, { backgroundText: undefined });
-    const zeroLength = withFields(timed, { begin: 10, end: 10 });
     const inverted = withFields(timed, { begin: 14, end: 10 });
-    for (const candidate of [withWords, untimed, noText, zeroLength, inverted])
+    for (const candidate of [withWords, untimed, noText, inverted])
       expect(withSeededBackground(candidate, DEFAULT_SPLIT_CHARACTER)).toBe(candidate);
   });
 });
