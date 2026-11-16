@@ -54,6 +54,7 @@ const LOG_PREFIX = "[OpenProject]";
 let latestRequest = 0;
 let appliedRequest = 0;
 let openProjectChanges = 0;
+let releaseStartupSaves: (() => void) | null = null;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -67,7 +68,16 @@ function claimRequest(): number {
   return latestRequest;
 }
 
+// Saves queued during the startup restore hold the stores it would replace, so they are dropped, never written.
+function endStartupSaveHold(): void {
+  if (!releaseStartupSaves) return;
+  cancelPendingSave();
+  releaseStartupSaves();
+  releaseStartupSaves = null;
+}
+
 function markOpenProjectChanged(): void {
+  endStartupSaveHold();
   openProjectChanges++;
 }
 
@@ -94,10 +104,12 @@ async function restoreStoredProject(): Promise<void> {
 async function restoreOpenProject(): Promise<void> {
   cancelPendingSave();
   const releaseSaves = holdSaves();
+  releaseStartupSaves = releaseSaves;
   try {
     await restoreStoredProject();
   } finally {
     releaseSaves();
+    if (releaseStartupSaves === releaseSaves) releaseStartupSaves = null;
   }
 }
 
@@ -144,6 +156,7 @@ async function openProject(id: string): Promise<void> {
 }
 
 function createProject(): string {
+  endStartupSaveHold();
   flushPendingSaveQuietly();
   saveResumePositionNow();
   return openEmptyProject();
