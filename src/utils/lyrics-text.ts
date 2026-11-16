@@ -8,6 +8,7 @@ import { backgroundText, lineText, trackText } from "insync/line-text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { joinedRowRun, linesByText } from "@/utils/lyrics-text-joined-rows";
 import { getSplitCharacter } from "@/utils/split-character";
+import { nearestAccepted } from "@/utils/nearest-accepted";
 import { cleanSplitCharacters, withoutSplitCharacter } from "insync/split-character-text";
 import { memoBySplitCharacter } from "insync/memo-by-identity";
 
@@ -48,6 +49,30 @@ function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined, 
   return sourceText !== trackText(mainTrack(line), splitChar) || !timedSyllables(backgroundTrack(line)).length;
 }
 
+// Where the claimed rows around a row place it among the existing lines. Rows are asked in ascending order within one
+// pass, and a pass claims only the row it is on, so the rows after it are fixed when the pass starts.
+function rowPlacement(
+  claimed: readonly (LyricLine | undefined)[],
+  existingIndex: ReadonlyMap<string, number>,
+  joinedCounts: ReadonlyMap<number, number>,
+): (row: number) => number {
+  const nextClaimed = new Array<number>(claimed.length + 1).fill(-1);
+  for (let row = claimed.length - 1; row >= 0; row--) nextClaimed[row] = claimed[row] ? row : nextClaimed[row + 1];
+  let previous = -1;
+  let scanned = 0;
+  return (row) => {
+    for (; scanned < row; scanned++) if (claimed[scanned]) previous = scanned;
+    const before = previous >= 0 ? claimed[previous] : undefined;
+    if (before) {
+      const lineIndex = existingIndex.get(before.id) ?? previous;
+      return lineIndex + (joinedCounts.get(previous) ?? 1) - 1 + row - previous;
+    }
+    const after = nextClaimed[row + 1];
+    const afterLine = after >= 0 ? claimed[after] : undefined;
+    return afterLine ? (existingIndex.get(afterLine.id) ?? after) - (after - row) : row;
+  };
+}
+
 // `text` is the typed text or its rows. `splitChar` is the character it was written with, which reads the existing
 // lines the same way.
 // `shownBackgrounds` holds each row's inline background when the text shows backgrounds inline.
@@ -58,17 +83,13 @@ function textToLyricLines(
   splitChar = getSplitCharacter(),
   shownBackgrounds?: readonly (string | null)[],
 ): LyricLine[] {
-  const textToCandidates = new Map<string, LyricLine[]>();
+  const textToCandidates = new Map<string, number[]>();
   const existingTrackKeys = existingLines.map((line) => mainTrackKeys(mainTrack(line), splitChar));
   const existingKeys = existingTrackKeys.map((keys) => keys.ownKey);
-  existingLines.forEach((line, index) => {
-    const key = existingKeys[index];
-    let bucket = textToCandidates.get(key);
-    if (!bucket) {
-      bucket = [];
-      textToCandidates.set(key, bucket);
-    }
-    bucket.push(line);
+  existingKeys.forEach((key, index) => {
+    const bucket = textToCandidates.get(key);
+    if (bucket) bucket.push(index);
+    else textToCandidates.set(key, [index]);
   });
 
   const usedExistingIds = new Set<string>();
@@ -106,30 +127,20 @@ function textToLyricLines(
   cleanedKeys.forEach((key, index) => {
     const candidates = textToCandidates.get(key);
     if (claimed[index] || candidates?.length !== 1 || rowsPerKey.get(key) !== 1) return;
-    if (!usedExistingIds.has(candidates[0].id)) claim(index, candidates[0]);
+    if (!usedExistingIds.has(existingLines[candidates[0]].id)) claim(index, existingLines[candidates[0]]);
   });
 
   const existingIndex = new Map(existingLines.map((line, index) => [line.id, index]));
   const joinedCounts = new Map<number, number>();
-  const expectedIndex = (row: number): number => {
-    for (let before = row - 1; before >= 0; before--) {
-      const line = claimed[before];
-      if (line) return (existingIndex.get(line.id) ?? before) + (joinedCounts.get(before) ?? 1) - 1 + row - before;
-    }
-    for (let after = row + 1; after < claimed.length; after++) {
-      const line = claimed[after];
-      if (line) return (existingIndex.get(line.id) ?? after) - (after - row);
-    }
-    return row;
-  };
   // Rows joined in Edit spell the text of adjacent lines with no line of their own, so they keep those lines' timing.
   if (newLines.length < existingLines.length) {
     const lineTexts = existingTrackKeys.map((keys) => keys.text.trim());
     const byText = linesByText(lineTexts);
     const isFree = (lineIndex: number) => !usedExistingIds.has(existingLines[lineIndex].id);
+    const joinPlacement = rowPlacement(claimed, existingIndex, joinedCounts);
     cleanedTexts.forEach((row, index) => {
       if (claimed[index] || textToCandidates.has(cleanedKeys[index])) return;
-      const run = joinedRowRun(row, lineTexts, byText, isFree, expectedIndex(index));
+      const run = joinedRowRun(row, lineTexts, byText, isFree, joinPlacement(index));
       const joined = run && joinedLines(existingLines.slice(run.start, run.end + 1), run.seams);
       if (!run || !joined) return;
       claim(index, joined);
@@ -138,16 +149,16 @@ function textToLyricLines(
     });
   }
 
+  const expectedIndex = rowPlacement(claimed, existingIndex, joinedCounts);
+  const freeLine = (lineIndex: number) => {
+    const line = existingLines[lineIndex];
+    return usedExistingIds.has(line.id) ? null : line;
+  };
   cleanedKeys.forEach((key, index) => {
-    if (claimed[index]) return;
-    const candidates = textToCandidates.get(key)?.filter((line) => !usedExistingIds.has(line.id));
-    if (!candidates?.length) return;
-    const expected = expectedIndex(index);
-    const distance = (line: LyricLine) => Math.abs((existingIndex.get(line.id) ?? 0) - expected);
-    claim(
-      index,
-      candidates.reduce((nearest, line) => (distance(line) < distance(nearest) ? line : nearest)),
-    );
+    const candidates = textToCandidates.get(key);
+    if (claimed[index] || !candidates) return;
+    const nearest = nearestAccepted(candidates, expectedIndex(index), freeLine);
+    if (nearest) claim(index, nearest.value);
   });
 
   const sources: Array<LyricLine | undefined> = new Array(newLines.length);

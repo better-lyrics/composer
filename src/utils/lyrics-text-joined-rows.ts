@@ -1,3 +1,5 @@
+import { nearestAccepted } from "@/utils/nearest-accepted";
+
 // -- Interfaces ----------------------------------------------------------------
 
 interface JoinedRun {
@@ -24,11 +26,21 @@ function joinSeams(texts: readonly string[], row: string): string[] | null {
   return at === row.length ? seams : null;
 }
 
-// The lines a row can start with, in line order: those whose text is a prefix of the row.
-function startsOf(row: string, linesByText: ReadonlyMap<string, readonly number[]>): number[] {
-  const starts: number[] = [];
-  for (let length = 1; length <= row.length; length++) starts.push(...(linesByText.get(row.slice(0, length)) ?? []));
-  return starts.toSorted((a, b) => a - b);
+// The run of free lines from `start` that spells the row, ending at the first line that completes it.
+function runFrom(
+  start: number,
+  row: string,
+  lineTexts: readonly string[],
+  isFree: (index: number) => boolean,
+): JoinedRun | null {
+  if (!isFree(start)) return null;
+  let spelled = lineTexts[start].length;
+  for (let end = start + 1; end < lineTexts.length && isFree(end) && spelled < row.length; end++) {
+    spelled += lineTexts[end].length;
+    const seams = joinSeams(lineTexts.slice(start, end + 1), row);
+    if (seams) return { start, end, seams };
+  }
+  return null;
 }
 
 // -- Functions -----------------------------------------------------------------
@@ -45,7 +57,8 @@ function linesByText(lineTexts: readonly string[]): Map<string, number[]> {
   return byText;
 }
 
-// Two or more adjacent free lines whose texts spell the row, the run starting nearest `expected` winning.
+// Two or more adjacent free lines whose texts spell the row, the run starting nearest `expected` winning and the
+// earlier run on a tie. Only lines whose text starts the row can start a run, searched outward from `expected`.
 function joinedRowRun(
   row: string,
   lineTexts: readonly string[],
@@ -54,16 +67,18 @@ function joinedRowRun(
   expected: number,
 ): JoinedRun | null {
   let nearest: JoinedRun | null = null;
-  for (const start of startsOf(row, byText)) {
-    if (!isFree(start)) continue;
-    let spelled = lineTexts[start].length;
-    for (let end = start + 1; end < lineTexts.length && isFree(end) && spelled < row.length; end++) {
-      spelled += lineTexts[end].length;
-      const seams = joinSeams(lineTexts.slice(start, end + 1), row);
-      if (!seams) continue;
-      if (!nearest || Math.abs(start - expected) < Math.abs(nearest.start - expected)) nearest = { start, end, seams };
-      break;
-    }
+  const distance = (run: JoinedRun) => Math.abs(run.start - expected);
+  for (let length = 1; length <= row.length; length++) {
+    const starts = byText.get(row.slice(0, length));
+    const found = starts && nearestAccepted(starts, expected, (start) => runFrom(start, row, lineTexts, isFree));
+    if (!found) continue;
+    const run = found.value;
+    if (
+      !nearest ||
+      distance(run) < distance(nearest) ||
+      (distance(run) === distance(nearest) && run.start < nearest.start)
+    )
+      nearest = run;
   }
   return nearest;
 }
