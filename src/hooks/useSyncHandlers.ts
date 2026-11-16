@@ -201,9 +201,11 @@ function useSyncHandlers({
     noteGuideSignal("sync.tap");
   }, [runGesture, granularity, setShowPulse]);
 
-  const handleHoldStart = useCallback(() => {
+  const handleHoldStart = useCallback((): boolean => {
     ignoreNextHoldEndRef.current = false;
-    if (runGesture("hold-start")) noteGuideSignal("sync.hold");
+    const started = runGesture("hold-start");
+    if (started) noteGuideSignal("sync.hold");
+    return started;
   }, [runGesture]);
 
   const handleHoldEnd = useCallback(() => {

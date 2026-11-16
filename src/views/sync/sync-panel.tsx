@@ -236,11 +236,9 @@ const SyncPanel: React.FC = () => {
     clearPlacementPreroll();
     if (!syncState.isActive && lines.length > 0) {
       if (handleStartSync() === "counting") return;
-      handleHoldStart();
-      setIsHolding(true);
+      if (handleHoldStart()) setIsHolding(true);
     } else if (isPlaying) {
-      handleHoldStart();
-      setIsHolding(true);
+      if (handleHoldStart()) setIsHolding(true);
     }
   }, [
     editMode,
