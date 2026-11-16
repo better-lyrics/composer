@@ -71,8 +71,8 @@ function contentOf(text: string, splitChar: string) {
 }
 
 // Where the caret goes when a redraw only moved things around (bracket groups, spaces, split marks, row breaks): after
-// the same letter of the main text, then past the same spaces and breaks it had after that letter; inside a group, at
-// the same place in that group. Null when the redraw changed the text itself.
+// the same letter of the main text, then past the same spaces, breaks and groups it had after that letter where they
+// still follow it; inside a group, at the same place in that group. Null when the redraw changed the text itself.
 function caretThroughRedraw(typed: string, displayed: string, caret: number, splitChar: string): number | null {
   if (typed === displayed) return caret;
   const before = contentOf(typed, splitChar);
@@ -89,14 +89,18 @@ function caretThroughRedraw(typed: string, displayed: string, caret: number, spl
   const count = before.positions.filter((position) => position < caret).length;
   const typedFrom = count > 0 ? before.positions[count - 1] + 1 : 0;
   let at = count > 0 ? after.positions[count - 1] + 1 : 0;
-  const gap = [...typed.slice(typedFrom, caret)].filter((_, offset) => {
-    const index = typedFrom + offset;
-    return !before.groups.some((group) => group.start <= index && index < group.end);
-  });
-  for (const char of gap) {
-    const group = after.groups.find((candidate) => candidate.start === at);
-    if (group && char !== "(") at = group.end;
-    if (displayed[at] === char) at++;
+  // The spaces and breaks after that letter come along; a group there comes along too when the redraw left it there.
+  for (let index = typedFrom; index < caret; index++) {
+    const group = before.groups.find((candidate) => candidate.start === index);
+    if (group) {
+      const text = typed.slice(group.start, group.end);
+      let next = at;
+      while (next < displayed.length && displayed[next] === " ") next++;
+      if (displayed.startsWith(text, next)) at = next + text.length;
+      index = group.end - 1;
+      continue;
+    }
+    if (displayed[at] === typed[index]) at++;
   }
   return at;
 }

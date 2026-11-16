@@ -95,4 +95,9 @@ describe("shiftCaretPastRewrittenRows", () => {
       "bloom (tide)".length,
     );
   });
+
+  it("regression: a group the redraw leaves after the same word keeps the caret after the group", () => {
+    const typed = "Harbour lights go down(go down)";
+    expect(shiftCaretPastRewrittenRows(typed, "Harbour lights go down (go down)", typed.length)).toBe(typed.length + 1);
+  });
 });
