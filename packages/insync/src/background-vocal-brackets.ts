@@ -34,30 +34,49 @@ function bracketWordList(words: WordTiming[]): WordTiming[] {
   return out;
 }
 
+// -- Separators ---------------------------------------------------------------
+
+type BackgroundSeparator = "space" | "comma";
+
+interface BracketJoin {
+  preserveBrackets: boolean;
+  separator: BackgroundSeparator;
+}
+
+const SEPARATOR_MARK: Record<BackgroundSeparator, string> = { space: "", comma: "," };
+
+const separatorText = (separator: BackgroundSeparator) => `${SEPARATOR_MARK[separator]} `;
+
+function joinExtractedParts(parts: readonly string[], separator: BackgroundSeparator): string {
+  return parts.join(separatorText(separator));
+}
+
 // -- Seam-aware concatenation -------------------------------------------------
 
+// Carried words extending a pair follow its last word after the separator, inside the pair when both sides have one.
 function joinBracketedCarriedWords(
   baseWords: WordTiming[],
   carried: WordTiming[],
-  canSeamStrip: boolean,
+  join: BracketJoin,
+  extendsPair: boolean,
 ): WordTiming[] {
-  if (!canSeamStrip) return [...withTrailingSpace(baseWords), ...carried];
+  if (!extendsPair) return [...withTrailingSpace(baseWords), ...carried];
   if (baseWords.length === 0) return carried;
   if (carried.length === 0) return baseWords;
   const lastBase = baseWords[baseWords.length - 1];
   const firstCarry = carried[0];
   const lastBaseSpaced = lastBase.text + lastBase.sep;
   const lastBaseStripped = stripTrailingSpace(lastBaseSpaced);
-  const lastBaseTrail = trailingSpaceOf(lastBaseSpaced);
-  const lastEndsBracket = lastBaseStripped.endsWith(")");
-  const firstStartsBracket = firstCarry.text.startsWith("(");
-  if (!lastEndsBracket || !firstStartsBracket) return [...withTrailingSpace(baseWords), ...carried];
-  const lastBaseText = `${lastBaseStripped.slice(0, -1)}${lastBaseTrail.length > 0 ? lastBaseTrail : " "}`;
-  const firstCarryText = firstCarry.text.slice(1);
+  const lastBaseTrail = trailingSpaceOf(lastBaseSpaced) || " ";
+  const mark = SEPARATOR_MARK[join.separator];
+  const stripsSeam = join.preserveBrackets && lastBaseStripped.endsWith(")") && firstCarry.text.startsWith("(");
+  const lastBaseText = stripsSeam
+    ? `${lastBaseStripped.slice(0, -1)}${mark}${lastBaseTrail}`
+    : `${lastBaseStripped}${mark}${lastBaseTrail}`;
   return [
     ...baseWords.slice(0, -1),
     wordFromSpaced({ ...lastBase, text: lastBaseText, joinsNext: false }),
-    { ...firstCarry, text: firstCarryText },
+    stripsSeam ? { ...firstCarry, text: firstCarry.text.slice(1) } : firstCarry,
     ...carried.slice(1),
   ];
 }
@@ -66,16 +85,19 @@ function joinBracketedCarriedWords(
 function joinBackgroundText(
   existing: string | undefined,
   addition: string,
-  preserveBrackets: boolean,
+  join: BracketJoin,
   extendsPair: boolean,
 ): string {
   const base = existing?.trim() ?? "";
-  const wrapped = preserveBrackets ? `(${addition})` : addition;
+  const wrapped = join.preserveBrackets ? `(${addition})` : addition;
   if (base.length === 0) return wrapped;
-  if (extendsPair && preserveBrackets && base.endsWith(")")) return `${base.slice(0, -1)} ${addition})`;
-  return `${base} ${wrapped}`;
+  if (!extendsPair) return `${base} ${wrapped}`;
+  const separator = separatorText(join.separator);
+  if (join.preserveBrackets && base.endsWith(")")) return `${base.slice(0, -1)}${separator}${addition})`;
+  return `${base}${separator}${wrapped}`;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { bracketWordList, joinBackgroundText, joinBracketedCarriedWords };
+export type { BackgroundSeparator, BracketJoin };
+export { bracketWordList, joinBackgroundText, joinBracketedCarriedWords, joinExtractedParts };

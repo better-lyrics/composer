@@ -1,5 +1,5 @@
 import type { ExtractOptions, LineClassification, ParenGroup } from "./background-vocal-extraction";
-import { joinBackgroundText } from "./background-vocal-brackets";
+import { type BackgroundSeparator, joinBackgroundText, joinExtractedParts } from "./background-vocal-brackets";
 import { gluedGroups } from "./background-vocal-glued-groups";
 import { splitTrailingWhitespace } from "./from-words";
 import { withBackground } from "./line-background";
@@ -12,11 +12,8 @@ import { remapWordTextsWithinLimit } from "./word-remap-text";
 
 // -- Functions ----------------------------------------------------------------
 
-const groupsText = (groups: readonly ParenGroup[]) =>
-  groups
-    .map((group) => group.inner.trim())
-    .filter(Boolean)
-    .join(" ");
+const groupsText = (groups: readonly ParenGroup[], separator: BackgroundSeparator) =>
+  joinExtractedParts(groups.map((group) => group.inner.trim()).filter(Boolean), separator);
 
 function hasSungContent(text: string, splitChar: string): boolean {
   return [...text].some((char) => !"() ".includes(char) && char !== splitChar);
@@ -35,7 +32,7 @@ function extractInlineWordSynced(
   const spans = wordContentSpans(words, splitChar);
   const glued = gluedGroups(line, classified.groups, splitChar);
   const groups = classified.groups.filter((group) => !glued.has(group));
-  const bgText = groupsText(groups);
+  const bgText = groupsText(groups, options.separator);
   if (!bgText) return line;
   const survivors: Syllable[] = [];
   const bracketed: Syllable[] = [];
@@ -67,7 +64,7 @@ function extractInlineWordSynced(
   );
   const base = backgroundText(line, splitChar);
   const extendsPair = backgroundTrack(line)?.source === "extraction";
-  const joined = joinBackgroundText(base, bgText, options.preserveBrackets, extendsPair);
+  const joined = joinBackgroundText(base, bgText, options, extendsPair);
   const timedBracketed = bracketed.filter(isTimedSyllable);
   const carried = base || timedBracketed.length < bracketed.length ? undefined : timedBracketed;
   const remapped = carried && remapWordTextsWithinLimit(carried, joined, splitChar, songEnd);

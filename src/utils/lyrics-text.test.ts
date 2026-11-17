@@ -450,7 +450,7 @@ describe("textToLyricLines · group attrs preservation", () => {
     const reparsed = textToLyricLines("Hello (ooh) world", "v1", existing);
     const extracted = extractBackgroundVocals(
       reparsed,
-      { mergeStandaloneLines: false, preserveBrackets: false },
+      { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
       DEFAULT_SPLIT_CHARACTER,
     );
     expect(extracted).toHaveLength(1);
@@ -722,7 +722,14 @@ describe("textToLyricLines · in-place edits keep row identity", () => {
   it("regression: a word typed into a line packed against the next line never runs into it", () => {
     const packed = packedLine("packed", ["dusk", "tide"], 1);
     const next = packedLine("next", ["ember"], 1.002);
-    const [typed] = textToLyricLines("dusk low tide\nember", "v1", [packed, next], DEFAULT_SPLIT_CHARACTER, undefined, 30);
+    const [typed] = textToLyricLines(
+      "dusk low tide\nember",
+      "v1",
+      [packed, next],
+      DEFAULT_SPLIT_CHARACTER,
+      undefined,
+      30,
+    );
     expect(timedTexts(typed)).toEqual([
       ["dusk", 1.001],
       ["low", null],

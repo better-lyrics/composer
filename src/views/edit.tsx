@@ -26,6 +26,7 @@ import { useProjectStore } from "@/stores/project";
 import type { LyricBurst } from "@/stores/project/history-types";
 import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
+import { settingsExtractOptions, useExtractOptions } from "@/stores/settings-extract-options";
 import { Button } from "@/ui/button";
 import { Tooltip } from "@/ui/tooltip";
 import { extractBackgroundVocals, lineHasInlineParens } from "insync/background-vocal-extraction";
@@ -47,7 +48,6 @@ import { useHeldBracketGroup } from "@/views/edit/use-held-bracket-group";
 import { useShownEditText } from "@/views/edit/use-shown-edit-text";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import {
-  settingsExtractOptions,
   shownAfterCommit,
   type TypedEdit,
   withTypedBackgroundsExtracted,
@@ -78,8 +78,6 @@ const EditPanel: React.FC = () => {
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
   const dropImportContext = useImportContext("Drop");
-  const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const { shownText, setRawText, showEditText: showShownText } = useShownEditText(lines);
   const rawText = shownText.text;
@@ -109,13 +107,7 @@ const EditPanel: React.FC = () => {
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
 
-  const extractOptions = useMemo(
-    () => ({
-      mergeStandaloneLines: mergeStandaloneBackgroundLines,
-      preserveBrackets: preserveBracketsOnExtraction,
-    }),
-    [mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
-  );
+  const extractOptions = useExtractOptions();
   const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
 
   // Shows the committed lyrics in the textarea only when the command changed them.
@@ -154,8 +146,7 @@ const EditPanel: React.FC = () => {
 
   const handleExtractLine = useCallback((lineId: string) => {
     const before = useProjectStore.getState().lines;
-    const preserveBrackets = useSettingsStore.getState().preserveBracketsOnExtraction;
-    useProjectStore.getState().commit(extractLineBackground(lineId, preserveBrackets));
+    useProjectStore.getState().commit(extractLineBackground(lineId, settingsExtractOptions()));
     if (useProjectStore.getState().lines === before) return;
     noteGuideSignal("edit.background");
     noteGuideSignal("edit.extractOneLine");

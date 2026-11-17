@@ -6,7 +6,7 @@ import { isWordSynced } from "./line-predicates";
 import { backgroundText, lineText } from "./line-text";
 import { backgroundTrack, mainTrack } from "./line-track";
 import { withMainTrack, withTrackText } from "./line-track-writes";
-import { joinBackgroundText } from "./background-vocal-brackets";
+import { type BracketJoin, joinBackgroundText } from "./background-vocal-brackets";
 import { gluedGroups } from "./background-vocal-glued-groups";
 import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
 import { extractInlineWordSynced, groupsText } from "./background-vocal-word-synced";
@@ -35,9 +35,8 @@ interface LineClassification {
   mainText: string;
 }
 
-interface ExtractOptions {
+interface ExtractOptions extends BracketJoin {
   mergeStandaloneLines: boolean;
-  preserveBrackets: boolean;
 }
 
 // -- Scanner ------------------------------------------------------------------
@@ -78,7 +77,7 @@ function collapseSpaces(text: string): string {
 
 function classifyGroups(text: string, groups: ParenGroup[]): LineClassification {
   if (groups.length === 0) return { kind: "none", groups: [], bgText: "", mainText: text };
-  const bgText = groupsText(groups);
+  const bgText = groupsText(groups, "space");
   if (bgText.length === 0) return { kind: "none", groups, bgText: "", mainText: text };
   const mainText = collapseSpaces(stripGroups(text, groups));
   return { kind: mainText.length === 0 ? "standalone" : "inline", groups, bgText, mainText };
@@ -116,7 +115,7 @@ function extractInline(
   return withBackground(
     withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar)),
     {
-      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, extendsPair),
+      text: joinBackgroundText(base, groupsText(classified.groups, options.separator), options, extendsPair),
       source: base && !extendsPair ? "manual" : "extraction",
     },
     splitChar,
@@ -220,9 +219,9 @@ function extractBackgroundVocals(
         const merged = mergeStandaloneInto(
           prev,
           line,
-          classified.bgText,
+          groupsText(classified.groups, options.separator),
           sameSessionWriteIndices.has(prevIndex),
-          options.preserveBrackets,
+          options,
           splitChar,
           songEnd,
         );

@@ -15,7 +15,12 @@ import { type Bounds, lastEnd } from "./word-bounds";
 import { remapWordTextsWithinLimit } from "./word-remap-text";
 import { withTrailingSpace } from "./word-spaces";
 import type { WordTiming } from "./word-timing";
-import { bracketWordList, joinBackgroundText, joinBracketedCarriedWords } from "./background-vocal-brackets";
+import {
+  type BracketJoin,
+  bracketWordList,
+  joinBackgroundText,
+  joinBracketedCarriedWords,
+} from "./background-vocal-brackets";
 import { createInitialBgWords } from "./lyric-words";
 
 // -- Types --------------------------------------------------------------------
@@ -89,7 +94,7 @@ function mergeIntoLineSynced(
   bgText: string,
   sameSession: boolean,
   keptBaseSource: BackgroundSource,
-  preserveBrackets: boolean,
+  join: BracketJoin,
   splitChar: string,
   songEnd: number,
 ): LyricLine {
@@ -98,7 +103,7 @@ function mergeIntoLineSynced(
   const merged = withBackground(
     base,
     {
-      text: joinBackgroundText(baseText, ownText ? `${bgText} ${ownText}` : bgText, preserveBrackets, sameSession),
+      text: joinBackgroundText(baseText, ownText ? `${bgText} ${ownText}` : bgText, join, sameSession),
       source: baseText ? keptBaseSource : "extraction",
     },
     splitChar,
@@ -113,7 +118,7 @@ function mergeStandaloneInto(
   standalone: LyricLine,
   bgText: string,
   prevTrailingBracketFromSamePass: boolean,
-  preserveBrackets: boolean,
+  join: BracketJoin,
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine | null {
@@ -125,16 +130,7 @@ function mergeStandaloneInto(
   // keeps that timing, so the row merges word by word below.
   const keepsWordTiming = isWordSynced(standalone) || timedSyllables(backgroundTrack(prev)).length > 0;
   if (isLineSynced(prev) && !keepsWordTiming && (extendsPair || !bgBounds(prev))) {
-    return mergeIntoLineSynced(
-      prev,
-      standalone,
-      bgText,
-      extendsPair,
-      keptBaseSource,
-      preserveBrackets,
-      splitChar,
-      songEnd,
-    );
+    return mergeIntoLineSynced(prev, standalone, bgText, extendsPair, keptBaseSource, join, splitChar, songEnd);
   }
   const baseText = backgroundText(prev, splitChar);
   // A line-synced background counts as the words it spans, as 3.x stored seeded words for it.
@@ -142,7 +138,7 @@ function mergeStandaloneInto(
   const sung = carriedBackgroundWords(
     standalone,
     bgText,
-    preserveBrackets,
+    join.preserveBrackets,
     extendsPair && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
     splitChar,
     songEnd,
@@ -163,15 +159,14 @@ function mergeStandaloneInto(
         prev,
         {
           words: baseWords,
-          text: joinBackgroundText(baseText, sungText, preserveBrackets, extendsPair),
+          text: joinBackgroundText(baseText, sungText, join, extendsPair),
           source: keptBaseSource,
         },
         splitChar,
       );
     }
     if (baseWords && baseWords.length > 0) {
-      const canSeamStrip = preserveBrackets && extendsPair;
-      const combined = joinBracketedCarriedWords(baseWords, carried, canSeamStrip);
+      const combined = joinBracketedCarriedWords(baseWords, carried, join, extendsPair);
       return withBackground(
         prev,
         {
@@ -196,7 +191,7 @@ function mergeStandaloneInto(
     return withBackground(
       prev,
       {
-        text: joinBackgroundText(baseText, sungText, preserveBrackets, extendsPair),
+        text: joinBackgroundText(baseText, sungText, join, extendsPair),
         source: keptBaseSource,
       },
       splitChar,
@@ -207,7 +202,7 @@ function mergeStandaloneInto(
   return withBackground(
     prev,
     {
-      text: joinBackgroundText(baseText, sungText, preserveBrackets, extendsPair),
+      text: joinBackgroundText(baseText, sungText, join, extendsPair),
       source: baseText ? keptBaseSource : "extraction",
     },
     splitChar,

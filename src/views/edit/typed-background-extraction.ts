@@ -1,10 +1,11 @@
-import { type ExtractOptions, extractionSlot, scanParenGroups } from "insync/background-vocal-extraction";
+import { extractionSlot, scanParenGroups } from "insync/background-vocal-extraction";
 import { extractBackgroundVocalsOnLines } from "insync/background-vocal-typed-extraction";
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
 import { rowAt, rowCount } from "@/domain/edit-text/text-rows";
 import { useSettingsStore } from "@/stores/settings";
+import { settingsExtractOptions } from "@/stores/settings-extract-options";
 
 // -- Types --------------------------------------------------------------------
 
@@ -22,14 +23,6 @@ interface TypedEdit {
 }
 
 // -- Functions ----------------------------------------------------------------
-
-function settingsExtractOptions(): ExtractOptions {
-  const settings = useSettingsStore.getState();
-  return {
-    mergeStandaloneLines: settings.mergeStandaloneBackgroundLines,
-    preserveBrackets: settings.preserveBracketsOnExtraction,
-  };
-}
 
 const rowsMatchLines = (typed: TypedEdit) => rowCount(typed.shown.text) === typed.finalLines.length;
 
@@ -88,4 +81,4 @@ function withTypedBackgroundsExtracted(
 // -- Exports ------------------------------------------------------------------
 
 export type { TypedEdit };
-export { rowTypingInGroup, settingsExtractOptions, shownAfterCommit, withTypedBackgroundsExtracted };
+export { rowTypingInGroup, shownAfterCommit, withTypedBackgroundsExtracted };

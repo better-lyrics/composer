@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { extractBackgroundVocals } from "insync/background-vocal-extraction";
+import { type ExtractOptions, extractBackgroundVocals } from "insync/background-vocal-extraction";
 import type { LyricLine } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
@@ -11,7 +11,7 @@ import { canExtractBackgroundVocals } from "./can-extract-background";
 
 describe("canExtractBackgroundVocals", () => {
   it("regression: a template line one linked instance refuses to extract offers no extraction", () => {
-    const options = { mergeStandaloneLines: true, preserveBrackets: true };
+    const options: ExtractOptions = { mergeStandaloneLines: true, preserveBrackets: true, separator: "space" };
     const refusing = createLine({
       id: "a",
       text: "paper (oh)",
@@ -34,7 +34,7 @@ describe("canExtractBackgroundVocals", () => {
   });
 
   it("regression: brackets typed after a word-synced line offer extraction only while it has no background", () => {
-    const options = { mergeStandaloneLines: true, preserveBrackets: true };
+    const options: ExtractOptions = { mergeStandaloneLines: true, preserveBrackets: true, separator: "space" };
     const words = [
       { text: "Silver", sep: " ", begin: 8, end: 8.5 },
       { text: "birds", begin: 8.5, end: 9 },

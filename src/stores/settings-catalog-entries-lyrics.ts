@@ -42,6 +42,14 @@ const LYRICS_CATALOG_ENTRIES = {
     keywords: ["bg", "parentheses"],
     settingKey: "preserveBracketsOnExtraction",
   },
+  backgroundSeparator: {
+    section: "lyrics",
+    group: "Background vocals",
+    label: "Separate background vocals with",
+    description: "When a line has more than one set of parentheses, joins what they hold with a space or a comma.",
+    keywords: ["bg", "parentheses", "comma", "space"],
+    settingKey: "backgroundSeparator",
+  },
 } as const satisfies Record<string, SettingEntry>;
 
 // -- Exports ------------------------------------------------------------------

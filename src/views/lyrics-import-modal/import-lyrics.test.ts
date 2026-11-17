@@ -41,8 +41,7 @@ function buildContext(overrides: Partial<ImportContext> = {}): ImportContext {
     confirm: async () => true,
     audioDuration: 0,
     applyBackgroundExtraction: false,
-    backgroundExtractionMergeStandalone: false,
-    backgroundExtractionPreserveBrackets: false,
+    backgroundExtraction: { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
     sourceLabel: "Test",
     ...overrides,
   };

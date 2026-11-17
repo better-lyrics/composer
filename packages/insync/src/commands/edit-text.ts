@@ -75,15 +75,9 @@ function removeSectionTagLines(lineIds: ReadonlySet<string>): LyricCommand {
   }));
 }
 
-function extractLineBackground(lineId: string, preserveBrackets: boolean): LyricCommand {
+function extractLineBackground(lineId: string, options: ExtractOptions): LyricCommand {
   return lineEditCommand({ command: "extract line background", args: [lineId] }, (root, ctx) =>
-    extractInlineOnLine(
-      root.lines,
-      lineId,
-      { mergeStandaloneLines: false, preserveBrackets },
-      ctx.splitChar,
-      ctx.songEnd,
-    ),
+    extractInlineOnLine(root.lines, lineId, { ...options, mergeStandaloneLines: false }, ctx.splitChar, ctx.songEnd),
   );
 }
 

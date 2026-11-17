@@ -13,6 +13,7 @@ import { SNAP_DEFAULTS, type SnapSettings } from "@/stores/settings-snap";
 import { UNISON_SETTING_DEFAULTS, type UnisonSettings } from "@/stores/settings-unison";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
+import type { BackgroundSeparator } from "insync/background-vocal-brackets";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { DEFAULT_MIN_WORD_DURATION } from "insync/word-spaces";
 import { create } from "zustand";
@@ -85,6 +86,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
   autoExtractBackgroundVocals: boolean;
   mergeStandaloneBackgroundLines: boolean;
   preserveBracketsOnExtraction: boolean;
+  backgroundSeparator: BackgroundSeparator;
 
   confirmReplaceLyrics: boolean;
   confirmSyncReset: boolean;
@@ -179,6 +181,7 @@ const DEFAULTS: SettingsState = {
   autoExtractBackgroundVocals: true,
   mergeStandaloneBackgroundLines: true,
   preserveBracketsOnExtraction: true,
+  backgroundSeparator: "space",
 
   confirmReplaceLyrics: true,
   confirmSyncReset: true,

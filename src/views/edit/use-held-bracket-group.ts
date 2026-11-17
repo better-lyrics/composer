@@ -6,8 +6,9 @@ import { songEndOrUnbounded } from "insync/song-end";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { settingsExtractOptions } from "@/stores/settings-extract-options";
 import { getSplitCharacter } from "@/utils/split-character";
-import { rowTypingInGroup, settingsExtractOptions } from "@/views/edit/typed-background-extraction";
+import { rowTypingInGroup } from "@/views/edit/typed-background-extraction";
 
 // -- Interfaces ----------------------------------------------------------------
 

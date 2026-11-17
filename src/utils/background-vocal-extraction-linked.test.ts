@@ -58,7 +58,11 @@ describe("extracting a background on one instance", () => {
       .getState()
       .restoreLyrics({ lines, groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }] });
 
-    useProjectStore.getState().commit(extractLineBackground("a0", false));
+    useProjectStore
+      .getState()
+      .commit(
+        extractLineBackground("a0", { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" }),
+      );
 
     const [a0, a1, a2, a3] = useProjectStore.getState().lines;
     for (const line of [a0, a1, a2]) {
@@ -97,7 +101,7 @@ describe("extracting backgrounds on every line", () => {
 
     const extracted = extractBackgroundVocals(
       [timed, untimed],
-      { mergeStandaloneLines: false, preserveBrackets: false },
+      { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
       DEFAULT_SPLIT_CHARACTER,
     );
 
