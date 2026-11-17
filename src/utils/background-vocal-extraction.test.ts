@@ -561,6 +561,28 @@ describe("extractInlineFromLine", () => {
 // -- extractInlineFromLine: word-synced extraction -----------------------------
 
 describe("extractInlineFromLine: word-synced extraction", () => {
+  it("regression: extracts a group that opens a word-synced line", () => {
+    const line: LyricLine = lineFromFields(
+      {
+        id: "1",
+        text: "(oh) hello",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "(oh)", sep: " ", begin: 0.5, end: 1, joinsNext: false },
+          { id: "w2", text: "hello", sep: "", begin: 1, end: 1.8, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const result = extractInlineFromLine(
+      line,
+      { mergeStandaloneLines: false, preserveBrackets: false },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("hello");
+    expect(backgroundText(result, DEFAULT_SPLIT_CHARACTER)).toBe("oh");
+  });
+
   it("extracts a mid-line paren word and preserves survivor timing", () => {
     const line: LyricLine = lineFromFields(
       {

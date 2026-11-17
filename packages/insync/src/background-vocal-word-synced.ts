@@ -55,7 +55,7 @@ function extractInlineWordSynced(
     }
     // A word the group was glued onto ends there now, so the main text after the group starts a new word.
     const previous = words[i - 1];
-    if (survivors.at(-1) === previous && previous.sep === "" && !previous.joinsNext)
+    if (previous && survivors.at(-1) === previous && previous.sep === "" && !previous.joinsNext)
       survivors[survivors.length - 1] = { ...previous, sep: " " };
     if (options.preserveBrackets || hasSungContent(words[i].text, splitChar)) bracketed.push(words[i]);
   }
