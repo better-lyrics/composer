@@ -1,5 +1,6 @@
 import { isLinked, isSlotLine } from "./instance-predicates";
-import { withBackground, withSeededBackground } from "./line-background";
+import { keepsBackgroundTiming, withBackground, withSeededBackground } from "./line-background";
+import { withTimedBackgroundJoined } from "./background-vocal-timed-join";
 import type { LineUpdate, LyricLine } from "./line";
 import { bgBounds } from "./line-bounds";
 import { isWordSynced } from "./line-predicates";
@@ -112,12 +113,13 @@ function extractInline(
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar, songEnd);
   const base = backgroundText(line, splitChar);
   const fromExtraction = backgroundTrack(line)?.source === "extraction";
+  const withMain = withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar));
+  const joined = joinBackgroundText(base, groupsText(classified.groups, options.separator), options);
+  if (keepsBackgroundTiming(line, splitChar, songEnd))
+    return withTimedBackgroundJoined(withMain, joined, options, splitChar);
   return withBackground(
-    withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar)),
-    {
-      text: joinBackgroundText(base, groupsText(classified.groups, options.separator), options),
-      source: base && !fromExtraction ? "manual" : "extraction",
-    },
+    withMain,
+    { text: joined, source: base && !fromExtraction ? "manual" : "extraction" },
     splitChar,
   );
 }

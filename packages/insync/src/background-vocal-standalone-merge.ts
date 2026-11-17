@@ -23,7 +23,7 @@ import {
   withOpenPair,
   backgroundParts,
 } from "./background-vocal-brackets";
-import { createInitialBgWords } from "./lyric-words";
+import { createInitialBgWords, spanWithRoom } from "./lyric-words";
 
 // -- Types --------------------------------------------------------------------
 
@@ -113,7 +113,8 @@ function mergeIntoLineSynced(
     },
     splitChar,
   );
-  const span = spanOver(bgBounds(withSeededBackground(base, splitChar, songEnd)), effectiveBounds(standalone));
+  const over = spanOver(bgBounds(withSeededBackground(base, splitChar, songEnd)), effectiveBounds(standalone));
+  const span = over && spanWithRoom(over.begin, over.end, songEnd);
   const background = backgroundTrack(merged);
   return span && background ? withBackgroundTrack(merged, withTrackSpan(background, span.begin, span.end)) : merged;
 }

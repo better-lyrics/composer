@@ -8,7 +8,8 @@ import {
 } from "./background-vocal-brackets";
 import { gluedGroups } from "./background-vocal-glued-groups";
 import { splitTrailingWhitespace } from "./from-words";
-import { withBackground } from "./line-background";
+import { keepsBackgroundTiming, withBackground } from "./line-background";
+import { withTimedBackgroundJoined } from "./background-vocal-timed-join";
 import type { LyricLine, Syllable } from "./line";
 import { wordContentSpans } from "./line-reconstruct-text";
 import { backgroundText } from "./line-text";
@@ -77,8 +78,11 @@ function extractInlineWordSynced(
   const joined = joinBackgroundText(base, bgText, options);
   const timedBracketed = bracketed.filter(isTimedSyllable);
   const carried = timedBracketed.length === bracketed.length ? timedBracketed : [];
+  const withMain = withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors));
+  if (keepsBackgroundTiming(line, splitChar, songEnd))
+    return withTimedBackgroundJoined(withMain, joined, options, splitChar);
   return withBackground(
-    withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)),
+    withMain,
     {
       text: joined,
       words: timedBackgroundWords(

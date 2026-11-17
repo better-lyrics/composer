@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withSeededBackground } from "insync/line-background";
+import { withBackgroundSeededFrom, withSeededBackground } from "insync/line-background";
 import { bgBounds } from "insync/line-bounds";
 import { lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
@@ -20,6 +20,7 @@ import {
   scanParenGroups,
 } from "insync/background-vocal-extraction";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { bgWordRetimeEdit } from "insync/timing-bg-word-ops";
 import { shownEditText } from "insync/edit-text-shown-row";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
@@ -1324,6 +1325,61 @@ describe("extractBackgroundVocalsOnLines", () => {
     }
   });
 
+  it("regression: a pair typed after a background timed by hand keeps that timing", () => {
+    const retimedFirstBegin = (line: LyricLine) => {
+      const update = bgWordRetimeEdit({
+        line,
+        wordIdx: 0,
+        edge: "begin",
+        change: { to: 2.2 },
+        range: { min: 0, max: 30 },
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      if (!update) throw new Error("no retime");
+      return { ...line, ...update.updates };
+    };
+    const timedLines = [
+      createLine({
+        id: "wall",
+        words: [
+          { text: "Silver", sep: " ", begin: 2, end: 3 },
+          { text: "fade", begin: 3, end: 4 },
+        ],
+      }),
+      createLine({ id: "wall", text: "Silver fade", begin: 2, end: 4 }),
+    ];
+    for (const line of timedLines) {
+      const [amber] = typedAtEnd([line], " (amber)", options);
+      const [river] = typedAtEnd([retimedFirstBegin(amber)], " (river)", options);
+      expect(bgBounds(river)?.begin).toBe(2.2);
+    }
+
+    const handTimed = createLine({
+      id: "old",
+      words: [
+        { text: "Silver", sep: " ", begin: 2, end: 3 },
+        { text: "fade", begin: 3, end: 4 },
+      ],
+      backgroundText: "(amber)",
+      backgroundTextSource: "extraction",
+      backgroundWords: [{ text: "(amber)", begin: 2.2, end: 3.4 }],
+    });
+    const [kept] = typedAtEnd([handTimed], " (river)", options);
+    expect(backgroundText(kept, DEFAULT_SPLIT_CHARACTER)).toBe("(amber river)");
+    expect(timedSyllables(backgroundTrack(kept))[0]).toMatchObject({ begin: 2.2, end: 3.4 });
+  });
+
+  it("regression: a part already ending in a comma gets no second one", () => {
+    const line = createLine({
+      id: "old",
+      text: "Real line (z)",
+      backgroundText: "(a,) c",
+      backgroundTextSource: "extraction",
+    });
+    const [joined] = extractBackgroundVocals([line], { ...options, separator: "comma" }, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(joined, DEFAULT_SPLIT_CHARACTER)).toBe("(a, c, z)");
+  });
+
   it("regression: a background of several pairs joins a new part as one pair of all its parts", () => {
     const line = createLine({
       id: "old",
@@ -1421,6 +1477,51 @@ describe("extractBackgroundVocals: none and skip lines", () => {
 // -- extractBackgroundVocals: timing-aware standalone merge -------------------
 
 describe("extractBackgroundVocals: timing-aware standalone merge", () => {
+  const options: ExtractOptions = { mergeStandaloneLines: true, preserveBrackets: true, separator: "space" };
+
+  it("regression: a line-synced line's background is always timed, even with under a millisecond left before the song end", () => {
+    const songEnd = 12;
+    const lastLine = createLine({
+      id: "last",
+      text: "Hello",
+      begin: 11.999,
+      end: songEnd,
+      backgroundText: "(ooh aah yeah)",
+    });
+    const typed = createLine({ id: "typed", text: "Hello (ooh aah yeah)", begin: 11.999, end: songEnd });
+    const tapped = createLine({
+      id: "tap",
+      text: "Hello",
+      begin: songEnd,
+      end: songEnd,
+      backgroundText: "(ooh aah yeah)",
+    });
+    const spans = [
+      bgBounds(withSeededBackground(lastLine, DEFAULT_SPLIT_CHARACTER, songEnd)),
+      bgBounds(extractInlineFromLine(typed, options, DEFAULT_SPLIT_CHARACTER, songEnd)),
+      bgBounds(withBackgroundSeededFrom(tapped, songEnd, songEnd, DEFAULT_SPLIT_CHARACTER)),
+    ];
+    for (const span of spans) {
+      expect(span).not.toBeNull();
+      expect(span && span.end > span.begin && span.end <= songEnd).toBe(true);
+    }
+  });
+
+  it("regression: a row tapped at the song end merges into a line-synced line with a span longer than zero", () => {
+    const songEnd = 12;
+    const [merged] = extractBackgroundVocals(
+      [
+        createLine({ id: "line", text: "Hold me close", begin: 11, end: songEnd }),
+        createLine({ id: "row", text: "(ooh aah)", begin: songEnd, end: songEnd }),
+      ],
+      options,
+      DEFAULT_SPLIT_CHARACTER,
+      songEnd,
+    );
+    const span = bgBounds(merged);
+    expect(span && span.end > span.begin && span.end <= songEnd).toBe(true);
+  });
+
   it("regression: a row merged after a seeded background that reaches the song end never gets zero-length words", () => {
     const songEnd = 12;
     const lines = [

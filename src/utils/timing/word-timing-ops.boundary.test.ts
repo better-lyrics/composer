@@ -302,11 +302,12 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
     expect(backgroundText(updatedLine(runBgBoundary()[0].updates), DEFAULT_SPLIT_CHARACTER)).toBe("ooh aah");
   });
 
-  it("setBgWordBegin still writes raw, leaving background provenance untouched", () => {
+  it("setBgWordBegin marks a background edit as manual, like every other background timing write", () => {
     const calls: LineUpdate[] = [];
     const line = bgLine();
     retimeInto(calls, bgWordRetimeEdit, "begin", { to: 1.5 }, [line], 0, 1);
-    expect("backgroundTextSource" in patchOf(calls[0].updates, line)).toBe(false);
+    // A Sync nudge is hand timing too, so a later typed pair must not seed it again.
+    expect(patchOf(calls[0].updates, line).backgroundTextSource).toBe("manual");
     expect("backgroundText" in patchOf(calls[0].updates, line)).toBe(false);
     expect((roleWords(updatedLine(calls[0].updates), "bg") ?? [])[1].begin).toBe(1.5);
   });

@@ -44,10 +44,14 @@ interface BracketJoin {
 
 const SEPARATOR_MARK: Record<BackgroundSeparator, string> = { space: "", comma: "," };
 
-const separatorText = (separator: BackgroundSeparator) => `${SEPARATOR_MARK[separator]} `;
-
+// A part that already ends in the mark is not given a second one.
 function joinExtractedParts(parts: readonly string[], separator: BackgroundSeparator): string {
-  return parts.join(separatorText(separator));
+  return parts.reduce((joined, part, index) => (index === 0 ? part : `${withMark(joined, separator)} ${part}`), "");
+}
+
+function withMark(text: string, separator: BackgroundSeparator): string {
+  const mark = SEPARATOR_MARK[separator];
+  return text.trimEnd().endsWith(mark) ? text.trimEnd() : `${text}${mark}`;
 }
 
 // -- Parts --------------------------------------------------------------------
@@ -103,7 +107,7 @@ function wordsAsParts(words: readonly WordTiming[], separator: BackgroundSeparat
   return read.map(({ word, text, closesPart, bareAtEnd }, index) => {
     const next = words[index + 1];
     const endsPart = next !== undefined && (closesPart || (bareAtEnd && next.text.startsWith("(")));
-    return { ...word, text: endsPart ? `${text}${SEPARATOR_MARK[separator]}` : text };
+    return { ...word, text: endsPart ? withMark(text, separator) : text };
   });
 }
 
@@ -122,7 +126,7 @@ function joinBracketedCarriedWords(baseWords: WordTiming[], carried: WordTiming[
   const last = base.at(-1);
   if (last && added.length > 0) {
     const lastSpaced = last.text + last.sep;
-    const text = `${stripTrailingSpace(lastSpaced)}${SEPARATOR_MARK[join.separator]}${trailingSpaceOf(lastSpaced) || " "}`;
+    const text = `${withMark(stripTrailingSpace(lastSpaced), join.separator)}${trailingSpaceOf(lastSpaced) || " "}`;
     base[base.length - 1] = wordFromSpaced({ ...last, text, joinsNext: false });
   }
   const combined = [...base, ...added];
@@ -135,8 +139,19 @@ function withOpenPair(words: WordTiming[], join: BracketJoin, restStartsPart: bo
   if (!last) return words;
   const spaced = stripTrailingSpace(last.text + last.sep);
   const open = join.preserveBrackets && spaced.endsWith(")") ? spaced.slice(0, -1) : spaced;
-  const mark = restStartsPart ? SEPARATOR_MARK[join.separator] : "";
-  return words.with(-1, wordFromSpaced({ ...last, text: `${open}${mark} `, joinsNext: false }));
+  const ended = restStartsPart ? withMark(open, join.separator) : open;
+  return words.with(-1, wordFromSpaced({ ...last, text: `${ended} `, joinsNext: false }));
+}
+
+// Timed words that open the one pair an untimed addition follows: their own pairs come off, the last ends in the mark.
+function wordsOpeningPair(words: readonly WordTiming[], join: BracketJoin): WordTiming[] {
+  const parts = wordsAsParts(words, join.separator);
+  const last = parts.at(-1);
+  if (!last) return parts;
+  const ended = withMark(stripTrailingSpace(last.text + last.sep), join.separator);
+  parts[parts.length - 1] = wordFromSpaced({ ...last, text: `${ended} `, joinsNext: false });
+  if (join.preserveBrackets) parts[0] = { ...parts[0], text: `(${parts[0].text}` };
+  return parts;
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -149,5 +164,6 @@ export {
   joinBracketedCarriedWords,
   joinExtractedParts,
   withOpenPair,
+  wordsOpeningPair,
   backgroundParts,
 };

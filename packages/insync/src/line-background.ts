@@ -12,10 +12,10 @@ import {
   withTrackSpan,
   withTrackSyllables,
   withTrackText,
+  withoutTrackTiming,
 } from "./line-track-writes";
-import { firstBegin, lastEnd } from "./word-bounds";
 import type { WordTiming } from "./word-timing";
-import { createInitialBgWords } from "./lyric-words";
+import { createInitialBgSpan, createInitialBgWords } from "./lyric-words";
 
 // -- Types --------------------------------------------------------------------
 
@@ -78,9 +78,12 @@ function seededBackground(
   const background = backgroundTrack(line);
   const text = backgroundText(line, splitChar);
   if (!background || !text || !span || isSpanTimed(background) || timedSyllables(background).length > 0) return line;
+  if (asSpan) {
+    const seededSpan = createInitialBgSpan(text, span.begin, span.end, splitChar, span.songEnd);
+    return seededSpan ? withBackgroundTrack(line, withTrackSpan(background, seededSpan.begin, seededSpan.end)) : line;
+  }
   const words = createInitialBgWords(text, span.begin, span.end, splitChar, span.songEnd);
   if (words.length === 0) return line;
-  if (asSpan) return withBackgroundTrack(line, withTrackSpan(background, firstBegin(words), lastEnd(words)));
   const untimed = background.syllables.map(untimedSyllable);
   const seeded =
     words.length === untimed.length
@@ -93,7 +96,8 @@ function seededBackground(
 function seedSpan(line: LyricLine, songEnd: number): { begin: number; end?: number; songEnd?: number } | null {
   const bounds = effectiveBounds(line);
   if (bounds && bounds.end === bounds.begin) return { begin: bounds.begin, songEnd };
-  return secondHalf(line);
+  const half = secondHalf(line);
+  return half && { ...half, songEnd };
 }
 
 // Untimed background lyrics are timed over the second half of a timed line, at the main track's sync level. An open
@@ -127,9 +131,23 @@ function withRetypedBackground(line: LyricLine, text: string, splitChar: string,
   return withSeededBackground(withBackgroundTrack(line, untimed), splitChar, songEnd);
 }
 
+// A timed background whose timing is not what seeding gives its text was timed by hand, so new text keeps that timing.
+function keepsBackgroundTiming(line: LyricLine, splitChar: string, songEnd = Number.POSITIVE_INFINITY): boolean {
+  const background = backgroundTrack(line);
+  if (!background || (!isSpanTimed(background) && timedSyllables(background).length === 0)) return false;
+  const untimed = withBackgroundTrack(line, withoutTrackTiming(background));
+  const seeded = backgroundTrack(withSeededBackground(untimed, splitChar, songEnd));
+  return !seeded || trackTimes(seeded) !== trackTimes(background);
+}
+
+function trackTimes(track: BackgroundTrack): string {
+  return JSON.stringify([track.begin, track.end, track.syllables.map((syllable) => [syllable.begin, syllable.end])]);
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
+  keepsBackgroundTiming,
   withRetypedBackground,
   withBackground,
   withBackgroundSeededFrom,

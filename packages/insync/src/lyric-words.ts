@@ -75,13 +75,39 @@ function createInitialBgWords(
   return distributeWordsInLine(backgroundText, begin, resolvedEnd, splitChar);
 }
 
+// A span for a background that must be timed: it ends by the song's end and starts early enough to last a millisecond.
+function spanWithRoom(
+  begin: number,
+  end: number,
+  songEnd = Number.POSITIVE_INFINITY,
+): { begin: number; end: number } | null {
+  const last = Math.min(end, songEnd);
+  const first = Math.max(0, Math.min(begin, last - SHORTEST_SEEDED_WORD));
+  return last > first ? { begin: first, end: last } : null;
+}
+
+// The span a line-synced line's background is seeded over, the one the seeded words would cover.
+function createInitialBgSpan(
+  backgroundText: string,
+  begin: number,
+  end: number | undefined,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): { begin: number; end: number } | null {
+  const wordCount = splitIntoWords(backgroundText, splitChar).length;
+  if (wordCount === 0) return null;
+  return spanWithRoom(begin, end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION, songEnd);
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
+  createInitialBgSpan,
   createInitialBgWords,
   DEFAULT_BG_WORD_DURATION,
   distributeWordsInLine,
   evenlyTimedWords,
   splitIntoWords,
+  spanWithRoom,
   splitIntoWordsWithMeta,
 };
