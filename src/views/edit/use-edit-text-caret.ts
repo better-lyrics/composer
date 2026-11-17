@@ -23,6 +23,7 @@ interface PendingCaret {
 function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => void) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [pendingCaret, setPendingCaret] = useState<PendingCaret | null>(null);
+  const placedCaretRef = useRef<PendingCaret | null>(null);
   const shownTextRef = useRef<string | null>(null);
   const scrollBeforePasteRef = useRef<number | null>(null);
 
@@ -55,8 +56,9 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
   useLayoutEffect(() => {
     const pending = pendingCaret;
     const textarea = textareaRef.current;
-    if (!pending || !textarea) return;
-    setPendingCaret(null);
+    // Placed carets stay in state: clearing them would render the whole panel again.
+    if (!pending || pending === placedCaretRef.current || !textarea) return;
+    placedCaretRef.current = pending;
     const splitChar = getSplitCharacter();
     if (pending.replaced) {
       const mapped = (caret: number) =>
