@@ -1,4 +1,4 @@
-import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
+import { IconFileImport } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LyricCommand } from "insync/commands/command";
 import {
@@ -28,15 +28,16 @@ import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
 import { settingsExtractOptions, useExtractOptions } from "@/stores/settings-extract-options";
 import { Button } from "@/ui/button";
-import { Tooltip } from "@/ui/tooltip";
 import { extractBackgroundVocals, lineHasInlineParens } from "insync/background-vocal-extraction";
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { pluralWord } from "insync/pluralize";
 import { songEndOrUnbounded } from "insync/song-end";
 import { AgentManager } from "@/views/edit/agent-manager";
-import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
+import { BracketsPopover } from "@/views/edit/brackets-popover";
+import { useExtractableLineCount } from "@/views/edit/can-extract-background";
 import { EditNotices } from "@/views/edit/edit-notices";
+import { ExtractBackgroundButton } from "@/views/edit/extract-background-button";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
@@ -108,7 +109,7 @@ const EditPanel: React.FC = () => {
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
 
   const extractOptions = useExtractOptions();
-  const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
+  const extractableCount = useExtractableLineCount(lines, extractOptions);
 
   // Shows the committed lyrics in the textarea only when the command changed them.
   const commitAndShow = useCallback(
@@ -366,20 +367,7 @@ const EditPanel: React.FC = () => {
         </div>
         <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
           <EditNotices parsed={parsed} isTyping={isTypingLyrics} />
-          <Tooltip content="No parentheses to extract" disabled={canExtractBackgroundVocals}>
-            <span className="inline-flex rounded-xl" tabIndex={canExtractBackgroundVocals ? undefined : 0}>
-              <Button
-                hasIcon
-                size="lg"
-                data-guide-spot="extractAll"
-                onClick={handleExtractBackgroundVocals}
-                disabled={!canExtractBackgroundVocals}
-              >
-                <IconMicrophone className="size-4" />
-                Extract background vocals
-              </Button>
-            </span>
-          </Tooltip>
+          <ExtractBackgroundButton canExtract={extractableCount > 0} onExtract={handleExtractBackgroundVocals} />
           <Button
             hasIcon
             size="lg"
@@ -408,12 +396,12 @@ const EditPanel: React.FC = () => {
         <div className="flex flex-1 min-h-0 gap-4">
           {/* Input */}
           <div className="flex flex-col flex-1 min-w-0">
-            <label
-              htmlFor={textareaId}
-              className="flex items-center self-start h-7 mb-2 text-[13px] font-medium select-none text-(--label)"
-            >
-              Paste or type lyrics
-            </label>
+            <div className="flex items-center justify-between h-7 mb-2">
+              <label htmlFor={textareaId} className="text-[13px] font-medium select-none text-(--label)">
+                Paste or type lyrics
+              </label>
+              <BracketsPopover extractableCount={extractableCount} onExtract={handleExtractBackgroundVocals} />
+            </div>
             {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
             <textarea
               id={textareaId}

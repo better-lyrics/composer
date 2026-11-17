@@ -2,12 +2,15 @@ import { useMemo } from "react";
 import type { LyricLine } from "insync/line";
 import { lineText } from "insync/line-text";
 import { useSettingsStore } from "@/stores/settings";
-import { extractBackgroundVocals, extractionSlot, refusesExtraction } from "insync/background-vocal-extraction";
+import {
+  type ExtractOptions,
+  extractBackgroundVocals,
+  extractionSlot,
+  refusesExtraction,
+} from "insync/background-vocal-extraction";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
-
-type ExtractOptions = Parameters<typeof extractBackgroundVocals>[1];
 
 interface WindowVerdict {
   previous: LyricLine | undefined;
@@ -58,11 +61,7 @@ function lineVerdict(
 
 // The whole-list pass changes a line exactly when the line, read with only the line before it, changes and no linked
 // instance of its template line refuses extraction. Only a line holding "(" can change.
-function canExtractBackgroundVocals(
-  lines: readonly LyricLine[],
-  options: ExtractOptions,
-  splitCharacter: string,
-): boolean {
+function extractableLineCount(lines: readonly LyricLine[], options: ExtractOptions, splitCharacter: string): number {
   const verdictsByLine = new Map<LyricLine, WindowVerdict>();
   const refusedSlots = new Set<string>();
   lines.forEach((line, index) => {
@@ -71,19 +70,20 @@ function canExtractBackgroundVocals(
     verdictsByLine.set(line, verdict);
     if (verdict.refuses) refusedSlots.add(extractionSlot(line) ?? "");
   });
+  let count = 0;
   for (const [line, verdict] of verdictsByLine) {
-    if (verdict.changes && !refusedSlots.has(extractionSlot(line) ?? "")) return true;
+    if (verdict.changes && !refusedSlots.has(extractionSlot(line) ?? "")) count++;
   }
-  return false;
+  return count;
 }
 
 // -- Hooks --------------------------------------------------------------------
 
-function useCanExtractBackgroundVocals(lines: readonly LyricLine[], options: ExtractOptions): boolean {
+function useExtractableLineCount(lines: readonly LyricLine[], options: ExtractOptions): number {
   const splitCharacter = useSettingsStore((s) => s.splitCharacter);
-  return useMemo(() => canExtractBackgroundVocals(lines, options, splitCharacter), [lines, options, splitCharacter]);
+  return useMemo(() => extractableLineCount(lines, options, splitCharacter), [lines, options, splitCharacter]);
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { canExtractBackgroundVocals, useCanExtractBackgroundVocals };
+export { extractableLineCount, useExtractableLineCount };

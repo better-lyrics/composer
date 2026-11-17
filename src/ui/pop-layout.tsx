@@ -24,6 +24,8 @@ interface PopRowProps {
   icon?: Icon;
   hint?: React.ReactNode;
   dimmed?: boolean;
+  // A row that is the label of its one control, so a press anywhere on it presses the control.
+  labelsControl?: boolean;
   children: React.ReactNode;
 }
 
@@ -116,23 +118,34 @@ const PopGroup: React.FC<{ label?: string; className?: string; children: React.R
   </div>
 );
 
-const PopRow: React.FC<PopRowProps> = ({ label, icon: RowIcon, hint, dimmed, children }) => (
-  <div className={cn("flex items-center gap-3 min-h-9 pl-2.5 pr-1", hint && "py-1.5")}>
-    {RowIcon && <RowIcon aria-hidden="true" className="size-4 shrink-0 text-(--muted)" />}
-    <span
+const PopRow: React.FC<PopRowProps> = ({ label, icon: RowIcon, hint, dimmed, labelsControl, children }) => {
+  const Row = labelsControl ? "label" : "div";
+  return (
+    <Row
       className={cn(
-        "flex-1 min-w-0 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
-        dimmed ? "text-(--muted)" : "text-(--label)",
+        "flex items-center gap-3 min-h-9 pl-2.5 pr-1",
+        hint && "py-1.5",
+        labelsControl && "rounded-lg cursor-pointer transition-colors duration-150 hover:bg-(--layer-2)",
       )}
     >
-      {label}
-      {hint && (
-        <span className="block mt-[3px] text-xs font-normal tabular-nums text-(--muted) whitespace-normal">{hint}</span>
-      )}
-    </span>
-    {children}
-  </div>
-);
+      {RowIcon && <RowIcon aria-hidden="true" className="size-4 shrink-0 text-(--muted)" />}
+      <span
+        className={cn(
+          "flex-1 min-w-0 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
+          dimmed ? "text-(--muted)" : "text-(--label)",
+        )}
+      >
+        {label}
+        {hint && (
+          <span className="block mt-[3px] text-xs font-normal tabular-nums text-(--muted) whitespace-normal">
+            {hint}
+          </span>
+        )}
+      </span>
+      {children}
+    </Row>
+  );
+};
 
 const PopNavButton: React.FC<PopNavButtonProps> = ({ label, icon: NavIcon, summary, onClick }) => (
   <Button

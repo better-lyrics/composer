@@ -7,9 +7,9 @@ import type { LyricLine } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 import { createLine } from "@/test/factories";
-import { canExtractBackgroundVocals } from "./can-extract-background";
+import { extractableLineCount } from "./can-extract-background";
 
-describe("canExtractBackgroundVocals", () => {
+describe("extractableLineCount", () => {
   it("regression: a template line one linked instance refuses to extract offers no extraction", () => {
     const options: ExtractOptions = { mergeStandaloneLines: true, preserveBrackets: true, separator: "space" };
     const refusing = createLine({
@@ -30,7 +30,7 @@ describe("canExtractBackgroundVocals", () => {
     const lines = [refusing, between, extractable];
 
     expect(extractBackgroundVocals(lines, options, DEFAULT_SPLIT_CHARACTER)).toEqual(lines);
-    expect(canExtractBackgroundVocals(lines, options, DEFAULT_SPLIT_CHARACTER)).toBe(false);
+    expect(extractableLineCount(lines, options, DEFAULT_SPLIT_CHARACTER)).toBe(0);
   });
 
   it("regression: brackets typed after a word-synced line offer extraction only while it has no background", () => {
@@ -45,7 +45,7 @@ describe("canExtractBackgroundVocals", () => {
       createLine({ id: "b", words, backgroundText: "soar", backgroundWords: [{ text: "soar", begin: 8.6, end: 9 }] }),
     );
 
-    expect(canExtractBackgroundVocals([bare], options, DEFAULT_SPLIT_CHARACTER)).toBe(true);
-    expect(canExtractBackgroundVocals([withBackground], options, DEFAULT_SPLIT_CHARACTER)).toBe(false);
+    expect(extractableLineCount([bare], options, DEFAULT_SPLIT_CHARACTER)).toBe(1);
+    expect(extractableLineCount([withBackground], options, DEFAULT_SPLIT_CHARACTER)).toBe(0);
   });
 });
