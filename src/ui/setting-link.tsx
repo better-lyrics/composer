@@ -30,7 +30,7 @@ const CHIP_STYLES =
   "group inline-flex items-center align-baseline mx-px pl-1.5 pr-2 rounded-md whitespace-nowrap select-none cursor-pointer text-[0.93em] font-medium leading-[1.45] text-composer-accent-text bg-composer-accent/13 ring-1 ring-inset ring-composer-accent/22 hover:bg-composer-accent/22 will-change-[scale] active:scale-[0.96] transition-[background-color,scale] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-composer-accent";
 
 const ARROW_STYLES =
-  "ml-0.5 w-3 shrink-0 opacity-40 transition-[opacity,translate] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:opacity-100 group-hover:translate-x-px group-hover:-translate-y-px group-focus-visible:opacity-100 group-focus-visible:translate-x-px group-focus-visible:-translate-y-px motion-reduce:transition-none";
+  "ml-0.5 w-3 shrink-0 opacity-40 transition-opacity duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none";
 
 // -- Components ----------------------------------------------------------------
 
