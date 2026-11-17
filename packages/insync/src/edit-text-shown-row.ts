@@ -1,3 +1,4 @@
+import { hasBalancedBrackets } from "./background-vocal-brackets";
 import { alternateBackgroundPlacement } from "./language-background-placement";
 import type { LyricLine } from "./line";
 import { backgroundText, lineText, syllableJoint } from "./line-text";
@@ -62,15 +63,6 @@ function bracketGroups(token: string): [number, number][] | null {
 function isOneGroup(token: string): boolean {
   const groups = bracketGroups(token);
   return groups?.length === 1 && groups[0][0] === 0 && groups[0][1] === token.length;
-}
-
-function hasBalancedBrackets(text: string): boolean {
-  let depth = 0;
-  for (const char of text) {
-    if (char === "(") depth++;
-    else if (char === ")" && --depth < 0) return false;
-  }
-  return depth === 0;
 }
 
 // Whether a token typed into still shows a background: one group, or a stored background that was never one group

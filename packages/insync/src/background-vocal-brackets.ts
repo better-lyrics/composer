@@ -52,14 +52,16 @@ function joinExtractedParts(parts: readonly string[], separator: BackgroundSepar
 
 // -- Parts --------------------------------------------------------------------
 
-function hasBalancedPairs(text: string): boolean {
+function hasBalancedBrackets(text: string): boolean {
   let depth = 0;
   for (const char of text) {
     if (char === "(") depth++;
     else if (char === ")" && --depth < 0) return false;
   }
-  return depth === 0 && text.includes("(");
+  return depth === 0;
 }
+
+const hasBalancedPairs = (text: string) => text.includes("(") && hasBalancedBrackets(text);
 
 // The parts a background already holds: each top-level pair's content and the bare text between pairs, in order.
 // Unbalanced text, or text with no pair, is one part as it is.
@@ -142,6 +144,7 @@ function withOpenPair(words: WordTiming[], join: BracketJoin, restStartsPart: bo
 export type { BackgroundSeparator, BracketJoin };
 export {
   bracketWordList,
+  hasBalancedBrackets,
   joinBackgroundText,
   joinBracketedCarriedWords,
   joinExtractedParts,
