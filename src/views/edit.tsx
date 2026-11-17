@@ -332,10 +332,10 @@ const EditPanel: React.FC = () => {
         { finalLines, shown: { text: action.editText, ranges: action.editRanges } },
         splitCharacter,
         songEnd,
+        { text, caret: textarea.selectionEnd },
       );
       finalLines = typed.finalLines;
       showEditText(text, typed.shown, textarea);
-
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;
       useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");

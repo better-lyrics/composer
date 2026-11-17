@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
@@ -242,5 +243,23 @@ describe("brackets pasted into a row", () => {
     await expect.poll(() => backgroundText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("(go down)");
     await expect.poll(() => textarea.value.split("\n")[1]).toBe("Harbour lights go down (go down)");
     expect(textarea.selectionStart).toBe(rowEnd + " (go down)".length);
+  });
+
+  it("regression: a space typed inside brackets kept as text stays where it was typed", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    setTextareaValue(textarea, "glimmer (low amber)\nember cinder lantern");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true });
+
+    textarea.focus();
+    const beforeClose = "glimmer (low amber".length;
+    textarea.setSelectionRange(beforeClose, beforeClose);
+    await userEvent.keyboard(" x");
+
+    await expect.poll(() => textarea.value.split("\n")).toEqual(["glimmer (low amber x)", "ember cinder lantern"]);
+    expect(textarea.selectionStart).toBe(beforeClose + 2);
   });
 });
