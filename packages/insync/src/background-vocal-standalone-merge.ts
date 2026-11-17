@@ -92,7 +92,6 @@ function mergeIntoLineSynced(
   base: LyricLine,
   standalone: LyricLine,
   bgText: string,
-  sameSession: boolean,
   keptBaseSource: BackgroundSource,
   join: BracketJoin,
   splitChar: string,
@@ -103,7 +102,7 @@ function mergeIntoLineSynced(
   const merged = withBackground(
     base,
     {
-      text: joinBackgroundText(baseText, ownText ? `${bgText} ${ownText}` : bgText, join, sameSession),
+      text: joinBackgroundText(baseText, ownText ? `${bgText} ${ownText}` : bgText, join),
       source: baseText ? keptBaseSource : "extraction",
     },
     splitChar,
@@ -122,15 +121,15 @@ function mergeStandaloneInto(
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine | null {
-  // An extracted background, or one this pass wrote, is extended in its own pair; a manual one keeps its own.
+  // An extracted background, or one this pass wrote, takes the row's timing after its own.
   const prevIsExtraction = backgroundTrack(prev)?.source === "extraction";
-  const extendsPair = prevIsExtraction || prevTrailingBracketFromSamePass;
+  const freshBackground = prevIsExtraction || prevTrailingBracketFromSamePass;
   const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
   // A background timed by hand before this pass, a background with word timing, or a row with its own word timing
   // keeps that timing, so the row merges word by word below.
   const keepsWordTiming = isWordSynced(standalone) || timedSyllables(backgroundTrack(prev)).length > 0;
-  if (isLineSynced(prev) && !keepsWordTiming && (extendsPair || !bgBounds(prev))) {
-    return mergeIntoLineSynced(prev, standalone, bgText, extendsPair, keptBaseSource, join, splitChar, songEnd);
+  if (isLineSynced(prev) && !keepsWordTiming && (freshBackground || !bgBounds(prev))) {
+    return mergeIntoLineSynced(prev, standalone, bgText, keptBaseSource, join, splitChar, songEnd);
   }
   const baseText = backgroundText(prev, splitChar);
   // A line-synced background counts as the words it spans, as 3.x stored seeded words for it.
@@ -139,7 +138,7 @@ function mergeStandaloneInto(
     standalone,
     bgText,
     join.preserveBrackets,
-    extendsPair && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
+    freshBackground && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
     splitChar,
     songEnd,
   );
@@ -159,14 +158,14 @@ function mergeStandaloneInto(
         prev,
         {
           words: baseWords,
-          text: joinBackgroundText(baseText, sungText, join, extendsPair),
+          text: joinBackgroundText(baseText, sungText, join),
           source: keptBaseSource,
         },
         splitChar,
       );
     }
     if (baseWords && baseWords.length > 0) {
-      const combined = joinBracketedCarriedWords(baseWords, carried, join, extendsPair);
+      const combined = joinBracketedCarriedWords(baseWords, carried, join);
       return withBackground(
         prev,
         {
@@ -191,7 +190,7 @@ function mergeStandaloneInto(
     return withBackground(
       prev,
       {
-        text: joinBackgroundText(baseText, sungText, join, extendsPair),
+        text: joinBackgroundText(baseText, sungText, join),
         source: keptBaseSource,
       },
       splitChar,
@@ -202,7 +201,7 @@ function mergeStandaloneInto(
   return withBackground(
     prev,
     {
-      text: joinBackgroundText(baseText, sungText, join, extendsPair),
+      text: joinBackgroundText(baseText, sungText, join),
       source: baseText ? keptBaseSource : "extraction",
     },
     splitChar,

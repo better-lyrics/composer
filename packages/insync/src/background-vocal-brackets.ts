@@ -1,6 +1,5 @@
 import { wordFromSpaced } from "./word-spaced-words";
 import type { WordTiming } from "./word-timing";
-import { withTrailingSpace } from "./word-spaces";
 
 // -- Trailing space accessors -------------------------------------------------
 
@@ -51,53 +50,60 @@ function joinExtractedParts(parts: readonly string[], separator: BackgroundSepar
   return parts.join(separatorText(separator));
 }
 
-// -- Seam-aware concatenation -------------------------------------------------
+// -- One pair -----------------------------------------------------------------
 
-// Carried words extending a pair follow its last word after the separator, inside the pair when both sides have one.
-function joinBracketedCarriedWords(
-  baseWords: WordTiming[],
-  carried: WordTiming[],
-  join: BracketJoin,
-  extendsPair: boolean,
-): WordTiming[] {
-  if (!extendsPair) return [...withTrailingSpace(baseWords), ...carried];
-  if (baseWords.length === 0) return carried;
-  if (carried.length === 0) return baseWords;
-  const lastBase = baseWords[baseWords.length - 1];
-  const firstCarry = carried[0];
-  const lastBaseSpaced = lastBase.text + lastBase.sep;
-  const lastBaseStripped = stripTrailingSpace(lastBaseSpaced);
-  const lastBaseTrail = trailingSpaceOf(lastBaseSpaced) || " ";
-  const mark = SEPARATOR_MARK[join.separator];
-  const stripsSeam = join.preserveBrackets && lastBaseStripped.endsWith(")") && firstCarry.text.startsWith("(");
-  const lastBaseText = stripsSeam
-    ? `${lastBaseStripped.slice(0, -1)}${mark}${lastBaseTrail}`
-    : `${lastBaseStripped}${mark}${lastBaseTrail}`;
-  return [
-    ...baseWords.slice(0, -1),
-    wordFromSpaced({ ...lastBase, text: lastBaseText, joinsNext: false }),
-    stripsSeam ? { ...firstCarry, text: firstCarry.text.slice(1) } : firstCarry,
-    ...carried.slice(1),
-  ];
+// Whether the "(" opening the text is closed by its last character, so the whole text is one pair.
+function isOnePair(text: string): boolean {
+  if (!text.startsWith("(")) return false;
+  let depth = 0;
+  for (let index = 0; index < text.length; index++) {
+    if (text[index] === "(") depth++;
+    else if (text[index] === ")" && --depth === 0) return index === text.length - 1;
+  }
+  return false;
 }
 
-// Extracted text joins the pair it extends; a background typed by hand keeps its own and the addition follows it.
-function joinBackgroundText(
-  existing: string | undefined,
-  addition: string,
-  join: BracketJoin,
-  extendsPair: boolean,
-): string {
-  const base = existing?.trim() ?? "";
-  const wrapped = join.preserveBrackets ? `(${addition})` : addition;
-  if (base.length === 0) return wrapped;
-  if (!extendsPair) return `${base} ${wrapped}`;
-  const separator = separatorText(join.separator);
-  if (join.preserveBrackets && base.endsWith(")")) return `${base.slice(0, -1)}${separator}${addition})`;
-  return `${base}${separator}${wrapped}`;
+function withoutOuterPair(text: string): string {
+  return isOnePair(text) ? text.slice(1, -1).trim() : text;
+}
+
+function wordsWithoutOuterPair(words: WordTiming[]): WordTiming[] {
+  if (!isOnePair(stripTrailingSpace(words.map((word) => word.text + word.sep).join("")))) return words;
+  const out = [...words];
+  out[0] = { ...out[0], text: out[0].text.slice(1) };
+  const last = out[out.length - 1];
+  const lastSpaced = last.text + last.sep;
+  out[out.length - 1] = wordFromSpaced({
+    ...last,
+    text: `${stripTrailingSpace(lastSpaced).slice(0, -1)}${trailingSpaceOf(lastSpaced)}`,
+  });
+  return out;
+}
+
+// -- Joins --------------------------------------------------------------------
+
+// A line's background is one pair: what it held, then each addition after the separator.
+function joinBackgroundText(existing: string | undefined, addition: string, join: BracketJoin): string {
+  const base = withoutOuterPair(existing?.trim() ?? "");
+  const joined = base ? `${base}${separatorText(join.separator)}${addition}` : addition;
+  return join.preserveBrackets ? `(${joined})` : joined;
+}
+
+// The word-level twin of `joinBackgroundText`, so timed words spell the same text.
+function joinBracketedCarriedWords(baseWords: WordTiming[], carried: WordTiming[], join: BracketJoin): WordTiming[] {
+  const base = [...wordsWithoutOuterPair(baseWords)];
+  const added = wordsWithoutOuterPair(carried);
+  const last = base.at(-1);
+  if (last && added.length > 0) {
+    const lastSpaced = last.text + last.sep;
+    const text = `${stripTrailingSpace(lastSpaced)}${SEPARATOR_MARK[join.separator]}${trailingSpaceOf(lastSpaced) || " "}`;
+    base[base.length - 1] = wordFromSpaced({ ...last, text, joinsNext: false });
+  }
+  const combined = [...base, ...added];
+  return join.preserveBrackets ? bracketWordList(combined) : combined;
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export type { BackgroundSeparator, BracketJoin };
-export { bracketWordList, joinBackgroundText, joinBracketedCarriedWords, joinExtractedParts };
+export { bracketWordList, joinBackgroundText, joinBracketedCarriedWords, joinExtractedParts, withoutOuterPair };

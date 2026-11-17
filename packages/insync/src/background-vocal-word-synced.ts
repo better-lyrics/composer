@@ -1,5 +1,11 @@
 import type { ExtractOptions, LineClassification, ParenGroup } from "./background-vocal-extraction";
-import { type BackgroundSeparator, joinBackgroundText, joinExtractedParts } from "./background-vocal-brackets";
+import {
+  type BackgroundSeparator,
+  type BracketJoin,
+  joinBackgroundText,
+  joinBracketedCarriedWords,
+  joinExtractedParts,
+} from "./background-vocal-brackets";
 import { gluedGroups } from "./background-vocal-glued-groups";
 import { splitTrailingWhitespace } from "./from-words";
 import { withBackground } from "./line-background";
@@ -8,7 +14,11 @@ import { wordContentSpans } from "./line-reconstruct-text";
 import { backgroundText } from "./line-text";
 import { backgroundTrack, isTimedSyllable, mainTrack } from "./line-track";
 import { withMainTrack, withTrackSyllables } from "./line-track-writes";
+import { createInitialBgWords } from "./lyric-words";
+import { mainBounds } from "./line-bounds";
+import { firstBegin } from "./word-bounds";
 import { remapWordTextsWithinLimit } from "./word-remap-text";
+import type { WordTiming } from "./word-timing";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -62,21 +72,53 @@ function extractInlineWordSynced(
       ? { ...word, ...splitTrailingWhitespace((word.text + word.sep).replace(/ +$/, "")), joinsNext: false }
       : word,
   );
-  const base = backgroundText(line, splitChar);
-  const extendsPair = backgroundTrack(line)?.source === "extraction";
-  const joined = joinBackgroundText(base, bgText, options, extendsPair);
+  const base = backgroundText(line, splitChar)?.trim();
+  const fromExtraction = backgroundTrack(line)?.source === "extraction";
+  const joined = joinBackgroundText(base, bgText, options);
   const timedBracketed = bracketed.filter(isTimedSyllable);
-  const carried = base || timedBracketed.length < bracketed.length ? undefined : timedBracketed;
-  const remapped = carried && remapWordTextsWithinLimit(carried, joined, splitChar, songEnd);
+  const carried = timedBracketed.length === bracketed.length ? timedBracketed : [];
   return withBackground(
     withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)),
     {
       text: joined,
-      words: remapped?.words.slice(0, remapped.untimedFrom),
-      source: base && !extendsPair ? "manual" : "extraction",
+      words: timedBackgroundWords(
+        line,
+        base,
+        carried,
+        joinBackgroundText(undefined, bgText, options),
+        options,
+        splitChar,
+        songEnd,
+      ),
+      source: base && !fromExtraction ? "manual" : "extraction",
     },
     splitChar,
   );
+}
+
+// Bracketed words that were all timed keep their timing; an untimed background before them is seeded in the second
+// half of the line up to where they begin, so timed words stay in text order. Without that room the whole is untimed.
+function timedBackgroundWords(
+  line: LyricLine,
+  base: string | undefined,
+  carried: WordTiming[],
+  addition: string,
+  join: BracketJoin,
+  splitChar: string,
+  songEnd: number,
+): WordTiming[] | undefined {
+  if (carried.length === 0) return undefined;
+  const remapped = remapWordTextsWithinLimit(carried, addition, splitChar, songEnd);
+  const sung = remapped.words.slice(0, remapped.untimedFrom);
+  if (!base) return sung;
+  const bounds = mainBounds(line);
+  if (sung.length < remapped.words.length || !bounds) return undefined;
+  const end = firstBegin(sung);
+  const middle = (bounds.begin + bounds.end) / 2;
+  const seedBegin = middle < end ? middle : bounds.begin;
+  if (end <= seedBegin) return undefined;
+  const baseWords = createInitialBgWords(base, seedBegin, end, splitChar);
+  return baseWords.length === 0 ? undefined : joinBracketedCarriedWords(baseWords, sung, join);
 }
 
 // -- Exports ------------------------------------------------------------------
