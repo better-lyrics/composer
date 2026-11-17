@@ -235,6 +235,18 @@ describe("remapWordTextsPreservingTiming", () => {
       }
     });
 
+    it("regression: two runs sharing the time of one kept word never overlap", () => {
+      const packed: WordTiming[] = [
+        { id: "w90", text: "a", sep: " ", begin: 0, end: 0.1, joinsNext: false },
+        { id: "w91", text: "b", sep: " ", begin: 0.1, end: 0.2, joinsNext: false },
+        { id: "w92", text: "c", sep: "", begin: 0.2, end: 0.201, joinsNext: false },
+      ];
+      const ms = (seconds: number) => Math.round(seconds * 1000);
+      const words = remapWordTextsPreservingTiming(packed, "a x b y c", DEFAULT_SPLIT_CHARACTER);
+      expect(words.every((word) => ms(word.end) - ms(word.begin) >= 1)).toBe(true);
+      expect(words.every((word, index) => index === 0 || ms(word.begin) >= ms(words[index - 1].end))).toBe(true);
+    });
+
     it("regression: words inserted on both sides of one word do not overlap it", () => {
       const result = remapWordTextsPreservingTiming(
         [{ id: "w11", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],

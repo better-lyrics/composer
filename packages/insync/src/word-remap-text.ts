@@ -81,7 +81,8 @@ interface SharedSlots {
 }
 
 // The fewest kept words next to a typed run whose time, with the run's slot, gives every word a millisecond: first the
-// words after it, then the words before it. Slots by text index. Where all the kept words around it have no time to
+// words after it, then the words before it. Slots by text index; a kept word an earlier run already shared with is read
+// at its shared slot, so two runs never hand out the same time. Where all the kept words around it have no time to
 // give, the last of them ends that many milliseconds later and every word after it moves with it, so no word is ever
 // under a millisecond.
 function sharedSlots(
@@ -91,12 +92,14 @@ function sharedSlots(
   slot: { begin: number; end: number },
   runStart: number,
   runEnd: number,
+  retimed: ReadonlyMap<number, { begin: number; end: number }>,
 ): SharedSlots {
   let from = runStart;
   let to = runEnd;
   const kept = (index: number) => oldIndexOf[index] !== undefined;
-  const beginAt = (index: number) => (index === runStart ? slot.begin : oldWords[oldIndexOf[index] as number].begin);
-  const endAt = (index: number) => (index === runEnd - 1 ? slot.end : oldWords[oldIndexOf[index] as number].end);
+  const keptAt = (index: number) => retimed.get(index) ?? oldWords[oldIndexOf[index] as number];
+  const beginAt = (index: number) => (index === runStart ? slot.begin : keptAt(index).begin);
+  const endAt = (index: number) => (index === runEnd - 1 ? slot.end : keptAt(index).end);
   const byIndex = (slots: readonly { begin: number; end: number }[]) =>
     new Map(slots.map((shared, index) => [from + index, shared]));
   while (to < texts.length && kept(to)) {
@@ -183,7 +186,7 @@ function remapWordTextsWithinLimit(
     // typed split does; a run after every kept word stays for the untimed tail.
     const roomMs = msFromSeconds(slot.end) - msFromSeconds(slot.begin);
     if (roomMs < runTexts.length && rightBracket) {
-      const shared = sharedSlots(texts, oldIndexOf, oldWords, slot, i, runEnd);
+      const shared = sharedSlots(texts, oldIndexOf, oldWords, slot, i, runEnd, retimed);
       for (const [index, span] of shared.slots) retimed.set(index, span);
       if (shared.delay) delays.push(shared.delay);
     }
