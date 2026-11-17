@@ -1,4 +1,5 @@
 import { type BooleanSettingKey, useSettingsStore } from "@/stores/settings";
+import { type SettingId, settingEntry } from "@/stores/settings-catalog";
 import { useExtractOptions } from "@/stores/settings-extract-options";
 import { BACKGROUND_SEPARATOR_OPTIONS } from "@/ui/background-separator-options";
 import { PopBody, PopButton, PopGroup, PopHead, PopRow } from "@/ui/pop-layout";
@@ -17,16 +18,16 @@ interface BracketsSettingsProps {
 }
 
 interface SettingSwitchRowProps {
-  setting: BooleanSettingKey;
-  label: string;
+  setting: BooleanSettingKey & SettingId;
   hint: string;
   icon: Icon;
 }
 
 // -- Components ----------------------------------------------------------------
 
-const SettingSwitchRow: React.FC<SettingSwitchRowProps> = ({ setting, label, hint, icon }) => {
+const SettingSwitchRow: React.FC<SettingSwitchRowProps> = ({ setting, hint, icon }) => {
   const checked = useSettingsStore((s) => s[setting]);
+  const { label } = settingEntry(setting);
   return (
     <PopRow label={label} hint={hint} icon={icon} labelsControl>
       <Switch
@@ -40,11 +41,12 @@ const SettingSwitchRow: React.FC<SettingSwitchRowProps> = ({ setting, label, hin
 
 const SeparatorRow: React.FC = () => {
   const separator = useSettingsStore((s) => s.backgroundSeparator);
+  const { label } = settingEntry("backgroundSeparator");
   return (
-    <PopRow label="Separate with" hint="When a line has more than one ( )" icon={IconSpace}>
+    <PopRow label={label} hint="When a line has more than one ( )" icon={IconSpace}>
       <SegmentedControl
         size="sm"
-        aria-label="Separate with"
+        aria-label={label}
         value={separator}
         options={BACKGROUND_SEPARATOR_OPTIONS}
         onChange={(next) => useSettingsStore.getState().set("backgroundSeparator", next)}
@@ -63,7 +65,6 @@ const BracketsSettings: React.FC<BracketsSettingsProps> = ({ extractableCount, k
       <PopGroup label="As you type" className="mt-2.5">
         <SettingSwitchRow
           setting="autoExtractBackgroundVocals"
-          label="Auto-extract background vocals"
           hint="Moves ( ) to the background when you close it"
           icon={IconMicrophone}
         />
@@ -71,13 +72,11 @@ const BracketsSettings: React.FC<BracketsSettingsProps> = ({ extractableCount, k
       <PopGroup label="Typing or the Extract button" className="mt-2">
         <SettingSwitchRow
           setting="mergeStandaloneBackgroundLines"
-          label="Merge standalone background lines"
           hint="A line that is only ( ) joins the line above"
           icon={IconCornerLeftUp}
         />
         <SettingSwitchRow
           setting="preserveBracketsOnExtraction"
-          label="Preserve brackets"
           hint="Background vocals keep their ( )"
           icon={IconBracketsContain}
         />
