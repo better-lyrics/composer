@@ -400,7 +400,11 @@ const EditPanel: React.FC = () => {
               <label htmlFor={textareaId} className="text-[13px] font-medium select-none text-(--label)">
                 Paste or type lyrics
               </label>
-              <BracketsPopover extractableCount={extractableCount} onExtract={handleExtractBackgroundVocals} />
+              <BracketsPopover
+                extractableCount={extractableCount}
+                parsed={parsed}
+                onExtract={handleExtractBackgroundVocals}
+              />
             </div>
             {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
             <textarea

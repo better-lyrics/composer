@@ -4,6 +4,7 @@ import { isSectionTagLine } from "insync/lyrics-file-genius-text";
 import { useProjectStore } from "@/stores/project";
 import type { NoticeAction, NoticeKind } from "@/ui/notices/notice-model";
 import { pluralWord, pluralize } from "insync/pluralize";
+import { linesKeepingBracketsAsText } from "@/views/edit/brackets-status";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconTrash } from "@tabler/icons-react";
 import { useMemo } from "react";
@@ -62,10 +63,10 @@ function useBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
   }, [parsed]);
 }
 
-// Brackets typed beside a timed background stay as text: extraction would make a second background group.
+// Brackets typed beside a background timed by hand, or held by a timed word, stay as text.
 function useBackgroundBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
   return useMemo(() => {
-    const keptLines = parsed.filter((line) => line.backgroundBracketRefusal);
+    const keptLines = linesKeepingBracketsAsText(parsed);
     if (keptLines.length === 0) return null;
     return {
       id: "background-brackets",

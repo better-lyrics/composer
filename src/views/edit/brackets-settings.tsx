@@ -1,4 +1,3 @@
-import { pluralWord, pluralize } from "insync/pluralize";
 import { type BooleanSettingKey, useSettingsStore } from "@/stores/settings";
 import { useExtractOptions } from "@/stores/settings-extract-options";
 import { BACKGROUND_SEPARATOR_OPTIONS } from "@/ui/background-separator-options";
@@ -6,12 +5,14 @@ import { PopBody, PopButton, PopGroup, PopHead, PopRow } from "@/ui/pop-layout";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { Switch } from "@/ui/switch";
 import { BracketsExample } from "@/views/edit/brackets-example";
+import { bracketsStatus } from "@/views/edit/brackets-status";
 import { type Icon, IconBracketsContain, IconCornerLeftUp, IconMicrophone, IconSpace } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
 interface BracketsSettingsProps {
   extractableCount: number;
+  keptAsTextCount: number;
   onExtract: () => void;
 }
 
@@ -20,13 +21,6 @@ interface SettingSwitchRowProps {
   label: string;
   hint: string;
   icon: Icon;
-}
-
-// -- Helpers -------------------------------------------------------------------
-
-function bracketsLeftStatus(count: number): string {
-  if (count === 0) return "No ( ) left in the lyrics";
-  return `${pluralize(count, "line")} ${pluralWord(count, "still has", "still have")} ( )`;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -61,7 +55,7 @@ const SeparatorRow: React.FC = () => {
 
 const PopDivider: React.FC = () => <div className="h-px my-1.5 -mx-1.5 bg-(--divider)" />;
 
-const BracketsSettings: React.FC<BracketsSettingsProps> = ({ extractableCount, onExtract }) => {
+const BracketsSettings: React.FC<BracketsSettingsProps> = ({ extractableCount, keptAsTextCount, onExtract }) => {
   const options = useExtractOptions();
   return (
     <PopBody>
@@ -96,7 +90,7 @@ const BracketsSettings: React.FC<BracketsSettingsProps> = ({ extractableCount, o
       <PopDivider />
       <div className="flex items-center justify-between gap-3 h-9 pl-2.5 pr-1">
         <span role="status" className="flex-1 min-w-0 truncate text-[12.5px] tabular-nums text-(--muted)">
-          {bracketsLeftStatus(extractableCount)}
+          {bracketsStatus(extractableCount, keptAsTextCount)}
         </span>
         <PopButton icon={IconMicrophone} disabled={extractableCount === 0} onClick={onExtract}>
           Extract now

@@ -4,12 +4,16 @@ import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
 import { cn } from "@/utils/cn";
 import { BracketsSettings } from "@/views/edit/brackets-settings";
+import { linesKeepingBracketsAsText } from "@/views/edit/brackets-status";
+import type { ParsedLine } from "@/views/edit/parse-lyrics";
+import { useMemo } from "react";
 import { IconChevronDown, IconParentheses } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
 interface BracketsPopoverProps {
   extractableCount: number;
+  parsed: readonly ParsedLine[];
   onExtract: () => void;
 }
 
@@ -41,15 +45,22 @@ const BracketsTrigger: React.FC<ButtonProps> = (props) => {
   );
 };
 
-const BracketsPopover: React.FC<BracketsPopoverProps> = ({ extractableCount, onExtract }) => (
-  <LazyPopover hasPopup="dialog" trigger={<BracketsTrigger />}>
-    {(anchor) => (
-      <Popover placement="bottom-end" aria-label="Brackets" {...anchor}>
-        <BracketsSettings extractableCount={extractableCount} onExtract={onExtract} />
-      </Popover>
-    )}
-  </LazyPopover>
-);
+const BracketsPopover: React.FC<BracketsPopoverProps> = ({ extractableCount, parsed, onExtract }) => {
+  const keptAsTextCount = useMemo(() => linesKeepingBracketsAsText(parsed).length, [parsed]);
+  return (
+    <LazyPopover hasPopup="dialog" trigger={<BracketsTrigger />}>
+      {(anchor) => (
+        <Popover placement="bottom-end" aria-label="Brackets" {...anchor}>
+          <BracketsSettings
+            extractableCount={extractableCount}
+            keptAsTextCount={keptAsTextCount}
+            onExtract={onExtract}
+          />
+        </Popover>
+      )}
+    </LazyPopover>
+  );
+};
 
 // -- Exports -------------------------------------------------------------------
 
