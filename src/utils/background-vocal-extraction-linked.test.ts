@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { extractLineBackground } from "insync/commands/edit-text";
 import { bgBounds } from "insync/line-bounds";
 import { lineFromFields } from "insync/line-from-fields";
@@ -71,5 +72,37 @@ describe("extracting a background on one instance", () => {
     expect(bgBounds(a1)?.begin).toBeGreaterThanOrEqual(60);
     expect(bgBounds(a1)?.end).toBeLessThanOrEqual(63);
     expect(a3).toBe(lines[3]);
+  });
+});
+
+describe("extracting backgrounds on every line", () => {
+  it("regression: linked copies extract the same bracket groups when a timed word reaches into one", () => {
+    const text = "rain bloom(cinder hush) and (low tide)";
+    const timed = lineFromFields(
+      {
+        id: "a0",
+        text,
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: wordsAt(["rain", "bloom(cinder", "hush)", "and", "(low", "tide)"], 10, 13),
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const untimed = lineFromFields(
+      { id: "a1", text, agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+
+    const extracted = extractBackgroundVocals(
+      [timed, untimed],
+      { mergeStandaloneLines: false, preserveBrackets: false },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+
+    const [timedText, untimedText] = extracted.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER));
+    expect(untimedText).toBe(timedText);
+    expect(extracted.map((line) => backgroundText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["low tide", "low tide"]);
   });
 });
