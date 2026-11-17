@@ -12,15 +12,28 @@ function nextLineStart(lines: readonly LyricLine[], index: number): number {
   return Number.POSITIVE_INFINITY;
 }
 
-// `nextLineStart` for every index at once, read in one backward pass; the entry at `lines.length` is past the last line.
-function nextLineStarts(lines: readonly LyricLine[]): number[] {
-  const starts: number[] = new Array(lines.length + 1);
-  starts[lines.length] = Number.POSITIVE_INFINITY;
-  for (let index = lines.length - 1; index >= 0; index--) {
-    const nextBounds = index + 1 < lines.length ? effectiveBounds(lines[index + 1]) : null;
-    starts[index] = nextBounds ? nextBounds.begin : starts[index + 1];
-  }
-  return starts;
+// `nextLineStart` for any index; each line is read at most once, so one changed row costs a step and all rows one pass.
+function nextLineStartReader(lines: readonly LyricLine[]): (index: number) => number {
+  const known = new Map<number, number>();
+  return (index) => {
+    const walked: number[] = [];
+    let start = Number.POSITIVE_INFINITY;
+    for (let at = index; at < lines.length; at++) {
+      const read = known.get(at);
+      if (read !== undefined) {
+        start = read;
+        break;
+      }
+      walked.push(at);
+      const bounds = at + 1 < lines.length ? effectiveBounds(lines[at + 1]) : null;
+      if (bounds) {
+        start = bounds.begin;
+        break;
+      }
+    }
+    for (const at of walked) known.set(at, start);
+    return start;
+  };
 }
 
 // Where the nearest timed line before `index` ends, background included.
@@ -43,4 +56,4 @@ function previousMainEnd(lines: readonly LyricLine[], index: number): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { nextLineStart, nextLineStarts, previousLineEnd, previousMainEnd };
+export { nextLineStart, nextLineStartReader, previousLineEnd, previousMainEnd };

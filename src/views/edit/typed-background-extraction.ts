@@ -3,6 +3,7 @@ import { extractBackgroundVocalsOnLines } from "insync/background-vocal-typed-ex
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
 import { shownWithRewrittenRows } from "@/domain/edit-text/background-ranges";
+import { rowAt, rowCount } from "@/domain/edit-text/text-rows";
 import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
@@ -30,7 +31,7 @@ function settingsExtractOptions(): ExtractOptions {
   };
 }
 
-const rowsMatchLines = (typed: TypedEdit) => typed.shown.text.split("\n").length === typed.finalLines.length;
+const rowsMatchLines = (typed: TypedEdit) => rowCount(typed.shown.text) === typed.finalLines.length;
 
 // Rows the commit left alone stay as typed; only rows it rewrote show the committed line.
 function shownAfterCommit(typed: TypedEdit, committed: readonly LyricLine[], splitCharacter: string): ShownEditText {
@@ -42,7 +43,7 @@ function shownAfterCommit(typed: TypedEdit, committed: readonly LyricLine[], spl
 
 // The row the caret is typing in, when it sits inside a bracket group: that group is still being typed.
 function rowTypingInGroup(typing: TypingAt): number | null {
-  const row = typing.text.slice(0, typing.caret).split("\n").length - 1;
+  const row = rowAt(typing.text, typing.caret);
   const rowStart = typing.text.lastIndexOf("\n", typing.caret - 1) + 1;
   const rowEnd = typing.text.indexOf("\n", typing.caret);
   const offset = typing.caret - rowStart;
