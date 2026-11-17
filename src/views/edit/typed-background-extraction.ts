@@ -1,4 +1,4 @@
-import { type ExtractOptions, scanParenGroups } from "insync/background-vocal-extraction";
+import { type ExtractOptions, extractionSlot, scanParenGroups } from "insync/background-vocal-extraction";
 import { extractBackgroundVocalsOnLines } from "insync/background-vocal-typed-extraction";
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
@@ -38,8 +38,6 @@ function shownAfterCommit(typed: TypedEdit, committed: readonly LyricLine[], spl
   return shownWithRewrittenRows(typed.shown, typed.finalLines, committed, splitCharacter);
 }
 
-// Brackets typed on a row become its background as soon as they close, as a paste extracts them; only the lines the
-// keystroke changed are read, and only their rows are shown again.
 // The row the caret is typing in, when it sits inside a bracket group: that group is still being typed.
 function rowTypingInGroup(typing: TypingAt): number | null {
   const row = typing.text.slice(0, typing.caret).split("\n").length - 1;
@@ -51,8 +49,8 @@ function rowTypingInGroup(typing: TypingAt): number | null {
 }
 
 // Brackets typed on a row become its background as soon as they close, as a paste extracts them; only the lines the
-// keystroke changed are read, and only their rows are shown again. A group the caret is still typing inside waits, so
-// a space typed there is never trimmed under the caret.
+// keystroke changed are read, and only their rows are shown again. A group the caret is still typing inside waits with
+// every linked instance of its line, which extract together, so a space typed there is never trimmed under the caret.
 function withTypedBackgroundsExtracted(
   before: readonly LyricLine[],
   typed: TypedEdit,
@@ -64,8 +62,11 @@ function withTypedBackgroundsExtracted(
   if (!rowsMatchLines(typed)) return typed;
   const held = new Set(before);
   const typingRow = rowTypingInGroup(typing);
+  const typingSlot = typingRow === null ? null : extractionSlot(typed.finalLines[typingRow]);
+  const waits = (line: LyricLine, index: number) =>
+    index === typingRow || (typingSlot !== null && extractionSlot(line) === typingSlot);
   const changedIds = new Set(
-    typed.finalLines.flatMap((line, index) => (held.has(line) || index === typingRow ? [] : [line.id])),
+    typed.finalLines.flatMap((line, index) => (held.has(line) || waits(line, index) ? [] : [line.id])),
   );
   if (changedIds.size === 0) return typed;
   const finalLines = extractBackgroundVocalsOnLines(

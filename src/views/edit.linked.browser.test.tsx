@@ -1,15 +1,14 @@
+import type { LyricLine } from "insync/line";
+import { lineFromFields } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { lineFromFields } from "insync/line-from-fields";
-import type { LyricLine } from "insync/line";
-
-import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
-import { EditPanel } from "@/views/edit";
 import { getSplitCharacter } from "@/utils/split-character";
+import { EditPanel } from "@/views/edit";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -102,6 +101,39 @@ describe("regressions", () => {
     setTextareaValue(textarea, `${textarea.value.replace("Verse", "Verse!")}`);
     await new Promise((r) => setTimeout(r, 50));
     expect(texts()).toEqual(["Chorus line edited", "Verse!", "Chorus line edited"]);
+  });
+
+  it("regression: a space typed inside brackets kept as text on a linked line stays, with the caret, for the next key", async () => {
+    const chorus = (id: string, instanceIdx: number) =>
+      lineFromFields(
+        { id, text: "Chorus line (sway cinder)", agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx: 0 },
+        getSplitCharacter(),
+      );
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    useProjectStore.setState({
+      activeTab: "edit",
+      lines: [
+        chorus("a0", 0),
+        lineFromFields({ id: "x", text: "Verse", agentId: "v1" }, getSplitCharacter()),
+        chorus("b0", 1),
+        chorus("c0", 2),
+      ],
+      groups: [createGroup({ id: "g1", label: "Chorus" })],
+    });
+    const screen = await render(<EditPanel />);
+    const textarea = getTextarea(screen.container);
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true });
+    const row = "Chorus line (sway cinder)";
+    const caret = `${row}\nVerse\n${row}`.length - 1;
+
+    textarea.focus();
+    textarea.setSelectionRange(caret, caret);
+    await userEvent.keyboard(" ");
+    await userEvent.keyboard("e");
+
+    await expect.poll(() => textarea.value.split("\n")[2]).toBe("Chorus line (sway cinder e)");
+    // The linked copy above gained the same two characters.
+    expect(textarea.selectionStart).toBe(caret + 4);
   });
 });
 
