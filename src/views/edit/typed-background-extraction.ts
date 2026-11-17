@@ -16,6 +16,8 @@ interface TypingAt {
 interface TypedEdit {
   finalLines: LyricLine[];
   shown: ShownEditText;
+  // The line whose bracket group waits because the caret is still typing inside it.
+  heldLineId?: string;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -68,7 +70,8 @@ function withTypedBackgroundsExtracted(
   const changedIds = new Set(
     typed.finalLines.flatMap((line, index) => (held.has(line) || waits(line, index) ? [] : [line.id])),
   );
-  if (changedIds.size === 0) return typed;
+  const waiting = typingRow === null ? typed : { ...typed, heldLineId: typed.finalLines[typingRow].id };
+  if (changedIds.size === 0) return waiting;
   const finalLines = extractBackgroundVocalsOnLines(
     typed.finalLines,
     changedIds,
@@ -76,11 +79,12 @@ function withTypedBackgroundsExtracted(
     splitCharacter,
     songEnd,
   );
-  if (finalLines === typed.finalLines) return typed;
-  return { finalLines, shown: shownWithRewrittenRows(typed.shown, typed.finalLines, finalLines, splitCharacter) };
+  if (finalLines === typed.finalLines) return waiting;
+  const shown = shownWithRewrittenRows(typed.shown, typed.finalLines, finalLines, splitCharacter);
+  return { ...waiting, finalLines, shown };
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export type { TypedEdit };
-export { settingsExtractOptions, shownAfterCommit, withTypedBackgroundsExtracted };
+export { rowTypingInGroup, settingsExtractOptions, shownAfterCommit, withTypedBackgroundsExtracted };

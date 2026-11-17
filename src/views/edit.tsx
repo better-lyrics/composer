@@ -43,6 +43,7 @@ import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { lyricsText, noteTypedLyrics } from "@/views/edit/typed-lyrics-signals";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
+import { useHeldBracketGroup } from "@/views/edit/use-held-bracket-group";
 import { useShownEditText } from "@/views/edit/use-shown-edit-text";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import {
@@ -84,6 +85,7 @@ const EditPanel: React.FC = () => {
   const rawText = shownText.text;
   const { textareaRef, showEditText, shownTextRef, showLines } = useEditTextCaret(rawText, showShownText);
   useFocusLyricsShortcut(textareaRef, isActive);
+  const { hold, releaseLeftGroup } = useHeldBracketGroup();
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const pastedRef = useRef(false);
   const runBurstRef = useRef<LyricBurst | null>(null);
@@ -170,13 +172,7 @@ const EditPanel: React.FC = () => {
         for (let i = start; i <= end; i++) {
           next.add(i);
         }
-      } else {
-        if (next.has(lineNumber)) {
-          next.delete(lineNumber);
-        } else {
-          next.add(lineNumber);
-        }
-      }
+      } else if (!next.delete(lineNumber)) next.add(lineNumber);
       return next;
     });
     lastSelectedLineRef.current = lineNumber;
@@ -339,12 +335,13 @@ const EditPanel: React.FC = () => {
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;
       useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");
+      hold(typed.heldLineId);
       if (action.splits.length > 0) notifyTemplateSplit(action.splits.map((split) => split.instances));
       if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
       else showLineDiffersToast(action.removedIds, lines);
       scheduleRunFinalize();
     },
-    [defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
+    [defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText, hold],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText, shownTextRef);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });
@@ -434,6 +431,7 @@ const EditPanel: React.FC = () => {
               onChange={textareaChange.onChange}
               onFocus={() => setIsTypingLyrics(true)}
               onBlur={handleTextareaBlur}
+              onSelect={releaseLeftGroup}
               onCompositionStart={textareaChange.onCompositionStart}
               onCompositionEnd={textareaChange.onCompositionEnd}
               onPaste={handlePaste}

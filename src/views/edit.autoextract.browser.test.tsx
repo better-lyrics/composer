@@ -262,4 +262,28 @@ describe("brackets pasted into a row", () => {
     await expect.poll(() => textarea.value.split("\n")).toEqual(["glimmer (low amber x)", "ember cinder lantern"]);
     expect(textarea.selectionStart).toBe(beforeClose + 2);
   });
+
+  it("regression: a bracket group typed with the caret inside extracts once the caret leaves it", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    setTextareaValue(textarea, "ember cinder lantern");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
+    blurTextarea(textarea);
+    const lineTexts = () => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter()));
+
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    await userEvent.keyboard(" (){ArrowLeft}test");
+    await expect.poll(() => textarea.value).toBe("ember cinder lantern (test)");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBeUndefined();
+
+    await userEvent.keyboard("{ArrowRight}");
+
+    await expect.poll(lineTexts).toEqual(["ember cinder lantern"]);
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("(test)");
+    await userEvent.keyboard("{Control>}z{/Control}");
+    await expect.poll(lineTexts).toEqual(["ember cinder lantern"]);
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBeUndefined();
+  });
 });
