@@ -48,4 +48,12 @@ describe("extractableLineCount", () => {
     expect(extractableLineCount([bare], options, DEFAULT_SPLIT_CHARACTER)).toBe(1);
     expect(extractableLineCount([withBackground], options, DEFAULT_SPLIT_CHARACTER)).toBe(0);
   });
+
+  it("regression: counts every row of only brackets that merges into the line above, one after another", () => {
+    const options: ExtractOptions = { mergeStandaloneLines: true, preserveBrackets: true, separator: "space" };
+    const lines = ["Hello", "(ooh)", "(aah)", "(hey)"].map((text, index) => createLine({ id: `${index}`, text }));
+
+    expect(extractBackgroundVocals(lines, options, DEFAULT_SPLIT_CHARACTER)).toHaveLength(1);
+    expect(extractableLineCount(lines, options, DEFAULT_SPLIT_CHARACTER)).toBe(3);
+  });
 });

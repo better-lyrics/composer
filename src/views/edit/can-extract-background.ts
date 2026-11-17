@@ -17,6 +17,7 @@ interface WindowVerdict {
   options: ExtractOptions;
   splitCharacter: string;
   changes: boolean;
+  mergesUp: boolean;
   refuses: boolean;
 }
 
@@ -27,10 +28,11 @@ const verdicts = new WeakMap<LyricLine, WindowVerdict>();
 // -- Helpers ------------------------------------------------------------------
 
 // Whether the line itself changes, or merges into the line before it; the line before has a window of its own.
-function windowChanges(previous: LyricLine | undefined, line: LyricLine, options: ExtractOptions): boolean {
+function windowChange(previous: LyricLine | undefined, line: LyricLine, options: ExtractOptions) {
   const window = previous ? [previous, line] : [line];
   const extracted = extractBackgroundVocals(window, options, getSplitCharacter());
-  return extracted.length !== window.length || extracted.at(-1) !== line;
+  const mergesUp = extracted.length !== window.length;
+  return { changes: mergesUp || extracted.at(-1) !== line, mergesUp };
 }
 
 function lineVerdict(
@@ -52,24 +54,30 @@ function lineVerdict(
     previous,
     options,
     splitCharacter,
-    changes: windowChanges(previous, line, options),
+    ...windowChange(previous, line, options),
     refuses: refusesExtraction(line, options, getSplitCharacter()),
   };
   verdicts.set(line, verdict);
   return verdict;
 }
 
-// The whole-list pass changes a line exactly when the line, read with only the line before it, changes and no linked
-// instance of its template line refuses extraction. Only a line holding "(" can change.
+// The whole-list pass changes a line exactly when the line, read with only the last line before it the pass keeps,
+// changes and no linked instance of its template line refuses extraction. A row merged into the line above counts as
+// changed. Only a line holding "(" can change.
 function extractableLineCount(lines: readonly LyricLine[], options: ExtractOptions, splitCharacter: string): number {
   const verdictsByLine = new Map<LyricLine, WindowVerdict>();
   const refusedSlots = new Set<string>();
-  lines.forEach((line, index) => {
-    if (!lineText(line, getSplitCharacter()).includes("(")) return;
-    const verdict = lineVerdict(lines[index - 1], line, options, splitCharacter);
+  let kept: LyricLine | undefined;
+  for (const line of lines) {
+    if (!lineText(line, getSplitCharacter()).includes("(")) {
+      kept = line;
+      continue;
+    }
+    const verdict = lineVerdict(kept, line, options, splitCharacter);
     verdictsByLine.set(line, verdict);
     if (verdict.refuses) refusedSlots.add(extractionSlot(line) ?? "");
-  });
+    if (!verdict.mergesUp) kept = line;
+  }
   let count = 0;
   for (const [line, verdict] of verdictsByLine) {
     if (verdict.changes && !refusedSlots.has(extractionSlot(line) ?? "")) count++;
