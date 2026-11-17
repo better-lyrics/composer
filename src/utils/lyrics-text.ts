@@ -2,7 +2,7 @@ import { withShownBackground } from "insync/edit-text-shown-background";
 import { withoutBackground } from "insync/line-background";
 import { lineFromFields } from "insync/line-from-fields";
 import { joinedLines } from "insync/line-joined-lines";
-import { nextLineStarts } from "insync/line-neighbour-bounds";
+import { nextLineStartReader } from "insync/line-neighbour-bounds";
 import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
@@ -183,11 +183,8 @@ function textToLyricLines(
   });
 
   // Only a row whose text changed reads where its line must end, so unchanged rows cost nothing per keystroke.
-  let lineStarts: number[] | undefined;
-  const nextStart = (line: LyricLine) => {
-    lineStarts ??= nextLineStarts(existingLines);
-    return lineStarts[existingIndex.get(line.id) ?? existingLines.length];
-  };
+  const nextLineStart = nextLineStartReader(existingLines);
+  const nextStart = (line: LyricLine) => nextLineStart(existingIndex.get(line.id) ?? existingLines.length);
   const reconciled = (line: LyricLine, cleanedText: string) =>
     mainTrackKeys(mainTrack(line), splitChar).text === cleanedText
       ? line
