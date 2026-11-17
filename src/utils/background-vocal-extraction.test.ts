@@ -1421,6 +1421,35 @@ describe("extractBackgroundVocals: none and skip lines", () => {
 // -- extractBackgroundVocals: timing-aware standalone merge -------------------
 
 describe("extractBackgroundVocals: timing-aware standalone merge", () => {
+  it("regression: a row merged after a seeded background that reaches the song end never gets zero-length words", () => {
+    const songEnd = 12;
+    const lines = [
+      createLine({
+        id: "end",
+        words: [
+          { text: "Timber", sep: " ", begin: 11.4, end: 11.7 },
+          { text: "rise", begin: 11.7, end: 12 },
+        ],
+        backgroundText: "(tide pale)",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { text: "(tide", sep: " ", begin: 11.7, end: 11.85 },
+          { text: "pale)", begin: 11.85, end: songEnd },
+        ],
+      }),
+      createLine({ id: "row", text: "(hollow lantern)" }),
+    ];
+    const [merged] = extractBackgroundVocals(
+      lines,
+      { mergeStandaloneLines: true, preserveBrackets: true, separator: "comma" },
+      DEFAULT_SPLIT_CHARACTER,
+      songEnd,
+    );
+    expect(backgroundText(merged, DEFAULT_SPLIT_CHARACTER)).toBe("(tide pale, hollow lantern)");
+    const timed = timedSyllables(backgroundTrack(merged));
+    expect(timed.filter((syllable) => syllable.end <= syllable.begin || syllable.end > songEnd)).toEqual([]);
+  });
+
   it("merges an untimed standalone line into an untimed predecessor as text only", () => {
     const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
     const result = extractBackgroundVocals(

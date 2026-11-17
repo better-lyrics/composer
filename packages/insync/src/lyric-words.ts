@@ -5,6 +5,8 @@ import { textParts } from "./word-text-parts";
 // -- Constants ----------------------------------------------------------------
 
 const DEFAULT_BG_WORD_DURATION = 0.3;
+// Seeded words get a millisecond each or are not seeded, so a span too short for them never holds zero-length words.
+const SHORTEST_SEEDED_WORD = 0.001;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -68,7 +70,8 @@ function createInitialBgWords(
 ): WordTiming[] {
   const wordCount = splitIntoWords(backgroundText, splitChar).length;
   if (wordCount === 0) return [];
-  const resolvedEnd = end ?? Math.max(begin, Math.min(begin + wordCount * DEFAULT_BG_WORD_DURATION, songEnd));
+  const resolvedEnd = Math.min(end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION, songEnd);
+  if (resolvedEnd - begin < wordCount * SHORTEST_SEEDED_WORD) return [];
   return distributeWordsInLine(backgroundText, begin, resolvedEnd, splitChar);
 }
 

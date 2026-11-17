@@ -56,7 +56,7 @@ function carriedBackgroundWords(
     const span = mainBounds(standalone);
     carry = span && createInitialBgWords(bgText, span.begin, span.end, splitChar);
   } else if (untimedSpan) {
-    carry = createInitialBgWords(bgText, untimedSpan.begin, untimedSpan.end, splitChar);
+    carry = createInitialBgWords(bgText, untimedSpan.begin, untimedSpan.end, splitChar, songEnd);
   } else {
     carry = null;
   }
@@ -173,7 +173,8 @@ function mergeStandaloneInto(
     return withBackground(prev, { text, source: keptBaseSource }, splitChar);
   }
 
-  if (baseWords && baseWords.length > 0) return null;
+  // A seeded background with no room after it for the row is seeded again whole with the row, as a paste would be.
+  if (baseWords && baseWords.length > 0 && !prevIsExtraction) return null;
   return withBackground(prev, { text, source: baseText ? keptBaseSource : "extraction" }, splitChar);
 }
 
