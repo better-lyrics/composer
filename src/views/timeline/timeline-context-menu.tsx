@@ -214,7 +214,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
         <>
           <MenuSeparator />
           <MenuItem
-            label={explicitToggleLabel(explicitToggle.value, selectedWords.length)}
+            label={explicitToggleLabel(explicitToggle.value, explicitToggle.markable)}
             shortcut={getEffectiveKeysArray("timeline.toggleExplicit")}
             onSelect={handleToggleExplicit}
           />

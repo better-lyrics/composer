@@ -78,10 +78,10 @@ function mergedWords(stored: WordTiming[] | undefined, edited: WordTiming[] | un
 // -- Field merges -------------------------------------------------------------
 
 // The one span an edit wrote a background as: its one timed word, or the span of a background read line synced.
-function editedBackgroundSpan(edited: LineFields): Pick<WordTiming, "begin" | "end" | "explicit"> | undefined {
+function editedBackgroundSpan(edited: LineFields): Pick<WordTiming, "begin" | "end"> | undefined {
   if (edited.backgroundWords) return edited.backgroundWords.length === 1 ? edited.backgroundWords[0] : undefined;
-  const { backgroundBegin: begin, backgroundEnd: end, backgroundExplicit: explicit } = edited;
-  return begin !== undefined && end !== undefined ? { begin, end, explicit } : undefined;
+  const { backgroundBegin: begin, backgroundEnd: end } = edited;
+  return begin !== undefined && end !== undefined ? { begin, end } : undefined;
 }
 
 function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined, edited: LineFields): boolean {
@@ -111,11 +111,10 @@ function keptBackgroundSpan(stored: LineFields, edited: LineFields): Partial<Lin
     backgroundWords: undefined,
     backgroundBegin: same ? stored.backgroundBegin : span.begin,
     backgroundEnd: same ? stored.backgroundEnd : span.end,
-    backgroundExplicit: span.explicit,
   };
 }
 
-const NO_BACKGROUND_SPAN = { backgroundBegin: undefined, backgroundEnd: undefined, backgroundExplicit: undefined };
+const NO_BACKGROUND_SPAN = { backgroundBegin: undefined, backgroundEnd: undefined };
 
 function mergedBackground(stored: LineFields, edited: LineFields): Partial<LineFields> {
   const span = keptBackgroundSpan(stored, edited);

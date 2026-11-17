@@ -79,12 +79,7 @@ function wholeTrackKeptAttrs(track: LineTrack | undefined): readonly XmlAttr[] |
 
 // A track written as one timed span without syllable times; a kept span holding all of it gives the timed span its
 // attributes instead of nesting inside it, so players never meet a span inside a word.
-function untimedTrackSpan(
-  word: { begin: number; end: number; explicit?: true },
-  track: LineTrack,
-  text: string,
-  splitChar: string,
-) {
+function untimedTrackSpan(word: { begin: number; end: number }, track: LineTrack, text: string, splitChar: string) {
   const attrs = wholeTrackKeptAttrs(track);
   return attrs
     ? timedSpan(word, escapeXmlText(withoutSplitCharacter(text, splitChar)), writeXmlAttrs(attrs))

@@ -1,13 +1,6 @@
 import type { BackgroundSource, BackgroundTrack, LineTrack, LyricLine, MainTrack, Syllable, TrackRole } from "./line";
 import { syllablesFromText } from "./line-syllables-from-text";
-import {
-  backgroundTrack,
-  isExplicitBlock,
-  isSpanTimed,
-  isTimedSyllable,
-  mainTrack,
-  untimedSyllable,
-} from "./line-track";
+import { backgroundTrack, isSpanTimed, isTimedSyllable, mainTrack, untimedSyllable } from "./line-track";
 import type { WordTiming } from "./word-timing";
 import { endedWord } from "./word-syllable-groups";
 
@@ -48,22 +41,11 @@ function withTrackWords<T extends LineTrack>(track: T, words: readonly WordTimin
   return syllableTimed(track, joinedSyllables(track, words, untaken));
 }
 
-// The block of a span is explicit when every syllable is; a mark on the block marks or clears them all.
-function withTrackExplicit<T extends LineTrack>(track: T, explicit: boolean): T {
-  if (track.syllables.every((syllable) => (syllable.explicit === true) === explicit)) return track;
-  const syllables = track.syllables.map(({ explicit: _explicit, ...syllable }) =>
-    explicit ? { ...syllable, explicit: true as const } : syllable,
-  );
-  return { ...track, syllables } as T;
-}
-
 // A timing write: one syllable sets a span track's edges, so a line-synced track stays line synced.
 function trackTimingWrite<T extends LineTrack>(track: T, syllables: readonly WordTiming[]): T {
   if (isSpanTimed(track) && syllables.length === 1) {
     const [block] = syllables;
-    const marked =
-      (block.explicit === true) === isExplicitBlock(track) ? track : withTrackExplicit(track, !!block.explicit);
-    return withTrackSpan(marked, block.begin, block.end);
+    return withTrackSpan(track, block.begin, block.end);
   }
   return withTrackWords(track, syllables);
 }
@@ -174,7 +156,6 @@ export {
   withRoleTrack,
   withRoleWords,
   withRoleWordsUntimingRest,
-  withTrackExplicit,
   withTrackSpan,
   withTrackSyllables,
   withTrackText,

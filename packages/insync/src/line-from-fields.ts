@@ -3,8 +3,7 @@ import type { BackgroundSource, BackgroundTrack, LyricLine, MainTrack, Syllable,
 import { groupFieldsOf } from "./line-group-fields";
 import { textSyllables } from "./line-syllables-from-text";
 import { trackText } from "./line-text";
-import { backgroundTrack, isExplicitBlock, isSpanTimed, mainTrack, timedSyllables } from "./line-track";
-import { withTrackExplicit } from "./line-track-writes";
+import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "./line-track";
 import type { WordTiming } from "./word-timing";
 
 // -- Types --------------------------------------------------------------------
@@ -23,8 +22,6 @@ interface LineFields {
   // The span of a line-synced background; never written by version 3, which seeded words instead.
   backgroundBegin?: number;
   backgroundEnd?: number;
-  // A line-synced background marked explicit as one block.
-  backgroundExplicit?: true;
   languages?: LineLanguages;
   groupId?: string;
   instanceIdx?: number;
@@ -140,7 +137,7 @@ function backgroundTrackFromFields(fields: LineFields, splitChar: string): Backg
     role: "bg",
     ...(backgroundTextSource && { source: backgroundTextSource }),
   };
-  return fields.backgroundExplicit && isSpanTimed(track) ? withTrackExplicit(track, true) : track;
+  return track;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -174,7 +171,6 @@ function fieldsOfLine(line: LyricLine, splitChar: string): LineFields {
       ...(backgroundWords.length > 0 && { backgroundWords }),
       ...(background.source && { backgroundTextSource: background.source }),
       ...(isSpanTimed(background) && { backgroundBegin: background.begin, backgroundEnd: background.end }),
-      ...(isSpanTimed(background) && isExplicitBlock(background) && { backgroundExplicit: true as const }),
     }),
     ...(line.languages && { languages: line.languages }),
     ...groupFieldsOf(line),

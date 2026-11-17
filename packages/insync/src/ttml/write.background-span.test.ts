@@ -83,3 +83,30 @@ describe("line-synced background read back", () => {
     expect(timedSyllables(background).map(({ text, begin, end }) => [text, begin, end])).toEqual([["(ooh)", 2.5, 4]]);
   });
 });
+
+describe("explicit marks stay on words", () => {
+  const exported = (line: LyricLine, timing?: "line") =>
+    generateTTML({
+      metadata: { title: "Test", artists: [], album: "", duration: 30 },
+      agents: [{ id: "v1", type: "person", name: "Lead" }],
+      lines: [line],
+      splitChar: SPLIT,
+      ...(timing && { timing }),
+    });
+
+  it("regression: a line timing export never marks the whole background span, even when its first word is explicit", () => {
+    const line = readLine(
+      '<p begin="1.000" end="4.000" ttm:agent="v1"><span begin="1.000" end="2.000">Lanterns</span><span ttm:role="x-bg"><span begin="2.500" end="3.000" composer:explicit="true">(damn</span> <span begin="3.000" end="4.000">it)</span></span></p>',
+    );
+    expect(timedSyllables(backgroundTrack(line))[0].explicit).toBe(true);
+    expect(exported(line, "line")).not.toMatch(/composer:explicit/);
+  });
+
+  it("regression: an explicit mark on a background span of several words is not read as a mark on the span", () => {
+    const line = readLine(
+      '<p begin="1.000" end="4.000" ttm:agent="v1">Lanterns drift<span ttm:role="x-bg"><span begin="2.500" end="4.000" composer:explicit="true">(damn it)</span></span></p>',
+    );
+    expect(drawnSyllables(line, "bg", SPLIT)[0].explicit).toBeUndefined();
+    expect(exported(line)).not.toMatch(/composer:explicit/);
+  });
+});
