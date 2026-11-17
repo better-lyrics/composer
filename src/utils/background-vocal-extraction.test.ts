@@ -1327,6 +1327,15 @@ describe("extractBackgroundVocalsOnLines", () => {
     const bracketsOff: ExtractOptions = { ...options, preserveBrackets: false, separator: "comma" };
     const [unbracketed] = extractBackgroundVocals([extracted], bracketsOff, DEFAULT_SPLIT_CHARACTER);
     expect(backgroundText(unbracketed, DEFAULT_SPLIT_CHARACTER)).toBe("ooh, aah");
+
+    const withRow = (join: ExtractOptions) => {
+      const row = createLine({ id: "row", text: "(ooh)", backgroundText: "(yeah)", backgroundTextSource: "manual" });
+      const [merged] = extractBackgroundVocals([clap(), row], join, DEFAULT_SPLIT_CHARACTER);
+      return backgroundText(merged, DEFAULT_SPLIT_CHARACTER);
+    };
+    expect(withRow(options)).toBe("(clap ooh yeah)");
+    expect(withRow({ ...options, separator: "comma" })).toBe("(clap, ooh, yeah)");
+    expect(withRow(bracketsOff)).toBe("clap, ooh, yeah");
   });
 });
 

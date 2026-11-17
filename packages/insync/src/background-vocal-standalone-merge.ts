@@ -13,13 +13,15 @@ import { backgroundTrack, isSpanTimed, isTimedSyllable, roleWords, timedSyllable
 import { withBackgroundTrack, withTrackSpan } from "./line-track-writes";
 import { type Bounds, lastEnd } from "./word-bounds";
 import { remapWordTextsWithinLimit } from "./word-remap-text";
-import { withTrailingSpace } from "./word-spaces";
 import type { WordTiming } from "./word-timing";
 import {
   type BracketJoin,
   bracketWordList,
   joinBackgroundText,
   joinBracketedCarriedWords,
+  joinExtractedParts,
+  withOpenPair,
+  withoutOuterPair,
 } from "./background-vocal-brackets";
 import { createInitialBgWords } from "./lyric-words";
 
@@ -31,6 +33,12 @@ interface TimeSpan {
 }
 
 // -- Standalone merge ---------------------------------------------------------
+
+// What a merged row adds: its bracketed text, then its own background as one more part.
+function rowParts(bgText: string, ownText: string, join: BracketJoin): string {
+  const ownPart = withoutOuterPair(ownText);
+  return ownPart ? joinExtractedParts([bgText, ownPart], join.separator) : bgText;
+}
 
 function carriedBackgroundWords(
   standalone: LyricLine,
@@ -98,11 +106,10 @@ function mergeIntoLineSynced(
   songEnd: number,
 ): LyricLine {
   const baseText = backgroundText(base, splitChar);
-  const ownText = backgroundText(standalone, splitChar)?.trim();
   const merged = withBackground(
     base,
     {
-      text: joinBackgroundText(baseText, ownText ? `${bgText} ${ownText}` : bgText, join),
+      text: joinBackgroundText(baseText, rowParts(bgText, ownBackground(standalone, splitChar).text, join), join),
       source: baseText ? keptBaseSource : "extraction",
     },
     splitChar,
@@ -143,9 +150,10 @@ function mergeStandaloneInto(
     songEnd,
   );
   const own = ownBackground(standalone, splitChar);
-  const carried = sung?.length && own.words.length ? [...withTrailingSpace(sung), ...own.words] : sung;
-  const withOwnRest = (text: string) => (own.rest ? `${text.trimEnd()} ${own.rest}` : text);
-  const sungText = own.text ? `${bgText} ${own.text}` : bgText;
+  const text = joinBackgroundText(baseText, rowParts(bgText, own.text, join), join);
+  const carried = sung?.length && own.words.length ? joinBracketedCarriedWords(sung, own.words, join) : sung;
+  // The row's own untimed rest follows its timed words in the text, so the pair closes after it.
+  const opened = (words: WordTiming[]) => (own.rest ? withOpenPair(words, join, own.words.length === 0) : words);
   const baseWords = carried?.length
     ? (roleWords(withSeededBackgroundWords(prev, splitChar), "bg") ?? storedBaseWords)
     : storedBaseWords;
@@ -154,58 +162,20 @@ function mergeStandaloneInto(
   const baseRest = ownBackground(prev, splitChar).rest;
   if (carried && carried.length > 0) {
     if (baseWords && baseWords.length > 0 && baseRest) {
-      return withBackground(
-        prev,
-        {
-          words: baseWords,
-          text: joinBackgroundText(baseText, sungText, join),
-          source: keptBaseSource,
-        },
-        splitChar,
-      );
+      return withBackground(prev, { words: baseWords, text, source: keptBaseSource }, splitChar);
     }
     if (baseWords && baseWords.length > 0) {
-      const combined = joinBracketedCarriedWords(baseWords, carried, join);
-      return withBackground(
-        prev,
-        {
-          words: combined,
-          text: withOwnRest(syllablesText(combined, splitChar)),
-          source: keptBaseSource,
-        },
-        splitChar,
-      );
+      const combined = opened(joinBracketedCarriedWords(baseWords, carried, join));
+      return withBackground(prev, { words: combined, text, source: keptBaseSource }, splitChar);
     }
     if (!baseText) {
-      return withBackground(
-        prev,
-        {
-          words: carried,
-          text: withOwnRest(syllablesText(carried, splitChar)),
-          source: "extraction",
-        },
-        splitChar,
-      );
+      return withBackground(prev, { words: opened(carried), text, source: "extraction" }, splitChar);
     }
-    return withBackground(
-      prev,
-      {
-        text: joinBackgroundText(baseText, sungText, join),
-        source: keptBaseSource,
-      },
-      splitChar,
-    );
+    return withBackground(prev, { text, source: keptBaseSource }, splitChar);
   }
 
   if (baseWords && baseWords.length > 0) return null;
-  return withBackground(
-    prev,
-    {
-      text: joinBackgroundText(baseText, sungText, join),
-      source: baseText ? keptBaseSource : "extraction",
-    },
-    splitChar,
-  );
+  return withBackground(prev, { text, source: baseText ? keptBaseSource : "extraction" }, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

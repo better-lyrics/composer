@@ -103,7 +103,24 @@ function joinBracketedCarriedWords(baseWords: WordTiming[], carried: WordTiming[
   return join.preserveBrackets ? bracketWordList(combined) : combined;
 }
 
+// Timed words that open a one-pair background whose untimed rest follows in the text, where the pair closes.
+function withOpenPair(words: WordTiming[], join: BracketJoin, restStartsPart: boolean): WordTiming[] {
+  const last = words.at(-1);
+  if (!last) return words;
+  const spaced = stripTrailingSpace(last.text + last.sep);
+  const open = join.preserveBrackets && spaced.endsWith(")") ? spaced.slice(0, -1) : spaced;
+  const mark = restStartsPart ? SEPARATOR_MARK[join.separator] : "";
+  return words.with(-1, wordFromSpaced({ ...last, text: `${open}${mark} `, joinsNext: false }));
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { BackgroundSeparator, BracketJoin };
-export { bracketWordList, joinBackgroundText, joinBracketedCarriedWords, joinExtractedParts, withoutOuterPair };
+export {
+  bracketWordList,
+  joinBackgroundText,
+  joinBracketedCarriedWords,
+  joinExtractedParts,
+  withOpenPair,
+  withoutOuterPair,
+};
