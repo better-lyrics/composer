@@ -1,7 +1,6 @@
 import {
   type BackgroundSource,
   withBackground,
-  withoutBackground,
   withSeededBackground,
   withSeededBackgroundWords,
 } from "./line-background";
@@ -118,40 +117,33 @@ function mergeStandaloneInto(
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine | null {
-  // On re-paste, prev's extraction-sourced background is stale output from a
-  // prior pass, so the standalone line replaces it. Manual background is kept.
-  // Extraction-sourced background produced earlier in this same pass (an
-  // already-merged standalone) is fresh, so further standalones append to it.
+  // An extracted background, or one this pass wrote, is extended in its own pair; a manual one keeps its own.
   const prevIsExtraction = backgroundTrack(prev)?.source === "extraction";
-  const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
-  // Source for a result that keeps the prev base: a surviving extraction base
-  // is necessarily fresh same-pass output (stale extraction was dropped above),
-  // so it stays extraction; manual or legacy-undefined stays manual.
+  const extendsPair = prevIsExtraction || prevTrailingBracketFromSamePass;
   const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
-  const base = prevIsStaleExtraction ? withoutBackground(prev) : prev;
   // A background timed by hand before this pass, a background with word timing, or a row with its own word timing
   // keeps that timing, so the row merges word by word below.
-  const keepsWordTiming = isWordSynced(standalone) || timedSyllables(backgroundTrack(base)).length > 0;
-  if (isLineSynced(prev) && !keepsWordTiming && (prevTrailingBracketFromSamePass || !bgBounds(base))) {
+  const keepsWordTiming = isWordSynced(standalone) || timedSyllables(backgroundTrack(prev)).length > 0;
+  if (isLineSynced(prev) && !keepsWordTiming && (extendsPair || !bgBounds(prev))) {
     return mergeIntoLineSynced(
-      base,
+      prev,
       standalone,
       bgText,
-      prevTrailingBracketFromSamePass,
+      extendsPair,
       keptBaseSource,
       preserveBrackets,
       splitChar,
       songEnd,
     );
   }
-  const baseText = prevIsStaleExtraction ? undefined : backgroundText(prev, splitChar);
+  const baseText = backgroundText(prev, splitChar);
   // A line-synced background counts as the words it spans, as 3.x stored seeded words for it.
-  const storedBaseWords = prevIsStaleExtraction ? undefined : backgroundWords(prev);
+  const storedBaseWords = backgroundWords(prev);
   const sung = carriedBackgroundWords(
     standalone,
     bgText,
     preserveBrackets,
-    prevTrailingBracketFromSamePass && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
+    extendsPair && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
     splitChar,
     songEnd,
   );
@@ -159,27 +151,26 @@ function mergeStandaloneInto(
   const carried = sung?.length && own.words.length ? [...withTrailingSpace(sung), ...own.words] : sung;
   const withOwnRest = (text: string) => (own.rest ? `${text.trimEnd()} ${own.rest}` : text);
   const sungText = own.text ? `${bgText} ${own.text}` : bgText;
-  const baseWords =
-    carried?.length && !prevIsStaleExtraction
-      ? (roleWords(withSeededBackgroundWords(prev, splitChar), "bg") ?? storedBaseWords)
-      : storedBaseWords;
+  const baseWords = carried?.length
+    ? (roleWords(withSeededBackgroundWords(prev, splitChar), "bg") ?? storedBaseWords)
+    : storedBaseWords;
 
   // Untimed words already after the base's timed ones stay before the row, so the row joins that untimed rest.
-  const baseRest = prevIsStaleExtraction ? "" : ownBackground(prev, splitChar).rest;
+  const baseRest = ownBackground(prev, splitChar).rest;
   if (carried && carried.length > 0) {
     if (baseWords && baseWords.length > 0 && baseRest) {
       return withBackground(
         prev,
         {
           words: baseWords,
-          text: joinBackgroundText(baseText, sungText, preserveBrackets, prevTrailingBracketFromSamePass),
+          text: joinBackgroundText(baseText, sungText, preserveBrackets, extendsPair),
           source: keptBaseSource,
         },
         splitChar,
       );
     }
     if (baseWords && baseWords.length > 0) {
-      const canSeamStrip = preserveBrackets && prevTrailingBracketFromSamePass;
+      const canSeamStrip = preserveBrackets && extendsPair;
       const combined = joinBracketedCarriedWords(baseWords, carried, canSeamStrip);
       return withBackground(
         prev,
@@ -205,7 +196,7 @@ function mergeStandaloneInto(
     return withBackground(
       prev,
       {
-        text: joinBackgroundText(baseText, sungText, preserveBrackets, prevTrailingBracketFromSamePass),
+        text: joinBackgroundText(baseText, sungText, preserveBrackets, extendsPair),
         source: keptBaseSource,
       },
       splitChar,
@@ -216,7 +207,7 @@ function mergeStandaloneInto(
   return withBackground(
     prev,
     {
-      text: joinBackgroundText(baseText, sungText, preserveBrackets, prevTrailingBracketFromSamePass),
+      text: joinBackgroundText(baseText, sungText, preserveBrackets, extendsPair),
       source: baseText ? keptBaseSource : "extraction",
     },
     splitChar,

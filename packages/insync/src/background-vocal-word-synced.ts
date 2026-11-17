@@ -65,8 +65,9 @@ function extractInlineWordSynced(
       ? { ...word, ...splitTrailingWhitespace((word.text + word.sep).replace(/ +$/, "")), joinsNext: false }
       : word,
   );
-  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
-  const joined = joinBackgroundText(base, bgText, options.preserveBrackets, false);
+  const base = backgroundText(line, splitChar);
+  const extendsPair = backgroundTrack(line)?.source === "extraction";
+  const joined = joinBackgroundText(base, bgText, options.preserveBrackets, extendsPair);
   const timedBracketed = bracketed.filter(isTimedSyllable);
   const carried = base || timedBracketed.length < bracketed.length ? undefined : timedBracketed;
   const remapped = carried && remapWordTextsWithinLimit(carried, joined, splitChar, songEnd);
@@ -75,7 +76,7 @@ function extractInlineWordSynced(
     {
       text: joined,
       words: remapped?.words.slice(0, remapped.untimedFrom),
-      source: base ? "manual" : "extraction",
+      source: base && !extendsPair ? "manual" : "extraction",
     },
     splitChar,
   );

@@ -111,12 +111,13 @@ function extractInline(
   const classified = extractable ? classifyGroups(text, extractable) : scanned;
   if (classified.kind !== "inline" || backgroundRefuses(line, classified)) return line;
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar, songEnd);
-  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
+  const base = backgroundText(line, splitChar);
+  const extendsPair = backgroundTrack(line)?.source === "extraction";
   return withBackground(
     withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar)),
     {
-      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
-      source: base ? "manual" : "extraction",
+      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, extendsPair),
+      source: base && !extendsPair ? "manual" : "extraction",
     },
     splitChar,
   );

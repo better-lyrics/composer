@@ -62,17 +62,18 @@ function joinBracketedCarriedWords(
   ];
 }
 
+// Extracted text joins the pair it extends; a background typed by hand keeps its own and the addition follows it.
 function joinBackgroundText(
   existing: string | undefined,
   addition: string,
   preserveBrackets: boolean,
-  trailingBracketFromSamePass: boolean,
+  extendsPair: boolean,
 ): string {
   const base = existing?.trim() ?? "";
-  if (!preserveBrackets) return base.length > 0 ? `${base} ${addition}` : addition;
-  if (base.length === 0) return `(${addition})`;
-  if (trailingBracketFromSamePass && base.endsWith(")")) return `${base.slice(0, -1)} ${addition})`;
-  return `${base} (${addition})`;
+  const wrapped = preserveBrackets ? `(${addition})` : addition;
+  if (base.length === 0) return wrapped;
+  if (extendsPair && preserveBrackets && base.endsWith(")")) return `${base.slice(0, -1)} ${addition})`;
+  return `${base} ${wrapped}`;
 }
 
 // -- Exports ------------------------------------------------------------------

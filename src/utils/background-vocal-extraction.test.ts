@@ -19,6 +19,9 @@ import {
   scanParenGroups,
 } from "insync/background-vocal-extraction";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+import { shownEditText } from "insync/edit-text-shown-row";
+import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
+import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 
 // -- Specification table -------------------------------------------------------
 
@@ -1183,6 +1186,34 @@ describe("extractBackgroundVocalsOnLines", () => {
 
     expect(extractBackgroundVocalsOnLines(lines, new Set(["river-0"]), options, DEFAULT_SPLIT_CHARACTER)).toBe(lines);
   });
+
+  it("regression: brackets typed one after another at a line end join one pair, as a paste does", () => {
+    const typeAtEnd = (lines: LyricLine[], typedText: string) => {
+      const shown = shownEditText(lines, DEFAULT_SPLIT_CHARACTER);
+      const text = `${shown.text}${typedText}`;
+      const action = decideEditTextAction({
+        text,
+        defaultAgentId: "v1",
+        lines,
+        groups: [],
+        splitCharacter: DEFAULT_SPLIT_CHARACTER,
+        ranges: remapBackgroundRanges(shown.text, text, shown.ranges, text.length),
+      });
+      if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+      return extractBackgroundVocalsOnLines(action.finalLines, new Set(["wall"]), options, DEFAULT_SPLIT_CHARACTER);
+    };
+    let lines = [createLine({ id: "wall", text: "We built it like a wall" })];
+    for (const typedText of [" (ooh)", " (aah)", " (hold on)"]) lines = typeAtEnd(lines, typedText);
+
+    const pasted = extractBackgroundVocals(
+      [createLine({ id: "wall", text: "We built it like a wall (ooh) (aah) (hold on)" })],
+      options,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(lineText(lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("We built it like a wall");
+    expect(backgroundText(lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("(ooh aah hold on)");
+    expect(backgroundText(pasted[0], DEFAULT_SPLIT_CHARACTER)).toBe("(ooh aah hold on)");
+  });
 });
 
 describe("extractBackgroundVocals: none and skip lines", () => {
@@ -1659,12 +1690,21 @@ describe("re-paste doubling", () => {
     expect(backgroundText(first[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
     expect(backgroundTrack(first[0])?.source).toBe("extraction");
 
+    // An extracted background now extends on a re-run, so the re-paste goes through the Edit text, which drops it.
+    const shown = shownEditText(first, DEFAULT_SPLIT_CHARACTER);
+    const pastedText = "hello\n(ooh)";
+    const pasted = decideEditTextAction({
+      text: pastedText,
+      defaultAgentId: "v1",
+      lines: first,
+      groups: [],
+      splitCharacter: DEFAULT_SPLIT_CHARACTER,
+      ranges: remapBackgroundRanges(shown.text, pastedText, shown.ranges, pastedText.length),
+    });
+    if (pasted.kind !== "apply") throw new Error(`expected apply, got ${pasted.kind}`);
     const second = extractBackgroundVocals(
-      [first[0], lineFromFields({ id: "b", text: "(ooh)", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER)],
-      {
-        mergeStandaloneLines: true,
-        preserveBrackets: false,
-      },
+      pasted.finalLines,
+      { mergeStandaloneLines: true, preserveBrackets: false },
       DEFAULT_SPLIT_CHARACTER,
     );
     expect(second).toHaveLength(1);
@@ -1711,7 +1751,7 @@ describe("extractInlineFromLine: provenance", () => {
     expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
-  it("replaces extraction-sourced background instead of appending on re-paste", () => {
+  it("extends an extraction-sourced background with the next extracted text", () => {
     const line: LyricLine = lineFromFields(
       {
         id: "1",
@@ -1728,7 +1768,8 @@ describe("extractInlineFromLine: provenance", () => {
       DEFAULT_SPLIT_CHARACTER,
     );
     expect(lineText(result, DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
-    expect(backgroundText(result, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
+    // An extracted background now takes later extracted text into its pair instead of being replaced by it.
+    expect(backgroundText(result, DEFAULT_SPLIT_CHARACTER)).toBe("ooh ooh");
     expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
@@ -1794,7 +1835,7 @@ describe("extractInlineFromLine: provenance", () => {
     expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
-  it("replaces extraction-sourced background on a word-synced re-paste", () => {
+  it("extends an extraction-sourced background on a word-synced line", () => {
     const line: LyricLine = lineFromFields(
       {
         id: "1",
@@ -1815,7 +1856,8 @@ describe("extractInlineFromLine: provenance", () => {
       { mergeStandaloneLines: false, preserveBrackets: false },
       DEFAULT_SPLIT_CHARACTER,
     );
-    expect(backgroundText(result, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
+    // An extracted background now takes later extracted text into its pair instead of being replaced by it.
+    expect(backgroundText(result, DEFAULT_SPLIT_CHARACTER)).toBe("ooh ooh");
     expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
@@ -1887,7 +1929,7 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
 
-  it("replaces extraction-sourced background text on standalone re-merge", () => {
+  it("extends extraction-sourced background text with a merged standalone line", () => {
     const lines = [
       createLine({ id: "1", text: "Real line", backgroundText: "ooh", backgroundTextSource: "extraction" }),
       createLine({ id: "2", text: "(ooh)" }),
@@ -1897,7 +1939,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       { mergeStandaloneLines: true, preserveBrackets: false },
       DEFAULT_SPLIT_CHARACTER,
     );
-    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
+    // An extracted background now takes later extracted text into its pair instead of being replaced by it.
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh ooh");
     expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
@@ -1972,7 +2015,7 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
 
-  it("replaces extraction-sourced background words when a timed standalone re-merges", () => {
+  it("appends a timed standalone's words after extraction-sourced background words", () => {
     const lines = [
       createLine({
         id: "1",
@@ -1999,14 +2042,17 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       DEFAULT_SPLIT_CHARACTER,
     );
     expect(result).toHaveLength(1);
+    // An extracted background now takes later extracted text into its pair instead of being replaced by it.
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: " ", begin: 5.6, end: 6.2, joinsNext: false },
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
-  it("merges a timed standalone into an untimed extraction-sourced predecessor by replacement", () => {
+  it("merges a timed standalone after an untimed extraction-sourced background", () => {
     const lines = [
       createLine({ id: "1", text: "Real line", backgroundText: "ooh", backgroundTextSource: "extraction" }),
       createLine({
@@ -2023,11 +2069,10 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       { mergeStandaloneLines: true, preserveBrackets: false },
       DEFAULT_SPLIT_CHARACTER,
     );
-    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah");
-    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
-    ]);
+    // An extracted background now takes later extracted text into its pair instead of being replaced by it.
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh ooh yeah");
+    // As with an untimed manual background, the merged text is untimed until it is synced.
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([]);
     expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
@@ -2048,8 +2093,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       DEFAULT_SPLIT_CHARACTER,
     );
     expect(result).toHaveLength(1);
-    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
-    expect(roleWords(result[0], "bg")).toBeUndefined();
+    // An extracted background now takes later extracted text into its pair instead of being replaced by it.
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ah ooh");
     expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 });
