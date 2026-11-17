@@ -1295,6 +1295,20 @@ describe("extractBackgroundVocalsOnLines", () => {
     expect(backgroundText(pasted[0], DEFAULT_SPLIT_CHARACTER)).toBe("(ooh aah hold on)");
   });
 
+  it("regression: a background of several pairs joins a new part as one pair of all its parts", () => {
+    const line = createLine({
+      id: "old",
+      text: "Real line (aah)",
+      backgroundText: "(rise spin) yeah (drift)",
+      backgroundTextSource: "extraction",
+    });
+    const joined = (join: ExtractOptions) =>
+      backgroundText(extractBackgroundVocals([line], join, DEFAULT_SPLIT_CHARACTER)[0], DEFAULT_SPLIT_CHARACTER);
+    expect(joined(options)).toBe("(rise spin yeah drift aah)");
+    expect(joined({ ...options, separator: "comma" })).toBe("(rise spin, yeah, drift, aah)");
+    expect(joined({ ...options, preserveBrackets: false, separator: "comma" })).toBe("rise spin, yeah, drift, aah");
+  });
+
   it("regression: a background typed by hand and brackets extracted after it end in one pair however they were added", () => {
     const clap = () =>
       createLine({

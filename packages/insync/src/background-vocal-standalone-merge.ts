@@ -21,7 +21,7 @@ import {
   joinBracketedCarriedWords,
   joinExtractedParts,
   withOpenPair,
-  withoutOuterPair,
+  backgroundParts,
 } from "./background-vocal-brackets";
 import { createInitialBgWords } from "./lyric-words";
 
@@ -36,8 +36,7 @@ interface TimeSpan {
 
 // What a merged row adds: its bracketed text, then its own background as one more part.
 function rowParts(bgText: string, ownText: string, join: BracketJoin): string {
-  const ownPart = withoutOuterPair(ownText);
-  return ownPart ? joinExtractedParts([bgText, ownPart], join.separator) : bgText;
+  return joinExtractedParts([bgText, ...backgroundParts(ownText)], join.separator);
 }
 
 function carriedBackgroundWords(

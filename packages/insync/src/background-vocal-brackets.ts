@@ -50,49 +50,73 @@ function joinExtractedParts(parts: readonly string[], separator: BackgroundSepar
   return parts.join(separatorText(separator));
 }
 
-// -- One pair -----------------------------------------------------------------
+// -- Parts --------------------------------------------------------------------
 
-// Whether the "(" opening the text is closed by its last character, so the whole text is one pair.
-function isOnePair(text: string): boolean {
-  if (!text.startsWith("(")) return false;
+function hasBalancedPairs(text: string): boolean {
   let depth = 0;
-  for (let index = 0; index < text.length; index++) {
-    if (text[index] === "(") depth++;
-    else if (text[index] === ")" && --depth === 0) return index === text.length - 1;
+  for (const char of text) {
+    if (char === "(") depth++;
+    else if (char === ")" && --depth < 0) return false;
   }
-  return false;
+  return depth === 0 && text.includes("(");
 }
 
-function withoutOuterPair(text: string): string {
-  return isOnePair(text) ? text.slice(1, -1).trim() : text;
+// The parts a background already holds: each top-level pair's content and the bare text between pairs, in order.
+// Unbalanced text, or text with no pair, is one part as it is.
+function backgroundParts(text: string): string[] {
+  if (!hasBalancedPairs(text)) return text ? [text] : [];
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  const close = () => {
+    if (current.trim()) parts.push(current.trim());
+    current = "";
+  };
+  for (const char of text) {
+    if (char === "(" && depth++ === 0) close();
+    else if (char === ")" && --depth === 0) close();
+    else current += char;
+  }
+  close();
+  return parts;
 }
 
-function wordsWithoutOuterPair(words: WordTiming[]): WordTiming[] {
-  if (!isOnePair(stripTrailingSpace(words.map((word) => word.text + word.sep).join("")))) return words;
-  const out = [...words];
-  out[0] = { ...out[0], text: out[0].text.slice(1) };
-  const last = out[out.length - 1];
-  const lastSpaced = last.text + last.sep;
-  out[out.length - 1] = wordFromSpaced({
-    ...last,
-    text: `${stripTrailingSpace(lastSpaced).slice(0, -1)}${trailingSpaceOf(lastSpaced)}`,
+// The word-level twin of `backgroundParts`: top-level brackets come off, and each part but the last ends in the mark.
+function wordsAsParts(words: readonly WordTiming[], separator: BackgroundSeparator): WordTiming[] {
+  if (!hasBalancedPairs(words.map((word) => word.text + word.sep).join(""))) return [...words];
+  let depth = 0;
+  const read = words.map((word) => {
+    let text = "";
+    let closesPart = false;
+    for (const char of word.text) {
+      if (char === "(" && depth++ === 0) continue;
+      if (char === ")" && --depth === 0) {
+        closesPart = true;
+        continue;
+      }
+      text += char;
+    }
+    return { word, text, closesPart, bareAtEnd: depth === 0 };
   });
-  return out;
+  return read.map(({ word, text, closesPart, bareAtEnd }, index) => {
+    const next = words[index + 1];
+    const endsPart = next !== undefined && (closesPart || (bareAtEnd && next.text.startsWith("(")));
+    return { ...word, text: endsPart ? `${text}${SEPARATOR_MARK[separator]}` : text };
+  });
 }
 
 // -- Joins --------------------------------------------------------------------
 
-// A line's background is one pair: what it held, then each addition after the separator.
+// A line's background is one pair: the parts it held, then each addition after the separator.
 function joinBackgroundText(existing: string | undefined, addition: string, join: BracketJoin): string {
-  const base = withoutOuterPair(existing?.trim() ?? "");
-  const joined = base ? `${base}${separatorText(join.separator)}${addition}` : addition;
+  const joined = joinExtractedParts([...backgroundParts(existing?.trim() ?? ""), addition], join.separator);
   return join.preserveBrackets ? `(${joined})` : joined;
 }
 
 // The word-level twin of `joinBackgroundText`, so timed words spell the same text.
 function joinBracketedCarriedWords(baseWords: WordTiming[], carried: WordTiming[], join: BracketJoin): WordTiming[] {
-  const base = [...wordsWithoutOuterPair(baseWords)];
-  const added = wordsWithoutOuterPair(carried);
+  const base = wordsAsParts(baseWords, join.separator);
+  const added = wordsAsParts(carried, join.separator);
   const last = base.at(-1);
   if (last && added.length > 0) {
     const lastSpaced = last.text + last.sep;
@@ -122,5 +146,5 @@ export {
   joinBracketedCarriedWords,
   joinExtractedParts,
   withOpenPair,
-  withoutOuterPair,
+  backgroundParts,
 };
