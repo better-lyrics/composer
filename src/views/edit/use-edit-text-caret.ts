@@ -1,12 +1,12 @@
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { caretThroughRedraw, shiftCaretPastRewrittenRows } from "insync/edit-text";
 import { type ShownEditText, shownEditText } from "insync/edit-text-shown-row";
 import type { LyricLine } from "insync/line";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { changedRegion } from "@/domain/edit-text/background-ranges";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
-import { getSplitCharacter } from "@/utils/split-character";
 import { scrollCaretIntoView } from "@/views/edit/textarea-caret-view";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface PendingCaret {
   typedText: string;
@@ -22,8 +22,7 @@ interface PendingCaret {
 
 function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => void) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pendingCaretRef = useRef<PendingCaret | null>(null);
-  const [caretVersion, setCaretVersion] = useState(0);
+  const [pendingCaret, setPendingCaret] = useState<PendingCaret | null>(null);
   const shownTextRef = useRef<string | null>(null);
   const scrollBeforePasteRef = useRef<number | null>(null);
 
@@ -53,12 +52,11 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     };
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: each pending caret renders once, so it is placed even when the text shown is the text that was there before
   useLayoutEffect(() => {
-    const pending = pendingCaretRef.current;
+    const pending = pendingCaret;
     const textarea = textareaRef.current;
     if (!pending || !textarea) return;
-    pendingCaretRef.current = null;
+    setPendingCaret(null);
     const splitChar = getSplitCharacter();
     if (pending.replaced) {
       const mapped = (caret: number) =>
@@ -76,21 +74,20 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
     // A new value moves the caret to the end and scrolls there; the typed row was in view, so the view stays.
     textarea.scrollTop = pending.scrollTop;
     if (pending.pasted) scrollCaretIntoView(textarea);
-  }, [rawText, caretVersion]);
+  }, [rawText, pendingCaret]);
 
   const showEditText = useCallback(
     (typedText: string, edit: ShownEditText, textarea: HTMLTextAreaElement) => {
       const scrollBeforePaste = scrollBeforePasteRef.current;
       scrollBeforePasteRef.current = null;
       if (edit.text !== typedText || scrollBeforePaste !== null) {
-        setCaretVersion((version) => version + 1);
-        pendingCaretRef.current = {
+        setPendingCaret({
           typedText,
           start: textarea.selectionStart,
           end: textarea.selectionEnd,
           scrollTop: scrollBeforePaste ?? textarea.scrollTop,
           ...(scrollBeforePaste !== null && { pasted: true }),
-        };
+        });
       }
       shownTextRef.current = edit.text;
       showText(edit);
@@ -103,14 +100,13 @@ function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => vo
       const edit = shownEditText(lines, getSplitCharacter());
       const textarea = textareaRef.current;
       if (textarea && document.activeElement === textarea && edit.text !== textarea.value) {
-        setCaretVersion((version) => version + 1);
-        pendingCaretRef.current = {
+        setPendingCaret({
           typedText: textarea.value,
           start: textarea.selectionStart,
           end: textarea.selectionEnd,
           scrollTop: textarea.scrollTop,
           replaced: true,
-        };
+        });
       }
       showText(edit);
     },
