@@ -91,9 +91,9 @@ function classifyLine(text: string): LineClassification {
 
 // -- Extraction ---------------------------------------------------------------
 
-// A timed background already shows as its own bracket group in Edit, so brackets typed beside it stay as text.
+// A background timed by hand keeps typed brackets beside it as text; a seeded one is seeded again with them, as a paste.
 function backgroundRefuses(line: LyricLine, classified: LineClassification): boolean {
-  return classified.kind === "inline" && bgBounds(line) !== null;
+  return classified.kind === "inline" && bgBounds(line) !== null && backgroundTrack(line)?.source !== "extraction";
 }
 
 // `keptGroups` are group indices that stay text, as every linked copy keeps the groups any one of them keeps.

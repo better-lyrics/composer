@@ -1295,6 +1295,35 @@ describe("extractBackgroundVocalsOnLines", () => {
     expect(backgroundText(pasted[0], DEFAULT_SPLIT_CHARACTER)).toBe("(ooh aah hold on)");
   });
 
+  it("regression: pairs typed one at a time on a timed line end as the same background a paste gives", () => {
+    const timedLines = [
+      createLine({
+        id: "wall",
+        words: [
+          { text: "Silver", sep: " ", begin: 2, end: 3 },
+          { text: "fade", begin: 3, end: 4 },
+        ],
+      }),
+      createLine({ id: "wall", text: "Silver fade", begin: 2, end: 4 }),
+    ];
+    for (const line of timedLines) {
+      let typed = [line];
+      for (const typedText of [" (amber)", " (river)"]) typed = typedAtEnd(typed, typedText, options);
+      const pasted = extractBackgroundVocals(
+        typedAtEnd([line], " (amber) (river)", null),
+        options,
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const shape = (result: LyricLine) => ({
+        main: lineText(result, DEFAULT_SPLIT_CHARACTER),
+        background: backgroundTrack(result)?.syllables.map(({ text, begin, end }) => [text, begin, end]),
+        bounds: bgBounds(result),
+      });
+      expect(shape(typed[0])).toEqual(shape(pasted[0]));
+      expect(backgroundText(typed[0], DEFAULT_SPLIT_CHARACTER)).toBe("(amber river)");
+    }
+  });
+
   it("regression: a background of several pairs joins a new part as one pair of all its parts", () => {
     const line = createLine({
       id: "old",
