@@ -1278,6 +1278,18 @@ describe("extractBackgroundVocalsOnLines", () => {
     expect(extracted({ ...options, separator: "comma" })).toBe("(ooh, hey, aah)");
   });
 
+  it("regression: a bracket typed inside a shown background that closes it early ends the background", () => {
+    const shown = shownEditText(
+      [createLine({ id: "fade", text: "silver fade", backgroundText: "(ooh aah)" })],
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const at = shown.text.indexOf("aah") + "aah".length;
+    for (const typed of [")", ") (hey"]) {
+      const text = `${shown.text.slice(0, at)}${typed}${shown.text.slice(at)}`;
+      expect(remapBackgroundRanges(shown.text, text, shown.ranges, at + typed.length)).toEqual([]);
+    }
+  });
+
   it("regression: extracts only the typed lines and the linked instances that move with them", () => {
     const typed = createLine({ id: "typed", text: "Ember lights are falling (falling)" });
     const untouched = createLine({ id: "untouched", text: "Copper bells (ring) tonight" });
