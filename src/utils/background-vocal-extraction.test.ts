@@ -1431,6 +1431,39 @@ describe("extractBackgroundVocalsOnLines", () => {
     ).toBe("(pale folly wander low)");
   });
 
+  it("regression: with brackets not kept, extraction takes the brackets off a single pair and the count agrees", () => {
+    const noBrackets = { ...options, preserveBrackets: false };
+    const untimed = createLine({ id: "clap", text: "Silver fade", backgroundText: "(clap)" });
+    const timed = createLine({
+      id: "timed",
+      text: "follow rain",
+      words: [
+        { id: "m1", text: "follow", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+        { id: "m2", text: "rain", sep: "", begin: 1.5, end: 2, joinsNext: false },
+      ],
+      backgroundText: "(clap)",
+      backgroundWords: [{ id: "b1", text: "(clap)", sep: "", begin: 1.2, end: 1.8, joinsNext: false }],
+      backgroundTextSource: "manual",
+    });
+    const unbalanced = createLine({ id: "open", text: "Harbour lights", backgroundText: "clap)" });
+    const lines = [untimed, timed, unbalanced];
+
+    const extracted = extractBackgroundVocals(lines, noBrackets, DEFAULT_SPLIT_CHARACTER);
+    expect(extracted.map((line) => backgroundText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["clap", "clap", "clap)"]);
+    expect(timedSyllables(backgroundTrack(extracted[1])).map(({ begin, end }) => [begin, end])).toEqual([[1.2, 1.8]]);
+    expect(extractableLineCount(lines, noBrackets, DEFAULT_SPLIT_CHARACTER)).toBe(2);
+
+    for (const separator of ["space", "comma"] as const) {
+      const kept = [
+        createLine({ id: "c", text: "Silver fade", backgroundText: "(ooh, aah)" }),
+        createLine({ id: "s", text: "Harbour lights", backgroundText: "(ooh aah)" }),
+      ];
+      const join = { ...options, separator };
+      expect(extractBackgroundVocals(kept, join, DEFAULT_SPLIT_CHARACTER)).toEqual(kept);
+      expect(extractableLineCount(kept, join, DEFAULT_SPLIT_CHARACTER)).toBe(0);
+    }
+  });
+
   it("regression: flattening a timed background into one pair keeps every time", () => {
     const line = createLine({
       id: "timed",

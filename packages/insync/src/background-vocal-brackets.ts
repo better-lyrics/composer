@@ -98,12 +98,11 @@ function wordsAsParts(words: readonly WordTiming[], separator: BackgroundSeparat
   });
 }
 
-// A background of more than one pair, or of a pair and bare text, that extraction makes one pair.
-function needsOnePair(text: string): boolean {
+// A background holding pairs that extraction writes differently: as one pair, or without brackets when none are kept.
+function needsOnePair(text: string, join: BracketJoin): boolean {
   const trimmed = text.trim();
   if (!hasBalancedPairs(trimmed) || backgroundParts(trimmed).length === 0) return false;
-  const opens = [...trimmed].filter((char) => char === "(").length;
-  return opens > 1 || !trimmed.startsWith("(") || !trimmed.endsWith(")");
+  return onePairText(trimmed, join) !== trimmed;
 }
 
 function onePairText(text: string, join: BracketJoin): string {
