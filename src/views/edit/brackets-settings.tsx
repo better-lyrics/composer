@@ -69,7 +69,7 @@ const BracketsSettings: React.FC<BracketsSettingsProps> = ({ extractableCount, k
           icon={IconMicrophone}
         />
       </PopGroup>
-      <PopGroup label="Typing or the Extract button" className="mt-2">
+      <PopGroup label="When brackets are extracted" className="mt-2">
         <SettingSwitchRow
           setting="mergeStandaloneBackgroundLines"
           hint="A line that is only ( ) joins the line above"
