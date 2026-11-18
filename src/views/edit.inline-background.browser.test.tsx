@@ -76,4 +76,29 @@ describe("Edit shows background vocals inline", () => {
     await expect.poll(() => lineText(storedLine(), getSplitCharacter())).toBe("Oh Hold (me) close");
     expect(backgroundText(storedLine(), getSplitCharacter())).toBe("ooh");
   });
+
+  it("leaves pairs pasted inside a background as pasted on paste and blur when auto-extract is off", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    useProjectStore.setState({
+      lines: [createLine({ id: "l1", text: "amber sway sway", backgroundText: "(amber sway hush)" })],
+    });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    const at = textarea.value.indexOf("(amber") + "(amber".length;
+    const pasted = " echo (cinder tide)";
+
+    textarea.focus();
+    textarea.setSelectionRange(at, at);
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", pasted);
+    textarea.dispatchEvent(new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }));
+    textarea.setRangeText(pasted, at, at, "end");
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const nested = "(amber echo (cinder tide) sway hush)";
+    await expect.poll(() => backgroundText(storedLine(), getSplitCharacter())).toBe(nested);
+    textarea.blur();
+    await expect.poll(() => textarea.value).toBe(`amber sway sway ${nested}`);
+    expect(backgroundText(storedLine(), getSplitCharacter())).toBe(nested);
+  });
 });

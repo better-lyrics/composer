@@ -67,48 +67,48 @@ function hasBalancedBrackets(text: string): boolean {
 
 const hasBalancedPairs = (text: string) => text.includes("(") && hasBalancedBrackets(text);
 
-// The parts a background already holds: each top-level pair's content and the bare text between pairs, in order.
-// Unbalanced text, or text with no pair, is one part as it is.
+const isBracket = (char: string) => char === "(" || char === ")";
+
+// The parts a background already holds: each pair's content, nested ones too, and the bare text between pairs, in
+// order. Unbalanced text, or text with no pair, is one part as it is.
 function backgroundParts(text: string): string[] {
   if (!hasBalancedPairs(text)) return text ? [text] : [];
   const parts: string[] = [];
-  let depth = 0;
   let current = "";
-  const close = () => {
+  for (const char of text) {
+    if (!isBracket(char)) {
+      current += char;
+      continue;
+    }
     if (current.trim()) parts.push(current.trim());
     current = "";
-  };
-  for (const char of text) {
-    if (char === "(" && depth++ === 0) close();
-    else if (char === ")" && --depth === 0) close();
-    else current += char;
   }
-  close();
+  if (current.trim()) parts.push(current.trim());
   return parts;
 }
 
-// The word-level twin of `backgroundParts`: top-level brackets come off, and each part but the last ends in the mark.
+// The word-level twin of `backgroundParts`: every bracket comes off, and each part but the last ends in the mark.
 function wordsAsParts(words: readonly WordTiming[], separator: BackgroundSeparator): WordTiming[] {
   if (!hasBalancedPairs(words.map((word) => word.text + word.sep).join(""))) return [...words];
-  let depth = 0;
-  const read = words.map((word) => {
-    let text = "";
-    let closesPart = false;
-    for (const char of word.text) {
-      if (char === "(" && depth++ === 0) continue;
-      if (char === ")" && --depth === 0) {
-        closesPart = true;
-        continue;
-      }
-      text += char;
-    }
-    return { word, text, closesPart, bareAtEnd: depth === 0 };
-  });
-  return read.map(({ word, text, closesPart, bareAtEnd }, index) => {
+  return words.map((word, index) => {
+    const text = [...word.text].filter((char) => !isBracket(char)).join("");
     const next = words[index + 1];
-    const endsPart = next !== undefined && (closesPart || (bareAtEnd && next.text.startsWith("(")));
+    const endsPart = next !== undefined && text !== "" && (word.text.includes(")") || next.text.startsWith("("));
     return { ...word, text: endsPart ? withMark(text, separator) : text };
   });
+}
+
+// A background of more than one pair, or of a pair and bare text, that extraction makes one pair.
+function needsOnePair(text: string): boolean {
+  const trimmed = text.trim();
+  if (!hasBalancedPairs(trimmed)) return false;
+  const opens = [...trimmed].filter((char) => char === "(").length;
+  return opens > 1 || !trimmed.startsWith("(") || !trimmed.endsWith(")");
+}
+
+function onePairText(text: string, join: BracketJoin): string {
+  const joined = joinExtractedParts(backgroundParts(text.trim()), join.separator);
+  return join.preserveBrackets ? `(${joined})` : joined;
 }
 
 // -- Joins --------------------------------------------------------------------
@@ -163,6 +163,8 @@ export {
   joinBackgroundText,
   joinBracketedCarriedWords,
   joinExtractedParts,
+  needsOnePair,
+  onePairText,
   withOpenPair,
   wordsOpeningPair,
   backgroundParts,

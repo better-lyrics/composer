@@ -10,6 +10,7 @@ import { withMainTrack, withTrackText } from "./line-track-writes";
 import { type BracketJoin, joinBackgroundText } from "./background-vocal-brackets";
 import { gluedGroups } from "./background-vocal-glued-groups";
 import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
+import { withOnePairBackground } from "./background-vocal-one-pair";
 import { extractInlineWordSynced, groupsText } from "./background-vocal-word-synced";
 
 // -- Types --------------------------------------------------------------------
@@ -186,7 +187,8 @@ function slotKeptGroups(lines: readonly LyricLine[], splitChar: string): Map<str
 
 // -- Whole-list transform -----------------------------------------------------
 
-function extractBackgroundVocals(
+// Brackets in the lyrics move to the background; backgrounds stay as they were typed.
+function extractBracketGroups(
   lines: LyricLine[],
   options: ExtractOptions,
   splitChar: string,
@@ -247,6 +249,18 @@ function extractBackgroundVocals(
   );
 }
 
+// Brackets move to the background, and every background becomes one pair.
+function extractBackgroundVocals(
+  lines: LyricLine[],
+  options: ExtractOptions,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): LyricLine[] {
+  return extractBracketGroups(lines, options, splitChar, songEnd).map((line) =>
+    withOnePairBackground(line, options, splitChar),
+  );
+}
+
 function lineHasInlineParens(line: LyricLine, splitChar: string): boolean {
   return classifyLine(lineText(line, splitChar)).kind === "inline";
 }
@@ -257,6 +271,7 @@ export type { ExtractOptions, LineClassification, ParenGroup };
 export {
   classifyLine,
   extractBackgroundVocals,
+  extractBracketGroups,
   extractInlineFromLine,
   extractInlineOnLine,
   extractionSlot,

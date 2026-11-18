@@ -8,6 +8,7 @@ import {
   extractionSlot,
   refusesExtraction,
 } from "insync/background-vocal-extraction";
+import { backgroundNeedsOnePair } from "insync/background-vocal-one-pair";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
@@ -63,13 +64,13 @@ function lineVerdict(
 
 // The whole-list pass changes a line exactly when the line, read with only the last line before it the pass keeps,
 // changes and no linked instance of its template line refuses extraction. A row merged into the line above counts as
-// changed. Only a line holding "(" can change.
+// changed. Only a line holding "(", or a background that is not one pair, can change.
 function extractableLineCount(lines: readonly LyricLine[], options: ExtractOptions, splitCharacter: string): number {
   const verdictsByLine = new Map<LyricLine, WindowVerdict>();
   const refusedSlots = new Set<string>();
   let kept: LyricLine | undefined;
   for (const line of lines) {
-    if (!lineText(line, getSplitCharacter()).includes("(")) {
+    if (!lineText(line, getSplitCharacter()).includes("(") && !backgroundNeedsOnePair(line, getSplitCharacter())) {
       kept = line;
       continue;
     }

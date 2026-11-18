@@ -1,7 +1,7 @@
 import type { LyricLine } from "./line";
 import {
   type ExtractOptions,
-  extractBackgroundVocals,
+  extractBracketGroups,
   extractionSlot,
   lineHasInlineParens,
 } from "./background-vocal-extraction";
@@ -27,7 +27,7 @@ function extractBackgroundVocalsOnLines(
   }
   if (!hasCandidate) return lines;
   const window = lines.filter((line) => lineIds.has(line.id) || slots.has(extractionSlot(line) ?? ""));
-  const extracted = extractBackgroundVocals(window, { ...options, mergeStandaloneLines: false }, splitChar, songEnd);
+  const extracted = extractBracketGroups(window, { ...options, mergeStandaloneLines: false }, splitChar, songEnd);
   const byId = new Map<string, LyricLine>();
   extracted.forEach((line, index) => {
     if (line !== window[index]) byId.set(line.id, line);

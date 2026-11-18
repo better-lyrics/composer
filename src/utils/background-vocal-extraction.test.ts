@@ -24,6 +24,7 @@ import { bgWordRetimeEdit } from "insync/timing-bg-word-ops";
 import { shownEditText } from "insync/edit-text-shown-row";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { extractableLineCount } from "@/views/edit/can-extract-background";
 
 // -- Specification table -------------------------------------------------------
 
@@ -1367,6 +1368,74 @@ describe("extractBackgroundVocalsOnLines", () => {
     const [kept] = typedAtEnd([handTimed], " (river)", options);
     expect(backgroundText(kept, DEFAULT_SPLIT_CHARACTER)).toBe("(amber river)");
     expect(timedSyllables(backgroundTrack(kept))[0]).toMatchObject({ begin: 2.2, end: 3.4 });
+  });
+
+  it("regression: pairs pasted inside a shown background stay as typed until extraction makes them one pair", () => {
+    const line = createLine({ id: "sway", text: "amber sway sway", backgroundText: "(amber sway hush)" });
+    const shown = shownEditText([line], DEFAULT_SPLIT_CHARACTER);
+    const at = shown.text.indexOf("(amber") + "(amber".length;
+    const pasted = " echo (cinder tide) amber (amber echo)";
+    const text = `${shown.text.slice(0, at)}${pasted}${shown.text.slice(at)}`;
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines: [line],
+      groups: [],
+      splitCharacter: DEFAULT_SPLIT_CHARACTER,
+      ranges: remapBackgroundRanges(shown.text, text, shown.ranges, at + pasted.length),
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    const typed = "(amber echo (cinder tide) amber (amber echo) sway hush)";
+    expect(backgroundText(action.finalLines[0], DEFAULT_SPLIT_CHARACTER)).toBe(typed);
+    const onKeystroke = extractBackgroundVocalsOnLines(
+      action.finalLines,
+      new Set(["sway"]),
+      options,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(backgroundText(onKeystroke[0], DEFAULT_SPLIT_CHARACTER)).toBe(typed);
+
+    const extracted = (join: ExtractOptions) =>
+      backgroundText(
+        extractBackgroundVocals(action.finalLines, join, DEFAULT_SPLIT_CHARACTER)[0],
+        DEFAULT_SPLIT_CHARACTER,
+      );
+    expect(extracted(options)).toBe("(amber echo cinder tide amber amber echo sway hush)");
+    expect(extracted({ ...options, separator: "comma" })).toBe(
+      "(amber echo, cinder tide, amber, amber echo, sway hush)",
+    );
+
+    const twoPairs = [createLine({ id: "cut", text: "follow rain", backgroundText: "(pale folly) (wander low)" })];
+    expect(extractableLineCount(twoPairs, options, DEFAULT_SPLIT_CHARACTER)).toBe(1);
+    expect(extractableLineCount([line], options, DEFAULT_SPLIT_CHARACTER)).toBe(0);
+    expect(
+      backgroundText(extractBackgroundVocals(twoPairs, options, DEFAULT_SPLIT_CHARACTER)[0], DEFAULT_SPLIT_CHARACTER),
+    ).toBe("(pale folly wander low)");
+  });
+
+  it("regression: flattening a timed background into one pair keeps every time", () => {
+    const line = createLine({
+      id: "timed",
+      text: "follow rain",
+      words: [
+        { id: "m1", text: "follow", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+        { id: "m2", text: "rain", sep: "", begin: 1.5, end: 2, joinsNext: false },
+      ],
+      backgroundText: "(pale) (wander low)",
+      backgroundWords: [
+        { id: "b1", text: "(pale)", sep: " ", begin: 1.1, end: 1.3, joinsNext: false },
+        { id: "b2", text: "(wander", sep: " ", begin: 1.4, end: 1.6, joinsNext: false },
+        { id: "b3", text: "low)", sep: "", begin: 1.6, end: 1.9, joinsNext: false },
+      ],
+      backgroundTextSource: "manual",
+    });
+    const [flat] = extractBackgroundVocals([line], { ...options, separator: "comma" }, DEFAULT_SPLIT_CHARACTER);
+    expect(backgroundText(flat, DEFAULT_SPLIT_CHARACTER)).toBe("(pale, wander low)");
+    expect(timedSyllables(backgroundTrack(flat)).map(({ begin, end }) => [begin, end])).toEqual([
+      [1.1, 1.3],
+      [1.4, 1.6],
+      [1.6, 1.9],
+    ]);
   });
 
   it("regression: a part already ending in a comma gets no second one", () => {
