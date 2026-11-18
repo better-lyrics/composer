@@ -76,13 +76,23 @@ function staysFramed(token: string): boolean {
   return true;
 }
 
+const bracketCount = (token: string, bracket: string) => token.split(bracket).length - 1;
+
+// A pair half typed inside a background only adds brackets; an edit that takes one out ends the background.
+function keepsEveryBracket(oldToken: string, newToken: string): boolean {
+  return ["(", ")"].every((bracket) => bracketCount(newToken, bracket) >= bracketCount(oldToken, bracket));
+}
+
 // Whether a token typed into still shows a background: one group, a background stored with its brackets that still
 // frame it while a pair is typed inside, or a stored background that was never one group (an import can hold text
 // between its groups) whose brackets still balance.
 function keepsBackgroundToken(oldToken: string, newToken: string, bracketed: boolean): boolean {
   if (newToken.includes("\n")) return false;
   if (isOneGroup(newToken)) return true;
-  const typingInside = bracketed && (isOneGroup(oldToken) || (isBracketed(oldToken) && !hasBalancedBrackets(oldToken)));
+  const typingInside =
+    bracketed &&
+    keepsEveryBracket(oldToken, newToken) &&
+    (isOneGroup(oldToken) || (isBracketed(oldToken) && !hasBalancedBrackets(oldToken)));
   return typingInside ? staysFramed(newToken) : !isOneGroup(oldToken) && hasBalancedBrackets(newToken);
 }
 

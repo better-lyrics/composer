@@ -1278,6 +1278,27 @@ describe("extractBackgroundVocalsOnLines", () => {
     expect(extracted({ ...options, separator: "comma" })).toBe("(ooh, hey, aah)");
   });
 
+  it("regression: a bracket cut out of a shown background leaves the row as text the store and the textarea agree on", () => {
+    const lines = [
+      createLine({ id: "drift", text: "drift", backgroundText: "( (tide) (low echo morrow) (amber)dusk river)" }),
+    ];
+    const shown = shownEditText(lines, DEFAULT_SPLIT_CHARACTER);
+    const cutAt = shown.text.indexOf("tid") + "tid".length;
+    const cut = `${shown.text.slice(0, cutAt)}${shown.text.slice(cutAt + "e) ".length)}`;
+    const action = decideEditTextAction({
+      text: cut,
+      defaultAgentId: "v1",
+      lines,
+      groups: [],
+      splitCharacter: DEFAULT_SPLIT_CHARACTER,
+      ranges: remapBackgroundRanges(shown.text, cut, shown.ranges, cutAt),
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.editRanges).toEqual([]);
+    expect(lineText(action.finalLines[0], DEFAULT_SPLIT_CHARACTER)).toBe(cut);
+    expect(backgroundText(action.finalLines[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+  });
+
   it("regression: a bracket typed inside a shown background that closes it early ends the background", () => {
     const shown = shownEditText(
       [createLine({ id: "fade", text: "silver fade", backgroundText: "(ooh aah)" })],
