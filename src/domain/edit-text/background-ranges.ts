@@ -111,7 +111,7 @@ function remappedRange(range: BackgroundRange, runs: readonly ChangedRegion[], o
   const moved = { ...range, start: range.start + shift, end: range.end + shift + growth };
   if (!touched) return moved;
   const oldToken = oldText.slice(range.start, range.end);
-  return keepsBackgroundToken(oldToken, newText.slice(moved.start, moved.end)) ? moved : null;
+  return keepsBackgroundToken(oldToken, newText.slice(moved.start, moved.end), range.bracketed) ? moved : null;
 }
 
 function remapBackgroundRanges(

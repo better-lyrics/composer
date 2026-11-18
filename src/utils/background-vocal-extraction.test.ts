@@ -25,6 +25,7 @@ import { shownEditText } from "insync/edit-text-shown-row";
 import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { extractableLineCount } from "@/views/edit/can-extract-background";
+import { withTypedBackgroundsExtracted } from "@/views/edit/typed-background-extraction";
 
 // -- Specification table -------------------------------------------------------
 
@@ -1242,6 +1243,40 @@ function typedAtEnd(lines: LyricLine[], typedText: string, extract: ExtractOptio
 
 describe("extractBackgroundVocalsOnLines", () => {
   const options: ExtractOptions = { mergeStandaloneLines: true, preserveBrackets: true, separator: "space" };
+
+  it("regression: a pair typed key by key inside a shown background stays in the background until extraction", () => {
+    let lines = [createLine({ id: "fade", text: "silver fade", backgroundText: "(ooh aah)" })];
+    let shown = shownEditText(lines, DEFAULT_SPLIT_CHARACTER);
+    let caret = shown.text.indexOf("(ooh") + "(ooh".length;
+    for (const char of " (hey)") {
+      const text = `${shown.text.slice(0, caret)}${char}${shown.text.slice(caret)}`;
+      caret++;
+      const action = decideEditTextAction({
+        text,
+        defaultAgentId: "v1",
+        lines,
+        groups: [],
+        splitCharacter: DEFAULT_SPLIT_CHARACTER,
+        ranges: remapBackgroundRanges(shown.text, text, shown.ranges, caret),
+      });
+      if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+      const typed = withTypedBackgroundsExtracted(
+        lines,
+        { finalLines: action.finalLines, shown: { text: action.editText, ranges: action.editRanges } },
+        DEFAULT_SPLIT_CHARACTER,
+        Number.POSITIVE_INFINITY,
+        { text, caret },
+      );
+      lines = typed.finalLines;
+      shown = typed.shown;
+      expect(lineText(lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("silver fade");
+    }
+    expect(backgroundText(lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("(ooh (hey) aah)");
+    const extracted = (join: ExtractOptions) =>
+      backgroundText(extractBackgroundVocals(lines, join, DEFAULT_SPLIT_CHARACTER)[0], DEFAULT_SPLIT_CHARACTER);
+    expect(extracted(options)).toBe("(ooh hey aah)");
+    expect(extracted({ ...options, separator: "comma" })).toBe("(ooh, hey, aah)");
+  });
 
   it("regression: extracts only the typed lines and the linked instances that move with them", () => {
     const typed = createLine({ id: "typed", text: "Ember lights are falling (falling)" });

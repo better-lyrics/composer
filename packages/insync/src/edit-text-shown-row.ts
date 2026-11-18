@@ -65,11 +65,14 @@ function isOneGroup(token: string): boolean {
   return groups?.length === 1 && groups[0][0] === 0 && groups[0][1] === token.length;
 }
 
-// Whether a token typed into still shows a background: one group, or a stored background that was never one group
-// (an import can hold text between its groups) whose brackets still balance.
-function keepsBackgroundToken(oldToken: string, newToken: string): boolean {
+// Whether a token typed into still shows a background: one group, a background stored with its brackets that still
+// frame it while a pair is typed inside, or a stored background that was never one group (an import can hold text
+// between its groups) whose brackets still balance.
+function keepsBackgroundToken(oldToken: string, newToken: string, bracketed: boolean): boolean {
   if (newToken.includes("\n")) return false;
-  return isOneGroup(newToken) || (!isOneGroup(oldToken) && hasBalancedBrackets(newToken));
+  if (isOneGroup(newToken)) return true;
+  const typingInside = bracketed && (isOneGroup(oldToken) || (isBracketed(oldToken) && !hasBalancedBrackets(oldToken)));
+  return typingInside ? isBracketed(newToken) : !isOneGroup(oldToken) && hasBalancedBrackets(newToken);
 }
 
 // The main text's offset after the syllable a middle background follows, when a single space joins it to the next.
