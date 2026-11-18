@@ -37,6 +37,8 @@ interface DecideOptions {
   anchors?: InstanceAnchors;
   /** Where the song ends; unbounded when left out. */
   songEnd?: number;
+  /** The lines when the current run of typing began. */
+  runStartLines?: readonly LyricLine[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -83,20 +85,27 @@ function decideEditTextAction({
   ranges,
   anchors,
   songEnd,
+  runStartLines,
 }: DecideOptions): EditTextAction {
   const lyricLines = typedLyricLines(text, ranges, defaultAgentId, lines, splitCharacter, songEnd);
   const diff = diffEditTextChange(lines, lyricLines);
 
   if (diff.hasStructuralChange) {
-    const moved = withMovedTextDetached(lines, lyricLines);
-    // A break that takes lines out of their instance commits them, so the text shows them as committed.
-    const leftInstance = moved.detachedIds.length > 0 || moved.removedIds.length > 0;
+    const runStart = runStartLines && { lines: runStartLines, splitChar: splitCharacter };
+    const moved = withMovedTextDetached(lines, lyricLines, runStart);
+    const finalLines = moved.restoredIds.length
+      ? carryTemplateEdits({ before: lines, after: moved.lines, groups, anchors, splitChar: splitCharacter, songEnd })
+          .lines
+      : moved.lines;
+    // A break that takes lines out of their instance or back to the run's start commits them, so the text shows them
+    // as committed.
+    const leftInstance = moved.detachedIds.length > 0 || moved.removedIds.length > 0 || moved.restoredIds.length > 0;
     const shown = leftInstance
-      ? rewrittenEditText(text, ranges, linesAlreadyHeld(lines, moved.lines), moved.lines, splitCharacter)
+      ? rewrittenEditText(text, ranges, linesAlreadyHeld(lines, finalLines), finalLines, splitCharacter)
       : { text, ranges: ranges ?? NO_RANGES };
     return {
       kind: "apply",
-      finalLines: moved.lines,
+      finalLines,
       editText: shown.text,
       editRanges: shown.ranges,
       detachedIds: moved.detachedIds,

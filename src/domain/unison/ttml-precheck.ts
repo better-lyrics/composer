@@ -1,4 +1,4 @@
-import { hasLetterOrDigit } from "@/domain/alignment/cjk";
+import { hasLetterOrDigit } from "insync/letter-or-digit";
 import { parseTtmlTimestamp } from "insync/ttml/timestamp";
 import { parseXmlDocument } from "@/utils/xml-document";
 

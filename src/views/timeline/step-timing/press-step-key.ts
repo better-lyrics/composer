@@ -6,7 +6,7 @@ import { type WordTrack, trackRole } from "insync/line-track";
 import { addressOf, toAddress } from "insync/selection-resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
-import type { StepKey, StepRefusal } from "insync/step-timing-step-write";
+import type { StepKey } from "insync/step-timing-step-write";
 import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
@@ -16,6 +16,7 @@ import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
+import { stepRefusalContent } from "@/views/timeline/step-timing/step-refusal-toast";
 import { stepSkipView } from "@/views/timeline/step-timing/step-skip-view";
 import { rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { isWholeLane, liveStepSelection } from "@/views/timeline/step-timing/step-selection";
@@ -24,15 +25,6 @@ import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
-
-function refusalMessage(refusal: StepRefusal): string {
-  if (refusal.reason === "beforePrevious") {
-    const word = refusal.previousWord.trim();
-    return `This time is before “${word}” ends. Click “${word}” to retime it.`;
-  }
-  if (refusal.reason === "songStart") return "This word can't start before the song does.";
-  return "There is no room for the words after this one before the song ends.";
-}
 
 // The toast's Undo stays only while the press is still the latest step, so it never undoes a later edit.
 function showEndedPreviousToast(previousWord: string): void {
@@ -106,7 +98,7 @@ function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void 
   project.commit(command);
   if (!outcome) return;
   if (outcome.kind === "refused") {
-    toast(refusalMessage(outcome.refusal));
+    toast(stepRefusalContent(outcome.refusal));
     timeline.setSelectedWords([cursor]);
     return;
   }

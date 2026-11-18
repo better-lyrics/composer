@@ -88,9 +88,7 @@ function templateBackgroundFields(template: LineTemplate, words: WordTiming[] | 
   return {
     ...(template.backgroundText !== undefined && { backgroundText: template.backgroundText }),
     ...(template.backgroundTextSource !== undefined && { backgroundTextSource: template.backgroundTextSource }),
-    ...(span
-      ? { backgroundBegin: block.begin, backgroundEnd: block.end, ...(block.explicit && { backgroundExplicit: true }) }
-      : words && { backgroundWords: words }),
+    ...(span ? { backgroundBegin: block.begin, backgroundEnd: block.end } : words && { backgroundWords: words }),
   };
 }
 

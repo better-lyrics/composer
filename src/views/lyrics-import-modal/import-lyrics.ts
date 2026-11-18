@@ -17,8 +17,9 @@ import { useAudioStore } from "@/stores/audio";
 import { type ConfirmOptions, useConfirm, useConfirmStore } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
-import { type SettingsState, useSettingsStore } from "@/stores/settings";
-import { extractBackgroundVocals } from "insync/background-vocal-extraction";
+import { useSettingsStore } from "@/stores/settings";
+import { settingsExtractOptions, useExtractOptions } from "@/stores/settings-extract-options";
+import { type ExtractOptions, extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import {
   type ParseIssue,
@@ -46,8 +47,7 @@ interface ImportContext {
   confirm: ConfirmFn;
   audioDuration: number;
   applyBackgroundExtraction: boolean;
-  backgroundExtractionMergeStandalone: boolean;
-  backgroundExtractionPreserveBrackets: boolean;
+  backgroundExtraction: ExtractOptions;
   sourceLabel: string;
   onResult?: (parsed: ParseResult, source: ImportSourceInfo) => void;
 }
@@ -133,15 +133,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
 
   const songEnd = songEndOrUnbounded(ctx.audioDuration);
   let workingLines = ctx.applyBackgroundExtraction
-    ? extractBackgroundVocals(
-        parsed.lines,
-        {
-          mergeStandaloneLines: ctx.backgroundExtractionMergeStandalone,
-          preserveBrackets: ctx.backgroundExtractionPreserveBrackets,
-        },
-        getSplitCharacter(),
-        songEnd,
-      )
+    ? extractBackgroundVocals(parsed.lines, ctx.backgroundExtraction, getSplitCharacter(), songEnd)
     : parsed.lines;
 
   if (!parsed.hasTimingData && ctx.audioDuration > 0) {
@@ -202,30 +194,31 @@ function importProjectLyrics(project: ProjectFile, filename: string, ctx: Import
 
 // -- Context ------------------------------------------------------------------
 
-type ExtractionSettings = Pick<
-  SettingsState,
-  "autoExtractBackgroundVocals" | "mergeStandaloneBackgroundLines" | "preserveBracketsOnExtraction"
->;
-
 function buildImportContext(
   sourceLabel: string,
   audioDuration: number,
   confirm: ConfirmFn,
-  settings: ExtractionSettings,
+  applyBackgroundExtraction: boolean,
+  backgroundExtraction: ExtractOptions,
 ): ImportContext {
   return {
     confirm,
     audioDuration,
-    applyBackgroundExtraction: settings.autoExtractBackgroundVocals,
-    backgroundExtractionMergeStandalone: settings.mergeStandaloneBackgroundLines,
-    backgroundExtractionPreserveBrackets: settings.preserveBracketsOnExtraction,
+    applyBackgroundExtraction,
+    backgroundExtraction,
     sourceLabel,
     onResult: (parsed, source) => useImportModalStore.getState().recordImportResult(parsed, source),
   };
 }
 
 function currentImportContext(sourceLabel: string, audioDuration: number): ImportContext {
-  return buildImportContext(sourceLabel, audioDuration, useConfirmStore.getState().open, useSettingsStore.getState());
+  return buildImportContext(
+    sourceLabel,
+    audioDuration,
+    useConfirmStore.getState().open,
+    useSettingsStore.getState().autoExtractBackgroundVocals,
+    settingsExtractOptions(),
+  );
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -234,24 +227,11 @@ function useImportContext(sourceLabel: string): ImportContext {
   const confirm = useConfirm();
   const audioDuration = useAudioStore((s) => s.duration);
   const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
-  const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
+  const extractOptions = useExtractOptions();
 
   return useMemo(
-    () =>
-      buildImportContext(sourceLabel, audioDuration, confirm, {
-        autoExtractBackgroundVocals,
-        mergeStandaloneBackgroundLines,
-        preserveBracketsOnExtraction,
-      }),
-    [
-      confirm,
-      audioDuration,
-      autoExtractBackgroundVocals,
-      mergeStandaloneBackgroundLines,
-      preserveBracketsOnExtraction,
-      sourceLabel,
-    ],
+    () => buildImportContext(sourceLabel, audioDuration, confirm, autoExtractBackgroundVocals, extractOptions),
+    [confirm, audioDuration, autoExtractBackgroundVocals, extractOptions, sourceLabel],
   );
 }
 

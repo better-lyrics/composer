@@ -1,4 +1,4 @@
-import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
+import { IconFileImport } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LyricCommand } from "insync/commands/command";
 import {
@@ -26,16 +26,18 @@ import { useProjectStore } from "@/stores/project";
 import type { LyricBurst } from "@/stores/project/history-types";
 import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
+import { settingsExtractOptions, useExtractOptions } from "@/stores/settings-extract-options";
 import { Button } from "@/ui/button";
-import { Tooltip } from "@/ui/tooltip";
 import { extractBackgroundVocals, lineHasInlineParens } from "insync/background-vocal-extraction";
 import { showLineDiffersToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { pluralWord } from "insync/pluralize";
 import { songEndOrUnbounded } from "insync/song-end";
 import { AgentManager } from "@/views/edit/agent-manager";
-import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
+import { BracketsPopover } from "@/views/edit/brackets-popover";
+import { useExtractableLineCount } from "@/views/edit/can-extract-background";
 import { EditNotices } from "@/views/edit/edit-notices";
+import { ExtractBackgroundButton } from "@/views/edit/extract-background-button";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
@@ -43,8 +45,14 @@ import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { lyricsText, noteTypedLyrics } from "@/views/edit/typed-lyrics-signals";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
+import { useHeldBracketGroup } from "@/views/edit/use-held-bracket-group";
 import { useShownEditText } from "@/views/edit/use-shown-edit-text";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
+import {
+  shownAfterCommit,
+  type TypedEdit,
+  withTypedBackgroundsExtracted,
+} from "@/views/edit/typed-background-extraction";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -71,13 +79,12 @@ const EditPanel: React.FC = () => {
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
   const dropImportContext = useImportContext("Drop");
-  const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
-  const { shownText, setRawText, showEditText: showShownText, showLines } = useShownEditText(lines);
+  const { shownText, setRawText, showEditText: showShownText } = useShownEditText(lines);
   const rawText = shownText.text;
-  const { textareaRef, showEditText } = useEditTextCaret(rawText, showShownText);
+  const { textareaRef, showEditText, shownTextRef, showLines } = useEditTextCaret(rawText, showShownText);
   useFocusLyricsShortcut(textareaRef, isActive);
+  const { hold, releaseLeftGroup } = useHeldBracketGroup();
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const pastedRef = useRef(false);
   const runBurstRef = useRef<LyricBurst | null>(null);
@@ -101,27 +108,24 @@ const EditPanel: React.FC = () => {
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
 
-  const extractOptions = useMemo(
-    () => ({
-      mergeStandaloneLines: mergeStandaloneBackgroundLines,
-      preserveBrackets: preserveBracketsOnExtraction,
-    }),
-    [mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
-  );
-  const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
+  const extractOptions = useExtractOptions();
+  const extractableCount = useExtractableLineCount(lines, extractOptions);
 
   // Shows the committed lyrics in the textarea only when the command changed them.
   const commitAndShow = useCallback(
-    (command: LyricCommand): boolean => {
+    (command: LyricCommand, typedIn?: { textarea: HTMLTextAreaElement; typed: TypedEdit }): boolean => {
       const before = useProjectStore.getState().lines;
       useProjectStore.getState().commit(command);
       const committed = useProjectStore.getState().lines;
       if (committed === before) return false;
       linesSetByUs.current = committed;
-      showLines(committed);
+      if (typedIn) {
+        const shown = shownAfterCommit(typedIn.typed, committed, getSplitCharacter());
+        showEditText(typedIn.textarea.value, shown, typedIn.textarea);
+      } else showLines(committed);
       return true;
     },
-    [showLines],
+    [showLines, showEditText],
   );
 
   const handleExtractBackgroundVocals = useCallback(() => {
@@ -143,8 +147,7 @@ const EditPanel: React.FC = () => {
 
   const handleExtractLine = useCallback((lineId: string) => {
     const before = useProjectStore.getState().lines;
-    const preserveBrackets = useSettingsStore.getState().preserveBracketsOnExtraction;
-    useProjectStore.getState().commit(extractLineBackground(lineId, preserveBrackets));
+    useProjectStore.getState().commit(extractLineBackground(lineId, settingsExtractOptions()));
     if (useProjectStore.getState().lines === before) return;
     noteGuideSignal("edit.background");
     noteGuideSignal("edit.extractOneLine");
@@ -161,13 +164,7 @@ const EditPanel: React.FC = () => {
         for (let i = start; i <= end; i++) {
           next.add(i);
         }
-      } else {
-        if (next.has(lineNumber)) {
-          next.delete(lineNumber);
-        } else {
-          next.add(lineNumber);
-        }
-      }
+      } else if (!next.delete(lineNumber)) next.add(lineNumber);
       return next;
     });
     lastSelectedLineRef.current = lineNumber;
@@ -248,10 +245,7 @@ const EditPanel: React.FC = () => {
       if (current.some((value) => lineHasInlineParens(value, getSplitCharacter()))) noteGuideSignal("edit.parenInLine");
       return;
     }
-    const extracted = extractBackground({
-      mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
-      preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
-    });
+    const extracted = extractBackground(settingsExtractOptions());
     if (commitAndShow(extracted)) noteGuideSignal("edit.background");
   }, [commitAndShow, finalizeRun]);
 
@@ -292,8 +286,8 @@ const EditPanel: React.FC = () => {
         ranges,
         anchors: instanceAnchors(docOfLines(lines)),
         songEnd,
+        runStartLines: runBurstRef.current?.lines,
       });
-
       useImportModalStore.getState().clearImportResult();
 
       if (action.kind === "noop") {
@@ -306,18 +300,11 @@ const EditPanel: React.FC = () => {
       if (wasPaste) {
         const pastedLines = finalLines;
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
-          finalLines = extractBackgroundVocals(
-            finalLines,
-            {
-              mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
-              preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
-            },
-            getSplitCharacter(),
-            songEnd,
-          );
+          finalLines = extractBackgroundVocals(finalLines, settingsExtractOptions(), getSplitCharacter(), songEnd);
         }
         finalizeRun();
-        commitAndShow(pasteLyrics(lines, finalLines));
+        const typed = { finalLines: pastedLines, shown: { text: action.editText, ranges: action.editRanges } };
+        commitAndShow(pasteLyrics(lines, finalLines), { textarea, typed });
         if (action.splits.length > 0) notifyTemplateSplit(action.splits.map((split) => split.instances));
         if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
         else showLineDiffersToast(action.removedIds, lines);
@@ -328,19 +315,27 @@ const EditPanel: React.FC = () => {
         return;
       }
 
-      showEditText(text, { text: action.editText, ranges: action.editRanges }, textarea);
-
+      const typed = withTypedBackgroundsExtracted(
+        lines,
+        { finalLines, shown: { text: action.editText, ranges: action.editRanges } },
+        splitCharacter,
+        songEnd,
+        { text, caret: textarea.selectionEnd },
+      );
+      finalLines = typed.finalLines;
+      showEditText(text, typed.shown, textarea);
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;
       useProjectStore.getState().commit(typeLyrics(lines, finalLines), "pending");
+      hold(typed.heldLineId);
       if (action.splits.length > 0) notifyTemplateSplit(action.splits.map((split) => split.instances));
       if (action.detachedIds.length > 0) showLineDiffersToast(action.detachedIds);
       else showLineDiffersToast(action.removedIds, lines);
       scheduleRunFinalize();
     },
-    [defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText],
+    [defaultAgentId, groups, lines, shownText, scheduleRunFinalize, commitAndShow, finalizeRun, showEditText, hold],
   );
-  const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
+  const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText, shownTextRef);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });
 
   const importTriggers = useDualClickImport(openImportModal);
@@ -372,20 +367,7 @@ const EditPanel: React.FC = () => {
         </div>
         <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
           <EditNotices parsed={parsed} isTyping={isTypingLyrics} />
-          <Tooltip content="No parentheses to extract" disabled={canExtractBackgroundVocals}>
-            <span className="inline-flex rounded-xl" tabIndex={canExtractBackgroundVocals ? undefined : 0}>
-              <Button
-                hasIcon
-                size="lg"
-                data-guide-spot="extractAll"
-                onClick={handleExtractBackgroundVocals}
-                disabled={!canExtractBackgroundVocals}
-              >
-                <IconMicrophone className="size-4" />
-                Extract background vocals
-              </Button>
-            </span>
-          </Tooltip>
+          <ExtractBackgroundButton canExtract={extractableCount > 0} onExtract={handleExtractBackgroundVocals} />
           <Button
             hasIcon
             size="lg"
@@ -414,12 +396,16 @@ const EditPanel: React.FC = () => {
         <div className="flex flex-1 min-h-0 gap-4">
           {/* Input */}
           <div className="flex flex-col flex-1 min-w-0">
-            <label
-              htmlFor={textareaId}
-              className="flex items-center self-start h-7 mb-2 text-[13px] font-medium select-none text-(--label)"
-            >
-              Paste or type lyrics
-            </label>
+            <div className="flex items-center justify-between h-7 mb-2">
+              <label htmlFor={textareaId} className="text-[13px] font-medium select-none text-(--label)">
+                Paste or type lyrics
+              </label>
+              <BracketsPopover
+                extractableCount={extractableCount}
+                parsed={parsed}
+                onExtract={handleExtractBackgroundVocals}
+              />
+            </div>
             {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
             <textarea
               id={textareaId}
@@ -428,6 +414,7 @@ const EditPanel: React.FC = () => {
               onChange={textareaChange.onChange}
               onFocus={() => setIsTypingLyrics(true)}
               onBlur={handleTextareaBlur}
+              onSelect={releaseLeftGroup}
               onCompositionStart={textareaChange.onCompositionStart}
               onCompositionEnd={textareaChange.onCompositionEnd}
               onPaste={handlePaste}

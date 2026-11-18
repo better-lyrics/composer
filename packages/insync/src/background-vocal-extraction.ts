@@ -1,17 +1,17 @@
 import { isLinked, isSlotLine } from "./instance-predicates";
-import { withBackground, withSeededBackground } from "./line-background";
+import { keepsBackgroundTiming, withBackground, withSeededBackground } from "./line-background";
+import { withTimedBackgroundJoined } from "./background-vocal-timed-join";
 import type { LineUpdate, LyricLine } from "./line";
 import { bgBounds } from "./line-bounds";
 import { isWordSynced } from "./line-predicates";
-import { wordContentSpans } from "./line-reconstruct-text";
-import { backgroundText, lineText, syllablesText } from "./line-text";
-import { backgroundTrack, mainTrack, roleWords } from "./line-track";
-import { withMainTrack, withTrackSyllables, withTrackText } from "./line-track-writes";
-import { remapWordTextsPreservingTiming } from "./word-remap-text";
-import { wordFromSpaced } from "./word-spaced-words";
-import type { WordTiming } from "./word-timing";
-import { joinBackgroundText } from "./background-vocal-brackets";
+import { backgroundText, lineText } from "./line-text";
+import { backgroundTrack, mainTrack } from "./line-track";
+import { withMainTrack, withTrackText } from "./line-track-writes";
+import { type BracketJoin, joinBackgroundText } from "./background-vocal-brackets";
+import { gluedGroups } from "./background-vocal-glued-groups";
 import { mergeStandaloneInto } from "./background-vocal-standalone-merge";
+import { withOnePairBackground } from "./background-vocal-one-pair";
+import { extractInlineWordSynced, groupsText } from "./background-vocal-word-synced";
 
 // -- Types --------------------------------------------------------------------
 
@@ -37,9 +37,8 @@ interface LineClassification {
   mainText: string;
 }
 
-interface ExtractOptions {
+interface ExtractOptions extends BracketJoin {
   mergeStandaloneLines: boolean;
-  preserveBrackets: boolean;
 }
 
 // -- Scanner ------------------------------------------------------------------
@@ -78,84 +77,50 @@ function collapseSpaces(text: string): string {
   return text.replace(/ {2,}/g, " ").trim();
 }
 
+function classifyGroups(text: string, groups: ParenGroup[]): LineClassification {
+  if (groups.length === 0) return { kind: "none", groups: [], bgText: "", mainText: text };
+  const bgText = groupsText(groups, "space");
+  if (bgText.length === 0) return { kind: "none", groups, bgText: "", mainText: text };
+  const mainText = collapseSpaces(stripGroups(text, groups));
+  return { kind: mainText.length === 0 ? "standalone" : "inline", groups, bgText, mainText };
+}
+
 function classifyLine(text: string): LineClassification {
   const scan = scanParenGroups(text);
   if (scan.status !== "balanced") return { kind: "skip", groups: [], bgText: "", mainText: text };
-  if (scan.groups.length === 0) return { kind: "none", groups: [], bgText: "", mainText: text };
-  const bgText = scan.groups
-    .map((g) => g.inner.trim())
-    .filter((s) => s.length > 0)
-    .join(" ");
-  if (bgText.length === 0) return { kind: "none", groups: scan.groups, bgText: "", mainText: text };
-  const mainText = collapseSpaces(stripGroups(text, scan.groups));
-  return { kind: mainText.length === 0 ? "standalone" : "inline", groups: scan.groups, bgText, mainText };
+  return classifyGroups(text, scan.groups);
 }
 
 // -- Extraction ---------------------------------------------------------------
 
-function hasSungContent(text: string, splitChar: string): boolean {
-  return [...text].some((char) => !"() ".includes(char) && char !== splitChar);
+// A background timed by hand keeps typed brackets beside it as text; a seeded one is seeded again with them, as a paste.
+function backgroundRefuses(line: LyricLine, classified: LineClassification): boolean {
+  return classified.kind === "inline" && bgBounds(line) !== null && backgroundTrack(line)?.source !== "extraction";
 }
 
-function extractInlineWordSynced(
+// `keptGroups` are group indices that stay text, as every linked copy keeps the groups any one of them keeps.
+function extractInline(
   line: LyricLine,
-  classified: LineClassification,
   options: ExtractOptions,
   splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+  keptGroups?: ReadonlySet<number>,
 ): LyricLine {
-  const words = roleWords(line, "main");
-  if (!words || words.length === 0) return line;
-  if (bgBounds(line)) return line;
-  if (syllablesText(words, splitChar) !== lineText(line, splitChar)) return line;
-  const spans = wordContentSpans(words, splitChar);
-  const survivors: WordTiming[] = [];
-  const bracketed: WordTiming[] = [];
-  for (let i = 0; i < words.length; i++) {
-    const span = spans[i];
-    let insideCount = 0;
-    for (const g of classified.groups) {
-      const groupStart = g.start;
-      const groupEnd = g.end + 1;
-      const overlaps = span.start < groupEnd && span.end > groupStart;
-      if (!overlaps) continue;
-      const fullyInside = span.start >= groupStart && span.end <= groupEnd;
-      if (!fullyInside) return line;
-      insideCount++;
-    }
-    if (insideCount === 0) survivors.push(words[i]);
-    else if (options.preserveBrackets || hasSungContent(words[i].text, splitChar)) bracketed.push(words[i]);
-  }
-  if (survivors.length === 0) return line;
-  const trimmedSurvivors = survivors.map((word, i) =>
-    i === survivors.length - 1
-      ? wordFromSpaced({ ...word, text: (word.text + word.sep).replace(/ +$/, ""), joinsNext: false })
-      : word,
-  );
-  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
-  const joined = joinBackgroundText(base, classified.bgText, options.preserveBrackets, false);
+  const text = lineText(line, splitChar);
+  const scanned = classifyLine(text);
+  const extractable = keptGroups && scanned.groups.filter((_, index) => !keptGroups.has(index));
+  const classified = extractable ? classifyGroups(text, extractable) : scanned;
+  if (classified.kind !== "inline" || backgroundRefuses(line, classified)) return line;
+  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar, songEnd);
+  const base = backgroundText(line, splitChar);
+  const fromExtraction = backgroundTrack(line)?.source === "extraction";
+  const withMain = withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar));
+  const joined = joinBackgroundText(base, groupsText(classified.groups, options.separator), options);
+  if (keepsBackgroundTiming(line, splitChar, songEnd))
+    return withTimedBackgroundJoined(withMain, joined, options, splitChar);
   return withBackground(
-    withMainTrack(line, withTrackSyllables(mainTrack(line), trimmedSurvivors)),
-    {
-      text: joined,
-      words: base ? undefined : remapWordTextsPreservingTiming(bracketed, joined, splitChar),
-      source: base ? "manual" : "extraction",
-    },
-    splitChar,
-  );
-}
-
-function extractInline(line: LyricLine, options: ExtractOptions, splitChar: string): LyricLine {
-  const classified = classifyLine(lineText(line, splitChar));
-  if (classified.kind !== "inline") return line;
-  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options, splitChar);
-  if (bgBounds(line)) return line;
-  const base = backgroundTrack(line)?.source === "extraction" ? undefined : backgroundText(line, splitChar);
-  return withBackground(
-    withMainTrack(line, withTrackText(mainTrack(line), classified.mainText, splitChar)),
-    {
-      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
-      source: base ? "manual" : "extraction",
-    },
+    withMain,
+    { text: joined, source: base && !fromExtraction ? "manual" : "extraction" },
     splitChar,
   );
 }
@@ -166,7 +131,7 @@ function extractInlineFromLine(
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine {
-  const extracted = extractInline(line, options, splitChar);
+  const extracted = extractInline(line, options, splitChar, songEnd);
   return extracted === line ? line : withSeededBackground(extracted, splitChar, songEnd);
 }
 
@@ -200,25 +165,57 @@ function refusesExtraction(line: LyricLine, options: ExtractOptions, splitChar: 
   );
 }
 
+function keepsTypedBackgroundGroups(line: LyricLine, splitChar: string): boolean {
+  return bgBounds(line) !== null && backgroundRefuses(line, classifyLine(lineText(line, splitChar)));
+}
+
+// Group indices a timed copy keeps as text because one of its words reaches into them, by slot.
+function slotKeptGroups(lines: readonly LyricLine[], splitChar: string): Map<string, Set<number>> {
+  const kept = new Map<string, Set<number>>();
+  for (const line of lines) {
+    const slot = extractionSlot(line);
+    if (slot === null || !isWordSynced(line)) continue;
+    const { groups } = classifyLine(lineText(line, splitChar));
+    const glued = gluedGroups(line, groups, splitChar);
+    if (glued.size === 0) continue;
+    const slotKept = kept.get(slot) ?? new Set<number>();
+    for (const [index, group] of groups.entries()) if (glued.has(group)) slotKept.add(index);
+    kept.set(slot, slotKept);
+  }
+  return kept;
+}
+
 // -- Whole-list transform -----------------------------------------------------
 
-function extractBackgroundVocals(
+// Brackets in the lyrics move to the background; backgrounds stay as they were typed.
+function extractBracketGroups(
   lines: LyricLine[],
   options: ExtractOptions,
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine[] {
+  return extractLines(lines, options, splitChar, songEnd, false);
+}
+
+function extractLines(
+  lines: LyricLine[],
+  options: ExtractOptions,
+  splitChar: string,
+  songEnd: number,
+  onePair: boolean,
+): LyricLine[] {
   const result: LyricLine[] = [];
   const sameSessionWriteIndices = new Set<number>();
   const slotLines = new Map<number, LyricLine>();
   const refusedSlots = new Set<string>();
+  const keptBySlot = slotKeptGroups(lines, splitChar);
   for (const line of lines) {
     const classified = classifyLine(lineText(line, splitChar));
     if (classified.kind === "inline") {
-      const extracted = extractInline(line, options, splitChar);
+      const slot = extractionSlot(line);
+      const extracted = extractInline(line, options, splitChar, songEnd, keptBySlot.get(slot ?? ""));
       result.push(extracted);
       if (extracted !== line) sameSessionWriteIndices.add(result.length - 1);
-      const slot = extractionSlot(line);
       if (slot !== null) slotLines.set(result.length - 1, line);
       if (slot !== null && extracted === line) refusedSlots.add(slot);
       continue;
@@ -236,9 +233,9 @@ function extractBackgroundVocals(
         const merged = mergeStandaloneInto(
           prev,
           line,
-          classified.bgText,
+          groupsText(classified.groups, options.separator),
           sameSessionWriteIndices.has(prevIndex),
-          options.preserveBrackets,
+          options,
           splitChar,
           songEnd,
         );
@@ -257,9 +254,21 @@ function extractBackgroundVocals(
     result[index] = line;
     sameSessionWriteIndices.delete(index);
   }
-  return result.map((line, index) =>
-    sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar, songEnd) : line,
-  );
+  return result.map((line, index) => {
+    const seeded = sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar, songEnd) : line;
+    const refused = refusedSlots.has(extractionSlot(seeded) ?? "");
+    return onePair && !refused ? withOnePairBackground(seeded, options, splitChar) : seeded;
+  });
+}
+
+// Brackets move to the background, and every background becomes one pair.
+function extractBackgroundVocals(
+  lines: LyricLine[],
+  options: ExtractOptions,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): LyricLine[] {
+  return extractLines(lines, options, splitChar, songEnd, true);
 }
 
 function lineHasInlineParens(line: LyricLine, splitChar: string): boolean {
@@ -268,13 +277,15 @@ function lineHasInlineParens(line: LyricLine, splitChar: string): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { ExtractOptions };
+export type { ExtractOptions, LineClassification, ParenGroup };
 export {
   classifyLine,
   extractBackgroundVocals,
+  extractBracketGroups,
   extractInlineFromLine,
   extractInlineOnLine,
   extractionSlot,
+  keepsTypedBackgroundGroups,
   lineHasInlineParens,
   refusesExtraction,
   scanParenGroups,

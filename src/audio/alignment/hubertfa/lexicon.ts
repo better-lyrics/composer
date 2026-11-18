@@ -1,7 +1,7 @@
 import { lookupInflected } from "@/audio/alignment/hubertfa/inflection";
 import { guessPhones } from "@/audio/alignment/hubertfa/letter-to-sound";
 import { stripMarks } from "@/audio/alignment/hubertfa/romanization";
-import { hasLetterOrDigit } from "@/domain/alignment/cjk";
+import { hasLetterOrDigit } from "insync/letter-or-digit";
 
 // Word → phone lookup against HubertFA's English dictionary (ds_cmudict-07b).
 // Mirrors the benchmark's normalisation so lyric spellings like "Don’t,",

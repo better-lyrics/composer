@@ -2,6 +2,7 @@ import { withShownBackground } from "insync/edit-text-shown-background";
 import { withoutBackground } from "insync/line-background";
 import { lineFromFields } from "insync/line-from-fields";
 import { joinedLines } from "insync/line-joined-lines";
+import { nextLineStartReader } from "insync/line-neighbour-bounds";
 import type { LyricLine, MainTrack } from "insync/line";
 import { reconcileMatchedTiming } from "insync/line-reconcile-text";
 import { backgroundText, lineText, trackText } from "insync/line-text";
@@ -181,12 +182,19 @@ function textToLyricLines(
     if (nearest) claim(index, nearest.value);
   });
 
+  // Only a row whose text changed reads where its line must end, so unchanged rows cost nothing per keystroke.
+  const nextLineStart = nextLineStartReader(existingLines);
+  const nextStart = (line: LyricLine) => nextLineStart(existingIndex.get(line.id) ?? existingLines.length);
+  const reconciled = (line: LyricLine, cleanedText: string) =>
+    mainTrackKeys(mainTrack(line), splitChar).text === cleanedText
+      ? line
+      : reconcileMatchedTiming(line, cleanedText, splitChar, Math.min(songEnd, nextStart(line)));
   const sources: Array<LyricLine | undefined> = new Array(newLines.length);
   const mapped = cleanedTexts.map((cleanedText, index) => {
     const matched = claimed[index];
     if (matched) {
       sources[index] = matched;
-      return reconcileMatchedTiming(matched, cleanedText, splitChar);
+      return reconciled(matched, cleanedText);
     }
 
     if (allowPositionMatch) {
@@ -194,7 +202,7 @@ function textToLyricLines(
       if (!usedExistingIds.has(positionMatch.id)) {
         usedExistingIds.add(positionMatch.id);
         sources[index] = positionMatch;
-        return reconcileMatchedTiming(positionMatch, cleanedText, splitChar);
+        return reconciled(positionMatch, cleanedText);
       }
     }
 

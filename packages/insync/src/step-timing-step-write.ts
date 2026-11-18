@@ -6,7 +6,11 @@ import type { WordTiming } from "./word-timing";
 
 type StepKey = "start" | "step" | "end";
 
-type StepRefusal = { reason: "beforePrevious"; previousWord: string } | { reason: "songStart" } | { reason: "noRoom" };
+type StepRefusal =
+  | { reason: "beforePrevious"; previousWord: string }
+  | { reason: "minDuration"; short: "word" | "previous"; word: string; previousWord: string; minMs: number }
+  | { reason: "songStart" }
+  | { reason: "noRoom" };
 
 type StepWrite =
   | { kind: "written"; words: WordTiming[]; endedPrevious?: string }
@@ -29,6 +33,24 @@ function beforePrevious(previous: WordTiming): StepWrite {
   return { kind: "refused", refusal: { reason: "beforePrevious", previousWord: previous.text + previous.sep } };
 }
 
+function belowMinimum(
+  short: "word" | "previous",
+  word: WordTiming,
+  previous: WordTiming,
+  minDuration: number,
+): StepWrite {
+  return {
+    kind: "refused",
+    refusal: {
+      reason: "minDuration",
+      short,
+      word: word.text + word.sep,
+      previousWord: previous.text + previous.sep,
+      minMs: Math.round(minDuration * 1000),
+    },
+  };
+}
+
 function pushAhead(words: WordTiming[], from: number, floor: number, minDuration: number, max: number): boolean {
   let start = floor;
   for (let k = from; k < words.length; k++) {
@@ -47,7 +69,9 @@ function writeStart(words: WordTiming[], index: number, input: StepWriteInput): 
   const word = words[index];
   const previous = words[index - 1];
   const endsPrevious = previous !== undefined && input.time < previous.end;
-  if (endsPrevious && input.time < previous.begin + input.minDuration) return beforePrevious(previous);
+  if (endsPrevious && input.time < previous.begin) return beforePrevious(previous);
+  if (endsPrevious && input.time < previous.begin + input.minDuration)
+    return belowMinimum("previous", word, previous, input.minDuration);
   if (endsPrevious) words[index - 1] = { ...previous, end: input.time };
   const begin = Math.max(input.time, input.range.min);
   const end = Math.max(word.end, begin + input.minDuration);
@@ -66,7 +90,8 @@ function writeEnd(words: WordTiming[], index: number, input: StepWriteInput): St
   let begin = word.begin;
   if (end < begin + input.minDuration) {
     begin = end - input.minDuration;
-    if (previous && begin < previous.end) return beforePrevious(previous);
+    if (previous && end < previous.end) return beforePrevious(previous);
+    if (previous && begin < previous.end) return belowMinimum("word", word, previous, input.minDuration);
     if (begin < input.range.min) return { kind: "refused", refusal: { reason: "songStart" } };
   }
   words[index] = { ...word, begin, end };

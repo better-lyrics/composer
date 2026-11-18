@@ -167,6 +167,11 @@ function fieldHits(source: string, words: readonly WordTiming[] | undefined): Fi
   return hits;
 }
 
+// Only timed words take a mark, so a word not yet timed, or a line-synced line, gets no suggestion.
+function timedHits(source: string, words: readonly WordTiming[]): FieldHit[] {
+  return fieldHits(source, words).filter((hit) => hit.wordIndices.every((index) => index < words.length));
+}
+
 function forgetOldestFields(fieldsInRun: number): void {
   let excess = hitsByField.size - fieldsInRun - RETAINED_EARLIER_FIELDS;
   for (const key of hitsByField.keys()) {
@@ -202,14 +207,14 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
     const mainText = lineText(line, getSplitCharacter());
     if (mainText && mainText.trim().length > 0) {
       fieldsInRun++;
-      for (const hit of fieldHits(mainText, timedSyllables(mainTrack(line)))) {
+      for (const hit of timedHits(mainText, timedSyllables(mainTrack(line)))) {
         raw.push({ ...hit, line, lineIndex: i, field: "words" });
       }
     }
     const bgText = backgroundText(line, getSplitCharacter());
     if (bgText && bgText.trim().length > 0) {
       fieldsInRun++;
-      for (const hit of fieldHits(bgText, timedSyllables(backgroundTrack(line)))) {
+      for (const hit of timedHits(bgText, timedSyllables(backgroundTrack(line)))) {
         raw.push({ ...hit, line, lineIndex: i, field: "backgroundWords" });
       }
     }

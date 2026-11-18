@@ -33,8 +33,7 @@ function fileImportContext(): ImportContext {
     confirm: useConfirmStore.getState().open,
     audioDuration: 0,
     applyBackgroundExtraction: false,
-    backgroundExtractionMergeStandalone: false,
-    backgroundExtractionPreserveBrackets: false,
+    backgroundExtraction: { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
     sourceLabel: "File",
     onResult: (parsed, source) => useImportModalStore.getState().recordImportResult(parsed, source),
   };

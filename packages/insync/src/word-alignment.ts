@@ -14,9 +14,17 @@ function wordKey(text: string, splitChar: string): string {
 function lcsPairs<T>(a: T[], b: T[]): Array<[number, number]> {
   let prefix = 0;
   while (prefix < a.length && prefix < b.length && a[prefix] === b[prefix]) prefix++;
-  const m = a.length - prefix;
-  const n = b.length - prefix;
+  let suffix = 0;
+  while (
+    suffix < a.length - prefix &&
+    suffix < b.length - prefix &&
+    a[a.length - 1 - suffix] === b[b.length - 1 - suffix]
+  )
+    suffix++;
+  const m = a.length - prefix - suffix;
+  const n = b.length - prefix - suffix;
   const pairs: Array<[number, number]> = [];
+  for (let index = 0; index < suffix; index++) pairs.push([a.length - 1 - index, b.length - 1 - index]);
   if (m > 0 && n > 0) {
     const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
     for (let i = 1; i <= m; i++) {

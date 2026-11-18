@@ -6,13 +6,11 @@ import { describe, expect, it } from "vitest";
 import { addInstance } from "insync/commands/instance-edits";
 import type { LinkGroup } from "insync/group";
 import { withSeededBackground } from "insync/line-background";
-import { drawnSyllables } from "insync/line-drawn-track";
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LyricLine } from "insync/line";
 import { backgroundTrack, timedSyllables } from "insync/line-track";
 import { mainBounds } from "insync/line-bounds";
 import { lineText } from "insync/line-text";
-import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import {
@@ -168,31 +166,6 @@ describe("instanceToTemplate", () => {
     // The added instance's line starts at 40, so its second-half background keeps its place in the line.
     expect(backgroundTrack(added)).toMatchObject({ begin: 42, end: 44 });
     expect(timedSyllables(backgroundTrack(added))).toEqual([]);
-  });
-
-  it("regression: an instance added from an explicit line-synced background keeps the mark", () => {
-    const seeded = withSeededBackground(
-      lineFromFields(
-        {
-          id: "a",
-          text: "hi",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          begin: 10,
-          end: 14,
-          backgroundText: "damn",
-        },
-        DEFAULT_SPLIT_CHARACTER,
-      ),
-      DEFAULT_SPLIT_CHARACTER,
-    );
-    const background = backgroundTrack(seeded)!;
-    const line = withBackgroundTrack(seeded, withTrackExplicit(background, true));
-    useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
-    useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
-    expect(drawnSyllables(useProjectStore.getState().lines[1], "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBe(true);
   });
 
   it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {

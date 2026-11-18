@@ -1,7 +1,6 @@
 import { formatTime } from "../format-time";
 import type { LineTrack, LyricLine } from "../line";
 import { bgBounds, effectiveBounds, mainBounds } from "../line-bounds";
-import { drawnSyllables } from "../line-drawn-track";
 import { isLineSynced, isWordSynced } from "../line-predicates";
 import { backgroundText, lineText, syllablesText } from "../line-text";
 import { backgroundTrack, mainTrack, timedSyllables } from "../line-track";
@@ -91,8 +90,7 @@ function backgroundSpan(line: LyricLine, writesWords: boolean, splitChar: string
   }
   const bgTiming = bgBounds(line) ?? effectiveBounds(line);
   if (!bgTiming) return "";
-  const explicit = drawnSyllables(line, "bg", splitChar)[0]?.explicit;
-  const whole = untimedTrackSpan({ ...bgTiming, explicit }, background, bgText, splitChar);
+  const whole = untimedTrackSpan(bgTiming, background, bgText, splitChar);
   return `${open}${keptAmongInline([wholeTrack(whole, background)], kept, order)}</span>`;
 }
 

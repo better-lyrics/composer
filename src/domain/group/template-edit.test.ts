@@ -136,6 +136,55 @@ describe("carryTemplateEdits", () => {
     expect(backgroundTrack(out[1])).toBeUndefined();
   });
 
+  it("regression: a main text edit keeps another instance's own background", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Hold the lantern", words: words(10, ["Hold", "the", "lantern"]) }),
+      groupLine("L2", 1, {
+        text: "Hold the lantern",
+        words: words(30, ["Hold", "the", "lantern"]),
+        backgroundText: "(burn on)",
+        backgroundWords: words(31, ["(burn", "on)"]),
+      }),
+    ];
+    const after = before.with(0, withFields(before[0], { text: "Hold the lantern high" }));
+    const out = carried(before, after)[1];
+    expect(lineText(out, DEFAULT_SPLIT_CHARACTER)).toBe("Hold the lantern high");
+    expect(backgroundTrack(out)).toEqual(backgroundTrack(before[1]));
+  });
+
+  it("regression: a shared instance takes the background timing an edit moved with the main text", () => {
+    const fields = (begin: number) => ({
+      text: "Hold the lantern",
+      words: words(begin, ["Hold", "the", "lantern"]),
+      backgroundText: "(burn on)",
+      backgroundWords: words(begin + 1, ["(burn", "on)"]),
+    });
+    const before = [groupLine("L1", 0, fields(10)), groupLine("L2", 1, fields(30))];
+    const moved = timedSyllables(backgroundTrack(before[0])!).map((word) => ({
+      ...word,
+      begin: word.begin + 0.2,
+      end: word.end + 0.2,
+    }));
+    const after = before.with(
+      0,
+      withFields(before[0], { text: "Hold the lantern high", backgroundText: "(burn on)", backgroundWords: moved }),
+    );
+    const out = carried(before, after, [shared])[1];
+    expect(timedSyllables(backgroundTrack(out)!).map((word) => [word.text, word.begin, word.end])).toEqual([
+      ["(burn", 31.2, 31.7],
+      ["on)", 31.7, 32.2],
+    ]);
+  });
+
+  it("gives a background added in one instance to another instance in place of its own", () => {
+    const before = [
+      groupLine("L1", 0, { text: "Hold the lantern" }),
+      groupLine("L2", 1, { text: "Hold the lantern", backgroundText: "(burn on)" }),
+    ];
+    const after = before.with(0, withFields(before[0], { backgroundText: "(glow)", backgroundTextSource: "manual" }));
+    expect(backgroundText(carried(before, after)[1], DEFAULT_SPLIT_CHARACTER)).toBe("(glow)");
+  });
+
   it("leaves detached lines, other groups and other template lines alone", () => {
     const before = [
       groupLine("L1", 0, { text: "stale" }),

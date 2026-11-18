@@ -4,10 +4,9 @@ import { lineEditCommand } from "./line-edits";
 import { type LyricRoot, type Refusal, applied, refused } from "./outcome";
 import type { LinkGroup } from "../group";
 import { isLinked } from "../instance-predicates";
-import { withBackground, withSeededBackground, withoutBackground } from "../line-background";
+import { withBackground, withRetypedBackground, withSeededBackground, withoutBackground } from "../line-background";
 import { lineText } from "../line-text";
 import { backgroundTrack, isSpanTimed, timedSyllables } from "../line-track";
-import { withBackgroundTrack, withTrackText } from "../line-track-writes";
 import { isSectionTagLine } from "../lyrics-file-genius-text";
 import { type ExtractOptions, extractBackgroundVocals, extractInlineOnLine } from "../background-vocal-extraction";
 
@@ -76,15 +75,9 @@ function removeSectionTagLines(lineIds: ReadonlySet<string>): LyricCommand {
   }));
 }
 
-function extractLineBackground(lineId: string, preserveBrackets: boolean): LyricCommand {
+function extractLineBackground(lineId: string, options: ExtractOptions): LyricCommand {
   return lineEditCommand({ command: "extract line background", args: [lineId] }, (root, ctx) =>
-    extractInlineOnLine(
-      root.lines,
-      lineId,
-      { mergeStandaloneLines: false, preserveBrackets },
-      ctx.splitChar,
-      ctx.songEnd,
-    ),
+    extractInlineOnLine(root.lines, lineId, { ...options, mergeStandaloneLines: false }, ctx.splitChar, ctx.songEnd),
   );
 }
 
@@ -97,7 +90,7 @@ function editBackgroundText(lineId: string, text: string): LyricCommand {
     const edited = !text
       ? withoutBackground(target)
       : background && (isSpanTimed(background) || timedSyllables(background).length > 0)
-        ? withBackgroundTrack(target, { ...withTrackText(background, text, ctx.splitChar), source: "manual" })
+        ? withRetypedBackground(target, text, ctx.splitChar, ctx.songEnd)
         : withSeededBackground(
             withBackground(target, { text, source: "manual" }, ctx.splitChar),
             ctx.splitChar,

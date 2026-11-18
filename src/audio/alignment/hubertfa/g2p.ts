@@ -1,7 +1,8 @@
 import { type ReadingToken, isKana, kanaToMorae } from "@/audio/alignment/hubertfa/japanese";
 import { type Pronunciations, lookupWord } from "@/audio/alignment/hubertfa/lexicon";
 import { pinyinSyllables, plainWords, romajiLine } from "@/audio/alignment/hubertfa/romanization";
-import { hasCjk, hasHan, hasLetterOrDigit } from "@/domain/alignment/cjk";
+import { hasCjk, hasHan } from "@/domain/alignment/cjk";
+import { hasLetterOrDigit } from "insync/letter-or-digit";
 import type { HanReading } from "@/domain/alignment/language";
 
 // -- Types --------------------------------------------------------------------

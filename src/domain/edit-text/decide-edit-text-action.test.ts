@@ -474,6 +474,33 @@ describe("breaking an instance line", () => {
     expect(action.editText.split("\n")[4]).toBe("you");
   });
 
+  it("regression: Enter after a tag typed on a linked line moves the tag to its own line and back off the other copies", () => {
+    const base = chorusLines();
+    const decide = (text: string, lines: LyricLine[]) =>
+      decideEditTextAction({
+        text,
+        defaultAgentId: "v1",
+        lines,
+        groups: [groupChorus],
+        splitCharacter: getSplitCharacter(),
+        ranges: NO_RANGES,
+        runStartLines: base,
+      });
+    const tagged = decide(`[Verse]${baseText(base)}`, base);
+    if (tagged.kind !== "apply") throw new Error(`expected apply, got ${tagged.kind}`);
+    const broken = decide(tagged.editText.replace("[Verse]", "[Verse]\n"), tagged.finalLines);
+    if (broken.kind !== "apply") throw new Error(`expected apply, got ${broken.kind}`);
+    const rows = broken.finalLines.map((line) => [lineText(line, getSplitCharacter()), line.groupId, line.detached]);
+    expect(rows).toEqual([
+      ["[Verse]", undefined, undefined],
+      ["I love you", "g1", undefined],
+      ["more than words", "g1", undefined],
+      ["verse line", undefined, undefined],
+      ["I love you", "g1", undefined],
+      ["more than words", "g1", undefined],
+    ]);
+  });
+
   it("regression: rows the break left alone keep the text as typed", () => {
     const typed = ["I love you", "more than words", "verse line ", "I love", " you", "more than words"].join("\n");
     const action = decideEditTextAction({
@@ -486,5 +513,35 @@ describe("breaking an instance line", () => {
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.editText.split("\n")[2]).toBe("verse line ");
+  });
+});
+
+describe("a keystroke in a long song", () => {
+  it("keeps every line it did not touch, so per-keystroke work reads only the changed line", () => {
+    const lines = Array.from({ length: 100 }, (_, index) =>
+      lineFromFields(
+        {
+          id: `l${index}`,
+          text: `Lantern light number ${index}`,
+          agentId: "v1",
+          ...(index % 7 === 0 && { backgroundText: `(glow ${index})` }),
+        },
+        getSplitCharacter(),
+      ),
+    );
+    const shown = shownEditText(lines, getSplitCharacter());
+    const caret = shown.text.indexOf("number 50") + "number".length;
+    const text = `${shown.text.slice(0, caret)}s${shown.text.slice(caret)}`;
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [],
+      splitCharacter: getSplitCharacter(),
+      ranges: remapBackgroundRanges(shown.text, text, shown.ranges, caret + 1),
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    const changed = action.finalLines.flatMap((line, index) => (line === lines[index] ? [] : [line.id]));
+    expect(changed).toEqual(["l50"]);
   });
 });

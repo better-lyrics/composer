@@ -1,6 +1,7 @@
 import { diffChars } from "diff";
 import {
   type BackgroundRange,
+  keepsBackgroundToken,
   NO_RANGES,
   type ShownEditText,
   shiftedRange,
@@ -92,18 +93,25 @@ function changedRuns(oldText: string, newText: string, region: ChangedRegion): C
 
 // A change before a background token moves it, one inside its brackets grows or shrinks it, and one that touches a
 // bracket turns the token into plain text.
-function remappedRange(range: BackgroundRange, runs: readonly ChangedRegion[], newText: string) {
+// A token no run reached only moves, whatever it shows, so an edit elsewhere never changes a stored background.
+function remappedRange(range: BackgroundRange, runs: readonly ChangedRegion[], oldText: string, newText: string) {
   let shift = 0;
   let growth = 0;
+  let touched = false;
   for (const run of runs) {
     const delta = run.newEnd - run.oldEnd;
     if (run.oldEnd <= range.start) shift += delta;
     else if (run.start >= range.end) break;
     else if (run.start <= range.start || run.oldEnd >= range.end) return null;
-    else growth += delta;
+    else {
+      growth += delta;
+      touched = true;
+    }
   }
   const moved = { ...range, start: range.start + shift, end: range.end + shift + growth };
-  return newText.slice(moved.start, moved.end).includes("\n") ? null : moved;
+  if (!touched) return moved;
+  const oldToken = oldText.slice(range.start, range.end);
+  return keepsBackgroundToken(oldToken, newText.slice(moved.start, moved.end), range.bracketed) ? moved : null;
 }
 
 function remapBackgroundRanges(
@@ -114,7 +122,8 @@ function remapBackgroundRanges(
 ): readonly BackgroundRange[] {
   if (ranges.length === 0 || oldText === newText) return ranges;
   const region = changedRegion(oldText, newText, caret);
-  const remapAll = (runs: readonly ChangedRegion[]) => ranges.map((range) => remappedRange(range, runs, newText));
+  const remapAll = (runs: readonly ChangedRegion[]) =>
+    ranges.map((range) => remappedRange(range, runs, oldText, newText));
   let remapped = remapAll([region]);
   if (remapped.includes(null)) remapped = remapAll(changedRuns(oldText, newText, region));
   const kept = remapped.filter((range) => range !== null);
@@ -199,7 +208,7 @@ function shownWithRewrittenRows(
       keptFrom = rowEnd;
     }
     const shownLength = rewritten ? rewritten.text.length : rowEnd - oldStart;
-    if (rewritten?.background) ranges.push(shiftedRange(rewritten.background, newStart));
+    for (const background of rewritten?.backgrounds ?? NO_RANGES) ranges.push(shiftedRange(background, newStart));
     for (; next < sorted.length && sorted[next].end <= rowEnd; next++) {
       if (!rewritten && sorted[next].start >= oldStart) ranges.push(shiftedRange(sorted[next], newStart - oldStart));
     }
@@ -212,4 +221,4 @@ function shownWithRewrittenRows(
 
 // -- Exports ------------------------------------------------------------------
 
-export { editRows, remapBackgroundRanges, shownWithRewrittenRows };
+export { changedRegion, editRows, remapBackgroundRanges, shownWithRewrittenRows };

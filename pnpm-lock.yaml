@@ -20,8 +20,8 @@ importers:
         specifier: ^0.3.2
         version: 0.3.2
       '@braccato/parsers':
-        specifier: ^0.4.2
-        version: 0.4.2
+        specifier: ^0.4.3
+        version: 0.4.3
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -190,7 +190,7 @@ importers:
     dependencies:
       fast-xml-parser:
         specifier: ^5.10.1
-        version: 5.11.2
+        version: 5.12.0
 
 packages:
 
@@ -403,8 +403,8 @@ packages:
   '@braccato/highlight@0.3.2':
     resolution: {integrity: sha512-1ZbgvqOhp3jsNnFbduyZdJRGMy78qv8JJyu64Zq//vld7aE4pk9HssAhitrh9eK8ByItM1U0RGOAroN+AxWIjg==}
 
-  '@braccato/parsers@0.4.2':
-    resolution: {integrity: sha512-G9elpXkNEV+xEDcmtNHqg7PCwR7zQVpLITxamfJjgya8FLLC11GnHX+xAT2atUt2gYXnj/7bgwj6FPFSGb8ACg==}
+  '@braccato/parsers@0.4.3':
+    resolution: {integrity: sha512-pNyIjY5mQiIWCPeQ1EOSBCDI9Fhr90dKYVdzbb7AI16cc81OfqaQY+EtL5+wSgP+VwFpObjFZHr/gIzrTu2kVg==}
 
   '@braccato/types@1.1.0':
     resolution: {integrity: sha512-HqGnKB/nb0usTGfh7xQMRAV/sOrU4wPRHXONDGgDDmoBBJjl4vgedkvZ7QYERVhzYdarOSleLjXJf8Jir4qCdA==}
@@ -1778,8 +1778,8 @@ packages:
   fast-xml-builder@1.3.1:
     resolution: {integrity: sha512-pIM/1n3ntFXKYrUZwW7QCK0gAW7XY+wzj1YMIV3tLDvPj/V+zTGJK5e3/4WJfwj0qWw2ElNXiTixda/R+3YSug==}
 
-  fast-xml-parser@5.11.2:
-    resolution: {integrity: sha512-R9iDuNrQYeQut46cn2r2wHKn4HYzVDvDm5J1wW+koZewykv0yuO2HChTYeZtrULyHIDM9cj9TUXloCsueCQUog==}
+  fast-xml-parser@5.12.0:
+    resolution: {integrity: sha512-/pXxRBtwxY9w8z7YbgsvIPPcPvFDsTbIkWwTQJhzNJPokj+TbN6ftmcv4j/pEQDvOCNnKGDzuk5Bo2oogIOiFg==}
     hasBin: true
 
   fd-package-json@2.0.0:
@@ -1933,8 +1933,8 @@ packages:
   is-potential-custom-element-name@1.0.1:
     resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
 
-  is-unsafe@2.0.2:
-    resolution: {integrity: sha512-HgbIHPBH0KHHCcjLfGsCvhtPTVxjaAZlXjwdz7/GQC40SjSe4sfQsar8J5VFo8JOSbarkpV0OLG95bbaNd9aAQ==}
+  is-unsafe@2.0.3:
+    resolution: {integrity: sha512-ZBllczCCO267vgdFb6Tq3pv+LhHaCiGMdr+ZsuL+OopruAg7S+3ZDs1vD0RPC0uSrkjzbraxaGjtX1YBxjPeFQ==}
 
   istanbul-lib-coverage@3.2.2:
     resolution: {integrity: sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg==}
@@ -3100,12 +3100,12 @@ snapshots:
 
   '@braccato/highlight@0.3.2':
     dependencies:
-      '@braccato/parsers': 0.4.2
+      '@braccato/parsers': 0.4.3
 
-  '@braccato/parsers@0.4.2':
+  '@braccato/parsers@0.4.3':
     dependencies:
       '@braccato/types': 1.1.0
-      fast-xml-parser: 5.11.2
+      fast-xml-parser: 5.12.0
 
   '@braccato/types@1.1.0': {}
 
@@ -4169,11 +4169,11 @@ snapshots:
       path-expression-matcher: 1.6.2
       xml-naming: 0.3.0
 
-  fast-xml-parser@5.11.2:
+  fast-xml-parser@5.12.0:
     dependencies:
       '@nodable/entities': 3.1.0
       fast-xml-builder: 1.3.1
-      is-unsafe: 2.0.2
+      is-unsafe: 2.0.3
       path-expression-matcher: 1.6.2
       strnum: 2.5.1
       xml-naming: 0.3.0
@@ -4326,7 +4326,7 @@ snapshots:
 
   is-potential-custom-element-name@1.0.1: {}
 
-  is-unsafe@2.0.2: {}
+  is-unsafe@2.0.3: {}
 
   istanbul-lib-coverage@3.2.2: {}
 

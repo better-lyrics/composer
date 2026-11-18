@@ -4,7 +4,6 @@ import { drawnSyllables } from "insync/line-drawn-track";
 import { isProjectFullySynced } from "insync/line-sync-progress";
 import { backgroundText, lineText } from "insync/line-text";
 import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
-import { withBackgroundTrack, withTrackExplicit } from "insync/line-track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
@@ -53,22 +52,20 @@ describe("mergeEditedTtmlLines · background vocals", () => {
       expect(timedSyllables(backgroundTrack(merged[0]!))).toEqual([]);
     });
 
-    it("regression: a line-synced background keeps its explicit mark, and takes one the edit sets", () => {
+    // Explicit is a word mark only: a mark on a line-synced background's one span is not read.
+    it("regression: a line-synced background ignores an explicit mark the edit sets on its span", () => {
       const seeded = withSeededBackground(
         createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" }),
         DEFAULT_SPLIT_CHARACTER,
       );
-      const marked = [withBackgroundTrack(seeded, withTrackExplicit(backgroundTrack(seeded)!, true))];
-      const kept = mergeEditedExport(marked, (ttml) => ttml.replace(">Main<", ">Mane<"));
-      expect(drawnSyllables(kept[0]!, "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBe(true);
-
       const set = mergeEditedExport([seeded], (ttml) =>
         ttml.replace(
           '<span begin="0:02.000" end="0:03.000">',
           '<span begin="0:02.000" end="0:03.000" composer:explicit="true">',
         ),
       );
-      expect(drawnSyllables(set[0]!, "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBe(true);
+      expect(backgroundTrack(set[0]!)).toMatchObject({ begin: 2, end: 3 });
+      expect(drawnSyllables(set[0]!, "bg", DEFAULT_SPLIT_CHARACTER)[0].explicit).toBeUndefined();
     });
 
     it("regression: a retimed line-synced background stays line synced", () => {

@@ -3,21 +3,30 @@
  */
 import { type LineFields, lineFromFields } from "insync/line-from-fields";
 import type { LinkGroup } from "insync/group";
-import type { LyricLine } from "insync/line";
+import type { LyricLine, Syllable } from "insync/line";
+import { backgroundTrack, mainTrack } from "insync/line-track";
 import { findExplicitWords } from "@/utils/explicit-detection";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-function lineWithText(id: string, text: string, words?: LineFields["words"]): LyricLine {
+// Suggestions are for timed words only, so a line without given words is word synced, one second a word.
+function timedLine(fields: LineFields): LyricLine {
+  const untimed = lineFromFields(fields, DEFAULT_SPLIT_CHARACTER);
+  const timed = (syllables: readonly Syllable[]) =>
+    syllables.map((syllable, index) => ({ ...syllable, begin: index, end: index + 1 }));
+  const background = backgroundTrack(untimed);
   return lineFromFields(
     {
-      id,
-      text,
-      agentId: "v1",
-      ...(words ? { words } : {}),
+      ...fields,
+      words: fields.words ?? timed(mainTrack(untimed).syllables),
+      ...(background && { backgroundWords: fields.backgroundWords ?? timed(background.syllables) }),
     },
     DEFAULT_SPLIT_CHARACTER,
   );
+}
+
+function lineWithText(id: string, text: string, words?: LineFields["words"]): LyricLine {
+  return timedLine({ id, text, agentId: "v1", ...(words ? { words } : {}) });
 }
 
 describe("findExplicitWords", () => {
@@ -43,6 +52,23 @@ describe("findExplicitWords", () => {
     expect(againHit?.wordIndices).toBe(firstHit?.wordIndices);
   });
 
+  it("regression: suggests no mark for a line-synced line or its line-synced background", () => {
+    const line = lineFromFields(
+      {
+        id: "L1",
+        text: "I fuck you",
+        agentId: "v1",
+        begin: 1,
+        end: 3,
+        backgroundText: "oh shit",
+        backgroundBegin: 2,
+        backgroundEnd: 3,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(findExplicitWords([line])).toEqual([]);
+  });
+
   it("returns no suggestions for clean lyrics", () => {
     const result = findExplicitWords([lineWithText("L1", "I love you so much")]);
     expect(result).toHaveLength(0);
@@ -60,15 +86,12 @@ describe("findExplicitWords", () => {
   });
 
   it("detects a profanity in backgroundText with field='backgroundWords'", () => {
-    const line: LyricLine = lineFromFields(
-      {
-        id: "L1",
-        text: "clean main",
-        agentId: "v1",
-        backgroundText: "oh shit",
-      },
-      DEFAULT_SPLIT_CHARACTER,
-    );
+    const line: LyricLine = timedLine({
+      id: "L1",
+      text: "clean main",
+      agentId: "v1",
+      backgroundText: "oh shit",
+    });
     const result = findExplicitWords([line]);
     expect(result).toHaveLength(1);
     expect(result[0].field).toBe("backgroundWords");

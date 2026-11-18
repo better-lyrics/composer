@@ -2,6 +2,8 @@
 // editor sees a whole line as one word. For alignment each character becomes
 // its own timed part, which is how word-synced CJK lyrics are usually made.
 
+import { hasLetterOrDigit } from "insync/letter-or-digit";
+
 // -- Constants ----------------------------------------------------------------
 
 const HAN = /[\p{Script=Han}々〆]/u;
@@ -9,7 +11,6 @@ const KANA = /[\p{Script=Hiragana}\p{Script=Katakana}ー]/u;
 // Small kana, the long-vowel mark and the small tsu only extend the kana
 // before them, so they're timed with it.
 const EXTENDS_PREVIOUS = /[ぁぃぅぇぉゃゅょゎっァィゥェォャュョヮッー]/u;
-const LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -19,10 +20,6 @@ function isCjk(char: string): boolean {
 
 function hasHan(text: string): boolean {
   return HAN.test(text);
-}
-
-function hasLetterOrDigit(text: string): boolean {
-  return LETTER_OR_DIGIT.test(text);
 }
 
 function hasCjk(text: string): boolean {
@@ -54,7 +51,7 @@ function splitCjkPart(part: string): string[] {
       }
       flushRun();
       pieces.push(char);
-    } else if (LETTER_OR_DIGIT.test(char)) {
+    } else if (hasLetterOrDigit(char)) {
       run += char;
     } else if (run) {
       run += char;
@@ -70,4 +67,4 @@ function splitCjkPart(part: string): string[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { hasCjk, hasHan, hasKana, hasLetterOrDigit, splitCjkPart };
+export { hasCjk, hasHan, hasKana, splitCjkPart };

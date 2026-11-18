@@ -10,7 +10,7 @@ import type { WordTiming } from "./word-timing";
 interface WordFieldConfig {
   getWords: (line: LyricLine, splitChar: string) => WordTiming[] | undefined;
   writeWords: (line: LyricLine, words: WordTiming[]) => Partial<LyricLine>;
-  // retimeEdit deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
+  // Every timing write goes through here, so a background retimed by hand is stamped manual.
   buildBoundaryUpdate?: (line: LyricLine, words: WordTiming[], splitChar: string) => Partial<LyricLine>;
 }
 
@@ -75,7 +75,7 @@ function createWordTimingOps(config: WordFieldConfig) {
       const maxEnd = words[wordIdx + 1]?.begin ?? range.max;
       updatedWords[wordIdx] = { ...word, end: Math.min(maxEnd, Math.max(word.begin, candidate)) };
     }
-    return { id: line.id, updates: writeWords(line, updatedWords) };
+    return { id: line.id, updates: boundaryUpdate(line, updatedWords, splitChar) };
   }
 
   function boundaryEdit({

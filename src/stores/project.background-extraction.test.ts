@@ -41,7 +41,7 @@ describe("project store · background extraction on linked lines", () => {
     if (!target) throw new Error(`line ${lineId} not found`);
     const extracted = extractInlineFromLine(
       target,
-      { mergeStandaloneLines: false, preserveBrackets: false },
+      { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
       DEFAULT_SPLIT_CHARACTER,
     );
     useProjectStore.getState().commit(

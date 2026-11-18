@@ -1,4 +1,4 @@
-import { insertSlot, remapWordTextsPreservingTiming } from "./word-remap-text";
+import { insertSlot, remapWordTextsPreservingTiming, remapWordTextsWithinLimit } from "./word-remap-text";
 import { computeSyllableGroups } from "./word-syllable-groups";
 import type { WordTiming } from "./word-timing";
 import { describe, expect, it } from "vitest";
@@ -159,7 +159,11 @@ describe("remapWordTextsPreservingTiming", () => {
         "hello I",
         DEFAULT_SPLIT_CHARACTER,
       );
-      expect(tooShort.map((word) => [word.text, word.begin, word.end])[1]).toEqual(["I", 1, 1.001]);
+      // No word is ever written under a millisecond: with no time around it, "I" moves a millisecond later.
+      expect(tooShort.map((word) => [word.text, word.begin, word.end])).toEqual([
+        ["hello", 1, 1.001],
+        ["I", 1.001, 1.002],
+      ]);
     });
 
     it("regression: a word inserted into a gap shorter than a millisecond shares the next word's slot", () => {
@@ -171,6 +175,76 @@ describe("remapWordTextsPreservingTiming", () => {
       expect(result[1].end - result[1].begin).toBeGreaterThan(0.001);
       expect(result[1].end).toBe(result[2].begin);
       expect(result[2].end).toBe(3.45075);
+    });
+
+    it("regression: words typed between two short words with no room share the time of the words around them", () => {
+      const words: WordTiming[] = [
+        { id: "w50", text: "(sway", sep: " ", begin: 6.5, end: 6.59, joinsNext: false },
+        { id: "w51", text: "mor", sep: "", begin: 6.59, end: 6.592, joinsNext: true },
+        { id: "w52", text: "row", sep: " ", begin: 6.592, end: 6.594, joinsNext: false },
+        { id: "w53", text: "lan", sep: "", begin: 6.594, end: 6.595, joinsNext: true },
+        { id: "w54", text: "tern)", sep: "", begin: 6.595, end: 6.596, joinsNext: false },
+      ];
+      const result = remapWordTextsPreservingTiming(
+        words,
+        "(sway mor|row morrow glimmer river lan|tern)",
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const exportedMs = (word: WordTiming) => Math.round(word.end * 1000) - Math.round(word.begin * 1000);
+      expect(result.map((word) => word.text)).toEqual([
+        "(sway",
+        "mor",
+        "row",
+        "morrow",
+        "glimmer",
+        "river",
+        "lan",
+        "tern)",
+      ]);
+      expect(result.every((word) => exportedMs(word) >= 1)).toBe(true);
+      expect(result.every((word, index) => index === 0 || word.begin === result[index - 1].end)).toBe(true);
+      expect([result[0].begin, result.at(-1)?.end]).toEqual([6.5, 6.596]);
+    });
+
+    it("regression: a split mark typed in a word that ran into the next with no space keeps the split", () => {
+      const words: WordTiming[] = [
+        { id: "w60", text: "am", sep: "", begin: 1, end: 1.2, joinsNext: true },
+        { id: "w61", text: "ber", sep: "", begin: 1.2, end: 1.4, joinsNext: false },
+        { id: "w62", text: "rain", sep: "", begin: 1.4, end: 1.8, joinsNext: false },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "am|berra|in", DEFAULT_SPLIT_CHARACTER);
+      expect(result.map((word) => [word.text, word.joinsNext])).toEqual([
+        ["am", true],
+        ["berra", true],
+        ["in", false],
+      ]);
+    });
+
+    it("regression: words moved for room never end past the limit, zero-length tail words included", () => {
+      const packed: WordTiming[] = [
+        { id: "w80", text: "a", sep: " ", begin: 1, end: 1.001, joinsNext: false },
+        { id: "w81", text: "b", sep: " ", begin: 1.001, end: 1.002, joinsNext: false },
+        { id: "w82", text: "c", sep: "", begin: 1.002, end: 1.003, joinsNext: false },
+      ];
+      for (const limit of [1.003, 1.004, 1.005, 1.006]) {
+        const { words, untimedFrom } = remapWordTextsWithinLimit(packed, "a x b z c tail", DEFAULT_SPLIT_CHARACTER, limit);
+        const ms = (seconds: number) => Math.round(seconds * 1000);
+        const timed = words.slice(0, untimedFrom).filter((word) => word.end > word.begin);
+        expect(words.slice(0, untimedFrom).every((word) => ms(word.end) <= ms(limit))).toBe(true);
+        expect(timed.every((word, index) => index === 0 || ms(word.begin) >= ms(timed[index - 1].end))).toBe(true);
+      }
+    });
+
+    it("regression: two runs sharing the time of one kept word never overlap", () => {
+      const packed: WordTiming[] = [
+        { id: "w90", text: "a", sep: " ", begin: 0, end: 0.1, joinsNext: false },
+        { id: "w91", text: "b", sep: " ", begin: 0.1, end: 0.2, joinsNext: false },
+        { id: "w92", text: "c", sep: "", begin: 0.2, end: 0.201, joinsNext: false },
+      ];
+      const ms = (seconds: number) => Math.round(seconds * 1000);
+      const words = remapWordTextsPreservingTiming(packed, "a x b y c", DEFAULT_SPLIT_CHARACTER);
+      expect(words.every((word) => ms(word.end) - ms(word.begin) >= 1)).toBe(true);
+      expect(words.every((word, index) => index === 0 || ms(word.begin) >= ms(words[index - 1].end))).toBe(true);
     });
 
     it("regression: words inserted on both sides of one word do not overlap it", () => {

@@ -1,4 +1,4 @@
-import { hasLetterOrDigit } from "@/domain/alignment/cjk";
+import { hasLetterOrDigit } from "insync/letter-or-digit";
 import { type AlignmentWindow, LEAD_IN, capWindow } from "@/domain/alignment/window";
 import type { AlignmentWord, PartSplit, WordInterval } from "@/domain/alignment/words";
 

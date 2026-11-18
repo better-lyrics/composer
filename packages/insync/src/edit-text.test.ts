@@ -1,7 +1,12 @@
 import { lineFromFields } from "./line-from-fields";
 import { describe, expect, it } from "vitest";
 
-import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "./edit-text";
+import {
+  caretThroughRedraw,
+  editTextWithRewrittenRows,
+  linesToEditText,
+  shiftCaretPastRewrittenRows,
+} from "./edit-text";
 import { DEFAULT_SPLIT_CHARACTER } from "./split-character-text";
 
 const line = (id: string, text: string) => lineFromFields({ id, text, agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
@@ -64,5 +69,44 @@ describe("shiftCaretPastRewrittenRows", () => {
 
   it("regression: a join that moves the background behind the joined words keeps the caret where the rows met", () => {
     expect(shiftCaretPastRewrittenRows("love (away)you\nlove (away)", "love you (away)\nlove (away)", 11)).toBe(5);
+  });
+
+  it("regression: a join that moves a background group before the caret keeps the caret where the rows met", () => {
+    const typed = "bloom (tide) sigh mead|ow sighhar|bor sigh yon|der (sigh hum)";
+    const shown = "bloom sigh mead|ow sighhar|bor sigh yon|der (tide) (sigh hum)";
+    const caret = typed.indexOf("har|bor");
+    expect(shiftCaretPastRewrittenRows(typed, shown, caret)).toBe(shown.indexOf("har|bor"));
+  });
+
+  it("regression: a group extracted as it closes leaves the caret after the main text the user typed", () => {
+    const typed = "rain (tide) glow\nnext";
+    const shown = "rain glow (tide)\nnext";
+    expect(shiftCaretPastRewrittenRows(typed, shown, typed.indexOf(" glow"))).toBe("rain ".length);
+  });
+
+  it("regression: a dangling split mark cleaned at the row start keeps the caret after the same letters", () => {
+    expect(shiftCaretPastRewrittenRows("|rain glow", "rain glow", "|rain gl".length)).toBe("rain gl".length);
+  });
+
+  it("regression: a background row merged into the row above keeps the caret on the row it was on", () => {
+    const typed = "dusk tide\n  (low hum)\nember";
+    const shown = "dusk tide (low hum)\nember";
+    expect(shiftCaretPastRewrittenRows(typed, shown, typed.indexOf("ember"))).toBe(shown.indexOf("ember"));
+  });
+
+  it("regression: a row the redraw left as typed keeps the caret right after a group typed in it", () => {
+    const typed = "bloom (tide) sigh\nhar|bor";
+    expect(shiftCaretPastRewrittenRows(typed, "bloom (tide) sigh\nharbor", "bloom (tide)".length)).toBe(
+      "bloom (tide)".length,
+    );
+  });
+
+  it("regression: a group the redraw leaves after the same word keeps the caret after the group", () => {
+    const typed = "Harbour lights go down(go down)";
+    expect(shiftCaretPastRewrittenRows(typed, "Harbour lights go down (go down)", typed.length)).toBe(typed.length + 1);
+  });
+
+  it("regression: a letter used as the split character never makes removing that letter look like a redraw", () => {
+    expect(caretThroughRedraw("banana tide", "bnana tide", 4, "a")).toBeNull();
   });
 });

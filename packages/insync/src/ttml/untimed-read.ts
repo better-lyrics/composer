@@ -22,7 +22,7 @@ interface KeptSpan {
   readonly passthrough: Passthrough;
 }
 
-type BackgroundSpan = Pick<LineFields, "backgroundBegin" | "backgroundEnd" | "backgroundExplicit">;
+type BackgroundSpan = Pick<LineFields, "backgroundBegin" | "backgroundEnd">;
 
 interface UntimedLyric {
   readonly text: string;
@@ -131,7 +131,7 @@ function lineSyncedBackground(
   if (!trailingSpace.slice(0, -1).some(Boolean)) return null;
   return {
     lyric: untimedLyricOfTimedSpan(span.text, span.passthrough),
-    span: { backgroundBegin: span.begin, backgroundEnd: span.end, ...(span.explicit && { backgroundExplicit: true }) },
+    span: { backgroundBegin: span.begin, backgroundEnd: span.end },
   };
 }
 

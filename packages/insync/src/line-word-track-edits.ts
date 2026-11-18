@@ -1,7 +1,6 @@
 import { withAlignedWords } from "./language-align";
 import { regroupedLanguages } from "./language-pieces";
 import { withManualBackgroundWords } from "./line-background";
-import { explicitFieldWords } from "./line-drawn-track";
 import type { LyricLine } from "./line";
 import { fieldRole, fieldWords, type TrackField } from "./line-track";
 import { withRoleWords } from "./line-track-writes";
@@ -23,11 +22,7 @@ function withFieldWords(line: LyricLine, field: TrackField, words: WordTiming[],
   return withRoleWords(line, "main", words);
 }
 
-function expandTargetsToSyllableGroups(
-  targets: ExplicitTarget[],
-  linesById: Map<string, LyricLine>,
-  splitChar: string,
-): ExplicitTarget[] {
+function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map<string, LyricLine>): ExplicitTarget[] {
   const byLineField = new Map<string, { lineId: string; field: TrackField; indices: number[] }>();
   for (const t of targets) {
     const key = `${t.lineId}:${t.field}`;
@@ -38,7 +33,7 @@ function expandTargetsToSyllableGroups(
   const out: ExplicitTarget[] = [];
   for (const group of byLineField.values()) {
     const line = linesById.get(group.lineId);
-    const currentWords = line && explicitFieldWords(line, group.field, splitChar);
+    const currentWords = line && fieldWords(line, group.field);
     const expanded = currentWords ? expandSelectionToGroupmates(currentWords, group.indices) : group.indices;
     for (const idx of expanded) out.push({ lineId: group.lineId, field: group.field, wordIndex: idx });
   }
@@ -123,12 +118,12 @@ function applyMarkWordsExplicit(
   const linesById = new Map<string, LyricLine>();
   for (const l of current) linesById.set(l.id, l);
 
-  const expandedTargets = expandTargetsToSyllableGroups(targets, linesById, splitChar);
+  const expandedTargets = expandTargetsToSyllableGroups(targets, linesById);
 
   for (const target of expandedTargets) {
     const line = linesById.get(target.lineId);
     if (!line) continue;
-    const currentWords = explicitFieldWords(line, target.field, splitChar);
+    const currentWords = fieldWords(line, target.field);
     if (!currentWords || target.wordIndex < 0 || target.wordIndex >= currentWords.length) continue;
     if ((currentWords[target.wordIndex].explicit === true) === value) continue;
 
