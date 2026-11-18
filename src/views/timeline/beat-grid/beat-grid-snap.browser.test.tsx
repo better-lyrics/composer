@@ -1,14 +1,17 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { roleWords } from "insync/line-track";
 import { manualGrid } from "@/domain/tempo/grid-edits";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { applyWordPatch } from "@/utils/word-patch";
+import { applyWordPatch } from "insync/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { beforeEach, describe, expect, it } from "vitest";
+import { lineEditCommand } from "insync/commands/line-edits";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -22,8 +25,14 @@ const START_X = 200;
 
 function writeWordToStore(index: number, updates: Partial<WordTiming>): void {
   const line = useProjectStore.getState().lines[0];
-  const words = line.words && applyWordPatch(line.words, index, updates);
-  if (words) useProjectStore.getState().updateLineWithHistory(line.id, { words }, { propagateToSiblings: false });
+  const main = roleWords(line, "main");
+  const words = main && applyWordPatch(main, index, updates);
+  if (words)
+    useProjectStore
+      .getState()
+      .commit(
+        lineEditCommand({ command: "edit lines", args: [] }, () => fieldUpdates([{ id: line.id, updates: { words } }])),
+      );
 }
 
 function dragEndEdgeBy(offsetPx: number): void {
@@ -67,6 +76,6 @@ describe("beat grid snapping", () => {
 
     dragEndEdgeBy((BEAT_AT - word.end) * ZOOM - MISS_PX);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].end).toBe(BEAT_AT);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0].end).toBe(BEAT_AT);
   });
 });

@@ -1,4 +1,9 @@
-import type { LyricLine } from "@/domain/line/model";
+import { lineTransliteration } from "insync/language-line-languages";
+import { pieceOf } from "insync/language-pieces";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -16,15 +21,15 @@ function comparable(text: string): string {
  * song) use the dictionaries, as do stale transliterations of edited lyrics.
  */
 function sungTransliteration(line: LyricLine): string | null {
-  const track = line.transliteration;
+  const track = lineTransliteration(line);
   if (!track || track.stale) return null;
   const text =
-    track.text?.trim() ||
-    line.words
-      ?.map((word) => word.transliteration ?? "")
+    track.main.text?.trim() ||
+    timedSyllables(mainTrack(line))
+      .map((word) => pieceOf(track.main.pieces, word)?.text ?? "")
       .join(" ")
       .trim();
-  if (!text || comparable(text) === comparable(line.text)) return null;
+  if (!text || comparable(text) === comparable(lineText(line, getSplitCharacter()))) return null;
   return text;
 }
 

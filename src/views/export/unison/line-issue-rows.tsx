@@ -1,10 +1,12 @@
-import type { LyricLine } from "@/domain/line/model";
+import { useMemo, useState } from "react";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
 import type { LineIssue } from "@/domain/unison/submit-checks";
 import { useProjectStore } from "@/stores/project";
-import { pluralize } from "@/utils/pluralize";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { pluralize } from "insync/pluralize";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 import { revealLineInTimeline } from "@/views/timeline/line-reveal-request";
-import { useMemo, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -42,12 +44,14 @@ function issueLabel(issue: LineIssue): string {
 
 function issueText(line: LyricLine | undefined, issue: LineIssue): string {
   if (!line) return "";
-  return issue.track === "main" ? line.text : (line.backgroundText ?? "");
+  return issue.track === "main"
+    ? lineText(line, getSplitCharacter())
+    : (backgroundText(line, getSplitCharacter()) ?? "");
 }
 
 // Neighbouring problem words share one mark, so the underline runs across the space between them.
 function lyricSegments(text: string, problemSlots: readonly number[]): LyricSegment[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text, getSplitCharacter());
   const problems = new Set(problemSlots);
   const segments: LyricSegment[] = [];
   let offset = 0;

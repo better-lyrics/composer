@@ -1,18 +1,21 @@
+import { addInstance, removeInstance, shiftInstance } from "insync/commands/instance-edits";
+import { addGroupWithLines } from "insync/commands/group-edits";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { withNewInstance } from "@/domain/group/own-timing";
-import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
-import { pickedTemplateSource } from "@/domain/group/template-source";
-import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
-import { instanceKey, parseInstanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
-import { currentInstanceFromSelection } from "@/domain/instance/selection-instance";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { ReadableLine } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
-import type { WordSelection } from "@/domain/selection/model";
+import { type NudgeReport, nudgeSelection, setWordBoundary } from "insync/commands/word-timing";
+import { fillInstanceRows } from "insync/commands/instance-rows";
+import { pickedTemplateSource } from "insync/group-template-source";
+import { instanceBounds } from "insync/instance-bounds";
+import { instanceCount, linesOfInstance } from "insync/instance-enumerate";
+import { instanceKey, parseInstanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
+import { currentInstanceFromSelection } from "insync/selection-instance";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { trackRole } from "insync/line-track";
+import { lineWordSelections } from "insync/selection-line-selections";
+import { resolveAddress, toAddress } from "insync/selection-resolve";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
@@ -23,9 +26,8 @@ import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { showGroupActionToast, showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
+import { showSelectionRefusal } from "@/utils/selection-refusal-toast";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
-import { setWordBoundary } from "@/utils/timing/word-timing";
 import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
@@ -58,7 +60,7 @@ import { escapeStepTiming, pressStepShortcut } from "@/views/timeline/step-timin
 import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
+import { computeRowLayout } from "@/views/timeline/utils";
 import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import {
@@ -70,12 +72,13 @@ import {
   syllableMergeTarget,
   wordMergeTarget,
 } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineKeyboard(
   scrollContainerRef: RefObject<HTMLDivElement | null>,
-  lines: ReadableLine[],
+  lines: LyricLine[],
   duration: number,
   onOpenLyricsModal?: () => void,
 ) {
@@ -86,7 +89,7 @@ function useTimelineKeyboard(
       const currentTime = playheadTime();
 
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
-      const selectedWord = selectedWords[0] ?? null;
+      const selectedWord = selectedWords[0] ? resolveAddress(lines, selectedWords[0], getSplitCharacter()) : null;
       const fromPlayhead = !selectedWord;
       const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge, currentEffectiveFocus());
       if (!targetWord) {
@@ -97,7 +100,7 @@ function useTimelineKeyboard(
       const line = lines[targetWord.lineIndex];
       if (!line) return;
 
-      const wordsArray = trackWords(line, targetWord.type);
+      const wordsArray = drawnSyllables(line, trackRole(targetWord.type), getSplitCharacter());
       if (!wordsArray) return;
 
       const wordIndex = targetWord.wordIndex;
@@ -147,21 +150,20 @@ function useTimelineKeyboard(
         }
       }
 
-      const setBoundaryOp = targetWord.type === "word" ? setWordBoundary : setBgWordBoundary;
-      setBoundaryOp({
-        lines,
-        lineIdx: targetWord.lineIndex,
-        wordIdx: wordIndex,
-        edge,
-        time: currentTime,
-        minDuration: useSettingsStore.getState().minWordDuration,
-        range: timeRangeResolver(useProjectStore.getState().lines, useProjectStore.getState().groups, duration)(line),
-        rolling: useSettingsStore.getState().rollingEdit,
-        syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
-        updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
-      });
+      const settings = useSettingsStore.getState();
+      useProjectStore.getState().commit(
+        setWordBoundary({
+          address: toAddress(targetWord),
+          edge,
+          time: currentTime,
+          minDuration: settings.minWordDuration,
+          rolling: settings.rollingEdit,
+          syllablesFollowRolling: settings.syllablesFollowRolling,
+          duration,
+        }),
+      );
       noteGuideSignal("timeline.resize");
-      showLoupeAfterKeyEdit({ lineId: line.id, wordIndex, type: targetWord.type }, edge, word[edge]);
+      showLoupeAfterKeyEdit(targetWord, edge, word[edge]);
     },
     [lines, duration, scrollContainerRef],
   );
@@ -194,17 +196,11 @@ function useTimelineKeyboard(
       if (!claimedByUser) {
         if (e.code === "KeyA" && (e.metaKey || e.ctrlKey) && !e.repeat) {
           e.preventDefault();
-          const allSelections: WordSelection[] = [];
           const focus = currentEffectiveFocus();
-          for (let li = 0; li < lines.length; li++) {
-            const line = lines[li];
-            if (!isInFocus(line, focus)) continue;
-            for (let wi = 0; wi < (line.words?.length ?? 0); wi++)
-              allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
-            for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++)
-              allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "bg" });
-          }
-          useTimelineStore.getState().setSelectedWords(allSelections);
+          const inFocus = lines.filter((line) => isInFocus(line, focus));
+          useTimelineStore
+            .getState()
+            .setSelectedWords(inFocus.flatMap((value) => lineWordSelections(value, getSplitCharacter())));
           return;
         }
 
@@ -225,11 +221,7 @@ function useTimelineKeyboard(
           const { selectedWords: eSel } = useTimelineStore.getState();
           if (eSel.length === 1) {
             e.preventDefault();
-            useTimelineStore.getState().setEditingWord({
-              lineId: eSel[0].lineId,
-              wordIndex: eSel[0].wordIndex,
-              type: eSel[0].type,
-            });
+            useTimelineStore.getState().setEditingWord(eSel[0]);
             noteGuideSignal("timeline.editTextDirect");
           }
           return;
@@ -366,34 +358,47 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.editWord": {
-          const editable = singleSelectedWord(useTimelineStore.getState().selectedWords);
-          if (!editable) break;
+          const { selectedWords } = useTimelineStore.getState();
+          const editable = singleSelectedWord(selectedWords);
+          if (!editable) {
+            showSelectionRefusal("editText", selectedWords);
+            break;
+          }
           e.preventDefault();
-          useTimelineStore
-            .getState()
-            .setEditingWord({ lineId: editable.lineId, wordIndex: editable.wordIndex, type: editable.type });
+          useTimelineStore.getState().setEditingWord(editable);
           noteGuideSignal("timeline.editTextDirect");
           break;
         }
         case "timeline.splitSyllable":
         case "timeline.splitWord": {
-          if (!singleSelectedWord(useTimelineStore.getState().selectedWords)) break;
+          const { selectedWords } = useTimelineStore.getState();
+          if (!singleSelectedWord(selectedWords)) {
+            showSelectionRefusal("split", selectedWords);
+            break;
+          }
           e.preventDefault();
           const eventName = matched === "timeline.splitWord" ? "timeline:split-word" : "timeline:split-syllable";
           window.dispatchEvent(new CustomEvent(eventName));
           break;
         }
         case "timeline.mergeWords": {
-          const merge = wordMergeTarget(useTimelineStore.getState().selectedWords, useProjectStore.getState().lines);
-          if (!merge) break;
+          const { selectedWords } = useTimelineStore.getState();
+          const merge = wordMergeTarget(selectedWords, useProjectStore.getState().lines);
+          if (!merge) {
+            showSelectionRefusal("mergeWords", selectedWords);
+            break;
+          }
           e.preventDefault();
           runWordMerge(merge);
           break;
         }
         case "timeline.mergeSyllablesIntoWord": {
-          const projectLines = useProjectStore.getState().lines;
-          const merge = syllableMergeTarget(useTimelineStore.getState().selectedWords, projectLines);
-          if (!merge) break;
+          const { selectedWords } = useTimelineStore.getState();
+          const merge = syllableMergeTarget(selectedWords, useProjectStore.getState().lines);
+          if (!merge) {
+            showSelectionRefusal("joinSyllables", selectedWords);
+            break;
+          }
           e.preventDefault();
           runSyllableMerge(merge);
           break;
@@ -435,7 +440,7 @@ function useTimelineKeyboard(
             toast.error("Could not create group from this selection");
             break;
           }
-          projectState.addGroupWithLines(result.group, result.updatedLines);
+          projectState.commit(addGroupWithLines(result.group, result.updatedLines));
           noteGuideSignal("edit.group");
           showGroupedToast(result.group, filled.expanded.size, filled.addedCount);
           break;
@@ -466,7 +471,7 @@ function useTimelineKeyboard(
           const template = instanceToTemplate(
             projectState.lines,
             groupId,
-            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx),
+            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx, getSplitCharacter()),
           );
           if (template.length === 0) {
             toast.error("Could not derive instance template");
@@ -479,13 +484,10 @@ function useTimelineKeyboard(
             playheadTime: playheadAt,
           });
           if (placement.kind === "fill") {
-            projectState.setLinesWithHistory(
-              placement.updatedLines,
-              withNewInstance(projectState.groups, groupId, placement.instanceIdx),
-            );
+            projectState.commit(fillInstanceRows(groupId, placement.instanceIdx, placement.updatedLines));
             toast.success("Linked instance placed in empty rows");
           } else if (placement.kind === "insert") {
-            projectState.addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
+            projectState.commit(addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex));
             toast.success("Linked instance added at playhead");
           } else {
             copyInstanceToClipboardAndPreview(projectState.lines, groupId, sourceInstanceIdx);
@@ -553,7 +555,7 @@ function useTimelineKeyboard(
             break;
           }
           e.preventDefault();
-          useProjectStore.getState().removeInstance(inst.groupId, inst.instanceIdx);
+          useProjectStore.getState().commit(removeInstance(inst.groupId, inst.instanceIdx));
           showGroupActionToast("Instance detached");
           break;
         }
@@ -591,24 +593,13 @@ function useTimelineKeyboard(
           e.preventDefault();
           const nudgeAmount = useSettingsStore.getState().nudgeAmount;
           const requestedDelta = matched === "timeline.nudgeLeft" ? -nudgeAmount : nudgeAmount;
-          const { lines: rawLines, groups } = useProjectStore.getState();
-          const partitioned = partitionNudgeSelections(rawLines, nudgeSel);
-          const rangeOf = timeRangeResolver(rawLines, groups, duration);
-          const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
-          if (Math.abs(result.appliedDelta) < Math.abs(requestedDelta)) {
-            const wholeSong = () => wholeSongRange(duration);
-            const unshared = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, wholeSong);
-            if (Math.abs(unshared.appliedDelta) > Math.abs(result.appliedDelta)) showSharedSongEdgeToast();
-          }
-          if (result.updates.length === 0) break;
           const nudgedFrom = storedEdgeTime(nudgeSel[0], "begin");
-          if (result.updates.length === 1) {
-            useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates, {
-              propagateToSiblings: false,
-            });
-          } else {
-            useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
-          }
+          let nudge = null as NudgeReport | null;
+          useProjectStore
+            .getState()
+            .commit(nudgeSelection(nudgeSel, requestedDelta, duration, (reported) => (nudge = reported)));
+          if (nudge?.sharedCopyLimited) showSharedSongEdgeToast();
+          if (!nudge?.moved) break;
           noteGuideSignal("timeline.nudge");
           if (nudgedFrom !== null) showLoupeAfterKeyEdit(nudgeSel[0], "begin", nudgedFrom);
           break;
@@ -656,7 +647,7 @@ function useTimelineKeyboard(
           e.preventDefault();
           useProjectStore
             .getState()
-            .shiftInstance(inst.groupId, inst.instanceIdx, delta, useAudioStore.getState().duration);
+            .commit(shiftInstance(inst.groupId, inst.instanceIdx, delta, useAudioStore.getState().duration));
           break;
         }
         case "timeline.jumpPrevBar":

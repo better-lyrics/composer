@@ -1,16 +1,19 @@
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { shiftLineTiming } from "@/domain/line/shift";
-import type { WordSelection } from "@/domain/selection/model";
-import { commitGesture } from "@/domain/sync/commit-gesture";
-import { clampBoundaryTime } from "@/domain/word/boundary";
-import { boundsOverlap } from "@/domain/word/overlap";
-import type { WordTiming } from "@/domain/word/timing";
-import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
-import { stretchSelections } from "@/views/timeline/stretch-selection";
-import { nudgeSelectedWords } from "@/views/timeline/utils";
 import { beforeEach, describe, expect, it } from "vitest";
+import { lineEditCommand } from "insync/commands/line-edits";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import type { LineUpdate, LyricLine } from "insync/line";
+import { shiftLineTiming } from "insync/line-shift";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { nudgeSelectedWords } from "insync/selection-nudge";
+import { stretchSelections } from "insync/selection-stretch";
+import { commitGesture } from "insync/sync-commit-gesture";
+import { clampBoundaryTime } from "insync/word-boundary";
+import { boundsOverlap } from "insync/word-overlap";
+import type { WordTiming } from "insync/word-timing";
+import { useProjectStore } from "@/stores/project";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -28,10 +31,10 @@ function chorusLines(instanceIdx: number): LyricLine[] {
       groupId: "g1",
       instanceIdx,
       templateLineIdx: 0,
-      words: [
-        createWord({ text: "I ", begin: start, end: start + 0.4 }),
-        createWord({ text: "want", begin: start + 0.5, end: start + 1 }),
-      ],
+      words: createWords([
+        { text: "I", sep: " ", begin: start, end: start + 0.4 },
+        { text: "want", begin: start + 0.5, end: start + 1 },
+      ]),
       backgroundText: "oh",
       backgroundWords: [createWord({ text: "oh", begin: start + 0.2, end: start + 0.8 })],
     }),
@@ -41,10 +44,10 @@ function chorusLines(instanceIdx: number): LyricLine[] {
       groupId: "g1",
       instanceIdx,
       templateLineIdx: 1,
-      words: [
-        createWord({ text: "you ", begin: start + 1.2, end: start + 1.6 }),
-        createWord({ text: "now", begin: start + 1.7, end: start + 2.2 }),
-      ],
+      words: createWords([
+        { text: "you", sep: " ", begin: start + 1.2, end: start + 1.6 },
+        { text: "now", begin: start + 1.7, end: start + 2.2 },
+      ]),
     }),
   ];
 }
@@ -68,11 +71,11 @@ const lineById = (id: string): LyricLine => {
 const rangeOf = () => timeRangeResolver(store().lines, store().groups, DURATION);
 
 function commit(updates: LineUpdate[]): void {
-  store().updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+  store().commit(lineEditCommand({ command: "edit lines", args: [] }, () => updates));
 }
 
-function selectWords(lineId: string, count: number): WordSelection[] {
-  return Array.from({ length: count }, (_, wordIndex) => ({ lineId, lineIndex: 0, wordIndex, type: "word" as const }));
+function selectWords(lineId: string, count: number) {
+  return Array.from({ length: count }, (_, wordIndex) => ({ lineId, wordIndex, type: "word" as const }));
 }
 
 function expectTrackClean(track: readonly WordTiming[] | undefined, label: string): void {
@@ -87,16 +90,16 @@ function expectTrackClean(track: readonly WordTiming[] | undefined, label: strin
 
 function expectNoOverlapInSharedInstances(): void {
   for (const line of store().lines.filter((candidate) => candidate.groupId === "g1")) {
-    expectTrackClean(line.words, `${line.id} main`);
-    expectTrackClean(line.backgroundWords, `${line.id} background`);
+    expectTrackClean(roleWords(line, "main"), `${line.id} main`);
+    expectTrackClean(roleWords(line, "bg"), `${line.id} background`);
   }
 }
 
 function expectCopiesFollowSource(templateLine: "a" | "b"): void {
-  const source = lineById(`${templateLine}${SOURCE_INSTANCE}`).words ?? [];
+  const source = timedSyllables(mainTrack(lineById(`${templateLine}${SOURCE_INSTANCE}`)));
   for (const instanceIdx of [0, 2]) {
     const offset = INSTANCE_STARTS[instanceIdx] - INSTANCE_STARTS[SOURCE_INSTANCE];
-    const copy = lineById(`${templateLine}${instanceIdx}`).words ?? [];
+    const copy = timedSyllables(mainTrack(lineById(`${templateLine}${instanceIdx}`)));
     copy.forEach((word, index) => expect(word.begin).toBeCloseTo(source[index].begin + offset, 6));
   }
 }
@@ -107,16 +110,22 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
   beforeEach(seedSong);
 
   it("word nudge", () => {
-    const { updates } = nudgeSelectedWords(store().lines, selectWords("a1", 2), -50, rangeOf());
+    const { updates } = nudgeSelectedWords(
+      store().lines,
+      selectWords("a1", 2),
+      -50,
+      rangeOf(),
+      DEFAULT_SPLIT_CHARACTER,
+    );
     commit(updates);
 
-    expect(lineById("a1").words?.[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(lineById("a1")))[0].begin).toBe(8);
     expectCopiesFollowSource("a");
     expectNoOverlapInSharedInstances();
   });
 
   it("boundary drag", () => {
-    const words = lineById("b1").words ?? [];
+    const words = timedSyllables(mainTrack(lineById("b1")));
     const end = clampBoundaryTime({
       words,
       wordIndex: words.length - 1,
@@ -126,24 +135,32 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
       rollNeighbour: false,
       range: rangeOf()(lineById("b1")),
     });
-    commit([
-      {
-        id: "b1",
-        updates: { words: words.map((word, index) => (index === words.length - 1 ? { ...word, end } : word)) },
-      },
-    ]);
+    commit(
+      fieldUpdates([
+        {
+          id: "b1",
+          updates: { words: words.map((word, index) => (index === words.length - 1 ? { ...word, end } : word)) },
+        },
+      ]),
+    );
 
-    expect(lineById("b1").words?.at(-1)?.end).toBe(12.5);
+    expect(timedSyllables(mainTrack(lineById("b1"))).at(-1)?.end).toBe(12.5);
     expectCopiesFollowSource("b");
     expectNoOverlapInSharedInstances();
   });
 
   it("stretch", () => {
     const selection = [...selectWords("a1", 2), ...selectWords("b1", 2)];
-    const { updates, appliedFactor } = stretchSelections(store().lines, selection, 10, {
-      rangeOf: rangeOf(),
-      minWordDuration: MIN_WORD_DURATION,
-    });
+    const { updates, appliedFactor } = stretchSelections(
+      store().lines,
+      selection,
+      10,
+      {
+        rangeOf: rangeOf(),
+        minWordDuration: MIN_WORD_DURATION,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     commit(updates);
 
     expect(appliedFactor).toBeCloseTo((12.5 - 10) / 2.2, 6);
@@ -156,7 +173,7 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
     const line = lineById("a1");
     commit([{ id: line.id, updates: shiftLineTiming(line, -50, rangeOf()(line)) }]);
 
-    expect(lineById("a1").words?.[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(lineById("a1")))[0].begin).toBe(8);
     expectCopiesFollowSource("a");
     expectNoOverlapInSharedInstances();
   });
@@ -168,12 +185,13 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
       time: 6.5,
       defaultWordDuration: 0.3,
       groups: store().groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!gesture) throw new Error("tap produced no commit");
     commit(gesture.lineUpdates);
 
-    expect(lineById("a1").words?.[0].begin).toBe(8);
-    expect(lineById("x").words?.[0].end).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("a1")))[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(lineById("x")))[0].end).toBe(7);
     expectCopiesFollowSource("a");
     expectNoOverlapInSharedInstances();
   });

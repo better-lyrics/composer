@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { pasteLines } from "insync/commands/instance-rows";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { TabBar } from "@/ui/tab-bar";
 import { isMac } from "@/utils/platform";
 import { EditorScreen } from "@/views/editor-screen";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -22,7 +26,7 @@ function pressUndo(target: EventTarget): KeyboardEvent {
   return event;
 }
 
-const firstLineText = () => useProjectStore.getState().lines[0].text;
+const firstLineText = () => lineText(useProjectStore.getState().lines[0], getSplitCharacter());
 
 // -- Tests --------------------------------------------------------------------
 
@@ -58,7 +62,7 @@ describe("EditorScreen", () => {
       activeTab: "export",
       lines: [createLine({ id: "line", text: "Before", begin: 0, end: 1 })],
     });
-    useProjectStore.getState().updateLineWithHistory("line", { text: "After" });
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "line", updates: { text: "After" } }])));
     const screen = await render(<EditorScreen />, { withRouter: true });
 
     await screen.getByRole("button", { name: /Edit$/ }).click();

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SyncPanel } from "@/views/sync/sync-panel";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
+import { SyncPanel } from "@/views/sync/sync-panel";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -17,12 +18,12 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
     const screen = await render(<SyncPanel />);
 
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(5);
 
     setCurrentTime(7);
     setIsPlaying(false);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
   });
 
   it("leaves the next tap behaving as a tap after the song ended mid-hold", async () => {
@@ -30,11 +31,11 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
     const screen = await render(<SyncPanel />);
 
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
 
     setCurrentTime(7);
     setIsPlaying(false);
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
 
     setIsPlaying(true);
     setCurrentTime(9);
@@ -44,8 +45,8 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
     firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown");
 
     // A tap closes the word it writes; a hold-tap would leave end === begin.
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.begin).toBe(9);
-    const tapped = useProjectStore.getState().lines[0].words?.[1];
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[1]?.begin).toBe(9);
+    const tapped = roleWords(useProjectStore.getState().lines[0], "main")?.[1];
     expect(tapped?.end).toBeGreaterThan(9);
   });
 
@@ -54,7 +55,7 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
     const screen = await render(<SyncPanel />);
 
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
 
     setCurrentTime(7);
     firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown");
@@ -69,6 +70,34 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
   });
 });
 
+describe("SyncPanel · skipped hold", () => {
+  it("regression: a hold whose start was skipped never holds, so a tap during it writes a closed word", async () => {
+    loadPlayingProject();
+    const zeroLength = [
+      { text: "one", sep: " ", begin: 5, end: 5 },
+      { text: "two", sep: " ", begin: 5, end: 5 },
+    ];
+    useProjectStore.setState({ lines: [createLine({ text: "one two three", words: zeroLength })] });
+    const screen = await render(<SyncPanel />);
+    setIsPlaying(false);
+    await screen.getByRole("button", { name: "two", exact: true }).click();
+    setIsPlaying(true);
+    setCurrentTime(4);
+
+    const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
+    firePointer(holdCircle.element(), "pointerdown");
+    await expect.poll(() => holdCircle.element().getAttribute("aria-pressed")).toBe("false");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1]).toMatchObject({ begin: 5, end: 5 });
+
+    setCurrentTime(6);
+    firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown");
+    await expect.poll(() => timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1]?.begin).toBe(6);
+    for (const word of timedSyllables(mainTrack(useProjectStore.getState().lines[0])).slice(1)) {
+      expect(word.end).toBeGreaterThan(word.begin);
+    }
+  });
+});
+
 describe("SyncPanel · hold pointer ownership", () => {
   it("ignores a release from a pointer that did not start the hold", async () => {
     loadPlayingProject();
@@ -76,18 +105,18 @@ describe("SyncPanel · hold pointer ownership", () => {
 
     const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
     firePointer(holdCircle.element(), "pointerdown", 1);
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(5);
 
     setCurrentTime(7);
     firePointer(holdCircle.element(), "pointerup", 2);
 
     await expect.poll(() => holdCircle.element().getAttribute("aria-pressed")).toBe("true");
-    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0]?.end).toBe(5);
 
     setCurrentTime(8);
     firePointer(holdCircle.element(), "pointerup", 1);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(8);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(8);
   });
 
   it("lets a second finger drive the tap circle during a hold, the two-finger gesture", async () => {
@@ -95,13 +124,13 @@ describe("SyncPanel · hold pointer ownership", () => {
     const screen = await render(<SyncPanel />);
 
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown", 1);
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
 
     setCurrentTime(7);
     firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown", 2);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.begin).toBe(7);
-    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[1]?.begin).toBe(7);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0]?.end).toBe(7);
   });
 
   it("releases a hold started after an earlier hold was drained by an unmount", async () => {
@@ -111,18 +140,18 @@ describe("SyncPanel · hold pointer ownership", () => {
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown", 3);
     setCurrentTime(6);
     setIsPlaying(false);
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(6);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(6);
 
     setIsPlaying(true);
     setCurrentTime(7);
     const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
     firePointer(holdCircle.element(), "pointerdown", 9);
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.begin).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[1]?.begin).toBe(7);
 
     setCurrentTime(9);
     firePointer(holdCircle.element(), "pointerup", 9);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.end).toBe(9);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[1]?.end).toBe(9);
   });
 });
 
@@ -136,7 +165,7 @@ describe("SyncPanel · keyboard hold release", () => {
   }
 
   function wordTimings(): number[][] | undefined {
-    return useProjectStore.getState().lines[0].words?.map((w) => [w.begin, w.end]);
+    return roleWords(useProjectStore.getState().lines[0], "main")?.map((w) => [w.begin, w.end]);
   }
 
   it("closes the held word on keyup", async () => {
@@ -144,12 +173,12 @@ describe("SyncPanel · keyboard hold release", () => {
     await render(<SyncPanel />);
 
     pressHoldKey("keydown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(5);
 
     setCurrentTime(7);
     pressHoldKey("keyup");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
   });
 
   it("closes the held word when the window loses focus", async () => {
@@ -157,12 +186,12 @@ describe("SyncPanel · keyboard hold release", () => {
     await render(<SyncPanel />);
 
     pressHoldKey("keydown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(5);
 
     setCurrentTime(7);
     window.dispatchEvent(new Event("blur"));
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
   });
 
   it("does not let a keyboard press take over a hold the pointer started", async () => {
@@ -170,18 +199,18 @@ describe("SyncPanel · keyboard hold release", () => {
     const screen = await render(<SyncPanel />);
 
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(5);
 
     setCurrentTime(6);
     pressHoldKey("keydown");
     pressHoldKey("keyup");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(5);
 
     setCurrentTime(8);
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerup");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(8);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(8);
   });
 
   it("ignores a keyup that arrives after blur already closed the hold", async () => {
@@ -191,13 +220,13 @@ describe("SyncPanel · keyboard hold release", () => {
     pressHoldKey("keydown");
     setCurrentTime(7);
     window.dispatchEvent(new Event("blur"));
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
 
     setCurrentTime(9);
     pressHoldKey("keyup");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0]?.end).toBe(7);
   });
 
   it("regression: keeps the gap after gapless syllables when the next hold starts", async () => {

@@ -1,24 +1,26 @@
-import type { LyricLine } from "@/domain/line/model";
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
 const FLUSH_WORDS = [
-  { text: "hello ", begin: 0, end: 1 },
-  { text: "world", begin: 1, end: 2 },
+  { text: "hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+  { text: "world", sep: "", begin: 1, end: 2, joinsNext: false },
 ];
 
 const FLUSH_SYLLABLES = [
-  { text: "ev", begin: 0, end: 1 },
-  { text: "er", begin: 1, end: 2 },
+  { text: "ev", sep: "", begin: 0, end: 1, joinsNext: true },
+  { text: "er", sep: "", begin: 1, end: 2, joinsNext: false },
 ];
 
 async function armTimeline(options: {
@@ -34,9 +36,7 @@ async function armTimeline(options: {
   useProjectStore.setState({ activeTab: "timeline", lines: [options.line] });
   useSettingsStore.setState({ rollingEdit: options.rolling });
   useTimelineStore.setState({
-    selectedWords: [
-      { lineId: options.line.id, lineIndex: 0, wordIndex: options.wordIndex, type: options.type ?? "word" },
-    ],
+    selectedWords: [storedWordAddress(options.line.id, options.wordIndex, options.type ?? "word")],
   });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() => useTimelineKeyboard(scrollContainerRef, [options.line], duration));
@@ -63,7 +63,7 @@ function pressBoundaryKey(key: "[" | "]") {
 }
 
 function currentWords(lineIndex = 0) {
-  return useProjectStore.getState().lines[lineIndex].words ?? [];
+  return timedSyllables(mainTrack(useProjectStore.getState().lines[lineIndex]));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -124,8 +124,8 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
 
     useProjectStore.getState().undo();
 
-    expect(currentWords()[0]).toEqual({ text: "hello ", begin: 0, end: 1 });
-    expect(currentWords()[1]).toEqual({ text: "world", begin: 1, end: 2 });
+    expect(currentWords()[0]).toEqual({ text: "hello", sep: " ", begin: 0, end: 1, joinsNext: false });
+    expect(currentWords()[1]).toEqual({ text: "world", sep: "", begin: 1, end: 2, joinsNext: false });
   });
 
   it("caps the last word's end at the audio duration", async () => {
@@ -148,7 +148,7 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
       words: [{ text: "lead", begin: 0, end: 1 }],
       backgroundText: "ooh aah",
       backgroundWords: [
-        { text: "ooh ", begin: 1, end: 1.5 },
+        { text: "ooh", sep: " ", begin: 1, end: 1.5 },
         { text: "aah", begin: 1.5, end: 2 },
       ],
       backgroundTextSource: "extraction",
@@ -157,9 +157,9 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
 
     pressBoundaryKey("[");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[1].begin).toBeCloseTo(1.7, 10);
-    expect(useProjectStore.getState().lines[0].backgroundWords?.[0].end).toBeCloseTo(1.7, 10);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.[1].begin).toBeCloseTo(1.7, 10);
+    expect(timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]))[0].end).toBeCloseTo(1.7, 10);
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("threads the configured minimum word duration into the clamp", async () => {
@@ -177,7 +177,7 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     createLine({
       text: "done gave",
       words: [
-        { text: "done ", begin: 1, end: 2 },
+        { text: "done", sep: " ", begin: 1, end: 2 },
         { text: "gave", begin: 3, end: 4 },
       ],
     });
@@ -248,7 +248,7 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     pressBoundaryKey("]");
 
     await expect.poll(() => currentWords()[0].end).toBeCloseTo(3, 10);
-    expect(currentWords()[1]).toEqual({ text: "gave", begin: 3, end: 4 });
+    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4, joinsNext: false });
   });
 
   it("changes nothing when no word starts after the playhead", async () => {
@@ -257,8 +257,8 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     pressBoundaryKey("[");
 
     await expect.poll(() => currentWords()[1].end).toBe(4);
-    expect(currentWords()[0]).toEqual({ text: "done ", begin: 1, end: 2 });
-    expect(currentWords()[1]).toEqual({ text: "gave", begin: 3, end: 4 });
+    expect(currentWords()[0]).toEqual({ text: "done", sep: " ", begin: 1, end: 2, joinsNext: false });
+    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4, joinsNext: false });
   });
 
   it("changes nothing when no word ends before the playhead", async () => {
@@ -267,7 +267,7 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     pressBoundaryKey("]");
 
     await expect.poll(() => currentWords()[0].begin).toBe(1);
-    expect(currentWords()[0]).toEqual({ text: "done ", begin: 1, end: 2 });
-    expect(currentWords()[1]).toEqual({ text: "gave", begin: 3, end: 4 });
+    expect(currentWords()[0]).toEqual({ text: "done", sep: " ", begin: 1, end: 2, joinsNext: false });
+    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4, joinsNext: false });
   });
 });

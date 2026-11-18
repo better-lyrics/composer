@@ -1,9 +1,10 @@
+import { roleWords } from "insync/line-track";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { makeAltDuplicateEvent } from "@/views/timeline/use-timeline-dnd.test-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -17,10 +18,10 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 2, end: begin + 3 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 2, end: begin + 3 },
+    ]),
   });
 }
 
@@ -31,7 +32,11 @@ function seed(sharesTiming: boolean): void {
   });
 }
 
-const firstWordOf = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id)?.words?.[0];
+const firstWordOf = (id: string) =>
+  roleWords(
+    useProjectStore.getState().lines.find((line) => line.id === id),
+    "main",
+  )?.[0];
 
 // -- Tests --------------------------------------------------------------------
 
@@ -59,7 +64,7 @@ describe("useTimelineDnd · alt-drag duplicate in a shared group", () => {
       result.current.handleDragEnd(makeAltDuplicateEvent(0, -350));
 
       expect(firstWordOf("l1")).toMatchObject({ begin: 6.5, end: 7.5 });
-      expect(firstWordOf("c0")).toMatchObject({ begin: 3, end: 4 });
+      expect(firstWordOf("c0")).toMatchObject({ text: "go", begin: 0, end: 0.5 });
     });
   });
 });

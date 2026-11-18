@@ -3,7 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 import { rulerLabelTimes, rulerStep } from "@/views/timeline/ruler-labels";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";

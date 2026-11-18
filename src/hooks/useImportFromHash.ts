@@ -1,11 +1,12 @@
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
+import type { Agent } from "insync/agent";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import type { ProjectMetadata } from "insync/metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { startSongInNewProject } from "@/lib/open-project";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
-import { isFromNewerComposer } from "@/lib/saved-project";
+import { isFromNewerComposer, linesFromLink } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { IMPORT_HASH_PREFIX, hasBootUnisonLyric } from "@/utils/incoming-link";
 import { showNewProjectToast, showNewerLinkToast } from "@/utils/project-toast";
@@ -17,7 +18,10 @@ import { toast } from "sonner";
 interface ImportPayload {
   metadata: ProjectMetadata;
   agents: Agent[];
-  lines: LyricLine[];
+  version?: unknown;
+  lines: unknown[];
+  parts?: Part[];
+  passthrough?: DocPassthrough;
   granularity: "line" | "word";
 }
 
@@ -43,7 +47,11 @@ function applyImport(payload: ImportPayload, metadata: ProjectMetadata): void {
   useProjectStore.getState().reset();
   const state = useProjectStore.getState();
   state.setMetadata(metadata);
-  state.setLines(payload.lines);
+  state.restoreLyrics({
+    lines: linesFromLink(payload),
+    parts: payload.parts ?? [],
+    passthrough: payload.passthrough ?? {},
+  });
   state.setGranularity(payload.granularity);
   for (const agent of payload.agents) {
     if (!useProjectStore.getState().agents.some((existing) => existing.id === agent.id)) {

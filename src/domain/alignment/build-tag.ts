@@ -1,5 +1,5 @@
-import { fnv1a } from "@/utils/fnv1a";
-import { ROOT_TT_TAG_REGEX } from "@/utils/lyrics-parsers/ttml-helpers";
+import { fnv1a } from "insync/fnv1a";
+import { ROOT_TT_TAG_REGEX } from "insync/ttml/read-helpers";
 
 // -- Types --------------------------------------------------------------------
 

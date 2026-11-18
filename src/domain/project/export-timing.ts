@@ -1,4 +1,4 @@
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 
 // -- Constants ----------------------------------------------------------------
 

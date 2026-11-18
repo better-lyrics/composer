@@ -3,7 +3,7 @@ import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { compareWithLive, previewRevision } from "@/lib/unison/endpoints";
 import type { RevisionInput } from "@/lib/unison/revision-types";
-import { fnv1a } from "@/utils/fnv1a";
+import { fnv1a } from "insync/fnv1a";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 

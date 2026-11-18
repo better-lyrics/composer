@@ -1,9 +1,9 @@
-import type { LanguageTextVariant } from "@/domain/language/display";
-import { hasTransliteration } from "@/domain/language/has-transliteration";
+import type { LanguageTextVariant } from "insync/language-display";
+import { hasTransliteration } from "insync/language-has-transliteration";
 import type { ResumePosition } from "@/domain/project/resume-position";
-import type { LoopRegion } from "@/domain/selection/loop-region";
-import type { WordSelection } from "@/domain/selection/model";
-import type { Bounds } from "@/domain/word/bounds";
+import type { LoopRegion } from "insync/selection-loop-region";
+import type { SyllableAddress } from "insync/selection-model";
+import type { Bounds } from "insync/word-bounds";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
@@ -20,7 +20,7 @@ import { create } from "zustand";
 // -- Types ---------------------------------------------------------------------
 
 type ContextMenuTarget =
-  | { kind: "word"; lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }
+  | ({ kind: "word" } & SyllableAddress)
   | { kind: "track"; lineId: string; lineIndex: number; time: number; type: "word" | "bg" }
   | { kind: "gutter"; lineId: string; lineIndex: number }
   | { kind: "group-banner"; groupId: string; instanceIdx: number; source: "gutter" | "banner" };
@@ -36,11 +36,7 @@ interface TrackHit {
   track: "word" | "bg";
 }
 
-interface EditingWord {
-  lineId: string;
-  wordIndex: number;
-  type: "word" | "bg";
-}
+type EditingWord = SyllableAddress;
 
 type SelectionPlaybackMode = "once" | "loop";
 
@@ -53,7 +49,7 @@ interface LoopRegionDrag {
 interface TimelineState {
   zoom: number;
   textVariant: LanguageTextVariant;
-  selectedWords: WordSelection[];
+  selectedWords: SyllableAddress[];
   selectionPlayback: SelectionPlaybackMode | null;
   loopRegion: LoopRegion | null;
   loopRegionDrag: LoopRegionDrag | null;
@@ -74,7 +70,7 @@ interface TimelineState {
   editingWord: EditingWord | null;
   markerMode: boolean;
   stepTiming: boolean;
-  stepQueue: WordSelection[] | null;
+  stepQueue: SyllableAddress[] | null;
   hoveredSnapPointId: string | null;
   collapsedInstances: Record<string, boolean>;
   focusedGroup: GroupFocus | null;
@@ -83,6 +79,7 @@ interface TimelineState {
   renamingInstanceIdx: number | null;
   draggedGroupShift: { groupId: string; instanceIdx: number; offsetPx: number } | null;
   wordDragHover: TrackHit | null;
+  isDraggingWord: boolean;
   isBypassing: boolean;
   snappedBlockId: string | null;
   snappedAnchorTime: number | null;
@@ -99,13 +96,13 @@ interface TimelineActions {
   zoomOut: () => void;
   toggleTextVariant: () => void;
   setTextVariant: (textVariant: LanguageTextVariant) => void;
-  setSelectedWords: (selections: WordSelection[], asQueue?: boolean) => void;
+  setSelectedWords: (selections: SyllableAddress[], asQueue?: boolean) => void;
   setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
   setLoopRegion: (region: LoopRegion | null) => void;
   setLoopRegionDrag: (drag: LoopRegionDrag | null) => void;
   setWaveformReady: (ready: boolean) => void;
 
-  toggleSelection: (selection: WordSelection) => void;
+  toggleSelection: (selection: SyllableAddress) => void;
   clearSelection: () => void;
   setClipboard: (clipboard: ClipboardData | null) => void;
   setPasteMode: (mode: PasteMode) => void;
@@ -132,6 +129,7 @@ interface TimelineActions {
   setRenamingGroupId: (groupId: string | null, instanceIdx?: number | null) => void;
   setDraggedGroupShift: (shift: { groupId: string; instanceIdx: number; offsetPx: number } | null) => void;
   setWordDragHover: (hover: TrackHit | null) => void;
+  setDraggingWord: (isDraggingWord: boolean) => void;
   setIsBypassing: (v: boolean) => void;
   setSnappedBlockId: (id: string | null) => void;
   setSnappedAnchorTime: (t: number | null) => void;
@@ -188,6 +186,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     renamingInstanceIdx: null,
     draggedGroupShift: null,
     wordDragHover: null,
+    isDraggingWord: false,
     isBypassing: false,
     snappedBlockId: null,
     snappedAnchorTime: null,
@@ -274,6 +273,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
           ? s
           : { wordDragHover },
       ),
+    setDraggingWord: (isDraggingWord) => set({ isDraggingWord }),
     setIsBypassing: (v) => set({ isBypassing: v }),
     setSnappedBlockId: (id) => set((s) => (s.snappedBlockId === id ? s : { snappedBlockId: id })),
     setSnappedAnchorTime: (t) => set((s) => (s.snappedAnchorTime === t ? s : { snappedAnchorTime: t })),
@@ -295,5 +295,5 @@ useSettingsStore.subscribe((settings, previous) => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
 export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };
+export { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT, ZOOM_STEP };

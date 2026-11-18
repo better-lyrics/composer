@@ -9,16 +9,17 @@ import {
   getFromStore,
   runTransaction,
 } from "@/lib/persistence-idb";
+import { removeAllPreV4Records } from "@/lib/pre-v4-records";
 import { announceProjectsDeleted } from "@/lib/project-channel";
 import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
 import { isProjectDeleted, writeTombstone } from "@/lib/project-tombstones";
-import type { SavedProject } from "@/lib/saved-project";
+import type { StoredProject } from "@/lib/saved-project";
 
 // -- Types --------------------------------------------------------------------
 
 interface StoredProjectRecord {
   id: string;
-  project: SavedProject;
+  project: StoredProject;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -45,8 +46,8 @@ async function getOpenProjectId(): Promise<string | undefined> {
   return id !== undefined && !(await isProjectDeleted(id)) ? id : undefined;
 }
 
-function loadProjectRecord(id: string): Promise<SavedProject | undefined> {
-  return getFromStore<SavedProject>(PROJECT_RECORD_STORE_NAME, id);
+function loadProjectRecord(id: string): Promise<StoredProject | undefined> {
+  return getFromStore<StoredProject>(PROJECT_RECORD_STORE_NAME, id);
 }
 
 async function listProjectRecords(): Promise<StoredProjectRecord[]> {
@@ -56,7 +57,7 @@ async function listProjectRecords(): Promise<StoredProjectRecord[]> {
     request.onsuccess = () => {
       const cursor = request.result;
       if (!cursor) return;
-      records.push({ id: String(cursor.key), project: cursor.value as SavedProject });
+      records.push({ id: String(cursor.key), project: cursor.value as StoredProject });
       cursor.continue();
     };
   });
@@ -78,6 +79,7 @@ async function clearAllProjects(): Promise<void> {
       for (const id of ids) writeTombstone(tx, id);
       for (const name of [PROJECT_STORE_NAME, STEM_STORE_NAME, ...PROJECT_DATA_STORES]) tx.objectStore(name).clear();
       appState.delete(OPEN_PROJECT_KEY);
+      removeAllPreV4Records(tx);
       clearedIds = [...ids];
     };
   });

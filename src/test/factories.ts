@@ -1,9 +1,12 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { wordsFromSpaced } from "insync/word-spaced-words";
+import type { WordTiming } from "insync/word-timing";
 import type { ProjectSaveInput } from "@/lib/persistence";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 interface FactoryLineOptions {
   id?: string;
@@ -20,13 +23,14 @@ interface FactoryLineOptions {
   templateLineIdx?: number;
 }
 
-interface FactoryWordOptions {
-  text: string;
-  begin: number;
-  end: number;
-  explicit?: true;
+// Words as tests spell them: without `sep` the text's trailing whitespace is the separator, and
+// without `joinsNext` the joins follow ids or spacing exactly as a saved track loads.
+type FactoryWordOptions = Omit<WordTiming, "id" | "sep" | "joinsNext"> & {
+  id?: string;
+  sep?: string;
+  joinsNext?: boolean;
   syllableGroupId?: string;
-}
+};
 
 interface FactoryGroupOptions {
   id?: string;
@@ -40,34 +44,41 @@ interface FactoryGroupOptions {
 let lineCounter = 0;
 let groupCounter = 0;
 
+function createWords(words: readonly FactoryWordOptions[]): WordTiming[] {
+  const spaced = words.map(({ sep, joinsNext: _joins, ...word }) =>
+    sep === undefined ? word : { ...word, text: word.text + sep },
+  );
+  return wordsFromSpaced(spaced).map((word, index) => {
+    const { joinsNext } = words[index];
+    return joinsNext === undefined ? word : { ...word, joinsNext };
+  });
+}
+
 function createWord(opts: FactoryWordOptions): WordTiming {
-  return {
-    text: opts.text,
-    begin: opts.begin,
-    end: opts.end,
-    ...(opts.explicit ? { explicit: opts.explicit } : {}),
-    ...(opts.syllableGroupId ? { syllableGroupId: opts.syllableGroupId } : {}),
-  };
+  return createWords([opts])[0];
 }
 
 function createLine(opts: FactoryLineOptions = {}): LyricLine {
   const id = opts.id ?? `line-${++lineCounter}`;
-  const text = opts.text ?? "Test lyric line";
+  const text = opts.text ?? (opts.words ? "" : "Test lyric line");
   const agentId = opts.agentId ?? DEFAULT_AGENTS[0]?.id ?? "v1";
-  return reconcileLine({
-    id,
-    text,
-    agentId,
-    ...(opts.begin !== undefined ? { begin: opts.begin } : {}),
-    ...(opts.end !== undefined ? { end: opts.end } : {}),
-    ...(opts.words ? { words: opts.words.map(createWord) } : {}),
-    ...(opts.backgroundText ? { backgroundText: opts.backgroundText } : {}),
-    ...(opts.backgroundWords ? { backgroundWords: opts.backgroundWords.map(createWord) } : {}),
-    ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
-    ...(opts.groupId ? { groupId: opts.groupId } : {}),
-    ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
-    ...(opts.templateLineIdx !== undefined ? { templateLineIdx: opts.templateLineIdx } : {}),
-  });
+  return lineFromFields(
+    {
+      id,
+      text,
+      agentId,
+      ...(opts.begin !== undefined ? { begin: opts.begin } : {}),
+      ...(opts.end !== undefined ? { end: opts.end } : {}),
+      ...(opts.words ? { words: createWords(opts.words) } : {}),
+      ...(opts.backgroundText ? { backgroundText: opts.backgroundText } : {}),
+      ...(opts.backgroundWords ? { backgroundWords: createWords(opts.backgroundWords) } : {}),
+      ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
+      ...(opts.groupId ? { groupId: opts.groupId } : {}),
+      ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
+      ...(opts.templateLineIdx !== undefined ? { templateLineIdx: opts.templateLineIdx } : {}),
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 function snapPoints(times: number[]): SnapPoint[] {
@@ -90,7 +101,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
   return {
     metadata: { title: "t", artists: [], album: "", duration: 0 },
     agents: DEFAULT_AGENTS,
-    lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+    lines: [createLine({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })],
     groups: [],
     granularity: "word",
     exportTiming: "word",
@@ -115,4 +126,5 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
   };
 }
 
-export { createGroup, createLine, createProjectSaveInput, createWord, snapPoints };
+export type { FactoryLineOptions };
+export { createGroup, createLine, createProjectSaveInput, createWord, createWords, snapPoints };

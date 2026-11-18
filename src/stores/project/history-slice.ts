@@ -1,12 +1,11 @@
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import {
-  amendCurrentStep,
-  canUndoFrom,
-  commitPendingEdit,
-  redoState,
-  undoState,
-} from "@/stores/project/history-helpers";
-import type { HistoryActions, HistoryState, ProjectStore } from "@/stores/project/types";
+import { isRefused } from "insync/commands/outcome";
+import { notifyPlacementBlocked, notifySharedTimingCopied } from "@/lib/shared-timing-signals";
+import { notifyTemplateSplit } from "@/lib/template-split-signals";
+import { commitCommand } from "@/stores/project/commit";
+import { writingLyrics } from "@/stores/project/lyric-change-listeners";
+import { canUndoFrom, commitPendingEdit, redoState, undoState } from "@/stores/project/history-helpers";
+import type { HistoryActions, HistoryState } from "@/stores/project/history-types";
+import type { ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------
@@ -17,6 +16,7 @@ function createHistoryInitialState(): HistoryState {
     history: [],
     historyIndex: -1,
     isDirtySinceHistory: false,
+    pendingNote: null,
   };
 }
 
@@ -29,23 +29,38 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
 
   markClean: () => set({ isDirty: false }),
 
-  undo: () => set(undoState),
+  commit: (command, mode = "step") => {
+    const { patch, outcome, copiedGroupIds, splits } = commitCommand(get(), command, mode);
+    if (patch) writingLyrics(get, "command", () => set(patch));
+    if (copiedGroupIds.length) notifySharedTimingCopied(copiedGroupIds);
+    if (splits.length) notifyTemplateSplit(splits.map((split) => split.instances));
+    if (isRefused(outcome) && outcome.refused.reason === "placement-out-of-range") notifyPlacementBlocked();
+    return outcome;
+  },
 
-  redo: () => set(redoState),
+  undo: () => writingLyrics(get, "undo", () => set(undoState)),
 
-  commitPendingLineEdit: (baseline, baselineWasDirty) =>
-    set((state) => commitPendingEdit(state, baseline, baselineWasDirty)),
+  redo: () => writingLyrics(get, "redo", () => set(redoState)),
 
-  applyLineUpdatesToCurrentStep: (updates) =>
-    set((state) => amendCurrentStep(state, applyLineUpdates(state.lines, updates))),
+  beginLyricBurst: () => {
+    const { lines, parts, passthrough, isDirtySinceHistory } = get();
+    return { lines, parts, passthrough, wasPending: isDirtySinceHistory };
+  },
+
+  closeLyricBurst: (burst) => set((state) => commitPendingEdit(state, burst)),
+
+  isCurrentStep: (entry) => {
+    const { history, historyIndex, isDirtySinceHistory } = get();
+    return history[historyIndex] === entry && !isDirtySinceHistory;
+  },
 
   canUndo: () => canUndoFrom(get()),
 
   canRedo: () => get().historyIndex < get().history.length - 1,
 
-  clearHistory: () => set({ history: [], historyIndex: -1, isDirtySinceHistory: false }),
+  clearHistory: () => set({ history: [], historyIndex: -1, isDirtySinceHistory: false, pendingNote: null }),
 });
 
 // -- Exports ------------------------------------------------------------------
 
-export { createHistorySlice, createHistoryInitialState };
+export { createHistoryInitialState, createHistorySlice };

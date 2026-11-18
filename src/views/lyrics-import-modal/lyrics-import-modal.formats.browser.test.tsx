@@ -1,4 +1,10 @@
-import { hasAnyTiming } from "@/domain/line/predicates";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { hasAnyTiming } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
+import { mainTrack } from "insync/line-track";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -8,10 +14,7 @@ import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { restoreProvidersForTests, snapshotProvidersForTests } from "@/utils/lyrics-search/registry";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const SRT = "1\n00:00:02,000 --> 00:00:04,500\nFirst subtitle line\n\n2\n00:00:05,000 --> 00:00:07,000\nSecond line";
 const TTML =
@@ -87,7 +90,7 @@ describe("I1 paste path format detection", () => {
     useSettingsStore.setState({ autoExtractBackgroundVocals: false });
     const screen = await render(host());
     await pasteAndImport(screen, SRT);
-    const texts = useProjectStore.getState().lines.map((line) => line.text);
+    const texts = useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()));
     expect(texts).toEqual(["First subtitle line", "Second line"]);
   });
 
@@ -95,7 +98,7 @@ describe("I1 paste path format detection", () => {
     useSettingsStore.setState({ autoExtractBackgroundVocals: false });
     const screen = await render(host());
     await pasteAndImport(screen, TTML);
-    const texts = useProjectStore.getState().lines.map((line) => line.text);
+    const texts = useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()));
     expect(texts).toEqual(["Hello"]);
   });
 });
@@ -106,7 +109,7 @@ describe("pasted LRC", () => {
     const screen = await render(host());
     await pasteAndImport(screen, LRCLIB_STYLE_PASTE);
     const { lines, metadata } = useProjectStore.getState();
-    expect(lines.map((line) => [line.text, line.begin])).toEqual([
+    expect(lines.map((line) => [lineText(line, getSplitCharacter()), mainTrack(line).begin])).toEqual([
       ["Is this the real life?", 0.63],
       ["Is this just fantasy?", 4.21],
     ]);
@@ -114,10 +117,10 @@ describe("pasted LRC", () => {
   });
 
   it("gives pasted lines the first singer of the project", async () => {
-    useProjectStore.getState().setAgents([{ id: "v2", type: "person", name: "Bob" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v2", type: "person", name: "Bob" }] });
     const screen = await render(host());
     await pasteAndImport(screen, "First line\nSecond line");
-    expect(useProjectStore.getState().lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
+    expect(useProjectStore.getState().lines.map((line) => mainTrack(line).agentId)).toEqual(["v2", "v2"]);
   });
 
   it("regression: never imports a rich text paste as timed lines", async () => {
@@ -157,7 +160,7 @@ describe("partially readable lyrics files", () => {
     const screen = await render(host());
     await uploadAndImport(screen, "weird.lrc", WEIRD_LRC);
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["valid"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["valid"]);
     await expect.element(screen.getByText("Imported 1 line. 3 lines could not be read.")).toBeInTheDocument();
   });
 
@@ -165,7 +168,10 @@ describe("partially readable lyrics files", () => {
     const screen = await render(host());
     await uploadAndImport(screen, "mixed.lrc", LRC_WITH_IGNORED_TAG);
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Chorus", "Next"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
+      "Chorus",
+      "Next",
+    ]);
     await expect.element(screen.getByText("Imported 2 lines. 1 line could not be read.")).toBeInTheDocument();
   });
 });
@@ -192,15 +198,17 @@ describe("I6 paste and upload of the same text", () => {
   it("produce the same lines", async () => {
     const screen = await render(host());
     await pasteAndImport(screen, PLAIN);
-    const pasted = useProjectStore
-      .getState()
-      .lines.map((line) => ({ text: line.text, backgroundText: line.backgroundText ?? null }));
+    const pasted = useProjectStore.getState().lines.map((line) => ({
+      text: lineText(line, getSplitCharacter()),
+      backgroundText: backgroundText(line, getSplitCharacter()) ?? null,
+    }));
 
     await uploadAndImport(screen, "plain.txt", PLAIN);
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
-    const uploaded = useProjectStore
-      .getState()
-      .lines.map((line) => ({ text: line.text, backgroundText: line.backgroundText ?? null }));
+    const uploaded = useProjectStore.getState().lines.map((line) => ({
+      text: lineText(line, getSplitCharacter()),
+      backgroundText: backgroundText(line, getSplitCharacter()) ?? null,
+    }));
 
     expect(uploaded).toEqual(pasted);
   });

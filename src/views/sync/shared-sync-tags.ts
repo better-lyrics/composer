@@ -1,11 +1,12 @@
-import { instanceStart, instancesInLineOrder, keepsOwnTiming } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
-import { attachedLineIndices } from "@/domain/instance/enumerate";
-import { instanceName } from "@/domain/instance/name";
-import type { LyricLine } from "@/domain/line/model";
-import { isSyncableLine } from "@/domain/line/sync-progress";
-import type { SyncCursor } from "@/domain/sync/cursor";
-import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
+import { instanceStart, instancesInLineOrder, keepsOwnTiming } from "insync/group-shared-timing";
+import type { LinkGroup } from "insync/group";
+import { attachedLineIndices } from "insync/instance-enumerate";
+import { instanceName } from "insync/instance-name";
+import type { LyricLine } from "insync/line";
+import { isSyncableLine } from "insync/line-sync-progress";
+import type { SyncCursor } from "insync/sync-cursor";
+import { sharedAnchorAt } from "insync/sync-shared-anchor";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -25,7 +26,7 @@ function sharedSuffix(
   cursor: SyncCursor,
 ): string {
   if (keepsOwnTiming(group, instanceIdx)) return " · own timing";
-  if (!sharedAnchorAt(lines, groups, { lineIndex: anchorIndex, wordIndex: 0 })) return "";
+  if (!sharedAnchorAt(lines, groups, { lineIndex: anchorIndex, wordIndex: 0 }, getSplitCharacter())) return "";
   if (instanceStart(lines, group.id, instanceIdx) !== null) return " · placed";
   return cursor.lineIndex === anchorIndex && cursor.wordIndex === 0 ? " · tap to place" : " · shared";
 }
@@ -39,7 +40,7 @@ function laneGroupTags(
   for (const group of groups) {
     for (const instanceIdx of instancesInLineOrder(lines, group.id)) {
       const indices = attachedLineIndices(lines, group.id, instanceIdx);
-      const first = indices.find((index) => isSyncableLine(lines[index])) ?? indices[0];
+      const first = indices.find((index) => isSyncableLine(lines[index], getSplitCharacter())) ?? indices[0];
       if (first === undefined) continue;
       const suffix = group.sharesTiming ? sharedSuffix(lines, groups, group, instanceIdx, first, cursor) : "";
       tags.set(lines[first].id, { label: `${instanceName(lines, group, instanceIdx)}${suffix}`, color: group.color });
@@ -49,7 +50,7 @@ function laneGroupTags(
 }
 
 function placingInstanceName(lines: readonly LyricLine[], groups: readonly LinkGroup[], cursor: SyncCursor) {
-  const anchor = sharedAnchorAt(lines, groups, cursor);
+  const anchor = sharedAnchorAt(lines, groups, cursor, getSplitCharacter());
   const group = anchor && groups.find((candidate) => candidate.id === anchor.groupId);
   return anchor && group ? instanceName(lines, group, anchor.instanceIdx) : null;
 }

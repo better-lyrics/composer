@@ -1,7 +1,7 @@
-import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
-import { boundsOverlap } from "@/domain/word/overlap";
-import type { SyllablePosition } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import { type BoundaryEdge, boundaryTarget, shouldRollNeighbour } from "insync/word-boundary";
+import { boundsOverlap } from "insync/word-overlap";
+import type { SyllablePosition } from "insync/word-syllable-groups";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useSettingsStore } from "@/stores/settings";
@@ -157,7 +157,7 @@ function useWordResizeDrag({
 
         const edgeAtStart = edge === "left" ? originalWord.begin : originalWord.end;
         const snapShiftPx = computeShiftPx(rawDeltaPx, [edgeAtStart]);
-        const clamped = clampBoundaryTime({
+        const target = boundaryTarget({
           words,
           wordIndex,
           edge: boundaryEdge,
@@ -166,9 +166,10 @@ function useWordResizeDrag({
           rollNeighbour: adjacentWordIndex !== null,
           range,
         });
+        const clamped = target ?? edgeAtStart;
 
         const adjacent =
-          adjacentWordIndex === null
+          adjacentWordIndex === null || target === null
             ? null
             : {
                 adjacentWordIndex,
@@ -184,7 +185,14 @@ function useWordResizeDrag({
         setDragState(newState);
         setLiveWordEdit({ lineId, kind: trackType, words: liveWordBounds(newState) });
         showLoupeEdit(
-          { lineId, track: trackType, wordIndex, edge: boundaryEdge, startTime: edgeAtStart, time: clamped },
+          {
+            lineId,
+            type: trackType,
+            syllableId: originalWord.id,
+            edge: boundaryEdge,
+            startTime: edgeAtStart,
+            time: clamped,
+          },
           false,
         );
       };
@@ -267,5 +275,5 @@ function useWordResizeDrag({
 
 // -- Exports -------------------------------------------------------------------
 
-export { useWordResizeDrag };
 export type { UpdateWord };
+export { useWordResizeDrag };

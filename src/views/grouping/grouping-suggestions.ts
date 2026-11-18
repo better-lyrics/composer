@@ -1,5 +1,7 @@
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 
@@ -18,11 +20,11 @@ let lastScan: LastScan | null = null;
 
 // -- Helpers -------------------------------------------------------------------
 
-function sameWordTexts(a: readonly WordTiming[] | undefined, b: readonly WordTiming[] | undefined): boolean {
+function sameWordTexts(a: readonly WordTiming[], b: readonly WordTiming[]): boolean {
   if (a === b) return true;
-  const length = a?.length ?? 0;
-  if (length !== (b?.length ?? 0)) return false;
-  for (let i = 0; i < length; i++) if (a?.[i].text !== b?.[i].text) return false;
+  const length = a.length;
+  if (length !== b.length) return false;
+  for (let i = 0; i < length; i++) if (a[i].text !== b[i].text || a[i].sep !== b[i].sep) return false;
   return true;
 }
 
@@ -30,12 +32,12 @@ function sameWordTexts(a: readonly WordTiming[] | undefined, b: readonly WordTim
 function sameScanInputLine(a: LyricLine, b: LyricLine): boolean {
   return (
     a === b ||
-    (a.text === b.text &&
-      a.agentId === b.agentId &&
-      a.backgroundText === b.backgroundText &&
+    (lineText(a, getSplitCharacter()) === lineText(b, getSplitCharacter()) &&
+      mainTrack(a).agentId === mainTrack(b).agentId &&
+      backgroundText(a, getSplitCharacter()) === backgroundText(b, getSplitCharacter()) &&
       (a.groupId === undefined) === (b.groupId === undefined) &&
-      sameWordTexts(a.words, b.words) &&
-      sameWordTexts(a.backgroundWords, b.backgroundWords))
+      sameWordTexts(timedSyllables(mainTrack(a)), timedSyllables(mainTrack(b))) &&
+      sameWordTexts(timedSyllables(backgroundTrack(a)), timedSyllables(backgroundTrack(b))))
   );
 }
 

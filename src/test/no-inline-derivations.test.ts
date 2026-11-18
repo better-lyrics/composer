@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 // discriminated union is the compile-time wall for those cases.
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const INSYNC_ROOT = resolve(SRC_ROOT, "../packages/insync/src");
 
 // Files allowed to contain the raw patterns: only `domain/**`, the modules that
 // legitimately own these derivations. Nothing outside `domain/**` currently
@@ -24,7 +25,7 @@ const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WHITELIST_EXACT = new Set<string>([]);
 
 function isWhitelisted(relPath: string): boolean {
-  if (relPath.startsWith("domain/")) return true;
+  if (relPath.startsWith("domain/") || relPath.startsWith("insync/")) return true;
   return WHITELIST_EXACT.has(relPath);
 }
 
@@ -41,6 +42,13 @@ function* walk(dir: string): Generator<string> {
   }
 }
 
+// Insync holds the domain modules that moved out of `src/domain`, so its files are owners in the same way.
+function* scannedFiles(): Generator<{ file: string; rel: string }> {
+  for (const file of walk(SRC_ROOT)) yield { file, rel: relative(SRC_ROOT, file).replace(/\\/g, "/") };
+  for (const file of walk(INSYNC_ROOT))
+    yield { file, rel: `insync/${relative(INSYNC_ROOT, file).replace(/\\/g, "/")}` };
+}
+
 interface ForbiddenPattern {
   name: string;
   regex: RegExp;
@@ -53,42 +61,42 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline line-synced check",
     regex: /\.begin !== undefined &&\s*[\w.]+\.end !== undefined/,
-    use: "isLineSynced from @/domain/line/predicates",
+    use: "isLineSynced from insync/line-predicates",
   },
   {
     name: "inline first-word-begin access",
     regex: /\bwords\[0\]\.begin\b/,
-    use: "firstBegin from @/domain/word/bounds",
+    use: "firstBegin from insync/word-bounds",
   },
   {
     name: "inline last-word-end access",
     regex: /words\[words\.length - 1\]\.end\b/,
-    use: "lastEnd from @/domain/word/bounds",
+    use: "lastEnd from insync/word-bounds",
   },
   {
     name: "inline standalone check",
     regex: /\.groupId === undefined \|\|\s*[\w.]+\.instanceIdx === undefined/,
-    use: "isLinked from @/domain/instance/predicates",
+    use: "isLinked from insync/instance-predicates",
   },
   {
     name: "inline linked-line check",
     regex: /\.groupId !== undefined &&\s*[\w.]+\.instanceIdx !== undefined/,
-    use: "isLinked from @/domain/instance/predicates",
+    use: "isLinked from insync/instance-predicates",
   },
   {
     name: "inline instance-index enumeration",
     regex: /\.groupId === [\w.]+ &&\s*[\w.]+\.instanceIdx !== undefined/,
-    use: "instanceIndicesOf / nextInstanceIdx from @/domain/instance/enumerate",
+    use: "instanceIndicesOf / nextInstanceIdx from insync/instance-enumerate",
   },
   {
     name: "inline word-selection identity check",
     regex: /\.wordIndex === [\w.]+\.wordIndex\b/,
-    use: "sameWordSelection / isWordSelected from @/domain/selection/identity",
+    use: "sameWordSelection / isWordSelected from insync/selection-identity",
   },
   {
-    name: "inline syllable-group run scan",
-    regex: /\.syllableGroupId (?:===|!==) (?!undefined)/,
-    use: "computeByGroupId / hasIntraGroupGap from @/domain/word/syllable-groups",
+    name: "inline syllable join read",
+    regex: /\.joinsNext\b/,
+    use: "computeSyllableGroups / isInSyllableGroup from insync/word-syllable-groups",
   },
   {
     name: "inline snap-point time projection",
@@ -97,8 +105,8 @@ const FORBIDDEN: ForbiddenPattern[] = [
   },
   {
     name: "inline project timing granularity",
-    regex: /\.some\(\s*(?:isWordSynced\b|\(?\s*(\w+)\s*\)?\s*=>\s*\1\.words\?\.length)/,
-    use: "timingGranularityOf from @/domain/project/timing-granularity",
+    regex: /\.some\(\s*isWordSynced\b/,
+    use: "timingGranularityOf from insync/project-timing-granularity",
   },
   {
     name: "local BG drop zone height",
@@ -109,41 +117,28 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline line timed check",
     regex: /effectiveBounds\([^()]*\)\s*!==\s*null/,
-    use: "isLineTimed from @/domain/line/sync-progress",
+    use: "isLineTimed from insync/line-sync-progress",
   },
   {
     name: "inline raw line begin check",
     regex: /\?\.begin\s*!==\s*undefined/,
-    use: "isLineTimed from @/domain/line/sync-progress or isLineSynced from @/domain/line/predicates",
-  },
-  {
-    name: "raw main-word edit outside the effective-line owner",
-    regex: /\bmainWordEditFields\(/,
-    use: "effectiveMainWordEdit from @/domain/line/effective-words",
+    use: "isLineTimed from insync/line-sync-progress or isLineSynced from insync/line-predicates",
   },
   {
     name: "inline instance ordinal",
     regex: /instanceIdx\b(?:\s*\?\?\s*\d+\))?\s*\+\s*1\b/,
-    use: "instanceOrdinal from @/domain/instance/enumerate",
+    use: "instanceOrdinal from insync/instance-enumerate",
   },
   {
     name: "inline instance count",
     regex: /instanceIndicesOf\((?:[^()]|\([^()]*\))*\)\.length/,
-    use: "instanceCount from @/domain/instance/enumerate",
+    use: "instanceCount from insync/instance-enumerate",
   },
   {
-    name: "inline word track pick",
-    regex:
-      /=== "word" \?\s*\(?[\w.?]+\.words\b[^:]*:\s*\(?[\w.?]+\.backgroundWords\b|=== "bg" \?\s*\(?[\w.?]+\.backgroundWords\b[^:]*:\s*\(?[\w.?]+\.words\b/,
-    use: "trackWords from @/domain/line/tracks",
-    ownerFile: "domain/line/tracks.ts",
-    includeDomain: true,
-  },
-  {
-    name: "inline word track field name",
-    regex: /=== "word" \?\s*"words"\s*:\s*"backgroundWords"|=== "bg" \?\s*"backgroundWords"\s*:\s*"words"/,
-    use: "trackField from @/domain/line/tracks",
-    ownerFile: "domain/line/tracks.ts",
+    name: "inline track pick",
+    regex: /\.tracks\[[01]\]|\.tracks\.find\(/,
+    use: "mainTrack / backgroundTrack from insync/line-track",
+    ownerFile: "insync/line-track.ts",
     includeDomain: true,
   },
   {
@@ -160,8 +155,7 @@ describe("no common inline domain derivations outside src/domain", () => {
     it(`has no ${pattern.name} (use ${pattern.use})`, () => {
       const offenders: Array<{ file: string; line: number; text: string }> = [];
 
-      for (const file of walk(SRC_ROOT)) {
-        const rel = relative(SRC_ROOT, file).replace(/\\/g, "/");
+      for (const { file, rel } of scannedFiles()) {
         if (!pattern.includeDomain && isWhitelisted(rel)) continue;
         if (rel === pattern.ownerFile) continue;
         if (rel.endsWith(".test.ts") || rel.endsWith(".test.tsx")) continue;

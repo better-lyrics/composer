@@ -1,8 +1,14 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { lineFromFields } from "insync/line-from-fields";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "insync/commands/instance-rows";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // These tests pin the contract that nudging a line-synced row by writing
 // only `begin/end` (without `words`) keeps it line-synced. The previous bug
@@ -14,47 +20,72 @@ describe("project store · line-sync nudge granularity", () => {
 
   it("preserves line-sync when only begin/end change", () => {
     const store = useProjectStore.getState();
-    store.setLines([{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }]);
-    store.updateLineWithHistory("L1", { begin: 5.05, end: 7.05 });
+    store.restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
+    });
+    store.commit(pasteLines(fieldUpdates([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }])));
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBeCloseTo(5.05);
-    expect(after.end).toBeCloseTo(7.05);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBeCloseTo(5.05);
+    expect(mainTrack(after).end).toBeCloseTo(7.05);
   });
 
   it("preserves line-sync across multiple consecutive nudges (no drift to word-sync)", () => {
     const store = useProjectStore.getState();
-    store.setLines([{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }]);
+    store.restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
+    });
     for (let i = 0; i < 5; i++) {
       const cur = useProjectStore.getState().lines[0];
-      store.updateLineWithHistory("L1", { begin: (cur.begin as number) + 0.1, end: (cur.end as number) + 0.1 });
+      store.commit(
+        pasteLines(
+          fieldUpdates([
+            {
+              id: "L1",
+              updates: { begin: (mainTrack(cur).begin as number) + 0.1, end: (mainTrack(cur).end as number) + 0.1 },
+            },
+          ]),
+        ),
+      );
     }
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBeCloseTo(5.5);
-    expect(after.end).toBeCloseTo(7.5);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBeCloseTo(5.5);
+    expect(mainTrack(after).end).toBeCloseTo(7.5);
   });
 
   it("undo restores prior line-sync state with no synthetic words appearing", () => {
     const store = useProjectStore.getState();
-    store.setLinesWithHistory([{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }]);
-    store.updateLineWithHistory("L1", { begin: 5.05, end: 7.05 });
+    store.commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER),
+      ]),
+    );
+    store.commit(pasteLines(fieldUpdates([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }])));
     store.undo();
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBe(5);
-    expect(after.end).toBe(7);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBe(5);
+    expect(mainTrack(after).end).toBe(7);
   });
 
   it("flips to word-sync only when an explicit words array is written", () => {
     const store = useProjectStore.getState();
-    store.setLines([{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }]);
-    store.updateLineWithHistory("L1", { words: [{ text: "verse", begin: 5, end: 7 }] });
+    store.restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
+    });
+    store.commit(
+      pasteLines(
+        fieldUpdates([
+          { id: "L1", updates: { words: [{ id: "w1", text: "verse", sep: "", begin: 5, end: 7, joinsNext: false }] } },
+        ]),
+      ),
+    );
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.length).toBe(1);
+    expect(roleWords(after, "main")?.length).toBe(1);
     // store auto-clears begin/end when words appear on a previously line-synced row
-    expect(after.begin).toBeUndefined();
-    expect(after.end).toBeUndefined();
+    expect(mainTrack(after).begin).toBeUndefined();
+    expect(mainTrack(after).end).toBeUndefined();
   });
 });
 
@@ -72,56 +103,68 @@ describe("instance shift = nudging every selected word at once", () => {
 
   it("nudging all words in an instance shifts every word by the same delta", () => {
     const store = useProjectStore.getState();
-    store.setLinesWithHistory([
-      {
-        id: "A",
-        text: "I love",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { text: "I ", begin: 10, end: 10.3 },
-          { text: "love", begin: 10.3, end: 10.8 },
-        ],
-      },
-      {
-        id: "B",
-        text: "all night",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 1,
-        words: [
-          { text: "all ", begin: 11, end: 11.4 },
-          { text: "night", begin: 11.4, end: 12 },
-        ],
-      },
-    ]);
+    store.commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        lineFromFields(
+          {
+            id: "A",
+            text: "I love",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: [
+              { id: "w2", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
+              { id: "w3", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "B",
+            text: "all night",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 1,
+            words: [
+              { id: "w4", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
+              { id: "w5", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+      ]),
+    );
     // Simulating what nudgeSelectedWords would output with all-instance selected:
-    store.updateLinesWithHistory([
-      {
-        id: "A",
-        updates: {
-          words: [
-            { text: "I ", begin: 10.5, end: 10.8 },
-            { text: "love", begin: 10.8, end: 11.3 },
-          ],
-        },
-      },
-      {
-        id: "B",
-        updates: {
-          words: [
-            { text: "all ", begin: 11.5, end: 11.9 },
-            { text: "night", begin: 11.9, end: 12.5 },
-          ],
-        },
-      },
-    ]);
+    store.commit(
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A",
+            updates: {
+              words: [
+                { id: "w6", text: "I", sep: " ", begin: 10.5, end: 10.8, joinsNext: false },
+                { id: "w7", text: "love", sep: "", begin: 10.8, end: 11.3, joinsNext: false },
+              ],
+            },
+          },
+          {
+            id: "B",
+            updates: {
+              words: [
+                { id: "w8", text: "all", sep: " ", begin: 11.5, end: 11.9, joinsNext: false },
+                { id: "w9", text: "night", sep: "", begin: 11.9, end: 12.5, joinsNext: false },
+              ],
+            },
+          },
+        ]),
+      ),
+    );
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "A")?.words?.[0].begin).toBeCloseTo(10.5);
-    expect(after.find((l) => l.id === "B")?.words?.[1].end).toBeCloseTo(12.5);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "A")!))[0].begin).toBeCloseTo(10.5);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "B")!))[1].end).toBeCloseTo(12.5);
     // group structure preserved
     expect(after.find((l) => l.id === "A")?.groupId).toBe("g1");
     expect(after.find((l) => l.id === "B")?.instanceIdx).toBe(0);
@@ -129,31 +172,48 @@ describe("instance shift = nudging every selected word at once", () => {
 
   it("only one instance shifts even when other instances exist", () => {
     const store = useProjectStore.getState();
-    store.setLinesWithHistory([
-      {
-        id: "A1",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [{ text: "x", begin: 10, end: 11 }],
-      },
-      {
-        id: "A2",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [{ text: "x", begin: 30, end: 31 }],
-      },
-    ]);
+    store.commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        lineFromFields(
+          {
+            id: "A1",
+            text: "x",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            words: [{ id: "w10", text: "x", sep: "", begin: 10, end: 11, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "A2",
+            text: "x",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+            words: [{ id: "w11", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+      ]),
+    );
     // Only nudge instance 0
-    store.updateLineWithHistory("A1", { words: [{ text: "x", begin: 10.5, end: 11.5 }] });
+    store.commit(
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A1",
+            updates: { words: [{ id: "w12", text: "x", sep: "", begin: 10.5, end: 11.5, joinsNext: false }] },
+          },
+        ]),
+      ),
+    );
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "A1")?.words?.[0].begin).toBeCloseTo(10.5);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "A1")!))[0].begin).toBeCloseTo(10.5);
     // Instance 1 unchanged, proving shift is per-selection, not group-wide
-    expect(after.find((l) => l.id === "A2")?.words?.[0].begin).toBe(30);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "A2")!))[0].begin).toBe(30);
   });
 });

@@ -1,4 +1,6 @@
-import { placementSkipTarget } from "@/domain/sync/placement-skip";
+import { withFields } from "@/test/field-updates";
+import { placementSkipTarget } from "insync/sync-placement-skip";
+import { newWordId } from "insync/word-id";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -38,7 +40,11 @@ describe("placementSkipTarget", () => {
 
   it("measures the end across main and background vocals", () => {
     const bgLast = lines.map((line) =>
-      line.id === "c2b" ? { ...line, backgroundWords: [{ text: "ooh", begin: 110, end: 116 }] } : line,
+      line.id === "c2b"
+        ? withFields(line, {
+            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 110, end: 116, joinsNext: false }],
+          })
+        : line,
     );
     expect(placementSkipTarget(bgLast, "g", 1, 94, 1.5)).toEqual({ seekTo: 114.5, end: 116 });
   });

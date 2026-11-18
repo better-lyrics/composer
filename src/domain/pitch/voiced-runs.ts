@@ -1,5 +1,5 @@
 import { type PitchPoint, type PitchTrack, frameAt, frameTime, isVoicedFrame, semitonesOf } from "@/domain/pitch/track";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 
 // -- Constants ----------------------------------------------------------------
 

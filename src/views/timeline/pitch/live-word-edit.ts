@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import type { PitchLaneKind } from "@/views/timeline/pitch/draw-pitch-lane";
 import { useSyncExternalStore } from "react";
 

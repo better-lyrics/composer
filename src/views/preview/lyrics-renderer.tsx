@@ -1,4 +1,4 @@
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { useSettingsStore } from "@/stores/settings";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";

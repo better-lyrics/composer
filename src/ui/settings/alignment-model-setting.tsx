@@ -4,7 +4,7 @@ import {
   pickAlignmentModel,
 } from "@/audio/alignment/hubertfa/model-manifest";
 import { coverageColumns, coversLanguage } from "@/domain/alignment/language";
-import { languageName } from "@/domain/project/language";
+import { languageName } from "insync/project-language";
 import { useAlignmentModels } from "@/hooks/useAlignmentModels";
 import { useSongLanguage } from "@/hooks/useSongLanguage";
 import { settingEntry } from "@/stores/settings-catalog";
@@ -88,15 +88,15 @@ const AlignmentModelSetting: React.FC = () => {
       <span className="flex items-center gap-1">
         {selected?.terms && <ModelTermsInfo terms={selected.terms} />}
         <Select
-        aria-label={settingEntry("alignmentModelId").label}
-        value={value}
-        onChange={(next) => set("alignmentModelId", next)}
-        options={options}
-        renderOption={renderOption}
-        header={song && <SongLanguageHeader song={song} />}
-        triggerAdornment={selectedLanguages && <TriggerCoverage languages={selectedLanguages} song={song} />}
-        className="h-9 max-w-72 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
-      />
+          aria-label={settingEntry("alignmentModelId").label}
+          value={value}
+          onChange={(next) => set("alignmentModelId", next)}
+          options={options}
+          renderOption={renderOption}
+          header={song && <SongLanguageHeader song={song} />}
+          triggerAdornment={selectedLanguages && <TriggerCoverage languages={selectedLanguages} song={song} />}
+          className="h-9 max-w-72 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
+        />
       </span>
     </SettingRowLayout>
   );

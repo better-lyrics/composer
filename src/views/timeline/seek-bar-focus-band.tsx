@@ -1,6 +1,6 @@
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
-import type { Bounds } from "@/domain/word/bounds";
+import { instanceIndicesOf } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
+import type { Bounds } from "insync/word-bounds";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useProjectStore } from "@/stores/project";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";

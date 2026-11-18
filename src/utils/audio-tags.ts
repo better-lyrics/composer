@@ -1,5 +1,5 @@
 import type { ICommonTagsResult } from "music-metadata";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { normalizeIsrc } from "@/utils/isrc";
 
 // -- Mapper -------------------------------------------------------------------

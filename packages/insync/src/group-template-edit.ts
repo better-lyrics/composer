@@ -1,0 +1,276 @@
+import { carriedLine, sameSharedContent } from "./group-carried-line";
+import { sharesTiming } from "./group-shared-timing";
+import type { LineageCounterpart, LineagePair } from "./group-syllable-lineage";
+import type { LinkGroup } from "./group";
+import type { InstanceAnchors } from "./group-template-copy";
+import { instanceBounds } from "./instance-bounds";
+import { instanceKey } from "./instance-key";
+import { isLinked, isSlotLine, type SlotLine } from "./instance-predicates";
+import type { LyricLine } from "./line";
+import { nextLineStart, previousLineEnd } from "./line-neighbour-bounds";
+
+// -- Types --------------------------------------------------------------------
+
+interface TemplateEditInput {
+  before: readonly LyricLine[];
+  after: LyricLine[];
+  groups: readonly LinkGroup[];
+  // Where each instance sits, from the doc; read from the lines when left out.
+  anchors?: InstanceAnchors;
+  splitChar: string;
+  // Where the song ends; unbounded when not given.
+  songEnd?: number;
+}
+
+// A split that reached other instances, with how many instances have it now.
+interface CarriedSplit {
+  groupId: string;
+  instances: number;
+}
+
+interface TemplateEdits {
+  lines: LyricLine[];
+  splits: CarriedSplit[];
+  // Group lines the command edited to other content than their template line's edit, made their instance's own.
+  detachedIds: string[];
+}
+
+interface Edit {
+  before: SlotLine;
+  after: SlotLine;
+}
+
+// -- Constants ----------------------------------------------------------------
+
+const DETACHED_SLOT = -1;
+
+// -- Helpers ------------------------------------------------------------------
+
+const slotKey = (groupId: string, slot: number) => `${groupId}\u0000${slot}`;
+
+type PreviousLine = (line: LyricLine, index: number) => LyricLine | undefined;
+
+// Group lines whose shared content changed, first of each template line in song order, and the line each line was.
+function templateLineEdits(
+  before: readonly LyricLine[],
+  after: readonly LyricLine[],
+): { edits: Edit[]; edited: Set<string>; previousOf: PreviousLine } {
+  let beforeById: Map<string, LyricLine> | undefined;
+  const previousOf: PreviousLine = (line, index) => {
+    if (before[index]?.id === line.id) return before[index];
+    beforeById ??= new Map(before.map((old) => [old.id, old]));
+    return beforeById.get(line.id);
+  };
+  const claimed = new Set<string>();
+  const edited = new Set<string>();
+  const edits: Edit[] = [];
+  for (let index = 0; index < after.length; index++) {
+    const line = after[index];
+    if (!isSlotLine(line)) continue;
+    if (before[index] === line) continue;
+    const previous = previousOf(line, index);
+    if (!isSlotLine(previous) || previous === line) continue;
+    if (previous.groupId !== line.groupId || previous.templateLineIdx !== line.templateLineIdx) continue;
+    if (sameSharedContent(previous, line)) continue;
+    edited.add(line.id);
+    const key = slotKey(line.groupId, line.templateLineIdx);
+    if (claimed.has(key)) continue;
+    claimed.add(key);
+    edits.push({ before: previous, after: line });
+  }
+  return { edits, edited, previousOf };
+}
+
+// The lines of every instance of the edited groups by template line, read in one pass.
+function linesByInstance(
+  lines: readonly LyricLine[],
+  groupIds: ReadonlySet<string>,
+): Map<string, Map<number, SlotLine>> {
+  const byInstance = new Map<string, Map<number, SlotLine>>();
+  for (const line of lines) {
+    if (!isSlotLine(line) || !groupIds.has(line.groupId)) continue;
+    const key = instanceKey(line.groupId, line.instanceIdx);
+    const bySlot = byInstance.get(key) ?? new Map<number, SlotLine>();
+    bySlot.set(line.templateLineIdx, line);
+    byInstance.set(key, bySlot);
+  }
+  return byInstance;
+}
+
+// Without the doc's anchors, an instance anchors at its first time.
+function firstTimes(byInstance: ReadonlyMap<string, ReadonlyMap<number, SlotLine>>): InstanceAnchors {
+  const byGroup = new Map<string, Map<number, number>>();
+  for (const bySlot of byInstance.values()) {
+    const [first] = bySlot.values();
+    const begin = instanceBounds([...bySlot.values()])?.begin;
+    if (!first || begin === undefined) continue;
+    const anchors = byGroup.get(first.groupId) ?? new Map<number, number>();
+    anchors.set(first.instanceIdx, begin);
+    byGroup.set(first.groupId, anchors);
+  }
+  return (groupId) => byGroup.get(groupId) ?? new Map();
+}
+
+// The other instance's syllable where each syllable of the edited instance stood, on any of its lines, so a word
+// moved from one line to another keeps that instance's timing.
+function counterpartOf(source: Map<number, SlotLine>, target: Map<number, SlotLine>): LineageCounterpart {
+  const pairs = new Map<string, LineagePair>();
+  for (const [slot, line] of source) {
+    const other = target.get(slot);
+    if (!other) continue;
+    line.tracks.forEach((track, index) => {
+      const otherTrack = other.tracks[index];
+      if (!otherTrack || otherTrack.role !== track.role || otherTrack.syllables.length !== track.syllables.length)
+        return;
+      track.syllables.forEach((syllable, position) => {
+        pairs.set(syllable.id, { source: syllable, target: otherTrack.syllables[position] });
+      });
+    });
+  }
+  return (id) => pairs.get(id);
+}
+
+// Template lines a command moved syllables between, by the slots of each: an instance takes such a move only whole. A
+// detached line of the group stands for a slot no instance holds, so a move to or from one reaches no other instance.
+// Syllable ids are matched within one instance, since instances on the template's ids share them.
+function slotsMovedTogether(
+  after: readonly LyricLine[],
+  edits: readonly Edit[],
+  previousOf: PreviousLine,
+): Map<string, number[]> {
+  const groupIds = new Set(edits.map((edit) => edit.after.groupId));
+  const detachedEdits = after.flatMap((line, index) => {
+    if (isSlotLine(line) || !isLinked(line) || !groupIds.has(line.groupId)) return [];
+    const previous = previousOf(line, index);
+    if (!previous || previous === line) return [];
+    const { groupId, instanceIdx } = line;
+    return [{ groupId, instanceIdx, slot: DETACHED_SLOT, before: previous, after: line }];
+  });
+  const moved = [
+    ...edits.map((edit) => {
+      const { groupId, instanceIdx, templateLineIdx } = edit.after;
+      return { groupId, instanceIdx, slot: templateLineIdx, ...edit };
+    }),
+    ...detachedEdits,
+  ];
+  const syllableKey = (groupId: string, instanceIdx: number, id: string) =>
+    `${instanceKey(groupId, instanceIdx)}\u0000${id}`;
+  const slotOfSyllable = new Map<string, number>();
+  for (const { groupId, instanceIdx, slot, before: line } of moved)
+    for (const track of line.tracks)
+      for (const syllable of track.syllables) slotOfSyllable.set(syllableKey(groupId, instanceIdx, syllable.id), slot);
+  const together = new Map<string, number[]>();
+  const link = (groupId: string, from: number, to: number) => {
+    const key = slotKey(groupId, from);
+    together.set(key, [...new Set([...(together.get(key) ?? [from]), to])]);
+  };
+  for (const { groupId, instanceIdx, slot, after: line } of moved)
+    for (const track of line.tracks)
+      for (const syllable of track.syllables) {
+        const from = slotOfSyllable.get(syllableKey(groupId, instanceIdx, syllable.id));
+        if (from === undefined || from === slot) continue;
+        link(groupId, from, slot);
+        link(groupId, slot, from);
+      }
+  return together;
+}
+
+function isSplit(edit: Edit): boolean {
+  return edit.after.tracks.some((track, index) => {
+    const previous = edit.before.tracks[index];
+    if (!previous || track.syllables.length <= previous.syllables.length) return false;
+    const text = (syllables: typeof track.syllables) => syllables.map((syllable) => syllable.text).join("");
+    return text(track.syllables) === text(previous.syllables);
+  });
+}
+
+// -- Functions ----------------------------------------------------------------
+
+// An edit to a group line's content is an edit to its template line, so every other instance that follows the
+// template and was not edited itself gets it: on the shared timing where both instances share it, else on its own
+// timing. Detached lines keep their own content, and so does an instance missing a line the command moved words to or
+// from. An instance the same command edited differently keeps its edit as its own line. Work grows with the lines and
+// the edited template lines.
+function carryTemplateEdits({
+  before,
+  after,
+  groups,
+  anchors,
+  splitChar,
+  songEnd = Number.POSITIVE_INFINITY,
+}: TemplateEditInput): TemplateEdits {
+  const { edits, edited, previousOf } = templateLineEdits(before, after);
+  if (edits.length === 0) return { lines: after, splits: [], detachedIds: [] };
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
+  const byInstance = linesByInstance(before, new Set(edits.map((edit) => edit.after.groupId)));
+  const anchorsOf = anchors ?? firstTimes(byInstance);
+  const offsetOf = (groupId: string, from: number, to: number) => {
+    const groupAnchors = anchorsOf(groupId);
+    const fromAt = groupAnchors.get(from);
+    const toAt = groupAnchors.get(to);
+    return fromAt === undefined || toAt === undefined ? null : toAt - fromAt;
+  };
+  const counterparts = new Map<string, LineageCounterpart>();
+  const counterpartFor = (groupId: string, from: number, to: number) => {
+    const key = `${instanceKey(groupId, from)}\u0000${to}`;
+    let counterpart = counterparts.get(key);
+    if (!counterpart) {
+      const none = new Map<number, SlotLine>();
+      counterpart = counterpartOf(
+        byInstance.get(instanceKey(groupId, from)) ?? none,
+        byInstance.get(instanceKey(groupId, to)) ?? none,
+      );
+      counterparts.set(key, counterpart);
+    }
+    return counterpart;
+  };
+  const bySlot = new Map(edits.map((edit) => [slotKey(edit.after.groupId, edit.after.templateLineIdx), edit]));
+  const movedTogether = slotsMovedTogether(after, edits, previousOf);
+  const takesWholeMove = (line: SlotLine) =>
+    (movedTogether.get(slotKey(line.groupId, line.templateLineIdx)) ?? []).every((slot) => {
+      const other = byInstance.get(instanceKey(line.groupId, line.instanceIdx))?.get(slot);
+      return other !== undefined && !edited.has(other.id);
+    });
+  const splits = new Map<string, Set<number>>();
+  const detachedIds: string[] = [];
+  let lines = after;
+  after.forEach((line, index) => {
+    if (!isSlotLine(line)) return;
+    const edit = bySlot.get(slotKey(line.groupId, line.templateLineIdx));
+    if (!edit || sameSharedContent(line, edit.after)) return;
+    if (edited.has(line.id)) {
+      if (lines === after) lines = [...after];
+      lines[index] = { ...line, detached: true };
+      detachedIds.push(line.id);
+      return;
+    }
+    if (!takesWholeMove(line)) return;
+    const { groupId, instanceIdx: from } = edit.after;
+    const group = groupsById.get(groupId);
+    const shared = sharesTiming(group, from) && sharesTiming(group, line.instanceIdx);
+    const offset = shared ? offsetOf(groupId, from, line.instanceIdx) : null;
+    const carried = carriedLine({
+      before: edit.before,
+      after: edit.after,
+      own: line,
+      offset,
+      counterpart: counterpartFor(groupId, from, line.instanceIdx),
+      room: { floor: previousLineEnd(after, index), limit: nextLineStart(after, index) },
+      splitChar,
+      songEnd,
+    });
+    if (lines === after) lines = [...after];
+    lines[index] = carried;
+    if (isSplit(edit)) splits.set(groupId, (splits.get(groupId) ?? new Set([from])).add(line.instanceIdx));
+  });
+  return {
+    lines,
+    splits: [...splits].map(([groupId, instances]) => ({ groupId, instances: instances.size })),
+    detachedIds,
+  };
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export type { CarriedSplit };
+export { carryTemplateEdits };

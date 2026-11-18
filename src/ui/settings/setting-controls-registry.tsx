@@ -2,6 +2,7 @@ import { SPECTRUM_CONTRAST } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
 import { SNAP_DISTANCE_RANGE_PX } from "@/stores/settings-snap";
+import { BACKGROUND_SEPARATOR_OPTIONS } from "@/ui/background-separator-options";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { LAUNCH_SCREEN_OPTIONS, LIBRARY_SORT_OPTIONS } from "@/ui/projects/library-options";
 import { AlignmentModelSetting } from "@/ui/settings/alignment-model-setting";
@@ -76,6 +77,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   autoExtractBackgroundVocals: TOGGLE,
   mergeStandaloneBackgroundLines: TOGGLE,
   preserveBracketsOnExtraction: TOGGLE,
+  backgroundSeparator: { kind: "select", options: [...BACKGROUND_SEPARATOR_OPTIONS] },
   musicBrainzLookup: {
     kind: "select",
     options: [
@@ -87,14 +89,6 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   resetGuide: { kind: "custom", Component: ResetGuideSetting },
   resetAllSettings: { kind: "custom", Component: ResetAllSettingsSetting },
   libraryView: { kind: "custom", Component: LibraryViewSetting },
-  linkedDivergenceAction: {
-    kind: "select",
-    options: [
-      { value: "ask", label: "Ask every time" },
-      { value: "apply", label: "Apply to all" },
-      { value: "detach", label: "Detach" },
-    ],
-  },
   librarySort: { kind: "select", options: LIBRARY_SORT_OPTIONS },
   launchScreen: { kind: "select", options: LAUNCH_SCREEN_OPTIONS },
   theme: { kind: "custom", Component: ThemeSettings },

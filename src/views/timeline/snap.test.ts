@@ -1,7 +1,9 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+import { withSeededBackground } from "insync/line-background";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { gridPoints } from "@/domain/tempo/grid-points";
 import { describe, expect, it } from "vitest";
@@ -13,6 +15,7 @@ import {
   findSnapShift,
   selfKey,
 } from "@/views/timeline/snap";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const ALL_SOURCES = {
   timelineSnap: true,
@@ -26,36 +29,54 @@ const ALL_SOURCES = {
 // -- Fixtures ------------------------------------------------------------------
 
 function wordTimedLine(): LyricLine {
-  return {
-    id: "l1",
-    text: "I love you",
-    agentId: "v1",
-    words: [
-      { text: "I ", begin: 0, end: 0.3 },
-      { text: "love ", begin: 0.3, end: 0.6 },
-      { text: "you", begin: 0.6, end: 1 },
-    ],
-    backgroundText: "oh yeah",
-    backgroundWords: [
-      { text: "oh ", begin: 0.4, end: 0.55 },
-      { text: "yeah", begin: 0.55, end: 0.8 },
-    ],
-  };
+  return lineFromFields(
+    {
+      id: "l1",
+      text: "I love you",
+      agentId: "v1",
+      words: [
+        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+      ],
+      backgroundText: "oh yeah",
+      backgroundWords: [
+        { id: "w4", text: "oh", sep: " ", begin: 0.4, end: 0.55, joinsNext: false },
+        { id: "w5", text: "yeah", sep: "", begin: 0.55, end: 0.8, joinsNext: false },
+      ],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 function lineSyncedLine(): LyricLine {
-  return {
-    id: "l2",
-    text: "another line",
-    agentId: "v1",
-    begin: 2,
-    end: 3,
-  };
+  return lineFromFields(
+    {
+      id: "l2",
+      text: "another line",
+      agentId: "v1",
+      begin: 2,
+      end: 3,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 // -- collectSnapAnchors --------------------------------------------------------
 
 describe("collectSnapAnchors", () => {
+  it("regression: snaps to the edges of a line-synced background", () => {
+    const line = withSeededBackground(
+      lineFromFields(
+        { id: "s", text: "a", agentId: "v1", begin: 2, end: 6, backgroundText: "ooh" },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const background = collectSnapAnchors([line], new Set(), null).filter((anchor) => anchor.track === "bg");
+    expect(background.map((anchor) => anchor.t)).toEqual([4, 6]);
+  });
+
   it("includes begin and end for every word in a word-timed line", () => {
     const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null);
     const wordAnchors = anchors.filter((a) => a.kind === "word-begin" || a.kind === "word-end");
@@ -207,7 +228,7 @@ describe("collectSnapAnchors", () => {
   });
 
   it("contributes nothing for a line with neither words nor begin/end", () => {
-    const empty: LyricLine = { id: "lx", text: "no timing", agentId: "v1" };
+    const empty: LyricLine = lineFromFields({ id: "lx", text: "no timing", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
     const anchors = collectSnapAnchors([empty], new Set(), null);
     expect(anchors).toEqual([]);
   });

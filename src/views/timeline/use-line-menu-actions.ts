@@ -1,19 +1,26 @@
-import { isSharedLine } from "@/domain/group/shared-timing";
-import { instanceName } from "@/domain/instance/name";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { useCallback } from "react";
+import { detachLine, placeInstance } from "insync/commands/instance-edits";
+import { deleteLine } from "insync/commands/instance-rows";
+import { placeLineAt } from "insync/commands/line-timing";
+import { assignSinger } from "insync/commands/singer";
+import { isSharedLine } from "insync/group-shared-timing";
+import { instanceName } from "insync/instance-name";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack } from "insync/line-track";
 import { useAutoAlign } from "@/hooks/use-auto-align";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { showGroupActionToast } from "@/utils/group-toast";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
-import { useCallback } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -33,8 +40,6 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-  const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
 
   const handlePlaceLineHere = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return;
@@ -42,23 +47,18 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const wordCount = splitIntoWordsWithMeta(line.text).parts.length;
+    const wordCount = splitIntoWordsWithMeta(lineText(line, getSplitCharacter()), getSplitCharacter()).parts.length;
     const lineDuration = Math.max(wordCount, 1) * wordDuration;
-    updateLineWithHistory(lineId, {
-      begin: time,
-      end: time + lineDuration,
-    });
+    useProjectStore.getState().commit(placeLineAt(lineId, time, time + lineDuration));
     clearContextMenu();
-  }, [contextMenu, rawLines, updateLineWithHistory, clearContextMenu]);
+  }, [contextMenu, rawLines, clearContextMenu]);
 
   const handlePlaceAtPlayhead = useCallback(() => {
     if (!placeAtPlayheadInfo) return;
     const audio = useAudioStore.getState();
     const playheadTime = livePlaybackTime();
     const { groupId, instanceIdx } = placeAtPlayheadInfo;
-    if (!useProjectStore.getState().placeInstance(groupId, instanceIdx, playheadTime, audio.duration)) {
-      showPlacementBlockedToast();
-    }
+    useProjectStore.getState().commit(placeInstance(groupId, instanceIdx, playheadTime, audio.duration));
     clearContextMenu();
   }, [placeAtPlayheadInfo, clearContextMenu]);
 
@@ -75,15 +75,14 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!contextMenu || contextMenu.target.kind !== "gutter") return;
     const lineId = contextMenu.target.lineId;
     const sharedName = sharedInstanceNameOf(rawLines, lineId);
-    const newLines = rawLines.filter((l) => l.id !== lineId);
-    setLinesWithHistory(newLines);
+    useProjectStore.getState().commit(deleteLine(lineId));
     if (sharedName) showGroupActionToast(`Line deleted from ${sharedName}. Its timing no longer copies there.`);
     clearContextMenu();
-  }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
+  }, [contextMenu, rawLines, clearContextMenu]);
 
   const handleDetachLine = useCallback(() => {
     if (!gutterLineGroupInfo) return;
-    useProjectStore.getState().detachLine(gutterLineGroupInfo.lineId);
+    useProjectStore.getState().commit(detachLine(gutterLineGroupInfo.lineId));
     showGroupActionToast("Line detached");
     clearContextMenu();
   }, [gutterLineGroupInfo, clearContextMenu]);
@@ -92,13 +91,14 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     (agentId: string) => {
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
       const { lineId } = contextMenu.target;
-      if (rawLines.find((line) => line.id === lineId)?.agentId !== agentId) {
-        updateLineWithHistory(lineId, { agentId });
+      const line = rawLines.find((candidate) => candidate.id === lineId);
+      if (!line || mainTrack(line).agentId !== agentId) {
+        useProjectStore.getState().commit(assignSinger([lineId], agentId));
         noteGuideSignal("edit.singer");
       }
       clearContextMenu();
     },
-    [contextMenu, rawLines, updateLineWithHistory, clearContextMenu],
+    [contextMenu, rawLines, clearContextMenu],
   );
 
   const handleSplitIntoWords = useCallback(() => {
@@ -114,6 +114,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   }, [autoAlignInfo, autoAlign, clearContextMenu]);
 
   return {
+    activeAgentIdAt: (lineIndex: number) => lines[lineIndex] && mainTrack(lines[lineIndex]).agentId,
     handleAutoAlign,
     handlePlaceLineHere,
     handlePlaceAtPlayhead,

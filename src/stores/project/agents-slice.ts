@@ -1,5 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { commitHistory } from "@/stores/project/history-helpers";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import type { AgentActions, AgentsState, ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
@@ -29,22 +28,6 @@ const createAgentsSlice: StateCreator<ProjectStore, [], [], AgentsState & AgentA
       isDirty: true,
       isDirtySinceHistory: true,
     })),
-
-  removeAgentWithHistory: (id) =>
-    set((state) => {
-      const fallback = state.agents.find((agent) => agent.id !== id);
-      if (!fallback) return state;
-      return commitHistory(
-        state,
-        {
-          agents: state.agents.filter((agent) => agent.id !== id),
-          lines: state.lines.map((line) => (line.agentId === id ? { ...line, agentId: fallback.id } : line)),
-        },
-        { deriveText: false },
-      );
-    }),
-
-  setAgents: (agents) => set({ agents, isDirty: true, isDirtySinceHistory: true }),
 });
 
 // -- Exports ------------------------------------------------------------------

@@ -1,4 +1,5 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { lineFromFields } from "insync/line-from-fields";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useProjectStore } from "@/stores/project";
@@ -7,6 +8,7 @@ import { seedProject } from "@/test/idb";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { render } from "@/test/render";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -52,7 +54,9 @@ describe("usePersistence · unexported imported song details", () => {
     await render(<PersistenceHost />);
     await getPersistenceSettled();
 
-    useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }, getSplitCharacter())],
+    });
     useProjectStore.getState().markSongDetailsImported();
 
     await expect.poll(async () => (await loadOpenProjectRecord())?.hasUnexportedImport, { timeout: 2000 }).toBe(true);
@@ -72,7 +76,7 @@ describe("usePersistence · unexported imported song details", () => {
     await getPersistenceSettled();
 
     useProjectStore.getState().replaceLyricsWithHistory({
-      lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      lines: [lineFromFields({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }, getSplitCharacter())],
       groups: [],
       agents: undefined,
       metadata: { title: "Imported" },

@@ -1,12 +1,15 @@
+import { Toaster } from "sonner";
+import { describe, expect, it, vi } from "vitest";
+import { lineText } from "insync/line-text";
+import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { schedulePendingDeletion } from "@/lib/pending-deletions";
 import { projectFileFrom } from "@/lib/project-file";
-import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { importProjectFile } from "@/lib/project-import";
 import { listProjectIndex, removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
@@ -14,13 +17,12 @@ import { createLine } from "@/test/factories";
 import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
-import { Toaster } from "sonner";
-import { describe, expect, it, vi } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
 function fileFor(projectId: string | undefined, title: string): File {
-  const project = storedProject({ ...songTitled(title), lines: [createLine({ text: `${title} line` })] });
+  const project = storedProject({ ...songTitled(title), lines: savedLines([createLine({ text: `${title} line` })]) });
   return new File([JSON.stringify(projectFileFrom(projectId, project))], `${title}.ttml-project.json`);
 }
 
@@ -135,14 +137,14 @@ describe("importProjectFile", () => {
       expect(id).not.toBeNull();
       expect(id).not.toBe("a");
       expect(openProjectIdSnapshot()).toBe(id);
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Now"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["Now"]);
     });
 
     it("starts the opened TTML project with nothing to undo", async () => {
       const id = await importProjectFile(new File([TTML_DOCUMENT], "Cynic.json"));
       expect(id).not.toBeNull();
       expect(useProjectStore.getState().canUndo()).toBe(false);
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Now"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["Now"]);
     });
 
     it("regression: a newer project file whose export edit holds TTML shows the project file error, not TTML", async () => {
@@ -198,7 +200,7 @@ describe("openLyricsFileAsNewProject", () => {
     expect(id).not.toBeNull();
     expect(id).not.toBe("a");
     expect(openProjectIdSnapshot()).toBe(id);
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
       "Climb up the H of the Hollywood sign",
       "In these stolen moments",
     ]);

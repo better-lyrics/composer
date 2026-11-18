@@ -9,13 +9,24 @@ import { hasCjk } from "@/domain/alignment/cjk";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { applyAlignedTimings, retimeNewSyllables } from "insync/commands/alignment";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
-import { isUnchanged, type PlannedLine, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import {
+  type AlignedWords,
+  alignedUpdates,
+  movesExistingWords,
+  type PlannedLine,
+  planLines,
+  segmentFor,
+} from "@/stores/alignment-plan";
 import { recordRealignedLines } from "@/stores/alignment-record";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -128,7 +139,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         return fail(set, "unsupported-language", "The alignment model doesn't cover this song's language.");
       }
       const hanReading = hanReadingFor(project.metadata.language, project.lines);
-      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line, getSplitCharacter())));
       const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
       if (!vocalsUrl) {
         return fail(
@@ -147,7 +158,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
       const pcm = await loadVocalsPcm(vocalsUrl);
-      const updates: LineUpdate[] = [];
+      const aligned: AlignedWords[] = [];
       const plannedById = new Map<string, PlannedLine>();
       const unknownWords = new Set<string>();
       const guessedWords = new Set<string>();
@@ -168,7 +179,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         for (const word of result.guessedWords) guessedWords.add(word);
         if (timings) {
           if (result.fellBack) fellBack++;
-          updates.push({ id: plan.line.id, updates: { words: timings } });
+          aligned.push({ id: plan.line.id, words: timings });
           plannedById.set(plan.line.id, plan);
         }
         set({ progress: { done: index + 1, total: planned.length } });
@@ -179,10 +190,9 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       // Another project can share line ids and text (a duplicate, a re-import); this run's timing isn't its.
       if (latest.projectSession !== project.projectSession) throw new DOMException("Project changed", "AbortError");
       const currentById = new Map(latest.lines.map((l) => [l.id, l]));
-      const applicable = updates.filter((u) => isUnchanged(currentById.get(u.id), plannedById.get(u.id)!));
+      const applicable = alignedUpdates(aligned, currentById, plannedById);
       if (applicable.length > 0) {
-        // Timing only: deriving text would drop the untimed words of partly synced lines.
-        latest.updateLinesWithHistory(applicable, { deriveText: false });
+        latest.commit(applyAlignedTimings(applicable));
         // Shared group copies change in the same write; linked siblings may be replaced with their timing unchanged.
         recordRealignedLines(currentById);
         // Lines are tapped in Line mode; once they have word timing, refine words.
@@ -191,7 +201,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       set({ status: "idle", progress: { done: 0, total: 0 } });
       return {
         aligned: applicable.length,
-        skipped: updates.length - applicable.length,
+        skipped: aligned.length - applicable.length,
         fellBack,
         unknownWords: [...unknownWords],
         guessedWords: [...guessedWords],
@@ -214,19 +224,22 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     if (status === "running" || status === "downloading") return;
     const aligner: Aligner = hubertfaAligner;
     const project = useProjectStore.getState();
+    if (project.lines === before) return;
     // The split's own history step, which the new timing joins if nothing has happened since.
     const step = project.history[project.historyIndex];
     const beforeById = new Map(before.map((line) => [line.id, line]));
     const groupsOf = new Map(
       project.lines.flatMap((line) => {
-        const was = beforeById.get(line.id)?.words;
-        const groups = line.words && line.words !== was ? newSyllableGroups(was, line.words) : [];
+        const previous = beforeById.get(line.id);
+        const was = previous && timedSyllables(mainTrack(previous));
+        const words = timedSyllables(mainTrack(line));
+        const groups = words.length > 0 && words !== was ? newSyllableGroups(was, words) : [];
         return groups.length > 0 ? [[line.id, groups] as const] : [];
       }),
     );
     const planned = planLines(project.lines, [...groupsOf.keys()], true);
     const hanReading = hanReadingFor(project.metadata.language, project.lines);
-    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line, getSplitCharacter())));
     const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.
@@ -238,7 +251,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       const assets = await resolveAlignmentAssets(modelId);
       if (!assets || !canAlignLanguage(project.metadata.language, assets.languages)) return;
       const pcm = await loadVocalsPcm(vocalsUrl);
-      const updates: LineUpdate[] = [];
+      const retimed: AlignedWords[] = [];
       for (const plan of planned) {
         signal.throwIfAborted();
         const { segment, window } = segmentFor(plan, hanReading, pcm);
@@ -247,10 +260,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         const intervals = sanitizeIntervals(result.intervals, window);
         const groups = groupsOf.get(plan.line.id) ?? [];
         if (!result.fellBack) {
-          updates.push({
-            id: plan.line.id,
-            updates: { words: retimeInnerBoundaries(plan.existing!, groups, intervals) },
-          });
+          retimed.push({ id: plan.line.id, words: retimeInnerBoundaries(plan.existing!, groups, intervals) });
         }
         set({ progress: { done: planned.indexOf(plan) + 1, total: planned.length } });
       }
@@ -259,18 +269,9 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       if (latest.projectSession !== project.projectSession) return;
       const currentById = new Map(latest.lines.map((l) => [l.id, l]));
       const plannedById = new Map(planned.map((p) => [p.line.id, p]));
-      const stepIsCurrent = latest.history[latest.historyIndex] === step && !latest.isDirtySinceHistory;
-      const applicable = updates.filter((u) => {
-        const planned = plannedById.get(u.id)!;
-        const moved = u.updates.words?.some(
-          (w, i) => w.begin !== planned.existing![i].begin || w.end !== planned.existing![i].end,
-        );
-        return moved && isUnchanged(currentById.get(u.id), planned);
-      });
+      const applicable = alignedUpdates(retimed, currentById, plannedById, movesExistingWords);
       // Part of the split, so one undo takes back both; anything done since leaves the split as it was.
-      const shared =
-        stepIsCurrent && applicable.length > 0 ? withSharedTiming(latest.lines, latest.groups, applicable) : null;
-      if (shared) latest.applyLineUpdatesToCurrentStep(shared);
+      if (latest.isCurrentStep(step) && applicable.length > 0) latest.commit(retimeNewSyllables(applicable), "amend");
     } catch (err) {
       if (!isAbortError(err) && !signal.aborted) {
         console.warn(`${LOG_PREFIX} could not time the new syllables`, err);

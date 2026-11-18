@@ -1,10 +1,11 @@
 import { detectFileType, type LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { parseLrc } from "@/utils/lyrics-parsers/lrc";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";
-import type { ParseResult, ParserFn } from "@/utils/lyrics-parsers/shared";
+import type { ParseResult, ParserFn } from "insync/parse-result";
 import { parseSrt } from "@/utils/lyrics-parsers/srt";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { parseTtml } from "insync/ttml/read";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Registry -----------------------------------------------------------------
 
@@ -12,7 +13,7 @@ const PARSERS: Record<Exclude<LyricsFileType, "unknown">, ParserFn> = {
   txt: parseTxt,
   lrc: parseLrc,
   srt: parseSrt,
-  ttml: parseTtml,
+  ttml: (content) => parseTtml(content, getSplitCharacter()),
   qrc: parseQrc,
 };
 

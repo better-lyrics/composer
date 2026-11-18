@@ -1,5 +1,5 @@
 import type { RankedMatch } from "@/domain/musicbrainz/rank-matches";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Labels -------------------------------------------------------------------
 

@@ -2,8 +2,9 @@ import { writeLrc } from "@/utils/lyrics-writers/lrc";
 import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import type { LyricsWriterInput } from "@/utils/lyrics-writers/shared";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
 import type { LyricFormat } from "@braccato/highlight";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -20,7 +21,7 @@ const TTML_OUTPUT: OutputFormat = {
   label: "TTML",
   extension: "ttml",
   mimeType: "application/ttml+xml",
-  write: generateTTML,
+  write: (document) => generateTTML({ ...document, splitChar: getSplitCharacter() }),
 };
 const LRC_OUTPUT: OutputFormat = { label: "LRC", extension: "lrc", mimeType: "text/plain", write: writeLrc };
 const SRT_OUTPUT: OutputFormat = { label: "SRT", extension: "srt", mimeType: "application/x-subrip", write: writeSrt };

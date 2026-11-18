@@ -1,10 +1,11 @@
 import type { AlignmentCounts } from "@/domain/alignment/build-tag";
 import { type AlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { coversSpan, mergeRanges, type PlayedRange } from "@/domain/alignment/played-ranges";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
-import { isLineTimed } from "@/domain/line/sync-progress";
-import { isExportedLine } from "@/utils/ttml-line-keys";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
+import { isLineTimed } from "insync/line-sync-progress";
+import { isExportedLine } from "insync/ttml/line-keys";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -44,7 +45,7 @@ function alignmentReview(lines: readonly LyricLine[], alignedTimings: AlignedTim
   let untouchedCount = 0;
   let firstUntouchedLineId: string | null = null;
   for (const line of lines) {
-    if (!isLineTimed(line)) continue;
+    if (!isLineTimed(line, getSplitCharacter())) continue;
     timedCount++;
     if (!isUntouched(line, alignedTimings)) continue;
     untouchedCount++;
@@ -62,7 +63,7 @@ function alignmentBreakdown(
   const untouchedIds = new Set<string>();
   const playedRuns = mergeRanges(played);
   for (const line of lines) {
-    if (!isExportedLine(line)) continue;
+    if (!isExportedLine(line, getSplitCharacter())) continue;
     if (alignedTimings[line.id] === undefined) counts.handSynced++;
     else if (!isUntouched(line, alignedTimings)) counts.fixed++;
     else {

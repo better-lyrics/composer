@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { roleWords } from "insync/line-track";
 import { createSnapPoint } from "@/domain/snap-point/model";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { scrollTrackHost } from "@/test/timeline-scroll";
 import { GroupBanner } from "@/views/timeline/group-banner";
@@ -16,7 +17,10 @@ const START_X = 100;
 const chorus = createLine({
   id: "c0",
   text: "go now",
-  words: [createWord({ text: "go ", begin: 10, end: 11 }), createWord({ text: "now", begin: 11, end: 12 })],
+  words: createWords([
+    { text: "go", sep: " ", begin: 10, end: 11 },
+    { text: "now", begin: 11, end: 12 },
+  ]),
   groupId: "g1",
   instanceIdx: 0,
   templateLineIdx: 0,
@@ -59,7 +63,7 @@ async function dragBanner(dxPx: number, modifiers: PointerEventInit = {}): Promi
   release(dxPx, modifiers);
 }
 
-const firstWordBegin = () => useProjectStore.getState().lines[0].words?.[0].begin;
+const firstWordBegin = () => roleWords(useProjectStore.getState().lines[0], "main")?.[0].begin;
 
 // -- Tests --------------------------------------------------------------------
 

@@ -1,8 +1,12 @@
-import { type LineTemplate, type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
-import { pickedTemplateSource } from "@/domain/group/template-source";
-import type { LyricLine } from "@/domain/line/model";
+import { type LineTemplate, offsetTemplateWords, type WordTemplate } from "insync/group-template";
+import type { LinkGroup } from "insync/group";
+import { pickedTemplateSource } from "insync/group-template-source";
+import type { LyricLine } from "insync/line";
+import type { WordTrack } from "insync/line-track";
+import { wordFromSpaced } from "insync/word-spaced-words";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -16,19 +20,22 @@ function instancePasteTemplate(
   { groupId, instanceIdx }: SourceInstance,
 ): LineTemplate[] {
   const group = groups.find((candidate) => candidate.id === groupId);
-  return instanceToTemplate(lines, groupId, pickedTemplateSource(lines, group, instanceIdx));
+  return instanceToTemplate(lines, groupId, pickedTemplateSource(lines, group, instanceIdx, getSplitCharacter()));
+}
+
+function trackEntries(words: WordTemplate[] | undefined, lineOffset: number, trackType: WordTrack): ClipboardEntry[] {
+  return offsetTemplateWords(words ?? [], 0).map((word, index) => {
+    const piece = words?.[index].piece;
+    return { word, lineOffset, trackType, ...(piece && { piece }) };
+  });
 }
 
 function templateEntries(line: LineTemplate, lineOffset: number): ClipboardEntry[] {
-  const main = offsetTemplateWords(line.words ?? [], 0);
-  const background = offsetTemplateWords(line.backgroundWords ?? [], 0);
-  const entries: ClipboardEntry[] = [
-    ...main.map((word) => ({ word, lineOffset, trackType: "word" as const })),
-    ...background.map((word) => ({ word, lineOffset, trackType: "bg" as const })),
-  ];
+  const main = trackEntries(line.words, lineOffset, "word");
+  const entries: ClipboardEntry[] = [...main, ...trackEntries(line.backgroundWords, lineOffset, "bg")];
   if (main.length === 0 && line.relativeBegin !== undefined && line.relativeEnd !== undefined)
     entries.push({
-      word: { text: line.text, begin: line.relativeBegin, end: line.relativeEnd },
+      word: wordFromSpaced({ text: line.text, begin: line.relativeBegin, end: line.relativeEnd }),
       lineOffset,
       trackType: "word",
     });

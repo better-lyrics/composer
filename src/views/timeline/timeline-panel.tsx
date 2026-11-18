@@ -1,8 +1,9 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
-import { getAgentColor } from "@/domain/agent/colors";
+import { getAgentColor } from "insync/agent-colors";
+import { mainTrack } from "insync/line-track";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
-import { trackWords } from "@/domain/line/tracks";
-import { isWordSelected } from "@/domain/selection/identity";
+import { sameAddress } from "insync/selection-identity";
+import { addressAt, resolveAddresses } from "insync/selection-resolve";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
@@ -28,7 +29,7 @@ import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { StepViewPublisher } from "@/views/timeline/step-timing/step-next";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
-import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
+import { useTimelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
@@ -62,6 +63,7 @@ import { IconMusic } from "@tabler/icons-react";
 import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Components ----------------------------------------------------------------
 
@@ -82,7 +84,7 @@ const TimelinePanel: React.FC = () => {
   const [rulerMarkerHost, setRulerMarkerHost] = useState<HTMLDivElement | null>(null);
   const openImportModal = useImportModal();
 
-  const effectiveLines = useTimelineEffectiveLines(lines);
+  const drawnLines = useTimelineDrawnLines(lines);
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const timelineShown = !!source && lines.length > 0;
 
@@ -110,7 +112,7 @@ const TimelinePanel: React.FC = () => {
   }, [initOverlayScrollbars, overlayScrollbars, timelineShown]);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
-  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
+  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(drawnLines);
   const dragZoom = useTimelineStore((s) => (activeDrag ? s.zoom : null));
   // DndContext runs the snap modifier only when it renders, so a bypass change during a held drag must re-render it.
   useTimelineStore((s) => activeDrag !== null && s.isBypassing);
@@ -131,27 +133,14 @@ const TimelinePanel: React.FC = () => {
 
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
-  useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
-  useLineRevealRequest(scrollContainerRef, effectiveLines);
+  useTimelineKeyboard(scrollContainerRef, drawnLines, duration, openLyricsModal);
+  useLineRevealRequest(scrollContainerRef, drawnLines);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
   useTimelineWheel(scrollContainerRef, timelineShown);
   useSeekReveal(scrollContainerRef, timelineShown);
   useTimelineFrameWake(scrollContainerRef, contentRef, timelineShown);
   useResumeView(scrollContainerRef, timelineShown && duration > 0);
-
-  useEffect(() => {
-    const { selectedWords } = useTimelineStore.getState();
-    if (selectedWords.length === 0) return;
-    const valid = selectedWords.filter((sel) => {
-      const line = effectiveLines[sel.lineIndex];
-      if (!line || line.id !== sel.lineId) return false;
-      return !!trackWords(line, sel.type)?.[sel.wordIndex];
-    });
-    if (valid.length < selectedWords.length) {
-      useTimelineStore.getState().setSelectedWords(valid);
-    }
-  }, [effectiveLines]);
 
   useEffect(() => {
     if (!timelineShown || !contentRef.current) return;
@@ -180,13 +169,12 @@ const TimelinePanel: React.FC = () => {
 
   const handleAudioDrop = useLoadAudioFile();
 
-  const dragColor = activeDrag
-    ? getAgentColor(effectiveLines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "")
-    : "#888";
+  const dragLine = activeDrag ? drawnLines.find((l) => l.id === activeDrag.lineId) : undefined;
+  const dragColor = activeDrag ? getAgentColor(dragLine ? mainTrack(dragLine).agentId : "") : "#888";
 
   const dragCells = useMemo(
-    () => (activeDrag && dragZoom !== null ? dragGhostCells(activeDrag, dragZoom, effectiveLines) : null),
-    [activeDrag, dragZoom, effectiveLines],
+    () => (activeDrag && dragZoom !== null ? dragGhostCells(activeDrag, dragZoom, drawnLines) : null),
+    [activeDrag, dragZoom, drawnLines],
   );
 
   if (!source) {
@@ -234,11 +222,11 @@ const TimelinePanel: React.FC = () => {
         if (!data?.snap) return;
         const { selectedWords } = useTimelineStore.getState();
         const lines = useProjectStore.getState().lines;
-        const isLeaderInSelection = isWordSelected(selectedWords, data.lineId, data.wordIndex, data.trackType);
-        const draggedSet =
-          isLeaderInSelection && selectedWords.length > 0
-            ? selectedWords
-            : [{ lineId: data.lineId, lineIndex: 0, wordIndex: data.wordIndex, type: data.trackType }];
+        const leader = addressAt(lines, data.lineId, data.trackType, data.wordIndex, getSplitCharacter());
+        const isLeaderInSelection = leader !== null && selectedWords.some((selected) => sameAddress(selected, leader));
+        const draggedSet = isLeaderInSelection
+          ? resolveAddresses(lines, selectedWords, getSplitCharacter())
+          : [{ lineId: data.lineId, wordIndex: data.wordIndex, type: data.trackType }];
         const selfIds = new Set(draggedSet.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
         const leaderKey = selfKey(data.lineId, data.wordIndex, data.trackType);
         beginGesture({
@@ -297,7 +285,7 @@ const TimelinePanel: React.FC = () => {
                   <BeatGridCorner />
                   <TimelineWaveform />
 
-                  <StepViewPublisher lines={effectiveLines} />
+                  <StepViewPublisher lines={drawnLines} />
                   <TimelineRows scrollContainerRef={scrollContainerRef} />
                 </div>
 
@@ -324,7 +312,7 @@ const TimelinePanel: React.FC = () => {
                 {editingWord && (
                   <WordEditOverlay
                     lineId={editingWord.lineId}
-                    wordIndex={editingWord.wordIndex}
+                    syllableId={editingWord.syllableId}
                     type={editingWord.type}
                     scrollContainerRef={scrollContainerRef}
                   />
@@ -346,7 +334,7 @@ const TimelinePanel: React.FC = () => {
         <TimelineDragOverlay>
           {activeDrag && dragCells && (
             <HoverSizedDragGhost
-              lines={effectiveLines}
+              lines={drawnLines}
               cells={dragCells.cells}
               anchorWidth={dragCells.anchorWidth}
               anchorHeight={dragCells.anchorHeight}

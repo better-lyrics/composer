@@ -1,19 +1,25 @@
-import { sharedTimingFanOut, timeRangeResolver } from "@/domain/group/shared-timing";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import type { LyricLine } from "@/domain/line/model";
+import { stretchSelection } from "insync/commands/word-timing";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import { copyThroughTemplate, instanceAnchors } from "insync/group-template-copy";
+import { applyLineUpdates } from "insync/line-apply-line-updates";
+import type { LyricLine } from "insync/line";
+import { resolveAddresses } from "insync/selection-resolve";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
+import { songEndOrUnbounded } from "insync/song-end";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { selfKey } from "@/views/timeline/snap";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
-import { mapStretchTargets, stretchSelections } from "@/views/timeline/stretch-selection";
-import { STRETCH_EPS } from "@/views/timeline/stretch-targets";
+import { mapStretchTargets } from "insync/selection-stretch";
+import { STRETCH_EPS } from "insync/selection-stretch-targets";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -46,28 +52,32 @@ const COMMIT_FACTOR_EPS = 1e-3;
 
 // -- Helpers -------------------------------------------------------------------
 
-// Preview writes go through setTransientLines: transient states that must not
-// mark the project dirty. The committed result goes through
-// updateLinesWithHistory, which owns history and dirty flags. The action keeps
+// Preview writes go through previewLines: transient states that must not
+// mark the project dirty. The committed result goes through the stretch
+// command, which owns history and dirty flags. The action keeps
 // the array reference, which the drag relies on for its external-writer check.
 function writePreviewLines(lines: LyricLine[]): void {
-  useProjectStore.getState().setTransientLines(lines);
+  useProjectStore.getState().previewLines(lines);
 }
 
-// Applies stretch updates to the pre-drag snapshot the way updateLinesWithHistory will commit them: each line
-// reconciled, no sibling propagation, and shared group timing copied, so the preview matches the release.
+// Applies stretch updates to the pre-drag snapshot the way the stretch command will commit them: each line
+// reconciled, no sibling propagation, and shared group timing copied, so the preview matches the release. A stretch
+// whose copy has no room is refused on release, so its preview stays on the snapshot.
 function applyStretchUpdates(
   snapshotLines: LyricLine[],
   updates: ReadonlyArray<{ id: string; updates: Partial<LyricLine> }>,
 ): LyricLine[] {
-  const applied = applyLineUpdates(snapshotLines, updates);
-  const shared = sharedTimingFanOut(
-    snapshotLines,
-    applied,
-    useProjectStore.getState().groups,
-    updates.map((update) => update.id),
-  );
-  return shared.rejected ? snapshotLines.slice() : shared.lines;
+  const doc = docOfLines(snapshotLines);
+  const copy = copyThroughTemplate({
+    doc,
+    before: snapshotLines,
+    after: applyLineUpdates(snapshotLines, updates),
+    groups: useProjectStore.getState().groups,
+    touched: updates.map((update) => update.id),
+    anchors: instanceAnchors(doc),
+    songEnd: songEndOrUnbounded(useAudioStore.getState().duration),
+  });
+  return copy.blocked ? snapshotLines : copy.lines;
 }
 
 // -- Hook ----------------------------------------------------------------------
@@ -114,9 +124,11 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       cleanupRef.current = null;
 
       const { lines: snapshotLines, groups } = useProjectStore.getState();
-      const selection = useTimelineStore.getState().selectedWords;
+      const selectedAddresses = useTimelineStore.getState().selectedWords;
+      const selection = resolveAddresses(snapshotLines, selectedAddresses, getSplitCharacter());
+      const duration = useAudioStore.getState().duration;
       const options = {
-        rangeOf: timeRangeResolver(snapshotLines, groups, useAudioStore.getState().duration),
+        rangeOf: timeRangeResolver(snapshotLines, groups, duration),
         minWordDuration: useSettingsStore.getState().minWordDuration,
       };
       const plan = planStretchDrag(snapshotLines, selection, { lineId, type, wordIndex, edge }, options);
@@ -162,7 +174,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
           finish(false);
           return;
         }
-        const updates = mapStretchTargets(targets, k, anchorTime);
+        const updates = mapStretchTargets(targets, k, anchorTime, getSplitCharacter());
         lastWritten = applyStretchUpdates(snapshotLines, updates);
         writePreviewLines(lastWritten);
       }
@@ -213,14 +225,19 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
         if (stillOurs) {
           // Restore the snapshot first so the history entry below captures the
           // true pre-drag state (and a discarded drag leaves no trace at all).
-          useProjectStore.getState().restoreTransientLines(snapshotLines);
+          useProjectStore.getState().restorePreviewLines(snapshotLines);
         }
         teardown();
         if (stillOurs && commit && dragged && Math.abs(currentFactor - 1) >= COMMIT_FACTOR_EPS) {
-          const result = stretchSelections(snapshotLines, selection, currentFactor, { ...options, anchor });
-          if (result.updates.length > 0) {
-            useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
-          }
+          useProjectStore.getState().commit(
+            stretchSelection({
+              addresses: selectedAddresses,
+              factor: currentFactor,
+              anchor,
+              minWordDuration: options.minWordDuration,
+              duration,
+            }),
+          );
         }
         onDragEndRef.current?.(dragged);
       }

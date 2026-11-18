@@ -1,8 +1,10 @@
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import { foldedLineIds } from "@/domain/sync/folded-lines";
+import { withFields } from "@/test/field-updates";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
+import { foldedLineIds } from "insync/sync-folded-lines";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -15,7 +17,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -35,7 +37,7 @@ const song = (secondBegin?: number, thirdBegin?: number) => [
 ];
 
 const folded = (lines: LyricLine[], lineIndex: number, wordIndex = 0, groups: LinkGroup[] = sharing) =>
-  [...foldedLineIds(lines, groups, { lineIndex, wordIndex })].toSorted();
+  [...foldedLineIds(lines, groups, { lineIndex, wordIndex }, DEFAULT_SPLIT_CHARACTER)].toSorted();
 
 describe("foldedLineIds", () => {
   it("folds every line after the first of an instance one tap places", () => {
@@ -52,7 +54,7 @@ describe("foldedLineIds", () => {
 
   describe("edge cases", () => {
     it("folds nothing without a timed instance to copy from", () => {
-      const lines = song().map((line) => (line.groupId ? { ...line, words: undefined } : line));
+      const lines = song().map((line) => (line.groupId ? withFields(line, { words: undefined }) : line));
       expect(folded(lines, 0)).toEqual([]);
     });
 

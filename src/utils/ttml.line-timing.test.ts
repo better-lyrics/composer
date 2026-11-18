@@ -1,93 +1,161 @@
 import { describe, expect, it } from "vitest";
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
-import { generateProjectTtml, generateTTML } from "@/utils/ttml";
+import type { Agent } from "insync/agent";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import type { ProjectMetadata } from "insync/metadata";
+import { legacyLine } from "@/test/legacy-languages";
+import { parseTtml } from "insync/ttml/read";
+import { generateProjectTtml, generateTTML } from "insync/ttml/write";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const metadata: ProjectMetadata = { title: "One Step Closer", artists: [], album: "", duration: 60 };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Frankie" }];
 
-const wordSynced: LyricLine = {
-  id: "w",
-  text: "Comin' at you, baby",
-  agentId: "v1",
-  words: [
-    { text: "Comin' ", begin: 1.437, end: 2.067 },
-    { text: "at ", begin: 2.067, end: 2.382 },
-    { text: "you, ", begin: 2.382, end: 2.649 },
-    { text: "baby", begin: 2.649, end: 3.012 },
-  ],
-};
-const lineSynced: LyricLine = { id: "l", text: "It's been too long", agentId: "v1", begin: 6.833, end: 8.893 };
+const wordSynced: LyricLine = lineFromFields(
+  {
+    id: "w",
+    text: "Comin' at you, baby",
+    agentId: "v1",
+    words: [
+      { id: "w1", text: "Comin'", sep: " ", begin: 1.437, end: 2.067, joinsNext: false },
+      { id: "w2", text: "at", sep: " ", begin: 2.067, end: 2.382, joinsNext: false },
+      { id: "w3", text: "you,", sep: " ", begin: 2.382, end: 2.649, joinsNext: false },
+      { id: "w4", text: "baby", sep: "", begin: 2.649, end: 3.012, joinsNext: false },
+    ],
+  },
+  DEFAULT_SPLIT_CHARACTER,
+);
+const lineSynced: LyricLine = lineFromFields(
+  {
+    id: "l",
+    text: "It's been too long",
+    agentId: "v1",
+    begin: 6.833,
+    end: 8.893,
+  },
+  DEFAULT_SPLIT_CHARACTER,
+);
 
 const paragraphs = (ttml: string) => ttml.match(/<p [^>]*>.*?<\/p>/g) ?? [];
 
 describe("generateTTML line timing", () => {
   describe("happy paths", () => {
     it("drops word spans and keeps the line bounds of a word-synced line", () => {
-      const ttml = generateTTML({ metadata, agents, lines: [wordSynced], timing: "line" });
+      const ttml = generateTTML({
+        metadata,
+        agents,
+        lines: [wordSynced],
+        timing: "line",
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
       expect(paragraphs(ttml)).toEqual([
         '<p begin="0:01.437" end="0:03.012" itunes:key="L1" ttm:agent="v1">Comin\' at you, baby</p>',
       ]);
     });
 
     it("writes a Line header for word-synced data", () => {
-      const ttml = generateTTML({ metadata, agents, lines: [wordSynced], timing: "line" });
+      const ttml = generateTTML({
+        metadata,
+        agents,
+        lines: [wordSynced],
+        timing: "line",
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
       expect(ttml).toContain('itunes:timing="Line" composer:timing="Line"');
     });
 
     it("leaves a line-synced line as it is", () => {
-      const lineTtml = generateTTML({ metadata, agents, lines: [lineSynced], timing: "line" });
-      expect(lineTtml).toBe(generateTTML({ metadata, agents, lines: [lineSynced] }));
+      const lineTtml = generateTTML({
+        metadata,
+        agents,
+        lines: [lineSynced],
+        timing: "line",
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      expect(lineTtml).toBe(
+        generateTTML({ metadata, agents, lines: [lineSynced], splitChar: DEFAULT_SPLIT_CHARACTER }),
+      );
     });
   });
 
   describe("edge cases", () => {
     it("writes the line text without split characters", () => {
-      const split: LyricLine = {
-        ...wordSynced,
-        text: "Com|in' at you, baby",
-        words: [{ text: "Com", begin: 1, end: 1.2 }, ...wordSynced.words!.map((word) => ({ ...word }))],
-      };
-      const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [split], timing: "line" }));
+      const split: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(wordSynced, DEFAULT_SPLIT_CHARACTER),
+          text: "Com|in' at you, baby",
+          words: [
+            { id: "w5", text: "Com", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            ...timedSyllables(mainTrack(wordSynced)).map((word, index) =>
+              index === 0 ? { ...word, text: "in'" } : { ...word },
+            ),
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const [paragraph] = paragraphs(
+        generateTTML({ metadata, agents, lines: [split], timing: "line", splitChar: DEFAULT_SPLIT_CHARACTER }),
+      );
       expect(paragraph).toContain(">Comin' at you, baby</p>");
     });
 
     it("times background vocals with their own bounds as one span", () => {
-      const withBackground: LyricLine = {
-        ...wordSynced,
-        backgroundText: "(coming)",
-        backgroundWords: [
-          { text: "(com", begin: 2.5, end: 2.8 },
-          { text: "ing)", begin: 2.8, end: 3.4 },
-        ],
-      };
-      const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [withBackground], timing: "line" }));
+      const withBackground: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(wordSynced, DEFAULT_SPLIT_CHARACTER),
+          backgroundText: "(coming)",
+          backgroundWords: [
+            { id: "w6", text: "(com", sep: "", begin: 2.5, end: 2.8, joinsNext: true },
+            { id: "w7", text: "ing)", sep: "", begin: 2.8, end: 3.4, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const [paragraph] = paragraphs(
+        generateTTML({ metadata, agents, lines: [withBackground], timing: "line", splitChar: DEFAULT_SPLIT_CHARACTER }),
+      );
       expect(paragraph).toBe(
         '<p begin="0:01.437" end="0:03.400" itunes:key="L1" ttm:agent="v1">Comin\' at you, baby<span ttm:role="x-bg"><span begin="0:02.500" end="0:03.400">(coming)</span></span></p>',
       );
     });
 
     it("times untimed background vocals with the line", () => {
-      const withBackground: LyricLine = { ...wordSynced, backgroundText: "(yeah)" };
-      const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [withBackground], timing: "line" }));
+      const withBackground: LyricLine = lineFromFields(
+        { ...fieldsOfLine(wordSynced, DEFAULT_SPLIT_CHARACTER), backgroundText: "(yeah)" },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const [paragraph] = paragraphs(
+        generateTTML({ metadata, agents, lines: [withBackground], timing: "line", splitChar: DEFAULT_SPLIT_CHARACTER }),
+      );
       expect(paragraph).toContain('<span ttm:role="x-bg"><span begin="0:01.437" end="0:03.012">(yeah)</span></span>');
     });
   });
 
   describe("regressions", () => {
     it("regression: writes aligned transliterations without word spans", () => {
-      const romanized: LyricLine = {
+      const romanized: LyricLine = legacyLine({
         id: "r",
         text: "今日",
         agentId: "v1",
         words: [
-          { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
-          { text: "日", begin: 1.5, end: 2, transliteration: "hi" },
+          {
+            id: "w8",
+            text: "今",
+            sep: "",
+            begin: 1,
+            end: 1.5,
+            transliteration: "kyou",
+            transliterationJoinerAfter: " ",
+            joinsNext: true,
+          },
+          { id: "w9", text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi", joinsNext: false },
         ],
         backgroundText: "空",
-        backgroundWords: [{ text: "空", begin: 1.2, end: 1.8, transliteration: "sora" }],
+        backgroundWords: [
+          { id: "w10", text: "空", sep: "", begin: 1.2, end: 1.8, transliteration: "sora", joinsNext: false },
+        ],
         transliteration: {
           language: "ja-Latn",
           text: "kyou hi",
@@ -100,46 +168,119 @@ describe("generateTTML line timing", () => {
           origin: "manual",
           sourceFingerprint: "test",
         },
-      };
-      const ttml = generateTTML({ metadata, agents, lines: [romanized], timing: "line" });
+      });
+      const ttml = generateTTML({
+        metadata,
+        agents,
+        lines: [romanized],
+        timing: "line",
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
       const transliteration = ttml.match(/<transliteration [^>]*>.*?<\/transliteration>/s)?.[0] ?? "";
       expect(transliteration).toContain("kyou hi");
       expect(transliteration).not.toContain("<span begin=");
-      expect(generateTTML({ metadata, agents, lines: [romanized] })).toContain(">kyou</span>");
+      expect(generateTTML({ metadata, agents, lines: [romanized], splitChar: DEFAULT_SPLIT_CHARACTER })).toContain(
+        ">kyou</span>",
+      );
     });
 
     it("regression: strips split characters from background vocals", () => {
-      const withBackground: LyricLine = {
-        ...wordSynced,
-        backgroundText: "(oo|ooh)",
-        backgroundWords: [
-          { text: "(oo", begin: 2.5, end: 2.8 },
-          { text: "ooh)", begin: 2.8, end: 3.4 },
-        ],
-      };
-      const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [withBackground], timing: "line" }));
+      const withBackground: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(wordSynced, DEFAULT_SPLIT_CHARACTER),
+          backgroundText: "(oo|ooh)",
+          backgroundWords: [
+            { id: "w11", text: "(oo", sep: "", begin: 2.5, end: 2.8, joinsNext: true },
+            { id: "w12", text: "ooh)", sep: "", begin: 2.8, end: 3.4, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const [paragraph] = paragraphs(
+        generateTTML({ metadata, agents, lines: [withBackground], timing: "line", splitChar: DEFAULT_SPLIT_CHARACTER }),
+      );
       expect(paragraph).toContain(">(ooooh)</span></span></p>");
     });
   });
 
   describe("invariants", () => {
     it("never writes a word span in the body", () => {
-      const ttml = generateTTML({ metadata, agents, lines: [wordSynced, lineSynced], timing: "line" });
+      const ttml = generateTTML({
+        metadata,
+        agents,
+        lines: [wordSynced, lineSynced],
+        timing: "line",
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
       for (const paragraph of paragraphs(ttml)) expect(paragraph).not.toMatch(/<p [^>]*><span begin=/);
     });
 
     it("does not change the lines it reads", () => {
       const lines = [structuredClone(wordSynced)];
-      generateTTML({ metadata, agents, lines, timing: "line" });
+      generateTTML({ metadata, agents, lines, timing: "line", splitChar: DEFAULT_SPLIT_CHARACTER });
       expect(lines).toEqual([wordSynced]);
     });
 
     it("reads back as line-synced lines with the same bounds", () => {
-      const ttml = generateTTML({ metadata, agents, lines: [wordSynced, lineSynced], timing: "line" });
-      const parsed = parseTtml(ttml).lines;
-      expect(parsed.map((line) => [line.text, line.words, line.begin, line.end])).toEqual([
+      const ttml = generateTTML({
+        metadata,
+        agents,
+        lines: [wordSynced, lineSynced],
+        timing: "line",
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      const parsed = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).lines;
+      expect(
+        parsed.map((line) => [
+          lineText(line, DEFAULT_SPLIT_CHARACTER),
+          roleWords(line, "main"),
+          mainTrack(line).begin,
+          mainTrack(line).end,
+        ]),
+      ).toEqual([
         ["Comin' at you, baby", undefined, 1.437, 3.012],
         ["It's been too long", undefined, 6.833, 8.893],
+      ]);
+    });
+
+    it("regression: a line-synced line reads back its own span when its background runs past it", () => {
+      const withLongerBackground = lineFromFields(
+        {
+          id: "b",
+          text: "wan|der",
+          agentId: "v1",
+          begin: 6.67,
+          end: 7.514,
+          backgroundText: "la|la yeah",
+          backgroundWords: [
+            { id: "b1", text: "la", sep: "", begin: 6.72, end: 7.079, joinsNext: true },
+            { id: "b2", text: "la", sep: " ", begin: 7.099, end: 7.369, joinsNext: false },
+            { id: "b3", text: "yeah", sep: "", begin: 7.369, end: 7.717, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const ttml = generateTTML({
+        metadata,
+        agents,
+        lines: [withLongerBackground],
+        splitChar: DEFAULT_SPLIT_CHARACTER,
+      });
+      const [line] = parseTtml(ttml, DEFAULT_SPLIT_CHARACTER).lines;
+      expect([roleWords(line, "main"), mainTrack(line).begin, mainTrack(line).end]).toEqual([undefined, 6.67, 7.514]);
+    });
+
+    it("regression: a broken or backwards main span keeps the paragraph times", () => {
+      const read = (mainBegin: string, mainEnd: string) =>
+        mainTrack(
+          parseTtml(
+            `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:composer="https://composer.boidu.dev/ttml"><body><div><p begin="1.000" end="3.000" composer:mainBegin="${mainBegin}" composer:mainEnd="${mainEnd}">wander far</p></div></body></tt>`,
+            DEFAULT_SPLIT_CHARACTER,
+          ).lines[0],
+        );
+      expect([read("oops", "2.000"), read("2.500", "1.500")].map((track) => [track.begin, track.end])).toEqual([
+        [1, 3],
+        [1, 3],
       ]);
     });
   });
@@ -147,8 +288,10 @@ describe("generateTTML line timing", () => {
   describe("project export", () => {
     it("follows the requested timing", () => {
       const project = { metadata, agents, lines: [wordSynced], groups: [] };
-      expect(generateProjectTtml(project, 0, "line")).toBe(generateTTML({ ...project, timing: "line" }));
-      expect(generateProjectTtml(project, 0)).toContain("<span begin=");
+      expect(generateProjectTtml(project, 0, DEFAULT_SPLIT_CHARACTER, "line")).toBe(
+        generateTTML({ ...project, timing: "line", splitChar: DEFAULT_SPLIT_CHARACTER }),
+      );
+      expect(generateProjectTtml(project, 0, DEFAULT_SPLIT_CHARACTER)).toContain("<span begin=");
     });
   });
 });

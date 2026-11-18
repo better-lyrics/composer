@@ -1,9 +1,13 @@
-import type { LyricLine } from "@/domain/line/model";
-import { isWordSynced } from "@/domain/line/predicates";
+import { expect } from "vitest";
+import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
+import type { LyricLine } from "insync/line";
+import { isWordSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { keyedExportLines } from "@/utils/ttml-line-keys";
-import { expect } from "vitest";
+import { keyedExportLines } from "insync/ttml/line-keys";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Types --------------------------------------------------------------------
 
@@ -31,7 +35,10 @@ function required<T>(value: T | undefined, what: string): T {
 }
 
 function keyOf(project: EditedTtmlProject, line: LyricLine): string {
-  return required(keyedExportLines(project.lines).find((keyed) => keyed.line === line)?.key, `key for ${line.id}`);
+  return required(
+    keyedExportLines(project.lines, DEFAULT_SPLIT_CHARACTER).find((keyed) => keyed.line === line)?.key,
+    `key for ${line.id}`,
+  );
 }
 
 function paragraphOf(ttml: string, project: EditedTtmlProject, line: LyricLine): string {
@@ -54,7 +61,7 @@ function lineById(lines: readonly LyricLine[], id: string): LyricLine {
 }
 
 function timedAt(project: EditedTtmlProject, index: number): LyricLine {
-  return required(keyedExportLines(project.lines)[index]?.line, `exported line ${index}`);
+  return required(keyedExportLines(project.lines, DEFAULT_SPLIT_CHARACTER)[index]?.line, `exported line ${index}`);
 }
 
 function withoutElement(ttml: string, element: string): string {
@@ -81,11 +88,11 @@ function editLineText(
   project: EditedTtmlProject,
   line: LyricLine,
 ): Pick<EditCase, "edited" | "expectTaken"> {
-  const words = line.words ?? [];
+  const words = timedSyllables(mainTrack(line));
   const expectStoredDataKept = (after: LyricLine) => {
-    expect(after.translations).toEqual(line.translations);
-    expect(after.transliteration?.origin).toBe(line.transliteration?.origin);
-    expect(after.backgroundTextSource).toBe(line.backgroundTextSource);
+    expect(lineTranslations(after)).toEqual(lineTranslations(line));
+    expect(lineTransliteration(after)?.origin).toBe(lineTransliteration(line)?.origin);
+    expect(backgroundTrack(after)?.source).toBe(backgroundTrack(line)?.source);
   };
   if (isWordSynced(line)) {
     const first = required(words[0], "word").text.trim();
@@ -93,13 +100,13 @@ function editLineText(
       edited: editParagraph(ttml, project, line, (p) => p.replace(`>${first}</span>`, `>${first}X</span>`)),
       expectTaken: (lines) => {
         const after = lineById(lines, line.id);
-        expect(after.words?.[0]?.text.trim()).toBe(`${first}X`);
-        expect(after.words?.slice(1)).toEqual(words.slice(1));
+        expect(timedSyllables(mainTrack(after))[0]?.text.trim()).toBe(`${first}X`);
+        expect(timedSyllables(mainTrack(after)).slice(1)).toEqual(words.slice(1));
         expectStoredDataKept(after);
       },
     };
   }
-  const text = stripSplitCharacter(line.text);
+  const text = stripSplitCharacter(lineText(line, DEFAULT_SPLIT_CHARACTER));
   return {
     edited: editParagraph(ttml, project, line, (p) => {
       const openTag = p.slice(0, p.indexOf(">") + 1);
@@ -107,7 +114,7 @@ function editLineText(
     }),
     expectTaken: (lines) => {
       const after = lineById(lines, line.id);
-      expect(after.text).toBe(`${text}!`);
+      expect(lineText(after, DEFAULT_SPLIT_CHARACTER)).toBe(`${text}!`);
       expectStoredDataKept(after);
     },
   };

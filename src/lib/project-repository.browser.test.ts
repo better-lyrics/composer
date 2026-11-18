@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { APP_STATE_STORE_NAME, getFromStore } from "@/lib/persistence-idb";
 import { deleteProjectAudio, loadProjectAudio, saveProjectAudio } from "@/lib/project-audio";
 import {
@@ -15,17 +15,20 @@ import {
 } from "@/lib/project-repository";
 import { OPEN_PROJECT_KEY, getOpenProjectId, loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError, isProjectDeleted } from "@/lib/project-tombstones";
-import type { SavedProject } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/saved-project";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 function project(overrides: Partial<SavedProject> = {}): SavedProject {
   return {
-    version: 1,
+    version: SAVED_PROJECT_VERSION,
     savedAt: 1_758_900_000_000,
     metadata: { title: "Espresso", artists: ["Sabrina Carpenter"], album: "Short n' Sweet", duration: 175 },
     agents: DEFAULT_AGENTS,
-    lines: [createLine({ text: "Now he's thinking bout me", begin: 1, end: 3 }), createLine({ text: "Every night" })],
+    lines: savedLines([
+      createLine({ text: "Now he's thinking bout me", begin: 1, end: 3 }),
+      createLine({ text: "Every night" }),
+    ]),
     granularity: "word",
     audioSource: { kind: "file", name: "espresso.flac" },
     ...overrides,

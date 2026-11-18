@@ -1,18 +1,17 @@
-import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
-import { isWordSelected } from "@/domain/selection/identity";
-import {
-  type SyllablePosition,
-  expandSelectionToGroupmates,
-  getSyllablePositions,
-} from "@/domain/word/syllable-groups";
+import type { LyricLine } from "insync/line";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { trackRole } from "insync/line-track";
+import { sameAddress } from "insync/selection-identity";
+import { addressAt, resolveAddresses } from "insync/selection-resolve";
+import { type SyllablePosition, expandSelectionToGroupmates, getSyllablePositions } from "insync/word-syllable-groups";
 import type { DragGhostCell } from "@/views/timeline/drag-ghost";
-import type { DragData } from "@/views/timeline/drag-handlers";
+import { type DragData, type DragWord, draggedWord } from "@/views/timeline/drag-handlers";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { bgTrackHeight, wordBlockWidth, wordInsetPx } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -25,12 +24,19 @@ interface DragGhostCells {
 // -- Functions -----------------------------------------------------------------
 
 // The dragged word, or every selected word with its syllable groupmates, laid out relative to the grabbed block.
-function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: LyricLine[]): DragGhostCells {
+function dragGhostCells(activeDrag: DragData, zoom: number, drawnLines: LyricLine[]): DragGhostCells {
   const { selectedWords, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
-  const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
+  const dragged = addressAt(
+    drawnLines,
+    activeDrag.lineId,
+    activeDrag.trackType,
+    activeDrag.wordIndex,
+    getSplitCharacter(),
+  );
+  const inSelection = dragged !== null && selectedWords.some((selected) => sameAddress(selected, dragged));
 
   const layout = computeRowLayout({
-    lines: effectiveLines,
+    lines: drawnLines,
     rowHeights,
     defaultRowHeight,
     collapsedInstances,
@@ -43,7 +49,7 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
   const rowMainHeights: Record<string, number> = {};
   const rowBgTops: Record<string, number> = {};
   const rowBgHeights: Record<string, number> = {};
-  for (const line of effectiveLines) {
+  for (const line of drawnLines) {
     const pos = layout.lineTops.get(line.id);
     if (!pos) continue;
     const mainH = rowHeights[line.id] ?? defaultRowHeight;
@@ -59,25 +65,18 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
   const anchorHeight =
     activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
 
-  const baseSelections =
+  const baseSelections: DragWord[] =
     inSelection && selectedWords.length > 1
-      ? selectedWords
-      : [
-          {
-            lineId: activeDrag.lineId,
-            lineIndex: activeDrag.lineIndex,
-            wordIndex: activeDrag.wordIndex,
-            type: activeDrag.trackType,
-          },
-        ];
+      ? resolveAddresses(drawnLines, selectedWords, getSplitCharacter())
+      : [draggedWord(activeDrag)];
 
-  const lineById = new Map(effectiveLines.map((l) => [l.id, l]));
+  const lineById = new Map(drawnLines.map((l) => [l.id, l]));
 
-  const wordsToShow: typeof baseSelections = [];
+  const wordsToShow: DragWord[] = [];
   const seen = new Set<string>();
   for (const sel of baseSelections) {
     const line = lineById.get(sel.lineId);
-    const wordsArray = line ? trackWords(line, sel.type) : undefined;
+    const wordsArray = line ? drawnSyllables(line, trackRole(sel.type), getSplitCharacter()) : undefined;
     if (!line || !wordsArray) continue;
     const indices = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
     for (const idx of indices) {
@@ -114,7 +113,7 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
     let positions = positionsByLineTrack.get(key);
     if (!positions) {
       const line = lineById.get(lineId);
-      const wordsArray = line ? trackWords(line, type) : undefined;
+      const wordsArray = line ? drawnSyllables(line, trackRole(type), getSplitCharacter()) : undefined;
       positions = wordsArray ? getSyllablePositions(wordsArray) : [];
       positionsByLineTrack.set(key, positions);
     }
@@ -123,7 +122,7 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
 
   const cells = wordsToShow.map((sel) => {
     const line = lineById.get(sel.lineId);
-    const wordsArray = line ? trackWords(line, sel.type) : undefined;
+    const wordsArray = line ? drawnSyllables(line, trackRole(sel.type), getSplitCharacter()) : undefined;
     const word = wordsArray?.[sel.wordIndex];
     if (!word || !line)
       return {
@@ -143,7 +142,7 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
       (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - wordInsetPx(sel.type) * 2;
 
     return {
-      text: word.text.trimEnd(),
+      text: word.text,
       left: cellLeft,
       top: cellTop,
       syllablePosition: positionFor(sel.lineId, sel.type, sel.wordIndex),

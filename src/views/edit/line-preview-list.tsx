@@ -1,11 +1,11 @@
-import type { Agent } from "@/domain/agent/model";
-import type { LinkGroup } from "@/domain/group/template";
-import { instancePositionsByLineId } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
+import type { Agent } from "insync/agent";
+import type { LinkGroup } from "insync/group";
+import { instancePositionsByLineId } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
 import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { useSettingsStore } from "@/stores/settings";
 import { ListScroll } from "@/ui/scroll";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import {
   LinePreview,
   type LinePreviewRowHandlers,

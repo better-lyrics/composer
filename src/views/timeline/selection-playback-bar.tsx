@@ -1,7 +1,7 @@
 import { Button } from "@/ui/button";
 import { SingerTag } from "@/ui/singer-tag";
-import { formatTime } from "@/utils/format-time";
-import { pluralize } from "@/utils/pluralize";
+import { formatTime } from "insync/format-time";
+import { pluralize } from "insync/pluralize";
 import { LoopToggle } from "@/views/timeline/loop-toggle";
 import { stopSelectionPlayback } from "@/views/timeline/selection-playback";
 import { selectionPlaybackIcon } from "@/views/timeline/selection-playback-icon";

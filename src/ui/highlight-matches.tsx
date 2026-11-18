@@ -1,4 +1,4 @@
-import { escapeRegex } from "@/utils/escape-regex";
+import { escapeRegex } from "insync/escape-regex";
 import { splitSearchTerms } from "@/utils/search-terms";
 
 // -- Component -----------------------------------------------------------------

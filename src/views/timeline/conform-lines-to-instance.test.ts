@@ -1,10 +1,15 @@
 /**
  * @vitest-environment node
  */
-import type { LineTemplate } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
+
 import { describe, expect, it } from "vitest";
+import type { LineTemplate } from "insync/group-template";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -15,8 +20,8 @@ const chorusTemplate: LineTemplate[] = [
     relativeBegin: 0,
     relativeEnd: 2,
     words: [
-      { text: "We were ", relativeBegin: 0, relativeEnd: 0.8 },
-      { text: "dancing in the dark", relativeBegin: 0.8, relativeEnd: 2 },
+      { text: "We were", sep: " ", relativeBegin: 0, relativeEnd: 0.8, joinsNext: false },
+      { text: "dancing in the dark", sep: "", relativeBegin: 0.8, relativeEnd: 2, joinsNext: false },
     ],
   },
   {
@@ -24,26 +29,48 @@ const chorusTemplate: LineTemplate[] = [
     agentId: "v2",
     relativeBegin: 2.5,
     relativeEnd: 4,
-    words: [{ text: "Till the morning came", relativeBegin: 2.5, relativeEnd: 4 }],
+    words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4, joinsNext: false }],
   },
 ];
 
 function songWithLooseChorus(): LyricLine[] {
   return [
-    { id: "verse", text: "I remember", agentId: "v1", words: [{ text: "I remember", begin: 0, end: 4 }] },
-    {
-      id: "loose1",
-      text: "we were dancin in the dark",
-      agentId: "v1",
-      words: [{ text: "we were dancin in the dark", begin: 20, end: 22 }],
-    },
-    {
-      id: "loose2",
-      text: "till mornin came",
-      agentId: "v1",
-      words: [{ text: "till mornin came", begin: 22.4, end: 24 }],
-    },
-    { id: "outro", text: "Goodnight", agentId: "v1", words: [{ text: "Goodnight", begin: 30, end: 32 }] },
+    lineFromFields(
+      {
+        id: "verse",
+        text: "I remember",
+        agentId: "v1",
+        words: [{ id: "w1", text: "I remember", sep: "", begin: 0, end: 4, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields(
+      {
+        id: "loose1",
+        text: "we were dancin in the dark",
+        agentId: "v1",
+        words: [{ id: "w2", text: "we were dancin in the dark", sep: "", begin: 20, end: 22, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields(
+      {
+        id: "loose2",
+        text: "till mornin came",
+        agentId: "v1",
+        words: [{ id: "w3", text: "till mornin came", sep: "", begin: 22.4, end: 24, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields(
+      {
+        id: "outro",
+        text: "Goodnight",
+        agentId: "v1",
+        words: [{ id: "w4", text: "Goodnight", sep: "", begin: 30, end: 32, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
   ];
 }
 
@@ -66,19 +93,31 @@ describe("conformLinesToInstance · happy path", () => {
     const updated = result.updatedLines ?? [];
     expect(updated[1].groupId).toBe("g1");
     expect(updated[2].groupId).toBe("g1");
-    expect(updated[1].text).toBe("We were dancing in the dark");
-    expect(updated[2].text).toBe("Till the morning came");
-    expect(updated[2].agentId).toBe("v2");
+    expect(lineText(updated[1], DEFAULT_SPLIT_CHARACTER)).toBe("We were dancing in the dark");
+    expect(lineText(updated[2], DEFAULT_SPLIT_CHARACTER)).toBe("Till the morning came");
+    expect(mainTrack(updated[2]).agentId).toBe("v2");
     expect(updated[1].id).toBe("loose1");
     expect(updated[2].id).toBe("loose2");
   });
 
   it("takes the lowest unused instanceIdx", () => {
     const lines: LyricLine[] = [
-      { id: "c0l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "c0l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-      { id: "c2l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 2, templateLineIdx: 0 },
-      { id: "c2l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 2, templateLineIdx: 1 },
+      lineFromFields(
+        { id: "c0l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        { id: "c0l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        { id: "c2l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 2, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        { id: "c2l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 2, templateLineIdx: 1 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       ...songWithLooseChorus().slice(1, 3),
     ];
     const result = conformLinesToInstance({
@@ -116,16 +155,16 @@ describe("conformLinesToInstance · happy path", () => {
       playheadTime: 99,
     });
 
-    expect(result.updatedLines?.[1].words?.[0].begin).toBe(20);
-    expect(result.updatedLines?.[1].words?.[1].end).toBe(22);
-    expect(result.updatedLines?.[2].words?.[0].begin).toBe(22.5);
-    expect(result.updatedLines?.[2].words?.[0].end).toBe(24);
+    expect(timedSyllables(mainTrack(result.updatedLines![1]))[0].begin).toBe(20);
+    expect(timedSyllables(mainTrack(result.updatedLines![1]))[1].end).toBe(22);
+    expect(timedSyllables(mainTrack(result.updatedLines![2]))[0].begin).toBe(22.5);
+    expect(timedSyllables(mainTrack(result.updatedLines![2]))[0].end).toBe(24);
   });
 
   it("falls back to the playhead when the selected lines carry no timing", () => {
     const lines: LyricLine[] = [
-      { id: "loose1", text: "we were dancin in the dark", agentId: "v1" },
-      { id: "loose2", text: "till mornin came", agentId: "v1" },
+      lineFromFields({ id: "loose1", text: "we were dancin in the dark", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "loose2", text: "till mornin came", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const result = conformLinesToInstance({
       lines,
@@ -135,8 +174,8 @@ describe("conformLinesToInstance · happy path", () => {
       playheadTime: 42,
     });
 
-    expect(result.updatedLines?.[0].words?.[0].begin).toBe(42);
-    expect(result.updatedLines?.[1].words?.[0].end).toBe(46);
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].begin).toBe(42);
+    expect(timedSyllables(mainTrack(result.updatedLines![1]))[0].end).toBe(46);
   });
 });
 

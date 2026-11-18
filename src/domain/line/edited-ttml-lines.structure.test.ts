@@ -1,7 +1,10 @@
-import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { describe, expect, it } from "vitest";
+import { mergeEditedTtmlLines } from "insync/line-edited-ttml-lines";
+import { lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords } from "insync/line-track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -13,7 +16,7 @@ function swapFirstTwoParagraphs(ttml: string): string {
   return ttml.replace(first, "\u0000").replace(second, first).replace("\u0000", second);
 }
 
-const SPANISH = { language: "es", text: "Hola", origin: "manual" as const, sourceFingerprint: "fp-1" };
+const SPANISH = { language: "es", main: { text: "Hola" }, origin: "manual" as const, sourceFingerprint: "fp-1" };
 
 // -- Tests --------------------------------------------------------------------
 
@@ -26,20 +29,20 @@ describe("mergeEditedTtmlLines · line structure", () => {
       ];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Other<", ">Other2<"));
       expect(merged[0]).toBe(stored[0]);
-      expect(merged[1]?.text).toBe("Other2");
+      expect(lineText(merged[1]!, DEFAULT_SPLIT_CHARACTER)).toBe("Other2");
     });
 
     it("regression: an edited line keeps its split characters when its text did not change", () => {
       const stored = [createLine({ id: "a", text: "Hel|lo world", begin: 1, end: 2 })];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace('end="0:02.000"', 'end="0:02.500"'));
-      expect(merged[0]?.text).toBe("Hel|lo world");
-      expect(merged[0]?.end).toBe(2.5);
+      expect(lineText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("Hel|lo world");
+      expect(merged[0] && mainTrack(merged[0]).end).toBe(2.5);
     });
 
     it("takes the edited text when the edit changed it", () => {
       const stored = [createLine({ id: "a", text: "Hel|lo world", begin: 1, end: 2 })];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Hello world<", ">Hello there<"));
-      expect(merged[0]?.text).toBe("Hello there");
+      expect(lineText(merged[0]!, DEFAULT_SPLIT_CHARACTER)).toBe("Hello there");
     });
 
     it("keeps stored lines and their split characters paired when a line without a key is added", () => {
@@ -70,7 +73,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
       expect(merged[1]).toBe(stored[1]);
       expect(merged[3]).toBe(stored[3]);
       expect(merged[4]).toBe(stored[4]);
-      expect(merged[2]?.text).toBe("Two2");
+      expect(lineText(merged[2]!, DEFAULT_SPLIT_CHARACTER)).toBe("Two2");
     });
 
     it("regression: keeps lines before the first exported line at the start", () => {
@@ -92,7 +95,11 @@ describe("mergeEditedTtmlLines · line structure", () => {
     it("keeps skipped lines when every exported line was deleted", () => {
       const blank = createLine({ id: "blank", text: "" });
       expect(
-        mergeEditedTtmlLines([createLine({ id: "a", text: "One", begin: 1, end: 2 }), blank], { lines: [] }),
+        mergeEditedTtmlLines(
+          [createLine({ id: "a", text: "One", begin: 1, end: 2 }), blank],
+          { lines: [] },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ).toEqual([blank]);
     });
   });
@@ -105,7 +112,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
         createLine({ id: "c", text: "End", begin: 3, end: 4 }),
       ];
       const merged = mergeEditedExport(stored, swapFirstTwoParagraphs);
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
         ["b", "Wor|ld"],
         ["a", "Hel|lo"],
         ["c", "End"],
@@ -138,7 +145,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
             backgroundText: "ooh",
             backgroundTextSource: "extraction",
           }),
-          translations: { es: SPANISH },
+          languages: { translations: { es: SPANISH } },
         },
         createLine({ id: "blank", text: "" }),
         createLine({ id: "two", text: "Two", begin: 2, end: 3 }),
@@ -148,11 +155,11 @@ describe("mergeEditedTtmlLines · line structure", () => {
           .replace(">One<", ">One!<")
           .replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Three</p></div>'),
       );
-      expect(merged.map((line) => line.text)).toEqual(["One!", "", "Two", "Three"]);
+      expect(merged.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["One!", "", "Two", "Three"]);
       expect(merged.slice(0, 3).map((line) => line.id)).toEqual(["one", "blank", "two"]);
-      expect(merged[0]?.translations?.es).toEqual(SPANISH);
-      expect(merged[0]?.backgroundTextSource).toBe("extraction");
-      expect(merged[0]?.backgroundWords).toBeUndefined();
+      expect(merged[0]?.languages?.translations?.es).toEqual(SPANISH);
+      expect(backgroundTrack(merged[0]!)?.source).toBe("extraction");
+      expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
     });
 
     it("pairs an edited line with the stored line at its place between unchanged lines", () => {
@@ -164,7 +171,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace(">Two<", ">Deux<").replace("<div>", '<div><p begin="0:00.000" end="0:01.000">Zero</p>'),
       );
-      expect(merged.map((line) => line.text)).toEqual(["Zero", "One", "Deux", "Three"]);
+      expect(merged.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Zero", "One", "Deux", "Three"]);
       expect(merged.slice(1).map((line) => line.id)).toEqual(["a", "b", "c"]);
     });
   });

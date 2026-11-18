@@ -1,0 +1,113 @@
+import type { WordTiming } from "./word-timing";
+import { wordsFromSpaced } from "./word-spaced-words";
+import { textParts } from "./word-text-parts";
+
+// -- Constants ----------------------------------------------------------------
+
+const DEFAULT_BG_WORD_DURATION = 0.3;
+// Seeded words get a millisecond each or are not seeded, so a span too short for them never holds zero-length words.
+const SHORTEST_SEEDED_WORD = 0.001;
+
+// -- Functions ----------------------------------------------------------------
+
+function splitIntoWords(text: string, splitChar: string): string[] {
+  return splitIntoWordsWithMeta(text, splitChar).parts;
+}
+
+function splitIntoWordsWithMeta(text: string, splitChar: string): { parts: string[]; trailingSpace: boolean[] } {
+  const parts = textParts(text, splitChar);
+  return {
+    parts: parts.map((part) => part.text),
+    trailingSpace: parts.map((part, index) => part.sep !== "" && index < parts.length - 1),
+  };
+}
+
+// Evenly timed parts of a text, as a line-synced line's span becomes words.
+function evenlyTimedWords(text: string, begin: number, end: number, splitChar: string): WordTiming[] {
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text, splitChar);
+  const wordDuration = (end - begin) / parts.length;
+  return wordsFromSpaced(
+    parts.map((part, i) => ({
+      text: trailingSpace[i] ? `${part} ` : part,
+      begin: begin + i * wordDuration,
+      end: begin + (i + 1) * wordDuration,
+    })),
+  );
+}
+
+// -- Word Distribution --------------------------------------------------------
+
+function distributeWordsInLine(text: string, begin: number, end: number, splitChar: string): WordTiming[] {
+  const { parts: words, trailingSpace } = splitIntoWordsWithMeta(text, splitChar);
+  if (words.length === 0) return [];
+
+  const totalChars = words.reduce((sum, w) => sum + w.length, 0);
+  const duration = end - begin;
+
+  let currentTime = begin;
+  return wordsFromSpaced(
+    words.map((word, i) => {
+      const wordDuration = (word.length / totalChars) * duration;
+      const wordTiming = {
+        text: trailingSpace[i] ? `${word} ` : word,
+        begin: currentTime,
+        end: currentTime + wordDuration,
+      };
+      currentTime += wordDuration;
+      return wordTiming;
+    }),
+  );
+}
+
+// -- BG Word Creation ---------------------------------------------------------
+
+function createInitialBgWords(
+  backgroundText: string,
+  begin: number,
+  end: number | undefined,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): WordTiming[] {
+  const wordCount = splitIntoWords(backgroundText, splitChar).length;
+  if (wordCount === 0) return [];
+  const resolvedEnd = Math.min(end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION, songEnd);
+  if (resolvedEnd - begin < wordCount * SHORTEST_SEEDED_WORD) return [];
+  return distributeWordsInLine(backgroundText, begin, resolvedEnd, splitChar);
+}
+
+// A span for a background that must be timed: it ends by the song's end and starts early enough to last a millisecond.
+function spanWithRoom(
+  begin: number,
+  end: number,
+  songEnd = Number.POSITIVE_INFINITY,
+): { begin: number; end: number } | null {
+  const last = Math.min(end, songEnd);
+  const first = Math.max(0, Math.min(begin, last - SHORTEST_SEEDED_WORD));
+  return last > first ? { begin: first, end: last } : null;
+}
+
+// The span a line-synced line's background is seeded over, the one the seeded words would cover.
+function createInitialBgSpan(
+  backgroundText: string,
+  begin: number,
+  end: number | undefined,
+  splitChar: string,
+  songEnd = Number.POSITIVE_INFINITY,
+): { begin: number; end: number } | null {
+  const wordCount = splitIntoWords(backgroundText, splitChar).length;
+  if (wordCount === 0) return null;
+  return spanWithRoom(begin, end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION, songEnd);
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export {
+  createInitialBgSpan,
+  createInitialBgWords,
+  DEFAULT_BG_WORD_DURATION,
+  distributeWordsInLine,
+  evenlyTimedWords,
+  splitIntoWords,
+  spanWithRoom,
+  splitIntoWordsWithMeta,
+};

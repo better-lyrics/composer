@@ -1,4 +1,7 @@
-import type { LyricLine } from "@/domain/line/model";
+import { Activity } from "react";
+import { describe, expect, it } from "vitest";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { isCountingIn, togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -7,8 +10,6 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { Activity } from "react";
-import { describe, expect, it } from "vitest";
 
 function load(lines: LyricLine[], countIn: number): void {
   useSettingsStore.setState({ syncCountIn: countIn });
@@ -27,7 +28,7 @@ function key(init: KeyboardEventInit, type: "keydown" | "keyup" = "keydown"): vo
 
 const space = () => key({ key: " ", code: "Space" });
 const isPlaying = () => useAudioStore.getState().isPlaying;
-const words = () => useProjectStore.getState().lines[0].words ?? [];
+const words = () => timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
 
 describe("Sync count-in", () => {
   it("counts in before playback starts when sync begins", async () => {
@@ -242,7 +243,7 @@ describe("Sync count-in · invariants", () => {
     space();
     key({ key: "f", code: "KeyF" });
     key({ key: "f", code: "KeyF" }, "keyup");
-    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "main")).toBeUndefined();
     expect(useProjectStore.getState().history.length).toBe(0);
   });
 });

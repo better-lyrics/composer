@@ -1,13 +1,17 @@
-import type { KeptOwnTiming, RealignRefusal } from "@/domain/group/shared-placement";
-import type { LinkGroup } from "@/domain/group/template";
+import type { KeptOwnTiming, RealignRefusal } from "insync/group-shared-placement";
+import type { LinkGroup } from "insync/group";
+import { instanceName } from "insync/instance-name";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants -----------------------------------------------------------------
 
 const GROUP_TOAST_DURATION_MS = 8000;
 const SHARED_SONG_EDGE_TOAST_ID = "shared-song-edge";
+const PLACEMENT_BLOCKED_TOAST_ID = "placement-blocked";
 const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, (count: number) => string> = {
   "before-song-start": () => ": the shared timing would start before the song",
   "past-song-end": () => ": the shared timing would run past the end of the song",
@@ -76,7 +80,7 @@ function showGroupedToast(group: LinkGroup, lineCount: number, filledGaps: numbe
 }
 
 function showPlacementBlockedToast(): void {
-  toast.error("Not enough room in the song to place this instance here");
+  toast.error("Not enough room in the song to place this instance here", { id: PLACEMENT_BLOCKED_TOAST_ID });
 }
 
 function showSharingBlockedToast(name: string, refusal: RealignRefusal): void {
@@ -85,6 +89,22 @@ function showSharingBlockedToast(name: string, refusal: RealignRefusal): void {
       ? ". Sync one instance fully, then choose Share timing again."
       : KEPT_OWN_TIMING_REASONS[refusal](1);
   toast.error(`${name} keeps its own timing${reason}`);
+}
+
+// A group line an edit made its instance's own, read from `lines` (a removed line from the lines before the edit); when
+// an edit changes several, the first one is named.
+function showLineDiffersToast(lineIds: readonly string[], lines = useProjectStore.getState().lines): void {
+  const { groups } = useProjectStore.getState();
+  const line = lineIds.length > 0 ? lines.find((candidate) => candidate.id === lineIds[0]) : undefined;
+  const group = line && groups.find((candidate) => candidate.id === line.groupId);
+  if (!line || !group || line.instanceIdx === undefined) return;
+  showGroupActionToast(
+    `"${lineText(line, getSplitCharacter())}" now differs in ${instanceName(lines, group, line.instanceIdx)}`,
+  );
+}
+
+function showSplitInAllInstancesToast(count: number): void {
+  showGroupActionToast(`Split in all ${count} instances`);
 }
 
 function showSharedSongEdgeToast(): void {
@@ -98,8 +118,10 @@ export {
   showGroupActionToast,
   showGroupedToast,
   showKeptOwnTimingToast,
-  showSharedSongEdgeToast,
+  showLineDiffersToast,
   showPlacementBlockedToast,
   showReplacedOwnTimingToast,
+  showSharedSongEdgeToast,
   showSharingBlockedToast,
+  showSplitInAllInstancesToast,
 };

@@ -1,14 +1,17 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { lineFromFields } from "insync/line-from-fields";
+import { backgroundTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import {
   installScrollHost,
   makeBgReorderDragEndEvent,
   makeBgReorderDragStartEvent,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineDnd · background-word drag provenance", () => {
   let scrollHost: HTMLDivElement;
@@ -18,18 +21,21 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        {
-          id: "l1",
-          text: "main",
-          agentId: "v1",
-          words: [{ text: "main", begin: 0, end: 0.5 }],
-          backgroundText: "ooh aah",
-          backgroundWords: [
-            { text: "ooh ", begin: 0, end: 0.5 },
-            { text: "aah", begin: 1, end: 1.5 },
-          ],
-          backgroundTextSource: "extraction",
-        },
+        lineFromFields(
+          {
+            id: "l1",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w1", text: "main", sep: "", begin: 0, end: 0.5, joinsNext: false }],
+            backgroundText: "ooh aah",
+            backgroundWords: [
+              { id: "w2", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+              { id: "w3", text: "aah", sep: "", begin: 1, end: 1.5, joinsNext: false },
+            ],
+            backgroundTextSource: "extraction",
+          },
+          getSplitCharacter(),
+        ),
       ],
     });
     scrollHost = installScrollHost();
@@ -48,8 +54,8 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     result.current.handleDragEnd(makeBgReorderDragEndEvent(-80));
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.backgroundTextSource).toBe("manual");
-    expect(after.backgroundWords?.length).toBe(2);
+    expect(backgroundTrack(after)?.source).toBe("manual");
+    expect(roleWords(after, "bg")?.length).toBe(2);
   });
 
   it("preserves the dragged background word texts and count", async () => {
@@ -60,7 +66,7 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     window.dispatchEvent(new PointerEvent("pointermove", { clientX: 220, clientY: 140 }));
     result.current.handleDragEnd(makeBgReorderDragEndEvent(-80));
 
-    const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
+    const bg = timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]));
     expect(bg).toHaveLength(2);
     expect(bg.map((w) => w.text.trim()).toSorted()).toEqual(["aah", "ooh"]);
   });

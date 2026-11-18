@@ -1,4 +1,4 @@
-import type { SyncGranularity } from "@/domain/line/sync-progress";
+import type { SyncGranularity } from "insync/line-sync-progress";
 import { cn } from "@/utils/cn";
 import type { LaneRow } from "@/views/sync/lane-rows";
 import { heightAboveWindow, laneMove, laneWindow } from "@/views/sync/lane-window";

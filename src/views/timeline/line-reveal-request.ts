@@ -1,7 +1,7 @@
-import { lineInstanceKey } from "@/domain/instance/key";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { ReadableLine } from "@/domain/line/effective-words";
-import { lineWordSelections } from "@/domain/selection/line-selections";
+import type { LyricLine } from "insync/line";
+import { lineInstanceKey } from "insync/instance-key";
+import { effectiveBounds } from "insync/line-bounds";
+import { lineWordSelections } from "insync/selection-line-selections";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
@@ -10,6 +10,7 @@ import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useSyncExternalStore } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -56,13 +57,12 @@ function revealLineInTimeline(lineId: string, track: LineRevealRequest["track"])
 // Returns false when a group focus or a collapsed instance hid the row: it exists only after the next render.
 function revealLine(
   container: HTMLElement,
-  lines: ReadableLine[],
+  lines: LyricLine[],
   request: LineRevealRequest,
   focusedGroup: GroupFocus | null,
   collapsedInstances: Record<string, boolean>,
 ): boolean {
-  const lineIndex = lines.findIndex((line) => line.id === request.lineId);
-  const line = lines[lineIndex];
+  const line = lines.find((candidate) => candidate.id === request.lineId);
   if (!line) return true;
   if (!isInFocus(line, focusedGroup)) {
     useTimelineStore.getState().closeGroup();
@@ -81,14 +81,14 @@ function revealLine(
     const track = request.track;
     useTimelineStore
       .getState()
-      .setSelectedWords(lineWordSelections(line, lineIndex).filter((selection) => selection.type === track));
+      .setSelectedWords(lineWordSelections(line, getSplitCharacter()).filter((selection) => selection.type === track));
   }
   return true;
 }
 
 // -- Hook ----------------------------------------------------------------------
 
-function useLineRevealRequest(scrollContainerRef: RefObject<HTMLDivElement | null>, lines: ReadableLine[]): void {
+function useLineRevealRequest(scrollContainerRef: RefObject<HTMLDivElement | null>, lines: LyricLine[]): void {
   const request = useSyncExternalStore(subscribe, snapshot, snapshot);
   const timelineActive = useIsActiveTab("timeline");
   const focusedGroup = useTimelineStore((state) => state.focusedGroup);

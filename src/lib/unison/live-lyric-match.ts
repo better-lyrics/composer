@@ -1,13 +1,16 @@
-import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
-import { changedParts, editedLyricsWrite, type ProjectLyrics } from "@/domain/project/edited-lyrics";
-import { changedMetadata, importableMetadata } from "@/domain/project/imported-metadata";
+import { agentWithoutKeptData } from "insync/agent-kept-data";
+import { mergeEditedTtmlLines } from "insync/line-edited-ttml-lines";
+import { withoutKeptData } from "insync/line-passthrough";
+import { changedParts, editedLyricsWrite, type ProjectLyrics } from "insync/project-edited-lyrics";
+import { changedMetadata, importableMetadata } from "insync/project-imported-metadata";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import type { LinkSuggestion, UnsureLink } from "@/domain/unison/link-suggestions";
 import { loadProjectRecord } from "@/lib/project-storage";
-import type { SavedProject } from "@/lib/saved-project";
+import { isFromNewerComposer, linesFromSaved, type StoredProject, upgradeSavedProject } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -25,22 +28,27 @@ const TIME_TOLERANCE_SECONDS = 0.01;
 
 // -- Matching ------------------------------------------------------------------
 
-// The same check Export's Done runs before it applies a TTML, read both ways for song details.
-function matchesLiveLyric(project: SavedProject, lyric: UnisonLyric): boolean {
+// The same check Export's Done runs before it applies a TTML, read both ways for song details. Kept TTML data is
+// the file's, not the user's content, so it never decides a match.
+function matchesLiveLyric(stored: StoredProject, lyric: UnisonLyric): boolean {
   const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") return false;
   const parsed = withUnisonDetails(read.parsed, lyric);
+  if (isFromNewerComposer(stored)) return false;
+  const project = upgradeSavedProject(stored);
+  const lines = linesFromSaved(project.lines).map(withoutKeptData);
   const current: ProjectLyrics = {
-    lines: project.lines,
+    lines,
     groups: project.groups ?? [],
-    agents: project.agents,
+    agents: project.agents.map(agentWithoutKeptData),
     metadata: normalizeLoadedMetadata(project.metadata),
   };
   const liveDetails = importableMetadata(parsed.metadata);
+  const live = { ...parsed, lines: parsed.lines.map(withoutKeptData) };
   const write = editedLyricsWrite(current, {
-    lines: mergeEditedTtmlLines(project.lines, parsed),
+    lines: mergeEditedTtmlLines(lines, live, getSplitCharacter()),
     groups: parsed.groups ?? [],
-    agents: parsed.agents,
+    agents: parsed.agents?.map(agentWithoutKeptData),
     metadata: liveDetails,
   });
   const extraDetails = changedMetadata(normalizeLoadedMetadata(liveDetails), importableMetadata(current.metadata));

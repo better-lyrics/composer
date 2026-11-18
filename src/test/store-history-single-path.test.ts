@@ -13,6 +13,30 @@ const FREEZE_IMPORT = /import \{ deepFreeze \} from "@\/stores\/project\/deep-fr
 const ENTRY_LITERAL = /\{[^{}]*\blines\b[^{}]*\btimestamp\s*:/;
 const TYPE_DECLARATION_BEFORE = /(?:interface\s+\w+|type\s+\w+\s*=)\s*$/;
 const ENTRY_CAST = /\bas\s+HistoryEntry\b|\bsatisfies\s+HistoryEntry\b/;
+const HISTORY_WRITE_CALL = /\b(?:commitHistory|amendCurrentStep)\(/;
+const LYRIC_FIELD = /\b(?:lines|groups|agents)\b/;
+const GENERIC_LINE_SETTER =
+  /\b(?:setLines|setLinesWithHistory|updateLine|updateLineWithHistory|updateLinesWithHistory|editLines|patchLines|replaceLines)\b/;
+const BURST_INTERNALS = /\b(?:commitPendingLineEdit|applyLineUpdatesToCurrentStep|isDirtySinceHistory)\b/;
+const RAW_LYRIC_STATE_WRITE = /useProjectStore\.setState\([^;]*\b(?:lines|groups|agents)\b/;
+const LYRIC_PATH_OWNERS = ["stores/project/"];
+// Test fixtures seed the store directly; they never ship.
+const TEST_FIXTURE = /^test\/|\.test-helpers\.tsx?$|-harness\.tsx?$/;
+const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);
+// A `lines:` value written into store state or a history entry, beside the doc it flattens from.
+const LINES_VALUE = /(?<![.\w])lines\s*:(?!\s*(?:LyricLine|readonly)\b)/;
+const LINES_ONLY_SET = /\bset\(\{\s*lines\s*\}\)/;
+const LINES_WITH_DOC_WRITERS = new Map<string, string>([
+  ["stores/project/history-helpers.ts", "history entries and their restores carry the doc beside its lines"],
+  ["stores/project/commit.ts", "the command input root and the doc's own lines after the fold"],
+  ["stores/project/with-body.ts", "withBody, the one write of lines with their doc"],
+]);
+// previewLines and restorePreviewLines, in that order.
+const PREVIEW_SLICE = "stores/project/lines-slice.ts";
+const NON_LYRIC_HISTORY_WRITERS = new Map<string, string>([
+  ["stores/project/beat-grid-slice.ts", "writes the beat grid only"],
+  ["stores/project/snap-points-slice.ts", "writes snap points only"],
+]);
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -39,6 +63,64 @@ describe("history has a single write path", () => {
       if (/\bhistory(Index)?\s*:/.test(src)) offenders.push(f);
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("lyric edits reach history only through commit", () => {
+  it("records the command note on every entry", () => {
+    expect(snapshotEntryBody(sourceOf("stores/project/history-helpers.ts"))).toMatch(
+      /^function snapshotEntry\([^)]*\bnote: HistoryNote \| null\): HistoryEntry \{/,
+    );
+  });
+
+  it("calls the history writers only from commit, history-helpers and the non-lyric slices", () => {
+    const offenders = productionSources("")
+      .filter(({ relPath }) => !LYRIC_WRITE_OWNERS.has(relPath) && !NON_LYRIC_HISTORY_WRITERS.has(relPath))
+      .flatMap(({ relPath, code }) => matchLines(code, HISTORY_WRITE_CALL).map((line) => `${relPath}:${line}`));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the non-lyric history writers away from lines, groups and agents", () => {
+    const offenders = [...NON_LYRIC_HISTORY_WRITERS.keys()].filter((relPath) => LYRIC_FIELD.test(sourceOf(relPath)));
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("outside the project store, lyrics change only through commit and restoreLyrics", () => {
+  it("never calls a generic line setter, reads the pending burst or sets lyric state directly", () => {
+    const offenders = productionSources("")
+      .filter(
+        ({ relPath }) => !TEST_FIXTURE.test(relPath) && !LYRIC_PATH_OWNERS.some((prefix) => relPath.startsWith(prefix)),
+      )
+      .flatMap(({ relPath, code }) =>
+        [GENERIC_LINE_SETTER, BURST_INTERNALS, RAW_LYRIC_STATE_WRITE]
+          .flatMap((pattern) => matchLines(code, pattern))
+          .map((line) => `${relPath}:${line}`),
+      );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("lines are written only with their doc", () => {
+  it("writes a lines value only where the doc is written beside it", () => {
+    const offenders = productionSources("stores/project")
+      .filter(({ relPath }) => !LINES_WITH_DOC_WRITERS.has(relPath))
+      .flatMap(({ relPath, code }) => matchLines(code, LINES_VALUE).map((line) => `${relPath}:${line}`));
+    expect(offenders).toEqual([]);
+  });
+
+  it("sets lines alone only in gesture previews, which the gesture restores or commits", () => {
+    const writes = productionSources("stores/project").flatMap(({ relPath, code }) =>
+      matchLines(code, LINES_ONLY_SET).map(() => relPath),
+    );
+    expect(writes).toEqual([PREVIEW_SLICE, PREVIEW_SLICE]);
+    const previews = sourceOf(PREVIEW_SLICE)
+      .split(/^ {2}(?=\w+:)/m)
+      .filter((action) => LINES_ONLY_SET.test(action));
+    expect(previews.map((action) => action.slice(0, action.indexOf(":")))).toEqual([
+      "previewLines",
+      "restorePreviewLines",
+    ]);
   });
 });
 

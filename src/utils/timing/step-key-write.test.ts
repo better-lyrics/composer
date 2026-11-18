@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import { pressStepKey } from "insync/commands/word-timing";
+import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables, type WordTrack } from "insync/line-track";
+import { type ResolvedAddress, resolvedAt, toAddress } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { writeStepKey } from "@/utils/timing/step-key-write";
+import { planStepKey } from "insync/timing-step-key-write";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const chorus = (id: string, instanceIdx: number, begin: number): LyricLine =>
@@ -20,35 +23,40 @@ const chorus = (id: string, instanceIdx: number, begin: number): LyricLine =>
       word("light", begin + 0.66, begin + 1.5),
     ],
   });
-const slot = (lineId: string, lineIndex: number, wordIndex: number): WordSelection => ({
-  lineId,
-  lineIndex,
-  wordIndex,
-  type: "word",
-});
+const slot = (_lineId: string, lineIndex: number, wordIndex: number, type: WordTrack = "word"): ResolvedAddress => {
+  const resolved = resolvedAt(useProjectStore.getState().lines, lineIndex, type, wordIndex, DEFAULT_SPLIT_CHARACTER);
+  if (!resolved) throw new Error("no word there");
+  return resolved;
+};
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
-const press = (cursor: WordSelection, startNext: WordSelection | null, time: number) =>
-  writeStepKey({
+const press = (cursor: ResolvedAddress, startNext: ResolvedAddress | null, time: number) => {
+  const step = { key: "step" as const, time, minDuration: 0.05 };
+  const plan = planStepKey({
     lines: store().lines,
     groups: store().groups,
     cursor,
     startNext,
-    key: "step",
-    time,
-    minDuration: 0.05,
+    ...step,
     rangeOf: () => UNBOUNDED_TIME_RANGE,
-    updateLinesWithHistory: store().updateLinesWithHistory,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
   });
+  if (plan?.kind !== "written") return plan;
+  const next = startNext && toAddress(startNext);
+  store().commit(
+    pressStepKey({ cursor: toAddress(cursor), startNext: next, ...step, duration: Number.POSITIVE_INFINITY }),
+  );
+  return { kind: plan.kind, endedPrevious: plan.endedPrevious };
+};
 
 describe("writeStepKey", () => {
   it("writes one step as one undo step", () => {
     useProjectStore.setState({ lines: [chorus("c0", 0, 28)], groups: [] });
-    const before = lineById("c0")?.words;
+    const before = roleWords(lineById("c0"), "main");
     expect(press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5)).toEqual({ kind: "written" });
-    expect(lineById("c0")?.words?.[1].begin).toBe(28.5);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[1].begin).toBe(28.5);
     store().undo();
-    expect(lineById("c0")?.words).toEqual(before);
+    expect(timedSyllables(mainTrack(lineById("c0")!))).toEqual(before);
   });
 
   it("keeps a shared instance in step with the written instance", () => {
@@ -57,8 +65,8 @@ describe("writeStepKey", () => {
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
     press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5);
-    expect(lineById("c1")?.words?.[0].end).toBeCloseTo(40.5);
-    expect(lineById("c1")?.words?.[1].begin).toBeCloseTo(40.5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0].end).toBeCloseTo(40.5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1].begin).toBeCloseTo(40.5);
   });
 
   it("regression: never chains into another instance of the same shared group", () => {
@@ -70,11 +78,11 @@ describe("writeStepKey", () => {
       lines: [chorus("a0", 0, 28), verse("a1", 0, 30), chorus("b0", 1, 40), verse("b1", 1, 42)],
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
-    const before = lineById("a0")?.words;
+    const before = roleWords(lineById("a0"), "main");
     expect(press(slot("a1", 1, 2), slot("b0", 2, 0), 31.9)).toEqual({ kind: "written" });
-    expect(lineById("a1")?.words?.[2].end).toBe(31.9);
-    expect(lineById("a0")?.words).toEqual(before);
-    expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(40);
+    expect(timedSyllables(mainTrack(lineById("a1")!))[2].end).toBe(31.9);
+    expect(timedSyllables(mainTrack(lineById("a0")!))).toEqual(before);
+    expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBeCloseTo(40);
   });
 
   it("still chains into a detached line, which keeps its own timing", () => {
@@ -83,7 +91,7 @@ describe("writeStepKey", () => {
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
     expect(press(slot("a0", 0, 2), slot("b0", 1, 0), 29.9)).toEqual({ kind: "written" });
-    expect(lineById("b0")?.words?.[0].begin).toBe(29.9);
+    expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBe(29.9);
   });
 
   it("ends a line's last word and starts the next line at the same time, as one undo step", () => {
@@ -95,10 +103,10 @@ describe("writeStepKey", () => {
     useProjectStore.setState({ lines: [chorus("c0", 0, 28), next], groups: [] });
     const before = store().lines;
     expect(press(slot("c0", 0, 2), slot("n", 1, 0), 29.9)).toEqual({ kind: "written" });
-    expect(lineById("c0")?.words?.[2].end).toBe(29.9);
-    expect(lineById("n")?.words?.[0]).toMatchObject({ begin: 29.9, end: 33.4 });
+    expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBe(29.9);
+    expect(timedSyllables(mainTrack(lineById("n")!))[0]).toMatchObject({ begin: 29.9, end: 33.4 });
     store().undo();
-    expect(store().lines.map((line) => line.words)).toEqual(before.map((line) => line.words));
+    expect(store().lines.map((line) => roleWords(line, "main"))).toEqual(before.map((line) => roleWords(line, "main")));
   });
 
   it("only ends the word when there is no word to chain into, and leaves the next line's start alone", () => {
@@ -115,8 +123,27 @@ describe("writeStepKey", () => {
       words: [word("Fold ", 33, 33.4), word("the ", 33.5, 34)],
     });
     useProjectStore.setState({ lines: [echo, next], groups: [] });
-    press({ lineId: "e", lineIndex: 0, wordIndex: 0, type: "bg" }, null, 30.7);
-    expect(lineById("e")?.backgroundWords?.[0].end).toBe(30.7);
-    expect(lineById("n")?.words?.[0].begin).toBe(33);
+    press(slot("e", 0, 0, "bg"), null, 30.7);
+    expect(timedSyllables(backgroundTrack(lineById("e")!))[0].end).toBe(30.7);
+    expect(timedSyllables(mainTrack(lineById("n")!))[0].begin).toBe(33);
+  });
+
+  it("regression: a step from a main word into a background word on the same line writes both", () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "c0",
+          text: "Hold the light",
+          words: [word("Hold ", 28, 28.4), word("the ", 28.44, 28.6), word("light", 28.66, 29.5)],
+          backgroundText: "ooh",
+          backgroundWords: [word("ooh", 29.8, 30.4)],
+        }),
+      ],
+      groups: [],
+    });
+    press(slot("c0", 0, 2), slot("c0", 0, 0, "bg"), 29.6);
+    const written = lineById("c0")!;
+    expect(timedSyllables(mainTrack(written))[2].end).toBe(29.6);
+    expect(timedSyllables(backgroundTrack(written))[0].begin).toBe(29.6);
   });
 });

@@ -1,6 +1,7 @@
-import type { LinkGroup } from "@/domain/group/template";
+import { mainTrack, roleWords } from "insync/line-track";
+import type { LinkGroup } from "insync/group";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -13,10 +14,10 @@ const chorus = (instanceIdx: number, begin: number, secondWordOffset = 1.5) =>
   createLine({
     id: `c${instanceIdx}`,
     text: "go now",
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + secondWordOffset, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + secondWordOffset, end: begin + 2 },
+    ]),
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
@@ -32,7 +33,11 @@ function seedBannerMenu(group: LinkGroup, instanceIdx: number) {
 
 const store = () => useProjectStore.getState();
 const group = () => store().groups[0];
-const secondWordBegin = (id: string) => store().lines.find((line) => line.id === id)?.words?.[1].begin;
+const secondWordBegin = (id: string) =>
+  roleWords(
+    store().lines.find((line) => line.id === id),
+    "main",
+  )?.[1].begin;
 
 async function renderMenu() {
   return render(
@@ -90,7 +95,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await screen.getByRole("menuitem", { name: "Share timing", exact: true }).click();
 
     await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
-    expect(store().lines[3].begin).toBe(43);
+    expect(mainTrack(store().lines[3]).begin).toBe(43);
   });
 
   it("keeps own timing and says why when no instance is fully timed", async () => {

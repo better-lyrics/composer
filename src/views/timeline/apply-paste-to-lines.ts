@@ -1,22 +1,22 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import {
-  type ReadableLine,
-  effectiveMainWordEdit,
-  effectiveTrackWords,
-  effectiveWords,
-} from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { boundsOverlap } from "@/domain/word/overlap";
-import type { WordTiming } from "@/domain/word/timing";
+import type { TimeRange } from "insync/group-shared-timing";
+import type { LanguagePiece } from "insync/language";
+import { withAddedPieces } from "insync/language-pieces";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
+import type { LyricLine, MainTrack } from "insync/line";
+import { type WordTrack, isSpanTimed, mainTrack, trackRole, untimedSyllablesOf } from "insync/line-track";
+import { withMainTrack, withTrackSyllables, withTrackWords } from "insync/line-track-writes";
+import { withNewId } from "insync/word-id";
+import { mergeWordsIntoTrack } from "insync/word-merge-track";
+import { boundsOverlap } from "insync/word-overlap";
+import type { WordTiming } from "insync/word-timing";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
 interface PasteInput {
-  lines: readonly ReadableLine[];
+  lines: readonly LyricLine[];
   clipboard: ClipboardData;
   targetLineIndex: number;
   timeDelta: number;
@@ -44,7 +44,7 @@ function pasteOverlaps(
   clipboard: ClipboardData,
   targetLineIndex: number,
   timeDelta: number,
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   rangeOf: (line: LyricLine) => TimeRange,
 ): boolean {
   for (const entry of clipboard.entries) {
@@ -54,10 +54,16 @@ function pasteOverlaps(
     const pasted = pastedWordBounds(entry.word, timeDelta, rangeOf(lines[lineIdx]));
     if (pasted.end <= pasted.begin) return true;
 
-    const existingWords = effectiveTrackWords(lines[lineIdx], entry.trackType) ?? [];
+    const existingWords = drawnSyllables(lines[lineIdx], trackRole(entry.trackType), getSplitCharacter());
     if (existingWords.some((existing) => boundsOverlap(pasted, existing))) return true;
   }
   return false;
+}
+
+// Pasting into a line-synced line writes the words over its whole track: its one drawn block stood for all of it.
+function convertedMainTrack(line: LyricLine, words: readonly WordTiming[]): MainTrack {
+  const main = mainTrack(line);
+  return isSpanTimed(main) ? withTrackSyllables(main, words) : withTrackWords(main, words);
 }
 
 function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, rangeOf }: PasteInput): LineUpdate[] | null {
@@ -77,21 +83,36 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
     const range = rangeOf(line);
     const newWords: WordTiming[] = [];
     const newBgWords: WordTiming[] = [];
+    const mainPieces: Record<string, LanguagePiece> = {};
+    const bgPieces: Record<string, LanguagePiece> = {};
 
     for (const entry of entries) {
-      const newWord = { ...entry.word, ...pastedWordBounds(entry.word, timeDelta, range) };
+      const newWord = withNewId({ ...entry.word, ...pastedWordBounds(entry.word, timeDelta, range) });
       if (entry.trackType === "word") newWords.push(newWord);
       else newBgWords.push(newWord);
+      if (entry.piece) (entry.trackType === "word" ? mainPieces : bgPieces)[newWord.id] = entry.piece;
     }
 
-    const lineUpdates: Partial<LyricLine> = {};
+    let lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      const merged = mergeWordsIntoTrack(effectiveWords(line), newWords);
-      Object.assign(lineUpdates, effectiveMainWordEdit(line, merged, { convertLineSynced: true }));
+      const merged = mergeWordsIntoTrack(
+        drawnSyllables(line, "main", getSplitCharacter()),
+        newWords,
+        untimedSyllablesOf(line, "main"),
+      );
+      lineUpdates = { tracks: withMainTrack(line, convertedMainTrack(line, merged)).tracks };
     }
     if (newBgWords.length > 0) {
-      Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords)));
+      const merged = mergeWordsIntoTrack(
+        drawnSyllables(line, "bg", getSplitCharacter()),
+        newBgWords,
+        untimedSyllablesOf(line, "bg"),
+      );
+      lineUpdates = manualBackgroundWordEdit(line, merged, getSplitCharacter(), lineUpdates);
     }
+
+    const languages = withAddedPieces(withAddedPieces(line.languages, "main", mainPieces), "bg", bgPieces);
+    if (languages !== line.languages) lineUpdates.languages = languages;
 
     updates.push({ id: line.id, updates: lineUpdates });
   }

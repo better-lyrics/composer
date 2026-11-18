@@ -1,5 +1,5 @@
-import { type TransliterationSlice, timedTransliterationSlice } from "@/domain/language/transliteration-format";
-import type { WordTiming } from "@/domain/word/timing";
+import { type TransliterationSlice, timedTransliterationSlice } from "insync/language-transliteration-format";
+import type { WordTiming } from "insync/word-timing";
 import { cn } from "@/utils/cn";
 import { IconArrowRight } from "@tabler/icons-react";
 import { Fragment } from "react";
@@ -26,10 +26,10 @@ const TransliterationTimingMap: React.FC<TransliterationTimingMapProps> = ({ wor
         joinerAfter: index < words.length - 1 ? slices[index]?.joinerAfter : trailingJoiner,
       }).text;
       return (
-        <Fragment key={`${word.begin}-${word.end}-${word.text}`}>
+        <Fragment key={`${word.begin}-${word.end}-${word.text}${word.sep}`}>
           {index > 0 && <IconArrowRight aria-hidden="true" className="size-3.5 text-composer-text-faint" />}
           <span className="inline-flex h-7 items-baseline gap-1.5 rounded-lg bg-composer-button px-2.5 leading-7">
-            <span className="text-composer-text-muted">{word.text.trimEnd()}</span>
+            <span className="text-composer-text-muted">{word.text}</span>
             <span className={cn("font-medium", !slice && "text-composer-negative")}>{slice || "missing"}</span>
           </span>
         </Fragment>

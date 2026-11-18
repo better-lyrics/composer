@@ -1,12 +1,14 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { describe, expect, it } from "vitest";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
+import type { Agent } from "insync/agent";
+import { fieldsOfLine, type LineFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { lineText, syllablesText } from "insync/line-text";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useSettingsStore } from "@/stores/settings";
 import { SICKO_MODE_QRC, SICKO_MODE_WRITERS, WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";
 import { getSplitCharacter } from "@/utils/split-character";
-import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -68,8 +70,8 @@ function sickoModeLyrics(): string[] {
   ];
 }
 
-function withoutLineId(line: LyricLine): Omit<LyricLine, "id"> {
-  const { id, ...rest } = line;
+function withoutLineId(line: LyricLine): Omit<LineFields, "id"> {
+  const { id, ...rest } = fieldsOfLine(line, getSplitCharacter());
   return rest;
 }
 
@@ -93,44 +95,74 @@ describe("parseQrc", () => {
 
     it("reads word timing that trails the word it belongs to", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      const first = result.lines.find((line) => line.text === FIRST_LYRIC_TEXT);
+      const first = result.lines.find((line) => lineText(line, getSplitCharacter()) === FIRST_LYRIC_TEXT);
       expect(first).toBeDefined();
-      expect(first?.words?.[0]).toEqual({ text: "Is ", begin: 34.059, end: 34.189 });
-      expect(first?.words?.[1]).toEqual({ text: "it ", begin: 34.189, end: 34.309 });
-      expect(first?.words?.at(-1)).toEqual({ text: "thing", begin: 35.42, end: 36.358 });
+      expect(timedSyllables(mainTrack(first!))[0]).toEqual({
+        text: "Is",
+        sep: " ",
+        begin: 34.059,
+        end: 34.189,
+        joinsNext: false,
+      });
+      expect(timedSyllables(mainTrack(first!))[1]).toEqual({
+        text: "it",
+        sep: " ",
+        begin: 34.189,
+        end: 34.309,
+        joinsNext: false,
+      });
+      expect(timedSyllables(mainTrack(first!)).at(-1)).toEqual({
+        text: "thing",
+        sep: "",
+        begin: 35.42,
+        end: 36.358,
+        joinsNext: false,
+      });
     });
 
     it("converts milliseconds to seconds", () => {
       const result = parseQrc("[34059,2299]Is (34059,130)it (34189,120)");
-      expect(result.lines[0].words?.[0].begin).toBe(34.059);
-      expect(result.lines[0].words?.[0].end).toBe(34.189);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].begin).toBe(34.059);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].end).toBe(34.189);
     });
 
     it("preserves trailing spaces as word separators", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      const first = result.lines.find((line) => line.text === FIRST_LYRIC_TEXT);
-      const words = first?.words ?? [];
-      expect(words.map((word) => word.text).join("")).toBe(FIRST_LYRIC_TEXT);
+      const first = result.lines.find((line) => lineText(line, getSplitCharacter()) === FIRST_LYRIC_TEXT);
+      const words = (first && roleWords(first, "main")) ?? [];
+      expect(words.map((word) => word.text + word.sep).join("")).toBe(FIRST_LYRIC_TEXT);
     });
 
     it("parses a document whose body is not wrapped in QrcInfos XML", () => {
       const result = parseQrc("[34059,2299]Is (34059,130)it (34189,2170)");
       expect(result.lines).toHaveLength(1);
-      expect(result.lines[0].words).toHaveLength(2);
+      expect(timedSyllables(mainTrack(result.lines[0]))).toHaveLength(2);
     });
 
     it("regression: reads only the lyric body when QQ leaves a quote unescaped in LyricContent", () => {
       const result = parseQrc(
         '<?xml version="1.0" encoding="utf-8"?>\n<QrcInfos>\n<LyricInfo LyricCount="1">\n<Lyric_1 LyricType="1" LyricContent="[1000,800]Say "(1000,300)Come(1300,500)\n[2000,500]Ooh(2000,500)\n"/>\n</LyricInfo>\n</QrcInfos>',
       );
-      expect(result.lines.map((line) => line.words?.map((word) => word.text).join(""))).toEqual(['Say "Come', "Ooh"]);
+      expect(
+        result.lines.map((line) =>
+          roleWords(line, "main")
+            ?.map((word) => word.text + word.sep)
+            .join(""),
+        ),
+      ).toEqual(['Say "Come', "Ooh"]);
     });
 
     it("regression: keeps reading past an unescaped quote followed by text that looks like an attribute", () => {
       const result = parseQrc(
         '<QrcInfos>\n<Lyric_1 LyricType="1" LyricContent="[1000,800]Say (1000,300)"E=mc²"(1300,500)\n[2000,500]Ooh(2000,500)\n"/>\n</QrcInfos>',
       );
-      expect(result.lines.map((line) => line.words?.map((word) => word.text).join(""))).toEqual(['Say "E=mc²"', "Ooh"]);
+      expect(
+        result.lines.map((line) =>
+          roleWords(line, "main")
+            ?.map((word) => word.text + word.sep)
+            .join(""),
+        ),
+      ).toEqual(['Say "E=mc²"', "Ooh"]);
     });
   });
 
@@ -149,27 +181,27 @@ describe("parseQrc", () => {
 
     it("shifts line and word timing by the header offset", () => {
       const result = parseQrc("[offset:1000]\n[34059,2299]Is (34059,130)it (34189,2170)");
-      expect(result.lines[0].words?.[0].begin).toBeCloseTo(35.059, 9);
-      expect(result.lines[0].words?.[0].end).toBeCloseTo(35.189, 9);
-      expect(result.lines[0].words?.[1].end).toBeCloseTo(37.359, 9);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].begin).toBeCloseTo(35.059, 9);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].end).toBeCloseTo(35.189, 9);
+      expect(timedSyllables(mainTrack(result.lines[0]))[1].end).toBeCloseTo(37.359, 9);
     });
 
     it("shifts a line-synced line by the header offset", () => {
       const result = parseQrc("[offset:1000]\n[1000,2500]No word tags here");
-      expect(result.lines[0].begin).toBe(2);
-      expect(result.lines[0].end).toBe(4.5);
+      expect(mainTrack(result.lines[0]).begin).toBe(2);
+      expect(mainTrack(result.lines[0]).end).toBe(4.5);
     });
 
     it("clamps a negative offset so no time drops below zero", () => {
       const result = parseQrc("[offset:-60000]\n[34059,2299]Is (34059,130)it (34189,2170)");
-      expect(result.lines[0].words?.[0].begin).toBe(0);
-      expect(result.lines[0].words?.[0].end).toBe(0);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].begin).toBe(0);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].end).toBe(0);
     });
 
     it("leaves timing untouched when the offset is zero", () => {
       const result = parseQrc("[offset:0]\n[34059,2299]Is (34059,130)it (34189,2170)");
-      expect(result.lines[0].words?.[0].begin).toBe(34.059);
-      expect(result.lines[0].words?.[0].end).toBe(34.189);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].begin).toBe(34.059);
+      expect(timedSyllables(mainTrack(result.lines[0]))[0].end).toBe(34.189);
     });
   });
 
@@ -201,7 +233,7 @@ describe("parseQrc", () => {
 
     it("drops the credits block and the title line from the lyrics", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      const texts = result.lines.map((line) => line.text);
+      const texts = result.lines.map((line) => lineText(line, getSplitCharacter()));
       expect(texts.some((text) => text.startsWith("Lyrics by"))).toBe(false);
       expect(texts.some((text) => text.startsWith("Composed by"))).toBe(false);
       expect(texts).not.toContain("Wanderlust - The Weeknd");
@@ -215,17 +247,17 @@ describe("parseQrc", () => {
 
     it("keeps a hyphenated lyric that is not the title line", () => {
       const result = parseQrc("[ti:Wanderlust]\n[ar:The Weeknd]\n[1000,500]Half (1000,250)- hearted(1250,250)");
-      expect(result.lines.map((line) => line.text)).toEqual(["Half - hearted"]);
+      expect(result.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["Half - hearted"]);
     });
 
     it("keeps a lyric that merely contains the word by", () => {
       const result = parseQrc("[1000,500]Stand (1000,250)by me(1250,250)");
-      expect(result.lines.map((line) => line.text)).toEqual(["Stand by me"]);
+      expect(result.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["Stand by me"]);
     });
 
     it("detects a Chinese credit line QQ tagged one character at a time", () => {
       const result = parseQrc("[1000,500]作(1000,150)词(1150,150)：(1300,200)方文山(1500,100)\n[2000,500]歌(2000,500)");
-      expect(result.lines.map((line) => line.text)).toEqual(["歌"]);
+      expect(result.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["歌"]);
       expect(result.metadata.songwriters).toEqual(["方文山"]);
       expect(result.metadata.extra?.qrcLyricist).toBe("方文山");
     });
@@ -248,7 +280,7 @@ describe("parseQrc", () => {
       const result = parseQrc(
         `[ti:青花瓷]\n[ar:周杰倫]\n${perCharacterQrcLine(1000, "青花瓷 - 周杰倫")}\n[9000,500]歌(9000,500)`,
       );
-      expect(result.lines.map((line) => line.text)).toEqual(["歌"]);
+      expect(result.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["歌"]);
     });
 
     it("keeps both halves of a credit list QQ wrapped across two lines", () => {
@@ -268,7 +300,7 @@ describe("parseQrc", () => {
 
     it("drops an agent-noun credit line and the title line from the lyrics", () => {
       const result = parseQrc(SICKO_MODE_QRC);
-      expect(result.lines.map((line) => line.text)).toEqual(sickoModeLyrics());
+      expect(result.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(sickoModeLyrics());
     });
 
     it("drops a credit line that names nobody without inventing an empty entry", () => {
@@ -380,13 +412,13 @@ describe("parseQrc", () => {
 
     it("attributes lines to the singer marked most recently before them", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      const foxLines = result.lines.filter((line) => line.agentId === "v2");
+      const foxLines = result.lines.filter((line) => mainTrack(line).agentId === "v2");
       expect(foxLines).toHaveLength(9);
-      expect(foxLines[0].text).toBe("Precious little diamond");
+      expect(lineText(foxLines[0], getSplitCharacter())).toBe("Precious little diamond");
     });
 
     it("drops marker lines from the lyrics", () => {
-      const texts = parseQrc(WANDERLUST_QRC).lines.map((line) => line.text);
+      const texts = parseQrc(WANDERLUST_QRC).lines.map((line) => lineText(line, getSplitCharacter()));
       expect(texts).not.toContain("The Weeknd：");
       expect(texts).not.toContain("Fox the Fox：");
     });
@@ -394,7 +426,7 @@ describe("parseQrc", () => {
     it("returns no agents when the document has no singer markers", () => {
       const result = parseQrc("[34059,2299]Is (34059,2299)");
       expect(result.agents).toBeUndefined();
-      expect(result.lines[0].agentId).toBe("v1");
+      expect(mainTrack(result.lines[0]).agentId).toBe("v1");
     });
 
     it("gives lines before the first marker the default voice instead of the first singer", () => {
@@ -405,7 +437,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
         { id: "v2", type: "person", name: "Fox the Fox" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v2"]);
     });
 
     it("names the default voice as the project already names an unnamed one", () => {
@@ -421,14 +453,14 @@ describe("parseQrc", () => {
         "[1000,500]The Weeknd：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]THE WEEKND：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1", type: "person", name: "The Weeknd" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1"]);
     });
 
     it("reads a marker name QQ tagged one character at a time", () => {
       const result = parseQrc("[1000,500]周(1000,150)杰(1150,150)倫(1300,100)：(1400,100)\n[2000,500]歌(2000,500)");
       expect(result.agents).toEqual([{ id: "v1", type: "person", name: "周杰倫" }]);
       expect(result.agents?.[0].name).not.toContain(getSplitCharacter());
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1"]);
     });
 
     it("reads a marker name whose word tags split a word", () => {
@@ -444,7 +476,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: "A" },
         { id: "v2", type: "person", name: "B" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2", "v1"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v2", "v1"]);
     });
 
     it("does not treat a credit line as a singer marker", () => {
@@ -457,7 +489,7 @@ describe("parseQrc", () => {
     it("mints one group agent for a marker that names several performers", () => {
       const result = parseQrc("[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)");
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000"]);
     });
 
     it("names every singer combination SICKO MODE marks", () => {
@@ -466,13 +498,13 @@ describe("parseQrc", () => {
 
     it("attributes every SICKO MODE line to the combination marked before it", () => {
       const result = parseQrc(SICKO_MODE_QRC);
-      expect(result.lines.map((line) => line.agentId)).toEqual(SICKO_MODE_AGENT_IDS);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(SICKO_MODE_AGENT_IDS);
     });
 
     it("gives every combination one shared group singer", () => {
       const result = parseQrc(SICKO_MODE_QRC);
       expect(result.agents?.filter((agent) => agent.type === "group")).toHaveLength(1);
-      expect(result.lines.filter((line) => line.agentId === "v1000")).toHaveLength(8);
+      expect(result.lines.filter((line) => mainTrack(line).agentId === "v1000")).toHaveLength(8);
     });
 
     it("treats combinations that differ only in case as one singer", () => {
@@ -480,7 +512,7 @@ describe("parseQrc", () => {
         "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]DRAKE/TRAVIS SCOTT：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("treats a reordered combination as the same singer", () => {
@@ -488,7 +520,7 @@ describe("parseQrc", () => {
         "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Travis Scott/Drake：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("names the group singer Chorus once two different combinations share it", () => {
@@ -496,7 +528,7 @@ describe("parseQrc", () => {
         "[1000,500]Drake Travis/Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Drake/Travis Scott：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Chorus" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("gives lines before a combination marker the default voice", () => {
@@ -507,7 +539,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
         { id: "v1000", type: "group", name: "Drake, Travis Scott" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1000"]);
     });
 
     it("keeps a solo marker apart from a combination that names the same performer", () => {
@@ -518,7 +550,7 @@ describe("parseQrc", () => {
         { id: "v1", type: "person", name: "Drake" },
         { id: "v1000", type: "group", name: "Drake, Travis Scott" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1000"]);
     });
 
     it("reads a combination QQ tagged one word at a time", () => {
@@ -531,14 +563,14 @@ describe("parseQrc", () => {
       for (const name of ["合", "合唱", "ALL", "all"]) {
         const result = parseQrc(`[1000,500]${name}：(1000,500)\n[2000,500]One(2000,500)`);
         expect(result.agents).toEqual([{ id: "v1000", type: "group", name }]);
-        expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
+        expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000"]);
       }
     });
 
     it("regression: reads back the Chorus group singer an export writes", () => {
       const result = parseQrc("[1000,500]Chorus：(1000,500)\n[2000,500]One(2000,500)");
       expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Chorus" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
+      expect(result.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1000"]);
     });
 
     it("keeps an ordinary solo performer a person", () => {
@@ -549,12 +581,14 @@ describe("parseQrc", () => {
     describe("regressions", () => {
       it("regression: reads a marker whose performer name is an initialism instead of keeping it as a lyric", () => {
         const result = parseQrc(SICKO_MODE_QRC);
-        expect(result.lines.map((line) => line.text)).not.toContain("Travis Scott/The Notorious B.I.G.：");
-        expect(result.lines[2].agentId).toBe("v1000");
+        expect(result.lines.map((line) => lineText(line, getSplitCharacter()))).not.toContain(
+          "Travis Scott/The Notorious B.I.G.：",
+        );
+        expect(mainTrack(result.lines[2]).agentId).toBe("v1000");
       });
 
       it("regression: never leaves a marker line in the lyrics of a document that marks its singers", () => {
-        const texts = parseQrc(SICKO_MODE_QRC).lines.map((line) => line.text);
+        const texts = parseQrc(SICKO_MODE_QRC).lines.map((line) => lineText(line, getSplitCharacter()));
         expect(texts).not.toHaveLength(0);
         for (const text of texts) {
           expect(text.endsWith("：")).toBe(false);
@@ -567,102 +601,126 @@ describe("parseQrc", () => {
     it("joins spaceless CJK syllables with the split character", () => {
       const splitChar = getSplitCharacter();
       const result = parseQrc("[1000,1500]我(1000,500)们(1500,500)走(2000,500)");
-      expect(result.lines[0].text).toBe(`我${splitChar}们${splitChar}走`);
-      expect(result.lines[0].words?.map((word) => word.text)).toEqual(["我", "们", "走"]);
+      expect(lineText(result.lines[0], getSplitCharacter())).toBe(`我${splitChar}们${splitChar}走`);
+      expect(timedSyllables(mainTrack(result.lines[0])).map((word) => word.text)).toEqual(["我", "们", "走"]);
     });
 
     it("keeps the trailing space a final word carries", () => {
       const result = parseQrc("[1000,2000]Hello (1000,500)world (1500,500)");
-      expect(result.lines[0].text).toBe("Hello world ");
+      expect(lineText(result.lines[0], getSplitCharacter())).toBe("Hello world ");
     });
 
     it("splits lines on CRLF without leaking the separator into a word", () => {
       const result = parseQrc("[1000,500]Hi (1000,250)there(1250,250)\r\n[2000,500]Bye(2000,500)");
       expect(result.lines).toHaveLength(2);
-      expect(result.lines[0].words?.at(-1)?.text).toBe("there");
-      expect(result.lines[1].words?.map((word) => word.text)).toEqual(["Bye"]);
+      expect(timedSyllables(mainTrack(result.lines[0])).at(-1)?.text).toBe("there");
+      expect(timedSyllables(mainTrack(result.lines[1])).map((word) => word.text)).toEqual(["Bye"]);
     });
 
     it("falls back to line timing when text trails the final word tag", () => {
       const result = parseQrc("[1000,2000]Hello (1000,500)world");
       expect(result.lines).toHaveLength(1);
-      expect(result.lines[0].text).toBe("Hello world");
-      expect(result.lines[0].words).toBeUndefined();
-      expect(result.lines[0].begin).toBe(1);
-      expect(result.lines[0].end).toBe(3);
+      expect(lineText(result.lines[0], getSplitCharacter())).toBe("Hello world");
+      expect(roleWords(result.lines[0], "main")).toBeUndefined();
+      expect(mainTrack(result.lines[0]).begin).toBe(1);
+      expect(mainTrack(result.lines[0]).end).toBe(3);
     });
 
     it("drops a header whose body is empty", () => {
       const result = parseQrc("[1000,500]\n[2000,500]Bye(2000,500)");
       expect(result.lines).toHaveLength(1);
-      expect(result.lines[0].text).toBe("Bye");
+      expect(lineText(result.lines[0], getSplitCharacter())).toBe("Bye");
     });
 
     it("keeps a lyric that carries a colon instead of reading a singer out of it", () => {
       const result = parseQrc("[1000,1000]Baby：I (1000,500)need you(1500,500)");
       expect(result.agents).toBeUndefined();
-      expect(result.lines.map((line) => line.text)).toEqual(["Baby：I need you"]);
-      expect(result.lines[0].agentId).toBe("v1");
+      expect(result.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual(["Baby：I need you"]);
+      expect(mainTrack(result.lines[0]).agentId).toBe("v1");
     });
   });
 
   describe("zero durations", () => {
     it("stretches a line that declares no duration to the next line's start", () => {
       const result = parseQrc("[1000,0]No word tags here\n[3000,500]Next(3000,500)");
-      expect(result.lines[0].begin).toBe(1);
-      expect(result.lines[0].end).toBe(3);
+      expect(mainTrack(result.lines[0]).begin).toBe(1);
+      expect(mainTrack(result.lines[0]).end).toBe(3);
     });
 
     it("stretches a final word that declares no duration to the next line's start", () => {
       const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)\n[3000,500]Next(3000,500)");
-      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 3 });
+      expect(timedSyllables(mainTrack(result.lines[0])).at(-1)).toEqual({
+        text: "there",
+        sep: "",
+        begin: 1.25,
+        end: 3,
+        joinsNext: false,
+      });
     });
 
     it("stretches the last line of a document to the song duration", () => {
       const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)", 5);
-      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 5 });
+      expect(timedSyllables(mainTrack(result.lines[0])).at(-1)).toEqual({
+        text: "there",
+        sep: "",
+        begin: 1.25,
+        end: 5,
+        joinsNext: false,
+      });
     });
 
     it("stretches the last line-synced line of a document to the song duration", () => {
       const result = parseQrc("[1000,0]No word tags here", 5);
-      expect(result.lines[0].end).toBe(5);
+      expect(mainTrack(result.lines[0]).end).toBe(5);
     });
 
     describe("edge cases", () => {
       it("leaves a zero duration alone when no song duration is known", () => {
         const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)");
-        expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 1.25 });
+        expect(timedSyllables(mainTrack(result.lines[0])).at(-1)).toEqual({
+          text: "there",
+          sep: "",
+          begin: 1.25,
+          end: 1.25,
+          joinsNext: false,
+        });
       });
 
       it("leaves a zero duration alone when the next line starts no later", () => {
         const result = parseQrc("[3000,0]First\n[1000,500]Second(1000,500)");
-        expect(result.lines[0].end).toBe(3);
+        expect(mainTrack(result.lines[0]).end).toBe(3);
       });
 
       it("leaves a zero duration alone when the song is shorter than the line", () => {
         const result = parseQrc("[9000,0]Late line", 5);
-        expect(result.lines[0].end).toBe(9);
+        expect(mainTrack(result.lines[0]).end).toBe(9);
       });
 
       it("leaves a word that declares a duration untouched", () => {
         const result = parseQrc("[1000,500]Hi (1000,250)there(1250,250)\n[3000,500]Next(3000,500)");
-        expect(result.lines[0].words?.at(-1)?.end).toBe(1.5);
+        expect(timedSyllables(mainTrack(result.lines[0])).at(-1)?.end).toBe(1.5);
       });
 
       it("leaves a zero-duration word that is not the last one untouched", () => {
         const result = parseQrc("[1000,500]Hi (1000,0)there(1250,250)\n[3000,500]Next(3000,500)");
-        expect(result.lines[0].words?.[0]).toEqual({ text: "Hi ", begin: 1, end: 1 });
+        expect(timedSyllables(mainTrack(result.lines[0]))[0]).toEqual({
+          text: "Hi",
+          sep: " ",
+          begin: 1,
+          end: 1,
+          joinsNext: false,
+        });
       });
 
       it("reads the next line's start through a marker line", () => {
         const result = parseQrc("[1000,0]No word tags here\n[2000,500]Drake：(2000,500)\n[3000,500]Next(3000,500)");
-        expect(result.lines[0].end).toBe(2);
+        expect(mainTrack(result.lines[0]).end).toBe(2);
       });
 
       it("shifts a backfilled end by the header offset like every other time", () => {
         const result = parseQrc("[offset:1000]\n[1000,0]No word tags here\n[3000,500]Next(3000,500)");
-        expect(result.lines[0].begin).toBe(2);
-        expect(result.lines[0].end).toBe(4);
+        expect(mainTrack(result.lines[0]).begin).toBe(2);
+        expect(mainTrack(result.lines[0]).end).toBe(4);
       });
     });
   });
@@ -672,22 +730,22 @@ describe("parseQrc", () => {
       const result = parseQrc(WANDERLUST_QRC);
       const splitChar = getSplitCharacter();
       for (const line of result.lines) {
-        if (!line.words?.length) continue;
-        expect(line.text).toBe(reconstructLineText(line.words, splitChar));
+        if (!timedSyllables(mainTrack(line)).length) continue;
+        expect(lineText(line, getSplitCharacter())).toBe(syllablesText(timedSyllables(mainTrack(line)), splitChar));
       }
     });
 
     it("never returns a line that is both word-synced and line-synced", () => {
       const result = parseQrc(WANDERLUST_QRC);
       for (const line of result.lines) {
-        if (line.words) expect(line.begin).toBeUndefined();
+        if (roleWords(line, "main")) expect(mainTrack(line).begin).toBeUndefined();
       }
     });
 
     it("orders every word within a line and never inverts a word's own bounds", () => {
       const result = parseQrc(WANDERLUST_QRC);
       for (const line of result.lines) {
-        const words = line.words ?? [];
+        const words = timedSyllables(mainTrack(line));
         for (let i = 0; i < words.length; i++) {
           expect(words[i].end).toBeGreaterThanOrEqual(words[i].begin);
           if (i > 0) expect(words[i].begin).toBeGreaterThanOrEqual(words[i - 1].begin);
@@ -705,8 +763,8 @@ describe("parseQrc", () => {
           expect(result.lines).toHaveLength(baseline.lines.length);
           expect(result.metadata).toEqual(baseline.metadata);
           expect(result.agents).toEqual(baseline.agents);
-          expect(result.lines.map((line) => line.words?.map((word) => word.text))).toEqual(
-            baseline.lines.map((line) => line.words?.map((word) => word.text)),
+          expect(result.lines.map((line) => roleWords(line, "main")?.map((word) => word.text))).toEqual(
+            baseline.lines.map((line) => roleWords(line, "main")?.map((word) => word.text)),
           );
         }
       } finally {
@@ -730,7 +788,7 @@ describe("parseQrc", () => {
     it("every line references an agent that exists", () => {
       const result = parseQrc(WANDERLUST_QRC);
       const ids = new Set((result.agents ?? []).map((agent) => agent.id));
-      for (const line of result.lines) expect(ids.has(line.agentId)).toBe(true);
+      for (const line of result.lines) expect(ids.has(mainTrack(line).agentId)).toBe(true);
     });
 
     it("is idempotent across repeated parses apart from generated line ids", () => {
@@ -757,7 +815,7 @@ describe("parseQrc", () => {
     it("reads a malformed QrcInfos document as a raw body", () => {
       const result = parseQrc('<QrcInfos><LyricInfo LyricCount="1"></QrcInfos>\n[1000,500]Hi (1000,500)');
       expect(result.lines).toHaveLength(1);
-      expect(result.lines[0].words?.map((word) => word.text)).toEqual(["Hi "]);
+      expect(timedSyllables(mainTrack(result.lines[0])).map((word) => word.text + word.sep)).toEqual(["Hi "]);
     });
 
     it("returns nothing when QrcInfos carries no LyricContent attribute", () => {
@@ -769,17 +827,17 @@ describe("parseQrc", () => {
     it("keeps a line with no word tags as line-synced", () => {
       const result = parseQrc("[1000,2500]No word tags here");
       expect(result.lines).toHaveLength(1);
-      expect(result.lines[0].text).toBe("No word tags here");
-      expect(result.lines[0].words).toBeUndefined();
-      expect(result.lines[0].begin).toBe(1);
-      expect(result.lines[0].end).toBe(3.5);
+      expect(lineText(result.lines[0], getSplitCharacter())).toBe("No word tags here");
+      expect(roleWords(result.lines[0], "main")).toBeUndefined();
+      expect(mainTrack(result.lines[0]).begin).toBe(1);
+      expect(mainTrack(result.lines[0]).end).toBe(3.5);
       expect(result.hasTimingData).toBe(true);
     });
 
     it("ignores header tags that are not a line header", () => {
       const result = parseQrc("[ti:Wanderlust]\n[offset:0]\n[1000,500]Hi (1000,500)");
       expect(result.lines).toHaveLength(1);
-      expect(result.lines[0].text).toBe("Hi ");
+      expect(lineText(result.lines[0], getSplitCharacter())).toBe("Hi ");
     });
   });
 });

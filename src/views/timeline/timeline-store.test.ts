@@ -1,5 +1,14 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { splitIdenticalSyllables } from "insync/commands/word-edits";
+import { lineText } from "insync/line-text";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { wordAt } from "insync/selection-resolve";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
+import { resetAllStores } from "@/test/stores";
+import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("markerMode", () => {
   beforeEach(() => {
@@ -28,9 +37,9 @@ describe("markerMode", () => {
 describe("resetProjectScope", () => {
   it("clears the selection, menus, word editing, paste mode and scroll", () => {
     const store = useTimelineStore.getState();
-    store.setSelectedWords([{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }]);
+    store.setSelectedWords([{ lineId: "l1", type: "word", syllableId: "w0" }]);
     store.setContextMenu({ x: 1, y: 2, target: { kind: "gutter", lineId: "l1", lineIndex: 0 } });
-    store.setEditingWord({ lineId: "l1", wordIndex: 0, type: "word" });
+    store.setEditingWord({ lineId: "l1", type: "word", syllableId: "w0" });
     store.setScrollLeft(240);
     store.resetProjectScope();
     const state = useTimelineStore.getState();
@@ -92,7 +101,7 @@ describe("group focus", () => {
   describe("invariants", () => {
     it("openGroup clears the selection and the menu so hidden words are never acted on", () => {
       const store = useTimelineStore.getState();
-      store.setSelectedWords([{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }]);
+      store.setSelectedWords([{ lineId: "l1", type: "word", syllableId: "w0" }]);
       store.setContextMenu({ x: 1, y: 2, target: { kind: "gutter", lineId: "l1", lineIndex: 0 } });
       store.openGroup("g1", 0);
 
@@ -103,7 +112,7 @@ describe("group focus", () => {
     it("closeGroup keeps the selection", () => {
       const store = useTimelineStore.getState();
       store.openGroup("g1", 0);
-      store.setSelectedWords([{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }]);
+      store.setSelectedWords([{ lineId: "l1", type: "word", syllableId: "w0" }]);
       store.closeGroup();
 
       expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
@@ -112,7 +121,7 @@ describe("group focus", () => {
 });
 
 describe("loopRegion", () => {
-  const word = { lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" as const };
+  const word = { lineId: "a", type: "word" as const, syllableId: "w0" };
   const region = { begin: 1, end: 2, loops: true };
 
   beforeEach(() => {
@@ -157,5 +166,102 @@ describe("loopRegion", () => {
     useTimelineStore.getState().resetProjectScope();
     expect(useTimelineStore.getState().loopRegion).toBeNull();
     expect(useTimelineStore.getState().loopRegionDrag).toBeNull();
+  });
+});
+
+describe("selection after a lines change", () => {
+  const line = createLine({
+    id: "a",
+    text: "Fall in to place",
+    words: [
+      { id: "w1", text: "Fall", sep: " ", begin: 1, end: 2 },
+      { id: "w2", text: "in", sep: " ", begin: 2, end: 2.5 },
+      { id: "w3", text: "to", sep: " ", begin: 2.5, end: 3 },
+      { id: "w4", text: "place", begin: 3, end: 4 },
+    ],
+  });
+  const address = (syllableId: string) => ({ lineId: "a", type: "word" as const, syllableId });
+  let stopFollowing = () => {};
+
+  function selectedTexts(): (string | undefined)[] {
+    const { lines } = useProjectStore.getState();
+    return useTimelineStore
+      .getState()
+      .selectedWords.map((selected) => wordAt(lines, selected, DEFAULT_SPLIT_CHARACTER)?.text);
+  }
+
+  function splitFirstWord(): void {
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "a", wordIndex: 0, type: "word" },
+        splitPoints: [2],
+        caseInsensitive: false,
+      }),
+    );
+  }
+
+  beforeEach(async () => {
+    await resetAllStores();
+    useProjectStore.getState().restoreLyrics({ lines: [line] });
+    stopFollowing = followLyricLines();
+  });
+
+  afterEach(() => stopFollowing());
+
+  it("regression: a split before a selected word keeps the selection on that word", () => {
+    useTimelineStore.getState().setSelectedWords([address("w2")]);
+    splitFirstWord();
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word) => word.text)).toEqual([
+      "Fa",
+      "ll",
+      "in",
+      "to",
+      "place",
+    ]);
+    expect(selectedTexts()).toEqual(["in"]);
+  });
+
+  it("drops a selected word that undo removed and keeps the rest, the same array when nothing drops", () => {
+    splitFirstWord();
+    const piece = roleWords(useProjectStore.getState().lines[0], "main")?.[1];
+    useTimelineStore.getState().setSelectedWords([address("w1"), address(piece?.id ?? ""), address("w3")]);
+    useTimelineStore.getState().setEditingWord(address(piece?.id ?? ""));
+    useProjectStore.getState().undo();
+    expect(selectedTexts()).toEqual(["Fall", "to"]);
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+
+    const kept = useTimelineStore.getState().selectedWords;
+    useProjectStore.getState().redo();
+    expect(useTimelineStore.getState().selectedWords).toBe(kept);
+  });
+
+  it("a restore drops every address whose word the restored lyrics do not have", () => {
+    useTimelineStore.getState().setSelectedWords([address("w1"), address("w3")]);
+    useTimelineStore.getState().setEditingWord(address("w3"));
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "a", text: "Rise up" })] });
+    expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+  });
+
+  it("regression: a Step cursor that undo removed moves to the first queued word left", () => {
+    splitFirstWord();
+    const piece = roleWords(useProjectStore.getState().lines[0], "main")?.[1];
+    useTimelineStore.getState().setStepTiming(true);
+    useTimelineStore.getState().setSelectedWords([address(piece?.id ?? ""), address("w3"), address("w4")], true);
+    useProjectStore.getState().undo();
+    expect(selectedTexts()).toEqual(["to"]);
+    expect(useTimelineStore.getState().stepQueue).toEqual([address("w3"), address("w4")]);
+  });
+
+  it("regression: a word dragged between two queued words takes its new place in the Step queue", () => {
+    useTimelineStore.getState().setStepTiming(true);
+    useTimelineStore.getState().setSelectedWords([address("w1"), address("w2"), address("w3")], true);
+    const [fall, into, to, place] = timedSyllables(mainTrack(line));
+    const reordered = [fall, { ...to, begin: 1.5 }, into, place];
+    useProjectStore.getState().restoreLyrics({
+      lines: [createLine({ id: "a", text: lineText(line, DEFAULT_SPLIT_CHARACTER), words: reordered })],
+    });
+    expect(useTimelineStore.getState().stepQueue).toEqual([address("w1"), address("w3"), address("w2")]);
+    expect(selectedTexts()).toEqual(["Fall"]);
   });
 });

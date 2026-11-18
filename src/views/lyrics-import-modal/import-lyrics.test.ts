@@ -1,17 +1,22 @@
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
+import type { Agent } from "insync/agent";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { ConfirmOptions } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
-import { generateTTML } from "@/utils/ttml";
+import type { ParseResult } from "insync/parse-result";
+import { generateTTML } from "insync/ttml/write";
 import { type ImportContext, importLyrics } from "@/views/lyrics-import-modal/import-lyrics";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function lineFactory(id: string, text: string, agentId = "v1"): LyricLine {
-  return { id, text, agentId };
+  return lineFromFields({ id, text, agentId }, DEFAULT_SPLIT_CHARACTER);
 }
 
 const EMPTY_FILE = { filename: "empty.txt", content: "" };
@@ -36,8 +41,7 @@ function buildContext(overrides: Partial<ImportContext> = {}): ImportContext {
     confirm: async () => true,
     audioDuration: 0,
     applyBackgroundExtraction: false,
-    backgroundExtractionMergeStandalone: false,
-    backgroundExtractionPreserveBrackets: false,
+    backgroundExtraction: { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
     sourceLabel: "Test",
     ...overrides,
   };
@@ -98,7 +102,7 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("prompts when existing lines are present and rejects the import on cancel", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
     let promptCount = 0;
     const result = await importLyrics(
       HELLO_WORLD,
@@ -112,19 +116,22 @@ describe("importLyrics confirm flow", () => {
     expect(result).toBe(false);
     expect(promptCount).toBe(1);
     expect(useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Old");
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Old");
   });
 
   it("replaces lines when the user confirms", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
     const result = await importLyrics(HELLO_WORLD, buildContext({ confirm: async () => true }));
     expect(result).toBe(true);
     expect(useProjectStore.getState().lines.length).toBe(2);
-    expect(useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Hello", "World"]);
+    expect(useProjectStore.getState().lines.map((l) => lineText(l, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "Hello",
+      "World",
+    ]);
   });
 
   it("says the replace can be undone instead of claiming it cannot", async () => {
-    useProjectStore.getState().setLines([lineFactory("a", "Old"), lineFactory("b", "Older")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("a", "Old"), lineFactory("b", "Older")] });
     const prompts: ConfirmOptions[] = [];
     await importLyrics(
       HELLO_WORLD,
@@ -142,7 +149,7 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("uses the singular for one existing line", async () => {
-    useProjectStore.getState().setLines([lineFactory("a", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("a", "Old")] });
     const prompts: ConfirmOptions[] = [];
     await importLyrics(
       HELLO_WORLD,
@@ -157,10 +164,10 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("undoes the whole import in one step", async () => {
-    useProjectStore.getState().setLinesWithHistory([lineFactory("existing", "Old")]);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [lineFactory("existing", "Old")]));
     await importLyrics(HELLO_WORLD, buildContext());
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Old"]);
+    expect(useProjectStore.getState().lines.map((l) => lineText(l, DEFAULT_SPLIT_CHARACTER))).toEqual(["Old"]);
   });
 });
 
@@ -170,19 +177,19 @@ describe("importLyrics timing distribution", () => {
   it("does not distribute timing when audioDuration is zero and there is no timing data", async () => {
     await importLyrics(HELLO_WORLD, buildContext({ audioDuration: 0 }));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeUndefined();
-    expect(lines[0].begin).toBeUndefined();
-    expect(lines[0].end).toBeUndefined();
+    expect(roleWords(lines[0], "main")).toBeUndefined();
+    expect(mainTrack(lines[0]).begin).toBeUndefined();
+    expect(mainTrack(lines[0]).end).toBeUndefined();
   });
 
   it("distributes timing across the audio when parsed lacks timing data", async () => {
     await importLyrics(HELLO_WORLD, buildContext({ audioDuration: 120 }));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeDefined();
-    expect(lines[0].words?.length).toBeGreaterThan(0);
-    const firstWord = lines[0].words?.[0];
+    expect(roleWords(lines[0], "main")).toBeDefined();
+    expect(roleWords(lines[0], "main")?.length).toBeGreaterThan(0);
+    const firstWord = roleWords(lines[0], "main")?.[0];
     const lastLine = lines[lines.length - 1];
-    const lastWord = lastLine.words?.[lastLine.words.length - 1];
+    const lastWord = roleWords(lastLine, "main")?.[roleWords(lastLine, "main")!.length - 1];
     expect(firstWord?.begin).toBe(0);
     expect(lastWord?.end).toBeCloseTo(120, 3);
   });
@@ -194,7 +201,7 @@ describe("importLyrics timing distribution", () => {
     );
     const stored = useProjectStore.getState().lines;
     expect(stored.length).toBe(1);
-    expect(stored[0].words).toEqual([{ text: "Hi", begin: 1, end: 2 }]);
+    expect(timedSyllables(mainTrack(stored[0]))).toEqual([{ text: "Hi", sep: "", begin: 1, end: 2, joinsNext: false }]);
   });
 
   it("regression: extracted background vocals on distributed lines are stored timed", async () => {
@@ -203,9 +210,9 @@ describe("importLyrics timing distribution", () => {
       buildContext({ audioDuration: 120, applyBackgroundExtraction: true }),
     );
     const [first] = useProjectStore.getState().lines;
-    expect(first.backgroundText).toBe("ooh");
-    expect(first.backgroundWords?.[0].begin).toBe(30);
-    expect(first.backgroundWords?.at(-1)?.end).toBe(60);
+    expect(backgroundText(first, DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(first))[0].begin).toBe(30);
+    expect(timedSyllables(backgroundTrack(first)).at(-1)?.end).toBe(60);
   });
 });
 
@@ -219,8 +226,8 @@ describe("importLyrics background extraction", () => {
     );
     const stored = useProjectStore.getState().lines;
     expect(stored.length).toBe(1);
-    expect(stored[0].text).toBe("Hello");
-    expect(stored[0].backgroundText).toBe("world");
+    expect(lineText(stored[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
+    expect(backgroundText(stored[0], DEFAULT_SPLIT_CHARACTER)).toBe("world");
   });
 
   it("passes original lines through when the flag is unset", async () => {
@@ -230,8 +237,8 @@ describe("importLyrics background extraction", () => {
     );
     const stored = useProjectStore.getState().lines;
     expect(stored.length).toBe(1);
-    expect(stored[0].text).toBe("Hello (world)");
-    expect(stored[0].backgroundText).toBeUndefined();
+    expect(lineText(stored[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello (world)");
+    expect(backgroundText(stored[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
   });
 });
 
@@ -247,7 +254,12 @@ describe("importLyrics agents", () => {
       buildContext(),
     );
     const stored = useProjectStore.getState().agents;
-    expect(stored.find((a) => a.id === "v2")).toEqual({ id: "v2", type: "person", name: "Voice 2" });
+    expect(stored.find((a) => a.id === "v2")).toEqual({
+      id: "v2",
+      type: "person",
+      name: "Voice 2",
+      namePassthrough: { attrs: [["type", "full"]] },
+    });
   });
 
   it("updates name and type on existing agents", async () => {
@@ -269,10 +281,10 @@ describe("importLyrics agents", () => {
 
 describe("importLyrics default singer", () => {
   it("gives lyrics without singers the first singer of the project", async () => {
-    useProjectStore.getState().setAgents([{ id: "v2", type: "person", name: "Bob" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v2", type: "person", name: "Bob" }] });
     await importLyrics(HELLO_WORLD, buildContext());
     const { lines, agents } = useProjectStore.getState();
-    expect(lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
+    expect(lines.map((line) => mainTrack(line).agentId)).toEqual(["v2", "v2"]);
     expect(agents).toEqual([{ id: "v2", type: "person", name: "Bob" }]);
   });
 });
@@ -353,7 +365,7 @@ describe("importLyrics metadata", () => {
     });
 
     it("does not mark song details when the import is rejected", async () => {
-      useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+      useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
       await importLyrics(
         { filename: "a.lrc", content: `[ti:Bohemian Rhapsody]\n${LRC_WITHOUT_TAGS}` },
         buildContext({ confirm: async () => false }),
@@ -387,7 +399,9 @@ describe("importLyrics metadata", () => {
 
 describe("importLyrics groups", () => {
   it("writes empty groups when not provided", async () => {
-    useProjectStore.getState().setGroups([{ id: "g0", label: "Old", color: "#a3c9ff", templateVersion: 0 }]);
+    useProjectStore
+      .getState()
+      .restoreLyrics({ groups: [{ id: "g0", label: "Old", color: "#a3c9ff", templateVersion: 0 }] });
     await importLyrics(HELLO_WORLD, buildContext());
     expect(useProjectStore.getState().groups).toEqual([]);
   });
@@ -397,8 +411,9 @@ describe("importLyrics groups", () => {
     const content = generateTTML({
       metadata: { title: "", artists: [], album: "", duration: 0 },
       agents: [{ id: "v1", type: "person", name: "Lead" }],
-      lines: [{ id: "a", text: "Hello", agentId: "v1", begin: 1, end: 2 }],
+      lines: [lineFromFields({ id: "a", text: "Hello", agentId: "v1", begin: 1, end: 2 }, DEFAULT_SPLIT_CHARACTER)],
       groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     await importLyrics({ filename: "grouped.ttml", content }, buildContext());
     expect(useProjectStore.getState().groups).toEqual(groups);
@@ -420,7 +435,7 @@ describe("importLyrics onResult", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].label).toBe("LRCLib");
     expect(calls[0].filename).toBe("lrclib-123.lrc");
-    expect(calls[0].parsed.lines.map((line) => line.text)).toEqual(["Hello", "World"]);
+    expect(calls[0].parsed.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Hello", "World"]);
   });
 
   it("labels a search import with the provider of the result", async () => {
@@ -459,7 +474,7 @@ describe("importLyrics onResult", () => {
   });
 
   it("does not call onResult when import was rejected via confirm", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
     let calls = 0;
     await importLyrics(
       HELLO_WORLD,

@@ -1,17 +1,21 @@
+import { describe, expect, it } from "vitest";
+import { lineFromFields } from "insync/line-from-fields";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
 function selectWordAt(lineId: string, wordIndex: number): void {
   useTimelineStore.setState({
-    selectedWords: [{ lineId, lineIndex: 0, wordIndex, type: "word" }],
+    selectedWords: [storedWordAddress(lineId, wordIndex, "word")],
   });
 }
 
@@ -19,12 +23,15 @@ function flushPairLine() {
   return createLine({
     id: "l1",
     text: "hello world",
-    words: [createWord({ text: "hello ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })],
+    words: createWords([
+      { text: "hello", sep: " ", begin: 0, end: 1 },
+      { text: "world", begin: 1, end: 2 },
+    ]),
   });
 }
 
 function currentWords() {
-  return useProjectStore.getState().lines[0].words ?? [];
+  return timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -52,7 +59,7 @@ describe("TimelineInfoPanel selected word label", () => {
   it("regression: shows a bracketed background word once, as stored", async () => {
     useAudioStore.setState({ duration: 10 });
     useProjectStore.setState({ lines: [lineWithBackground("(yeah)")] });
-    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress("l1", 0, "bg")] });
     const screen = await render(<TimelineInfoPanel />);
     await expect.element(screen.getByText("(yeah)", { exact: true })).toBeInTheDocument();
     expect(screen.container.textContent).not.toContain("((yeah))");
@@ -61,7 +68,7 @@ describe("TimelineInfoPanel selected word label", () => {
   it("labels a background word as background instead of inventing brackets", async () => {
     useAudioStore.setState({ duration: 10 });
     useProjectStore.setState({ lines: [lineWithBackground("yeah")] });
-    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress("l1", 0, "bg")] });
     const screen = await render(<TimelineInfoPanel />);
     await expect.element(screen.getByText("Line 1 ・ Background")).toBeInTheDocument();
     await expect.element(screen.getByText("yeah", { exact: true })).toBeInTheDocument();
@@ -91,37 +98,37 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
   it("stamps backgroundTextSource manual when a bg word's begin is set to the cursor", async () => {
     useAudioStore.setState({ currentTime: 1.3, duration: 10 });
     useProjectStore.setState({ lines: [lineWithBg()] });
-    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress("l1", 0, "bg")] });
     const screen = await render(<TimelineInfoPanel />);
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].begin).toBeCloseTo(1.3);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.[0].begin).toBeCloseTo(1.3);
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("stamps backgroundTextSource manual when a bg word's end is set to the cursor", async () => {
     useAudioStore.setState({ currentTime: 1.7, duration: 10 });
     useProjectStore.setState({ lines: [lineWithBg()] });
-    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress("l1", 0, "bg")] });
     const screen = await render(<TimelineInfoPanel />);
 
     await screen.getByRole("button", { name: /Set End/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].end).toBeCloseTo(1.7);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.[0].end).toBeCloseTo(1.7);
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word's begin is retimed", async () => {
     useAudioStore.setState({ currentTime: 0.4, duration: 10 });
     useProjectStore.setState({ lines: [lineWithBg()] });
-    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress("l1", 0, "word")] });
     const screen = await render(<TimelineInfoPanel />);
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].begin).toBeCloseTo(0.4);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0].begin).toBeCloseTo(0.4);
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
 
@@ -172,7 +179,10 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
         createLine({
           id: "l1",
           text: "ever",
-          words: [createWord({ text: "ev", begin: 0, end: 1 }), createWord({ text: "er", begin: 1, end: 2 })],
+          words: createWords([
+            { text: "ev", begin: 0, end: 1 },
+            { text: "er", begin: 1, end: 2 },
+          ]),
         }),
       ],
     });
@@ -239,16 +249,19 @@ describe("TimelineInfoPanel selection copy", () => {
         createLine({
           id: "w",
           text: "a b",
-          words: [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })],
+          words: createWords([
+            { text: "a", sep: " ", begin: 0, end: 1 },
+            { text: "b", begin: 1, end: 2 },
+          ]),
         }),
-        { id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 },
+        lineFromFields({ id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 }, getSplitCharacter()),
       ],
     });
     useTimelineStore.setState({
       selectedWords: [
-        { lineId: "w", lineIndex: 0, wordIndex: 0, type: "word" },
-        { lineId: "w", lineIndex: 0, wordIndex: 1, type: "word" },
-        { lineId: "ls", lineIndex: 1, wordIndex: 0, type: "word" },
+        storedWordAddress("w", 0, "word"),
+        storedWordAddress("w", 1, "word"),
+        storedWordAddress("ls", 0, "word"),
       ],
     });
     const screen = await render(<TimelineInfoPanel />);
@@ -274,12 +287,12 @@ describe("TimelineInfoPanel cursor buttons · shared time range", () => {
       lines: [chorus("c0", 0, 3), chorus("c1", 1, 10)],
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
-    useTimelineStore.setState({ selectedWords: [{ lineId: "c1", lineIndex: 1, wordIndex: 0, type: "word" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress("c1", 0, "word")] });
     const screen = await render(<TimelineInfoPanel />);
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.[0].begin).toBe(7);
-    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(0);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].begin).toBe(0);
   });
 });

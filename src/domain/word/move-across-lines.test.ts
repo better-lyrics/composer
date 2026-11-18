@@ -1,13 +1,18 @@
 /**
  * @vitest-environment node
  */
-import type { TimeRange } from "@/domain/group/shared-timing";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
-import { createLine } from "@/test/factories";
+
 import { describe, expect, it } from "vitest";
-import { applyWordMoveAcrossLines } from "./move-across-lines";
+import type { TimeRange } from "insync/group-shared-timing";
+import type { LineUpdate, LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { newWordId } from "insync/word-id";
+import type { WordTiming } from "insync/word-timing";
+import { createLine } from "@/test/factories";
+import { updatedLine } from "@/test/field-updates";
+import { applyWordMoveAcrossLines } from "insync/word-move-across-lines";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -17,7 +22,7 @@ const wholeSong = (): TimeRange => ({ min: 0, max: DURATION });
 function applyUpdates(lines: LyricLine[], updates: LineUpdate[]): LyricLine[] {
   return lines.map((line) => {
     const update = updates.find((u) => u.id === line.id);
-    return update ? reconcileLine({ ...line, ...update.updates }) : line;
+    return update ? { ...line, ...update.updates } : line;
   });
 }
 
@@ -34,18 +39,18 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
     const lineB = createLine({
       id: "B",
       words: [
-        { text: "foo ", begin: 2, end: 2.5 },
+        { text: "foo", sep: " ", begin: 2, end: 2.5 },
         { text: "bar", begin: 2.5, end: 3 },
       ],
     });
-    const moved: WordTiming = { text: "world", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w1", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -59,21 +64,22 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["foo", "bar", "world"]);
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["hello"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["foo", "bar", "world"]);
   });
 
   it("moves a main word into the background track (main -> bg)", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
@@ -84,7 +90,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       backgroundText: "ooh",
       backgroundTextSource: "manual",
     });
-    const moved: WordTiming = { text: "world", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w2", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -98,15 +104,16 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
-    expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh", "world"]);
-    expect(b.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["hello"]);
+    expect(timedSyllables(backgroundTrack(b)).map((w) => w.text.trimEnd())).toEqual(["ooh", "world"]);
+    expect(backgroundTrack(b)?.source).toBe("manual");
   });
 
   it("moves a background word from line A to line B (bg -> bg)", () => {
@@ -114,7 +121,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "A",
       words: [{ text: "main", begin: 0, end: 0.5 }],
       backgroundWords: [
-        { text: "ooh ", begin: 0.6, end: 0.9 },
+        { text: "ooh", sep: " ", begin: 0.6, end: 0.9 },
         { text: "ahh", begin: 0.9, end: 1.2 },
       ],
       backgroundText: "ooh ahh",
@@ -127,7 +134,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       backgroundText: "yeah",
       backgroundTextSource: "manual",
     });
-    const moved: WordTiming = { text: "ahh", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w3", text: "ahh", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -141,14 +148,15 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
-    expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["yeah", "ahh"]);
+    expect(timedSyllables(backgroundTrack(a)).map((w) => w.text.trimEnd())).toEqual(["ooh"]);
+    expect(timedSyllables(backgroundTrack(b)).map((w) => w.text.trimEnd())).toEqual(["yeah", "ahh"]);
   });
 
   it("moves a background word into the main track (bg -> main)", () => {
@@ -156,7 +164,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "A",
       words: [{ text: "main", begin: 0, end: 0.5 }],
       backgroundWords: [
-        { text: "ooh ", begin: 0.6, end: 0.9 },
+        { text: "ooh", sep: " ", begin: 0.6, end: 0.9 },
         { text: "ahh", begin: 0.9, end: 1.2 },
       ],
       backgroundText: "ooh ahh",
@@ -166,7 +174,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "B",
       words: [{ text: "first", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { text: "ahh", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w4", text: "ahh", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -180,22 +188,23 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["first", "ahh"]);
+    expect(timedSyllables(backgroundTrack(a)).map((w) => w.text.trimEnd())).toEqual(["ooh"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["first", "ahh"]);
   });
 
   it("moves two main words from one source into one target", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "one ", begin: 0, end: 0.5 },
-        { text: "two ", begin: 0.5, end: 1 },
+        { text: "one", sep: " ", begin: 0, end: 0.5 },
+        { text: "two", sep: " ", begin: 0.5, end: 1 },
         { text: "three", begin: 1, end: 1.5 },
       ],
     });
@@ -203,8 +212,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "B",
       words: [{ text: "alpha", begin: 3, end: 3.5 }],
     });
-    const moveW1: WordTiming = { text: "one", begin: 5, end: 5.4 };
-    const moveW2: WordTiming = { text: "two", begin: 5.5, end: 5.9 };
+    const moveW1: WordTiming = { id: "w5", text: "one", sep: "", begin: 5, end: 5.4, joinsNext: true };
+    const moveW2: WordTiming = { id: "w6", text: "two", sep: "", begin: 5.5, end: 5.9, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -226,28 +235,29 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["three"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["alpha", "one", "two"]);
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["three"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["alpha", "one", "two"]);
   });
 
   it("moves words from two different source lines into one target line", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "a1 ", begin: 0, end: 0.5 },
+        { text: "a1", sep: " ", begin: 0, end: 0.5 },
         { text: "a2", begin: 0.5, end: 1 },
       ],
     });
     const lineB = createLine({
       id: "B",
       words: [
-        { text: "b1 ", begin: 2, end: 2.5 },
+        { text: "b1", sep: " ", begin: 2, end: 2.5 },
         { text: "b2", begin: 2.5, end: 3 },
       ],
     });
@@ -255,8 +265,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
       id: "C",
       words: [{ text: "c1", begin: 4, end: 4.5 }],
     });
-    const fromA: WordTiming = { text: "a2", begin: 6, end: 6.4 };
-    const fromB: WordTiming = { text: "b1", begin: 7, end: 7.4 };
+    const fromA: WordTiming = { id: "w7", text: "a2", sep: "", begin: 6, end: 6.4, joinsNext: true };
+    const fromB: WordTiming = { id: "w8", text: "b1", sep: "", begin: 7, end: 7.4, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB, lineC],
       [
@@ -278,6 +288,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
@@ -285,16 +296,16 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     const a = findById(applyUpdates([lineA, lineB, lineC], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB, lineC], result.updates), "B");
     const c = findById(applyUpdates([lineA, lineB, lineC], result.updates), "C");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["a1"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["b2"]);
-    expect(c.words?.map((w) => w.text.trimEnd())).toEqual(["c1", "a2", "b1"]);
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["a1"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["b2"]);
+    expect(timedSyllables(mainTrack(c)).map((w) => w.text.trimEnd())).toEqual(["c1", "a2", "b1"]);
   });
 });
 
 // -- Rejections ---------------------------------------------------------------
 
-describe("applyWordMoveAcrossLines: rejections", () => {
-  it("rejects cross-instance moves", () => {
+describe("applyWordMoveAcrossLines: across instances", () => {
+  it("a move between instances makes both lines their instance's own", () => {
     const lineA = createLine({
       id: "A",
       groupId: "g1",
@@ -307,7 +318,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       instanceIdx: 1,
       words: [{ text: "other", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { text: "word", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w9", text: "word", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -321,17 +332,20 @@ describe("applyWordMoveAcrossLines: rejections", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("expected reject");
-    expect(result.reject).toBe("cross-instance");
+    if (!result.ok) throw new Error(`expected a move, got ${result.reject}`);
+    expect(result.detachedIds).toEqual(["A", "B"]);
+    expect(result.updates.every((update) => update.updates.detached === true)).toBe(true);
   });
+});
 
+describe("applyWordMoveAcrossLines: rejections", () => {
   it("rejects when target is line-synced and target track is word", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
@@ -341,7 +355,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       begin: 10,
       end: 12,
     });
-    const moved: WordTiming = { text: "world", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w10", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -355,6 +369,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -365,7 +380,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
@@ -373,7 +388,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       id: "B",
       words: [{ text: "blocker", begin: 5, end: 6 }],
     });
-    const moved: WordTiming = { text: "world", begin: 5.3, end: 5.7 };
+    const moved: WordTiming = { id: "w11", text: "world", sep: "", begin: 5.3, end: 5.7, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -387,6 +402,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -397,7 +413,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "one ", begin: 0, end: 0.5 },
+        { text: "one", sep: " ", begin: 0, end: 0.5 },
         { text: "two", begin: 0.5, end: 1 },
       ],
     });
@@ -405,8 +421,8 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       id: "B",
       words: [{ text: "anchor", begin: 2, end: 2.5 }],
     });
-    const moveW1: WordTiming = { text: "one", begin: 5, end: 5.5 };
-    const moveW2: WordTiming = { text: "two", begin: 5.3, end: 5.8 };
+    const moveW1: WordTiming = { id: "w12", text: "one", sep: "", begin: 5, end: 5.5, joinsNext: true };
+    const moveW2: WordTiming = { id: "w13", text: "two", sep: "", begin: 5.3, end: 5.8, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -428,6 +444,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -442,8 +459,8 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "alpha ", begin: 0, end: 0.5 },
-        { text: "beta ", begin: 0.5, end: 1 },
+        { text: "alpha", sep: " ", begin: 0, end: 0.5 },
+        { text: "beta", sep: " ", begin: 0.5, end: 1 },
         { text: "gamma", begin: 1, end: 1.5 },
       ],
     });
@@ -451,7 +468,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "x", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { text: "beta", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w14", text: "beta", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -465,19 +482,20 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
-    expect(a.text).toBe("alpha gamma");
+    expect(lineText(a, DEFAULT_SPLIT_CHARACTER)).toBe("alpha gamma");
   });
 
   it("re-derives target-line text after merge", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
@@ -485,7 +503,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "foo", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { text: "world", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w15", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -499,14 +517,15 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(b.text).toBe("foo world");
+    expect(lineText(b, DEFAULT_SPLIT_CHARACTER)).toBe("foo world");
   });
 
-  it("regenerates syllable group ids on inserted words", () => {
+  it("keeps syllables joined on inserted words", () => {
     const lineA = createLine({
       id: "A",
       words: [
@@ -518,8 +537,8 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "anchor", begin: 2, end: 2.5 }],
     });
-    const moveW1: WordTiming = { text: "ti", begin: 5, end: 5.4, syllableGroupId: "shared" };
-    const moveW2: WordTiming = { text: "tle", begin: 5.4, end: 5.8, syllableGroupId: "shared" };
+    const moveW1: WordTiming = { id: "w16", text: "ti", sep: "", begin: 5, end: 5.4, joinsNext: true };
+    const moveW2: WordTiming = { id: "w17", text: "tle", sep: "", begin: 5.4, end: 5.8, joinsNext: false };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -541,23 +560,22 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    const inserted = b.words?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
+    const inserted = roleWords(b, "main")?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
     expect(inserted).toHaveLength(2);
-    for (const w of inserted) expect(w.syllableGroupId).not.toBe("shared");
-    expect(inserted[0].syllableGroupId).toBeDefined();
-    expect(inserted[0].syllableGroupId).toBe(inserted[1].syllableGroupId);
+    expect(inserted.map((w) => w.joinsNext)).toEqual([true, false]);
   });
 
   it("does not mutate the input lines array", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
@@ -576,10 +594,11 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "word",
-          word: { text: "world", begin: 5, end: 5.5 },
+          word: { id: "w18", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true },
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(JSON.stringify(input)).toBe(snapshot);
   });
@@ -588,7 +607,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
@@ -606,10 +625,11 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "word",
-          word: { text: "world", begin: 5, end: 5.5 },
+          word: { id: "w19", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true },
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -625,7 +645,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
       id: "B",
       words: [{ text: "anchor", begin: 2, end: 2.5 }],
     });
-    const moved: WordTiming = { text: "only", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w20", text: "only", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -639,13 +659,14 @@ describe("applyWordMoveAcrossLines: invariants", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
-    expect(a.words).toBeUndefined();
-    expect(a.begin).toBeUndefined();
-    expect(a.end).toBeUndefined();
+    expect(roleWords(a, "main")).toBeUndefined();
+    expect(mainTrack(a).begin).toBeUndefined();
+    expect(mainTrack(a).end).toBeUndefined();
   });
 });
 
@@ -656,12 +677,12 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
     const lineA = createLine({
       id: "A",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
         { text: "world", begin: 0.5, end: 1 },
       ],
     });
     const lineB = createLine({ id: "B", text: "" });
-    const moved: WordTiming = { text: "world", begin: 5, end: 5.5 };
+    const moved: WordTiming = { id: "w21", text: "world", sep: "", begin: 5, end: 5.5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -675,11 +696,12 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["world"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["world"]);
   });
 
   it("rejects when target line is line-synced and target track is word", () => {
@@ -702,10 +724,11 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "word",
-          word: { text: "moved", begin: 5, end: 5.5 },
+          word: { id: "w22", text: "moved", sep: "", begin: 5, end: 5.5, joinsNext: true },
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -721,7 +744,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
       id: "B",
       words: [{ text: "neighbor", begin: 2, end: 5 }],
     });
-    const moved: WordTiming = { text: "moved", begin: 5, end: 5 };
+    const moved: WordTiming = { id: "w23", text: "moved", sep: "", begin: 5, end: 5, joinsNext: true };
     const result = applyWordMoveAcrossLines(
       [lineA, lineB],
       [
@@ -735,6 +758,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     expect(result.ok).toBe(true);
   });
@@ -745,88 +769,88 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
       words: [{ text: "only", begin: 0, end: 0.5 }],
     });
     const input = [lineA];
-    const result = applyWordMoveAcrossLines(input, [], wholeSong);
+    const result = applyWordMoveAcrossLines(input, [], wholeSong, DEFAULT_SPLIT_CHARACTER);
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates).toEqual([]);
   });
 });
 
-// -- Effective lines ----------------------------------------------------------
+// -- Drawn lines --------------------------------------------------------------
 
-describe("applyWordMoveAcrossLines: effective lines", () => {
+describe("applyWordMoveAcrossLines: drawn lines", () => {
   const moveAlphaTo = (targetLineId: string) => ({
     sourceLineId: "A",
     sourceWordIndex: 0,
     sourceTrack: "word" as const,
     targetLineId,
     targetTrack: "word" as const,
-    word: { text: "alpha", begin: 6, end: 6.3 },
+    word: { id: newWordId(), text: "alpha", sep: "", begin: 6, end: 6.3, joinsNext: true },
   });
 
   it("returns updates for exactly the source and target lines", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({
         id: "A",
         words: [
-          { text: "alpha ", begin: 0.1, end: 0.4 },
+          { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
           { text: "beta", begin: 0.4, end: 0.7 },
         ],
       }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "U", text: "untouched", words: [{ text: "untouched", begin: 9, end: 10 }] }),
-    ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    ];
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.map((u) => u.id)).toEqual(["A", "B"]);
   });
 
   it("regression D6: never includes an unrelated line-synced line", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({
         id: "A",
         words: [
-          { text: "alpha ", begin: 0.1, end: 0.4 },
+          { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
           { text: "beta", begin: 0.4, end: 0.7 },
         ],
       }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "C", text: "Line synced only", begin: 17, end: 20 }),
-    ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    ];
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.some((u) => u.id === "C")).toBe(false);
   });
 
   it("regression D6 sibling: rejects a word-track target that is a line-synced source", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({
         id: "A",
         words: [
-          { text: "alpha ", begin: 0.1, end: 0.4 },
+          { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
           { text: "beta", begin: 0.4, end: 0.7 },
         ],
       }),
       createLine({ id: "B", text: "delta", begin: 5, end: 5.4 }),
-    ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    ];
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     expect(result).toEqual({ ok: false, reject: "line-synced-target" });
   });
 
   it("rejects moving the only synthetic word out of a line-synced source", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({ id: "A", text: "Line synced only", begin: 1, end: 2 }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
-    ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
+    ];
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong, DEFAULT_SPLIT_CHARACTER);
     expect(result).toEqual({ ok: false, reject: "line-synced-source" });
   });
 
   it("a background move onto a line-synced row leaves its main timing line-synced", () => {
-    const lines = getEffectiveLines([
+    const lines = [
       createLine({ id: "A", text: "lead", words: [{ text: "lead", begin: 0, end: 1 }] }),
       createLine({ id: "B", text: "Line synced", begin: 5, end: 8 }),
-    ]);
+    ];
     const result = applyWordMoveAcrossLines(
       lines,
       [
@@ -836,14 +860,79 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
           sourceTrack: "word",
           targetLineId: "B",
           targetTrack: "bg",
-          word: { text: "lead", begin: 6, end: 7 },
+          word: { id: "w24", text: "lead", sep: "", begin: 6, end: 7, joinsNext: true },
         },
       ],
       wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
     );
     if (!result.ok) throw new Error("expected ok");
     const toB = result.updates.find((u) => u.id === "B")?.updates;
-    expect(toB?.words).toBeUndefined();
-    expect(toB?.backgroundWords?.map((w) => w.text)).toEqual(["lead"]);
+    expect(roleWords(updatedLine(toB), "main")).toBeUndefined();
+    expect(roleWords(updatedLine(toB), "bg")?.map((w) => w.text)).toEqual(["lead"]);
+  });
+});
+
+describe("applyWordMoveAcrossLines: partly synced lines", () => {
+  it("regression: a word moved into a partly synced line keeps its untimed rest", () => {
+    const lineA = createLine({ id: "A", words: [{ text: "lanterns", begin: 0, end: 0.5 }] });
+    const lineB = createLine({
+      id: "B",
+      text: "Paper boats drift away",
+      words: [{ text: "Paper", sep: " ", begin: 2, end: 2.5 }],
+    });
+    const moved: WordTiming = { id: "w99", text: "lanterns", sep: "", begin: 2.6, end: 3, joinsNext: false };
+    const result = applyWordMoveAcrossLines(
+      [lineA, lineB],
+      [
+        {
+          sourceLineId: "A",
+          sourceWordIndex: 0,
+          sourceTrack: "word",
+          targetLineId: "B",
+          targetTrack: "word",
+          word: moved,
+        },
+      ],
+      wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    if (!result.ok) throw new Error("expected ok");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
+    expect(mainTrack(b).syllables.map((syllable) => syllable.text)).toEqual([
+      "Paper",
+      "lanterns",
+      "boats",
+      "drift",
+      "away",
+    ]);
+  });
+
+  it("regression: moving the only timed background word keeps the background's untimed rest", () => {
+    const line = createLine({
+      id: "A",
+      words: [{ text: "Forever", begin: 1, end: 2 }],
+      backgroundText: "ooh the wind",
+      backgroundWords: [{ text: "ooh", sep: " ", begin: 1.2, end: 1.5 }],
+    });
+    const moved: WordTiming = { id: "w98", text: "ooh", sep: "", begin: 2.2, end: 2.5, joinsNext: false };
+    const result = applyWordMoveAcrossLines(
+      [line],
+      [
+        {
+          sourceLineId: "A",
+          sourceWordIndex: 0,
+          sourceTrack: "bg",
+          targetLineId: "A",
+          targetTrack: "word",
+          word: moved,
+        },
+      ],
+      wholeSong,
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    if (!result.ok) throw new Error("expected ok");
+    const after = findById(applyUpdates([line], result.updates), "A");
+    expect(backgroundTrack(after)?.syllables.map((syllable) => syllable.text)).toEqual(["the", "wind"]);
   });
 });

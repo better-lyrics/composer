@@ -1,17 +1,19 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
-import type { Agent } from "@/domain/agent/model";
-import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
-import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
-import type { EditedLyrics } from "@/domain/project/edited-lyrics";
-import type { MetadataKey } from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { Agent } from "insync/agent";
+import type { LyricRoot } from "insync/commands/outcome";
+import type { LinkGroup, LyricDoc } from "insync/group";
+import type { LyricLine } from "insync/line";
+import type { EditedLyrics } from "insync/project-edited-lyrics";
+import type { MetadataKey } from "insync/project-imported-metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { ProjectTab } from "@/domain/project/tab";
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
-import type { WordTiming } from "@/domain/word/timing";
+import type { HistoryActions, HistoryState } from "@/stores/project/history-types";
 import type { UnisonLinkActions, UnisonLinkState } from "@/stores/project/unison-link-slice";
 
 // -- Store-local Types --------------------------------------------------------
@@ -19,15 +21,6 @@ import type { UnisonLinkActions, UnisonLinkState } from "@/stores/project/unison
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
 type TtmlEditState = { source: string; content: string; lyricsChanged?: true } | null;
-
-interface HistoryEntry {
-  lines: LyricLine[];
-  groups: LinkGroup[];
-  agents: Agent[];
-  customSnapPoints: SnapPoint[];
-  beatGrid: BeatGrid | null;
-  timestamp: number;
-}
 
 // -- Segregated State Slices --------------------------------------------------
 
@@ -52,7 +45,10 @@ interface AgentsState {
 }
 
 interface LinesState {
+  doc: LyricDoc;
   lines: LyricLine[];
+  parts: readonly Part[];
+  passthrough: DocPassthrough;
 }
 
 interface GroupsState {
@@ -83,17 +79,6 @@ interface BeatGridState {
   beatGrid: BeatGrid | null;
 }
 
-interface HistoryState {
-  isDirty: boolean;
-  history: HistoryEntry[];
-  historyIndex: number;
-  // True when any snapshotted state (lines, groups, agents) has changed since
-  // the last history entry was written (e.g., per-keystroke setLines from the
-  // Edit textarea). The next history-aware mutator, and undo itself, snapshot
-  // this state first so undo lands on the pending edit instead of skipping it.
-  isDirtySinceHistory: boolean;
-}
-
 // -- Segregated Action Slices -------------------------------------------------
 
 interface MetadataActions {
@@ -102,9 +87,11 @@ interface MetadataActions {
   resetSongIdentity: (title: string) => void;
   restoreSongIdentity: (identity: SongIdentity) => void;
   replaceLyricsWithHistory: (input: {
-    lines: RawLine[];
+    lines: LyricLine[];
     groups: LinkGroup[];
     agents: Agent[] | undefined;
+    parts?: readonly Part[];
+    passthrough?: DocPassthrough;
     metadata: Partial<ProjectMetadata>;
   }) => void;
   applyEditedLyricsWithHistory: (edited: EditedLyrics) => void;
@@ -118,8 +105,6 @@ interface MetadataActions {
 interface AgentActions {
   addAgent: (agent: Agent) => void;
   updateAgent: (id: string, updates: Partial<Agent>) => void;
-  removeAgentWithHistory: (id: string) => void;
-  setAgents: (agents: Agent[]) => void;
 }
 
 interface UiActions {
@@ -161,82 +146,11 @@ interface BeatGridActions {
   clearBeatGrid: () => void;
 }
 
-interface HistoryActions {
-  undo: () => void;
-  redo: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
-  clearHistory: () => void;
-  markDirty: () => void;
-  markClean: () => void;
-  commitPendingLineEdit: (baseline: LyricLine[], baselineWasDirty?: boolean) => void;
-  applyLineUpdatesToCurrentStep: (updates: LineUpdate[]) => void;
-}
-
 interface LineActions {
-  setLines: (lines: RawLine[]) => void;
-  // See the JSDoc on the implementation in lines-slice.ts before using this.
-  setTransientLines: (lines: RawLine[]) => void;
-  restoreTransientLines: (lines: RawLine[]) => void;
-  setLinesWithHistory: (lines: RawLine[], groups?: LinkGroup[]) => void;
-  insertEmptyLineWithHistory: (anchorLineId: string, position: "above" | "below") => void;
-  updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
-  updateLineWithHistory: (
-    id: string,
-    updates: Partial<LyricLine>,
-    options?: { deriveText?: boolean; propagateToSiblings?: boolean },
-  ) => void;
-  updateLinesWithHistory: (
-    updates: LineUpdate[],
-    options?: { deriveText?: boolean; propagateToSiblings?: boolean },
-  ) => void;
-  moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
-  moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
-  applyWordCountChange: (
-    lineId: string,
-    newWords: WordTiming[],
-    field: "words" | "backgroundWords",
-    resolution: "apply" | "detach" | "cancel",
-    extraUpdates?: Partial<LyricLine>,
-  ) => void;
-  toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  snapSyllablesFlush: (lineId: string, field: "words" | "backgroundWords") => void;
-  markWordsExplicit: (
-    targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
-    value: boolean,
-  ) => void;
-  splitSyllablesAcrossIdenticalWordsWithHistory: (params: {
-    source: { lineId: string; wordIndex: number; type: "word" | "bg" };
-    splitPoints: number[];
-    caseInsensitive: boolean;
-  }) => void;
-}
-
-interface GroupActions {
-  setGroups: (groups: LinkGroup[]) => void;
-  addGroup: (group: LinkGroup) => void;
-  addGroupWithLines: (group: LinkGroup, lines: LyricLine[]) => void;
-  groupRepeatingSections: (
-    starts: number[],
-    length: number,
-    options?: { label?: string; color?: string; duration?: number },
-  ) => SharingOutcome;
-  updateGroup: (id: string, updates: Partial<LinkGroup>) => void;
-  removeGroup: (id: string) => void;
-  addInstance: (groupId: string, structure: LineTemplate[], instanceStart: number, insertAtIndex?: number) => void;
-  removeInstance: (groupId: string, instanceIdx: number) => void;
-  detachLine: (lineId: string) => void;
-  shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number, duration: number) => void;
-  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean, duration: number) => RealignRefusal | null;
-  shareGroupTiming: (groupId: string, duration: number) => SharingOutcome;
-  placeInstance: (
-    groupId: string,
-    instanceIdx: number,
-    start: number,
-    duration: number,
-    precedingUpdates?: LineUpdate[],
-  ) => boolean;
+  // Loads and restores only: the one write of lines, groups and agents outside commands.
+  restoreLyrics: (root: Partial<LyricRoot>) => void;
+  previewLines: (lines: LyricLine[]) => void;
+  restorePreviewLines: (lines: LyricLine[]) => void;
 }
 
 // -- Composed Store -----------------------------------------------------------
@@ -261,7 +175,6 @@ type ProjectActions = MetadataActions &
   BeatGridActions &
   HistoryActions &
   LineActions &
-  GroupActions &
   AlignmentReviewActions &
   UnisonLinkActions;
 
@@ -281,17 +194,13 @@ export type {
   DismissalsState,
   SnapPointsState,
   BeatGridState,
-  HistoryEntry,
-  HistoryState,
   MetadataActions,
   AgentActions,
   UiActions,
   DismissalActions,
   SnapPointActions,
   BeatGridActions,
-  HistoryActions,
   LineActions,
-  GroupActions,
   ProjectState,
   ProjectStore,
 };

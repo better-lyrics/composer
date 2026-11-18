@@ -1,32 +1,67 @@
-import type { LyricLine } from "@/domain/line/model";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { describe, expect, it } from "vitest";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { convertLineToWord } from "insync/line-span-to-words";
+import { lineText, syllablesText } from "insync/line-text";
+import { roleWords } from "insync/line-track";
+import { lineTimingWordId } from "insync/word-id";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useSettingsStore } from "@/stores/settings";
+import { createLine } from "@/test/factories";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("createTrackWordsFromTextAt", () => {
-  const base: LyricLine = { id: "l", agentId: "v1", text: "main", backgroundText: "ooh yeah" };
+  const base: LyricLine = lineFromFields(
+    { id: "l", agentId: "v1", text: "main", backgroundText: "ooh yeah" },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
   it("times untimed bg text from the given start", () => {
     const words = createTrackWordsFromTextAt(base, "bg", 5, 100);
-    expect(words?.map((w) => w.text)).toEqual(["ooh ", "yeah"]);
+    expect(words?.map((w) => w.text + w.sep)).toEqual(["ooh ", "yeah"]);
     expect(words?.[0].begin).toBe(5);
   });
 
   describe("edge cases", () => {
     it("returns null when the bg track already has words", () => {
-      const timed: LyricLine = { ...base, backgroundWords: [{ text: "ooh yeah", begin: 1, end: 2 }] };
+      const timed: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER),
+          backgroundWords: [{ id: "w1", text: "ooh yeah", sep: "", begin: 1, end: 2, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(createTrackWordsFromTextAt(timed, "bg", 5, 100)).toBeNull();
     });
 
     it("returns null when there is no bg text", () => {
-      expect(createTrackWordsFromTextAt({ ...base, backgroundText: undefined }, "bg", 5, 100)).toBeNull();
+      expect(
+        createTrackWordsFromTextAt(
+          lineFromFields(
+            { ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER), backgroundText: undefined },
+            DEFAULT_SPLIT_CHARACTER,
+          ),
+          "bg",
+          5,
+          100,
+        ),
+      ).toBeNull();
     });
 
     it("returns null for whitespace-only bg text", () => {
-      expect(createTrackWordsFromTextAt({ ...base, backgroundText: "   " }, "bg", 5, 100)).toBeNull();
+      expect(
+        createTrackWordsFromTextAt(
+          lineFromFields(
+            { ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER), backgroundText: "   " },
+            DEFAULT_SPLIT_CHARACTER,
+          ),
+          "bg",
+          5,
+          100,
+        ),
+      ).toBeNull();
     });
 
     it("never runs past the max end", () => {
@@ -37,18 +72,30 @@ describe("createTrackWordsFromTextAt", () => {
 
   describe("invariants", () => {
     it("keeps the bg text unchanged word for word", () => {
-      const words = createTrackWordsFromTextAt({ ...base, backgroundText: "la la la" }, "bg", 0, 100) ?? [];
-      expect(words.map((w) => w.text).join("")).toBe("la la la");
+      const words =
+        createTrackWordsFromTextAt(
+          lineFromFields(
+            { ...fieldsOfLine(base, DEFAULT_SPLIT_CHARACTER), backgroundText: "la la la" },
+            DEFAULT_SPLIT_CHARACTER,
+          ),
+          "bg",
+          0,
+          100,
+        ) ?? [];
+      expect(words.map((w) => w.text + w.sep).join("")).toBe("la la la");
     });
   });
 
   describe("main track", () => {
     const split = getSplitCharacter();
-    const untimed: LyricLine = { id: "m", agentId: "v1", text: `hel${split}lo world` };
+    const untimed: LyricLine = lineFromFields(
+      { id: "m", agentId: "v1", text: `hel${split}lo world` },
+      DEFAULT_SPLIT_CHARACTER,
+    );
 
     it("lays out one block per syllable from the given start", () => {
       const words = createTrackWordsFromTextAt(untimed, "word", 5, 100) ?? [];
-      expect(words.map((w) => w.text)).toEqual(["hel", "lo ", "world"]);
+      expect(words.map((w) => w.text + w.sep)).toEqual(["hel", "lo ", "world"]);
       expect(words[0].begin).toBe(5);
     });
 
@@ -65,12 +112,25 @@ describe("createTrackWordsFromTextAt", () => {
 
     describe("edge cases", () => {
       it("returns null when the line already has words", () => {
-        const timed: LyricLine = { ...untimed, words: [{ text: "hello world", begin: 1, end: 2 }] };
+        const timed: LyricLine = lineFromFields(
+          {
+            ...fieldsOfLine(untimed, DEFAULT_SPLIT_CHARACTER),
+            words: [{ id: "w2", text: "hello world", sep: "", begin: 1, end: 2, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        );
         expect(createTrackWordsFromTextAt(timed, "word", 5, 100)).toBeNull();
       });
 
       it("returns null for an empty line", () => {
-        expect(createTrackWordsFromTextAt({ ...untimed, text: "" }, "word", 5, 100)).toBeNull();
+        expect(
+          createTrackWordsFromTextAt(
+            lineFromFields({ ...fieldsOfLine(untimed, DEFAULT_SPLIT_CHARACTER), text: "" }, DEFAULT_SPLIT_CHARACTER),
+            "word",
+            5,
+            100,
+          ),
+        ).toBeNull();
       });
 
       it("never runs past the max end", () => {
@@ -82,8 +142,17 @@ describe("createTrackWordsFromTextAt", () => {
     describe("invariants", () => {
       it("rebuilds the exact line text, split characters included", () => {
         const words = createTrackWordsFromTextAt(untimed, "word", 0, 100) ?? [];
-        expect(reconstructLineText(words, split)).toBe(untimed.text);
+        expect(syllablesText(words, split)).toBe(lineText(untimed, DEFAULT_SPLIT_CHARACTER));
       });
     });
+  });
+});
+
+describe("convertLineToWord", () => {
+  it("keeps the line-synced word id on the first word", () => {
+    const line = createLine({ id: "line-1", text: "Into the quiet", begin: 1, end: 4 });
+    const converted = convertLineToWord(line);
+    expect(roleWords(converted, "main")?.[0].id).toBe(lineTimingWordId("line-1"));
+    expect(new Set(roleWords(converted, "main")?.map((word) => word.id)).size).toBe(3);
   });
 });

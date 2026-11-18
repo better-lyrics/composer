@@ -1,6 +1,6 @@
 import type { SuggestionDecider } from "@/lib/unison/api-types";
 import { formatRelativeTimeInline } from "@/utils/format-relative-time";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Constants -----------------------------------------------------------------
 

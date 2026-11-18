@@ -1,9 +1,15 @@
-import { useProjectStore } from "@/stores/project";
-import { createLine } from "@/test/factories";
-import { render } from "@/test/render";
-import { EditPanel } from "@/views/edit";
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { pasteLines } from "insync/commands/instance-rows";
+import { backgroundText } from "insync/line-text";
+import { backgroundTrack } from "insync/line-track";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
+import { render } from "@/test/render";
+import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -29,16 +35,20 @@ describe("background vocals popover", () => {
   it("writes edited text on Enter as one undo step", async () => {
     useProjectStore
       .getState()
-      .setLinesWithHistory([createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })]);
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [
+          createLine({ id: "l1", text: "Hello world", backgroundText: "yea" }),
+        ]),
+      );
     const input = await openBackgroundPopover();
 
     await input.fill("yeah");
     await userEvent.keyboard("{Enter}");
     await expect.element(input).not.toBeInTheDocument();
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("yeah");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("yeah");
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("yea");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("yea");
   });
 
   it("opens from the keyboard and returns focus to its trigger on close", async () => {
@@ -64,7 +74,7 @@ describe("regressions", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "yeah" });
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { backgroundText: "yeah" } }])));
     await screen.getByRole("button", { name: "BG", exact: true }).click();
 
     await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toHaveValue("yeah");
@@ -74,16 +84,16 @@ describe("regressions", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "yeah" });
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { backgroundText: "yeah" } }])));
     await screen.getByRole("button", { name: "BG", exact: true }).click();
     await screen.getByRole("textbox", { name: "Background vocals text" }).click();
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("yeah");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("yeah");
   });
 
   it("regression: blurring without an edit leaves the line and history untouched", async () => {
-    useProjectStore.getState().setLinesWithHistory([extractedLine()]);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [extractedLine()]));
     const linesBefore = useProjectStore.getState().lines;
     const input = await openBackgroundPopover();
 
@@ -95,7 +105,7 @@ describe("regressions", () => {
   });
 
   it("regression: pressing Enter without an edit keeps an extracted background", async () => {
-    useProjectStore.getState().setLinesWithHistory([extractedLine()]);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [extractedLine()]));
     const linesBefore = useProjectStore.getState().lines;
     const input = await openBackgroundPopover();
 
@@ -104,6 +114,6 @@ describe("regressions", () => {
     await expect.element(input).not.toBeInTheDocument();
 
     expect(useProjectStore.getState().lines).toBe(linesBefore);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });

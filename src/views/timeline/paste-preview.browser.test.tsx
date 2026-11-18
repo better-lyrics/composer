@@ -1,12 +1,14 @@
 import { useRef } from "react";
 import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { userEvent } from "vitest/browser";
-import type { LyricLine } from "@/domain/line/model";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -16,6 +18,7 @@ import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -25,10 +28,10 @@ const chorusLine = (id: string, instanceIdx: number, begin: number, secondWordAt
   createLine({
     id,
     text: "go now",
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + secondWordAt, end: begin + secondWordAt + 1 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + secondWordAt, end: begin + secondWordAt + 1 },
+    ]),
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
@@ -123,7 +126,7 @@ const pasteOnEmptyRow = (screen: Awaited<ReturnType<typeof render>>) => pasteOnR
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
 const entriesOf = (line: LyricLine) =>
-  (line.words ?? []).map((word) => ({ word, lineOffset: 0, trackType: "word" as const }));
+  timedSyllables(mainTrack(line)).map((word) => ({ word, lineOffset: 0, trackType: "word" as const }));
 
 // -- Tests --------------------------------------------------------------------
 
@@ -151,7 +154,7 @@ describe("PastePreview · paste into a group that shares timing", () => {
     await screen.getByRole("button", { name: "Link as instance" }).click();
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
-    expect(lineById("e")?.words?.[1].begin).toBe(PASTE_TIME + 1);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(PASTE_TIME + 1);
   });
 
   it("gives an instance pasted from an own-timing copy the shared timing", async () => {
@@ -161,7 +164,7 @@ describe("PastePreview · paste into a group that shares timing", () => {
     await pasteOnEmptyRow(screen);
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
-    expect(lineById("e")?.words?.[1].begin).toBe(PASTE_TIME + 1);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(PASTE_TIME + 1);
   });
 
   describe("regressions", () => {
@@ -231,10 +234,10 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
 
     await pasteOnRow(screen, "c0", 12.5);
 
-    await expect.poll(() => lineById("c0")?.words).toHaveLength(3);
-    expect(lineById("c0")?.words?.[2].begin).toBeCloseTo(12.5, 5);
-    expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13, 5);
-    expect(lineById("c1")?.words?.[2].end).toBeCloseTo(20, 5);
+    await expect.poll(() => roleWords(lineById("c0"), "main")).toHaveLength(3);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[2].begin).toBeCloseTo(12.5, 5);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBeCloseTo(13, 5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[2].end).toBeCloseTo(20, 5);
   });
 
   it("previews the pasted word cut at the range end", async () => {
@@ -255,8 +258,8 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
       expect(ghostWidth(screen)).toBeCloseTo(wordBlockWidth(12.5, 13.5, ZOOM), 3);
       await pasteOnRow(screen, "c0", 12.5);
 
-      await expect.poll(() => lineById("c0")?.words).toHaveLength(3);
-      expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.5, 5);
+      await expect.poll(() => roleWords(lineById("c0"), "main")).toHaveLength(3);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBeCloseTo(13.5, 5);
     });
   });
 });
@@ -264,7 +267,9 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
 describe("PastePreview · paste into the hovered lane", () => {
   it("pastes words copied from a main lane into the hovered background lane", async () => {
     useAudioStore.setState({ duration: 60 });
-    useProjectStore.setState({ lines: [createLine({ id: "l", text: "go now", words: ownTimingChorus.words })] });
+    useProjectStore.setState({
+      lines: [createLine({ id: "l", text: "go now", words: roleWords(ownTimingChorus, "main") })],
+    });
     const clipboard: ClipboardData = {
       entries: [{ word: createWord({ text: "you", begin: 0, end: 1 }), lineOffset: 0, trackType: "word" }],
     };
@@ -272,8 +277,8 @@ describe("PastePreview · paste into the hovered lane", () => {
 
     await pasteOnRow(screen, "l", 10, "bg");
 
-    await expect.poll(() => lineById("l")?.backgroundWords?.map((word) => word.text)).toEqual(["you"]);
-    expect(lineById("l")?.words).toEqual(ownTimingChorus.words);
+    await expect.poll(() => roleWords(lineById("l"), "bg")?.map((word) => word.text + word.sep)).toEqual(["you"]);
+    expect(timedSyllables(mainTrack(lineById("l")!))).toEqual(timedSyllables(mainTrack(ownTimingChorus)));
   });
 });
 
@@ -284,7 +289,14 @@ describe("PastePreview · paste an instance", () => {
     useProjectStore.setState({
       groups: [createGroup({ id: "g1" })],
       lines: [
-        { ...chorus, templateLineIdx: 0, backgroundWords: [createWord({ text: "ah", begin: 12, end: 13 })] },
+        lineFromFields(
+          {
+            ...fieldsOfLine(chorus, getSplitCharacter()),
+            templateLineIdx: 0,
+            backgroundWords: [createWord({ text: "ah", begin: 12, end: 13 })],
+          },
+          getSplitCharacter(),
+        ),
         createLine({ id: "e", text: "" }),
       ],
     });
@@ -294,6 +306,6 @@ describe("PastePreview · paste an instance", () => {
 
     await pasteOnEmptyRow(screen);
 
-    await expect.poll(() => lineById("e")?.begin).toBeCloseTo(PASTE_TIME, 5);
+    await expect.poll(() => mainTrack(lineById("e")!).begin).toBeCloseTo(PASTE_TIME, 5);
   });
 });

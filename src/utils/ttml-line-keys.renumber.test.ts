@@ -1,17 +1,20 @@
+import { fieldsOfLine } from "insync/line-from-fields";
 import { createLine } from "@/test/factories";
-import { generateTTML } from "@/utils/ttml";
-import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
+import { legacyLine } from "@/test/legacy-languages";
+import { generateTTML } from "insync/ttml/write";
+import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "insync/ttml/line-keys";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
 const METADATA = { title: "Song", artists: [], album: "", duration: 0 };
 
 function translated(id: string, text: string, begin: number) {
-  return {
-    ...createLine({ id, text, begin, end: begin + 1 }),
+  return legacyLine({
+    ...fieldsOfLine(createLine({ id, text, begin, end: begin + 1 }), DEFAULT_SPLIT_CHARACTER),
     translations: { es: { language: "es", text: `${text} es`, origin: "manual" as const, sourceFingerprint: "fp" } },
-  };
+  });
 }
 
 const ALPHA = translated("a", "Alpha", 1);
@@ -19,7 +22,7 @@ const BRAVO = translated("b", "Bravo", 2);
 const CHARLIE = translated("c", "Charlie", 3);
 
 function exported(lines: Parameters<typeof generateTTML>[0]["lines"]): string {
-  return generateTTML({ metadata: METADATA, agents: [], lines });
+  return generateTTML({ metadata: METADATA, agents: [], lines, splitChar: DEFAULT_SPLIT_CHARACTER });
 }
 
 function keysIn(ttml: string): string[] {
@@ -31,18 +34,22 @@ function keysIn(ttml: string): string[] {
 describe("lineKeyIds", () => {
   it("maps each key the export writes to its line id", () => {
     const blank = createLine({ id: "blank", text: "" });
-    expect(lineKeyIds([ALPHA, blank, BRAVO])).toEqual({ L1: "a", L2: "b" });
+    expect(lineKeyIds([ALPHA, blank, BRAVO], DEFAULT_SPLIT_CHARACTER)).toEqual({ L1: "a", L2: "b" });
   });
 
   it("is empty for a project the export writes no line for", () => {
-    expect(lineKeyIds([createLine({ id: "x", text: "Untimed" })])).toEqual({});
+    expect(lineKeyIds([createLine({ id: "x", text: "Untimed" })], DEFAULT_SPLIT_CHARACTER)).toEqual({});
   });
 });
 
 describe("renumberLineKeys", () => {
   it("moves the keys and their references from one numbering to another", () => {
     const content = exported([ALPHA, BRAVO, CHARLIE]).replace(">Charlie<", ">Charlie!<");
-    const renumbered = renumberLineKeys(content, lineKeyIds([ALPHA, BRAVO, CHARLIE]), lineKeyIds([ALPHA, CHARLIE]));
+    const renumbered = renumberLineKeys(
+      content,
+      lineKeyIds([ALPHA, BRAVO, CHARLIE], DEFAULT_SPLIT_CHARACTER),
+      lineKeyIds([ALPHA, CHARLIE], DEFAULT_SPLIT_CHARACTER),
+    );
     expect(keysIn(renumbered)).toEqual(["L1", "N1", "L2"]);
     expect(renumbered).toContain('<text for="L2">Charlie es</text>');
     expect(renumbered).toContain('<text for="N1">Bravo es</text>');
@@ -71,7 +78,7 @@ describe("renumberLineKeys", () => {
   describe("invariants", () => {
     it("changes nothing when both numberings are the same", () => {
       const content = exported([ALPHA, BRAVO]);
-      const keys = lineKeyIds([ALPHA, BRAVO]);
+      const keys = lineKeyIds([ALPHA, BRAVO], DEFAULT_SPLIT_CHARACTER);
       expect(renumberLineKeys(content, keys, keys)).toBe(content);
     });
   });

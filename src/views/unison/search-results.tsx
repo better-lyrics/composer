@@ -7,7 +7,7 @@ import { ScoreLabel } from "@/ui/unison/score-label";
 import { unisonSyncLabel } from "@/ui/unison/sync-type-label";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { MINE_GRID, ROW_AT_REST, ROW_REVEAL, UNISON_ROW } from "@/views/unison/mine-row";
 
 // -- Types ---------------------------------------------------------------------

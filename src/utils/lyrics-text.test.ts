@@ -3,26 +3,34 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LanguageContentOrigin, TransliterationAlignmentStatus } from "insync/language";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, isSpanTimed, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { extractBackgroundVocals } from "insync/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("textToLyricLines · group attrs preservation", () => {
   it("keeps groupId/instanceIdx/templateLineIdx on exact-text match", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { text: "I ", begin: 0, end: 0.3 },
-          { text: "love ", begin: 0.3, end: 0.6 },
-          { text: "you", begin: 0.6, end: 1 },
-        ],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+            { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("I love you", "v1", existing);
     expect(result).toHaveLength(1);
@@ -34,24 +42,27 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("keeps the same id and group attrs on a position-based typo fix", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { text: "I ", begin: 0, end: 0.3 },
-          { text: "love ", begin: 0.3, end: 0.6 },
-          { text: "you", begin: 0.6, end: 1 },
-        ],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w5", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+            { id: "w6", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("I luv you", "v1", existing);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("I luv you");
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("I luv you");
     expect(result[0].groupId).toBe("g1");
     expect(result[0].instanceIdx).toBe(0);
     expect(result[0].templateLineIdx).toBe(0);
@@ -59,15 +70,18 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("preserves the detached flag on a position-based typo fix", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        detached: true,
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          detached: true,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("I luv you", "v1", existing);
     expect(result[0].detached).toBe(true);
@@ -75,31 +89,39 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("spreads a position-based typo fix across the edited word's slot", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "I love",
-        agentId: "v1",
-        words: [{ text: "I love", begin: 0, end: 1 }],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "I love",
+          agentId: "v1",
+          words: [{ id: "w7", text: "I love", sep: "", begin: 0, end: 1, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("I luv", "v1", existing);
-    expect(result[0].words).toEqual([
-      { text: "I ", begin: 0, end: 0.5 },
-      { text: "luv", begin: 0.5, end: 1 },
+    expect(timedSyllables(mainTrack(result[0]))).toEqual([
+      { text: "I", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { text: "luv", sep: "", begin: 0.5, end: 1, joinsNext: false },
     ]);
-    expect(result[0].begin).toBeUndefined();
-    expect(result[0].end).toBeUndefined();
+    expect(mainTrack(result[0]).begin).toBeUndefined();
+    expect(mainTrack(result[0]).end).toBeUndefined();
   });
 
   it("keeps backgroundText on a position-based typo fix", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "main", agentId: "v1", backgroundText: "ah ah" }];
+    const existing: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "main", agentId: "v1", backgroundText: "ah ah" }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const result = textToLyricLines("main edit", "v1", existing);
-    expect(result[0].backgroundText).toBe("ah ah");
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ah ah");
   });
 
   it("returns brand-new lines (new ids, no group attrs) for genuinely new text", () => {
     const existing: LyricLine[] = [
-      { id: "L1", text: "first", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      lineFromFields(
+        { id: "L1", text: "first", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("first\nsecond", "v1", existing);
     expect(result).toHaveLength(2);
@@ -110,8 +132,14 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("does not steal an exact-match line that's already used by an earlier position", () => {
     const existing: LyricLine[] = [
-      { id: "L1", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "L2", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      lineFromFields(
+        { id: "L1", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        { id: "L2", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("chorus\nchorus", "v1", existing);
     expect(result[0].id).toBe("L1");
@@ -120,90 +148,109 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("preserves words on every instance of repeated text (not just the first)", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "chorus",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [{ text: "chorus", begin: 10, end: 11 }],
-      },
-      {
-        id: "L2",
-        text: "chorus",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [{ text: "chorus", begin: 30, end: 31 }],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "chorus",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [{ id: "w8", text: "chorus", sep: "", begin: 10, end: 11, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "L2",
+          text: "chorus",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [{ id: "w9", text: "chorus", sep: "", begin: 30, end: 31, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("chorus\nchorus", "v1", existing);
-    expect(result[0].words).toEqual(existing[0].words);
-    expect(result[0].words?.[0].begin).toBe(10);
-    expect(result[1].words).toEqual(existing[1].words);
-    expect(result[1].words?.[0].begin).toBe(30);
+    expect(timedSyllables(mainTrack(result[0]))).toEqual(timedSyllables(mainTrack(existing[0])));
+    expect(timedSyllables(mainTrack(result[0]))[0].begin).toBe(10);
+    expect(timedSyllables(mainTrack(result[1]))).toEqual(timedSyllables(mainTrack(existing[1])));
+    expect(timedSyllables(mainTrack(result[1]))[0].begin).toBe(30);
   });
 
   it("preserves word timings on the edited line when word count matches (single-word swap)", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "I love you",
-        agentId: "v1",
-        words: [
-          { text: "I ", begin: 0, end: 0.4 },
-          { text: "love ", begin: 0.4, end: 0.8 },
-          { text: "you", begin: 0.8, end: 1.2 },
-        ],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "I love you",
+          agentId: "v1",
+          words: [
+            { id: "w10", text: "I", sep: " ", begin: 0, end: 0.4, joinsNext: false },
+            { id: "w11", text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
+            { id: "w12", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("I luv you", "v1", existing);
-    expect(result[0].text).toBe("I luv you");
-    expect(result[0].words).toBeDefined();
-    expect(result[0].words?.length).toBe(3);
-    expect(result[0].words?.[1].text).toBe("luv ");
-    expect(result[0].words?.[1].begin).toBe(0.4);
-    expect(result[0].words?.[1].end).toBe(0.8);
-    expect(result[0].words?.[0].begin).toBe(0);
-    expect(result[0].words?.[2].end).toBe(1.2);
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("I luv you");
+    expect(roleWords(result[0], "main")).toBeDefined();
+    expect(roleWords(result[0], "main")?.length).toBe(3);
+    expect(timedSyllables(mainTrack(result[0]))[1]).toMatchObject({ text: "luv", sep: " " });
+    expect(timedSyllables(mainTrack(result[0]))[1].begin).toBe(0.4);
+    expect(timedSyllables(mainTrack(result[0]))[1].end).toBe(0.8);
+    expect(timedSyllables(mainTrack(result[0]))[0].begin).toBe(0);
+    expect(timedSyllables(mainTrack(result[0]))[2].end).toBe(1.2);
   });
 
   it("keeps untouched word timing when the edited word count differs", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "I love you",
-        agentId: "v1",
-        words: [
-          { text: "I ", begin: 0, end: 0.4 },
-          { text: "love ", begin: 0.4, end: 0.8 },
-          { text: "you", begin: 0.8, end: 1.2 },
-        ],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "I love you",
+          agentId: "v1",
+          words: [
+            { id: "w13", text: "I", sep: " ", begin: 0, end: 0.4, joinsNext: false },
+            { id: "w14", text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
+            { id: "w15", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("I really love you", "v1", existing);
-    expect(result[0].text).toBe("I really love you");
-    expect(result[0].words?.map((w) => w.text)).toEqual(["I ", "really ", "love ", "you"]);
-    expect(result[0].words?.slice(2)).toEqual([
-      { text: "love ", begin: 0.4, end: 0.8 },
-      { text: "you", begin: 0.8, end: 1.2 },
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("I really love you");
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.text + w.sep)).toEqual(["I ", "really ", "love ", "you"]);
+    // The inserted word shares the next word's slot, so "love" keeps its end and gives up part of its start.
+    expect(timedSyllables(mainTrack(result[0])).slice(2)).toEqual([
+      { text: "love", sep: " ", begin: expect.closeTo(0.64), end: 0.8, joinsNext: false },
+      { text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
     ]);
   });
 
   it("does NOT position-match across an insertion (typed line count > existing)", () => {
     const existing: LyricLine[] = [
-      { id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-      { id: "L2", text: "verse", agentId: "v1" },
+      lineFromFields(
+        { id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        { id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "L2", text: "verse", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     // User adds a new line "x" between A and B
     const result = textToLyricLines("A\nx\nB\nverse", "v1", existing);
     expect(result).toHaveLength(4);
     expect(result[0].id).toBe("L0");
     expect(result[1].id).not.toBe("L1");
-    expect(result[1].text).toBe("x");
+    expect(lineText(result[1], DEFAULT_SPLIT_CHARACTER)).toBe("x");
     expect(result[1].groupId).toBeUndefined();
     expect(result[2].id).toBe("L1");
     expect(result[3].id).toBe("L2");
@@ -211,9 +258,15 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("does NOT position-match across a deletion (typed line count < existing)", () => {
     const existing: LyricLine[] = [
-      { id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-      { id: "L2", text: "verse", agentId: "v1" },
+      lineFromFields(
+        { id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        { id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "L2", text: "verse", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     // User deletes B
     const result = textToLyricLines("A\nverse", "v1", existing);
@@ -224,263 +277,335 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("preserves an empty draft line when the user edits a sibling line", () => {
     const existing: LyricLine[] = [
-      { id: "A", text: "verse one", agentId: "v1" },
-      { id: "EMPTY", text: "", agentId: "v1" },
-      { id: "C", text: "verse three", agentId: "v1" },
+      lineFromFields({ id: "A", text: "verse one", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "EMPTY", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "C", text: "verse three", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const result = textToLyricLines("verse one edited\n\nverse three", "v1", existing);
     expect(result).toHaveLength(3);
     expect(result[0].id).toBe("A");
-    expect(result[0].text).toBe("verse one edited");
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("verse one edited");
     expect(result[1].id).toBe("EMPTY");
-    expect(result[1].text).toBe("");
+    expect(lineText(result[1], DEFAULT_SPLIT_CHARACTER)).toBe("");
     expect(result[2].id).toBe("C");
-    expect(result[2].text).toBe("verse three");
+    expect(lineText(result[2], DEFAULT_SPLIT_CHARACTER)).toBe("verse three");
   });
 
   it("fills an empty draft line when user types into its position", () => {
     const existing: LyricLine[] = [
-      { id: "A", text: "first", agentId: "v1" },
-      { id: "DRAFT", text: "", agentId: "v1" },
+      lineFromFields({ id: "A", text: "first", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "DRAFT", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const result = textToLyricLines("first\nfilled in", "v1", existing);
     expect(result).toHaveLength(2);
     expect(result[1].id).toBe("DRAFT");
-    expect(result[1].text).toBe("filled in");
+    expect(lineText(result[1], DEFAULT_SPLIT_CHARACTER)).toBe("filled in");
   });
 
   it("explicit blank line in textarea round-trips as text: ''", () => {
     const result = textToLyricLines("a\n\nb", "v1", []);
-    expect(result.map((l) => l.text)).toEqual(["a", "", "b"]);
+    expect(result.map((l) => lineText(l, DEFAULT_SPLIT_CHARACTER))).toEqual(["a", "", "b"]);
   });
 
   it("drops carried backgroundText when re-pasted text reintroduces parentheses (position match)", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("Hello (ooh) world");
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh) world");
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+    expect(roleWords(result[0], "bg")).toBeUndefined();
   });
 
   it("keeps carried backgroundText when re-pasted text has no parentheses", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const result = textToLyricLines("Hello there", "v1", existing);
-    expect(result[0].backgroundText).toBe("ooh");
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
   });
 
   it("drops carried backgroundText on an exact-text match whose text contains parentheses", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello (ooh) world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      lineFromFields(
+        { id: "L1", text: "Hello (ooh) world", agentId: "v1", backgroundText: "ooh" },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+    ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("Hello (ooh) world");
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh) world");
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+    expect(roleWords(result[0], "bg")).toBeUndefined();
   });
 
   it("regression: an unchanged row with doubled spaces keeps its timed background", () => {
-    const timedBackground = [{ text: "oh", begin: 1, end: 2 }];
+    const timedBackground = [{ id: "w16", text: "oh", sep: "", begin: 1, end: 2, joinsNext: false }];
     const existing: LyricLine[] = [
-      { id: "L1", text: "Hold  on (hold on)", agentId: "v1", backgroundText: "oh", backgroundWords: timedBackground },
-      { id: "L2", text: "Never let go", agentId: "v1" },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "Hold  on (hold on)",
+          agentId: "v1",
+          backgroundText: "oh",
+          backgroundWords: timedBackground,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "L2", text: "Never let go", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const result = textToLyricLines("Hold  on (hold on)\nNever let it go", "v1", existing);
-    expect(result[0].backgroundWords).toEqual(timedBackground);
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual(timedBackground);
   });
 
   it("regression: a row the edit did not change keeps its timed background, parentheses or not", () => {
-    const timedBackground = [{ text: "hold on", begin: 1, end: 2 }];
+    const timedBackground = [{ id: "w17", text: "hold on", sep: "", begin: 1, end: 2, joinsNext: false }];
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "Hold on (hold on)",
-        agentId: "v1",
-        backgroundText: "hold on",
-        backgroundWords: timedBackground,
-      },
-      { id: "L2", text: "Never let go", agentId: "v1" },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "Hold on (hold on)",
+          agentId: "v1",
+          backgroundText: "hold on",
+          backgroundWords: timedBackground,
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "L2", text: "Never let go", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const result = textToLyricLines("Hold on (hold on)\nNever let it go", "v1", existing);
     expect(result[0].id).toBe("L1");
-    expect(result[0].backgroundWords).toEqual(timedBackground);
-    expect(result[0].backgroundText).toBe("hold on");
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual(timedBackground);
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("hold on");
   });
 
   it("drops carried backgroundWords when re-pasted text reintroduces parentheses", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "Hello world",
-        agentId: "v1",
-        backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", begin: 0, end: 0.5 }],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "Hello world",
+          agentId: "v1",
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w18", text: "ooh", sep: "", begin: 0, end: 0.5, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+    expect(roleWords(result[0], "bg")).toBeUndefined();
   });
 
   it("clears the backgroundTextSource flag when a re-paste reintroduces parentheses", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "Hello world",
-        agentId: "v1",
-        backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", begin: 0, end: 0.5 }],
-        backgroundTextSource: "extraction",
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "Hello world",
+          agentId: "v1",
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w19", text: "ooh", sep: "", begin: 0, end: 0.5, joinsNext: false }],
+          backgroundTextSource: "extraction",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+    expect(roleWords(result[0], "bg")).toBeUndefined();
+    expect(backgroundTrack(result[0])?.source).toBeUndefined();
   });
 
   it("clears a manual-sourced background flag too on re-paste with parentheses", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "Hello world",
-        agentId: "v1",
-        backgroundText: "ooh",
-        backgroundTextSource: "manual",
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "Hello world",
+          agentId: "v1",
+          backgroundText: "ooh",
+          backgroundTextSource: "manual",
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
-    expect(result[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundTrack(result[0])?.source).toBeUndefined();
   });
 
   it("produces a fresh unmatched line with parentheses without crashing or inventing backgroundText", () => {
     const result = textToLyricLines("Hello (ooh) world\nSecond line", "v1", []);
     expect(result).toHaveLength(2);
-    expect(result[0].text).toBe("Hello (ooh) world");
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh) world");
+    expect(backgroundText(result[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+    expect(roleWords(result[0], "bg")).toBeUndefined();
   });
 
   it("re-pasting parenthesised lyrics over an already-extracted line does not double the background text", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      lineFromFields({ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }, DEFAULT_SPLIT_CHARACTER),
+    ];
     const reparsed = textToLyricLines("Hello (ooh) world", "v1", existing);
-    const extracted = extractBackgroundVocals(reparsed, { mergeStandaloneLines: false, preserveBrackets: false });
+    const extracted = extractBackgroundVocals(
+      reparsed,
+      { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(extracted).toHaveLength(1);
-    expect(extracted[0].text).toBe("Hello world");
-    expect(extracted[0].backgroundText).toBe("ooh");
+    expect(lineText(extracted[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello world");
+    expect(backgroundText(extracted[0], DEFAULT_SPLIT_CHARACTER)).toBe("ooh");
   });
 
   it("typo on first instance preserves the second instance's words", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L1",
-        text: "chorus",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [{ text: "chorus", begin: 10, end: 11 }],
-      },
-      {
-        id: "L2",
-        text: "chorus",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [{ text: "chorus", begin: 30, end: 31 }],
-      },
+      lineFromFields(
+        {
+          id: "L1",
+          text: "chorus",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [{ id: "w20", text: "chorus", sep: "", begin: 10, end: 11, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "L2",
+          text: "chorus",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [{ id: "w21", text: "chorus", sep: "", begin: 30, end: 31, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("choru\nchorus", "v1", existing);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("choru");
-    expect(result[0].words?.length).toBe(1);
-    expect(result[0].words?.[0].text).toBe("choru");
-    expect(result[0].words?.[0].begin).toBe(10);
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("choru");
+    expect(roleWords(result[0], "main")?.length).toBe(1);
+    expect(timedSyllables(mainTrack(result[0]))[0].text).toBe("choru");
+    expect(timedSyllables(mainTrack(result[0]))[0].begin).toBe(10);
     expect(result[1].id).toBe("L2");
-    expect(result[1].text).toBe("chorus");
-    expect(result[1].words).toEqual(existing[1].words);
+    expect(lineText(result[1], DEFAULT_SPLIT_CHARACTER)).toBe("chorus");
+    expect(timedSyllables(mainTrack(result[1]))).toEqual(timedSyllables(mainTrack(existing[1])));
   });
 });
 
 describe("textToLyricLines · split-character timing preservation", () => {
   it("preserves word timing on untouched split-character lines when a blank line is appended", () => {
     const existing: LyricLine[] = [
-      {
-        id: "L0",
-        text: "Suara hujan",
-        agentId: "v1",
-        words: [
-          { text: "Suara ", begin: 0, end: 0.5 },
-          { text: "hujan", begin: 0.5, end: 1 },
-        ],
-      },
-      {
-        id: "L1",
-        text: "Dengar|lah rindu yang menyik|sa i|ni",
-        agentId: "v1",
-        words: [
-          { text: "Dengar", begin: 1, end: 1.2 },
-          { text: "lah ", begin: 1.2, end: 1.4 },
-          { text: "rindu ", begin: 1.4, end: 1.6 },
-          { text: "yang ", begin: 1.6, end: 1.8 },
-          { text: "menyik", begin: 1.8, end: 2 },
-          { text: "sa ", begin: 2, end: 2.2 },
-          { text: "i", begin: 2.2, end: 2.4 },
-          { text: "ni", begin: 2.4, end: 2.6 },
-        ],
-      },
+      lineFromFields(
+        {
+          id: "L0",
+          text: "Suara hujan",
+          agentId: "v1",
+          words: [
+            { id: "w22", text: "Suara", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+            { id: "w23", text: "hujan", sep: "", begin: 0.5, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "L1",
+          text: "Dengar|lah rindu yang menyik|sa i|ni",
+          agentId: "v1",
+          words: [
+            { id: "w24", text: "Dengar", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            { id: "w25", text: "lah", sep: " ", begin: 1.2, end: 1.4, joinsNext: false },
+            { id: "w26", text: "rindu", sep: " ", begin: 1.4, end: 1.6, joinsNext: false },
+            { id: "w27", text: "yang", sep: " ", begin: 1.6, end: 1.8, joinsNext: false },
+            { id: "w28", text: "menyik", sep: "", begin: 1.8, end: 2, joinsNext: true },
+            { id: "w29", text: "sa", sep: " ", begin: 2, end: 2.2, joinsNext: false },
+            { id: "w30", text: "i", sep: "", begin: 2.2, end: 2.4, joinsNext: true },
+            { id: "w31", text: "ni", sep: "", begin: 2.4, end: 2.6, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = textToLyricLines("Suara hujan\nDengar|lah rindu yang menyik|sa i|ni\n", "v1", existing);
     expect(result).toHaveLength(3);
     expect(result[1].id).toBe("L1");
-    expect(result[1].text).toBe("Dengar|lah rindu yang menyik|sa i|ni");
-    expect(result[1].words).toEqual(existing[1].words);
+    expect(lineText(result[1], DEFAULT_SPLIT_CHARACTER)).toBe("Dengar|lah rindu yang menyik|sa i|ni");
+    expect(timedSyllables(mainTrack(result[1]))).toEqual(timedSyllables(mainTrack(existing[1])));
   });
 });
 
 describe("textToLyricLines · whitespace-normalized matching", () => {
-  const doubleSpaced: LyricLine = {
-    id: "chorus-1",
-    text: "Wish  I  could",
-    agentId: "v1",
-    words: [
-      { text: "Wish  ", begin: 49, end: 50 },
-      { text: "I  ", begin: 50, end: 51 },
-      { text: "could", begin: 51, end: 52 },
-    ],
-  };
-  const singleSpaced: LyricLine = { id: "chorus-2", text: "Wish I could", agentId: "v1", begin: 116, end: 118 };
+  const doubleSpaced: LyricLine = lineFromFields(
+    {
+      id: "chorus-1",
+      text: "Wish  I  could",
+      agentId: "v1",
+      words: [
+        { id: "w32", text: "Wish", sep: "  ", begin: 49, end: 50, joinsNext: false },
+        { id: "w33", text: "I", sep: "  ", begin: 50, end: 51, joinsNext: false },
+        { id: "w34", text: "could", sep: "", begin: 51, end: 52, joinsNext: false },
+      ],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
+  const singleSpaced: LyricLine = lineFromFields(
+    {
+      id: "chorus-2",
+      text: "Wish I could",
+      agentId: "v1",
+      begin: 116,
+      end: 118,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
   it("regression: a double-spaced line keeps its own id and timing instead of stealing a later duplicate's", () => {
     const result = textToLyricLines("Wish  I  could\nWish I could", "v1", [doubleSpaced, singleSpaced]);
     expect(result.map((l) => l.id)).toEqual(["chorus-1", "chorus-2"]);
-    expect(result[0].words?.map((w) => w.begin)).toEqual([49, 50, 51]);
-    expect(result[1].begin).toBe(116);
-    expect(result[1].end).toBe(118);
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.begin)).toEqual([49, 50, 51]);
+    expect(mainTrack(result[1]).begin).toBe(116);
+    expect(mainTrack(result[1]).end).toBe(118);
   });
 
   it("regression: editing an unrelated line does not reshuffle duplicate lines", () => {
-    const other: LyricLine = { id: "other", text: "Always", agentId: "v1", begin: 1, end: 2 };
+    const other: LyricLine = lineFromFields(
+      { id: "other", text: "Always", agentId: "v1", begin: 1, end: 2 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const result = textToLyricLines("Always yeah\nWish  I  could\nWish I could", "v1", [
       other,
       doubleSpaced,
       singleSpaced,
     ]);
     expect(result.map((l) => l.id)).toEqual(["other", "chorus-1", "chorus-2"]);
-    expect(result[2].begin).toBe(116);
+    expect(mainTrack(result[2]).begin).toBe(116);
   });
 
   describe("edge cases", () => {
     it("matches a line whose stored text has leading or trailing whitespace", () => {
-      const padded: LyricLine = { id: "p", text: " Hello  world ", agentId: "v1", begin: 3, end: 4 };
+      const padded: LyricLine = lineFromFields(
+        { id: "p", text: " Hello  world ", agentId: "v1", begin: 3, end: 4 },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       const result = textToLyricLines("Hello world", "v1", [padded]);
       expect(result[0].id).toBe("p");
-      expect(result[0].begin).toBe(3);
+      expect(mainTrack(result[0]).begin).toBe(3);
     });
 
     it("still matches duplicates in document order when all are single-spaced", () => {
-      const a: LyricLine = { id: "a", text: "la la", agentId: "v1", begin: 1, end: 2 };
-      const b: LyricLine = { id: "b", text: "la la", agentId: "v1", begin: 5, end: 6 };
+      const a: LyricLine = lineFromFields(
+        { id: "a", text: "la la", agentId: "v1", begin: 1, end: 2 },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const b: LyricLine = lineFromFields(
+        { id: "b", text: "la la", agentId: "v1", begin: 5, end: 6 },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       const result = textToLyricLines("la la\nla la", "v1", [a, b]);
       expect(result.map((l) => l.id)).toEqual(["a", "b"]);
     });
@@ -489,27 +614,318 @@ describe("textToLyricLines · whitespace-normalized matching", () => {
 
 describe("textToLyricLines · in-place edits keep row identity", () => {
   it("regression: correcting a line into a later duplicate's text does not steal that duplicate", () => {
-    const typo: LyricLine = { id: "typo", text: "Wish I coud", agentId: "v1", begin: 49, end: 52 };
-    const middle: LyricLine = { id: "mid", text: "Something else", agentId: "v1", begin: 60, end: 62 };
-    const later: LyricLine = { id: "later", text: "Wish I could", agentId: "v1", begin: 116, end: 118 };
+    const typo: LyricLine = lineFromFields(
+      { id: "typo", text: "Wish I coud", agentId: "v1", begin: 49, end: 52 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const middle: LyricLine = lineFromFields(
+      { id: "mid", text: "Something else", agentId: "v1", begin: 60, end: 62 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const later: LyricLine = lineFromFields(
+      { id: "later", text: "Wish I could", agentId: "v1", begin: 116, end: 118 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const result = textToLyricLines("Wish I could\nSomething else\nWish I could", "v1", [typo, middle, later]);
     expect(result.map((l) => l.id)).toEqual(["typo", "mid", "later"]);
-    expect(result[0].begin).toBe(49);
-    expect(result[2].begin).toBe(116);
+    expect(mainTrack(result[0]).begin).toBe(49);
+    expect(mainTrack(result[2]).begin).toBe(116);
   });
 
   it("still follows lines by text when a same-count paste reorders them", () => {
-    const a: LyricLine = { id: "a", text: "first", agentId: "v1", begin: 1, end: 2 };
-    const b: LyricLine = { id: "b", text: "second", agentId: "v1", begin: 3, end: 4 };
+    const a: LyricLine = lineFromFields(
+      { id: "a", text: "first", agentId: "v1", begin: 1, end: 2 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const b: LyricLine = lineFromFields(
+      { id: "b", text: "second", agentId: "v1", begin: 3, end: 4 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const result = textToLyricLines("second\nfirst", "v1", [a, b]);
     expect(result.map((l) => l.id)).toEqual(["b", "a"]);
   });
 
   it("does not claim by position when the line count changed", () => {
-    const x1: LyricLine = { id: "x1", text: "X", agentId: "v1", begin: 1, end: 2 };
-    const x2: LyricLine = { id: "x2", text: "X", agentId: "v1", begin: 5, end: 6 };
-    const y: LyricLine = { id: "y", text: "Y", agentId: "v1", begin: 8, end: 9 };
+    const x1: LyricLine = lineFromFields(
+      { id: "x1", text: "X", agentId: "v1", begin: 1, end: 2 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const x2: LyricLine = lineFromFields(
+      { id: "x2", text: "X", agentId: "v1", begin: 5, end: 6 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const y: LyricLine = lineFromFields(
+      { id: "y", text: "Y", agentId: "v1", begin: 8, end: 9 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const result = textToLyricLines("New\nX\nX\nY", "v1", [x1, x2, y]);
     expect(result.slice(1).map((l) => l.id)).toEqual(["x1", "x2", "y"]);
+  });
+
+  const timedLine = (id: string, words: string[], begin: number): LyricLine =>
+    lineFromFields(
+      {
+        id,
+        text: words.join(" "),
+        agentId: "v1",
+        words: words.map((text, index) => ({
+          id: `${id}-w${index}`,
+          text,
+          sep: index < words.length - 1 ? " " : "",
+          begin: begin + index,
+          end: begin + index + 1,
+          joinsNext: false,
+        })),
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+
+  it("regression: joining two timed rows keeps the timing of both", () => {
+    const lanterns = timedLine("lanterns", ["Lanterns", "drift", "away"], 1);
+    const paper = timedLine("paper", ["Paper", "wings", "tonight"], 5);
+    const result = textToLyricLines("Lanterns drift awayPaper wings tonight", "v1", [lanterns, paper]);
+    expect(result.map((l) => l.id)).toEqual(["lanterns"]);
+    expect(lineText(result[0], DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns drift awayPaper wings tonight");
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.begin)).toEqual([1, 2, 3, 5, 6, 7]);
+  });
+
+  const packedLine = (id: string, texts: string[], begin: number) =>
+    lineFromFields(
+      {
+        id,
+        text: texts.join(" "),
+        agentId: "v1",
+        words: texts.map((text, index) => ({
+          id: `${id}-w${index}`,
+          text,
+          sep: index < texts.length - 1 ? " " : "",
+          begin: begin + index / 1000,
+          end: begin + (index + 1) / 1000,
+          joinsNext: false,
+        })),
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+  const timedTexts = (line: LyricLine) =>
+    mainTrack(line).syllables.map((syllable) => [syllable.text, "begin" in syllable ? syllable.end : null]);
+
+  it("regression: a word typed into a line packed against the song end leaves the rest untimed, not past the end", () => {
+    const packed = packedLine("packed", ["dusk", "tide"], 29.998);
+    const [typed] = textToLyricLines("dusk low tide", "v1", [packed], DEFAULT_SPLIT_CHARACTER, undefined, 30);
+    expect(timedTexts(typed)).toEqual([
+      ["dusk", 29.999],
+      ["low", null],
+      ["tide", null],
+    ]);
+  });
+
+  it("regression: a word typed into a line packed against the next line never runs into it", () => {
+    const packed = packedLine("packed", ["dusk", "tide"], 1);
+    const next = packedLine("next", ["ember"], 1.002);
+    const [typed] = textToLyricLines(
+      "dusk low tide\nember",
+      "v1",
+      [packed, next],
+      DEFAULT_SPLIT_CHARACTER,
+      undefined,
+      30,
+    );
+    expect(timedTexts(typed)).toEqual([
+      ["dusk", 1.001],
+      ["low", null],
+      ["tide", null],
+    ]);
+  });
+
+  const packedBackground = (main: Parameters<typeof lineFromFields>[0]) =>
+    lineFromFields(
+      {
+        ...main,
+        backgroundText: "(low hum)",
+        backgroundWords: [
+          { id: "bg-low", text: "(low", sep: " ", begin: 29.998, end: 29.999, joinsNext: false },
+          { id: "bg-hum", text: "hum)", sep: "", begin: 29.999, end: 30, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+  const bgTimes = (line: LyricLine) =>
+    backgroundTrack(line)?.syllables.map((syllable) => [syllable.text, "begin" in syllable]);
+
+  it("regression: a word typed into a word-synced background packed at the song end keeps its timed start", () => {
+    const line = packedBackground({
+      id: "bg",
+      text: "dusk tide",
+      agentId: "v1",
+      words: [
+        { id: "m1", text: "dusk", sep: " ", begin: 28, end: 29, joinsNext: false },
+        { id: "m2", text: "tide", sep: "", begin: 29, end: 29.5, joinsNext: false },
+      ],
+    });
+    const [typed] = textToLyricLines("dusk tide", "v1", [line], DEFAULT_SPLIT_CHARACTER, ["(low ember hum)"], 30);
+    expect(bgTimes(typed)).toEqual([
+      ["(low", true],
+      ["ember", false],
+      ["hum)", false],
+    ]);
+  });
+
+  it("regression: a word typed into a background packed at the song end on a line-synced line stays timed", () => {
+    const line = packedBackground({ id: "bg", text: "dusk tide", agentId: "v1", begin: 28, end: 29.5 });
+    const [typed] = textToLyricLines("dusk tide", "v1", [line], DEFAULT_SPLIT_CHARACTER, ["(low ember hum)"], 30);
+    expect(bgTimes(typed)?.every(([, timed]) => timed) || isSpanTimed(backgroundTrack(typed)!)).toBe(true);
+  });
+
+  it("regression: typing on a joined row keeps the syllable splits of the row joined onto it", () => {
+    const lanterns = timedLine("lanterns", ["Lanterns", "drift", "a"], 1);
+    const paper = lineFromFields(
+      {
+        id: "paper",
+        text: "way|ward wings",
+        agentId: "v1",
+        words: [
+          { id: "way", text: "way", sep: "", begin: 5, end: 5.5, joinsNext: true },
+          { id: "ward", text: "ward", sep: " ", begin: 5.5, end: 6, joinsNext: false },
+          { id: "wings", text: "wings", sep: "", begin: 6, end: 7, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const joined = textToLyricLines("Lanterns drift away|ward wings", "v1", [lanterns, paper]);
+    const [typed] = textToLyricLines("Lanterns drift away|ward wings glow", "v1", joined);
+    expect(lineText(typed, DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns drift away|ward wings glow");
+    expect(timedSyllables(mainTrack(typed)).map((w) => w.begin)).toEqual([1, 2, 3, 5.5, 6]);
+  });
+
+  it("regression: joining a row timed before the row above keeps every timed syllable in time order", () => {
+    const lanterns = timedLine("lanterns", ["Lanterns", "drift"], 8);
+    const paper = timedLine("paper", ["Paper", "wings"], 2);
+    const [joined] = textToLyricLines("Lanterns driftPaper wings", "v1", [lanterns, paper]);
+    const begins = timedSyllables(mainTrack(joined)).map((w) => w.begin);
+    expect(begins).toEqual(begins.toSorted((a, b) => a - b));
+  });
+
+  it("regression: joining a line-synced row inside the span of the row above keeps the longer span", () => {
+    const lanterns = lineFromFields(
+      { id: "lanterns", text: "Lanterns drift", agentId: "v1", begin: 1, end: 10 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const paper = lineFromFields(
+      { id: "paper", text: "Paper wings", agentId: "v1", begin: 2, end: 3 },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    const [joined] = textToLyricLines("Lanterns driftPaper wings", "v1", [lanterns, paper]);
+    const track = mainTrack(joined);
+    expect(isSpanTimed(track) && [track.begin, track.end]).toEqual([1, 10]);
+  });
+
+  it("regression: joining two rows joins their translations and romanizations in order", () => {
+    const languages = (translation: string, romanization: string): LyricLine["languages"] => ({
+      translations: { de: { language: "de", origin: "manual", sourceFingerprint: "", main: { text: translation } } },
+      transliteration: { language: "ja-Latn", origin: "google", sourceFingerprint: "", main: { text: romanization } },
+    });
+    const lanterns = { ...timedLine("lanterns", ["Lanterns"], 1), languages: languages("Laternen", "rantan") };
+    const paper = { ...timedLine("paper", ["Paper"], 5), languages: languages("Papier", "peepaa") };
+    const [joined] = textToLyricLines("LanternsPaper", "v1", [lanterns, paper]);
+    expect(joined.languages?.translations?.de.main.text).toBe("Laternen Papier");
+    expect(joined.languages?.transliteration?.main.text).toBe("rantan peepaa");
+  });
+
+  it("regression: a join holding hand text stays manual and asks for review, so a refresh never overwrites it", () => {
+    const romanization = (origin: LanguageContentOrigin, sourceFingerprint: string): LyricLine["languages"] => ({
+      transliteration: { language: "ja-Latn", origin, sourceFingerprint, main: { text: sourceFingerprint } },
+    });
+    const lanterns = { ...timedLine("lanterns", ["Lanterns"], 1), languages: romanization("google", "rantan") };
+    const paper = { ...timedLine("paper", ["Paper"], 5), languages: romanization("manual", "peepaa") };
+    const [joined] = textToLyricLines("LanternsPaper", "v1", [lanterns, paper]);
+    expect(joined.languages?.transliteration).toMatchObject({
+      origin: "manual",
+      sourceFingerprint: "",
+      main: { alignmentStatus: "needs-review" },
+    });
+  });
+
+  it("regression: a join of a confirmed and a needs-review romanization needs review", () => {
+    const romanization = (alignmentStatus: TransliterationAlignmentStatus): LyricLine["languages"] => ({
+      transliteration: {
+        language: "ja-Latn",
+        origin: "manual",
+        sourceFingerprint: "",
+        main: { text: alignmentStatus, alignmentStatus },
+      },
+    });
+    const lanterns = { ...timedLine("lanterns", ["Lanterns"], 1), languages: romanization("confirmed") };
+    const paper = { ...timedLine("paper", ["Paper"], 5), languages: romanization("needs-review") };
+    const [joined] = textToLyricLines("LanternsPaper", "v1", [lanterns, paper]);
+    expect(joined.languages?.transliteration?.main.alignmentStatus).toBe("needs-review");
+  });
+
+  it("regression: a repeated row keeps the timing of the line nearest its place, not the first one", () => {
+    const lines = [
+      timedLine("lanterns", ["Lanterns", "drift", "away"], 1),
+      timedLine("paper-1", ["Paper", "wings", "tonight"], 5),
+      timedLine("quiet", ["Quiet", "harbor", "lights"], 9),
+      timedLine("paper-2", ["Paper", "wings", "tonight"], 13),
+    ];
+    const result = textToLyricLines("Lanterns drift away\nQuiet harbor lights\nPaper wings tonight", "v1", lines);
+    expect(result.map((l) => l.id)).toEqual(["lanterns", "quiet", "paper-2"]);
+  });
+});
+
+describe("textToLyricLines · rows outside the edited range keep their own line", () => {
+  const sameText = (): LyricLine[] => [
+    lineFromFields(
+      {
+        id: "r1",
+        text: "tanu da",
+        agentId: "v1",
+        words: [
+          { id: "r1-a", text: "tanu", sep: " ", begin: 6.6, end: 6.76, joinsNext: false },
+          { id: "r1-b", text: "da", sep: "", begin: 6.76, end: 6.94, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields(
+      {
+        id: "r2",
+        text: "tanu da",
+        agentId: "v1",
+        backgroundText: "lovo",
+        words: [
+          { id: "r2-a", text: "tanu", sep: " ", begin: 7.1, end: 7.3, joinsNext: false },
+          { id: "r2-b", text: "da", sep: "", begin: 7.3, end: 7.5, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields({ id: "r3", text: "tanu da", agentId: "v1", begin: 7.76, end: 8.95 }, DEFAULT_SPLIT_CHARACTER),
+  ];
+
+  it("regression: splitting the first of three same-text rows leaves the other two untouched", () => {
+    const lines = sameText();
+    const result = textToLyricLines("ta\nnu da\ntanu da\ntanu da", "v1", lines);
+    expect(result.slice(2)).toEqual(lines.slice(1));
+  });
+
+  it("regression: joining the first two of three same-text rows leaves the third untouched", () => {
+    const lines = sameText();
+    const result = textToLyricLines("tanu da tanu da\ntanu da", "v1", lines);
+    expect(result[1]).toEqual(lines[2]);
+  });
+
+  it("regression: an empty row inserted above an empty row with a background does not take that row's line", () => {
+    const lines = [
+      lineFromFields({ id: "x", text: "tanu da", agentId: "v1", begin: 1, end: 2 }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "bg-only", text: "", agentId: "v1", backgroundText: "lovo" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "blank", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+    ];
+    const result = textToLyricLines(["tanu da", "", "", ""], "v1", lines, DEFAULT_SPLIT_CHARACTER, [
+      null,
+      null,
+      "lovo",
+      null,
+    ]);
+    expect(result.map((line) => line.id).slice(2)).toEqual(["bg-only", "blank"]);
   });
 });

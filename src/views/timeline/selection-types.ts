@@ -1,5 +1,6 @@
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LanguagePiece } from "insync/language";
+import type { LyricLine } from "insync/line";
+import type { WordTiming } from "insync/word-timing";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -7,6 +8,7 @@ interface ClipboardEntry {
   word: WordTiming;
   lineOffset: number;
   trackType: "word" | "bg";
+  piece?: LanguagePiece;
 }
 
 interface ClipboardData {

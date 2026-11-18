@@ -1,9 +1,11 @@
-import type { LyricLine } from "@/domain/line/model";
-import { type AnchorUndo, anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
-import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import type { LyricLine } from "insync/line";
+import { type SyncAddress, syncAddressAt } from "insync/sync-address";
+import { type AnchorUndo, anchorGesture, placingEntries, storedSyncPosition } from "insync/sync-anchor-gesture";
+import { type SyncGesture, commitGesture } from "insync/sync-commit-gesture";
+import type { SyncCursor } from "insync/sync-cursor";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -16,7 +18,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -30,7 +32,7 @@ const verse = (id: string, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "Walking ", begin, end: begin + 0.5 },
+            { text: "Walking", sep: " ", begin, end: begin + 0.5 },
             { text: "home", begin: begin + 0.6, end: begin + 1 },
           ],
         }),
@@ -48,7 +50,10 @@ const song = (secondBegin?: number): LyricLine[] => [
 
 function gestureAt(lines: LyricLine[], gesture: SyncGesture, cursor: SyncCursor, time: number) {
   const ctx = { cursor, jumped: false, time, defaultWordDuration: 0.5, groups: sharing };
-  return { commit: commitGesture(lines, gesture, ctx), anchor: anchorGesture(lines, gesture, ctx) };
+  return {
+    commit: commitGesture(lines, gesture, { ...ctx, splitChar: DEFAULT_SPLIT_CHARACTER }),
+    anchor: anchorGesture(lines, gesture, { ...ctx, splitChar: DEFAULT_SPLIT_CHARACTER }),
+  };
 }
 
 describe("anchorGesture", () => {
@@ -92,7 +97,7 @@ describe("anchorGesture", () => {
       id: "v1",
       text: "Walking home",
       words: [
-        { text: "Walking ", begin: 20, end: 20.5 },
+        { text: "Walking", sep: " ", begin: 20, end: 20.5 },
         { text: "home", begin: 38, end: 38 },
       ],
     });
@@ -115,7 +120,7 @@ describe("anchorGesture", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "I ", begin: 40, end: 40 }],
+        words: [{ text: "I", sep: " ", begin: 40, end: 40 }],
       });
       const lines = song().map((line) => (line.id === "c1-0" ? held : line));
       expect(gestureAt(lines, "hold-end", { lineIndex: 3, wordIndex: 0 }, 41).anchor).toBeNull();
@@ -138,6 +143,23 @@ describe("anchorGesture", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a tap inside the background echo of the line above still moves a placed instance there", () => {
+      const verseWithBackground = createLine({
+        id: "v1",
+        text: "Walking home",
+        backgroundText: "(home)",
+        words: [
+          { text: "Walking", sep: " ", begin: 20, end: 20.5 },
+          { text: "home", begin: 20.6, end: 20.6 },
+        ],
+        backgroundWords: [{ text: "(home)", begin: 20.8, end: 21.6 }],
+      });
+      const lines = song(22).map((line) => (line.id === "v1" ? verseWithBackground : line));
+      const { anchor } = gestureAt(lines, "tap-word", { lineIndex: 3, wordIndex: 0 }, 21.2);
+      expect(anchor).toMatchObject({ keepsPlacement: false, start: 21.2 });
+      expect(anchor?.precedingUpdates.map((update) => update.id)).toEqual(["v1"]);
+    });
+
     it("regression: moves a placed instance earlier than the room its old position leaves", () => {
       const { commit, anchor } = gestureAt(song(60), "tap-word", { lineIndex: 3, wordIndex: 0 }, 40);
       expect(commit?.clampedTo).toBe(50);
@@ -147,12 +169,14 @@ describe("anchorGesture", () => {
 });
 
 describe("storedSyncPosition", () => {
-  const resume = { lineIndex: 5, wordIndex: 0 };
+  const lines = song();
+  const resume: SyncAddress = syncAddressAt(lines, { lineIndex: 5, wordIndex: 0 });
+  const anchorSlot: SyncAddress = syncAddressAt(lines, { lineIndex: 3, wordIndex: 0 });
   const before = { name: "before placing" };
   const placed = { name: "placed" };
   const anchorUndo: AnchorUndo = {
     resume,
-    anchor: { lineIndex: 3, wordIndex: 0 },
+    anchor: anchorSlot,
     jumped: false,
     placedEntry: placed,
     previousEntry: before,
@@ -161,16 +185,16 @@ describe("storedSyncPosition", () => {
 
   it("returns the anchor slot once the placing is undone", () => {
     expect(
-      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, at([before, placed], 0)),
+      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, lines, at([before, placed], 0)),
     ).toEqual({
-      position: { lineIndex: 3, wordIndex: 0 },
+      position: anchorSlot,
       jumped: false,
     });
   });
 
   it("keeps the resume position while the placing stands", () => {
     expect(
-      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, at([before, placed], 1)),
+      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, lines, at([before, placed], 1)),
     ).toEqual({
       position: resume,
       jumped: true,
@@ -179,46 +203,59 @@ describe("storedSyncPosition", () => {
 
   it("keeps the resume position after later edits", () => {
     const state = { position: resume, jumpedToPosition: true, anchorUndo };
-    expect(storedSyncPosition(state, at([before, placed, { name: "edit" }], 2)).position).toBe(resume);
+    expect(storedSyncPosition(state, lines, at([before, placed, { name: "edit" }], 2)).position).toBe(resume);
   });
 
   describe("regressions", () => {
+    it("regression: a placing that changed nothing and wrote no step has nothing to undo", () => {
+      expect(placingEntries(placed, at([before, placed], 1))).toBeNull();
+      expect(placingEntries(before, at([before, placed], 1))).toEqual({ placedEntry: placed, previousEntry: before });
+    });
+
     it("regression: returns the anchor slot when an edit follows the undo", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([before, { name: "edit" }], 1)).position).toEqual({
-        lineIndex: 3,
-        wordIndex: 0,
-      });
+      expect(storedSyncPosition(state, lines, at([before, { name: "edit" }], 1)).position).toBe(anchorSlot);
     });
 
     it("regression: keeps the resume position when a full history undoes a later edit", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([placed, { name: "a" }, { name: "b" }], 1)).position).toBe(resume);
+      expect(storedSyncPosition(state, lines, at([placed, { name: "a" }, { name: "b" }], 1)).position).toBe(resume);
     });
 
     it("regression: returns the anchor slot when the resume position was rebuilt with the same place", () => {
-      const rebuilt = { lineIndex: resume.lineIndex, wordIndex: resume.wordIndex };
+      const rebuilt: SyncAddress = { ...resume, storedAt: { ...resume.storedAt } };
       const state = { position: rebuilt, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([before, placed], 0)).position).toEqual({ lineIndex: 3, wordIndex: 0 });
+      expect(storedSyncPosition(state, lines, at([before, placed], 0)).position).toBe(anchorSlot);
+    });
+
+    it("regression: returns the anchor slot after an undone hold made the resume slot a timed word", () => {
+      const heldLines = [...lines.slice(0, 5), verse("v2", 60)];
+      const held = syncAddressAt(heldLines, { lineIndex: 5, wordIndex: 0 });
+      const state = { position: held, jumpedToPosition: true, anchorUndo };
+      expect(storedSyncPosition(state, lines, at([before, placed, { name: "held" }], 0)).position).toBe(anchorSlot);
     });
 
     it("keeps the resume position once the placing is too old to undo", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([{ name: "a" }, { name: "b" }], 0)).position).toBe(resume);
+      expect(storedSyncPosition(state, lines, at([{ name: "a" }, { name: "b" }], 0)).position).toBe(resume);
     });
   });
 
   describe("invariants", () => {
     it("ignores the record once the cursor has moved", () => {
-      const moved = { lineIndex: 6, wordIndex: 1 };
-      expect(storedSyncPosition({ position: moved, anchorUndo }, at([before, placed], 0))).toEqual({
+      const moved: SyncAddress = {
+        lineId: "bridge",
+        syllableId: "y4",
+        storedAt: { lineIndex: 6, wordIndex: 1 },
+      };
+      expect(storedSyncPosition({ position: moved, anchorUndo }, lines, at([before, placed], 0))).toEqual({
         position: moved,
         jumped: false,
       });
     });
 
     it("reads the stored position when there is no record", () => {
-      expect(storedSyncPosition({ position: resume }, at([], 0))).toEqual({ position: resume, jumped: false });
+      expect(storedSyncPosition({ position: resume }, lines, at([], 0))).toEqual({ position: resume, jumped: false });
     });
   });
 });

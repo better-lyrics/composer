@@ -1,5 +1,5 @@
-import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
-import type { Bounds } from "@/domain/word/bounds";
+import { alternateMatchesMainText } from "insync/language-alternate-visibility";
+import type { Bounds } from "insync/word-bounds";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
@@ -7,6 +7,7 @@ import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/vi
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout, OUTSIDE_FOCUS_ATTRIBUTE } from "@/views/preview/lyrics-layout";
 import type { AmLyrics as AmLyricsElement } from "@uimaxbai/am-lyrics";
 import { useEffect, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -47,12 +48,15 @@ function markMatchingAlternateElements(el: AmLyricsElement): void {
       .join("");
 
     const translation = line.querySelector<HTMLElement>(".lyrics-translation-container");
-    if (translation && alternateMatchesMainText(translation.textContent ?? "", mainText)) {
+    if (translation && alternateMatchesMainText(translation.textContent ?? "", mainText, getSplitCharacter())) {
       translation.dataset.composerMatchingAlternate = "";
     }
 
     const lineRomanization = line.querySelector<HTMLElement>(".lyrics-romanization-container");
-    if (lineRomanization && alternateMatchesMainText(lineRomanization.textContent ?? "", mainText)) {
+    if (
+      lineRomanization &&
+      alternateMatchesMainText(lineRomanization.textContent ?? "", mainText, getSplitCharacter())
+    ) {
       lineRomanization.dataset.composerMatchingAlternate = "";
     }
 
@@ -61,7 +65,7 @@ function markMatchingAlternateElements(el: AmLyricsElement): void {
     ];
     for (const syllable of timedRomanization) syllable.parentElement?.classList.add("has-transliteration");
     const romanizedText = timedRomanization.map((syllable) => syllable.textContent ?? "").join(" ");
-    if (timedRomanization.length > 0 && alternateMatchesMainText(romanizedText, mainText)) {
+    if (timedRomanization.length > 0 && alternateMatchesMainText(romanizedText, mainText, getSplitCharacter())) {
       for (const syllable of timedRomanization) {
         syllable.parentElement?.classList.remove("has-transliteration");
         syllable.dataset.composerMatchingAlternate = "";

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { applyCrossLineMove, applySameLineReorder, type DragData } from "@/views/timeline/drag-handlers";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -16,10 +16,10 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 2, end: begin + 3 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 2, end: begin + 3 },
+    ]),
     backgroundText: "hey",
     backgroundWords: [createWord({ text: "hey", begin: begin + 1, end: begin + 1.5 })],
   });
@@ -34,16 +34,14 @@ function seed(sharesTiming: boolean): void {
 
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
-const rangeOf = () => timeRangeResolver(store().lines, store().groups, DURATION);
 
 function dragOf(trackType: "word" | "bg", wordIndex: number, begin: number, end: number): DragData {
   return { lineId: "c1", lineIndex: 1, wordIndex, trackType, text: "go ", begin, end };
 }
 
 function reorderFirstWord(timeDelta: number): void {
-  const drag = dragOf("word", 0, 10, 11);
   const selection = [{ lineId: "c1", lineIndex: 1, wordIndex: 0, type: "word" as const }];
-  applySameLineReorder(drag, selection, store().lines, timeDelta, rangeOf(), store().updateLineWithHistory);
+  applySameLineReorder(selection, store().lines, timeDelta, DURATION);
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -54,8 +52,8 @@ describe("applySameLineReorder with a shared time range", () => {
 
     reorderFirstWord(-9);
 
-    expect(lineById("c1")?.words?.[0]).toMatchObject({ begin: 7, end: 8 });
-    expect(lineById("c0")?.words?.[0]).toMatchObject({ begin: 0, end: 1 });
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0]).toMatchObject({ begin: 7, end: 8 });
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0]).toMatchObject({ begin: 0, end: 1 });
   });
 
   describe("regressions", () => {
@@ -64,8 +62,8 @@ describe("applySameLineReorder with a shared time range", () => {
 
       reorderFirstWord(-15);
 
-      expect(lineById("c1")?.words?.[0]).toMatchObject({ begin: 0, end: 1 });
-      expect(lineById("c0")?.words?.[0]).toMatchObject({ begin: 3, end: 4 });
+      expect(timedSyllables(mainTrack(lineById("c1")!))[0]).toMatchObject({ begin: 0, end: 1 });
+      expect(timedSyllables(mainTrack(lineById("c0")!))[0]).toMatchObject({ begin: 3, end: 4 });
     });
   });
 });
@@ -83,11 +81,11 @@ describe("applyCrossLineMove with a shared time range", () => {
       wordsToMove: [{ lineId: "c1", lineIndex: 1, wordIndex: 0, type: "bg" }],
       lines: store().lines,
       timeDelta: 2.8,
-      rangeOf: rangeOf(),
+      duration: DURATION,
     });
 
-    const moved = lineById("c1")?.words?.at(-1);
-    const copied = lineById("c2")?.words?.at(-1);
+    const moved = roleWords(lineById("c1"), "main")?.at(-1);
+    const copied = roleWords(lineById("c2"), "main")?.at(-1);
     expect(moved?.begin).toBeCloseTo(13.8, 6);
     expect(moved?.end).toBe(14);
     expect(copied?.begin).toBeCloseTo(19.8, 6);

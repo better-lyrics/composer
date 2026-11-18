@@ -1,4 +1,4 @@
-import type { TransliterationSegment } from "@/domain/language/model";
+import type { TransliterationSegment } from "insync/language";
 
 interface LanguageLineInput {
   id: string;

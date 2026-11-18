@@ -1,34 +1,30 @@
+import { drawnSyllables } from "insync/line-drawn-track";
 import { toast } from "sonner";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
+import { pressStepKey as stepKeyCommand } from "insync/commands/word-timing";
+import type { LyricLine } from "insync/line";
+import { type WordTrack, trackRole } from "insync/line-track";
+import { addressOf, toAddress } from "insync/selection-resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
-import type { WordSelection } from "@/domain/selection/model";
-import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
+import type { StepKey } from "insync/step-timing-step-write";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { writeStepKey } from "@/utils/timing/step-key-write";
+import type { StepKeyPlan } from "insync/timing-step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
+import { stepRefusalContent } from "@/views/timeline/step-timing/step-refusal-toast";
 import { stepSkipView } from "@/views/timeline/step-timing/step-skip-view";
 import { rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { isWholeLane, liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
-
-function refusalMessage(refusal: StepRefusal): string {
-  if (refusal.reason === "beforePrevious") {
-    const word = refusal.previousWord.trim();
-    return `This time is before “${word}” ends. Click “${word}” to retime it.`;
-  }
-  if (refusal.reason === "songStart") return "This word can't start before the song does.";
-  return "There is no room for the words after this one before the song ends.";
-}
 
 // The toast's Undo stays only while the press is still the latest step, so it never undoes a later edit.
 function showEndedPreviousToast(previousWord: string): void {
@@ -55,7 +51,7 @@ function showEndedPreviousToast(previousWord: string): void {
 
 // -- Functions ----------------------------------------------------------------
 
-function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): void {
+function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void {
   const time = playheadTime();
   const focus = currentEffectiveFocus();
   const timeline = useTimelineStore.getState();
@@ -66,43 +62,55 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     return;
   }
   const line = lines[cursor.lineIndex];
-  const word = line ? effectiveTrackWords(line, cursor.type)?.[cursor.wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(cursor.type), getSplitCharacter())[cursor.wordIndex] : undefined;
   if (!line || !word) return;
   const project = useProjectStore.getState();
   const { skippedLineIds } = stepSkipView(lines, project.groups, timeline.collapsedInstances, line);
-  const include = (candidate: ReadableLine) => isInFocus(candidate, focus) && !skippedLineIds.has(candidate.id);
-  const rangeOf = timeRangeResolver(project.lines, project.groups, duration);
+  const include = (candidate: LyricLine) => isInFocus(candidate, focus) && !skippedLineIds.has(candidate.id);
   const queue = live.cursor ? live.queue : null;
   if (queue && timeline.stepQueue && queue.length !== timeline.stepQueue.length) timeline.setSelectedWords(queue, true);
   const next =
     key === "start"
       ? null
-      : nextCursorSlot(lines, cursor, queue, include, useSettingsStore.getState().stepTimingBackground);
-  const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
-  const outcome = writeStepKey({
-    lines,
-    groups: project.groups,
-    cursor,
-    startNext,
-    key,
-    time,
-    minDuration: useSettingsStore.getState().minWordDuration,
-    rangeOf,
-    updateLinesWithHistory: project.updateLinesWithHistory,
-  });
-  if (outcome?.kind === "refused") {
-    toast(refusalMessage(outcome.refusal));
+      : nextCursorSlot(
+          lines,
+          cursor,
+          queue,
+          include,
+          getSplitCharacter(),
+          useSettingsStore.getState().stepTimingBackground,
+        );
+  const startNext =
+    key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include, getSplitCharacter())) : null;
+  let outcome = null as StepKeyPlan | null;
+  const command = stepKeyCommand(
+    {
+      cursor: toAddress(cursor),
+      startNext: startNext && toAddress(startNext),
+      key,
+      time,
+      minDuration: useSettingsStore.getState().minWordDuration,
+      duration,
+    },
+    (plan) => (outcome = plan),
+  );
+  const entryBeforePress = project.history[project.historyIndex];
+  project.commit(command);
+  if (!outcome) return;
+  if (outcome.kind === "refused") {
+    toast(stepRefusalContent(outcome.refusal));
     timeline.setSelectedWords([cursor]);
     return;
   }
-  if (outcome?.endedPrevious) showEndedPreviousToast(outcome.endedPrevious);
+  if (outcome.endedPrevious) showEndedPreviousToast(outcome.endedPrevious);
   noteGuideSignal("timeline.stepTiming");
   const leftLine = cursor.type === "word" && next?.lineId !== cursor.lineId;
-  if (leftLine && effectiveTrackWords(line, "bg")?.length) noteGuideSignal("timeline.stepPastBackground");
+  if (leftLine && drawnSyllables(line, "bg", getSplitCharacter()).length)
+    noteGuideSignal("timeline.stepPastBackground");
   if (queue && key !== "start" && !next) noteGuideSignal("timeline.stepQueueEnd");
   // The queue outlives its last word, so the keys never leave the chosen words.
   timeline.setSelectedWords([next ?? cursor]);
-  rememberStepPress({ selectedWords: [cursor], stepQueue: queue });
+  rememberStepPress({ selectedWords: [toAddress(cursor)], stepQueue: queue }, entryBeforePress);
 }
 
 function setStepTimingMode(on: boolean): void {
@@ -111,7 +119,7 @@ function setStepTimingMode(on: boolean): void {
 }
 
 // Returns false for a timing key outside Step timing, which then sets the word under the playhead as usual.
-function pressStepShortcut(id: string, lines: ReadableLine[], duration: number): boolean {
+function pressStepShortcut(id: string, lines: LyricLine[], duration: number): boolean {
   const { stepTiming } = useTimelineStore.getState();
   if (id === "timeline.stepTimingOff") setStepTimingMode(!stepTiming);
   else if (id === "timeline.stepWord" && !stepTiming) noteGuideSignal("timeline.stepKeyWhileOff");
@@ -135,8 +143,8 @@ function escapeStepTiming(): boolean {
   return true;
 }
 
-function toggleStepLane(lineId: string, lineIndex: number, type: WordSelection["type"], wordCount: number): void {
-  const lane = Array.from({ length: wordCount }, (_, wordIndex) => ({ lineId, lineIndex, wordIndex, type }));
+function toggleStepLane(line: Pick<LyricLine, "id">, type: WordTrack, words: readonly WordTiming[]): void {
+  const lane = words.map((word) => addressOf(line, type, word));
   const { stepQueue, selectedWords, setSelectedWords } = useTimelineStore.getState();
   const clearing = isWholeLane(stepQueue ?? selectedWords, lane);
   setSelectedWords(clearing ? [] : lane, true);

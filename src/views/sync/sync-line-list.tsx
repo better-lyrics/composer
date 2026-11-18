@@ -1,18 +1,22 @@
-import type { LinkGroup } from "@/domain/group/template";
-import { instancePositionsByLineId } from "@/domain/instance/enumerate";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LanguageDisplayLine } from "@/domain/language/display";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
-import type { SkippedInstance } from "@/domain/sync/skipped-instances";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import type { LinkGroup } from "insync/group";
+import { instancePositionsByLineId } from "insync/instance-enumerate";
+import { isLinked } from "insync/instance-predicates";
+import type { LanguageDisplayLine } from "insync/language-display";
+import { effectiveBounds } from "insync/line-bounds";
+import { drawnSyllables, drawnUntimedSyllables } from "insync/line-drawn-track";
+import type { LyricLine } from "insync/line";
+import { isLineSynced } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { SkippedInstance } from "insync/sync-skipped-instances";
 import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type SyncLineListHandlers, useRowCallbacks } from "@/views/sync/use-row-callbacks";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -148,16 +152,18 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           {...rowCallbacks(index)}
           lineId={line.id}
           lineNumber={index + 1}
-          text={line.text}
+          text={lineText(line, getSplitCharacter())}
           displayText={displayLine.text}
           displayWordTexts={displayLine.wordTexts}
           isCurrent={index === currentLineIndex}
-          agentId={line.agentId}
-          backgroundText={line.backgroundText}
+          agentId={mainTrack(line).agentId}
+          backgroundText={backgroundText(line, getSplitCharacter())}
           displayBackgroundText={displayLine.backgroundText}
           displayBackgroundWordTexts={displayLine.backgroundWordTexts}
-          backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
-          words={displayLine.words ?? line.words}
+          backgroundWords={displayLine.backgroundWords ?? drawnSyllables(line, "bg", getSplitCharacter())}
+          untimedBackgroundWords={drawnUntimedSyllables(line, "bg")}
+          words={displayLine.words ?? timedSyllables(mainTrack(line))}
+          untimedWords={drawnUntimedSyllables(line, "main")}
           lineBegin={timing?.begin}
           lineEnd={timing?.end}
           lineSynced={isLineSynced(line)}

@@ -1,10 +1,16 @@
 /**
  * @vitest-environment node
  */
-import type { TransliterationTrack } from "@/domain/language/model";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
+
 import { beforeEach, describe, expect, it } from "vitest";
+import { addGroup } from "insync/commands/group-edits";
+import { mergeSyllableGroup } from "insync/commands/word-edits";
+import type { V3TransliterationTrack } from "insync/language-v3-languages";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { newWordId } from "insync/word-id";
+import { useProjectStore } from "@/stores/project";
+import { type LegacyLine, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -13,7 +19,7 @@ beforeEach(() => {
 
 // -- Fixtures -----------------------------------------------------------------
 
-const track: TransliterationTrack = {
+const track: V3TransliterationTrack = {
   language: "ko-Latn",
   text: "Uh  ildan eun  na",
   backgroundText: "geurae  yeah",
@@ -23,16 +29,16 @@ const track: TransliterationTrack = {
   sourceFingerprint: "source",
 };
 
-function splitKoreanLine(overrides: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({
+function splitKoreanLine(overrides: Partial<LegacyLine> = {}): LyricLine {
+  return legacyLine({
     id: "line-1",
     agentId: "v1",
     text: "Uh 일|단은 나",
     words: [
-      { text: "Uh ", begin: 0, end: 0.5 },
-      { text: "일", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
-      { text: "단은 ", begin: 0.8, end: 1.5, syllableGroupId: "g1" },
-      { text: "나", begin: 1.5, end: 2 },
+      { id: newWordId(), text: "Uh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { id: newWordId(), text: "일", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+      { id: newWordId(), text: "단은", sep: " ", begin: 0.8, end: 1.5, joinsNext: false },
+      { id: newWordId(), text: "나", sep: "", begin: 1.5, end: 2, joinsNext: false },
     ],
     transliteration: track,
     ...overrides,
@@ -48,108 +54,138 @@ function lineById(id: string): LyricLine | undefined {
 describe("mergeSyllableGroupIntoWord · transliteration", () => {
   describe("regressions", () => {
     it("regression: merges the aligned pieces when stored words lost them (#283)", () => {
-      useProjectStore.getState().setLines([splitKoreanLine()]);
+      useProjectStore.getState().restoreLyrics({ lines: [splitKoreanLine()] });
 
-      useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
+      useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
       const merged = lineById("line-1");
-      expect(merged?.words?.map((word) => word.text)).toEqual(["Uh ", "일단은 ", "나"]);
-      expect(merged?.words?.[1].transliteration).toBe("ildan eun");
-      expect(merged?.transliteration).toEqual(track);
+      expect(timedSyllables(mainTrack(merged!)).map((word) => word.text + word.sep)).toEqual(["Uh ", "일단은 ", "나"]);
+      expect(legacyWords(timedSyllables(mainTrack(merged!)), merged?.languages)?.[1].transliteration).toBe("ildan eun");
+      expect(legacyLanguages(merged?.languages).transliteration).toEqual(track);
     });
 
     it("regression: keeps the last syllable's joiner on the merged word (#283)", () => {
       const line = splitKoreanLine({
         words: [
-          { text: "Uh ", begin: 0, end: 0.5, transliteration: "Uh", transliterationJoinerAfter: "  " },
           {
+            id: "w1",
+            text: "Uh",
+            sep: " ",
+            begin: 0,
+            end: 0.5,
+            transliteration: "Uh",
+            transliterationJoinerAfter: "  ",
+            joinsNext: false,
+          },
+          {
+            id: "w2",
             text: "일",
+            sep: "",
             begin: 0.5,
             end: 0.8,
-            syllableGroupId: "g1",
             transliteration: "il",
             transliterationJoinerAfter: "",
+            joinsNext: true,
           },
           {
-            text: "단은 ",
+            id: "w3",
+            text: "단은",
+            sep: " ",
             begin: 0.8,
             end: 1.5,
-            syllableGroupId: "g1",
             transliteration: "dan eun",
             transliterationJoinerAfter: "  ",
+            joinsNext: false,
           },
-          { text: "나", begin: 1.5, end: 2, transliteration: "na" },
+          { id: "w4", text: "나", sep: "", begin: 1.5, end: 2, transliteration: "na", joinsNext: false },
         ],
       });
-      useProjectStore.getState().setLines([line]);
+      useProjectStore.getState().restoreLyrics({ lines: [line] });
 
-      useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [2]);
+      useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [2]));
 
-      const mergedWord = lineById("line-1")?.words?.[1];
+      const merged = lineById("line-1");
+      const mergedWord = legacyWords(merged && roleWords(merged, "main"), merged?.languages)?.[1];
       expect(mergedWord?.transliteration).toBe("ildan eun");
       expect(mergedWord?.transliterationJoinerAfter).toBe("  ");
     });
 
     it("regression: merges a background group from its aligned pieces (#283)", () => {
-      useProjectStore.getState().setLines([
-        splitKoreanLine({
-          backgroundText: "그|래 yeah",
-          backgroundWords: [
-            { text: "그", begin: 2, end: 2.2, syllableGroupId: "b1" },
-            { text: "래 ", begin: 2.2, end: 2.5, syllableGroupId: "b1" },
-            { text: "yeah", begin: 2.5, end: 3 },
-          ],
-        }),
-      ]);
+      useProjectStore.getState().restoreLyrics({
+        lines: [
+          splitKoreanLine({
+            backgroundText: "그|래 yeah",
+            backgroundWords: [
+              { id: "w5", text: "그", sep: "", begin: 2, end: 2.2, joinsNext: true },
+              { id: "w6", text: "래", sep: " ", begin: 2.2, end: 2.5, joinsNext: false },
+              { id: "w7", text: "yeah", sep: "", begin: 2.5, end: 3, joinsNext: false },
+            ],
+          }),
+        ],
+      });
 
-      useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0]);
+      useProjectStore.getState().commit(mergeSyllableGroup("line-1", "backgroundWords", [0]));
 
       const merged = lineById("line-1");
-      expect(merged?.backgroundWords?.map((word) => word.text)).toEqual(["그래 ", "yeah"]);
-      expect(merged?.backgroundWords?.map((word) => word.transliteration)).toEqual(["geurae", "yeah"]);
-      expect(merged?.transliteration).toEqual(track);
+      expect(timedSyllables(backgroundTrack(merged!)).map((word) => word.text + word.sep)).toEqual(["그래 ", "yeah"]);
+      expect(
+        legacyWords(timedSyllables(backgroundTrack(merged!)), merged?.languages, "bg")?.map(
+          (word) => word.transliteration,
+        ),
+      ).toEqual(["geurae", "yeah"]);
+      expect(legacyLanguages(merged?.languages).transliteration).toEqual(track);
     });
   });
 
   describe("cross-field interactions", () => {
     it("merges a linked sibling with its own aligned pieces", () => {
-      useProjectStore.getState().addGroup({ id: "chorus", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+      useProjectStore
+        .getState()
+        .commit(addGroup({ id: "chorus", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
       const linked = { groupId: "chorus", templateLineIdx: 0 };
-      useProjectStore.getState().setLines([
-        splitKoreanLine({ id: "a0", instanceIdx: 0, ...linked }),
-        splitKoreanLine({
-          id: "a1",
-          instanceIdx: 1,
-          ...linked,
-          words: [
-            { text: "Uh ", begin: 10, end: 10.5 },
-            { text: "일", begin: 10.5, end: 10.8, syllableGroupId: "g2" },
-            { text: "단은 ", begin: 10.8, end: 11.5, syllableGroupId: "g2" },
-            { text: "나", begin: 11.5, end: 12 },
-          ],
-          transliteration: { ...track, text: "Uh  ilttan eun  na" },
-        }),
+      useProjectStore.getState().restoreLyrics({
+        lines: [
+          splitKoreanLine({ id: "a0", instanceIdx: 0, ...linked }),
+          splitKoreanLine({
+            id: "a1",
+            instanceIdx: 1,
+            ...linked,
+            words: [
+              { id: "w8", text: "Uh", sep: " ", begin: 10, end: 10.5, joinsNext: false },
+              { id: "w9", text: "일", sep: "", begin: 10.5, end: 10.8, joinsNext: true },
+              { id: "w10", text: "단은", sep: " ", begin: 10.8, end: 11.5, joinsNext: false },
+              { id: "w11", text: "나", sep: "", begin: 11.5, end: 12, joinsNext: false },
+            ],
+            transliteration: { ...track, text: "Uh  ilttan eun  na" },
+          }),
+        ],
+      });
+
+      useProjectStore.getState().commit(mergeSyllableGroup("a0", "words", [1]));
+
+      const a0 = lineById("a0")!;
+      expect(legacyWords(timedSyllables(mainTrack(a0)), a0.languages)?.[1].transliteration).toBe("ildan eun");
+      expect(timedSyllables(mainTrack(lineById("a1")!)).map((word) => word.text + word.sep)).toEqual([
+        "Uh ",
+        "일단은 ",
+        "나",
       ]);
-
-      useProjectStore.getState().mergeSyllableGroupIntoWord("a0", "words", [1]);
-
-      expect(lineById("a0")?.words?.[1].transliteration).toBe("ildan eun");
-      expect(lineById("a1")?.words?.map((word) => word.text)).toEqual(["Uh ", "일단은 ", "나"]);
-      expect(lineById("a1")?.words?.[1].transliteration).toBe("ilttan eun");
+      const a1 = lineById("a1")!;
+      expect(legacyWords(timedSyllables(mainTrack(a1)), a1.languages)?.[1].transliteration).toBe("ilttan eun");
     });
   });
 
   describe("edge cases", () => {
     it("merges a line without a transliteration track as before", () => {
-      const { transliteration: _track, ...line } = splitKoreanLine();
-      useProjectStore.getState().setLines([line]);
+      const { languages: _languages, ...line } = splitKoreanLine();
+      useProjectStore.getState().restoreLyrics({ lines: [line] });
 
-      useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
+      useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
-      expect(lineById("line-1")?.words).toEqual([
-        { text: "Uh ", begin: 0, end: 0.5 },
-        { text: "일단은 ", begin: 0.5, end: 1.5 },
-        { text: "나", begin: 1.5, end: 2 },
+      expect(timedSyllables(mainTrack(lineById("line-1")!))).toEqual([
+        { text: "Uh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+        { text: "일단은", sep: " ", begin: 0.5, end: 1.5, joinsNext: false },
+        { text: "나", sep: "", begin: 1.5, end: 2, joinsNext: false },
       ]);
     });
   });

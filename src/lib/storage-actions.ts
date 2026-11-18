@@ -5,6 +5,7 @@ import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { flushPendingSave } from "@/lib/persistence-debounce";
 import { type AudioRemoval, clearCachedYouTubeAudio, deleteProjectAudio } from "@/lib/project-audio";
 import { type ProjectBundle, buildProjectBundle, downloadProjectBundle } from "@/lib/project-bundle";
+import { listPreV4Records } from "@/lib/pre-v4-records";
 import { listProjectRecords } from "@/lib/project-storage";
 import { isStemJobInUse } from "@/stores/separation";
 
@@ -35,9 +36,12 @@ async function backUpAllProjects(): Promise<ProjectBundle | null> {
     console.error(LOG_PREFIX, "could not flush the pending save before backing up", error);
   }
   const hidden = hiddenProjectIdsSnapshot();
-  const records = (await listProjectRecords()).filter((record) => !hidden.has(record.id));
+  const [allRecords, allPreviousVersions] = await Promise.all([listProjectRecords(), listPreV4Records()]);
+  const records = allRecords.filter((record) => !hidden.has(record.id));
   if (records.length === 0) return null;
-  const bundle = buildProjectBundle(records, Date.now());
+  const backedUpIds = new Set(records.map((record) => record.id));
+  const previousVersions = allPreviousVersions.filter((record) => backedUpIds.has(record.id));
+  const bundle = buildProjectBundle(records, Date.now(), previousVersions);
   downloadProjectBundle(bundle);
   noteGuideSignal("export.backup");
   return bundle;

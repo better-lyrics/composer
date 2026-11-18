@@ -1,12 +1,17 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "insync/commands/instance-rows";
+import { backgroundText, lineText } from "insync/line-text";
+import { mainTrack } from "insync/line-track";
 import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 import { EditPanel } from "@/views/edit";
-import { beforeEach, describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -79,17 +84,17 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
 
     blurTextarea(textarea);
 
     useProjectStore.getState().undo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello"]);
 
     useProjectStore.getState().redo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
     await expect.poll(() => textarea.value).toBe("Hello world");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world"]);
   });
@@ -100,10 +105,10 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello there");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello there");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello there");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
   });
 
@@ -114,10 +119,10 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello again");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello again");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello again");
 
     pressUndo(textarea, REMAPPED_UNDO);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
   });
 
@@ -127,13 +132,13 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello");
 
     pressRedo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
     await expect.poll(() => textarea.value).toBe("Hello world");
   });
 
@@ -143,13 +148,13 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello");
 
     pressRedo(textarea, ALTERNATE_REDO);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
     await expect.poll(() => textarea.value).toBe("Hello world");
   });
 
@@ -161,7 +166,7 @@ describe("editor undo and redo", () => {
 
     pasteIntoTextarea(textarea, "First line\nSecond line\nThird line");
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
       .toEqual(["First line", "Second line", "Third line"]);
 
     pressUndo(textarea);
@@ -176,18 +181,22 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Start typed");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Start typed");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Start typed");
 
     pasteIntoTextarea(textarea, "Start typed\nPasted line");
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
       .toEqual(["Start typed", "Pasted line"]);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Start typed"]);
+    await expect
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
+      .toEqual(["Start typed"]);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Start"]);
+    await expect
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
+      .toEqual(["Start"]);
   });
 
   it("treats two blurred typing runs as two undo steps", async () => {
@@ -196,18 +205,18 @@ describe("editor undo and redo", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "AB");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("AB");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("AB");
     blurTextarea(textarea);
 
     setTextareaValue(textarea, "ABC");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("ABC");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("ABC");
     blurTextarea(textarea);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("AB");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("AB");
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("A");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("A");
   });
 });
 
@@ -223,12 +232,12 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "ooh" });
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { backgroundText: "ooh" } }])));
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("ooh");
     expect(document.activeElement).not.toBe(textarea);
 
     dispatchWindowUndo();
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe(undefined);
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe(undefined);
   });
 
   it("undoes via a remapped binding on window when focus is outside the textarea", async () => {
@@ -239,11 +248,11 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     dispatchWindowUndo(REMAPPED_UNDO);
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
   });
 
   it("still undoes when the textarea itself is focused", async () => {
@@ -252,11 +261,11 @@ describe("editor undo and redo without textarea focus", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
     textarea.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v3" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v3");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v3" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v3");
 
     dispatchWindowUndo();
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
   });
 
   it("redoes via Cmd+Shift+Z on window when focus is outside the textarea", async () => {
@@ -266,14 +275,14 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     dispatchWindowUndo();
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
 
     dispatchWindowRedo();
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
   });
 
   it.skipIf(isMac)("redoes via the Ctrl+Y alternate redo on window when focus is outside the textarea", async () => {
@@ -283,14 +292,14 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     dispatchWindowUndo();
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
 
     dispatchWindowRedo(ALTERNATE_REDO);
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
   });
 });
 
@@ -299,25 +308,25 @@ describe("editor window undo handler gating", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "sync" });
     await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     const event = dispatchWindowUndo();
     expect(event.defaultPrevented).toBe(false);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
   });
 
   it("does not undo while a modal is open", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
     await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     const modalToken = useEscapeLayerStackStore.getState().push("modal");
     const event = dispatchWindowUndo();
     expect(event.defaultPrevented).toBe(false);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
     useEscapeLayerStackStore.getState().pop(modalToken);
   });
 
@@ -348,14 +357,14 @@ describe("editor window undo handler gating", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     await screen.unmount();
 
     const event = dispatchWindowUndo();
     expect(event.defaultPrevented).toBe(false);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
   });
 });
 
@@ -368,8 +377,8 @@ describe("editor undo handler input exemption", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
     const indexBefore = useProjectStore.getState().historyIndex;
 
     const input = await openAgentNameInput(screen);
@@ -384,17 +393,17 @@ describe("editor undo handler input exemption", () => {
 
     expect(event.defaultPrevented).toBe(false);
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
   });
 
   it("does not redo when Cmd+Shift+Z is pressed inside a non-lyrics input", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
     useProjectStore.getState().undo();
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
     const indexBefore = useProjectStore.getState().historyIndex;
 
     const input = await openAgentNameInput(screen);
@@ -410,7 +419,7 @@ describe("editor undo handler input exemption", () => {
 
     expect(event.defaultPrevented).toBe(false);
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
   });
 
   it("still undoes when Cmd+Z originates from the lyrics textarea", async () => {
@@ -419,8 +428,8 @@ describe("editor undo handler input exemption", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
     textarea.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: "l1", updates: { agentId: "v2" } }])));
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
 
     const event = new KeyboardEvent("keydown", {
       key: "z",
@@ -432,7 +441,7 @@ describe("editor undo handler input exemption", () => {
     textarea.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
   });
 });
 
@@ -447,7 +456,7 @@ describe("editor undo edge cases", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Untouched");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Untouched");
     expect(textarea.value).toBe("Untouched");
   });
 
@@ -457,15 +466,15 @@ describe("editor undo edge cases", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Base A");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Base A");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Base A");
     blurTextarea(textarea);
 
     setTextareaValue(textarea, "Base B");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Base B");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Base B");
     blurTextarea(textarea);
 
     pressUndo(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Base A");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Base A");
     await expect.poll(() => textarea.value).toBe("Base A");
   });
 
@@ -501,7 +510,7 @@ describe("editor undo edge cases", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Hello world");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Hello world");
 
     const event = new KeyboardEvent("keydown", {
       key: "z",

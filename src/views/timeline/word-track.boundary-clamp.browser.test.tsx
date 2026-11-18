@@ -1,7 +1,7 @@
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { scrollTrackHost } from "@/test/timeline-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -21,9 +21,18 @@ const GESTURE_START_X = 200;
 
 // A flush pair whose combined span is shorter than twice the minimum word
 // duration, so no boundary position can satisfy both words' floors.
-const TIGHT_PAIR = [createWord({ text: "a ", begin: 0.99, end: 1 }), createWord({ text: "b", begin: 1, end: 1.02 })];
-const ROOMY_PAIR = [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })];
-const GAPPED_PAIR = [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1.5, end: 2.5 })];
+const TIGHT_PAIR = createWords([
+  { text: "a", sep: " ", begin: 0.99, end: 1 },
+  { text: "b", begin: 1, end: 1.02 },
+]);
+const ROOMY_PAIR = createWords([
+  { text: "a", sep: " ", begin: 0, end: 1 },
+  { text: "b", begin: 1, end: 2 },
+]);
+const GAPPED_PAIR = createWords([
+  { text: "a", sep: " ", begin: 0, end: 1 },
+  { text: "b", begin: 1.5, end: 2.5 },
+]);
 
 async function renderResizableTrack(words: WordTiming[], options: { rolling?: boolean; duration?: number } = {}) {
   const { rolling = true, duration = 3 } = options;
@@ -141,17 +150,13 @@ describe("WordTrack boundary drag inputs", () => {
       expect(calls[0].updates.end).toBeCloseTo(3.1, 4);
     });
 
-    it("regression: does not invert either word when dragging the left edge of a tight flush pair", async () => {
+    it("regression: a roll that would leave a word of a tight flush pair no length writes nothing", async () => {
       const { blocks, calls } = await renderResizableTrack(TIGHT_PAIR);
 
       dragEdgeBy(blocks[1], "left", 30);
 
-      await expect.poll(() => calls.length).toBe(1);
-      expect(calls[0].adjacentIndex).toBe(0);
-      const boundary = calls[0].updates.begin ?? Number.NaN;
-      expect(boundary).toBeLessThanOrEqual(TIGHT_PAIR[1].end);
-      expect(boundary).toBeGreaterThanOrEqual(TIGHT_PAIR[0].begin);
-      expect(calls[0].adjacentUpdates?.end).toBe(boundary);
+      // The drag now agrees with the boundary command, which refuses a roll that squeezes a word to nothing.
+      expect(calls).toEqual([]);
     });
 
     it("regression: does not invert the last word when the audio ends before it begins", async () => {

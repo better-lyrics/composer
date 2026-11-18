@@ -6,12 +6,13 @@ import {
   PROJECT_STORE_NAME,
   runTransaction,
 } from "@/lib/persistence-idb";
+import { storedLyricLines } from "@/domain/project/index-entry";
 import { storedDataBytes } from "@/domain/storage/stored-data";
 import { protectStorageForFirstProject } from "@/lib/browser-storage";
 import { indexEntryForProject } from "@/lib/project-index-write";
 import { createProjectId } from "@/lib/project-repository";
 import { LEGACY_AUDIO_KEY, LEGACY_PROJECT_KEY, OPEN_PROJECT_KEY, getOpenProjectId } from "@/lib/project-storage";
-import type { SavedAudioFile, SavedProject } from "@/lib/saved-project";
+import type { SavedAudioFile, StoredProject } from "@/lib/saved-project";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -38,13 +39,13 @@ async function migrateLegacyProject(): Promise<string | undefined> {
       projectRequest.onsuccess = () => {
         const audioRequest = legacy.get(LEGACY_AUDIO_KEY);
         audioRequest.onsuccess = () => {
-          const project = projectRequest.result as SavedProject | undefined;
+          const project = projectRequest.result as StoredProject | undefined;
           const audio = audioRequest.result as SavedAudioFile | undefined;
           if (!project && !audio) return;
           if (project) {
             tx.objectStore(PROJECT_RECORD_STORE_NAME).put(project, id);
             tx.objectStore(PROJECT_INDEX_STORE_NAME).put(
-              indexEntryForProject(id, project, {
+              indexEntryForProject(id, project, storedLyricLines(project.lines), {
                 storedAudioBytes: audio ? storedDataBytes(audio.data) : 0,
                 openedAt: project.savedAt,
               }),

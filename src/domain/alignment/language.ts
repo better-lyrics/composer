@@ -1,6 +1,8 @@
 import { hasKana } from "@/domain/alignment/cjk";
-import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
-import type { LyricLine } from "@/domain/line/model";
+import { detectNonLatinLanguage, hasLatinLetter } from "insync/language-script-detection";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -39,15 +41,15 @@ function canAlignLanguage(language: string | undefined, modelLanguages: readonly
 function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]): HanReading {
   const base = baseLanguage(language);
   if (base === "ja" || base === "zh") return base;
-  return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
+  return lines.some((line) => hasKana(lineText(line, getSplitCharacter()))) ? "ja" : "zh";
 }
 
 // The project language when set, else a guess from the lyrics' script. Kana
 // anywhere wins over Han, as in `hanReadingFor`.
-function songLanguage(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): string | null {
+function songLanguage(language: string | undefined, lines: readonly LyricLine[]): string | null {
   const base = baseLanguage(language);
   if (base) return base;
-  const text = lines.map((line) => line.text).join("\n");
+  const text = lines.map((value) => lineText(value, getSplitCharacter())).join("\n");
   return detectNonLatinLanguage(text) ?? (hasLatinLetter(text) ? "en" : null);
 }
 

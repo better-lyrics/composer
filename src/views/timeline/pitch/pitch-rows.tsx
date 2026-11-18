@@ -1,7 +1,7 @@
 import type { PitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import { songWordCoverage } from "@/domain/pitch/spill";
 import type { PitchTrack } from "@/domain/pitch/track";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

@@ -1,5 +1,5 @@
 import { coversLanguage } from "@/domain/alignment/language";
-import { languageName } from "@/domain/project/language";
+import { languageName } from "insync/project-language";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ----------------------------------------------------------------

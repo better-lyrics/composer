@@ -1,11 +1,13 @@
-import { bgBounds, effectiveBounds, mainBounds } from "@/domain/line/bounds";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import { bgBounds, effectiveBounds, mainBounds } from "insync/line-bounds";
+
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LooseLine> = {}) {
-  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+function line(extras: Partial<LineFields> = {}) {
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras }, DEFAULT_SPLIT_CHARACTER);
 }
 
 // -- mainBounds ---------------------------------------------------------------
@@ -16,8 +18,8 @@ describe("mainBounds", () => {
       mainBounds(
         line({
           words: [
-            { text: "a", begin: 2, end: 5 },
-            { text: "b", begin: 5, end: 8 },
+            { id: "w1", text: "a", sep: "", begin: 2, end: 5, joinsNext: true },
+            { id: "w2", text: "b", sep: "", begin: 5, end: 8, joinsNext: false },
           ],
         }),
       ),
@@ -42,7 +44,7 @@ describe("mainBounds", () => {
         line({
           begin: 0,
           end: 999,
-          words: [{ text: "a", begin: 2, end: 5 }],
+          words: [{ id: "w3", text: "a", sep: "", begin: 2, end: 5, joinsNext: false }],
         }),
       ),
     ).toEqual({ begin: 2, end: 5 });
@@ -61,8 +63,8 @@ describe("bgBounds", () => {
       bgBounds(
         line({
           backgroundWords: [
-            { text: "a", begin: 6, end: 9 },
-            { text: "b", begin: 9, end: 12 },
+            { id: "w4", text: "a", sep: "", begin: 6, end: 9, joinsNext: true },
+            { id: "w5", text: "b", sep: "", begin: 9, end: 12, joinsNext: false },
           ],
         }),
       ),
@@ -86,8 +88,8 @@ describe("effectiveBounds", () => {
       effectiveBounds(
         line({
           words: [
-            { text: "a", begin: 2, end: 5 },
-            { text: "b", begin: 5, end: 8 },
+            { id: "w6", text: "a", sep: "", begin: 2, end: 5, joinsNext: true },
+            { id: "w7", text: "b", sep: "", begin: 5, end: 8, joinsNext: false },
           ],
         }),
       ),
@@ -107,12 +109,12 @@ describe("effectiveBounds", () => {
       effectiveBounds(
         line({
           words: [
-            { text: "a", begin: 2, end: 5 },
-            { text: "b", begin: 5, end: 8 },
+            { id: "w8", text: "a", sep: "", begin: 2, end: 5, joinsNext: true },
+            { id: "w9", text: "b", sep: "", begin: 5, end: 8, joinsNext: false },
           ],
           backgroundWords: [
-            { text: "c", begin: 6, end: 9 },
-            { text: "d", begin: 9, end: 12 },
+            { id: "w10", text: "c", sep: "", begin: 6, end: 9, joinsNext: true },
+            { id: "w11", text: "d", sep: "", begin: 9, end: 12, joinsNext: false },
           ],
         }),
       ),
@@ -123,8 +125,8 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          words: [{ text: "a", begin: 5, end: 8 }],
-          backgroundWords: [{ text: "b", begin: 3, end: 6 }],
+          words: [{ id: "w12", text: "a", sep: "", begin: 5, end: 8, joinsNext: false }],
+          backgroundWords: [{ id: "w13", text: "b", sep: "", begin: 3, end: 6, joinsNext: false }],
         }),
       ),
     ).toEqual({ begin: 3, end: 8 });
@@ -136,7 +138,7 @@ describe("effectiveBounds", () => {
         line({
           begin: 3,
           end: 7,
-          backgroundWords: [{ text: "b", begin: 6, end: 10 }],
+          backgroundWords: [{ id: "w14", text: "b", sep: "", begin: 6, end: 10, joinsNext: false }],
         }),
       ),
     ).toEqual({ begin: 3, end: 10 });
@@ -146,8 +148,8 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          words: [{ text: "a", begin: 2, end: 10 }],
-          backgroundWords: [{ text: "b", begin: 4, end: 7 }],
+          words: [{ id: "w15", text: "a", sep: "", begin: 2, end: 10, joinsNext: false }],
+          backgroundWords: [{ id: "w16", text: "b", sep: "", begin: 4, end: 7, joinsNext: false }],
         }),
       ),
     ).toEqual({ begin: 2, end: 10 });
@@ -157,7 +159,7 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          words: [{ text: "a", begin: 2, end: 5 }],
+          words: [{ id: "w17", text: "a", sep: "", begin: 2, end: 5, joinsNext: false }],
           backgroundWords: [],
         }),
       ),
@@ -168,7 +170,7 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          backgroundWords: [{ text: "b", begin: 3, end: 6 }],
+          backgroundWords: [{ id: "w1", text: "b", sep: "", begin: 3, end: 6, joinsNext: false }],
         }),
       ),
     ).toBeNull();
@@ -184,7 +186,7 @@ describe("effectiveBounds", () => {
         line({
           begin: 0,
           end: 999,
-          words: [{ text: "a", begin: 2, end: 5 }],
+          words: [{ id: "w18", text: "a", sep: "", begin: 2, end: 5, joinsNext: false }],
         }),
       ),
     ).toEqual({ begin: 2, end: 5 });

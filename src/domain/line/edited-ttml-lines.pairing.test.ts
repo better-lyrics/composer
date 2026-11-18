@@ -1,11 +1,19 @@
-import type { LyricLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { backgroundTrack } from "insync/line-track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
-const BRAVO_SPANISH = { language: "es", text: "Bravo es", origin: "manual" as const, sourceFingerprint: "fp-b" };
+const BRAVO_SPANISH = {
+  language: "es",
+  main: { text: "Bravo es" },
+  origin: "manual" as const,
+  sourceFingerprint: "fp-b",
+};
 
 function bravo(): LyricLine {
   return {
@@ -17,7 +25,7 @@ function bravo(): LyricLine {
       backgroundText: "ooh",
       backgroundTextSource: "extraction",
     }),
-    translations: { es: BRAVO_SPANISH },
+    languages: { translations: { es: BRAVO_SPANISH } },
   };
 }
 
@@ -26,10 +34,10 @@ function paragraphs(ttml: string): string[] {
 }
 
 function expectBravoKeptItsData(merged: LyricLine[]): void {
-  const line = merged.find((candidate) => candidate.text === "Bravo!");
+  const line = merged.find((candidate) => lineText(candidate, DEFAULT_SPLIT_CHARACTER) === "Bravo!");
   expect(line?.id).toBe("b");
-  expect(line?.translations?.es).toEqual(BRAVO_SPANISH);
-  expect(line?.backgroundTextSource).toBe("extraction");
+  expect(line?.languages?.translations?.es).toEqual(BRAVO_SPANISH);
+  expect(backgroundTrack(line!)?.source).toBe("extraction");
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -41,7 +49,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
         createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }),
         {
           ...createLine({ id: "k", text: "Kay", begin: 2, end: 3 }),
-          translations: { es: { ...BRAVO_SPANISH, text: "Ka" } },
+          languages: { translations: { es: { ...BRAVO_SPANISH, main: { text: "Ka" } } } },
         },
         bravo(),
         createLine({ id: "z", text: "Zulu", begin: 4, end: 5 }),
@@ -64,7 +72,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
           .replace(paragraphs(ttml)[0] ?? "", `${paragraphs(ttml)[0]}<p begin="0:02.000" end="0:03.000">New</p>`)
           .replace(">Bravo<", ">Bravo!<"),
       );
-      expect(merged.map((line) => line.text)).toEqual(["Alpha", "New", "Bravo!", "Zulu"]);
+      expect(merged.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Alpha", "New", "Bravo!", "Zulu"]);
       expect(["a", "b", "z"]).not.toContain(merged[1]?.id);
       expectBravoKeptItsData(merged);
     });
@@ -72,13 +80,13 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
     it("regression: reordering and editing a line keeps its id and translation origin", () => {
       const google = {
         language: "es",
-        text: "Hola",
+        main: { text: "Hola" },
         origin: "google" as const,
         sourceFingerprint: "fp-h",
         stale: true,
       };
       const stored = [
-        { ...createLine({ id: "h", text: "Hel|lo", begin: 1, end: 2 }), translations: { es: google } },
+        { ...createLine({ id: "h", text: "Hel|lo", begin: 1, end: 2 }), languages: { translations: { es: google } } },
         createLine({ id: "w", text: "Wor|ld", begin: 2, end: 3 }),
         createLine({ id: "e", text: "End", begin: 3, end: 4 }),
       ];
@@ -90,12 +98,12 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
           .replace("\u0000", second)
           .replace(">Hello<", ">Hello!<");
       });
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
         ["w", "Wor|ld"],
         ["h", "Hello!"],
         ["e", "End"],
       ]);
-      expect(merged[1]?.translations?.es).toEqual(google);
+      expect(merged[1]?.languages?.translations?.es).toEqual(google);
     });
   });
 
@@ -110,7 +118,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace(paragraphs(ttml)[1] ?? "", "").replace(">Quebec<", ">Totally different<"),
       );
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
         ["a", "Alpha"],
         ["q", "Totally different"],
         ["z", "Zulu"],

@@ -1,5 +1,10 @@
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { type BackgroundBracketRefusal, backgroundBracketRefusals } from "insync/background-vocal-refusals";
+import { shownRow } from "insync/edit-text-shown-row";
+import { mainTrack } from "insync/line-track";
+import type { LyricLine } from "insync/line";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface ParsedLine {
   lineNumber: number;
@@ -7,6 +12,7 @@ interface ParsedLine {
   text: string;
   isEmpty: boolean;
   hasBrackets: boolean;
+  backgroundBracketRefusal?: BackgroundBracketRefusal;
   hasTiming: boolean;
   agentId: string;
   backgroundText?: string;
@@ -17,7 +23,8 @@ interface ParsedLine {
 
 function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): ParsedLine[] {
   const textLines = text.split("\n");
-  const nonEmptyStored = lines.filter((l) => l.text !== "");
+  const nonEmptyStored = lines.filter((l) => shownRow(l, getSplitCharacter()).text !== "");
+  const backgroundRefusals = backgroundBracketRefusals(lines, getSplitCharacter());
   let nonEmptyIndex = 0;
 
   return textLines.map((line, index) => {
@@ -29,12 +36,13 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
     return {
       lineNumber: index + 1,
       lineId: lyricLine?.id ?? "",
-      text: lyricLine?.text ?? line,
+      text: lyricLine ? lineText(lyricLine, getSplitCharacter()) : line,
       isEmpty,
       hasBrackets: /\[.*?\]/.test(line),
+      backgroundBracketRefusal: lyricLine && backgroundRefusals.get(lyricLine.id),
       hasTiming,
-      agentId: lyricLine?.agentId ?? defaultAgentId,
-      backgroundText: lyricLine?.backgroundText,
+      agentId: (lyricLine && mainTrack(lyricLine).agentId) ?? defaultAgentId,
+      backgroundText: lyricLine && backgroundText(lyricLine, getSplitCharacter()),
       groupId: lyricLine?.groupId,
       instanceIdx: lyricLine?.instanceIdx,
       templateLineIdx: lyricLine?.templateLineIdx,

@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { PROJECT_BUNDLE_FORMAT, buildProjectBundle, projectBundleFileName } from "@/lib/project-bundle";
 import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
 import { describe, expect, it } from "vitest";

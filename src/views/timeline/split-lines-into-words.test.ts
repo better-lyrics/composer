@@ -1,38 +1,56 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import { useProjectStore } from "@/stores/project";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+
 import { beforeEach, describe, expect, it } from "vitest";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { backgroundText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { useProjectStore } from "@/stores/project";
+import { patchOf, updatedLine } from "@/test/field-updates";
+import { legacyLine, legacyWords } from "@/test/legacy-languages";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   computeSplitIntoWordsUpdates,
   computeSplitSelections,
   splitLinesIntoWords,
   splitTargetsForMenu,
 } from "./split-lines-into-words";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-const lineSynced: LyricLine = { id: "L1", text: "one two three", agentId: "v1", begin: 1, end: 4 };
-const wordSynced: LyricLine = {
-  id: "L2",
-  text: "already words",
-  agentId: "v1",
-  words: [{ text: "already words", begin: 5, end: 6 }],
-};
-const anotherSynced: LyricLine = { id: "L3", text: "four five", agentId: "v1", begin: 7, end: 9 };
-const sentenceBg: LyricLine = {
-  id: "L4",
-  text: "main line",
-  agentId: "v1",
-  words: [
-    { text: "main ", begin: 0, end: 2 },
-    { text: "line", begin: 2, end: 4 },
-  ],
-  backgroundText: "ooh yeah baby",
-  backgroundWords: [{ text: "ooh yeah baby", begin: 1, end: 4 }],
-  backgroundTextSource: "manual",
-};
+const lineSynced: LyricLine = lineFromFields(
+  { id: "L1", text: "one two three", agentId: "v1", begin: 1, end: 4 },
+  DEFAULT_SPLIT_CHARACTER,
+);
+const wordSynced: LyricLine = lineFromFields(
+  {
+    id: "L2",
+    text: "already words",
+    agentId: "v1",
+    words: [{ id: "w1", text: "already words", sep: "", begin: 5, end: 6, joinsNext: false }],
+  },
+  DEFAULT_SPLIT_CHARACTER,
+);
+const anotherSynced: LyricLine = lineFromFields(
+  { id: "L3", text: "four five", agentId: "v1", begin: 7, end: 9 },
+  DEFAULT_SPLIT_CHARACTER,
+);
+const sentenceBg: LyricLine = lineFromFields(
+  {
+    id: "L4",
+    text: "main line",
+    agentId: "v1",
+    words: [
+      { id: "w2", text: "main", sep: " ", begin: 0, end: 2, joinsNext: false },
+      { id: "w3", text: "line", sep: "", begin: 2, end: 4, joinsNext: false },
+    ],
+    backgroundText: "ooh yeah baby",
+    backgroundWords: [{ id: "w4", text: "ooh yeah baby", sep: "", begin: 1, end: 4, joinsNext: false }],
+    backgroundTextSource: "manual",
+  },
+  DEFAULT_SPLIT_CHARACTER,
+);
 
 function main(...ids: string[]) {
   return ids.map((lineId) => ({ lineId, type: "word" as const }));
@@ -47,9 +65,9 @@ describe("computeSplitIntoWordsUpdates", () => {
     const updates = computeSplitIntoWordsUpdates(main("L1"), [lineSynced]);
     expect(updates).toHaveLength(1);
     expect(updates[0].id).toBe("L1");
-    expect(updates[0].updates.begin).toBeUndefined();
-    expect(updates[0].updates.end).toBeUndefined();
-    expect(updates[0].updates.words?.length).toBeGreaterThan(0);
+    expect(updatedLine(updates[0].updates) && mainTrack(updatedLine(updates[0].updates)!).begin).toBeUndefined();
+    expect(updatedLine(updates[0].updates) && mainTrack(updatedLine(updates[0].updates)!).end).toBeUndefined();
+    expect(roleWords(updatedLine(updates[0].updates), "main")?.length).toBeGreaterThan(0);
   });
 
   it("skips lines that are already word-synced", () => {
@@ -69,14 +87,16 @@ describe("computeSplitIntoWordsUpdates", () => {
 });
 
 describe("computeSplitSelections", () => {
-  it("produces a word selection per converted word, indexed against effective lines", () => {
+  it("produces a word selection per converted word, addressed by the new word ids", () => {
     const updates = computeSplitIntoWordsUpdates(main("L1"), [lineSynced]);
     const selections = computeSplitSelections(updates, [lineSynced]);
-    expect(selections.length).toBe(updates[0].updates.words?.length);
-    expect(selections.every((s) => s.lineId === "L1" && s.lineIndex === 0 && s.type === "word")).toBe(true);
+    expect(selections.map((s) => s.syllableId)).toEqual(
+      roleWords(updatedLine(updates[0].updates), "main")?.map((word) => word.id),
+    );
+    expect(selections.every((s) => s.lineId === "L1" && s.type === "word")).toBe(true);
   });
 
-  it("returns no selections when an update id is absent from the effective lines", () => {
+  it("returns no selections when an update id is absent from the lines", () => {
     const updates = computeSplitIntoWordsUpdates(main("L1"), [lineSynced]);
     const selections = computeSplitSelections(updates, [anotherSynced]);
     expect(selections).toHaveLength(0);
@@ -92,35 +112,47 @@ describe("splitLinesIntoWords (store-mutating)", () => {
 
   it("converts a single line-synced row to word-synced and selects its words", () => {
     useProjectStore.setState({ lines: [{ ...lineSynced }] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(main("L1"), effective);
+    splitLinesIntoWords(main("L1"), lines);
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.length).toBeGreaterThan(0);
-    expect(after.begin).toBeUndefined();
-    expect(after.end).toBeUndefined();
-    expect(useTimelineStore.getState().selectedWords.length).toBe(after.words?.length);
+    expect(roleWords(after, "main")?.length).toBeGreaterThan(0);
+    expect(mainTrack(after).begin).toBeUndefined();
+    expect(mainTrack(after).end).toBeUndefined();
+    expect(useTimelineStore.getState().selectedWords.length).toBe(roleWords(after, "main")?.length);
   });
 
   it("converts multiple line-synced rows in one history step", () => {
     useProjectStore.setState({ lines: [{ ...lineSynced }, { ...anotherSynced }] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(main("L1", "L3"), effective);
+    splitLinesIntoWords(main("L1", "L3"), lines);
 
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "L1")?.words?.length).toBeGreaterThan(0);
-    expect(after.find((l) => l.id === "L3")?.words?.length).toBeGreaterThan(0);
+    expect(
+      roleWords(
+        after.find((l) => l.id === "L1"),
+        "main",
+      )?.length,
+    ).toBeGreaterThan(0);
+    expect(
+      roleWords(
+        after.find((l) => l.id === "L3"),
+        "main",
+      )?.length,
+    ).toBeGreaterThan(0);
   });
 
   it("leaves a word-synced row untouched and selects nothing", () => {
     useProjectStore.setState({ lines: [{ ...wordSynced }] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(main("L2"), effective);
+    splitLinesIntoWords(main("L2"), lines);
 
-    expect(useProjectStore.getState().lines[0].words).toEqual(wordSynced.words);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual(
+      timedSyllables(mainTrack(wordSynced)),
+    );
     expect(useTimelineStore.getState().selectedWords).toHaveLength(0);
   });
 });
@@ -129,44 +161,66 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
   it("splits a single sentence-long bg word evenly across its span", () => {
     const updates = computeSplitIntoWordsUpdates(bg("L4"), [sentenceBg]);
     expect(updates).toHaveLength(1);
-    expect(updates[0].updates.backgroundWords).toEqual([
-      { text: "ooh ", begin: 1, end: 2 },
-      { text: "yeah ", begin: 2, end: 3 },
-      { text: "baby", begin: 3, end: 4 },
+    expect(roleWords(updatedLine(updates[0].updates), "bg")).toEqual([
+      { text: "ooh", sep: " ", begin: 1, end: 2, joinsNext: false },
+      { text: "yeah", sep: " ", begin: 2, end: 3, joinsNext: false },
+      { text: "baby", sep: "", begin: 3, end: 4, joinsNext: false },
     ]);
-    expect(updates[0].updates.backgroundText).toBe("ooh yeah baby");
-    expect(updates[0].updates.backgroundTextSource).toBe("manual");
-    expect("words" in updates[0].updates).toBe(false);
+    expect(backgroundText(updatedLine(updates[0].updates), DEFAULT_SPLIT_CHARACTER)).toBe("ooh yeah baby");
+    expect(updatedLine(updates[0].updates) && backgroundTrack(updatedLine(updates[0].updates)!)?.source).toBe("manual");
+    expect("words" in patchOf(updates[0].updates, sentenceBg)).toBe(false);
   });
 
   it("does not copy a bg word's transliteration onto every split piece", () => {
-    const line: LyricLine = {
-      ...sentenceBg,
+    const line = legacyLine({
+      ...fieldsOfLine(sentenceBg, DEFAULT_SPLIT_CHARACTER),
       backgroundWords: [
-        { text: "ooh yeah baby", begin: 1, end: 4, transliteration: "u  ye  bei", transliterationJoinerAfter: " " },
+        {
+          id: "w5",
+          text: "ooh yeah baby",
+          sep: "",
+          begin: 1,
+          end: 4,
+          transliteration: "u  ye  bei",
+          transliterationJoinerAfter: " ",
+          joinsNext: false,
+        },
       ],
-    };
+      transliteration: {
+        language: "en-Latn",
+        text: "",
+        backgroundText: "u  ye  bei",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: "test",
+      },
+    });
     const [update] = computeSplitIntoWordsUpdates(bg("L4"), [line]);
-    for (const word of update.updates.backgroundWords ?? []) {
+    const words = legacyWords(roleWords(updatedLine(update.updates), "bg"), update.updates.languages, "bg") ?? [];
+    expect(words.length).toBeGreaterThan(1);
+    for (const word of words) {
       expect(word).not.toHaveProperty("transliteration");
       expect(word).not.toHaveProperty("transliterationJoinerAfter");
     }
   });
 
   it("splits only the multi-word bg word and leaves its neighbours' timing alone", () => {
-    const line: LyricLine = {
-      ...sentenceBg,
-      backgroundText: "ah ooh yeah",
-      backgroundWords: [
-        { text: "ah ", begin: 0, end: 1 },
-        { text: "ooh yeah", begin: 1, end: 3 },
-      ],
-    };
+    const line: LyricLine = lineFromFields(
+      {
+        ...fieldsOfLine(sentenceBg, DEFAULT_SPLIT_CHARACTER),
+        backgroundText: "ah ooh yeah",
+        backgroundWords: [
+          { id: "w6", text: "ah", sep: " ", begin: 0, end: 1, joinsNext: false },
+          { id: "w7", text: "ooh yeah", sep: "", begin: 1, end: 3, joinsNext: false },
+        ],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const updates = computeSplitIntoWordsUpdates(bg("L4"), [line]);
-    expect(updates[0].updates.backgroundWords).toEqual([
-      { text: "ah ", begin: 0, end: 1 },
-      { text: "ooh ", begin: 1, end: 2 },
-      { text: "yeah", begin: 2, end: 3 },
+    expect(roleWords(updatedLine(updates[0].updates), "bg")).toEqual([
+      { text: "ah", sep: " ", begin: 0, end: 1, joinsNext: false },
+      { text: "ooh", sep: " ", begin: 1, end: 2, joinsNext: false },
+      { text: "yeah", sep: "", begin: 2, end: 3, joinsNext: false },
     ]);
   });
 
@@ -175,73 +229,91 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
   });
 
   it("targets main and bg together when both are selected on a line-synced line", () => {
-    const line: LyricLine = {
-      id: "L5",
-      text: "one two",
-      agentId: "v1",
-      begin: 0,
-      end: 2,
-      backgroundText: "ooh ah",
-      backgroundWords: [{ text: "ooh ah", begin: 0, end: 2 }],
-    };
+    const line: LyricLine = lineFromFields(
+      {
+        id: "L5",
+        text: "one two",
+        agentId: "v1",
+        begin: 0,
+        end: 2,
+        backgroundText: "ooh ah",
+        backgroundWords: [{ id: "w8", text: "ooh ah", sep: "", begin: 0, end: 2, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const updates = computeSplitIntoWordsUpdates([...main("L5"), ...bg("L5")], [line]);
     expect(updates).toHaveLength(1);
-    expect(updates[0].updates.words?.map((w) => w.text)).toEqual(["one ", "two"]);
-    expect(updates[0].updates.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "ah"]);
+    expect(roleWords(updatedLine(updates[0].updates), "main")?.map((w) => w.text + w.sep)).toEqual(["one ", "two"]);
+    expect(roleWords(updatedLine(updates[0].updates), "bg")?.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah"]);
   });
 
   it("regression: a bg-only target leaves a line-synced main line untouched", () => {
-    const line: LyricLine = {
-      id: "L5",
-      text: "one two",
-      agentId: "v1",
-      begin: 0,
-      end: 2,
-      backgroundText: "ooh ah",
-      backgroundWords: [{ text: "ooh ah", begin: 0, end: 2 }],
-    };
+    const line: LyricLine = lineFromFields(
+      {
+        id: "L5",
+        text: "one two",
+        agentId: "v1",
+        begin: 0,
+        end: 2,
+        backgroundText: "ooh ah",
+        backgroundWords: [{ id: "w9", text: "ooh ah", sep: "", begin: 0, end: 2, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     const updates = computeSplitIntoWordsUpdates(bg("L5"), [line]);
     expect(updates).toHaveLength(1);
-    expect("words" in updates[0].updates).toBe(false);
-    expect(updates[0].updates.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "ah"]);
+    expect("words" in patchOf(updates[0].updates, line)).toBe(false);
+    expect(roleWords(updatedLine(updates[0].updates), "bg")?.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah"]);
   });
 
   describe("edge cases", () => {
     it("skips a bg track that is already one word per word", () => {
-      const line: LyricLine = {
-        ...sentenceBg,
-        backgroundWords: [
-          { text: "ooh ", begin: 1, end: 2 },
-          { text: "yeah", begin: 2, end: 3 },
-        ],
-      };
+      const line: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(sentenceBg, DEFAULT_SPLIT_CHARACTER),
+          backgroundWords: [
+            { id: "w10", text: "ooh", sep: " ", begin: 1, end: 2, joinsNext: false },
+            { id: "w11", text: "yeah", sep: "", begin: 2, end: 3, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(computeSplitIntoWordsUpdates(bg("L4"), [line])).toHaveLength(0);
     });
 
     it("skips a single-word bg", () => {
-      const line: LyricLine = {
-        ...sentenceBg,
-        backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", begin: 1, end: 2 }],
-      };
+      const line: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(sentenceBg, DEFAULT_SPLIT_CHARACTER),
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w12", text: "ooh", sep: "", begin: 1, end: 2, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(computeSplitIntoWordsUpdates(bg("L4"), [line])).toHaveLength(0);
     });
 
     it("skips a line with untimed bg text only", () => {
-      const line: LyricLine = { id: "L6", text: "x", agentId: "v1", backgroundText: "ooh yeah" };
+      const line: LyricLine = lineFromFields(
+        { id: "L6", text: "x", agentId: "v1", backgroundText: "ooh yeah" },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       expect(computeSplitIntoWordsUpdates(bg("L6"), [line])).toHaveLength(0);
     });
 
     it("keeps a trailing space on the last split word when the source word had one", () => {
-      const line: LyricLine = {
-        ...sentenceBg,
-        backgroundWords: [
-          { text: "ooh yeah ", begin: 1, end: 3 },
-          { text: "baby", begin: 3, end: 4 },
-        ],
-      };
-      const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
-      expect(words?.map((w) => w.text)).toEqual(["ooh ", "yeah ", "baby"]);
+      const line: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(sentenceBg, DEFAULT_SPLIT_CHARACTER),
+          backgroundWords: [
+            { id: "w13", text: "ooh yeah", sep: " ", begin: 1, end: 3, joinsNext: false },
+            { id: "w14", text: "baby", sep: "", begin: 3, end: 4, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const words = roleWords(updatedLine(computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates), "bg");
+      expect(words?.map((w) => w.text + w.sep)).toEqual(["ooh ", "yeah ", "baby"]);
     });
 
     it("emits one update per line even when several bg words on it are selected", () => {
@@ -251,20 +323,28 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
 
   describe("regressions", () => {
     it("regression: split parts keep the source word's explicit flag", () => {
-      const line: LyricLine = {
-        ...sentenceBg,
-        backgroundWords: [{ text: "ooh yeah", begin: 1, end: 3, explicit: true }],
-      };
-      const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
+      const line: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(sentenceBg, DEFAULT_SPLIT_CHARACTER),
+          backgroundWords: [
+            { id: "w15", text: "ooh yeah", sep: "", begin: 1, end: 3, explicit: true, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const words = roleWords(updatedLine(computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates), "bg");
       expect(words?.map((w) => w.explicit)).toEqual([true, true]);
     });
 
     it("regression: split parts drop the source word's syllable group", () => {
-      const line: LyricLine = {
-        ...sentenceBg,
-        backgroundWords: [{ text: "ooh yeah", begin: 1, end: 3, syllableGroupId: "g1" }],
-      };
-      const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
+      const line: LyricLine = lineFromFields(
+        {
+          ...fieldsOfLine(sentenceBg, DEFAULT_SPLIT_CHARACTER),
+          backgroundWords: [{ id: "w16", text: "ooh yeah", sep: "", begin: 1, end: 3, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
+      const words = roleWords(updatedLine(computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates), "bg");
       expect(words?.every((w) => !("syllableGroupId" in w))).toBe(true);
     });
   });
@@ -282,16 +362,23 @@ describe("computeSplitSelections · background track", () => {
   it("selects the new bg words on the bg track", () => {
     const updates = computeSplitIntoWordsUpdates(bg("L4"), [sentenceBg]);
     const selections = computeSplitSelections(updates, [sentenceBg]);
-    expect(selections).toEqual([
-      { lineId: "L4", lineIndex: 0, wordIndex: 0, type: "bg" },
-      { lineId: "L4", lineIndex: 0, wordIndex: 1, type: "bg" },
-      { lineId: "L4", lineIndex: 0, wordIndex: 2, type: "bg" },
-    ]);
+    expect(selections).toEqual(
+      (roleWords(updatedLine(updates[0].updates), "bg") ?? []).map((word) => ({
+        lineId: "L4",
+        type: "bg",
+        syllableId: word.id,
+      })),
+    );
+    expect(selections).toHaveLength(3);
   });
 });
 
 describe("splitTargetsForMenu", () => {
-  const selection = (lineId: string, type: "word" | "bg", wordIndex = 0) => ({ lineId, lineIndex: 0, wordIndex, type });
+  const selection = (lineId: string, type: "word" | "bg", wordIndex = 0) => ({
+    lineId,
+    type,
+    syllableId: `w${wordIndex}`,
+  });
 
   it("uses the target alone when nothing on its line is selected", () => {
     expect(splitTargetsForMenu({ lineId: "L1", type: "word" }, [selection("L2", "word")])).toEqual([
@@ -310,25 +397,32 @@ describe("splitTargetsForMenu", () => {
 
   describe("regressions", () => {
     it("regression: right-clicking main with a bg word selected on the same line still splits main", () => {
-      const line: LyricLine = {
-        id: "L5",
-        text: "one two",
-        agentId: "v1",
-        begin: 0,
-        end: 2,
-        backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", begin: 0, end: 2 }],
-      };
+      const line: LyricLine = lineFromFields(
+        {
+          id: "L5",
+          text: "one two",
+          agentId: "v1",
+          begin: 0,
+          end: 2,
+          backgroundText: "ooh",
+          backgroundWords: [{ id: "w17", text: "ooh", sep: "", begin: 0, end: 2, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      );
       const targets = splitTargetsForMenu({ lineId: "L5", type: "word" }, [selection("L5", "bg")]);
       const updates = computeSplitIntoWordsUpdates(targets, [line]);
       expect(updates).toHaveLength(1);
-      expect(updates[0].updates.words?.map((w) => w.text)).toEqual(["one ", "two"]);
+      expect(roleWords(updatedLine(updates[0].updates), "main")?.map((w) => w.text + w.sep)).toEqual(["one ", "two"]);
     });
 
     it("regression: right-clicking a multi-word bg with main selected on the same line still splits bg", () => {
       const targets = splitTargetsForMenu({ lineId: "L4", type: "bg" }, [selection("L4", "word")]);
       const updates = computeSplitIntoWordsUpdates(targets, [sentenceBg]);
-      expect(updates[0].updates.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "yeah ", "baby"]);
+      expect(roleWords(updatedLine(updates[0].updates), "bg")?.map((w) => w.text + w.sep)).toEqual([
+        "ooh ",
+        "yeah ",
+        "baby",
+      ]);
     });
   });
 });
@@ -342,13 +436,13 @@ describe("splitLinesIntoWords · regressions", () => {
 
   it("regression: W splits a bg sentence typed into one placeholder word", () => {
     useProjectStore.setState({ lines: [structuredClone(sentenceBg)] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(bg("L4"), effective);
+    splitLinesIntoWords(bg("L4"), lines);
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "yeah ", "baby"]);
-    expect(after.words).toEqual(sentenceBg.words);
+    expect(timedSyllables(backgroundTrack(after)).map((w) => w.text + w.sep)).toEqual(["ooh ", "yeah ", "baby"]);
+    expect(timedSyllables(mainTrack(after))).toEqual(timedSyllables(mainTrack(sentenceBg)));
     expect(useTimelineStore.getState().selectedWords.every((s) => s.type === "bg")).toBe(true);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(3);
   });

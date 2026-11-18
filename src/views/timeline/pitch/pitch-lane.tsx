@@ -1,11 +1,12 @@
-import { effectiveBounds } from "@/domain/line/bounds";
-import { effectiveTrackWords } from "@/domain/line/effective-words";
-import { isLineTimed } from "@/domain/line/sync-progress";
-import type { LyricLine } from "@/domain/line/model";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { trackRole } from "insync/line-track";
+import { effectiveBounds } from "insync/line-bounds";
+import { isLineTimed } from "insync/line-sync-progress";
+import type { LyricLine } from "insync/line";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
 import { songWordCoverage, spillRuns, wordCoverage } from "@/domain/pitch/spill";
 import type { PitchPoint } from "@/domain/pitch/track";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import type { Rgb } from "@/domain/spectrum/palettes";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime } from "@/stores/audio";
@@ -28,6 +29,7 @@ import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { wordFit } from "@/views/timeline/word-fit";
 import { useCallback, useEffect, useRef } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -62,13 +64,13 @@ interface PitchLaneProps {
 
 // -- Helpers -------------------------------------------------------------------
 
-function selectedIndices(
+function selectedIds(
   selections: ReturnType<typeof useTimelineStore.getState>["selectedWords"],
   lineId: string,
   kind: PitchLaneKind,
 ): string {
   return selections
-    .flatMap((selection) => (selection.lineId === lineId && selection.type === kind ? [selection.wordIndex] : []))
+    .flatMap((selection) => (selection.lineId === lineId && selection.type === kind ? [selection.syllableId] : []))
     .join();
 }
 
@@ -122,7 +124,7 @@ function otherTracksCoverage(
 
 const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line, kind, height, color, rows }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const selected = useTimelineStore((s) => selectedIndices(s.selectedWords, line.id, kind));
+  const selected = useTimelineStore((s) => selectedIds(s.selectedWords, line.id, kind));
   const live = useLiveWordEdit(line.id, kind);
   const sparkRef = useRef<HTMLCanvasElement>(null);
   const sungRef = useRef<HTMLCanvasElement>(null);
@@ -132,7 +134,8 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
   const inksRef = useRef<LaneInks | null>(null);
   const otherTracksRef = useRef<OtherTracksCoverage | null>(null);
   const pitchLineOn = useSettingsStore((s) => s.pitchLine !== "off");
-  const hasSungLane = isLineTimed(line) && (effectiveTrackWords(line, kind)?.length ?? 0) > 0;
+  const hasSungLane =
+    isLineTimed(line, getSplitCharacter()) && drawnSyllables(line, trackRole(kind), getSplitCharacter()).length > 0;
 
   const revealSung = useCallback(() => {
     const sung = sungRef.current;
@@ -151,16 +154,16 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     const sung = sungRef.current;
     const ghost = ghostRef.current;
     const lineBounds = effectiveBounds(line);
-    const words = effectiveTrackWords(line, kind) ?? [];
+    const words = drawnSyllables(line, trackRole(kind), getSplitCharacter());
     if (!spark || !sung || !ghost || !lineBounds || words.length === 0) return;
-    const selectedSet = new Set(selected.split(",").filter(Boolean).map(Number));
+    const selectedSet = new Set(selected.split(","));
     const laneWords: LaneWord[] = words.map((word, index) => {
       const { begin, end } = live?.words.get(index) ?? word;
       return {
         begin,
         end,
-        tick: wordFit(word.text, wordBlockWidth(begin, end, zoom)).fit === "tick",
-        selected: selectedSet.has(index),
+        tick: wordFit(word.text + word.sep, wordBlockWidth(begin, end, zoom)).fit === "tick",
+        selected: selectedSet.has(word.id),
       };
     });
     const window = laneWindow(
@@ -169,7 +172,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
       height,
       pitchRangeBetween(rows.track, lineBounds.begin, lineBounds.end),
     );
-    const leadWords = kind === "bg" ? (effectiveTrackWords(line, "word") ?? []) : [];
+    const leadWords = kind === "bg" ? drawnSyllables(line, "main", getSplitCharacter()) : [];
     const drawing = { window, runs: laneRuns(rows.track, kind, window, laneWords, leadWords), words: laneWords };
     let coverage = rows.coverage;
     if (live) {

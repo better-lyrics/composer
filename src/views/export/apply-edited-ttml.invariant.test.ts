@@ -3,19 +3,20 @@ import { type EditCase, lineById } from "@/test/edited-ttml-edits";
 import { LINE_IDENTITY_OPERATIONS } from "@/test/edited-ttml-identity-operations";
 import { COMBINED_OPERATIONS, OPERATIONS } from "@/test/edited-ttml-operations";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function keptOverProjectChange(editCase: EditCase, atEditStart: EditedTtmlProject, fixture: EditedTtmlProject) {
-  const source = generateProjectTtml(useProjectStore.getState(), 0);
+  const source = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
   useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, source, editCase.edited, false) });
   const changed = editCase.projectChangeBeforeKeepingEdits?.(atEditStart.lines, fixture.lines) ?? atEditStart.lines;
   useProjectStore.setState({ lines: changed });
-  const generated = generateProjectTtml(useProjectStore.getState(), 0);
+  const generated = generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER);
   useProjectStore.setState((state) => ({ ttmlEditState: keptTtmlEdit(state.ttmlEditState, generated) }));
   return changed;
 }
@@ -35,8 +36,13 @@ describe("applyEditedTtml · invariants", () => {
           groups: project.groups,
           agents: project.agents,
           metadata: project.metadata,
+          parts: [],
+          passthrough: {},
         });
-        const editCase = operation.edit(atEditStart, generateProjectTtml(useProjectStore.getState(), 0));
+        const editCase = operation.edit(
+          atEditStart,
+          generateProjectTtml(useProjectStore.getState(), 0, DEFAULT_SPLIT_CHARACTER),
+        );
         if (editCase.projectChangeBeforeKeepingEdits) {
           const changed = keptOverProjectChange(editCase, atEditStart, project);
           expect(applyEditedTtml(editCase.edited, 0)).toEqual({ status: "export-only", reason: "lyrics-changed" });
@@ -65,7 +71,7 @@ describe("applyEditedTtml · invariants", () => {
         editCase.expectTaken(state.lines);
 
         const settled = state.lines;
-        const again = applyEditedTtml(generateProjectTtml(state, 0), 0);
+        const again = applyEditedTtml(generateProjectTtml(state, 0, DEFAULT_SPLIT_CHARACTER), 0);
         expect(again).toEqual({ status: "applied", skipped: 0, keptInExport: false });
         expect(useProjectStore.getState().lines).toBe(settled);
       });

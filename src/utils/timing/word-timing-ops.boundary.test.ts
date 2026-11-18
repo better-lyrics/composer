@@ -1,9 +1,13 @@
+import { backgroundTrack, roleWords } from "insync/line-track";
+import { backgroundText } from "insync/line-text";
+import { updatedLine, patchOf } from "@/test/field-updates";
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import type { BoundaryEdge } from "@/domain/word/boundary";
+import type { LineUpdate, LyricLine } from "insync/line";
+import type { BoundaryEdge } from "insync/word-boundary";
 import { createLine } from "@/test/factories";
-import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
-import { setBgWordBegin, setBgWordBoundary } from "@/utils/timing/bg-word-timing";
+import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
+import { bgWordBoundaryEdit, bgWordRetimeEdit } from "insync/timing-bg-word-ops";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("createWordTimingOps: setBoundary", () => {
   interface BoundaryCase {
@@ -15,25 +19,22 @@ describe("createWordTimingOps: setBoundary", () => {
     minDuration?: number;
     duration?: number;
     line?: LyricLine;
-    lines?: LyricLine[];
   }
 
   function run(boundaryCase: BoundaryCase) {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    const line = boundaryCase.line ?? makeLine();
-    wordsOps.setBoundary({
-      lines: boundaryCase.lines ?? [line],
-      lineIdx: 0,
+    const edit = wordsOps.boundaryEdit({
+      line: boundaryCase.line ?? makeLine(),
       wordIdx: boundaryCase.wordIdx,
       edge: boundaryCase.edge,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
       time: boundaryCase.time,
       minDuration: boundaryCase.minDuration ?? 0.05,
       rolling: boundaryCase.rolling,
       syllablesFollowRolling: boundaryCase.syllablesFollowRolling ?? false,
       ...(boundaryCase.duration !== undefined ? { range: { min: 0, max: boundaryCase.duration } } : {}),
-      updateLineWithHistory,
     });
-    return { calls, words: calls[0]?.updates.words ?? [] };
+    const calls = edit ? [edit] : [];
+    return { calls, words: roleWords(updatedLine(calls[0]?.updates), "main") ?? [] };
   }
 
   const gappedLine = () =>
@@ -65,7 +66,7 @@ describe("createWordTimingOps: setBoundary", () => {
         syllablesFollowRolling: true,
       });
       expect(words[1].begin).toBe(1.5);
-      expect(words[0]).toEqual({ text: "ev", begin: 0, end: 1 });
+      expect(words[0]).toEqual({ text: "ev", sep: "", begin: 0, end: 1, joinsNext: true });
     });
 
     it("rolls the neighbouring syllable when rolling is on", () => {
@@ -91,7 +92,7 @@ describe("createWordTimingOps: setBoundary", () => {
   it("moves only the target word when rolling is off", () => {
     const { words } = run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: false });
     expect(words[1].begin).toBe(1.5);
-    expect(words[0]).toEqual({ text: "a ", begin: 0, end: 1 });
+    expect(words[0]).toEqual({ text: "a", sep: " ", begin: 0, end: 1, joinsNext: false });
   });
 
   it("drags the previous word's end along a flush begin boundary when rolling", () => {
@@ -118,13 +119,13 @@ describe("createWordTimingOps: setBoundary", () => {
   it("does not roll at the first index for begin", () => {
     const { words } = run({ wordIdx: 0, edge: "begin", time: 0.5, rolling: true });
     expect(words[0].begin).toBe(0.5);
-    expect(words[1]).toEqual({ text: "b ", begin: 1, end: 2 });
+    expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1, end: 2, joinsNext: false });
   });
 
   it("does not roll at the last index for end", () => {
     const { words } = run({ wordIdx: 2, edge: "end", time: 4, rolling: true });
     expect(words[2].end).toBe(4);
-    expect(words[1]).toEqual({ text: "b ", begin: 1, end: 2 });
+    expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1, end: 2, joinsNext: false });
   });
 
   it("keeps the target word at least minDuration long", () => {
@@ -168,39 +169,28 @@ describe("createWordTimingOps: setBoundary", () => {
     expect(run({ wordIdx: 2, edge: "end", time: 99, rolling: false }).words[2].end).toBe(99);
   });
 
-  it("calls updateLineWithHistory exactly once when rolling", () => {
+  it("plans one line update when rolling", () => {
     expect(run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: true }).calls).toHaveLength(1);
     expect(run({ wordIdx: 1, edge: "end", time: 1.5, rolling: true }).calls).toHaveLength(1);
   });
 
-  it("passes propagateToSiblings: false", () => {
-    const { calls } = run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: true });
-    expect(calls[0].options?.propagateToSiblings).toBe(false);
-  });
-
   describe("edge cases", () => {
-    it("no-ops when the line is missing", () => {
-      expect(run({ lines: [], wordIdx: 0, edge: "begin", time: 1, rolling: true }).calls).toHaveLength(0);
-    });
-
     it("no-ops when the word index is out of range", () => {
       expect(run({ wordIdx: 9, edge: "begin", time: 1, rolling: true }).calls).toHaveLength(0);
     });
 
     it("no-ops when getWords returns undefined", () => {
-      const { calls, updateLineWithHistory } = captureUpdates();
-      setBgWordBoundary({
-        lines: [createLine({ text: "Lead" })],
-        lineIdx: 0,
+      const edit = bgWordBoundaryEdit({
+        line: createLine({ text: "Lead" }),
         wordIdx: 0,
         edge: "begin",
         time: 1,
         minDuration: 0.05,
         rolling: true,
         syllablesFollowRolling: false,
-        updateLineWithHistory,
+        splitChar: DEFAULT_SPLIT_CHARACTER,
       });
-      expect(calls).toHaveLength(0);
+      expect(edit).toBeNull();
     });
 
     it("never sets a begin below zero", () => {
@@ -219,12 +209,19 @@ describe("createWordTimingOps: setBoundary", () => {
             { text: "b", begin: 1, end: 1.02 },
           ],
         });
-      const rolledBack = run({ line: tight(), wordIdx: 1, edge: "begin", time: 0.95, minDuration: 0.5, rolling: true });
-      expect(rolledBack.words[1].begin).toBeLessThanOrEqual(rolledBack.words[1].end);
-      expect(rolledBack.words[0].begin).toBeLessThanOrEqual(rolledBack.words[0].end);
-      const rolledOn = run({ line: tight(), wordIdx: 0, edge: "end", time: 0.95, minDuration: 0.5, rolling: true });
-      expect(rolledOn.words[0].begin).toBeLessThanOrEqual(rolledOn.words[0].end);
-      expect(rolledOn.words[1].begin).toBeLessThanOrEqual(rolledOn.words[1].end);
+      // A roll that would leave either word no length is refused, which leaves the words as they were.
+      const wordsAfter = (rolled: ReturnType<typeof run>) =>
+        rolled.calls.length ? rolled.words : (roleWords(tight(), "main") ?? []);
+      const rolledBack = wordsAfter(
+        run({ line: tight(), wordIdx: 1, edge: "begin", time: 0.95, minDuration: 0.5, rolling: true }),
+      );
+      expect(rolledBack[1].begin).toBeLessThanOrEqual(rolledBack[1].end);
+      expect(rolledBack[0].begin).toBeLessThanOrEqual(rolledBack[0].end);
+      const rolledOn = wordsAfter(
+        run({ line: tight(), wordIdx: 0, edge: "end", time: 0.95, minDuration: 0.5, rolling: true }),
+      );
+      expect(rolledOn[0].begin).toBeLessThanOrEqual(rolledOn[0].end);
+      expect(rolledOn[1].begin).toBeLessThanOrEqual(rolledOn[1].end);
     });
 
     it("regression: rolls a syllable boundary with rolling off, so no gap opens inside a word", () => {
@@ -247,24 +244,24 @@ describe("createWordTimingOps: setBoundary", () => {
     it("regression: never inverts a word whose begin is past a shorter audio duration", () => {
       const lastWord = run({ wordIdx: 2, edge: "end", time: 99, rolling: false, duration: 1.5 });
       expect(lastWord.words[2].begin).toBeLessThanOrEqual(lastWord.words[2].end);
+      // A roll that would leave either word no length is refused, so nothing is written.
       const rolled = run({ wordIdx: 1, edge: "end", time: 99, rolling: true, duration: 0.5 });
-      expect(rolled.words[1].begin).toBeLessThanOrEqual(rolled.words[1].end);
-      expect(rolled.words[2].begin).toBeLessThanOrEqual(rolled.words[2].end);
+      expect(rolled.calls).toEqual([]);
     });
   });
 
   describe("invariants", () => {
     it("never lets a word's begin exceed its end", () => {
       const { words } = run({ wordIdx: 1, edge: "begin", time: 99, rolling: true });
-      expect(words[1]).toEqual({ text: "b ", begin: 1.95, end: 2 });
+      expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1.95, end: 2, joinsNext: false });
     });
 
     it("does not modify the input words array", () => {
       const line = makeLine();
-      const snapshot = structuredClone(line.words);
+      const snapshot = structuredClone(roleWords(line, "main"));
       const { calls } = run({ line, wordIdx: 1, edge: "begin", time: 1.5, rolling: true });
-      expect(line.words).toEqual(snapshot);
-      expect(calls[0].updates.words).not.toBe(line.words);
+      expect(roleWords(line, "main")).toEqual(snapshot);
+      expect(roleWords(updatedLine(calls[0].updates), "main")).not.toBe(roleWords(line, "main"));
     });
   });
 });
@@ -275,49 +272,50 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
       text: "Lead",
       backgroundText: "ooh aah",
       backgroundWords: [
-        { text: "ooh ", begin: 0, end: 1 },
+        { text: "ooh", sep: " ", begin: 0, end: 1 },
         { text: "aah", begin: 1, end: 2 },
       ],
     });
   }
 
   function runBgBoundary() {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    setBgWordBoundary({
-      lines: [bgLine()],
-      lineIdx: 0,
+    const edit = bgWordBoundaryEdit({
+      line: bgLine(),
       wordIdx: 1,
       edge: "begin",
       time: 1.5,
       minDuration: 0.05,
       rolling: false,
       syllablesFollowRolling: false,
-      updateLineWithHistory,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
-    return calls;
+    return edit ? [edit] : [];
   }
 
   it("setBoundary marks a background edit as manual", () => {
     const calls = runBgBoundary();
-    expect(calls[0].updates.backgroundTextSource).toBe("manual");
-    expect((calls[0].updates.backgroundWords ?? [])[1].begin).toBe(1.5);
+    expect(updatedLine(calls[0].updates) && backgroundTrack(updatedLine(calls[0].updates)!)?.source).toBe("manual");
+    expect((roleWords(updatedLine(calls[0].updates), "bg") ?? [])[1].begin).toBe(1.5);
   });
 
   it("setBoundary leaves backgroundText unchanged for a timing-only edit", () => {
-    expect(runBgBoundary()[0].updates.backgroundText).toBe("ooh aah");
+    expect(backgroundText(updatedLine(runBgBoundary()[0].updates), DEFAULT_SPLIT_CHARACTER)).toBe("ooh aah");
   });
 
-  it("setBgWordBegin still writes raw, leaving background provenance untouched", () => {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    setBgWordBegin([bgLine()], 0, 1, 1.5, updateLineWithHistory);
-    expect("backgroundTextSource" in calls[0].updates).toBe(false);
-    expect("backgroundText" in calls[0].updates).toBe(false);
-    expect((calls[0].updates.backgroundWords ?? [])[1].begin).toBe(1.5);
+  it("setBgWordBegin marks a background edit as manual, like every other background timing write", () => {
+    const calls: LineUpdate[] = [];
+    const line = bgLine();
+    retimeInto(calls, bgWordRetimeEdit, "begin", { to: 1.5 }, [line], 0, 1);
+    // A Sync nudge is hand timing too, so a later typed pair must not seed it again.
+    expect(patchOf(calls[0].updates, line).backgroundTextSource).toBe("manual");
+    expect("backgroundText" in patchOf(calls[0].updates, line)).toBe(false);
+    expect((roleWords(updatedLine(calls[0].updates), "bg") ?? [])[1].begin).toBe(1.5);
   });
 
   it("an instance without a buildBoundaryUpdate hook writes only the word array", () => {
-    const { calls, updateLineWithHistory } = captureUpdates();
-    bgOps.setBegin([bgLine()], 0, 1, 1.5, updateLineWithHistory);
-    expect(Object.keys(calls[0].updates)).toEqual(["backgroundWords"]);
+    const calls: LineUpdate[] = [];
+    const line = bgLine();
+    retimeInto(calls, bgOps.retimeEdit, "begin", { to: 1.5 }, [line], 0, 1);
+    expect(Object.keys(patchOf(calls[0].updates, line))).toEqual(["backgroundWords"]);
   });
 });

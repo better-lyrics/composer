@@ -1,21 +1,27 @@
 /**
  * @vitest-environment node
  */
-import { withAlignedTransliteration } from "@/domain/language/align";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { withDerivedText } from "@/domain/line/reconstruct-text";
-import type { WordTiming } from "@/domain/word/timing";
+
+import { beforeEach, describe, expect, it } from "vitest";
+import { addInstance } from "insync/commands/instance-edits";
+import { withAlignedTransliteration } from "insync/language-align";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
-import { getSplitCharacter } from "@/utils/split-character";
+import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
-import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-function mappedWords(fragments: string[], start: number): WordTiming[] {
+function mappedWords(fragments: string[], start: number): LegacyWord[] {
   const joiners = ["", "-", "", "  "];
   return fragments.map((transliteration, index) => ({
-    text: ["あ", "い", "う", "え ", "お"][index],
+    id: newWordId(),
+    text: ["あ", "い", "う", "え", "お"][index],
+    sep: index === 3 ? " " : "",
+    joinsNext: index !== 3 && index < fragments.length - 1,
     begin: start + index,
     end: start + index + 0.75,
     explicit: true,
@@ -25,57 +31,64 @@ function mappedWords(fragments: string[], start: number): WordTiming[] {
 }
 
 function sourceLine(): LyricLine {
-  return withDerivedText(
-    {
-      id: "source",
-      agentId: "v1",
-      text: "",
-      groupId: "g1",
-      instanceIdx: 0,
-      templateLineIdx: 0,
-      words: mappedWords(["a", "bc", "", "d", "e"], 10),
-      backgroundWords: mappedWords(["w", "x", "yz", "", "q"], 11),
-      backgroundTextSource: "manual",
-      transliteration: {
-        text: "abc-d  e",
-        backgroundText: "wx-yz  q",
-        language: "ja-Latn",
+  return legacyLine({
+    id: "source",
+    agentId: "v1",
+    text: "",
+    groupId: "g1",
+    instanceIdx: 0,
+    templateLineIdx: 0,
+    words: mappedWords(["a", "bc", "", "d", "e"], 10),
+    backgroundWords: mappedWords(["w", "x", "yz", "", "q"], 11),
+    backgroundTextSource: "manual",
+    transliteration: {
+      text: "abc-d  e",
+      backgroundText: "wx-yz  q",
+      language: "ja-Latn",
+      origin: "manual",
+      sourceFingerprint: "source-fingerprint",
+      segments: [{ original: "あ", transliteration: "abc" }],
+      backgroundSegments: [{ original: "あ", transliteration: "wx" }],
+      alignmentStatus: "confirmed",
+      backgroundAlignmentStatus: "confirmed",
+    },
+    translations: {
+      en: {
+        language: "en",
+        text: "Main translation",
+        backgroundText: "Background translation",
         origin: "manual",
         sourceFingerprint: "source-fingerprint",
-        segments: [{ original: "あ", transliteration: "abc" }],
-        backgroundSegments: [{ original: "あ", transliteration: "wx" }],
-        alignmentStatus: "confirmed",
-        backgroundAlignmentStatus: "confirmed",
-      },
-      translations: {
-        en: {
-          language: "en",
-          text: "Main translation",
-          backgroundText: "Background translation",
-          origin: "manual",
-          sourceFingerprint: "source-fingerprint",
-        },
       },
     },
-    getSplitCharacter(),
-  );
+  });
 }
 
 function expectExactCopy(copy: LyricLine, source: LyricLine, delta: number) {
-  for (const field of ["words", "backgroundWords"] as const) {
-    expect(copy[field]).toEqual(
-      source[field]?.map((word) => ({ ...word, begin: word.begin + delta, end: word.end + delta })),
+  for (const side of ["main", "bg"] as const) {
+    expect(legacyWords(roleWords(copy, side), copy.languages, side)).toEqual(
+      legacyWords(roleWords(source, side), source.languages, side)?.map((word) => ({
+        ...word,
+        begin: word.begin + delta,
+        end: word.end + delta,
+      })),
     );
-    expect(copy[field]).not.toBe(source[field]);
+    expect(roleWords(copy, side)).not.toBe(roleWords(source, side));
     // Rendering/export must reuse the chosen boundaries, not infer new ones.
-    expect(withAlignedTransliteration(copy)[field]).toBe(copy[field]);
+    const pieces = copy.languages?.transliteration?.[side]?.pieces;
+    expect(pieces).toBeDefined();
+    expect(withAlignedTransliteration(copy, DEFAULT_SPLIT_CHARACTER).languages?.transliteration?.[side]?.pieces).toBe(
+      pieces,
+    );
   }
-  expect(copy.transliteration).toEqual(source.transliteration);
-  expect(copy.transliteration).not.toBe(source.transliteration);
-  expect(copy.transliteration?.segments).not.toBe(source.transliteration?.segments);
-  expect(copy.transliteration?.backgroundSegments).not.toBe(source.transliteration?.backgroundSegments);
-  expect(copy.translations).toEqual(source.translations);
-  expect(copy.translations?.en).not.toBe(source.translations?.en);
+  const copied = copy.languages?.transliteration;
+  const original = source.languages?.transliteration;
+  expect(legacyLanguages(copy.languages).transliteration).toEqual(legacyLanguages(source.languages).transliteration);
+  expect(copied).not.toBe(original);
+  expect(copied?.main.segments).not.toBe(original?.main.segments);
+  expect(copied?.bg?.segments).not.toBe(original?.bg?.segments);
+  expect(copy.languages?.translations).toEqual(source.languages?.translations);
+  expect(copy.languages?.translations?.en).not.toBe(source.languages?.translations?.en);
 }
 
 beforeEach(() => {
@@ -88,33 +101,35 @@ describe("linked group alternate-language mappings", () => {
     const source = sourceLine();
     useProjectStore.setState({ lines: [source] });
     const template = instanceToTemplate([source], "g1", 0);
-    expect(template[0].transliteration).not.toBe(source.transliteration);
-    expect(template[0].translations?.en).not.toBe(source.translations?.en);
+    expect(template[0].languages?.transliteration).not.toBe(source.languages?.transliteration);
+    expect(template[0].languages?.translations?.en).not.toBe(source.languages?.translations?.en);
 
-    useProjectStore.getState().addInstance("g1", template, 30);
+    useProjectStore.getState().commit(addInstance("g1", template, 30));
     const copy = useProjectStore.getState().lines[1];
     expect(copy.instanceIdx).toBe(1);
     expectExactCopy(copy, source, 20);
-    expect(copy.transliteration).not.toBe(template[0].transliteration);
+    expect(copy.languages?.transliteration).not.toBe(template[0].languages?.transliteration);
 
     expect(() => {
-      if (copy.transliteration) copy.transliteration.segments[0].transliteration = "edited";
+      const segment = copy.languages?.transliteration?.main.segments?.[0];
+      if (segment) segment.transliteration = "edited";
     }).toThrow(TypeError);
-    expect(source.transliteration?.segments[0].transliteration).toBe("abc");
-    expect(template[0].transliteration?.segments[0].transliteration).toBe("abc");
+    expect(source.languages?.transliteration?.main.segments?.[0].transliteration).toBe("abc");
+    expect(template[0].languages?.transliteration?.main.segments?.[0].transliteration).toBe("abc");
   });
 
   it.each(["fill", "conform"] as const)(
     "preserves mappings and clones canonical tracks when applying via %s",
     (operation) => {
       const source = sourceLine();
-      const target: LyricLine = {
+      const { transliteration, translations } = legacyLanguages(source.languages);
+      const target: LyricLine = legacyLine({
         id: "target",
         agentId: "v2",
         text: "old content",
-        transliteration: { ...source.transliteration!, text: "old romanization" },
-        translations: { en: { ...source.translations!.en, text: "old translation" } },
-      };
+        transliteration: transliteration && { ...transliteration, text: "old romanization" },
+        translations: translations && { en: { ...translations.en, text: "old translation" } },
+      });
       const input = { lines: [source, target], groupId: "g1", template: instanceToTemplate([source], "g1", 0) };
       const result =
         operation === "fill"
@@ -127,16 +142,7 @@ describe("linked group alternate-language mappings", () => {
   );
 
   it("clears destination tracks when the applied template has no alternates", () => {
-    const clearWordAlternates = (words?: WordTiming[]) =>
-      words?.map(({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word);
-    const original = sourceLine();
-    const source = reconcileLine({
-      ...original,
-      words: clearWordAlternates(original.words)!,
-      backgroundWords: clearWordAlternates(original.backgroundWords),
-      transliteration: undefined,
-      translations: undefined,
-    });
+    const { languages: _languages, ...source } = sourceLine();
     const target = { ...sourceLine(), id: "target", groupId: undefined };
     const result = conformLinesToInstance({
       lines: [source, target],
@@ -146,9 +152,20 @@ describe("linked group alternate-language mappings", () => {
       playheadTime: 30,
     });
     expect(result.ok).toBe(true);
-    expect(result.updatedLines![1].transliteration).toBeUndefined();
-    expect(result.updatedLines![1].translations).toBeUndefined();
-    expect(result.updatedLines![1].words?.every((word) => word.transliteration === undefined)).toBe(true);
-    expect(result.updatedLines![1].backgroundWords?.every((word) => word.transliteration === undefined)).toBe(true);
+    expect(result.updatedLines![1].languages?.transliteration).toBeUndefined();
+    expect(result.updatedLines![1].languages?.translations).toBeUndefined();
+    expect(roleWords(result.updatedLines![1], "main")).toBeDefined();
+    expect(roleWords(result.updatedLines![1], "bg")).toBeDefined();
+    const applied = result.updatedLines![1];
+    expect(
+      legacyWords(timedSyllables(mainTrack(applied)), applied.languages)?.every(
+        (word) => word.transliteration === undefined,
+      ),
+    ).toBe(true);
+    expect(
+      legacyWords(timedSyllables(backgroundTrack(applied)), applied.languages, "bg")?.every(
+        (word) => word.transliteration === undefined,
+      ),
+    ).toBe(true);
   });
 });

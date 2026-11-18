@@ -1,4 +1,10 @@
-import { mainBounds } from "@/domain/line/bounds";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { mainBounds } from "insync/line-bounds";
+import { lineFromFields } from "insync/line-from-fields";
+import { backgroundText, lineText } from "insync/line-text";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { useAudioStore } from "@/stores/audio";
@@ -14,9 +20,7 @@ import {
 } from "@/utils/lyrics-search/registry";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixture provider plumbing ------------------------------------------------
 
@@ -192,7 +196,7 @@ describe("LyricsImportModal paste section commit", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     const [line] = useProjectStore.getState().lines;
     expect(line && mainBounds(line)).toEqual({ begin: 2, end: 3 });
-    expect(line?.words?.map((word) => word.text)).toEqual(["Hel", "lo"]);
+    expect(timedSyllables(mainTrack(line!)).map((word) => word.text + word.sep)).toEqual(["Hel", "lo"]);
   });
 
   it("disables Import when paste is whitespace only", async () => {
@@ -236,7 +240,7 @@ describe("LyricsImportModal search section commit", () => {
   it("confirm-replace runs when project already has lines (cancel keeps existing)", async () => {
     useSettingsStore.setState({ confirmReplaceLyrics: true });
     useProjectStore.setState({
-      lines: [{ id: "existing", text: "Old line", agentId: "v1" }],
+      lines: [lineFromFields({ id: "existing", text: "Old line", agentId: "v1" }, getSplitCharacter())],
     });
     const screen = await render(withQueryClient(<LyricsImportModalHost />));
     openModal({ prefill: { track: "Bohemian" } });
@@ -248,7 +252,7 @@ describe("LyricsImportModal search section commit", () => {
     await expect.element(screen.getByText(/Replace existing lyrics/i)).toBeInTheDocument();
     await screen.getByRole("button", { name: /Cancel/i }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Old line");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Old line");
   });
 });
 
@@ -373,8 +377,8 @@ describe("LyricsImportModal settings integration", () => {
     await screen.getByRole("button", { name: /^Import$/ }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeDefined();
-    expect(lines[0].words?.length ?? 0).toBeGreaterThan(0);
+    expect(roleWords(lines[0], "main")).toBeDefined();
+    expect(timedSyllables(mainTrack(lines[0])).length).toBeGreaterThan(0);
   });
 
   it("extracts inline parenthetical background when the setting is on", async () => {
@@ -387,7 +391,7 @@ describe("LyricsImportModal settings integration", () => {
     await screen.getByRole("button", { name: /^Import$/ }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     const line = useProjectStore.getState().lines[0];
-    expect(line.text).toBe("Hello");
-    expect(line.backgroundText).toBe("(world)");
+    expect(lineText(line, getSplitCharacter())).toBe("Hello");
+    expect(backgroundText(line, getSplitCharacter())).toBe("(world)");
   });
 });

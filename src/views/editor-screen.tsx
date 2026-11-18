@@ -15,7 +15,8 @@ import { SyncPanel } from "@/views/sync/sync-panel";
 import { useReleaseTimelineCachesWithEditor } from "@/views/timeline/release-timeline-caches";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { cn } from "@/utils/cn";
-import { Activity, memo, useState } from "react";
+import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
+import { Activity, memo, useEffect, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -63,6 +64,7 @@ const TabPanel = memo<TabPanelProps>(({ tab, Panel, isActive }) => (
 const EditorScreen: React.FC = () => {
   useMissingAudioNotice();
   useReleaseTimelineCachesWithEditor();
+  useEffect(followLyricLines, []);
   const activeTab = useProjectStore((state) => state.activeTab);
   const showPlayer = useTransportDeckShown();
   const showGuide = useSettingsStore((state) => state.showGuide);

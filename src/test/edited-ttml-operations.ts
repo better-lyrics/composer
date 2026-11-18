@@ -1,7 +1,12 @@
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { isLineTimed } from "@/domain/line/sync-progress";
-import { timingGranularityOf } from "@/domain/project/timing-granularity";
+import { expect } from "vitest";
+import { lineTranslations } from "insync/language-line-languages";
+import { fieldsOfLine } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
+import { isLineTimed } from "insync/line-sync-progress";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { timingGranularityOf } from "insync/project-timing-granularity";
 import { useProjectStore } from "@/stores/project";
 import {
   type EditOperation,
@@ -16,8 +21,9 @@ import {
   timedAt,
 } from "@/test/edited-ttml-edits";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
-import { formatTime } from "@/utils/format-time";
-import { expect } from "vitest";
+import { formatTime } from "insync/format-time";
+import { keyedExportLines } from "insync/ttml/line-keys";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Operations ---------------------------------------------------------------
 
@@ -41,7 +47,7 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "change a line's timing",
     edit: (project, ttml) => {
       const line = required(project.lines.find(isLineSynced), "line-synced line");
-      const end = required(line.end, "line end");
+      const end = required(mainTrack(line).end, "line end");
       const change = (p: string) => {
         const openTag = p.slice(0, p.indexOf(">") + 1);
         return p.replace(openTag, openTag.replace(`end="${formatTime(end)}"`, `end="${formatTime(end + 0.25)}"`));
@@ -49,7 +55,7 @@ const OPERATIONS: readonly EditOperation[] = [
       return {
         edited: editParagraph(ttml, project, line, change),
         touched: [line.id],
-        expectTaken: (lines) => expect(lineById(lines, line.id).end).toBeCloseTo(end + 0.25, 3),
+        expectTaken: (lines) => expect(mainTrack(lineById(lines, line.id)).end).toBeCloseTo(end + 0.25, 3),
       };
     },
   },
@@ -61,11 +67,15 @@ const OPERATIONS: readonly EditOperation[] = [
       lossless: true,
       expectTaken: (lines) => {
         const added = required(
-          lines.find((line) => line.text === "Brand new line"),
+          lines.find((line) => lineText(line, DEFAULT_SPLIT_CHARACTER) === "Brand new line"),
           "added line",
         );
-        expect(added).toMatchObject({ begin: 30, end: 31, backgroundText: "new ooh" });
-        expect(added.backgroundWords).toBeUndefined();
+        expect(fieldsOfLine(added, DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+          begin: 30,
+          end: 31,
+          backgroundText: "new ooh",
+        });
+        expect(roleWords(added, "bg")).toBeUndefined();
       },
     }),
   },
@@ -93,7 +103,7 @@ const OPERATIONS: readonly EditOperation[] = [
         reordered: true,
         lossless: true,
         expectTaken: (lines) => {
-          const order = lines.filter(isLineTimed).map((line) => line.id);
+          const order = lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER)).map((line) => line.id);
           expect(order.indexOf(second.id)).toBe(order.indexOf(first.id) - 1);
         },
       };
@@ -103,20 +113,22 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "edit a translation",
     edit: (project, ttml) => {
       const line = required(
-        project.lines.find((candidate) => Object.values(candidate.translations ?? {}).some((track) => track.text)),
+        project.lines.find((candidate) =>
+          Object.values(lineTranslations(candidate) ?? {}).some((track) => track.main.text),
+        ),
         "translated line",
       );
       const [language, track] = required(
-        Object.entries(line.translations ?? {}).find(([, candidate]) => candidate.text),
+        Object.entries(lineTranslations(line) ?? {}).find(([, candidate]) => candidate.main.text),
         "translation",
       );
-      const text = `<text for="${keyOf(project, line)}">${track.text}`;
+      const text = `<text for="${keyOf(project, line)}">${track.main.text}`;
       if (!ttml.includes(text)) throw new Error("translation not exported");
       return {
         edited: ttml.replace(text, `${text} again`),
         touched: [line.id],
         expectTaken: (lines) =>
-          expect(lineById(lines, line.id).translations?.[language]?.text).toBe(`${track.text} again`),
+          expect(lineTranslations(lineById(lines, line.id))?.[language]?.main.text).toBe(`${track.main.text} again`),
       };
     },
   },
@@ -124,16 +136,20 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "edit a background",
     edit: (project, ttml) => {
       const line = required(
-        project.lines.find((candidate) => candidate.backgroundText),
+        project.lines.find((candidate) => backgroundText(candidate, DEFAULT_SPLIT_CHARACTER)),
         "background",
       );
-      const last = line.backgroundWords?.at(-1)?.text.trimEnd() ?? line.backgroundText;
+      const last =
+        timedSyllables(backgroundTrack(line)).at(-1)?.text.trimEnd() ?? backgroundText(line, DEFAULT_SPLIT_CHARACTER);
       return {
         edited: editParagraph(ttml, project, line, (p) =>
           p.replace(`>${last}</span></span>`, `>${last}h</span></span>`),
         ),
         touched: [line.id],
-        expectTaken: (lines) => expect(lineById(lines, line.id).backgroundText).toBe(`${line.backgroundText}h`),
+        expectTaken: (lines) =>
+          expect(backgroundText(lineById(lines, line.id), DEFAULT_SPLIT_CHARACTER)).toBe(
+            `${backgroundText(line, DEFAULT_SPLIT_CHARACTER)}h`,
+          ),
       };
     },
   },
@@ -143,6 +159,45 @@ const OPERATIONS: readonly EditOperation[] = [
       edited: ttml.replace(`<ttm:title>${project.metadata.title}<`, `<ttm:title>${project.metadata.title} (Live)<`),
       touched: [],
       expectTaken: () => expect(useProjectStore.getState().metadata.title).toBe(`${project.metadata.title} (Live)`),
+    }),
+  },
+  {
+    name: "add an unknown attribute to a line",
+    edit: (project, ttml) => {
+      const line = timedAt(project, 1);
+      return {
+        edited: editParagraph(ttml, project, line, (p) => p.replace("<p ", '<p x-cue="intro" ')),
+        touched: [line.id],
+        expectTaken: (lines) => expect(lineById(lines, line.id).passthrough?.attrs).toEqual([["x-cue", "intro"]]),
+      };
+    },
+  },
+  {
+    name: "add a kept head element",
+    edit: (_project, ttml) => ({
+      edited: ttml.replace("</head>", '<songInfo id="7"/></head>'),
+      touched: [],
+      expectTaken: () =>
+        expect(useProjectStore.getState().passthrough.head?.elements).toEqual([
+          { name: "songInfo", attrs: [["id", "7"]], children: [] },
+        ]),
+    }),
+  },
+  {
+    name: "put every line in a song part",
+    edit: (project, ttml) => ({
+      edited: ttml.replace("<div>", '<div itunes:songPart="Verse">'),
+      touched: [],
+      expectTaken: (lines) => {
+        const [part, ...rest] = useProjectStore.getState().parts;
+        expect(rest).toEqual([]);
+        expect(part?.kind).toBe("Verse");
+        const ids = new Set(lines.map((line) => line.id));
+        expect(part?.lineIds.every((id) => ids.has(id))).toBe(true);
+        expect(part?.lineIds).toEqual(
+          expect.arrayContaining(keyedExportLines(project.lines, DEFAULT_SPLIT_CHARACTER).map(({ line }) => line.id)),
+        );
+      },
     }),
   },
 ];
@@ -174,7 +229,9 @@ const COMBINED_OPERATIONS: readonly EditOperation[] = [
         expectTaken: (lines) => {
           textEdit.expectTaken(lines);
           const ids = lines.map((candidate) => candidate.id);
-          expect(ids.indexOf(line.id)).toBe(lines.findIndex((candidate) => candidate.text === "Brand new line") + 1);
+          expect(ids.indexOf(line.id)).toBe(
+            lines.findIndex((candidate) => lineText(candidate, DEFAULT_SPLIT_CHARACTER) === "Brand new line") + 1,
+          );
         },
       };
     },
@@ -191,7 +248,7 @@ const COMBINED_OPERATIONS: readonly EditOperation[] = [
         reordered: true,
         expectTaken: (lines) => {
           textEdit.expectTaken(lines);
-          const order = lines.filter(isLineTimed).map((line) => line.id);
+          const order = lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER)).map((line) => line.id);
           expect(order.indexOf(second.id)).toBe(order.indexOf(first.id) - 1);
         },
       };

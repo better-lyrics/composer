@@ -1,3 +1,4 @@
+import { lineFromFields } from "insync/line-from-fields";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -8,6 +9,7 @@ import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import type { Modifier } from "@dnd-kit/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -123,7 +125,7 @@ describe("useTimelineSnap · custom snap points", () => {
 
   it("does not emit line anchors when word snapping is OFF but a custom point exists", async () => {
     useProjectStore.setState({
-      lines: [{ id: "g1", text: "grid", agentId: "v1", begin: 2, end: 3 }],
+      lines: [lineFromFields({ id: "g1", text: "grid", agentId: "v1", begin: 2, end: 3 }, getSplitCharacter())],
       customSnapPoints: snapPoints([1]),
     });
     const { result } = await renderHook(() => useTimelineSnap());

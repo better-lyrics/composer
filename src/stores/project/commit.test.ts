@@ -1,0 +1,98 @@
+/**
+ * @vitest-environment node
+ */
+
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { addGroup, updateGroup } from "insync/commands/group-edits";
+import { lineEditCommand } from "insync/commands/line-edits";
+import { flattenBody } from "insync/group-flatten";
+import { lineText } from "insync/line-text";
+import { useProjectStore } from "@/stores/project";
+import { createGroup, createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
+
+const typed = (text: string) =>
+  lineEditCommand({ command: "edit lines", args: ["l1"] }, () => fieldUpdates([{ id: "l1", updates: { text } }]));
+
+beforeEach(() => {
+  useProjectStore.getState().reset();
+  useProjectStore
+    .getState()
+    .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "Lanterns" })]));
+});
+
+describe("commit", () => {
+  it("a pending burst is one undo step and carries its note", () => {
+    const { commit } = useProjectStore.getState();
+    commit(typed("Lanterns over"), "pending");
+    commit(typed("Lanterns over the"), "pending");
+    commit(typed("Lanterns over the river"), "pending");
+
+    useProjectStore.getState().undo();
+    expect(lineText(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns");
+
+    useProjectStore.getState().redo();
+    const { lines, history, historyIndex } = useProjectStore.getState();
+    expect(lineText(lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Lanterns over the river");
+    expect(history[historyIndex].note).toEqual({ command: "edit lines", args: ["l1"] });
+  });
+
+  it("a command that changes no line keeps the lines array", () => {
+    const before = useProjectStore.getState().lines;
+    useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#ffffff", templateVersion: 1 }));
+    expect(useProjectStore.getState().groups).toHaveLength(1);
+    expect(useProjectStore.getState().lines).toBe(before);
+  });
+
+  it("regression: a command that writes the values a line already has makes no undo step", () => {
+    const { history, lines } = useProjectStore.getState();
+    useProjectStore.getState().commit(typed("Lanterns"));
+    expect(useProjectStore.getState().history).toBe(history);
+    expect(useProjectStore.getState().lines).toBe(lines);
+  });
+
+  it("deleting a part's only line drops the part, and undo restores it", () => {
+    const store = useProjectStore.getState();
+    store.commit(pasteLyrics(store.lines, [createLine({ id: "l1", text: "Lanterns" }), createLine({ id: "l2" })]));
+    const parts = [{ id: "p1", kind: "Chorus", lineIds: ["l2"] }];
+    useProjectStore.getState().restoreLyrics({ parts });
+
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "Lanterns" })]));
+    expect(useProjectStore.getState().parts).toEqual([]);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().parts).toEqual(parts);
+  });
+
+  it("regression: undoing a typing burst that deleted a part's only line brings the part back", () => {
+    const parts = [{ id: "p1", kind: "Chorus", lineIds: ["l2"] }];
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [createLine({ id: "l1", text: "Lanterns" }), createLine({ id: "l2" })], parts });
+    useProjectStore.getState().clearHistory();
+
+    const burst = useProjectStore.getState().beginLyricBurst();
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "Lanterns" })]), "pending");
+    useProjectStore.getState().closeLyricBurst(burst);
+    useProjectStore.getState().undo();
+
+    expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["l1", "l2"]);
+    expect(useProjectStore.getState().parts).toEqual(parts);
+  });
+
+  it("regression: a commit that changes no line still stores the doc of the lines it keeps", () => {
+    const lines = [
+      createLine({ id: "seeded", text: "Rivers in the dark", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+    ];
+    useProjectStore.setState({ lines, groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(updateGroup("g1", { label: "Chorus" }));
+    const { doc, lines: after } = useProjectStore.getState();
+    expect(flattenBody(doc)).toBe(after);
+  });
+});

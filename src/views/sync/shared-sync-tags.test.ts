@@ -1,5 +1,5 @@
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
 import { createGroup, createLine } from "@/test/factories";
 import { laneGroupTags, placingInstanceName } from "@/views/sync/shared-sync-tags";
 import { describe, expect, it } from "vitest";
@@ -15,7 +15,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),

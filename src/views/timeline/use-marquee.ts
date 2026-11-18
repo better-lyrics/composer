@@ -1,6 +1,8 @@
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
-import { mergeWordSelections } from "@/domain/selection/set-ops";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { drawnSyllables } from "insync/line-drawn-track";
+import type { SyllableAddress } from "insync/selection-model";
+import { addressOf } from "insync/selection-resolve";
+import { mergeAddresses } from "insync/selection-set-ops";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -10,8 +12,8 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
-import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { readViewScroll, scrollViewBy } from "@/views/timeline/view-scroll";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -90,8 +92,8 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
   // the loop awake and let effect cleanup guarantee the release.
   useEffect(() => (autoScrolling ? holdFrames(AUTO_SCROLL_LABEL) : undefined), [autoScrolling]);
 
-  const computeSelection = useCallback((rect: MarqueeRect): WordSelection[] => {
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+  const computeSelection = useCallback((rect: MarqueeRect): SyllableAddress[] => {
+    const { lines } = useProjectStore.getState();
     const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
     const layout = computeRowLayout({
       lines,
@@ -103,43 +105,36 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });
 
-    const selections: WordSelection[] = [];
+    const selections: SyllableAddress[] = [];
     const rectBottom = rect.y + rect.height;
     const rectRight = rect.x + rect.width;
 
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const line = lines[lineIndex];
+    for (const line of lines) {
       const pos = layout.lineTops.get(line.id);
       if (!pos) continue;
 
       const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-      const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
+      const backgroundWords = drawnSyllables(line, "bg", getSplitCharacter());
       const mainTop = pos.top;
       const mainBottom = mainTop + mainHeight;
 
-      if (mainTop < rectBottom && mainBottom > rect.y && line.words) {
-        for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
-          const word = line.words[wordIndex];
+      if (mainTop < rectBottom && mainBottom > rect.y) {
+        for (const word of drawnSyllables(line, "main", getSplitCharacter())) {
           const wordLeft = GUTTER_WIDTH + word.begin * zoom;
           const wordRight = GUTTER_WIDTH + word.end * zoom;
-          if (wordLeft < rectRight && wordRight > rect.x) {
-            selections.push({ lineId: line.id, lineIndex, wordIndex, type: "word" });
-          }
+          if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "word", word));
         }
       }
 
-      if (hasBg && line.backgroundWords) {
+      if (backgroundWords.length > 0) {
         const bgHeight = mainHeight;
         const bgTop = mainBottom;
         const bgBottom = bgTop + bgHeight;
         if (bgTop < rectBottom && bgBottom > rect.y) {
-          for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
-            const word = line.backgroundWords[wordIndex];
+          for (const word of backgroundWords) {
             const wordLeft = GUTTER_WIDTH + word.begin * zoom;
             const wordRight = GUTTER_WIDTH + word.end * zoom;
-            if (wordLeft < rectRight && wordRight > rect.x) {
-              selections.push({ lineId: line.id, lineIndex, wordIndex, type: "bg" });
-            }
+            if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "bg", word));
           }
         }
       }
@@ -200,7 +195,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
           if (shiftRef.current) {
             const { stepQueue, selectedWords } = useTimelineStore.getState();
             const existing = stepQueue ?? selectedWords;
-            useTimelineStore.getState().setSelectedWords(mergeWordSelections(existing, newSelections));
+            useTimelineStore.getState().setSelectedWords(mergeAddresses(existing, newSelections));
           } else {
             useTimelineStore.getState().setSelectedWords(newSelections);
           }
@@ -230,5 +225,5 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
 // -- Exports -------------------------------------------------------------------
 
-export { useMarquee };
 export type { MarqueeRect };
+export { useMarquee };

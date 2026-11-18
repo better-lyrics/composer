@@ -1,6 +1,6 @@
 import { HEADING, PROSE } from "@/ui/typography";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
+import { formatTime } from "insync/format-time";
 
 // -- Interfaces ----------------------------------------------------------------
 

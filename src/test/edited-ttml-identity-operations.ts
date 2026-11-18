@@ -1,5 +1,9 @@
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { expect } from "vitest";
+import { lineTranslations } from "insync/language-line-languages";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { isLineTimed } from "insync/line-sync-progress";
+import { lineText } from "insync/line-text";
 import {
   type EditOperation,
   editLineText,
@@ -13,23 +17,27 @@ import {
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { createLine } from "@/test/factories";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { expect } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
 function repeatedPair(project: EditedTtmlProject): [LyricLine, LyricLine] {
-  const timed = project.lines.filter(isLineTimed);
+  const timed = project.lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER));
   for (const [index, line] of timed.entries()) {
     const copy = timed
       .slice(index + 1)
-      .find((other) => stripSplitCharacter(other.text) === stripSplitCharacter(line.text));
+      .find(
+        (other) =>
+          stripSplitCharacter(lineText(other, DEFAULT_SPLIT_CHARACTER)) ===
+          stripSplitCharacter(lineText(line, DEFAULT_SPLIT_CHARACTER)),
+      );
     if (copy) return [line, copy];
   }
   throw new Error("fixture has no repeated line");
 }
 
 function groupInstancePair(project: EditedTtmlProject): [LyricLine, LyricLine] {
-  const timed = project.lines.filter(isLineTimed);
+  const timed = project.lines.filter((value) => isLineTimed(value, DEFAULT_SPLIT_CHARACTER));
   for (const line of timed) {
     const other = timed.find(
       (candidate) => candidate.groupId === line.groupId && candidate.instanceIdx !== line.instanceIdx,
@@ -40,7 +48,16 @@ function groupInstancePair(project: EditedTtmlProject): [LyricLine, LyricLine] {
 }
 
 function untimed(line: LyricLine): LyricLine {
-  return reconcileLine({ ...line, words: undefined, begin: undefined, end: undefined, backgroundWords: undefined });
+  return lineFromFields(
+    {
+      ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER),
+      words: undefined,
+      begin: undefined,
+      end: undefined,
+      backgroundWords: undefined,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 // -- Operations ---------------------------------------------------------------
@@ -63,11 +80,13 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
     name: "copy a translated paragraph to add a line",
     edit: (project, ttml) => {
       const line = required(
-        project.lines.find((candidate) => Object.values(candidate.translations ?? {}).some((track) => track.text)),
+        project.lines.find((candidate) =>
+          Object.values(lineTranslations(candidate) ?? {}).some((track) => track.main.text),
+        ),
         "translated line",
       );
       const original = paragraphOf(ttml, project, line);
-      const text = stripSplitCharacter(line.text);
+      const text = stripSplitCharacter(lineText(line, DEFAULT_SPLIT_CHARACTER));
       const openTag = original.slice(0, original.indexOf(">") + 1);
       const copy = original.replace(`${openTag}${text}`, `${openTag}${text} again`);
       return {
@@ -76,11 +95,11 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
         lossless: true,
         expectTaken: (lines) => {
           const added = required(
-            lines.find((candidate) => candidate.text === `${text} again`),
+            lines.find((candidate) => lineText(candidate, DEFAULT_SPLIT_CHARACTER) === `${text} again`),
             "copied line",
           );
           expect(added.id).not.toBe(line.id);
-          expect(added.translations).toBeUndefined();
+          expect(lineTranslations(added)).toBeUndefined();
           expect(lines.indexOf(added)).toBe(lines.indexOf(lineById(lines, line.id)) + 1);
         },
       };

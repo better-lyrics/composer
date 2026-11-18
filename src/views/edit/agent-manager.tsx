@@ -1,8 +1,10 @@
+import { mainTrack } from "insync/line-track";
+import { removeSinger } from "insync/commands/lyrics-replace";
 import { noteGuideSignal } from "@/lib/guide-signals";
-import { agentDisplayName } from "@/domain/agent/display-name";
-import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
-import { nextAgentId } from "@/domain/agent/next-agent-id";
-import type { Agent, AgentType } from "@/domain/agent/model";
+import { agentDisplayName } from "insync/agent-display-name";
+import { AGENT_PRESETS, getAgentColor } from "insync/agent-colors";
+import { nextAgentId } from "insync/agent-next-agent-id";
+import type { Agent, AgentType } from "insync/agent";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
@@ -14,7 +16,7 @@ import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
 import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
 import { focusOnMount } from "@/utils/focus-on-mount";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconChevronDown, IconChevronLeft, IconMicrophone2, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 
@@ -189,7 +191,7 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
       <p className="px-2 pt-2 pb-1.5 text-[13.5px] font-bold text-composer-text">Agents</p>
       <div className="grid grid-cols-[minmax(0,max-content)_1fr_auto] max-h-74 overflow-x-hidden overflow-y-auto overscroll-none">
         {agents.map((agent) => {
-          const lineCount = lines.filter((line) => line.agentId === agent.id).length;
+          const lineCount = lines.filter((line) => mainTrack(line).agentId === agent.id).length;
           return (
             <button
               key={agent.id}
@@ -223,7 +225,6 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
 
 const AgentsPopoverBody: React.FC<{ close: () => void }> = ({ close }) => {
   const agents = useProjectStore((s) => s.agents);
-  const removeAgentWithHistory = useProjectStore((s) => s.removeAgentWithHistory);
   const [view, setView] = useState<AgentsView>({ kind: "list" });
   const showList = () => setView({ kind: "list" });
 
@@ -236,7 +237,7 @@ const AgentsPopoverBody: React.FC<{ close: () => void }> = ({ close }) => {
         <EditAgentForm
           agent={view.agent}
           removable={agents.length > 1}
-          onRemove={() => removeAgentWithHistory(view.agent.id)}
+          onRemove={() => useProjectStore.getState().commit(removeSinger(view.agent.id))}
           onDone={close}
           onBack={showList}
         />

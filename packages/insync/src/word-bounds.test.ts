@@ -1,0 +1,35 @@
+import { firstBegin, lastEnd } from "./word-bounds";
+import type { WordTiming } from "./word-timing";
+import { describe, expect, it } from "vitest";
+
+// -- firstBegin ---------------------------------------------------------------
+
+describe("firstBegin", () => {
+  it("returns begin of first word", () => {
+    const words: WordTiming[] = [
+      { id: "w1", text: "hi", sep: "", begin: 3, end: 4, joinsNext: true },
+      { id: "w2", text: "yo", sep: "", begin: 5, end: 6, joinsNext: false },
+    ];
+    expect(firstBegin(words)).toBe(3);
+  });
+
+  it("works for a single-word array", () => {
+    expect(firstBegin([{ id: "w3", text: "hi", sep: "", begin: 7, end: 8, joinsNext: false }])).toBe(7);
+  });
+});
+
+// -- lastEnd ------------------------------------------------------------------
+
+describe("lastEnd", () => {
+  it("returns end of last word", () => {
+    const words: WordTiming[] = [
+      { id: "w4", text: "hi", sep: "", begin: 3, end: 4, joinsNext: true },
+      { id: "w5", text: "yo", sep: "", begin: 5, end: 6, joinsNext: false },
+    ];
+    expect(lastEnd(words)).toBe(6);
+  });
+
+  it("works for a single-word array", () => {
+    expect(lastEnd([{ id: "w6", text: "hi", sep: "", begin: 7, end: 8, joinsNext: false }])).toBe(8);
+  });
+});

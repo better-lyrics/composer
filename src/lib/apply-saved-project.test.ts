@@ -1,14 +1,22 @@
-import type { Agent } from "@/domain/agent/model";
+import { msFromSeconds } from "insync/time";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Agent } from "insync/agent";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { addGroup } from "insync/commands/group-edits";
+import { bgBounds } from "insync/line-bounds";
+import { lineText } from "insync/line-text";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
 import { buildSavedProject } from "@/lib/persistence";
 import { buildSaveInput, currentSaveInput } from "@/lib/project-snapshot";
-import type { SavedProject } from "@/lib/saved-project";
+import type { SavedLine, SavedProject, SavedProjectV3 } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines, upgradeSavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
+import { savedLinesV3 } from "@/test/saved-v3";
 import { resetAllStores } from "@/test/stores";
-import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const FILE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "File Lead" },
@@ -31,9 +39,11 @@ function projectFile(overrides: Partial<SavedProject> = {}): SavedProject {
 
 function editProjectA(): void {
   const store = useProjectStore.getState();
-  store.setLinesWithHistory([createLine({ id: "a1", text: "first" })]);
-  useProjectStore.getState().addGroup(createGroup({ id: "ga", label: "Old group" }));
-  useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "second" })]);
+  store.commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "first" })]));
+  useProjectStore.getState().commit(addGroup(createGroup({ id: "ga", label: "Old group" })));
+  useProjectStore
+    .getState()
+    .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "second" })]));
 }
 
 describe("applySavedProject", () => {
@@ -67,14 +77,44 @@ describe("applySavedProject", () => {
 
     it("regression: stores timing for background vocals saved on a synced line without words", () => {
       const legacy = createLine({ id: "l1", text: "hello", begin: 10, end: 14, backgroundText: "ooh" });
+      const record: SavedProjectV3 = { ...projectFile(), version: 3, lines: savedLinesV3([legacy]) };
 
       for (const origin of ["storage", "file"] as const) {
-        applySavedProject(projectFile({ lines: [legacy] }), origin);
+        applySavedProject(upgradeSavedProject(structuredClone(record)), origin);
 
         const state = useProjectStore.getState();
-        expect(state.lines[0].backgroundWords?.[0]).toMatchObject({ begin: 12, end: 14 });
+        expect(bgBounds(state.lines[0])).toEqual({ begin: 12, end: 14 });
         expect(state.isDirty).toBe(false);
       }
+    });
+
+    it("regression: a saved background with no timing of its own stays untimed when the project opens", () => {
+      const line = createLine({ id: "l1", text: "hello", begin: 10, end: 14, backgroundText: "ooh" });
+
+      applySavedProject(projectFile({ lines: savedLines([line]) }), "storage");
+
+      expect(bgBounds(useProjectStore.getState().lines[0])).toBeNull();
+    });
+
+    it("regression: a line-synced background keeps its own span when a format 4 record opens", () => {
+      const lines: SavedLine[] = [
+        {
+          id: "l1",
+          tracks: [
+            {
+              role: "main",
+              agent: "v1",
+              span: [msFromSeconds(10), msFromSeconds(20)],
+              syllables: [{ text: "hello", sep: "" }],
+            },
+            { role: "bg", span: [msFromSeconds(12), msFromSeconds(14)], syllables: [{ text: "ooh", sep: "" }] },
+          ],
+        },
+      ];
+
+      applySavedProject(projectFile({ lines }), "storage");
+
+      expect(bgBounds(useProjectStore.getState().lines[0])).toEqual({ begin: 12, end: 14 });
     });
 
     it("regression: drops imported metadata keys a hand-edited file does not know", () => {
@@ -91,11 +131,15 @@ describe("applySavedProject", () => {
       editProjectA();
       applySavedProject(projectFile(), "file");
 
-      useProjectStore.getState().setLinesWithHistory([createLine({ id: "b1", text: "edited" })]);
+      useProjectStore
+        .getState()
+        .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "b1", text: "edited" })]));
       useProjectStore.getState().undo();
       useProjectStore.getState().undo();
 
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["file line"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "file line",
+      ]);
       expect(useProjectStore.getState().groups.map((group) => group.id)).toEqual(["gb"]);
     });
   });
@@ -132,13 +176,20 @@ describe("applySavedProject", () => {
     const grid = withOffset(detectedGrid({ beats, downbeats: [0.5, 2.5] }), 20);
 
     it("round-trips through save and restore", async () => {
-      useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "line" })]);
+      useProjectStore
+        .getState()
+        .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "line" })]));
       useProjectStore.getState().applyBeatGridWithHistory(grid);
       const saved = buildSaveInput();
       if (!saved) throw new Error("expected a save input");
       await resetAllStores();
 
-      applySavedProject(JSON.parse(JSON.stringify({ version: 3, savedAt: 0, ...saved })), "storage");
+      applySavedProject(
+        JSON.parse(
+          JSON.stringify({ version: SAVED_PROJECT_VERSION, savedAt: 0, ...saved, lines: savedLines(saved.lines) }),
+        ),
+        "storage",
+      );
 
       expect(useProjectStore.getState().beatGrid).toEqual(grid);
     });
@@ -162,7 +213,9 @@ describe("unison link", () => {
   beforeEach(resetAllStores);
 
   it("round-trips through save and restore", async () => {
-    useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "line" })]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "line" })]));
     useProjectStore.getState().linkUnisonLyric("4821");
     expect(useProjectStore.getState().isDirty).toBe(true);
     const saved = buildSaveInput();
@@ -198,5 +251,58 @@ describe("primingCorrected", () => {
   it("a stored project saved before the fix restores it false", () => {
     applySavedProject(projectFile({ primingCorrected: undefined }), "storage");
     expect(useProjectStore.getState().primingCorrected).toBe(false);
+  });
+});
+
+describe("unknown TTML data", () => {
+  beforeEach(resetAllStores);
+
+  it("a v4 save and load keeps passthrough and parts", () => {
+    const lines: SavedLine[] = [
+      {
+        id: "L1",
+        passthrough: { attrs: [["x-vendor:mood", "calm"]] },
+        tracks: [
+          {
+            id: "L1:main",
+            role: "main",
+            agent: "v1",
+            syllables: [
+              {
+                id: "w1",
+                text: "Harbour",
+                sep: " ",
+                span: [msFromSeconds(1), msFromSeconds(1.5)],
+                passthrough: { attrs: [["x-vendor:cue", "3"]] },
+              },
+              { id: "w2", text: "lights", sep: "", span: [msFromSeconds(1.5), msFromSeconds(2)] },
+            ],
+          },
+          {
+            id: "L1:bg",
+            role: "bg",
+            passthrough: { attrs: [["x-vendor:layer", "2"]] },
+            syllables: [{ id: "w3", text: "glow", sep: "", span: [msFromSeconds(2), msFromSeconds(2.4)] }],
+          },
+        ],
+      },
+    ];
+    const kept = {
+      agents: [{ ...FILE_AGENTS[0], passthrough: { attrs: [["x-vendor:voice", "alto"]] } }, FILE_AGENTS[1]],
+      lines,
+      parts: [{ id: "p1", kind: "Verse", lineIds: ["L1"] }],
+      passthrough: { tt: { attrs: [["xmlns:x-vendor", "urn:x"]] } },
+    } satisfies Partial<SavedProject>;
+
+    applySavedProject(structuredClone(projectFile(kept)), "storage");
+    const resaved = buildSavedProject(currentSaveInput());
+
+    expect(resaved).toMatchObject(kept);
+  });
+
+  it("a project without kept data saves no field for it", () => {
+    const saved = buildSavedProject(createProjectSaveInput());
+    expect(saved).not.toHaveProperty("parts");
+    expect(saved).not.toHaveProperty("passthrough");
   });
 });

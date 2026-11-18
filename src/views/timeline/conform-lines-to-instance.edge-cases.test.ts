@@ -1,11 +1,17 @@
+import { describe, expect, it } from "vitest";
+import type { LineTemplate } from "insync/group-template";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
 /**
  * @vitest-environment node
  */
-import type { LineTemplate } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { newWordId } from "insync/word-id";
+import { withFields } from "@/test/field-updates";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -15,31 +21,37 @@ const twoLineTemplate: LineTemplate[] = [
     agentId: "v1",
     relativeBegin: 0,
     relativeEnd: 2,
-    words: [{ text: "We were dancing in the dark", relativeBegin: 0, relativeEnd: 2 }],
+    words: [{ text: "We were dancing in the dark", sep: "", relativeBegin: 0, relativeEnd: 2, joinsNext: false }],
   },
   {
     text: "Till the morning came",
     agentId: "v1",
     relativeBegin: 2.5,
     relativeEnd: 4,
-    words: [{ text: "Till the morning came", relativeBegin: 2.5, relativeEnd: 4 }],
+    words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4, joinsNext: false }],
   },
 ];
 
 function looseChorus(): LyricLine[] {
   return [
-    {
-      id: "loose1",
-      text: "we were dancin in the dark",
-      agentId: "v1",
-      words: [{ text: "we were dancin in the dark", begin: 20, end: 22 }],
-    },
-    {
-      id: "loose2",
-      text: "till mornin came",
-      agentId: "v1",
-      words: [{ text: "till mornin came", begin: 22.4, end: 24 }],
-    },
+    lineFromFields(
+      {
+        id: "loose1",
+        text: "we were dancin in the dark",
+        agentId: "v1",
+        words: [{ id: "w1", text: "we were dancin in the dark", sep: "", begin: 20, end: 22, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
+    lineFromFields(
+      {
+        id: "loose2",
+        text: "till mornin came",
+        agentId: "v1",
+        words: [{ id: "w2", text: "till mornin came", sep: "", begin: 22.4, end: 24, joinsNext: false }],
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    ),
   ];
 }
 
@@ -50,7 +62,15 @@ const looseIds: ReadonlySet<string> = new Set(["loose1", "loose2"]);
 describe("conformLinesToInstance · edge cases", () => {
   it("conforms a single line to a single-line template", () => {
     const lines: LyricLine[] = [
-      { id: "hook", text: "oh oh oh", agentId: "v1", words: [{ text: "oh oh oh", begin: 8, end: 9 }] },
+      lineFromFields(
+        {
+          id: "hook",
+          text: "oh oh oh",
+          agentId: "v1",
+          words: [{ id: "w3", text: "oh oh oh", sep: "", begin: 8, end: 9, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = conformLinesToInstance({
       lines,
@@ -61,7 +81,7 @@ describe("conformLinesToInstance · edge cases", () => {
           agentId: "v1",
           relativeBegin: 0,
           relativeEnd: 1.5,
-          words: [{ text: "Oh oh oh", relativeBegin: 0, relativeEnd: 1.5 }],
+          words: [{ text: "Oh oh oh", sep: "", relativeBegin: 0, relativeEnd: 1.5, joinsNext: false }],
         },
       ],
       selectedLineIds: new Set(["hook"]),
@@ -69,9 +89,9 @@ describe("conformLinesToInstance · edge cases", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.updatedLines?.[0].text).toBe("Oh oh oh");
-    expect(result.updatedLines?.[0].words?.[0].begin).toBe(8);
-    expect(result.updatedLines?.[0].words?.[0].end).toBe(9.5);
+    expect(lineText(result.updatedLines![0], DEFAULT_SPLIT_CHARACTER)).toBe("Oh oh oh");
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].begin).toBe(8);
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].end).toBe(9.5);
   });
 
   it("keeps a line-synced template line-synced, with no words array", () => {
@@ -87,11 +107,11 @@ describe("conformLinesToInstance · edge cases", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.updatedLines?.[0].words).toBeUndefined();
-    expect(result.updatedLines?.[0].begin).toBe(20);
-    expect(result.updatedLines?.[0].end).toBe(22);
-    expect(result.updatedLines?.[1].begin).toBe(22.5);
-    expect(result.updatedLines?.[1].end).toBe(24);
+    expect(roleWords(result.updatedLines?.[0], "main")).toBeUndefined();
+    expect(mainTrack(result.updatedLines![0]).begin).toBe(20);
+    expect(mainTrack(result.updatedLines![0]).end).toBe(22);
+    expect(mainTrack(result.updatedLines![1]).begin).toBe(22.5);
+    expect(mainTrack(result.updatedLines![1]).end).toBe(24);
   });
 
   it("carries background vocals from the template onto the conformed lines", () => {
@@ -101,11 +121,11 @@ describe("conformLinesToInstance · edge cases", () => {
         agentId: "v1",
         relativeBegin: 0,
         relativeEnd: 2,
-        words: [{ text: "We were dancing in the dark", relativeBegin: 0, relativeEnd: 2 }],
+        words: [{ text: "We were dancing in the dark", sep: "", relativeBegin: 0, relativeEnd: 2, joinsNext: false }],
         backgroundText: "in the dark",
         backgroundWords: [
-          { text: "in ", relativeBegin: 1.2, relativeEnd: 1.5 },
-          { text: "the dark", relativeBegin: 1.5, relativeEnd: 2 },
+          { text: "in", sep: " ", relativeBegin: 1.2, relativeEnd: 1.5, joinsNext: false },
+          { text: "the dark", sep: "", relativeBegin: 1.5, relativeEnd: 2, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
       },
@@ -114,7 +134,7 @@ describe("conformLinesToInstance · edge cases", () => {
         agentId: "v1",
         relativeBegin: 2.5,
         relativeEnd: 4,
-        words: [{ text: "Till the morning came", relativeBegin: 2.5, relativeEnd: 4 }],
+        words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4, joinsNext: false }],
       },
     ];
     const result = conformLinesToInstance({
@@ -127,24 +147,23 @@ describe("conformLinesToInstance · edge cases", () => {
 
     expect(result.ok).toBe(true);
     const first = result.updatedLines?.[0];
-    expect(first?.backgroundText).toBe("in the dark");
-    expect(first?.backgroundWords?.map((w) => w.text)).toEqual(["in ", "the dark"]);
-    expect(first?.backgroundWords?.[0].begin).toBe(21.2);
-    expect(first?.backgroundWords?.[1].end).toBe(22);
-    expect(first?.backgroundTextSource).toBe("extraction");
-    expect(result.updatedLines?.[1].backgroundText).toBeUndefined();
-    expect(result.updatedLines?.[1].backgroundWords).toBeUndefined();
+    expect(backgroundText(first!, DEFAULT_SPLIT_CHARACTER)).toBe("in the dark");
+    expect(timedSyllables(backgroundTrack(first!)).map((w) => w.text + w.sep)).toEqual(["in ", "the dark"]);
+    expect(timedSyllables(backgroundTrack(first!))[0].begin).toBe(21.2);
+    expect(timedSyllables(backgroundTrack(first!))[1].end).toBe(22);
+    expect(backgroundTrack(first!)?.source).toBe("extraction");
+    expect(backgroundText(result.updatedLines?.[1], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+    expect(roleWords(result.updatedLines?.[1], "bg")).toBeUndefined();
   });
 
   it("clears background vocals the selection had but the template does not", () => {
     const lines: LyricLine[] = looseChorus().map((line, idx) =>
       idx === 0
-        ? {
-            ...line,
+        ? withFields(line, {
             backgroundText: "ooh",
-            backgroundWords: [{ text: "ooh", begin: 21, end: 21.5 }],
-            backgroundTextSource: "manual" as const,
-          }
+            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 21, end: 21.5, joinsNext: false }],
+            backgroundTextSource: "manual",
+          })
         : line,
     );
     const result = conformLinesToInstance({
@@ -155,14 +174,19 @@ describe("conformLinesToInstance · edge cases", () => {
       playheadTime: 0,
     });
 
-    expect(result.updatedLines?.[0].backgroundText).toBeUndefined();
-    expect(result.updatedLines?.[0].backgroundWords).toBeUndefined();
-    expect(result.updatedLines?.[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundText(result.updatedLines?.[0], DEFAULT_SPLIT_CHARACTER)).toBeUndefined();
+    expect(roleWords(result.updatedLines?.[0], "bg")).toBeUndefined();
+    expect(backgroundTrack(result.updatedLines![0])?.source).toBeUndefined();
   });
 
   it("uses background timing when it starts before the main words", () => {
     const lines: LyricLine[] = looseChorus().map((line, idx) =>
-      idx === 0 ? { ...line, backgroundText: "ooh", backgroundWords: [{ text: "ooh", begin: 18, end: 19 }] } : line,
+      idx === 0
+        ? withFields(line, {
+            backgroundText: "ooh",
+            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 18, end: 19, joinsNext: false }],
+          })
+        : line,
     );
     const result = conformLinesToInstance({
       lines,
@@ -172,13 +196,21 @@ describe("conformLinesToInstance · edge cases", () => {
       playheadTime: 0,
     });
 
-    expect(result.updatedLines?.[0].words?.[0].begin).toBe(18);
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].begin).toBe(18);
   });
 
   it("conforms a selection at the very start of the project", () => {
     const lines: LyricLine[] = [
       ...looseChorus(),
-      { id: "outro", text: "Goodnight", agentId: "v1", words: [{ text: "Goodnight", begin: 30, end: 32 }] },
+      lineFromFields(
+        {
+          id: "outro",
+          text: "Goodnight",
+          agentId: "v1",
+          words: [{ id: "w4", text: "Goodnight", sep: "", begin: 30, end: 32, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = conformLinesToInstance({
       lines,
@@ -195,7 +227,15 @@ describe("conformLinesToInstance · edge cases", () => {
 
   it("conforms a selection at the very end of the project", () => {
     const lines: LyricLine[] = [
-      { id: "verse", text: "I remember", agentId: "v1", words: [{ text: "I remember", begin: 0, end: 4 }] },
+      lineFromFields(
+        {
+          id: "verse",
+          text: "I remember",
+          agentId: "v1",
+          words: [{ id: "w5", text: "I remember", sep: "", begin: 0, end: 4, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       ...looseChorus(),
     ];
     const result = conformLinesToInstance({
@@ -231,9 +271,25 @@ describe("conformLinesToInstance · invariants", () => {
 
   it("keeps every line outside the selection referentially identical", () => {
     const lines: LyricLine[] = [
-      { id: "verse", text: "I remember", agentId: "v1", words: [{ text: "I remember", begin: 0, end: 4 }] },
+      lineFromFields(
+        {
+          id: "verse",
+          text: "I remember",
+          agentId: "v1",
+          words: [{ id: "w6", text: "I remember", sep: "", begin: 0, end: 4, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
       ...looseChorus(),
-      { id: "outro", text: "Goodnight", agentId: "v1", words: [{ text: "Goodnight", begin: 30, end: 32 }] },
+      lineFromFields(
+        {
+          id: "outro",
+          text: "Goodnight",
+          agentId: "v1",
+          words: [{ id: "w7", text: "Goodnight", sep: "", begin: 30, end: 32, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
     const result = conformLinesToInstance({
       lines,
@@ -250,9 +306,17 @@ describe("conformLinesToInstance · invariants", () => {
 
   it("matches fillEmptyLinesWithInstance when the targets happen to be empty", () => {
     const lines: LyricLine[] = [
-      { id: "verse", text: "I remember", agentId: "v1", words: [{ text: "I remember", begin: 0, end: 4 }] },
-      { id: "loose1", text: "", agentId: "v1" },
-      { id: "loose2", text: "", agentId: "v1" },
+      lineFromFields(
+        {
+          id: "verse",
+          text: "I remember",
+          agentId: "v1",
+          words: [{ id: "w8", text: "I remember", sep: "", begin: 0, end: 4, joinsNext: false }],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields({ id: "loose1", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      lineFromFields({ id: "loose2", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
     ];
     const conformed = conformLinesToInstance({
       lines,

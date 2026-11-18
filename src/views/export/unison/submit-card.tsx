@@ -10,7 +10,7 @@ import { isUnisonSessionEnded } from "@/lib/unison/client";
 import type { RevisionFieldCheck, RevisionPreview } from "@/lib/unison/revision-types";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { ChangesSection } from "@/views/export/unison/changes-section";
 import {
   CHECKS_FAILED_REASON,

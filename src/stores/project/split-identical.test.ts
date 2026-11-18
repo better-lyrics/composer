@@ -1,6 +1,9 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { splitIdenticalSyllables } from "insync/commands/word-edits";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
-import { beforeEach, describe, expect, it } from "vitest";
 
 describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
   beforeEach(() => {
@@ -12,35 +15,39 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
       createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] }),
       createLine({ id: "l2", words: [{ text: "running", begin: 2, end: 3 }] }),
     ];
-    useProjectStore.getState().setLinesWithHistory(lines);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, lines));
 
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "l1", wordIndex: 0, type: "word" },
-      splitPoints: [3],
-      caseInsensitive: false,
-    });
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "l1", wordIndex: 0, type: "word" },
+        splitPoints: [3],
+        caseInsensitive: false,
+      }),
+    );
 
     const after = useProjectStore.getState().lines;
-    expect(after[0].words).toHaveLength(2);
-    expect(after[1].words).toHaveLength(2);
+    expect(timedSyllables(mainTrack(after[0]))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(after[1]))).toHaveLength(2);
 
     useProjectStore.getState().undo();
     const reverted = useProjectStore.getState().lines;
-    expect(reverted[0].words).toHaveLength(1);
-    expect(reverted[1].words).toHaveLength(1);
+    expect(timedSyllables(mainTrack(reverted[0]))).toHaveLength(1);
+    expect(timedSyllables(mainTrack(reverted[1]))).toHaveLength(1);
   });
 
   it("source word splits even when there are no other matches", () => {
     const lines = [createLine({ id: "l1", words: [{ text: "alone", begin: 0, end: 1 }] })];
-    useProjectStore.getState().setLinesWithHistory(lines);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, lines));
 
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "l1", wordIndex: 0, type: "word" },
-      splitPoints: [2],
-      caseInsensitive: false,
-    });
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "l1", wordIndex: 0, type: "word" },
+        splitPoints: [2],
+        caseInsensitive: false,
+      }),
+    );
 
-    expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toHaveLength(2);
   });
 
   it("case-insensitive flag splits Capitalized siblings via the action", () => {
@@ -48,26 +55,30 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
       createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] }),
       createLine({ id: "l2", words: [{ text: "Running", begin: 2, end: 3 }] }),
     ];
-    useProjectStore.getState().setLinesWithHistory(lines);
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "l1", wordIndex: 0, type: "word" },
-      splitPoints: [3],
-      caseInsensitive: true,
-    });
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, lines));
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "l1", wordIndex: 0, type: "word" },
+        splitPoints: [3],
+        caseInsensitive: true,
+      }),
+    );
     const after = useProjectStore.getState().lines;
-    expect(after[1].words).toHaveLength(2);
-    expect(after[1].words?.[0].text).toBe("Run");
+    expect(timedSyllables(mainTrack(after[1]))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(after[1]))[0].text).toBe("Run");
   });
 
   it("is a no-op when splitPoints is empty", () => {
     const lines = [createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] })];
-    useProjectStore.getState().setLinesWithHistory(lines);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, lines));
     const before = useProjectStore.getState().lines;
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "l1", wordIndex: 0, type: "word" },
-      splitPoints: [],
-      caseInsensitive: false,
-    });
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "l1", wordIndex: 0, type: "word" },
+        splitPoints: [],
+        caseInsensitive: false,
+      }),
+    );
     expect(useProjectStore.getState().lines).toBe(before);
   });
 });
@@ -87,15 +98,17 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory · background pr
         backgroundWords: [{ text: "running", begin: 1, end: 2 }],
       }),
     ];
-    useProjectStore.getState().setLinesWithHistory(lines);
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "l1", wordIndex: 0, type: "bg" },
-      splitPoints: [3],
-      caseInsensitive: false,
-    });
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, lines));
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "l1", wordIndex: 0, type: "bg" },
+        splitPoints: [3],
+        caseInsensitive: false,
+      }),
+    );
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords).toHaveLength(2);
-    expect(line.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(line))).toHaveLength(2);
+    expect(backgroundTrack(line)?.source).toBe("manual");
   });
 
   it("leaves backgroundTextSource untouched when only the main track is split", () => {
@@ -108,13 +121,15 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory · background pr
         backgroundWords: [{ text: "ooh", begin: 1, end: 2 }],
       }),
     ];
-    useProjectStore.getState().setLinesWithHistory(lines);
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "l1", wordIndex: 0, type: "word" },
-      splitPoints: [3],
-      caseInsensitive: false,
-    });
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, lines));
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "l1", wordIndex: 0, type: "word" },
+        splitPoints: [3],
+        caseInsensitive: false,
+      }),
+    );
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 
   it("undo restores the prior extraction provenance", () => {
@@ -127,14 +142,16 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory · background pr
         backgroundWords: [{ text: "running", begin: 1, end: 2 }],
       }),
     ];
-    useProjectStore.getState().setLinesWithHistory(lines);
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "l1", wordIndex: 0, type: "bg" },
-      splitPoints: [3],
-      caseInsensitive: false,
-    });
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, lines));
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "l1", wordIndex: 0, type: "bg" },
+        splitPoints: [3],
+        caseInsensitive: false,
+      }),
+    );
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });

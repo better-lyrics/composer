@@ -1,9 +1,9 @@
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
-import { memoByIdentity } from "@/utils/memo-by-identity";
+import { instanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
+import type { SyllableAddress } from "insync/selection-model";
+import { memoByIdentity } from "insync/memo-by-identity";
 import type { RowLayout } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
@@ -14,7 +14,7 @@ interface RowSpan {
 }
 
 interface FollowMemory {
-  selection: readonly WordSelection[] | null;
+  selection: readonly SyllableAddress[] | null;
   selectedLineIds: ReadonlySet<string> | null;
   layout: RowLayout | null;
   viewportHeight: number;
@@ -27,7 +27,7 @@ interface FollowMemory {
 interface FollowInput {
   lines: readonly LyricLine[];
   time: number;
-  selection: readonly WordSelection[] | null;
+  selection: readonly SyllableAddress[] | null;
   layout: RowLayout;
   collapsedInstances: Record<string, boolean>;
   viewportHeight: number;
@@ -185,5 +185,5 @@ function followScrollTop(rows: RowSpan, input: FollowInput, scrollHeight: number
 
 // -- Exports ------------------------------------------------------------------
 
-export { createFollowMemory, followScrollTop, followStep, lineAtTime, resetFollowMemory };
 export type { FollowInput, FollowMemory };
+export { createFollowMemory, followScrollTop, followStep, lineAtTime, resetFollowMemory };

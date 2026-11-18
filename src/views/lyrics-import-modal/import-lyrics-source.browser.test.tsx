@@ -1,3 +1,8 @@
+import { savedLines } from "@/lib/saved-project";
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { listProjectIndex } from "@/lib/project-repository";
@@ -9,16 +14,14 @@ import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { PROJECT_FILE_NAME, backupFileNamed, projectFileNamed, projectFileText } from "@/test/project-file-fixtures";
-import { seedStoredProject } from "@/test/projects";
+import { linesOfRecord, seedStoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE } from "@/views/lyrics-import-modal/accepted-files";
 import type { ImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -30,8 +33,7 @@ function fileImportContext(): ImportContext {
     confirm: useConfirmStore.getState().open,
     audioDuration: 0,
     applyBackgroundExtraction: false,
-    backgroundExtractionMergeStandalone: false,
-    backgroundExtractionPreserveBrackets: false,
+    backgroundExtraction: { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
     sourceLabel: "File",
     onResult: (parsed, source) => useImportModalStore.getState().recordImportResult(parsed, source),
   };
@@ -48,7 +50,7 @@ async function renderHosts() {
 }
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => line.text);
+  return useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()));
 }
 
 async function openAlpha(): Promise<void> {
@@ -56,7 +58,7 @@ async function openAlpha(): Promise<void> {
     open: true,
     project: {
       metadata: { title: "Alpha", artists: [], album: "", duration: 0 },
-      lines: [createLine({ text: "Alpha line one" }), createLine({ text: "Alpha line two" })],
+      lines: savedLines([createLine({ text: "Alpha line one" }), createLine({ text: "Alpha line two" })]),
     },
   });
   await restoreOpenProject();
@@ -103,7 +105,7 @@ describe("importLyricsFile with a project file", () => {
     await expect(pending).resolves.toBe(true);
     expect(openProjectIdSnapshot()).not.toBe("alpha");
     expect(useProjectStore.getState().metadata.title).toBe("Lust for Life");
-    expect((await loadProjectRecord("alpha"))?.lines.map((line) => line.text)).toEqual([
+    expect(linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line, getSplitCharacter()))).toEqual([
       "Alpha line one",
       "Alpha line two",
     ]);

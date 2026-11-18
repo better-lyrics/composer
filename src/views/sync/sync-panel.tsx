@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { hasTransliteration } from "@/domain/language/has-transliteration";
-import { playingLineIndex } from "@/domain/line/playing-line";
-import { isProjectFullySynced, syncProgress } from "@/domain/line/sync-progress";
-import { previousSlot, slotBounds } from "@/domain/sync/cursor";
+import { hasTransliteration } from "insync/language-has-transliteration";
+import { playingLineIndex } from "insync/line-playing-line";
+import { isProjectFullySynced, syncProgress } from "insync/line-sync-progress";
+import { SYNC_START } from "insync/sync-address";
+import { previousSlot, slotBounds } from "insync/sync-cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -28,6 +29,7 @@ import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Components ---------------------------------------------------------------
 
@@ -58,7 +60,7 @@ const SyncPanel: React.FC = () => {
   const displayLines = useDisplayLines(lines, textVariant);
 
   const [syncState, setSyncState] = useState<SyncState>({
-    position: { lineIndex: 0, wordIndex: 0 },
+    position: SYNC_START,
     isActive: false,
   });
   const [showPulse, setShowPulse] = useState(false);
@@ -110,7 +112,7 @@ const SyncPanel: React.FC = () => {
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
     setSyncState((prev) => ({ ...prev, isActive: false }));
-    const slot = previousSlot(lines, cursor, granularity);
+    const slot = previousSlot(lines, cursor, granularity, getSplitCharacter());
     const bounds = slot ? slotBounds(lines, slot) : null;
     if (bounds) seekTo(Math.max(0, bounds.begin - useSettingsStore.getState().redoPreroll));
   });
@@ -171,8 +173,8 @@ const SyncPanel: React.FC = () => {
     editMode,
   );
 
-  const progress = useMemo(() => syncProgress(lines, granularity), [lines, granularity]);
-  const syncComplete = useMemo(() => isProjectFullySynced(lines), [lines]);
+  const progress = useMemo(() => syncProgress(lines, granularity, getSplitCharacter()), [lines, granularity]);
+  const syncComplete = useMemo(() => isProjectFullySynced(lines, getSplitCharacter()), [lines]);
 
   const handleGranularityChange = useCallback(
     (newGranularity: "line" | "word") => {
@@ -202,7 +204,7 @@ const SyncPanel: React.FC = () => {
   const noteSyncUndo = useEffectEvent(() => noteGuideSignal("sync.undoTap", lines[lineIndex]?.id));
 
   const lastSyncedTime = useMemo(() => {
-    const slot = previousSlot(lines, cursor, granularity);
+    const slot = previousSlot(lines, cursor, granularity, getSplitCharacter());
     return slot ? slotBounds(lines, slot)?.begin : undefined;
   }, [lines, cursor, granularity]);
 
@@ -234,11 +236,9 @@ const SyncPanel: React.FC = () => {
     clearPlacementPreroll();
     if (!syncState.isActive && lines.length > 0) {
       if (handleStartSync() === "counting") return;
-      handleHoldStart();
-      setIsHolding(true);
+      if (handleHoldStart()) setIsHolding(true);
     } else if (isPlaying) {
-      handleHoldStart();
-      setIsHolding(true);
+      if (handleHoldStart()) setIsHolding(true);
     }
   }, [
     editMode,
@@ -318,7 +318,7 @@ const SyncPanel: React.FC = () => {
     if (runHistoryShortcut(e, runHistory, { scope: "sync" })) return;
 
     const matched = findMatchingShortcut(e, "sync");
-    if (!matched || focusedControlOwnsKey(e)) return;
+    if (!matched || !source || focusedControlOwnsKey(e)) return;
 
     switch (matched) {
       case "sync.tap":

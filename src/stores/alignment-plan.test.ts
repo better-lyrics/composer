@@ -1,15 +1,18 @@
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { commitGesture } from "@/domain/sync/commit-gesture";
+import { mainTrack } from "insync/line-track";
+import type { LyricLine } from "insync/line";
+import { planGesture } from "insync/sync-commit-gesture";
 import { planLines, plainWindow } from "@/stores/alignment-plan";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // Line mode tap scenarios from hubertfa-posttrain's parity fixtures
 // (tests/composer_parity), which pin the behaviour hfapt/linemode.py
 // transcribes and the step-1 evaluation scored. Each tap is [line, time,
 // jumped]. `bounds` and `clamped` are what this code returned when the
-// fixtures were recorded; `windows` are each aligned line's plain window under
-// the step-1 rules, by line index.
+// fixtures were recorded, except that a tap behind an open line is now refused
+// ("no-room") and tapped again; `windows` are each aligned line's plain window
+// under the step-1 rules, by line index.
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -19,7 +22,7 @@ interface Scenario {
   lines: number;
   taps: [number, number, boolean][];
   bounds: ([number, number] | null)[];
-  clamped: (number | null)[];
+  clamped: (number | null | "no-room")[];
   windows: Record<number, [number, number]>;
 }
 
@@ -101,18 +104,19 @@ const SCENARIOS: Scenario[] = [
       [0, 5, false],
       [1, 5.4, false],
       [2, 5.3, false],
+      [2, 5.45, false],
       [3, 6, false],
       [4, 6.05, false],
     ],
     bounds: [
       [5, 5.4],
-      [5.4, 5.4],
-      [5.4, 6],
+      [5.4, 5.45],
+      [5.45, 6],
       [6, 6.05],
       [6.05, 6.05],
     ],
-    clamped: [null, null, 5.4, null, null],
-    windows: { 0: [4.4, 5.55], 2: [4.8, 6.15], 3: [5.4, 6.2], 4: [5.45, 20] },
+    clamped: [null, null, "no-room", null, null, null],
+    windows: { 0: [4.4, 5.55], 1: [4.8, 5.6], 2: [4.85, 6.15], 3: [5.4, 6.2], 4: [5.45, 20] },
   },
   {
     name: "edges and the final line",
@@ -139,19 +143,24 @@ function tapLines(scenario: Scenario) {
   let lines: LyricLine[] = Array.from({ length: scenario.lines }, (_, i) =>
     createLine({ id: `l${i}`, text: `line ${i} words here` }),
   );
-  const clamped: (number | null)[] = [];
+  const clamped: (number | null | "no-room")[] = [];
   for (const [lineIndex, time, jumped] of scenario.taps) {
-    const commit = commitGesture(lines, "tap-line", {
+    const commit = planGesture(lines, "tap-line", {
       cursor: { lineIndex, wordIndex: 0 },
       jumped,
       time,
       defaultWordDuration: 0.3,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     if (!commit) throw new Error(`tap on line ${lineIndex} wasn't committed`);
+    if (commit === "no-room") {
+      clamped.push(commit);
+      continue;
+    }
     clamped.push(commit.clampedTo);
     lines = lines.map((line) => {
       const update = commit.lineUpdates.find((u) => u.id === line.id);
-      return update ? reconcileLine({ ...line, ...update.updates }) : line;
+      return update ? { ...line, ...update.updates } : line;
     });
   }
   return { lines, clamped };
@@ -162,9 +171,13 @@ function tapLines(scenario: Scenario) {
 describe("planLines in Line mode", () => {
   it.each(SCENARIOS)("$name: plans every tapped line, ended or not, in step-1 windows", (scenario) => {
     const { lines, clamped } = tapLines(scenario);
-    expect(lines.map((l) => (l.begin === undefined || l.end === undefined ? null : [l.begin, l.end]))).toEqual(
-      scenario.bounds,
-    );
+    expect(
+      lines.map((l) =>
+        mainTrack(l).begin === undefined || mainTrack(l).end === undefined
+          ? null
+          : [mainTrack(l).begin, mainTrack(l).end],
+      ),
+    ).toEqual(scenario.bounds);
     expect(clamped).toEqual(scenario.clamped);
 
     const windows = Object.fromEntries(

@@ -1,9 +1,16 @@
-import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { TranslationTrack, TransliterationTrack } from "@/domain/language/model";
-import { alignPastedLanguageLines } from "@/domain/language/paste-import";
-import type { LyricLine } from "@/domain/line/model";
+import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@tabler/icons-react";
+import { useId, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { pasteLanguageLines } from "insync/commands/languages";
+import { alignTrackToLine, validateTransliterationAlignment } from "insync/language-align";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { lineTranslations, lineTransliteration, withLanguages } from "insync/language-line-languages";
+import { wholeLineSegments } from "insync/language-manual-segments";
+import type { LineLanguage } from "insync/language";
+import { alignPastedLanguageLines } from "insync/language-paste-import";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -13,10 +20,8 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { Select } from "@/ui/select";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
-import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@tabler/icons-react";
-import { useId, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { pluralize } from "insync/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -58,7 +63,6 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
   onClose,
   onImportedTranslation,
 }) => {
-  const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const [kind, setKind] = useState<"transliteration" | "translation">(defaultKind);
   const [targetLanguage, setTargetLanguage] = useState(defaultTargetLanguage);
   const [pastedText, setPastedText] = useState(initialText);
@@ -67,7 +71,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     () =>
       alignPastedLanguageLines(
         pastedText,
-        lines.map((line) => line.text),
+        lines.map((line) => lineText(line, getSplitCharacter())),
       ),
     [lines, pastedText],
   );
@@ -76,7 +80,14 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
   const errors = useMemo(
     () =>
       kind === "transliteration"
-        ? lines.map((line, index) => validateTransliterationAlignment(line.text, mappedLines[index] ?? "", line.words))
+        ? lines.map((line, index) =>
+            validateTransliterationAlignment(
+              lineText(line, getSplitCharacter()),
+              mappedLines[index] ?? "",
+              timedSyllables(mainTrack(line)),
+              lineTransliteration(line)?.main.pieces,
+            ),
+          )
         : lines.map(() => null),
     [kind, lines, mappedLines],
   );
@@ -97,30 +108,33 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     lines.forEach((line, index) => {
       const text = mappedLines[index]?.trim();
       if (!text) return;
-      const sourceFingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+      const sourceFingerprint = languageSourceFingerprint(
+        getSplitCharacter(),
+        lineText(line, getSplitCharacter()),
+        backgroundText(line, getSplitCharacter()),
+      );
       if (kind === "transliteration") {
-        const transliteration: TransliterationTrack = {
+        const transliteration: LineLanguage = {
           language: `${sourceLanguage || "und"}-Latn`,
-          text,
-          segments: wholeLineSegments(line.text, text),
+          main: { text, segments: wholeLineSegments(lineText(line, getSplitCharacter()), text) },
           origin: "import",
           sourceFingerprint,
         };
-        updates.push({ id: line.id, updates: alignTrackToLine(line, transliteration) });
+        updates.push({ id: line.id, updates: alignTrackToLine(line, transliteration, getSplitCharacter()) });
         return;
       }
       const translations = {
-        ...(line.translations ?? {}),
+        ...(lineTranslations(line) ?? {}),
         [targetLanguage]: {
           language: targetLanguage,
-          text,
+          main: { text },
           origin: "import",
           sourceFingerprint,
-        } satisfies TranslationTrack,
+        } satisfies LineLanguage,
       };
-      updates.push({ id: line.id, updates: { translations } });
+      updates.push({ id: line.id, updates: withLanguages(line, { translations }) });
     });
-    updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+    useProjectStore.getState().commit(pasteLanguageLines(updates));
     noteGuideSignal("languages.paste");
     if (kind === "transliteration") noteGuideSignal("languages.romanize");
     if (kind === "translation") onImportedTranslation(targetLanguage);
@@ -202,7 +216,9 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                   {index + 1}
                 </span>
                 <p className="pt-1.5 text-sm leading-5 break-words text-composer-text-secondary select-text">
-                  {line.text || <span className="italic text-composer-text-muted">Blank line</span>}
+                  {lineText(line, getSplitCharacter()) || (
+                    <span className="italic text-composer-text-muted">Blank line</span>
+                  )}
                 </p>
                 <IconArrowRight aria-hidden="true" className="mt-2.5 size-3.5 text-composer-text-faint" />
                 <div>

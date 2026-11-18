@@ -1,16 +1,26 @@
-import { type IndexEntryInput, buildIndexEntry } from "@/domain/project/index-entry";
+import { savedLines } from "@/lib/saved-project";
+import type { LyricLine } from "insync/line";
+import { type IndexEntryInput, buildIndexEntry, storedLyricLines } from "@/domain/project/index-entry";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
-function input(overrides: Partial<IndexEntryInput> = {}): IndexEntryInput {
+// The project index reads saved records, so lines built in memory are written the way a save writes them.
+function storedRecord(line: unknown): unknown {
+  return typeof line === "object" && line !== null && "tracks" in line ? savedLines([line as LyricLine])[0] : line;
+}
+
+function input({
+  lines,
+  ...overrides
+}: Partial<Omit<IndexEntryInput, "lines">> & { lines?: unknown } = {}): IndexEntryInput {
   return {
     id: "p1",
     metadata: { title: "Midnight City", artists: ["M83"], album: "Hurry Up, We're Dreaming", duration: 243 },
-    lines: [],
     audioSource: undefined,
     storedAudioBytes: 0,
     updatedAt: 1_758_900_000_000,
     ...overrides,
+    lines: storedLyricLines(Array.isArray(lines) ? lines.map(storedRecord) : lines),
   };
 }
 
@@ -131,6 +141,13 @@ describe("buildIndexEntry", () => {
       expect(entry.lineCount).toBe(0);
     });
 
+    it("regression: skips a saved word with no text instead of throwing", () => {
+      const lines = [{ id: "w", text: "Night bus", agentId: "v1", words: [{ begin: 1, end: 2 }, null] }];
+      const entry = buildIndexEntry(input({ lines }));
+      expect(entry.lineCount).toBe(1);
+      expect(entry.hasWordTiming).toBe(false);
+    });
+
     it("regression: treats a line with a non-string text field as having no main lyrics", () => {
       const entry = buildIndexEntry(input({ lines: [{ id: "z", text: 42 }] }));
       expect(entry.lineCount).toBe(0);
@@ -138,6 +155,28 @@ describe("buildIndexEntry", () => {
   });
 
   describe("invariants", () => {
+    it("counts the lines a save started from the same as the record it wrote", () => {
+      const lines = [
+        createLine({ text: "Waiting in a car", words: [{ text: "Waiting", begin: 1.0004, end: 2 }] }),
+        createLine({ text: "Waiting for a ride", begin: 3, end: 4 }),
+        createLine({ text: "In the dark" }),
+        createLine({
+          text: "Main words",
+          backgroundText: "(ooh)",
+          backgroundWords: [{ text: "ooh", begin: 5, end: 6 }],
+        }),
+        createLine({ text: "", begin: 7, end: 8 }),
+      ];
+      const counts = ({ lineCount, syncedLineCount, hasWordTiming }: ReturnType<typeof buildIndexEntry>) => ({
+        lineCount,
+        syncedLineCount,
+        hasWordTiming,
+      });
+      const fromRecord = counts(buildIndexEntry(input({ lines })));
+      expect(fromRecord).toEqual({ lineCount: 4, syncedLineCount: 3, hasWordTiming: true });
+      expect(counts(buildIndexEntry({ ...input(), lines }))).toEqual(fromRecord);
+    });
+
     it("never counts more synced lines than lyric lines", () => {
       const lines = [createLine({ text: "a", begin: 1, end: 2 }), createLine({ text: "", begin: 3, end: 4 })];
       const entry = buildIndexEntry(input({ lines }));

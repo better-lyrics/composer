@@ -1,7 +1,9 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { describe, expect, it } from "vitest";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -33,11 +35,15 @@ describe("applyEditedLyricsWithHistory", () => {
   it("writes the edited lines as one undo step", () => {
     seedProject();
     apply();
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "Hello there",
+    ]);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Hello"]);
     useProjectStore.getState().redo();
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "Hello there",
+    ]);
   });
 
   describe("regressions", () => {
@@ -52,7 +58,7 @@ describe("applyEditedLyricsWithHistory", () => {
       seedProject();
       useProjectStore.setState({ agents: DEFAULT_AGENTS, groups: [], isDirty: false });
       const before = useProjectStore.getState();
-      apply({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
+      apply({ lines: structuredClone(before.lines) });
       const after = useProjectStore.getState();
       expect(after.lines).toBe(before.lines);
       expect(after.metadata).toBe(before.metadata);

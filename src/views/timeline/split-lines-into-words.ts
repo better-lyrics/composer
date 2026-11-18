@@ -1,12 +1,16 @@
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import type { ReadableLine } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
-import type { WordSelection } from "@/domain/selection/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { convertToWordTiming } from "insync/commands/line-timing";
+import { withKeptSyllablePieces } from "insync/language-pieces";
+import { manualBackgroundWordEdit } from "insync/line-lane-word-edits";
+import type { LyricLine } from "insync/line";
+import { isLineSynced } from "insync/line-predicates";
+import { convertBackgroundToWord, convertMainToWord } from "insync/line-span-to-words";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import type { SyllableAddress } from "insync/selection-model";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
-import { convertLineToWord } from "@/utils/sync-helpers";
+import { evenlyTimedWords } from "insync/lyric-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -17,22 +21,19 @@ interface LineWordsUpdate {
 
 // -- Pure computation ----------------------------------------------------------
 
-type SplitTarget = Pick<WordSelection, "lineId" | "type">;
+type SplitTarget = Pick<SyllableAddress, "lineId" | "type">;
 
 function splitMultiWordWord(word: WordTiming): WordTiming[] {
-  const asLine: { text: string; begin: number; end: number; words?: WordTiming[] } = {
-    text: word.text.trimEnd(),
-    begin: word.begin,
-    end: word.end,
-  };
-  const parts = convertLineToWord(asLine).words;
-  if (!parts || parts.length < 2) return [word];
-  const { syllableGroupId: _drop, transliteration: _t, transliterationJoinerAfter: _j, ...base } = word;
+  const parts = evenlyTimedWords(word.text, word.begin, word.end, getSplitCharacter());
+  if (parts.length < 2) return [word];
+  const { joinsNext, ...base } = word;
   const lastIndex = parts.length - 1;
   return parts.map((part, index) => ({
     ...base,
     ...part,
-    text: index === lastIndex && word.text.endsWith(" ") ? `${part.text} ` : part.text,
+    id: index === 0 ? word.id : part.id,
+    sep: index === lastIndex ? (word.sep.endsWith(" ") ? " " : "") : part.sep,
+    ...(index === lastIndex && { joinsNext }),
   }));
 }
 
@@ -56,39 +57,40 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
   for (const [id, tracks] of tracksByLine) {
     const realLine = rawLinesById.get(id);
     if (!realLine) continue;
-    const lineUpdates: Partial<LyricLine> = {};
-    if (tracks.has("word") && isLineSynced(realLine)) {
-      const converted = convertLineToWord(realLine);
-      if (converted.words) Object.assign(lineUpdates, { words: converted.words, begin: undefined, end: undefined });
+    const withBackgroundWords = tracks.has("bg") ? convertBackgroundToWord(realLine) : realLine;
+    const converted =
+      tracks.has("word") && isLineSynced(realLine) ? convertMainToWord(withBackgroundWords) : withBackgroundWords;
+    let lineUpdates: Partial<LyricLine> = converted === realLine ? {} : { tracks: converted.tracks };
+    const bgWords = timedSyllables(backgroundTrack(realLine));
+    const splitBg = tracks.has("bg") ? splitMultiWordBgWords(bgWords) : null;
+    if (splitBg) {
+      lineUpdates = manualBackgroundWordEdit(realLine, splitBg, getSplitCharacter(), {
+        ...lineUpdates,
+        languages: withKeptSyllablePieces(realLine, "bg", bgWords, splitBg),
+      });
     }
-    const splitBg =
-      tracks.has("bg") && realLine.backgroundWords ? splitMultiWordBgWords(realLine.backgroundWords) : null;
-    if (splitBg) Object.assign(lineUpdates, manualBackgroundWordEdit(splitBg));
     if (Object.keys(lineUpdates).length > 0) updates.push({ id, updates: lineUpdates });
   }
   return updates;
 }
 
-function splitTargetsForMenu(target: SplitTarget, selectedWords: WordSelection[]): SplitTarget[] {
+function splitTargetsForMenu(target: SplitTarget, selectedWords: SyllableAddress[]): SplitTarget[] {
   return selectedWords.some((w) => w.lineId === target.lineId) ? [target, ...selectedWords] : [target];
 }
 
-function computeSplitSelections(updates: LineWordsUpdate[], effectiveLines: readonly ReadableLine[]): WordSelection[] {
-  const lineIndexById = new Map<string, number>();
-  for (let i = 0; i < effectiveLines.length; i++) lineIndexById.set(effectiveLines[i].id, i);
-
-  const selections: WordSelection[] = [];
+function computeSplitSelections(updates: LineWordsUpdate[], lines: readonly LyricLine[]): SyllableAddress[] {
+  const shownById = new Map(lines.map((line) => [line.id, line]));
+  const selections: SyllableAddress[] = [];
   for (const update of updates) {
-    const lineIndex = lineIndexById.get(update.id);
-    if (lineIndex === undefined) continue;
+    const shown = shownById.get(update.id);
+    if (!shown) continue;
+    const written = { ...shown, ...update.updates };
     const tracks = [
-      ["word", update.updates.words],
-      ["bg", update.updates.backgroundWords],
+      ["word", mainTrack(written) !== mainTrack(shown) ? timedSyllables(mainTrack(written)) : []],
+      ["bg", backgroundTrack(written) !== backgroundTrack(shown) ? timedSyllables(backgroundTrack(written)) : []],
     ] as const;
     for (const [type, words] of tracks) {
-      for (let wi = 0; wi < (words?.length ?? 0); wi++) {
-        selections.push({ lineId: update.id, lineIndex, wordIndex: wi, type });
-      }
+      for (const word of words) selections.push({ lineId: update.id, type, syllableId: word.id });
     }
   }
   return selections;
@@ -96,17 +98,13 @@ function computeSplitSelections(updates: LineWordsUpdate[], effectiveLines: read
 
 // -- Store-mutating operation --------------------------------------------------
 
-function splitLinesIntoWords(targets: Iterable<SplitTarget>, effectiveLines: readonly ReadableLine[]): void {
+function splitLinesIntoWords(targets: Iterable<SplitTarget>, lines: readonly LyricLine[]): void {
   const projectState = useProjectStore.getState();
   const updates = computeSplitIntoWordsUpdates(targets, projectState.lines);
 
-  if (updates.length === 1) {
-    projectState.updateLineWithHistory(updates[0].id, updates[0].updates);
-  } else if (updates.length > 1) {
-    projectState.updateLinesWithHistory(updates);
-  }
+  if (updates.length > 0) projectState.commit(convertToWordTiming(updates));
 
-  const newSelections = computeSplitSelections(updates, effectiveLines);
+  const newSelections = computeSplitSelections(updates, lines);
   if (newSelections.length > 0) {
     useTimelineStore.getState().setSelectedWords(newSelections);
   }

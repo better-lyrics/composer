@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
+import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { formatTimeMs } from "@/utils/sync-helpers";
 
@@ -34,6 +35,23 @@ describe("ScrollableLine", () => {
     expect(screen.container.textContent).toContain("(echo)");
   });
 
+  it("regression: a long untimed background on a line-drawn row wraps inside the row, joined at split marks", async () => {
+    const background = `(${"far ech|o call ".repeat(12).trim()})`;
+    const row = (
+      <div style={{ width: 320 }}>
+        <ScrollableLine {...BASE_PROPS} granularity="line" backgroundText={background} />
+      </div>
+    );
+    const first = await render(row);
+    await installUtilitiesUsedIn(first.container);
+    await first.unmount();
+    const screen = await render(row);
+    const backgroundRow = screen.container.querySelectorAll(".flex-wrap")[0] as HTMLElement;
+
+    expect([...backgroundRow.children].slice(0, 3).map((word) => word.textContent)).toEqual(["(far", "echo", "call"]);
+    expect(backgroundRow.scrollWidth).toBeLessThanOrEqual(backgroundRow.clientWidth);
+  });
+
   it("renders only the line-number gutter when text is empty", async () => {
     const screen = await render(<ScrollableLine {...BASE_PROPS} text="" />);
     expect((screen.container.textContent ?? "").trim()).toBe(String(BASE_PROPS.lineNumber));
@@ -46,8 +64,8 @@ describe("ScrollableLine", () => {
       <ScrollableLine
         {...BASE_PROPS}
         words={[
-          { text: "Hello ", begin: 0, end: 0.5 },
-          { text: "world", begin: 0.5, end: 1 },
+          { id: "w1", text: "Hello", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+          { id: "w2", text: "world", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ]}
         onClick={() => {
           lineClicks++;
@@ -113,8 +131,8 @@ describe("ScrollableLine line-synced row in Word mode", () => {
         {...LINE_SYNCED_PROPS}
         backgroundText="ooh ah"
         backgroundWords={[
-          { text: "ooh ", begin: 1, end: 2 },
-          { text: "ah", begin: 2, end: 3 },
+          { id: "w3", text: "ooh", sep: " ", begin: 1, end: 2, joinsNext: false },
+          { id: "w4", text: "ah", sep: "", begin: 2, end: 3, joinsNext: false },
         ]}
       />,
     );

@@ -1,3 +1,8 @@
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { backgroundText, lineText } from "insync/line-text";
+import { mainTrack } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
@@ -7,9 +12,7 @@ import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { EditPanel } from "@/views/edit";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -44,7 +47,7 @@ function pasteText(textarea: HTMLTextAreaElement, text: string): ClipboardEvent 
 }
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => line.text);
+  return useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -55,7 +58,7 @@ describe("EditPanel smart paste", () => {
     const event = pasteText(textarea, TTML);
     expect(event.defaultPrevented).toBe(true);
     await expect.poll(lineTexts).toEqual(["Hello", "World"]);
-    expect(useProjectStore.getState().lines[0].begin).toBe(1);
+    expect(mainTrack(useProjectStore.getState().lines[0]).begin).toBe(1);
     await expect.poll(() => textarea.value).toBe("Hello\nWorld");
     await expect.element(screen.getByText("Imported 2 lines from pasted text with 2 timed lines")).toBeInTheDocument();
   });
@@ -171,7 +174,7 @@ describe("EditPanel smart paste", () => {
       expect(event.defaultPrevented).toBe(false);
       Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(textarea, "Hi (ooh)");
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
-      await expect.poll(() => useProjectStore.getState().lines[0]?.backgroundText).toBe("(ooh)");
+      await expect.poll(() => backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("(ooh)");
       expect(screen.container.textContent).not.toContain("Imported");
     });
   });

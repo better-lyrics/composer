@@ -1,11 +1,13 @@
+import type { LyricLine } from "insync/line";
+import { lineFromFields } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import type { LyricLine } from "@/domain/line/model";
-import { reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
+import { getSplitCharacter } from "@/utils/split-character";
 import { EditPanel } from "@/views/edit";
 
 // -- Helpers ------------------------------------------------------------------
@@ -28,13 +30,19 @@ function pasteTextareaValue(textarea: HTMLTextAreaElement, value: string): void 
 
 function linkedChorusAroundVerse(): LyricLine[] {
   return [
-    reconcileLine({ id: "a0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-    reconcileLine({ id: "x", text: "Verse", agentId: "v1" }),
-    reconcileLine({ id: "b0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+    lineFromFields(
+      { id: "a0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
+    lineFromFields({ id: "x", text: "Verse", agentId: "v1" }, getSplitCharacter()),
+    lineFromFields(
+      { id: "b0", text: "Chorus line", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      getSplitCharacter(),
+    ),
   ];
 }
 
-const texts = () => useProjectStore.getState().lines.map((l) => l.text);
+const texts = () => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter()));
 
 // -- Tests --------------------------------------------------------------------
 
@@ -94,6 +102,39 @@ describe("regressions", () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(texts()).toEqual(["Chorus line edited", "Verse!", "Chorus line edited"]);
   });
+
+  it("regression: a space typed inside brackets kept as text on a linked line stays, with the caret, for the next key", async () => {
+    const chorus = (id: string, instanceIdx: number) =>
+      lineFromFields(
+        { id, text: "Chorus line (sway cinder)", agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx: 0 },
+        getSplitCharacter(),
+      );
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    useProjectStore.setState({
+      activeTab: "edit",
+      lines: [
+        chorus("a0", 0),
+        lineFromFields({ id: "x", text: "Verse", agentId: "v1" }, getSplitCharacter()),
+        chorus("b0", 1),
+        chorus("c0", 2),
+      ],
+      groups: [createGroup({ id: "g1", label: "Chorus" })],
+    });
+    const screen = await render(<EditPanel />);
+    const textarea = getTextarea(screen.container);
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true });
+    const row = "Chorus line (sway cinder)";
+    const caret = `${row}\nVerse\n${row}`.length - 1;
+
+    textarea.focus();
+    textarea.setSelectionRange(caret, caret);
+    await userEvent.keyboard(" ");
+    await userEvent.keyboard("e");
+
+    await expect.poll(() => textarea.value.split("\n")[2]).toBe("Chorus line (sway cinder e)");
+    // The linked copy above gained the same two characters.
+    expect(textarea.selectionStart).toBe(caret + 4);
+  });
 });
 
 describe("pasting over a linked line", () => {
@@ -102,25 +143,31 @@ describe("pasting over a linked line", () => {
     useProjectStore.setState({
       activeTab: "edit",
       lines: [
-        reconcileLine({
-          id: "a0",
-          text: "Chorus line",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-        }),
-        reconcileLine({ id: "x", text: "Verse", agentId: "v1" }),
-        reconcileLine({ id: "bg1", text: "(oh)", agentId: "v1" }),
-        reconcileLine({ id: "bg2", text: "(yeah)", agentId: "v1" }),
-        reconcileLine({
-          id: "b0",
-          text: "Chorus line",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 1,
-          templateLineIdx: 0,
-        }),
+        lineFromFields(
+          {
+            id: "a0",
+            text: "Chorus line",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields({ id: "x", text: "Verse", agentId: "v1" }, getSplitCharacter()),
+        lineFromFields({ id: "bg1", text: "(oh)", agentId: "v1" }, getSplitCharacter()),
+        lineFromFields({ id: "bg2", text: "(yeah)", agentId: "v1" }, getSplitCharacter()),
+        lineFromFields(
+          {
+            id: "b0",
+            text: "Chorus line",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 1,
+            templateLineIdx: 0,
+          },
+          getSplitCharacter(),
+        ),
       ],
       groups: [createGroup({ id: "g1", label: "Chorus" })],
     });
@@ -131,7 +178,8 @@ describe("pasting over a linked line", () => {
     pasteTextareaValue(textarea, "Chorus song\nVerse\n(oh)\n(yeah)\nChorus line");
 
     await expect.poll(texts).toEqual(["Chorus song", "Verse", "Chorus song"]);
-    await expect.poll(() => textarea.value).toBe("Chorus song\nVerse\nChorus song");
+    // Background parts now join with a comma by default.
+    await expect.poll(() => textarea.value).toBe("Chorus song\nVerse (oh, yeah)\nChorus song");
     expect(textarea.selectionStart).toBeLessThanOrEqual(textarea.value.length);
   });
 });

@@ -1,6 +1,6 @@
-import { instanceBounds } from "@/domain/instance/bounds";
-import type { LineTemplate } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import { instanceBounds } from "insync/instance-bounds";
+import type { LineTemplate } from "insync/group-template";
+import type { LyricLine } from "insync/line";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
 
 // -- Types --------------------------------------------------------------------

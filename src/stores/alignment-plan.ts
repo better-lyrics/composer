@@ -3,14 +3,15 @@ import type { HanReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
-import type { LinkGroup } from "@/domain/group/template";
-import { sharedTimingFanOut } from "@/domain/group/shared-timing";
-import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { mainBounds } from "@/domain/line/bounds";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import type { WordTiming } from "@/domain/word/timing";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { mainBounds } from "insync/line-bounds";
+import type { LineUpdate, LyricLine } from "insync/line";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
+import { isSpanTimed, mainTrack, timedSyllables } from "insync/line-track";
+import { withRoleWords } from "insync/line-track-writes";
+import type { WordTiming } from "insync/word-timing";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // Which lines a run aligns, and what each one is aligned against.
 
@@ -21,6 +22,11 @@ interface AlignableCounts {
   lineTimed: number;
   /** Lines that already have word timing: only aligned when re-aligning. */
   wordTimed: number;
+}
+
+interface AlignedWords {
+  id: string;
+  words: WordTiming[];
 }
 
 interface PlannedLine {
@@ -49,22 +55,24 @@ function planLine(
   realign: boolean,
   nextBegin: number,
 ): Pick<PlannedLine, "taps" | "words" | "existing" | "guide"> | null {
-  if (isLineSynced(line)) {
-    const end = line.end === line.begin ? nextBegin : line.end;
-    if (end <= line.begin) return null;
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
+  const main = mainTrack(line);
+  if (isSpanTimed(main)) {
+    const end = main.end === main.begin ? nextBegin : main.end;
+    if (end <= main.begin) return null;
+    const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line, getSplitCharacter()), getSplitCharacter());
     if (parts.length === 0) return null;
     return {
-      taps: { begin: line.begin, end: line.end },
+      taps: { begin: main.begin, end: main.end },
       words: groupAlignmentWords(parts, trailingSpace),
       existing: null,
-      guide: { begin: line.begin, end },
+      guide: { begin: main.begin, end },
     };
   }
   if (realign && isWordSynced(line)) {
     const taps = mainBounds(line);
     if (!taps || taps.end <= taps.begin) return null;
-    return { taps, words: groupTimedWords(line.words!), existing: line.words!, guide: taps };
+    const words = timedSyllables(mainTrack(line));
+    return { taps, words: groupTimedWords(words), existing: words, guide: taps };
   }
   return null;
 }
@@ -98,9 +106,10 @@ function countAlignableLines(lines: readonly LyricLine[], lineIds?: readonly str
 // A line the user retimed or retyped mid-run keeps their edit. The store
 // replaces a line's object (and its words array) on every change.
 function isUnchanged(current: LyricLine | undefined, planned: PlannedLine): boolean {
-  if (!current || current.text !== planned.line.text) return false;
-  if (planned.existing) return current.words === planned.existing;
-  return isLineSynced(current) && current.begin === planned.taps.begin && current.end === planned.taps.end;
+  if (!current || lineText(current, getSplitCharacter()) !== lineText(planned.line, getSplitCharacter())) return false;
+  if (planned.existing) return timedSyllables(mainTrack(current)) === planned.existing;
+  const span = mainBounds(current);
+  return isLineSynced(current) && span?.begin === planned.taps.begin && span.end === planned.taps.end;
 }
 
 /** The span a planned line's windows are built around, inside the song. */
@@ -148,39 +157,37 @@ function hasTappedEnd(plan: PlannedLine): boolean {
   return plan.guide.end === plan.taps.end;
 }
 
-/**
- * The updates with their timing copied to linked instances that share it, as
- * every timing write does: the first instance's timing wins, so an instance
- * aligned on its own (or one whose alignment fell back) can't drift from it.
- * Null when the copy is refused.
- */
-function withSharedTiming(
-  lines: readonly LyricLine[],
-  groups: readonly LinkGroup[],
-  updates: readonly LineUpdate[],
-): LineUpdate[] | null {
-  const after = applyLineUpdates(lines, updates);
-  const shared = sharedTimingFanOut(
-    lines,
-    after,
-    groups,
-    updates.map((u) => u.id),
-  );
-  if (shared.rejected) return null;
-  return shared.lines.flatMap((line, i) => (line === lines[i] ? [] : [{ id: line.id, updates: line }]));
+// Aligned words land on the line as it is now, and only on lines unchanged since the plan that the caller keeps.
+function alignedUpdates(
+  aligned: readonly AlignedWords[],
+  currentById: ReadonlyMap<string, LyricLine>,
+  plannedById: ReadonlyMap<string, PlannedLine>,
+  keeps: (planned: PlannedLine, words: readonly WordTiming[]) => boolean = () => true,
+): LineUpdate[] {
+  return aligned.flatMap(({ id, words }) => {
+    const current = currentById.get(id);
+    const planned = plannedById.get(id);
+    return current && planned && keeps(planned, words) && isUnchanged(current, planned)
+      ? [{ id, updates: { tracks: withRoleWords(current, "main", words).tracks } }]
+      : [];
+  });
+}
+
+function movesExistingWords(planned: PlannedLine, words: readonly WordTiming[]): boolean {
+  return words.some((w, i) => w.begin !== planned.existing![i].begin || w.end !== planned.existing![i].end);
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export {
+  alignedUpdates,
   countAlignableLines,
   guideTaps,
   hasTappedEnd,
-  isUnchanged,
+  movesExistingWords,
   planLines,
   plainWindow,
   segmentFor,
   segmentIn,
-  withSharedTiming,
 };
-export type { PlannedLine };
+export type { AlignedWords, PlannedLine };

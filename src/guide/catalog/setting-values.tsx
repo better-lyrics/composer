@@ -1,5 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
-import { pluralWord } from "@/utils/pluralize";
+import { pluralWord } from "insync/pluralize";
 
 // -- Components ---------------------------------------------------------------
 

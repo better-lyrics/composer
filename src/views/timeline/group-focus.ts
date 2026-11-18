@@ -1,10 +1,10 @@
-import { instanceStart, sharesTiming } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
-import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
-import { belongsToInstance } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
-import type { Bounds } from "@/domain/word/bounds";
+import { instanceStart, sharesTiming } from "insync/group-shared-timing";
+import type { LinkGroup } from "insync/group";
+import { instanceBounds } from "insync/instance-bounds";
+import { instanceIndicesOf, linesOfInstance } from "insync/instance-enumerate";
+import { belongsToInstance } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
+import type { Bounds } from "insync/word-bounds";
 
 // -- Types --------------------------------------------------------------------
 

@@ -5,7 +5,7 @@ import { deleteLyrics, withdrawPendingRevision } from "@/lib/unison/endpoints";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { unlinkProjectsFromLyric } from "@/lib/unison/project-link";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { showEditWithdrawnToast, showRemovedFromUnisonToast, showUnisonFailureToast } from "@/utils/unison-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";

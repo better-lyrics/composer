@@ -1,14 +1,19 @@
+import { fieldsOfLine } from "insync/line-from-fields";
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { assignBinding } from "@/stores/shortcut-bindings";
 import { snapPoints } from "@/test/factories";
 import { createLine } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineKeyboard", () => {
   it("toggles snap when the snap shortcut is pressed in the timeline scope", async () => {
@@ -115,8 +120,8 @@ describe("useTimelineKeyboard", () => {
   });
 
   it("toggles original and transliteration labels when L is pressed", async () => {
-    const line = {
-      ...createLine({ text: "일단은" }),
+    const line = legacyLine({
+      ...fieldsOfLine(createLine({ text: "일단은" }), getSplitCharacter()),
       transliteration: {
         language: "ko-Latn",
         text: "ildan eun",
@@ -124,7 +129,7 @@ describe("useTimelineKeyboard", () => {
         origin: "google" as const,
         sourceFingerprint: "source",
       },
-    };
+    });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({ textVariant: "original" });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -147,16 +152,13 @@ describe("useTimelineKeyboard", () => {
     const line = createLine({
       text: "every day",
       words: [
-        { text: "every ", begin: 1, end: 1.5 },
+        { text: "every", sep: " ", begin: 1, end: 1.5 },
         { text: "day", begin: 1.5, end: 2 },
       ],
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [
-        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
-      ],
+      selectedWords: [storedWordAddress(line.id, 0, "word"), storedWordAddress(line.id, 1, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
@@ -164,7 +166,9 @@ describe("useTimelineKeyboard", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const mergedLine = useProjectStore.getState().lines[0];
-    expect(mergedLine.words).toEqual([{ text: "everyday", begin: 1, end: 2 }]);
+    expect(timedSyllables(mainTrack(mergedLine))).toEqual([
+      { text: "everyday", sep: "", begin: 1, end: 2, joinsNext: false },
+    ]);
   });
 
   it("regression: a remapped import lyrics binding opens the import", async () => {
@@ -337,7 +341,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const line = createLine({
       text: "hi there",
       words: [
-        { text: "hi ", begin: 0, end: 1 },
+        { text: "hi", sep: " ", begin: 0, end: 1 },
         { text: "there", begin: 1, end: 2 },
       ],
     });
@@ -345,7 +349,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const hoveredId = useProjectStore.getState().customSnapPoints[0].id; // the 5 pin
     useTimelineStore.setState({
       hoveredSnapPointId: hoveredId,
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
@@ -353,7 +357,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
 
     expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([12]);
-    expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toHaveLength(2);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
   });
 
@@ -361,14 +365,14 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const line = createLine({
       text: "hi there",
       words: [
-        { text: "hi ", begin: 0, end: 1 },
+        { text: "hi", sep: " ", begin: 0, end: 1 },
         { text: "there", begin: 1, end: 2 },
       ],
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({
       hoveredSnapPointId: null,
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
@@ -383,12 +387,12 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const line = createLine({
       text: "hi there",
       words: [
-        { text: "hi ", begin: 0, end: 1 },
+        { text: "hi", sep: " ", begin: 0, end: 1 },
         { text: "there", begin: 1, end: 2 },
       ],
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
-    useTimelineStore.setState({ selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress(line.id, 0, "word")] });
     assignBinding("timeline.deleteSelection", { key: "F2" });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
@@ -396,7 +400,9 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "F2", bubbles: true }));
 
     expect(useTimelineStore.getState().editingWord).toBeNull();
-    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual(["there"]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word) => word.text + word.sep)).toEqual([
+      "there",
+    ]);
   });
 });
 
@@ -412,7 +418,7 @@ describe("useTimelineKeyboard · background provenance", () => {
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress(line.id, 0, "bg")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
@@ -420,8 +426,8 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundTextSource).toBe("manual");
-    expect(updated.backgroundWords?.[0].begin).toBeCloseTo(1.2);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated))[0].begin).toBeCloseTo(1.2);
   });
 
   it("stamps backgroundTextSource manual when bg words are merged", async () => {
@@ -430,17 +436,14 @@ describe("useTimelineKeyboard · background provenance", () => {
       words: [{ text: "main", begin: 0, end: 1 }],
       backgroundText: "ooh aah",
       backgroundWords: [
-        { text: "ooh ", begin: 1, end: 1.5 },
+        { text: "ooh", sep: " ", begin: 1, end: 1.5 },
         { text: "aah", begin: 1.5, end: 2 },
       ],
       backgroundTextSource: "extraction",
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [
-        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "bg" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 1, type: "bg" },
-      ],
+      selectedWords: [storedWordAddress(line.id, 0, "bg"), storedWordAddress(line.id, 1, "bg")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
@@ -448,8 +451,10 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords).toEqual([{ text: "oohaah", begin: 1, end: 2 }]);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated))).toEqual([
+      { text: "oohaah", sep: "", begin: 1, end: 2, joinsNext: false },
+    ]);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word's timing is set", async () => {
@@ -463,13 +468,13 @@ describe("useTimelineKeyboard · background provenance", () => {
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
 
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });

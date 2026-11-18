@@ -1,34 +1,43 @@
-import { effectiveTimingWrite } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { roleWords } from "insync/line-track";
+import { mainTimingWrite, withRoleWords } from "insync/line-track-writes";
+import { UNBOUNDED_TIME_RANGE } from "insync/group-shared-timing";
+import type { LineUpdate, LyricLine } from "insync/line";
+import type { BoundaryEdge } from "insync/word-boundary";
 import { createLine } from "@/test/factories";
-import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { type RetimeChange, createWordTimingOps } from "insync/timing-word-ops";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-// -- Store write seam ---------------------------------------------------------
+// -- Retime seam --------------------------------------------------------------
 
-interface CapturedUpdate {
-  id: string;
-  updates: Partial<LyricLine>;
-  options?: { propagateToSiblings?: boolean };
-}
+type RetimeEdit = ReturnType<typeof createWordTimingOps>["retimeEdit"];
 
-function captureUpdates() {
-  const calls: CapturedUpdate[] = [];
-  const updateLineWithHistory = (
-    id: string,
-    updates: Partial<LyricLine>,
-    options?: { propagateToSiblings?: boolean },
-  ) => {
-    calls.push({ id, updates, options });
-  };
-  return { calls, updateLineWithHistory };
+// Plans one Sync retime with no shared range and collects the update it writes.
+function retimeInto(
+  calls: LineUpdate[],
+  retimeEdit: RetimeEdit,
+  edge: BoundaryEdge,
+  change: RetimeChange,
+  lines: readonly LyricLine[],
+  lineIdx: number,
+  wordIdx: number,
+): void {
+  const line = lines[lineIdx];
+  const update = line
+    ? retimeEdit({ line, wordIdx, edge, change, range: UNBOUNDED_TIME_RANGE, splitChar: DEFAULT_SPLIT_CHARACTER })
+    : null;
+  if (update) calls.push(update);
 }
 
 // -- Factory instances --------------------------------------------------------
 
-const wordsOps = createWordTimingOps({ getWords: (line) => line.words, writeWords: effectiveTimingWrite });
+const wordsOps = createWordTimingOps({
+  getWords: (line) => drawnSyllables(line, "main", DEFAULT_SPLIT_CHARACTER),
+  writeWords: mainTimingWrite,
+});
 const bgOps = createWordTimingOps({
-  getWords: (line) => line.backgroundWords,
-  writeWords: (_line, words) => ({ backgroundWords: words }),
+  getWords: (line) => roleWords(line, "bg"),
+  writeWords: (line, words) => ({ tracks: withRoleWords(line, "bg", words).tracks }),
 });
 
 // -- Fixtures -----------------------------------------------------------------
@@ -39,8 +48,8 @@ function makeLine() {
   return createLine({
     text: "a b c",
     words: [
-      { text: "a ", begin: 0, end: 1 },
-      { text: "b ", begin: 1, end: 2 },
+      { text: "a", sep: " ", begin: 0, end: 1 },
+      { text: "b", sep: " ", begin: 1, end: 2 },
       { text: "c", begin: 2, end: 3 },
     ],
   });
@@ -48,4 +57,4 @@ function makeLine() {
 
 // -- Exports ------------------------------------------------------------------
 
-export { bgOps, captureUpdates, makeLine, wordsOps };
+export { bgOps, makeLine, retimeInto, wordsOps };

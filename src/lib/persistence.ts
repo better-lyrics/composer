@@ -1,21 +1,23 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { Stem } from "@/audio/separation/types";
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
 import type { PlayedRange } from "@/domain/alignment/played-ranges";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
-import type { MetadataKey } from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { MetadataKey } from "insync/project-imported-metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import type { TimingGranularity } from "insync/project-timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { ensureOpenProjectId, findOpenProjectId } from "@/lib/open-project-session";
 import { deleteProjectAudio, saveProjectAudio } from "@/lib/project-audio";
 import type { IndexViewFields } from "@/lib/project-index-write";
 import { saveProjectRecord } from "@/lib/project-repository";
-import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject, savedKeptRoot, savedLines } from "@/lib/saved-project";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
 
@@ -26,6 +28,8 @@ interface ProjectSaveInput {
   agents: Agent[];
   lines: LyricLine[];
   groups: LinkGroup[];
+  parts?: readonly Part[];
+  passthrough?: DocPassthrough;
   granularity: GranularityMode;
   exportTiming: TimingGranularity;
   syllableSplitDefaults: SyllableSplitDefaults;
@@ -50,20 +54,22 @@ interface ProjectSaveInput {
 // -- Records ------------------------------------------------------------------
 
 function buildSavedProject(input: ProjectSaveInput): SavedProject {
-  const { unisonLyricId, ...fields } = input;
+  const { unisonLyricId, parts, passthrough, ...fields } = input;
   const audioFileName = input.audioSource?.kind === "file" ? input.audioSource.name : undefined;
   return {
     version: SAVED_PROJECT_VERSION,
     savedAt: Date.now(),
     ...fields,
+    lines: savedLines(input.lines),
     audioFileName,
+    ...savedKeptRoot({ parts, passthrough }),
     ...(unisonLyricId ? { unisonLyricId } : {}),
   };
 }
 
 async function saveProjectTo(target: Promise<string>, input: ProjectSaveInput, view?: IndexViewFields): Promise<void> {
   const project = buildSavedProject(input);
-  await saveProjectRecord(await target, project, view);
+  await saveProjectRecord(await target, project, { view, lines: input.lines });
 }
 
 // -- Public API ---------------------------------------------------------------

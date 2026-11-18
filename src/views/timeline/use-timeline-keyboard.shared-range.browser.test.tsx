@@ -1,14 +1,15 @@
-import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { createGroup, createLine, createWords } from "@/test/factories";
+import { storedWordAddress } from "@/test/word-address";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -21,14 +22,19 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
   });
 }
 
-async function armSharedTimeline(options: { sharesTiming: boolean; selection: WordSelection[]; currentTime?: number }) {
+interface WordAt {
+  lineId: string;
+  wordIndex: number;
+}
+
+async function armSharedTimeline(options: { sharesTiming: boolean; selection: WordAt[]; currentTime?: number }) {
   useAudioStore.setState({ currentTime: options.currentTime ?? 0, duration: DURATION });
   useProjectStore.setState({
     activeTab: "timeline",
@@ -36,7 +42,9 @@ async function armSharedTimeline(options: { sharesTiming: boolean; selection: Wo
     groups: [createGroup({ id: "g1", ...(options.sharesTiming ? { sharesTiming: true } : {}) })],
   });
   useSettingsStore.setState({ rollingEdit: false });
-  useTimelineStore.setState({ selectedWords: options.selection });
+  useTimelineStore.setState({
+    selectedWords: options.selection.map(({ lineId, wordIndex }) => storedWordAddress(lineId, wordIndex)),
+  });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() =>
     useTimelineKeyboard(
@@ -52,12 +60,7 @@ function pressKey(key: string) {
 }
 
 const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
-const firstWordOf = (lineId: string, lineIndex: number): WordSelection => ({
-  lineId,
-  lineIndex,
-  wordIndex: 0,
-  type: "word",
-});
+const firstWordOf = (lineId: string, _lineIndex: number): WordAt => ({ lineId, wordIndex: 0 });
 
 // -- Tests --------------------------------------------------------------------
 
@@ -67,8 +70,8 @@ describe("useTimelineKeyboard · shared time range", () => {
 
     pressKey("[");
 
-    await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(7);
-    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+    await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
   it("stops a left nudge of a whole line where the earliest instance reaches zero", async () => {
@@ -80,8 +83,8 @@ describe("useTimelineKeyboard · shared time range", () => {
 
     pressKey("ArrowLeft");
 
-    await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(7);
-    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+    await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(7);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(0);
   });
 
   describe("regressions", () => {
@@ -90,8 +93,8 @@ describe("useTimelineKeyboard · shared time range", () => {
 
       pressKey("[");
 
-      await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(1);
-      expect(lineById("c0")?.words?.[0].begin).toBe(3);
+      await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(1);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(3);
     });
 
     it("regression: nudges a whole line of an old group by the full amount", async () => {
@@ -103,8 +106,8 @@ describe("useTimelineKeyboard · shared time range", () => {
 
       pressKey("ArrowLeft");
 
-      await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(5);
-      expect(lineById("c0")?.words?.[0].begin).toBe(3);
+      await expect.poll(() => roleWords(lineById("c1"), "main")?.[0].begin).toBe(5);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[0].begin).toBe(3);
     });
   });
 });

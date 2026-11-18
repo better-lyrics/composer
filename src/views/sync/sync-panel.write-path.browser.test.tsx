@@ -1,17 +1,20 @@
 import { Toaster } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
+import { effectiveBounds, mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
+import { isLineSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
-import { useSettingsStore } from "@/stores/settings";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { isMac } from "@/utils/platform";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -53,13 +56,15 @@ function lines(): LyricLine[] {
 }
 
 function wordTexts(i: number): string[] {
-  return (lines()[i].words ?? []).map((w) => w.text);
+  return timedSyllables(mainTrack(lines()[i])).map((w) => w.text + w.sep);
 }
 
 function assertMonotonic(allLines: LyricLine[]): void {
   const flat = allLines.flatMap((l) => {
-    if (l.words) return l.words;
-    if (isLineSynced(l)) return [{ text: l.text, begin: l.begin, end: l.end }];
+    const words = roleWords(l, "main");
+    if (words) return words;
+    const span = isLineSynced(l) ? mainBounds(l) : null;
+    if (span) return [{ text: lineText(l, getSplitCharacter()), begin: span.begin, end: span.end }];
     return [];
   });
   for (let i = 0; i < flat.length; i++) {
@@ -95,7 +100,7 @@ describe("D2 undo mid word-sync", () => {
     await tapAt(4);
     key({ key: "ArrowLeft", code: "ArrowLeft" });
     await settle();
-    expect(lines()[0].text).toContain("the rumors");
+    expect(lineText(lines()[0], getSplitCharacter())).toContain("the rumors");
   });
 });
 
@@ -106,7 +111,7 @@ describe("sibling: nudge mid-sync truncates untapped text", () => {
     await tapAt(1);
     key({ key: "ArrowLeft", code: "ArrowLeft" });
     await settle();
-    expect(lines()[0].text).toBe("one two three");
+    expect(lineText(lines()[0], getSplitCharacter())).toBe("one two three");
   });
 });
 
@@ -131,8 +136,8 @@ describe("D3 re-record from a clicked word", () => {
     expect(useAudioStore.getState().isPlaying).toBe(true);
     await tapAt(2.6);
     await tapAt(2.9);
-    const words = lines()[0].words ?? [];
-    expect(words.map((w) => w.text)).toEqual(["I ", "heard ", "the ", "rumors ", "going ", "round"]);
+    const words = timedSyllables(mainTrack(lines()[0]));
+    expect(words.map((w) => w.text + w.sep)).toEqual(["I ", "heard ", "the ", "rumors ", "going ", "round"]);
     for (const w of words.slice(0, 3)) expect(w.end - w.begin, `${w.text} keeps duration`).toBeGreaterThan(0);
   });
 
@@ -153,7 +158,7 @@ describe("D3 re-record from a clicked word", () => {
     key({ key: " ", code: "Space" });
     await tapAt(1.6);
 
-    expect(lines()[0].words?.map((w) => [w.begin, w.end])).toEqual([
+    expect(timedSyllables(mainTrack(lines()[0])).map((w) => [w.begin, w.end])).toEqual([
       [1, 1.6],
       [1.6, 1.6 + 0.3],
       [3, 3.3],
@@ -179,11 +184,11 @@ describe("D5 tap behind the previous committed time", () => {
     await tapAt(6);
     await tapAt(2);
     const defaultWordDuration = useSettingsStore.getState().defaultWordDuration;
-    expect(lines()[0].words?.map((w) => [w.begin, w.end])).toEqual([
+    expect(timedSyllables(mainTrack(lines()[0])).map((w) => [w.begin, w.end])).toEqual([
       [5, 6],
       [6, 6 + defaultWordDuration],
     ]);
-    expect(lines()[1].words?.[0].begin).toBe(2);
+    expect(timedSyllables(mainTrack(lines()[1]))[0].begin).toBe(2);
     for (const line of lines()) assertMonotonic([line]);
   });
 
@@ -208,7 +213,7 @@ describe("song end keeps sync armed", () => {
     await settle();
     expect(useAudioStore.getState().isPlaying).toBe(true);
     await tapAt(0.2);
-    expect(lines()[1].words?.[0].begin).toBe(0.2);
+    expect(timedSyllables(mainTrack(lines()[1]))[0].begin).toBe(0.2);
     for (const line of lines()) assertMonotonic([line]);
   });
 });
@@ -223,7 +228,7 @@ describe("T3 tap then hold across a line boundary", () => {
     await settle();
     key({ key: "f", code: "KeyF" });
     await settle();
-    expect(lines()[0].words?.[1].end).toBe(6.1);
+    expect(timedSyllables(mainTrack(lines()[0]))[1].end).toBe(6.1);
   });
 
   it("sibling: hold-tap that crosses into an already synced line keeps that line's other words", async () => {
@@ -233,7 +238,7 @@ describe("T3 tap then hold across a line boundary", () => {
           id: "l0",
           text: "a b",
           words: [
-            { text: "a ", begin: 1, end: 2 },
+            { text: "a", sep: " ", begin: 1, end: 2 },
             { text: "b", begin: 2, end: 3 },
           ],
         }),
@@ -241,7 +246,7 @@ describe("T3 tap then hold across a line boundary", () => {
           id: "l1",
           text: "c d",
           words: [
-            { text: "c ", begin: 10, end: 11 },
+            { text: "c", sep: " ", begin: 10, end: 11 },
             { text: "d", begin: 11, end: 12 },
           ],
         }),
@@ -270,7 +275,7 @@ describe("T4 nudge targets the last tapped word", () => {
         id: "l1",
         text: "c d",
         words: [
-          { text: "c ", begin: 10, end: 11 },
+          { text: "c", sep: " ", begin: 10, end: 11 },
           { text: "d", begin: 11, end: 12 },
         ],
       }),
@@ -279,8 +284,8 @@ describe("T4 nudge targets the last tapped word", () => {
     await tapAt(1);
     key({ key: "ArrowRight", code: "ArrowRight" });
     await settle();
-    expect(lines()[1].words?.[1].begin).toBe(11);
-    expect(lines()[0].words?.[0].begin).toBeGreaterThan(1);
+    expect(timedSyllables(mainTrack(lines()[1]))[1].begin).toBe(11);
+    expect(timedSyllables(mainTrack(lines()[0]))[0].begin).toBeGreaterThan(1);
   });
 });
 
@@ -293,10 +298,10 @@ describe("T5 background vocals after re-syncing the main line", () => {
         begin: 26,
         end: 28,
         backgroundText: "oh oh",
-        backgroundWords: [
-          createWord({ text: "oh ", begin: 26.5, end: 27.25 }),
-          createWord({ text: "oh", begin: 27.25, end: 28 }),
-        ],
+        backgroundWords: createWords([
+          { text: "oh", sep: " ", begin: 26.5, end: 27.25 },
+          { text: "oh", begin: 27.25, end: 28 },
+        ]),
       }),
     ]);
     await render(<SyncPanel />);
@@ -315,7 +320,7 @@ describe("T10 line-mode tap on a word-synced line", () => {
           id: "l0",
           text: "a b",
           words: [
-            { text: "a ", begin: 20, end: 21 },
+            { text: "a", sep: " ", begin: 20, end: 21 },
             { text: "b", begin: 21, end: 22 },
           ],
         }),
@@ -344,7 +349,7 @@ describe("one tap = one history entry at a line boundary", () => {
     await tapAt(3);
     await undo();
     await undo();
-    expect(lines()[1].words).toBeUndefined();
+    expect(roleWords(lines()[1], "main")).toBeUndefined();
   });
 });
 
@@ -372,7 +377,7 @@ describe("U3 completion while words are unsynced", () => {
     await tapAt(2);
     await tapAt(3);
     await undo();
-    expect(lines()[0].words?.length).toBe(2);
+    expect(roleWords(lines()[0], "main")?.length).toBe(2);
     await settle();
     expect(screen.container.textContent).not.toContain("Sync complete!");
   });
@@ -407,7 +412,7 @@ describe("end of lyrics", () => {
 });
 
 describe("early tap flag (P1)", () => {
-  it("tells the user when a tap was snapped to the previous word", async () => {
+  it("tells the user when a tap was snapped to the end of the previous word", async () => {
     load([createLine({ id: "l0", text: "a b c" })]);
     const screen = await render(
       <>
@@ -418,7 +423,7 @@ describe("early tap flag (P1)", () => {
     await tapAt(5);
     await tapAt(6);
     await tapAt(1);
-    await expect.element(screen.getByText("Early tap snapped to 0:06.000")).toBeVisible();
+    await expect.element(screen.getByText("Early tap snapped to 0:06.300")).toBeVisible();
   });
 });
 

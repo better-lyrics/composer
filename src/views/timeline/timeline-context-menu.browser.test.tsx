@@ -1,10 +1,14 @@
+import { describe, expect, it } from "vitest";
+import { backgroundText } from "insync/line-text";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 function findButton(pattern: RegExp): HTMLButtonElement | undefined {
   return Array.from(document.querySelectorAll("button")).find((b) => pattern.test(b.textContent ?? ""));
@@ -15,9 +19,9 @@ function openWordContextMenu(lineId: string) {
     contextMenu: {
       x: 100,
       y: 100,
-      target: { kind: "word", lineId, lineIndex: 0, wordIndex: 0, type: "word" },
+      target: { kind: "word", ...storedWordAddress(lineId, 0, "word") },
     },
-    selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "word" }],
+    selectedWords: [storedWordAddress(lineId, 0, "word")],
   });
 }
 
@@ -61,26 +65,26 @@ describe("TimelineContextMenu", () => {
     );
     expect(explicitButton).toBeDefined();
     explicitButton?.click();
-    const updated = useProjectStore.getState().lines[0].words?.[0];
+    const updated = roleWords(useProjectStore.getState().lines[0], "main")?.[0];
     expect(updated?.explicit).toBe(true);
   });
 
   it("shows 'Merge syllables' on a syllable-group word and collapses the group to one word when clicked", async () => {
     const line = createLine({
-      words: [
-        createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" }),
-        createWord({ text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_every" }),
-        createWord({ text: "y", begin: 0.6, end: 1, syllableGroupId: "g_every" }),
-      ],
+      words: createWords([
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_every" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_every" },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+        target: { kind: "word", ...storedWordAddress(line.id, 1, "word") },
       },
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 1, "word")],
     });
     await render(<TimelineContextMenu />);
 
@@ -90,12 +94,12 @@ describe("TimelineContextMenu", () => {
     expect(mergeBtn).toBeDefined();
     mergeBtn?.click();
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words).toHaveLength(1);
     expect(words[0].text).toBe("every");
     expect(words[0].begin).toBe(0);
     expect(words[0].end).toBe(1);
-    expect(words[0].syllableGroupId).toBeUndefined();
+    expect(words[0].joinsNext).toBe(false);
   });
 
   it("hides 'Merge syllables' on a standalone word", async () => {
@@ -105,9 +109,9 @@ describe("TimelineContextMenu", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
+        target: { kind: "word", ...storedWordAddress(line.id, 0, "word") },
       },
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     await render(<TimelineContextMenu />);
 
@@ -141,20 +145,20 @@ describe("TimelineContextMenu", () => {
 
   it("snaps a gapped syllable group flush when 'Snap syllables flush' is clicked", async () => {
     const line = createLine({
-      words: [
-        createWord({ text: "beau", begin: 0, end: 0.3, syllableGroupId: "g_beau" }),
-        createWord({ text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g_beau" }),
-        createWord({ text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g_beau" }),
-      ],
+      words: createWords([
+        { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g_beau" },
+        { text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g_beau" },
+        { text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g_beau" },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+        target: { kind: "word", ...storedWordAddress(line.id, 1, "word") },
       },
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 1, "word")],
     });
     await render(<TimelineContextMenu />);
 
@@ -164,7 +168,7 @@ describe("TimelineContextMenu", () => {
     expect(snapBtn).toBeDefined();
     snapBtn?.click();
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words[0].end).toBe(words[1].begin);
     expect(words[1].end).toBe(words[2].begin);
     expect(words[0].begin).toBe(0);
@@ -179,10 +183,10 @@ describe("TimelineContextMenu background provenance", () => {
       text: "main",
       words: [createWord({ text: "main", begin: 0, end: 1 })],
       backgroundText: "ooh aah",
-      backgroundWords: [
-        createWord({ text: "ooh ", begin: 1, end: 1.5 }),
-        createWord({ text: "aah", begin: 1.5, end: 2 }),
-      ],
+      backgroundWords: createWords([
+        { text: "ooh", sep: " ", begin: 1, end: 1.5 },
+        { text: "aah", begin: 1.5, end: 2 },
+      ]),
       backgroundTextSource: "extraction",
     });
   }
@@ -193,17 +197,17 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "bg") },
       },
-      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress("l1", 0, "bg")],
     });
     await render(<TimelineContextMenu />);
 
     findButton(/Delete word/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords?.map((w) => w.text)).toEqual(["aah"]);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated)).map((w) => w.text + w.sep)).toEqual(["aah"]);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("clears all three background fields when the last bg word is deleted", async () => {
@@ -220,18 +224,18 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "bg") },
       },
-      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress("l1", 0, "bg")],
     });
     await render(<TimelineContextMenu />);
 
     findButton(/Delete word/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords).toBeUndefined();
-    expect(updated.backgroundText).toBeUndefined();
-    expect(updated.backgroundTextSource).toBeUndefined();
+    expect(roleWords(updated, "bg")).toBeUndefined();
+    expect(backgroundText(updated, getSplitCharacter())).toBeUndefined();
+    expect(backgroundTrack(updated)?.source).toBeUndefined();
   });
 
   it("stamps backgroundTextSource manual when a bg word is added via 'Add word here'", async () => {
@@ -249,8 +253,8 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Add word here/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords?.length).toBe(3);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(roleWords(updated, "bg")?.length).toBe(3);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("stamps backgroundTextSource manual when bg words are merged", async () => {
@@ -259,27 +263,27 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "bg") },
       },
-      selectedWords: [
-        { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
-        { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "bg" },
-      ],
+      selectedWords: [storedWordAddress("l1", 0, "bg"), storedWordAddress("l1", 1, "bg")],
     });
     await render(<TimelineContextMenu />);
 
     findButton(/Merge words/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords).toHaveLength(1);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated))).toHaveLength(1);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word is deleted", async () => {
     const line = createLine({
       id: "l1",
       text: "I love",
-      words: [createWord({ text: "I ", begin: 0, end: 0.5 }), createWord({ text: "love", begin: 0.5, end: 1 })],
+      words: createWords([
+        { text: "I", sep: " ", begin: 0, end: 0.5 },
+        { text: "love", begin: 0.5, end: 1 },
+      ]),
       backgroundText: "ooh",
       backgroundWords: [createWord({ text: "ooh", begin: 1, end: 2 })],
       backgroundTextSource: "extraction",
@@ -289,15 +293,15 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "word") },
       },
-      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress("l1", 0, "word")],
     });
     await render(<TimelineContextMenu />);
 
     findButton(/Delete word/i)?.click();
 
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
 
@@ -307,16 +311,19 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId, lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress(lineId, 0, "bg") },
       },
-      selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress(lineId, 0, "bg")],
     });
   }
 
   it("regression: offers 'Split into words' on a sentence-long bg word and splits it", async () => {
     const line = createLine({
       text: "main line",
-      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      words: createWords([
+        { text: "main", sep: " ", begin: 0, end: 2 },
+        { text: "line", begin: 2, end: 4 },
+      ]),
       backgroundText: "ooh yeah baby",
       backgroundWords: [createWord({ text: "ooh yeah baby", begin: 1, end: 4 })],
     });
@@ -329,17 +336,23 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
     splitButton?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah ", "baby"]);
-    expect(useProjectStore.getState().lines[0].words).toEqual(line.words);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual(timedSyllables(mainTrack(line)));
   });
 
   it("hides 'Split into words' on a bg track that is already one word per word", async () => {
     const line = createLine({
       text: "main line",
-      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      words: createWords([
+        { text: "main", sep: " ", begin: 0, end: 2 },
+        { text: "line", begin: 2, end: 4 },
+      ]),
       backgroundText: "ooh yeah",
-      backgroundWords: [createWord({ text: "ooh ", begin: 1, end: 2 }), createWord({ text: "yeah", begin: 2, end: 3 })],
+      backgroundWords: createWords([
+        { text: "ooh", sep: " ", begin: 1, end: 2 },
+        { text: "yeah", begin: 2, end: 3 },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     openBgWordContextMenu(line.id);
@@ -367,10 +380,10 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     findButton(/Add word here/i)?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah"]);
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
-    const firstBegin = useProjectStore.getState().lines[0].backgroundWords?.[0].begin ?? -1;
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("ooh yeah");
+    const firstBegin = roleWords(useProjectStore.getState().lines[0], "bg")?.[0].begin ?? -1;
     expect(firstBegin).toBeGreaterThan(4.5);
     expect(firstBegin).toBeLessThanOrEqual(5);
   });
@@ -386,12 +399,9 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
         contextMenu: {
           x: 100,
           y: 100,
-          target: { kind: "word", lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
+          target: { kind: "word", ...storedWordAddress(lines[last].id, 0, "word") },
         },
-        selectedWords: [
-          { lineId: lines[0].id, lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
-        ],
+        selectedWords: [storedWordAddress(lines[0].id, 0, "word"), storedWordAddress(lines[last].id, 0, "word")],
       });
     }
 
@@ -432,7 +442,7 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     findButton(/^Paste here/)?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[1].words?.[0])
-      .toMatchObject({ text: "hi", begin: 5, end: 6 });
+      .poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.[0])
+      .toMatchObject({ text: "hi", sep: "", begin: 5, end: 6, joinsNext: false });
   });
 });

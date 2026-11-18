@@ -1,9 +1,12 @@
-import { useProjectStore } from "@/stores/project";
-import { createLine } from "@/test/factories";
-import { render } from "@/test/render";
-import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
+import { lineText } from "insync/line-text";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
+import { render } from "@/test/render";
+import { ExportPanel } from "@/views/export";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -22,7 +25,7 @@ async function renderConflicted() {
   const generated = (textarea.element() as HTMLTextAreaElement).value;
   await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
   useProjectStore.setState((state) => ({
-    lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+    lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
   }));
   await expect.element(screen.getByRole("alert")).toBeInTheDocument();
   return { screen, textarea };
@@ -46,7 +49,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 2 ? { ...line, text: "THIRD CHANGED" } : line)),
+      lines: state.lines.map((line, index) => (index === 2 ? withFields(line, { text: "THIRD CHANGED" }) : line)),
     }));
 
     await expect.poll(() => (textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
@@ -64,7 +67,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+      lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
     }));
 
     await expect.element(screen.getByRole("alert")).toBeInTheDocument();
@@ -83,7 +86,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+      lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
     }));
     await expect.element(screen.getByRole("alert")).toBeInTheDocument();
 
@@ -103,7 +106,7 @@ describe("ExportPanel · edits across regeneration", () => {
     await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
 
     useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+      lines: state.lines.map((line, index) => (index === 0 ? withFields(line, { text: "HELLO REGEN" }) : line)),
     }));
     await expect.element(screen.getByRole("alert")).toBeInTheDocument();
 
@@ -127,7 +130,10 @@ describe("ExportPanel · edits across regeneration", () => {
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
       expect(useProjectStore.getState().lines).toBe(conflictedLines);
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["HELLO REGEN", "World"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
+        "HELLO REGEN",
+        "World",
+      ]);
       expect(useProjectStore.getState().ttmlEditState?.content).toContain("HELLO EDITED");
       expect(screen.getByText("Updated the lyrics from the TTML").elements()).toHaveLength(0);
     });

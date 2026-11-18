@@ -1,8 +1,11 @@
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import { getSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
+import type { WordTiming } from "insync/word-timing";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import { getSplitCharacter } from "@/utils/split-character";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -63,7 +66,7 @@ interface WordRange {
 }
 
 function buildWordRanges(text: string): { canonical: string; ranges: WordRange[] } {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text, getSplitCharacter());
   if (parts.length === 0) return { canonical: "", ranges: [] };
 
   const ranges: WordRange[] = [];
@@ -154,7 +157,7 @@ const RETAINED_EARLIER_FIELDS = 4096;
 let scannedSplitChar = "";
 const hitsByField = new Map<string, FieldHit[]>();
 
-function fieldHits(source: string, words: LyricLine["words"]): FieldHit[] {
+function fieldHits(source: string, words: readonly WordTiming[] | undefined): FieldHit[] {
   const marked = alreadyMarkedSet(words);
   const key = `${[...marked].join(",")}\u0000${source}`;
   const cached = hitsByField.get(key);
@@ -162,6 +165,11 @@ function fieldHits(source: string, words: LyricLine["words"]): FieldHit[] {
   const hits = cached ?? scanField(source, marked);
   hitsByField.set(key, hits);
   return hits;
+}
+
+// Only timed words take a mark, so a word not yet timed, or a line-synced line, gets no suggestion.
+function timedHits(source: string, words: readonly WordTiming[]): FieldHit[] {
+  return fieldHits(source, words).filter((hit) => hit.wordIndices.every((index) => index < words.length));
 }
 
 function forgetOldestFields(fieldsInRun: number): void {
@@ -172,7 +180,7 @@ function forgetOldestFields(fieldsInRun: number): void {
   }
 }
 
-function alreadyMarkedSet(words: LyricLine["words"] | undefined): Set<number> {
+function alreadyMarkedSet(words: readonly WordTiming[] | undefined): Set<number> {
   const set = new Set<number>();
   if (!words) return set;
   for (let i = 0; i < words.length; i++) {
@@ -196,15 +204,17 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.text && line.text.trim().length > 0) {
+    const mainText = lineText(line, getSplitCharacter());
+    if (mainText && mainText.trim().length > 0) {
       fieldsInRun++;
-      for (const hit of fieldHits(line.text, line.words)) {
+      for (const hit of timedHits(mainText, timedSyllables(mainTrack(line)))) {
         raw.push({ ...hit, line, lineIndex: i, field: "words" });
       }
     }
-    if (line.backgroundText && line.backgroundText.trim().length > 0) {
+    const bgText = backgroundText(line, getSplitCharacter());
+    if (bgText && bgText.trim().length > 0) {
       fieldsInRun++;
-      for (const hit of fieldHits(line.backgroundText, line.backgroundWords)) {
+      for (const hit of timedHits(bgText, timedSyllables(backgroundTrack(line)))) {
         raw.push({ ...hit, line, lineIndex: i, field: "backgroundWords" });
       }
     }

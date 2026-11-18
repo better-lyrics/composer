@@ -1,11 +1,18 @@
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import { type LineTemplate, type LinkGroup, wordsToTemplate } from "@/domain/group/template";
-import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
-import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { backgroundTrack, isSpanTimed, mainTrack, roleWords } from "insync/line-track";
+import { initialGroupSharing } from "insync/group-initial-sharing";
+import { templateSlotSources } from "insync/group-template-source";
+import { type LineTemplate, languagesToTemplate, wordsToTemplate } from "insync/group-template";
+import type { LinkGroup } from "insync/group";
+import { trackPieces } from "insync/language-pieces";
+import { instanceBounds } from "insync/instance-bounds";
+import { mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
+import { linePassthroughOf } from "insync/line-passthrough";
+import { backgroundText, lineText } from "insync/line-text";
+import { GROUP_COLORS, pickNextGroupColor } from "insync/group-colors";
+import { songEndOrUnbounded } from "insync/song-end";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -103,6 +110,7 @@ function createGroupFromSelection(
     updatedLines,
     { id: groupId, label, color, templateVersion: 1 },
     shareTimingInNewGroups,
+    getSplitCharacter(),
     songEndOrUnbounded(options.duration ?? 0),
   );
   return { group: shared.group, updatedLines: shared.lines };
@@ -111,32 +119,42 @@ function createGroupFromSelection(
 // -- Duplicate as linked -------------------------------------------------------
 
 function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: number): LineTemplate[] {
-  const matched = linesOfInstance(lines, groupId, instanceIdx).toSorted(
-    (a, b) => (a.templateLineIdx ?? 0) - (b.templateLineIdx ?? 0),
+  const sources = templateSlotSources(lines, groupId, instanceIdx);
+  const startTime = Math.min(
+    ...sources.flatMap(({ line, shift }) => {
+      const bounds = instanceBounds([line]);
+      return bounds && shift !== null ? [bounds.begin + shift] : [];
+    }),
   );
-  const bounds = instanceBounds(matched);
-  const startTime = bounds?.begin ?? 0;
-  const templates: LineTemplate[] = [];
+  const instanceStart = Number.isFinite(startTime) ? startTime : 0;
 
-  for (const line of matched) {
-    const tplWords = line.words && wordsToTemplate(line.words, startTime);
-    const tplBgWords = line.backgroundWords && wordsToTemplate(line.backgroundWords, startTime);
+  return sources.map(({ line, slot, shift }) => {
+    const timed = shift !== null;
+    const lineStart = instanceStart - (shift ?? 0);
+    const mainWords = timed ? roleWords(line, "main") : undefined;
+    const background = backgroundTrack(line);
+    const drawnBackground = timed ? drawnSyllables(line, "bg", getSplitCharacter()) : [];
+    const bgWords = drawnBackground.length > 0 ? drawnBackground : undefined;
+    const tplWords = mainWords && wordsToTemplate(mainWords, lineStart, trackPieces(line, "main"));
+    const tplBgWords = bgWords && wordsToTemplate(bgWords, lineStart, trackPieces(line, "bg"));
 
-    const lineBounds = mainBounds(line);
-    templates.push({
-      text: line.text,
-      agentId: line.agentId,
-      relativeBegin: lineBounds ? lineBounds.begin - startTime : undefined,
-      relativeEnd: lineBounds ? lineBounds.end - startTime : undefined,
+    const lineBounds = timed ? mainBounds(line) : undefined;
+    const passthrough = linePassthroughOf(line);
+    return {
+      slot,
+      text: lineText(line, getSplitCharacter()),
+      agentId: mainTrack(line).agentId,
+      relativeBegin: lineBounds ? lineBounds.begin - lineStart : undefined,
+      relativeEnd: lineBounds ? lineBounds.end - lineStart : undefined,
       words: tplWords,
-      backgroundText: line.backgroundText,
+      backgroundText: backgroundText(line, getSplitCharacter()),
       backgroundWords: tplBgWords,
-      backgroundTextSource: line.backgroundTextSource,
-      translations: line.translations && structuredClone(line.translations),
-      transliteration: line.transliteration && structuredClone(line.transliteration),
-    });
-  }
-  return templates;
+      backgroundTextSource: background?.source,
+      ...(timed && background && isSpanTimed(background) && { backgroundLineSynced: true }),
+      languages: languagesToTemplate(line.languages),
+      ...(passthrough && { passthrough }),
+    };
+  });
 }
 
 // -- Exports -------------------------------------------------------------------

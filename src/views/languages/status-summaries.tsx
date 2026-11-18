@@ -1,10 +1,11 @@
-import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
-import type { LanguageAlignmentErrorField } from "@/domain/language/alignment-errors";
-import { getLanguageReviewItems } from "@/domain/language/review";
-import type { LanguageReviewTrack } from "@/domain/language/review";
-import type { LyricLine } from "@/domain/line/model";
+import { getLanguageAlignmentErrorItems } from "insync/language-alignment-errors";
+import type { LanguageAlignmentErrorField } from "insync/language-alignment-errors";
+import { getLanguageReviewItems } from "insync/language-review";
+import type { LanguageReviewTrack } from "insync/language-review";
+import type { LyricLine } from "insync/line";
 import { LanguageStatusBanner } from "@/views/languages/status-banner";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -22,8 +23,8 @@ function fieldName(field: LanguageAlignmentErrorField): string {
 // -- Component ----------------------------------------------------------------
 
 const LanguageStatusSummaries: React.FC<LanguageStatusSummariesProps> = ({ lines, languageNames }) => {
-  const errorItems = getLanguageAlignmentErrorItems(lines);
-  const reviewItems = getLanguageReviewItems(lines);
+  const errorItems = getLanguageAlignmentErrorItems(lines, getSplitCharacter());
+  const reviewItems = getLanguageReviewItems(lines, getSplitCharacter());
   const reasons = new Set(reviewItems.flatMap((item) => item.tracks.flatMap((track) => track.reasons)));
   const reviewHelper = reasons.has("source-changed")
     ? reasons.has("alignment")

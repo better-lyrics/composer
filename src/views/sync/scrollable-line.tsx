@@ -1,16 +1,19 @@
-import { getAgentColor } from "@/domain/agent/colors";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
+import { getAgentColor } from "insync/agent-colors";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
+import type { Syllable } from "insync/line";
+import type { WordTiming } from "insync/word-timing";
 import { useSettingsStore } from "@/stores/settings";
-import { withoutSplitCharacter } from "@/utils/split-character";
-import { splitIntoWords } from "@/utils/sync-helpers";
+import { withoutSplitCharacter } from "insync/split-character-text";
+import { splitIntoWords } from "insync/lyric-words";
 import { focusedControlOwnsKey } from "@/utils/typing-target";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
+import type { SyllableSplitHandler } from "@/views/sync/use-syllable-splitter-state";
 import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
 import { memo, useMemo } from "react";
 import { cn } from "@/utils/cn";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -34,7 +37,9 @@ interface ScrollableLineProps {
   displayBackgroundText?: string;
   displayBackgroundWordTexts?: string[];
   backgroundWords?: WordTiming[];
+  untimedBackgroundWords?: readonly Syllable[];
   words?: WordTiming[];
+  untimedWords?: readonly Syllable[];
   lineBegin?: number;
   lineEnd?: number;
   lineSynced?: boolean;
@@ -52,7 +57,7 @@ interface ScrollableLineProps {
   onSetWordEndTime?: (wordIndex: number, newEnd: number) => void;
   onNudgeLine?: (delta: number) => void;
   onSetLineTime?: (newBegin: number) => void;
-  onSplitWord?: (wordIndex: number, newWords: WordTiming[]) => void;
+  onSplitWord?: SyllableSplitHandler;
   onNudgeBgWord?: (wordIndex: number, delta: number) => void;
   onSetBgWordTime?: (wordIndex: number, newBegin: number) => void;
   onNudgeBgWordEnd?: (wordIndex: number, delta: number) => void;
@@ -73,7 +78,9 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   displayBackgroundText,
   displayBackgroundWordTexts,
   backgroundWords,
+  untimedBackgroundWords,
   words,
+  untimedWords,
   lineBegin,
   lineEnd,
   lineSynced,
@@ -99,20 +106,32 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 }) => {
   // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const wordTexts = useMemo(
-    () => displayWordTexts ?? (words?.length ? words.map((w) => w.text) : splitIntoWords(text)),
-    [displayWordTexts, text, words, splitCharacter],
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
-  const bgWordTexts = useMemo(
     () =>
-      displayBackgroundWordTexts ??
-      (backgroundWords?.length
-        ? backgroundWords.map((w) => w.text)
-        : (displayBackgroundText ?? backgroundText)
-          ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "")
-          : []),
-    [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts, splitCharacter],
+      displayWordTexts ??
+      (words?.length
+        ? [...words, ...(untimedWords ?? [])].map((w) => w.text + w.sep)
+        : splitIntoWords(text, getSplitCharacter())),
+    [displayWordTexts, text, words, untimedWords, splitCharacter],
   );
+  const drawsLine = granularity === "line" || lineSynced;
+  const bgWordTexts = useMemo(() => {
+    if (displayBackgroundWordTexts) return displayBackgroundWordTexts;
+    if (backgroundWords?.length) {
+      return [...backgroundWords, ...(untimedBackgroundWords ?? [])].map((w) => w.text + w.sep);
+    }
+    const shownBackground = displayBackgroundText ?? backgroundText;
+    if (!shownBackground) return [];
+    const drawnBackground = drawsLine ? withoutSplitCharacter(shownBackground, splitCharacter) : shownBackground;
+    return splitIntoWords(drawnBackground, getSplitCharacter());
+  }, [
+    backgroundText,
+    backgroundWords,
+    untimedBackgroundWords,
+    displayBackgroundText,
+    displayBackgroundWordTexts,
+    drawsLine,
+    splitCharacter,
+  ]);
 
   const renderLineContent = () => {
     const renderedText = withoutSplitCharacter(displayText ?? text, splitCharacter);
@@ -204,10 +223,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
               .map((word) => word.trim())
               .join("-")
           : group.originalWord;
-        const merge =
-          !isBackground && timings?.[group.startIndex]?.syllableGroupId !== undefined
-            ? { lineId, wordIndex: group.startIndex }
-            : undefined;
+        const merge = isBackground ? undefined : { lineId, wordIndex: group.startIndex };
         elements.push(
           <SyllableGroup key={`${lineNumber}-${prefix}-group-${group.startIndex}`} label={label} merge={merge}>
             {texts.slice(group.startIndex, group.endIndex + 1).map((word, j) => {
@@ -283,7 +299,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       </span>
       <span className="flex flex-1 min-w-0 items-start gap-4 pt-2.5 pb-3 px-5 border-b border-(--divider) transition-colors group-hover/row:bg-(--layer-1)">
         <div className="flex flex-col flex-1 min-w-0 gap-2 text-[17px] font-medium leading-6">
-          {granularity === "line" || lineSynced ? (
+          {drawsLine ? (
             <div className="flex items-center justify-between gap-3">
               {renderLineContent()}
               {lineBegin !== undefined && onNudgeLine && onSetLineTime && (
@@ -338,12 +354,14 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     prev.displayBackgroundText === next.displayBackgroundText &&
     prev.displayBackgroundWordTexts === next.displayBackgroundWordTexts &&
     prev.backgroundWords === next.backgroundWords &&
+    prev.untimedBackgroundWords === next.untimedBackgroundWords &&
     prev.granularity === next.granularity &&
     prev.editMode === next.editMode &&
     prev.lineBegin === next.lineBegin &&
     prev.lineEnd === next.lineEnd &&
     prev.lineSynced === next.lineSynced &&
     prev.words === next.words &&
+    prev.untimedWords === next.untimedWords &&
     prev.linkInfo?.color === next.linkInfo?.color &&
     prev.linkInfo?.label === next.linkInfo?.label &&
     prev.linkInfo?.ordinal === next.linkInfo?.ordinal &&

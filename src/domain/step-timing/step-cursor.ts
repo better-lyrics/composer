@@ -1,6 +1,7 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import { drawnSyllables } from "insync/line-drawn-track";
+import type { LyricLine } from "insync/line";
+import type { SyllableAddress } from "insync/selection-model";
+import { type ResolvedAddress, resolveAddress, resolvedAt } from "insync/selection-resolve";
 import { nextInQueue } from "@/domain/step-timing/step-queue";
 
 // -- Types --------------------------------------------------------------------
@@ -9,22 +10,22 @@ type LineFilter = (line: LyricLine) => boolean;
 
 // -- Helpers ------------------------------------------------------------------
 
-function mainBlocks(line: LyricLine): number {
-  return effectiveTrackWords(line, "word")?.length ?? 0;
-}
-
-function firstWordOf(line: LyricLine, lineIndex: number): WordSelection {
-  return { lineId: line.id, lineIndex, wordIndex: 0, type: "word" };
+function mainBlocks(line: LyricLine, splitChar: string): number {
+  return drawnSyllables(line, "main", splitChar).length;
 }
 
 // -- Functions ----------------------------------------------------------------
 
-function nextStepSlot(lines: readonly LyricLine[], cursor: WordSelection, include: LineFilter): WordSelection | null {
-  const line = lines[cursor.lineIndex];
-  const words = line ? effectiveTrackWords(line, cursor.type) : undefined;
-  if (words && cursor.wordIndex + 1 < words.length) return { ...cursor, wordIndex: cursor.wordIndex + 1 };
+function nextStepSlot(
+  lines: readonly LyricLine[],
+  cursor: ResolvedAddress,
+  include: LineFilter,
+  splitChar: string,
+): ResolvedAddress | null {
+  const sameTrack = resolvedAt(lines, cursor.lineIndex, cursor.type, cursor.wordIndex + 1, splitChar);
+  if (sameTrack) return sameTrack;
   for (let i = cursor.lineIndex + 1; i < lines.length; i++) {
-    if (include(lines[i]) && mainBlocks(lines[i]) > 0) return firstWordOf(lines[i], i);
+    if (include(lines[i]) && mainBlocks(lines[i], splitChar) > 0) return resolvedAt(lines, i, "word", 0, splitChar);
   }
   return null;
 }
@@ -32,27 +33,32 @@ function nextStepSlot(lines: readonly LyricLine[], cursor: WordSelection, includ
 // With background vocals included, a line's background words come right after its lead words.
 function nextSlotWithBackground(
   lines: readonly LyricLine[],
-  cursor: WordSelection,
+  cursor: ResolvedAddress,
   include: LineFilter,
-): WordSelection | null {
+  splitChar: string,
+): ResolvedAddress | null {
   const line = lines[cursor.lineIndex];
-  const leadWords = line ? effectiveTrackWords(line, "word") : undefined;
+  const leadWords = line ? drawnSyllables(line, "main", splitChar) : undefined;
   const leadEnds = cursor.type === "word" && cursor.wordIndex + 1 === leadWords?.length;
-  if (line && leadEnds && effectiveTrackWords(line, "bg")?.length) {
-    return { lineId: line.id, lineIndex: cursor.lineIndex, wordIndex: 0, type: "bg" };
-  }
-  return nextStepSlot(lines, cursor, include);
+  const firstBackground = leadEnds ? resolvedAt(lines, cursor.lineIndex, "bg", 0, splitChar) : null;
+  return firstBackground ?? nextStepSlot(lines, cursor, include, splitChar);
 }
 
 function nextCursorSlot(
   lines: readonly LyricLine[],
-  cursor: WordSelection,
-  queue: readonly WordSelection[] | null,
+  cursor: ResolvedAddress,
+  queue: readonly SyllableAddress[] | null,
   include: LineFilter,
+  splitChar: string,
   withBackground = false,
-): WordSelection | null {
-  if (queue) return nextInQueue(queue, cursor);
-  return withBackground ? nextSlotWithBackground(lines, cursor, include) : nextStepSlot(lines, cursor, include);
+): ResolvedAddress | null {
+  if (queue) {
+    const next = nextInQueue(queue, cursor);
+    return next && resolveAddress(lines, next, splitChar);
+  }
+  return withBackground
+    ? nextSlotWithBackground(lines, cursor, include, splitChar)
+    : nextStepSlot(lines, cursor, include, splitChar);
 }
 
 // -- Exports ------------------------------------------------------------------

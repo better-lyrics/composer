@@ -1,0 +1,22 @@
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:x-vendor="https://vendor.example/ttml" x-vendor:release="7" itunes:timing="Word">
+  <head x-vendor:profile="karaoke">
+    <metadata x-vendor:source="studio">
+      <ttm:title>Glass Orchard</ttm:title>
+      <ttm:agent type="person" xml:id="v1" x-vendor:voice="alto"><ttm:name x-vendor:display="short">Ilse Marr</ttm:name><x-vendor:range low="A3" high="E5"/></ttm:agent>
+      <ttm:agent type="group" xml:id="v2"/>
+      <x-vendor:credits><x-vendor:credit role="mix &amp; master">Juno Park</x-vendor:credit></x-vendor:credits>
+    </metadata>
+    <styling><style xml:id="s1" tts:color="#ffffff"/></styling>
+  </head>
+  <body x-vendor:layout="stack" dur="0:30.000">
+    <x-vendor:count n="3"/>
+    <div x-vendor:section="bridge">
+      <p begin="0:01.000" end="0:06.000" itunes:key="L1" ttm:agent="v1" x-vendor:cue="3"><span begin="0:01.000" end="0:02.000" x-vendor:stress="high">Glass </span><span begin="0:02.000" end="0:03.000"><ruby>果<rt>か</rt></ruby></span><span begin="0:03.000" end="0:04.000">樹 </span><span begin="0:04.000" end="0:06.000">bloom</span><span ttm:role="x-bg" x-vendor:mix="soft"><span begin="0:04.500" end="0:05.200" x-vendor:echo="1">(oh </span><x-vendor:breath/><span begin="0:05.200" end="0:06.000">ah)</span><x-vendor:note>breath</x-vendor:note></span><x-vendor:marker at="end"/></p>
+      <p begin="0:07.000" end="0:10.000" itunes:key="L2" ttm:agent="v2" xml:lang="en"><x-vendor:lead/><span begin="0:07.000" end="0:08.000">Every </span><span begin="0:08.000" end="0:10.000">branch</span><span x-vendor:hint="hum">mm</span></p>
+    </div>
+    <div>
+      <p begin="0:11.000" end="0:14.000" itunes:key="L3" ttm:agent="v1" x-vendor:cue="9">Quiet line the orchard keeps</p>
+    </div>
+    <x-vendor:outro kind="fade"/>
+  </body>
+</tt>

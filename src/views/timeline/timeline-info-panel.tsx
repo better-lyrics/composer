@@ -1,9 +1,13 @@
-import { getAgentColor } from "@/domain/agent/colors";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { ReadableLine } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
-import type { BoundaryEdge } from "@/domain/word/boundary";
-import type { WordTiming } from "@/domain/word/timing";
+import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
+import { useCallback, useMemo } from "react";
+import { getAgentColor } from "insync/agent-colors";
+import { setWordBoundary } from "insync/commands/word-timing";
+import type { LyricLine } from "insync/line";
+import { backgroundText } from "insync/line-text";
+import { mainTrack } from "insync/line-track";
+import { type ResolvedAddress, resolveAddress, toAddress } from "insync/selection-resolve";
+import type { BoundaryEdge } from "insync/word-boundary";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -12,8 +16,6 @@ import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortc
 import { Button } from "@/ui/button";
 import { SingerTag } from "@/ui/singer-tag";
 import { formatShortcut } from "@/utils/format-key";
-import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
-import { setWordBoundary } from "@/utils/timing/word-timing";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
 import {
   type GroupHighlight,
@@ -23,11 +25,10 @@ import {
   selectionCountLabel,
   selectionGroupHighlight,
 } from "@/views/timeline/selection-info";
-import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
+import { useTimelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
-import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
-import { useCallback, useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Components ----------------------------------------------------------------
 
@@ -69,8 +70,8 @@ const MultiSelectionInfo: React.FC<{ summary: MultiSelectionSummary; highlight: 
 );
 
 interface SingleWordInfoProps {
-  selection: WordSelection;
-  line: ReadableLine;
+  selection: ResolvedAddress;
+  line: LyricLine;
   item: Pick<WordTiming, "text" | "begin" | "end">;
   highlight: GroupHighlight | null;
   onSetBegin: () => void;
@@ -83,7 +84,7 @@ const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, 
   return (
     <div className="relative flex items-center gap-6 px-6 py-3 border-t border-(--divider) bg-(--pop)">
       {highlight && <GroupBadge highlight={highlight} title="This word belongs to a linked group" />}
-      <SingerTag color={getAgentColor(line.agentId)}>
+      <SingerTag color={getAgentColor(mainTrack(line).agentId)}>
         {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
       </SingerTag>
 
@@ -97,7 +98,7 @@ const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, 
         <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
       </div>
 
-      <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
+      <BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line, getSplitCharacter())} />
 
       <div className="flex items-center gap-2 ml-auto">
         <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin} title={`Set begin to cursor (${beginKeys})`}>
@@ -116,42 +117,39 @@ const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, 
 const TimelineInfoPanel: React.FC = () => {
   const rawLines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
-  const selectedWord = selectedWords[0] ?? null;
-
-  const lines = useTimelineEffectiveLines(rawLines);
+  const lines = useTimelineDrawnLines(rawLines);
+  const selectedWord = useMemo(
+    () => (selectedWords[0] ? resolveAddress(lines, selectedWords[0], getSplitCharacter()) : null),
+    [selectedWords, lines],
+  );
   const highlight = useMemo(
     () => selectionGroupHighlight(selectedWords, rawLines, groups),
     [selectedWords, rawLines, groups],
   );
-  const summary = useMemo(
-    () => multiSelectionSummary(selectedWords, lines, rawLines),
-    [selectedWords, lines, rawLines],
-  );
+  const summary = useMemo(() => multiSelectionSummary(selectedWords, lines), [selectedWords, lines]);
   const item = useMemo(() => (selectedWord ? selectedWordTiming(selectedWord, lines) : null), [selectedWord, lines]);
 
   const setSelectedWordBoundary = useCallback(
     (edge: BoundaryEdge) => {
       if (!selectedWord) return;
       const currentTime = livePlaybackTime();
-      const setBoundaryOp = selectedWord.type === "word" ? setWordBoundary : setBgWordBoundary;
-      setBoundaryOp({
-        lines,
-        lineIdx: selectedWord.lineIndex,
-        wordIdx: selectedWord.wordIndex,
-        edge,
-        time: currentTime,
-        minDuration: useSettingsStore.getState().minWordDuration,
-        range: timeRangeResolver(rawLines, groups, duration)(lines[selectedWord.lineIndex]),
-        rolling: useSettingsStore.getState().rollingEdit,
-        syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
-        updateLineWithHistory,
-      });
+      const settings = useSettingsStore.getState();
+      useProjectStore.getState().commit(
+        setWordBoundary({
+          address: toAddress(selectedWord),
+          edge,
+          time: currentTime,
+          minDuration: settings.minWordDuration,
+          rolling: settings.rollingEdit,
+          syllablesFollowRolling: settings.syllablesFollowRolling,
+          duration,
+        }),
+      );
       noteGuideSignal("timeline.resize");
     },
-    [selectedWord, lines, rawLines, groups, duration, updateLineWithHistory],
+    [selectedWord, duration],
   );
 
   const handleSetBeginToCursor = useCallback(() => setSelectedWordBoundary("begin"), [setSelectedWordBoundary]);

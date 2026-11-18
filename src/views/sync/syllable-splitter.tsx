@@ -1,16 +1,20 @@
-import type { WordTiming } from "@/domain/word/timing";
+import { alignedPieceOf } from "insync/language-aligned-piece";
+import type { LanguagePiece } from "insync/language";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
-import { findIdenticalWords } from "@/utils/identical-word-matcher";
+import { findIdenticalWords } from "insync/identical-word-matcher";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
 import {
+  type SyllableSplitHandler,
   type UseSyllableSplitterStateResult,
   useSyllableSplitterState,
 } from "@/views/sync/use-syllable-splitter-state";
 import { IconScissors } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -19,10 +23,11 @@ interface SyllableSplitterProps {
   type: "word" | "bg";
   word: WordTiming;
   wordIndex: number;
-  onSplit: (wordIndex: number, newWords: WordTiming[]) => void;
+  onSplit: SyllableSplitHandler;
 }
 
 interface SyllableSplitPanelProps extends Pick<SyllableSplitterProps, "lineId" | "type" | "word" | "wordIndex"> {
+  piece: LanguagePiece | undefined;
   panelId: string;
   state: UseSyllableSplitterStateResult;
   close: () => void;
@@ -35,6 +40,7 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
   lineId,
   type,
   word,
+  piece,
   wordIndex,
   state,
   close,
@@ -47,7 +53,7 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
         .length,
     [lines, lineId, wordIndex, type, caseInsensitive, splitPoints],
   );
-  const text = word.text.trimEnd();
+  const text = word.text;
 
   return (
     <div id={panelId} className="p-5">
@@ -64,8 +70,8 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
         onCaseInsensitiveChange={state.setCaseInsensitive}
         identicalCount={identicalCount}
         sourceText={text}
-        showApplyControls={!word.transliteration}
-        secondaryText={word.transliteration?.trim()}
+        showApplyControls={!piece?.text}
+        secondaryText={piece?.text?.trim()}
         secondarySplitPoints={state.transliterationSplitPoints}
         onToggleSecondarySplit={state.toggleTransliterationSplit}
       />
@@ -87,8 +93,10 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
   onOpenChange,
   ...splitter
 }) => {
-  const state = useSyllableSplitterState(splitter);
   const { lineId, type, word, wordIndex } = splitter;
+  const line = useProjectStore((s) => s.lines.find((candidate) => candidate.id === lineId));
+  const piece = useMemo(() => line && alignedPieceOf(line, type, word, getSplitCharacter()), [line, type, word]);
+  const state = useSyllableSplitterState({ ...splitter, piece });
   return (
     <Popover reference={trigger} open={open} onOpenChange={onOpenChange}>
       {(close) => (
@@ -97,6 +105,7 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
           lineId={lineId}
           type={type}
           word={word}
+          piece={piece}
           wordIndex={wordIndex}
           state={state}
           close={close}
@@ -108,7 +117,7 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
 
 // Every synced word has a splitter, so its popover mounts on the first open and stays mounted after.
 const SyllableSplitter: React.FC<SyllableSplitterProps> = (props) => {
-  if (props.word.text.trimEnd().length < 2) {
+  if (props.word.text.length < 2) {
     return null;
   }
 

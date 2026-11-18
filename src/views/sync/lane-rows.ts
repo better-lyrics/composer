@@ -1,10 +1,12 @@
-import { getAgentColor } from "@/domain/agent/colors";
-import { agentDisplayName } from "@/domain/agent/display-name";
-import type { Agent } from "@/domain/agent/model";
-import type { LanguageDisplayLine } from "@/domain/language/display";
-import type { LyricLine } from "@/domain/line/model";
+import { mainTrack } from "insync/line-track";
+import { getAgentColor } from "insync/agent-colors";
+import { agentDisplayName } from "insync/agent-display-name";
+import type { Agent } from "insync/agent";
+import { type LanguageDisplayLine, getLanguageDisplayLine } from "insync/language-display";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
 import { getSplitCharacter } from "@/utils/split-character";
-import { splitIntoWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWords, splitIntoWordsWithMeta } from "insync/lyric-words";
 import type { LaneGroupTag } from "@/views/sync/shared-sync-tags";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -61,7 +63,7 @@ function laneSinger(agentId: string, agents: readonly Agent[]): LaneSinger {
 
 // Syllables split from one word share a run, so the lane spaces words apart and keeps syllables joined.
 function wordRunsOf(text: string, slotCount: number): WordRun[] {
-  const { trailingSpace } = splitIntoWordsWithMeta(text);
+  const { trailingSpace } = splitIntoWordsWithMeta(text, getSplitCharacter());
   const runs: WordRun[] = [];
   let start = 0;
   for (let index = 0; index < slotCount; index++) {
@@ -77,8 +79,13 @@ function lineWords(line: LyricLine, display: LanguageDisplayLine): LineWords {
   const splitCharacter = getSplitCharacter();
   const cached = wordsByLine.get(line);
   if (cached?.display === display && cached.splitCharacter === splitCharacter) return cached;
-  const wordTexts = display.wordTexts ?? splitIntoWords(display.text);
-  const words = { display, splitCharacter, wordTexts, wordRuns: wordRunsOf(line.text, wordTexts.length) };
+  const wordTexts = display.wordTexts ?? splitIntoWords(display.text, getSplitCharacter());
+  const words = {
+    display,
+    splitCharacter,
+    wordTexts,
+    wordRuns: wordRunsOf(lineText(line, getSplitCharacter()), wordTexts.length),
+  };
   wordsByLine.set(line, words);
   return words;
 }
@@ -101,13 +108,13 @@ function reusedRow(previous: LaneRow | undefined, next: LaneRow): LaneRow {
 }
 
 function buildLaneRows({ lines, displayLines, agents, groupTags, folded }: LaneRowsInput): LaneRow[] {
-  const showsSingers = new Set(lines.map((line) => line.agentId)).size > 1;
+  const showsSingers = new Set(lines.map((line) => mainTrack(line).agentId)).size > 1;
   let previousAgentId: string | null = null;
   return lines.map((line, lineIndex) => {
-    const display = displayLines[lineIndex] ?? line;
+    const display = displayLines[lineIndex] ?? getLanguageDisplayLine(line, "original", getSplitCharacter());
     const isFolded = folded.has(line.id);
-    const singerChanged = !isFolded && line.agentId !== previousAgentId;
-    if (!isFolded) previousAgentId = line.agentId;
+    const singerChanged = !isFolded && mainTrack(line).agentId !== previousAgentId;
+    if (!isFolded) previousAgentId = mainTrack(line).agentId;
     const { wordTexts, wordRuns } = lineWords(line, display);
     const row = reusedRow(rowByLine.get(line), {
       line,
@@ -116,7 +123,7 @@ function buildLaneRows({ lines, displayLines, agents, groupTags, folded }: LaneR
       wordTexts,
       wordRuns,
       backgroundText: display.backgroundText,
-      singer: showsSingers && singerChanged ? laneSinger(line.agentId, agents) : undefined,
+      singer: showsSingers && singerChanged ? laneSinger(mainTrack(line).agentId, agents) : undefined,
       groupTag: groupTags.get(line.id),
       folded: isFolded,
     });

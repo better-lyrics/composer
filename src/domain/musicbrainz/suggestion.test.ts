@@ -1,6 +1,6 @@
 import type { SongDetails } from "@/domain/musicbrainz/song-details";
 import { fillPatch, metadataSuggestions, suggestionCount } from "@/domain/musicbrainz/suggestion";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import { describe, expect, it } from "vitest";
 
 const details: SongDetails = {

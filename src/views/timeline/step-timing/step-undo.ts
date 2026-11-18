@@ -1,13 +1,13 @@
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { useProjectStore } from "@/stores/project";
-import type { HistoryEntry } from "@/stores/project/types";
+import type { HistoryEntry } from "@/stores/project/history-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
 
 interface StepSpot {
-  selectedWords: WordSelection[];
-  stepQueue: WordSelection[] | null;
+  selectedWords: SyllableAddress[];
+  stepQueue: SyllableAddress[] | null;
 }
 
 // -- State --------------------------------------------------------------------
@@ -17,10 +17,10 @@ const pressSpots = new WeakMap<HistoryEntry, { before: StepSpot; after: StepSpot
 
 // -- Functions ----------------------------------------------------------------
 
-function rememberStepPress(before: StepSpot): void {
+function rememberStepPress(before: StepSpot, entryBeforePress?: HistoryEntry): void {
   const { history, historyIndex } = useProjectStore.getState();
   const entry = history[historyIndex];
-  if (!entry) return;
+  if (!entry || entry === entryBeforePress) return;
   const { selectedWords, stepQueue } = useTimelineStore.getState();
   pressSpots.set(entry, { before, after: { selectedWords, stepQueue } });
 }

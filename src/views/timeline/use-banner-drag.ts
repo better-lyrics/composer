@@ -1,6 +1,7 @@
+import { shiftInstance } from "insync/commands/instance-edits";
 import { useCallback, useRef, useState } from "react";
-import { wholeSongRange } from "@/domain/group/shared-timing";
-import { instanceKey } from "@/domain/instance/key";
+import { wholeSongRange } from "insync/group-shared-timing";
+import { instanceKey } from "insync/instance-key";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
@@ -116,7 +117,7 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd }: Use
           if (Math.abs(deltaSeconds) > 0.001) {
             useProjectStore
               .getState()
-              .shiftInstance(groupId, instanceIdx, deltaSeconds, useAudioStore.getState().duration);
+              .commit(shiftInstance(groupId, instanceIdx, deltaSeconds, useAudioStore.getState().duration));
           }
         } else {
           // treat as click: select all words in this instance (so nudge works on it)

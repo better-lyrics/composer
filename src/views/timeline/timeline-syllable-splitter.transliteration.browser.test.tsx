@@ -1,16 +1,20 @@
-import type { TransliterationTrack } from "@/domain/language/model";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { V3TransliterationTrack } from "insync/language-v3-languages";
+import { drawnLanguages, drawnSyllables } from "insync/line-drawn-track";
+import type { LyricLine } from "insync/line";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { type LegacyWord, legacyLine, legacyWords } from "@/test/legacy-languages";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
-import { beforeEach, describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
-const track: TransliterationTrack = {
+const track: V3TransliterationTrack = {
   language: "ko-Latn",
   text: "Uh  ildan eun  na",
   backgroundText: "geurae  yeah",
@@ -21,22 +25,33 @@ const track: TransliterationTrack = {
 };
 
 function lineWithoutPieces(): LyricLine {
-  return {
+  return legacyLine({
     id: "line-ko",
     agentId: "v1",
     text: "Uh 일단은 나",
     words: [
-      { text: "Uh ", begin: 0, end: 0.5 },
-      { text: "일단은 ", begin: 0.5, end: 1.5 },
-      { text: "나", begin: 1.5, end: 2 },
+      { id: "w1", text: "Uh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { id: "w2", text: "일단은", sep: " ", begin: 0.5, end: 1.5, joinsNext: false },
+      { id: "w3", text: "나", sep: "", begin: 1.5, end: 2, joinsNext: false },
     ],
     backgroundText: "그래 yeah",
     backgroundWords: [
-      { text: "그래 ", begin: 2, end: 2.5 },
-      { text: "yeah", begin: 2.5, end: 3 },
+      { id: "w4", text: "그래", sep: " ", begin: 2, end: 2.5, joinsNext: false },
+      { id: "w5", text: "yeah", sep: "", begin: 2.5, end: 3, joinsNext: false },
     ],
     transliteration: track,
-  };
+  });
+}
+
+function drawnReadings(line: LyricLine): LegacyWord[] {
+  return (
+    legacyWords(drawnSyllables(line, "main", getSplitCharacter()), drawnLanguages(line, getSplitCharacter())) ?? []
+  );
+}
+
+function readings(line: LyricLine, side: "main" | "bg" = "main"): LegacyWord[] {
+  const track = side === "main" ? mainTrack(line) : backgroundTrack(line);
+  return legacyWords(timedSyllables(track), line.languages, side) ?? [];
 }
 
 async function openSplitter(
@@ -44,7 +59,7 @@ async function openSplitter(
   wordIndex: number,
   event: "timeline:split-syllable" | "timeline:split-word",
 ) {
-  useTimelineStore.setState({ selectedWords: [{ lineId: "line-ko", lineIndex: 0, wordIndex, type }] });
+  useTimelineStore.setState({ selectedWords: [storedWordAddress("line-ko", wordIndex, type)] });
   const screen = await render(<TimelineSyllableSplitter />);
   window.dispatchEvent(new Event(event));
   return screen;
@@ -71,15 +86,10 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Transliteration split point 2" }).click();
       await screen.getByRole("button", { name: "Split Word" }).click();
 
-      await expect.poll(() => savedLine().words?.length).toBe(4);
-      expect(savedLine().words?.map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
-      expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
-      expect(getEffectiveLines([savedLine()])[0].words?.map((word) => word.transliteration)).toEqual([
-        "Uh",
-        "il",
-        "dan eun",
-        "na",
-      ]);
+      await expect.poll(() => roleWords(savedLine(), "main")?.length).toBe(4);
+      expect(readings(savedLine()).map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
+      expect(savedLine().languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
+      expect(drawnReadings(savedLine()).map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
     });
 
     it("regression: keeps the chosen roman split on the background track (#283)", async () => {
@@ -90,10 +100,10 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Transliteration split point 2" }).click();
       await screen.getByRole("button", { name: "Split Word" }).click();
 
-      await expect.poll(() => savedLine().backgroundWords?.length).toBe(3);
-      expect(savedLine().backgroundWords?.map((word) => word.transliteration)).toEqual(["ge", "urae", "yeah"]);
-      expect(savedLine().transliteration?.backgroundText).toBe("geurae  yeah");
-      expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
+      await expect.poll(() => roleWords(savedLine(), "bg")?.length).toBe(3);
+      expect(readings(savedLine(), "bg").map((word) => word.transliteration)).toEqual(["ge", "urae", "yeah"]);
+      expect(savedLine().languages?.transliteration?.bg?.text).toBe("geurae  yeah");
+      expect(savedLine().languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
     });
 
     it("regression: split word mode gives each part its own transliteration (#283)", async () => {
@@ -104,17 +114,12 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Transliteration split point 3" }).click();
       await screen.getByRole("button", { name: "Split Word" }).click();
 
-      await expect.poll(() => savedLine().words?.length).toBe(4);
-      const stored = savedLine().words ?? [];
-      expect(stored.map((word) => word.text)).toEqual(["Uh ", "일단 ", "은 ", "나"]);
+      await expect.poll(() => roleWords(savedLine(), "main")?.length).toBe(4);
+      const stored = readings(savedLine());
+      expect(stored.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단 ", "은 ", "나"]);
       expect(stored.map((word) => word.transliteration)).toEqual(["Uh", "ild", "an eun", "na"]);
-      expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
-      expect(getEffectiveLines([savedLine()])[0].words?.map((word) => word.transliteration)).toEqual([
-        "Uh",
-        "ild",
-        "an eun",
-        "na",
-      ]);
+      expect(savedLine().languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
+      expect(drawnReadings(savedLine()).map((word) => word.transliteration)).toEqual(["Uh", "ild", "an eun", "na"]);
     });
   });
 });

@@ -1,5 +1,5 @@
-import { mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { useAutoAlign } from "@/hooks/use-auto-align";
 import { isAutoAlignAvailable, useAlignmentStore } from "@/stores/alignment";
 import { countAlignableLines } from "@/stores/alignment-plan";

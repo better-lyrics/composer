@@ -1,4 +1,6 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { App } from "@/App";
+import { lineText } from "insync/line-text";
 import { removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { getSaveStatus } from "@/lib/save-status";
@@ -7,10 +9,10 @@ import { useSettingsStore } from "@/stores/settings";
 import { assignBinding } from "@/stores/shortcut-bindings";
 import { allowConsole } from "@/test/console-guard";
 import { LocationProbe } from "@/test/location-probe";
-import { seedStoredProject, songTitled } from "@/test/projects";
+import { linesOfRecord, seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
-import { beforeEach, describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -44,13 +46,13 @@ async function openEditTab(screen: Awaited<ReturnType<typeof renderApp>>): Promi
   const lyrics = screen.getByRole("textbox", { name: "Paste or type lyrics" });
   await lyrics.fill("Typed before the delay");
   await expect
-    .poll(() => useProjectStore.getState().lines.map((line) => line.text))
+    .poll(() => useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter())))
     .toContain("Typed before the delay");
   return lyrics.element() as HTMLTextAreaElement;
 }
 
 async function storedLineTexts(): Promise<string[]> {
-  return ((await loadProjectRecord("alpha"))?.lines ?? []).map((line) => line.text);
+  return linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line, getSplitCharacter()));
 }
 
 beforeEach(async () => {

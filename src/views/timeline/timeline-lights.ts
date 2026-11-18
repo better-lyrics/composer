@@ -1,5 +1,5 @@
-import type { LyricLine } from "@/domain/line/model";
-import { lineStarts, startedLineIndex } from "@/domain/line/line-at-time";
+import type { LyricLine } from "insync/line";
+import { lineStarts, startedLineIndex } from "insync/line-at-time";
 
 // -- Types ---------------------------------------------------------------------
 

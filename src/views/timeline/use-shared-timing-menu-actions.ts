@@ -1,12 +1,15 @@
-import { replacedInstances } from "@/domain/group/replaced-instances";
-import { sharesTiming } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
-import { instanceName } from "@/domain/instance/name";
+import { setInstanceOwnTiming } from "insync/commands/instance-edits";
+import { isRefused } from "insync/commands/outcome";
+import { replacedInstances } from "insync/group-replaced-instances";
+import { sharesTiming } from "insync/group-shared-timing";
+import type { LinkGroup } from "insync/group";
+import { instanceName } from "insync/instance-name";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { useCallback } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -32,18 +35,18 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
   const store = useProjectStore.getState();
   const name = instanceName(store.lines, group, instanceIdx);
   if (action === "use-own-timing") {
-    store.setInstanceOwnTiming(group.id, instanceIdx, true, useAudioStore.getState().duration);
+    store.commit(setInstanceOwnTiming(group.id, instanceIdx, true, useAudioStore.getState().duration));
     showGroupActionToast(`${name} uses its own timing`);
     return;
   }
   if (action === "share-timing") {
-    const refusal = store.setInstanceOwnTiming(group.id, instanceIdx, false, useAudioStore.getState().duration);
-    if (refusal) {
-      showSharingBlockedToast(name, refusal);
+    const outcome = store.commit(setInstanceOwnTiming(group.id, instanceIdx, false, useAudioStore.getState().duration));
+    if (isRefused(outcome)) {
+      if (outcome.refused.reason === "realign") showSharingBlockedToast(name, outcome.refused.refusal);
       return;
     }
     const after = useProjectStore.getState().lines;
-    const replaced = replacedInstances(store.lines, after).length > 0;
+    const replaced = replacedInstances(store.lines, after, getSplitCharacter()).length > 0;
     showGroupActionToast(
       replaced ? `${name} shares timing again. Its own timing was replaced.` : `${name} shares timing again`,
     );

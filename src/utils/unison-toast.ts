@@ -3,8 +3,8 @@ import type { SuggestionDecider } from "@/lib/unison/api-types";
 import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
 import { settingEntry } from "@/stores/settings-catalog";
-import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
-import { pluralize } from "@/utils/pluralize";
+import { skippedLinesMessage } from "insync/parse-result";
+import { pluralize } from "insync/pluralize";
 import { sentDetail } from "@/utils/unison-suggest-copy";
 
 // -- Types --------------------------------------------------------------------

@@ -1,8 +1,12 @@
-import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import type { LyricLine } from "@/domain/line/model";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
-import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { initialGroupSharing } from "insync/group-initial-sharing";
+import { fieldsOfLine } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { skippedSharedInstances } from "insync/sync-skipped-instances";
+import { createGroup, createLine } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -15,7 +19,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -26,7 +30,7 @@ const shifted = (instanceIdx: number, begin: number, secondWordShift = 0) =>
     id: `c${instanceIdx}-0`,
     text: "I want",
     words: [
-      { text: "I ", begin, end: begin + 0.4 },
+      { text: "I", sep: " ", begin, end: begin + 0.4 },
       { text: "want", begin: begin + 0.5 + secondWordShift, end: begin + 1 + secondWordShift },
     ],
     groupId: "g1",
@@ -35,13 +39,17 @@ const shifted = (instanceIdx: number, begin: number, secondWordShift = 0) =>
   });
 
 const newGroup = createGroup({ id: "g1", label: "Chorus" });
-const share = (lines: LyricLine[], settingOn = true) => initialGroupSharing(lines, newGroup, settingOn);
+const share = (lines: LyricLine[], settingOn = true) =>
+  initialGroupSharing(lines, newGroup, settingOn, DEFAULT_SPLIT_CHARACTER);
 const sharingOf = (lines: LyricLine[]) => {
   const { sharesTiming, ownTimingInstances } = share(lines).group;
   return { sharesTiming, ownTimingInstances };
 };
 const secondWordBegin = (lines: readonly LyricLine[], id: string) =>
-  lines.find((line) => line.id === id)?.words?.[1]?.begin;
+  roleWords(
+    lines.find((line) => line.id === id),
+    "main",
+  )?.[1]?.begin;
 
 describe("initialGroupSharing", () => {
   it("leaves the group and the lines alone when the setting is off", () => {
@@ -63,7 +71,12 @@ describe("initialGroupSharing", () => {
     const lines = [chorus(0, 0, 10), chorus(1, 0)];
     const result = share(lines);
     expect(sharingOf(lines)).toEqual({ sharesTiming: true, ownTimingInstances: undefined });
-    expect(result.lines.find((line) => line.id === "c1-0")?.words).toBeUndefined();
+    expect(
+      roleWords(
+        result.lines.find((line) => line.id === "c1-0"),
+        "main",
+      ),
+    ).toBeUndefined();
   });
 
   it("shares an instance with different timing and realigns it from the source at its start", () => {
@@ -78,7 +91,7 @@ describe("initialGroupSharing", () => {
     const partial = createLine({
       id: "c0-0",
       text: "I want",
-      words: [{ text: "I ", begin: 1, end: 1.4 }],
+      words: [{ text: "I", sep: " ", begin: 1, end: 1.4 }],
       groupId: "g1",
       instanceIdx: 0,
       templateLineIdx: 0,
@@ -93,8 +106,12 @@ describe("initialGroupSharing", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1)];
       const result = share(lines);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines.find((line) => line.id === "c1-1")?.words?.[0]?.begin).toBeCloseTo(43, 6);
-      expect(skippedSharedInstances(result.lines, [result.group]).map((skipped) => skipped.instanceIdx)).toEqual([1]);
+      expect(timedSyllables(mainTrack(result.lines.find((line) => line.id === "c1-1")!))[0]?.begin).toBeCloseTo(43, 6);
+      expect(
+        skippedSharedInstances(result.lines, [result.group], DEFAULT_SPLIT_CHARACTER).map(
+          (skipped) => skipped.instanceIdx,
+        ),
+      ).toEqual([1]);
     });
 
     it("regression: shares a partly line-synced instance mid-sync, so sync skips it", () => {
@@ -109,15 +126,22 @@ describe("initialGroupSharing", () => {
         });
       const result = share([lineSynced(0, 0, 10), lineSynced(0, 1, 13), lineSynced(1, 0, 40), lineSynced(1, 1)]);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines.find((line) => line.id === "l1-1")).toMatchObject({ begin: 43, end: 45 });
-      expect(skippedSharedInstances(result.lines, [result.group]).map((skipped) => skipped.instanceIdx)).toEqual([1]);
+      expect(fieldsOfLine(result.lines.find((line) => line.id === "l1-1")!, DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+        begin: 43,
+        end: 45,
+      });
+      expect(
+        skippedSharedInstances(result.lines, [result.group], DEFAULT_SPLIT_CHARACTER).map(
+          (skipped) => skipped.instanceIdx,
+        ),
+      ).toEqual([1]);
     });
 
     it("regression: measures the offset only over template lines timed in both instances", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 50)];
       const result = share(lines);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines.find((line) => line.id === "c1-0")?.words?.[0]?.begin).toBeCloseTo(47, 6);
+      expect(timedSyllables(mainTrack(result.lines.find((line) => line.id === "c1-0")!))[0]?.begin).toBeCloseTo(47, 6);
     });
   });
 
@@ -132,7 +156,7 @@ describe("initialGroupSharing", () => {
 
     it("keeps its own timing for an instance the shared timing would run past the song end", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
-      const result = initialGroupSharing(lines, newGroup, true, 300);
+      const result = initialGroupSharing(lines, newGroup, true, DEFAULT_SPLIT_CHARACTER, 300);
       expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "past-song-end" }]);
       expect(result.group.ownTimingInstances).toEqual([1]);
       expect(result.lines).toEqual(lines);
@@ -142,7 +166,7 @@ describe("initialGroupSharing", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 1), chorus(2, 0, 70), chorus(2, 1)];
       const result = share(lines);
       expect(result.group.ownTimingInstances).toEqual([1]);
-      expect(result.lines.find((line) => line.id === "c2-1")?.words?.[0]?.begin).toBeCloseTo(73, 6);
+      expect(timedSyllables(mainTrack(result.lines.find((line) => line.id === "c2-1")!))[0]?.begin).toBeCloseTo(73, 6);
     });
 
     it("matches within the 10 ms tolerance without writing timing", () => {
@@ -162,8 +186,8 @@ describe("initialGroupSharing", () => {
           id: `h${instanceIdx}`,
           text: "I want you",
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
-            { text: "want ", begin: begin + (instanceIdx === 0 ? 0.5 : 0.8), end: begin + 1.2 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
+            { text: "want", sep: " ", begin: begin + (instanceIdx === 0 ? 0.5 : 0.8), end: begin + 1.2 },
           ],
           groupId: "g1",
           instanceIdx,
@@ -177,8 +201,8 @@ describe("initialGroupSharing", () => {
     });
 
     it("shares half-synced instances that match when none is fully timed", () => {
-      const lines = [chorus(0, 0, 10), { ...chorus(1, 0, 40), text: "I want you", id: "x" }];
-      expect(sharingOf([{ ...lines[0], text: "I want you" }, lines[1]])).toEqual({
+      const lines = [chorus(0, 0, 10), { ...withFields(chorus(1, 0, 40), { text: "I want you" }), id: "x" }];
+      expect(sharingOf([withFields(lines[0], { text: "I want you" }), lines[1]])).toEqual({
         sharesTiming: true,
         ownTimingInstances: undefined,
       });
@@ -202,7 +226,7 @@ describe("initialGroupSharing", () => {
       });
       const result = share([lineSynced, shifted(1, 40, 0.2)]);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines[0].words?.map((word) => word.begin)).toEqual([5, expect.closeTo(5.7, 6)]);
+      expect(timedSyllables(mainTrack(result.lines[0])).map((word) => word.begin)).toEqual([5, expect.closeTo(5.7, 6)]);
       expect(result.lines[1]).toEqual(shifted(1, 40, 0.2));
     });
 
@@ -250,7 +274,7 @@ describe("initialGroupSharing", () => {
     it("replaces sharing fields the group already had", () => {
       const lines = [shifted(0, 10), shifted(1, 40, 0.2)];
       const old = createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] });
-      expect(initialGroupSharing(lines, old, true).group.ownTimingInstances).toBeUndefined();
+      expect(initialGroupSharing(lines, old, true, DEFAULT_SPLIT_CHARACTER).group.ownTimingInstances).toBeUndefined();
     });
   });
 

@@ -1,10 +1,12 @@
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { ExportPanel } from "@/views/export";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -34,7 +36,7 @@ async function startEditing(screen: Awaited<ReturnType<typeof renderPanel>>) {
   return { textarea, generated: (textarea.element() as HTMLTextAreaElement).value };
 }
 
-const lineTexts = () => useProjectStore.getState().lines.map((line) => line.text);
+const lineTexts = () => useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()));
 
 // -- Tests --------------------------------------------------------------------
 
@@ -48,8 +50,8 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
           createLine({
             text: "Half synced words here",
             words: [
-              { text: "Half ", begin: 1, end: 2 },
-              { text: "synced ", begin: 2, end: 3 },
+              { text: "Half", sep: " ", begin: 1, end: 2 },
+              { text: "synced", sep: " ", begin: 2, end: 3 },
             ],
           }),
         ],
@@ -100,7 +102,7 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
       await expect.element(screen.getByText(KEPT_IN_EXPORT)).toBeInTheDocument();
       expect(useProjectStore.getState().metadata.title).toBe("Kept title");
       expect(useProjectStore.getState().ttmlEditState).toEqual({
-        source: generateProjectTtml(useProjectStore.getState(), 0),
+        source: generateProjectTtml(useProjectStore.getState(), 0, getSplitCharacter()),
         content: edited,
       });
       expect(screen.container.querySelector("pre")?.textContent).not.toContain("Kept title");
@@ -135,7 +137,7 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByText(APPLIED, { exact: true })).toBeInTheDocument();
       expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["one", "blank", "split", "two"]);
-      expect(lineTexts()).toEqual(["One", "", "|", "Two2"]);
+      expect(lineTexts()).toEqual(["One", "", "", "Two2"]);
     });
 
     it("regression: a project with a field the export does not carry keeps the edit in the export only", async () => {
@@ -189,7 +191,7 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
       await startEditing(screen);
       useProjectStore.getState().reset();
       useProjectStore.setState({ lines: [createLine({ text: "Project B", begin: 0, end: 1 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const generated = generateProjectTtml(useProjectStore.getState(), 0, getSplitCharacter());
       const saved = generated.replace(">Project B<", ">Project B saved edit<");
       useProjectStore.setState({ ttmlEditState: { source: generated, content: saved } });
       await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
@@ -204,7 +206,7 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
   describe("edge cases", () => {
     it("does not apply a saved edit when nothing changed in this editing session", async () => {
       useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 0, end: 1 })] });
-      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const generated = generateProjectTtml(useProjectStore.getState(), 0, getSplitCharacter());
       const saved = generated.replace(">Hello<", ">Hello from before<");
       useProjectStore.setState({ ttmlEditState: { source: generated, content: saved } });
       const before = useProjectStore.getState().lines;

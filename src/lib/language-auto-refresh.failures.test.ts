@@ -1,7 +1,9 @@
+import { fieldUpdates } from "@/test/field-updates";
 import { useProjectStore } from "@/stores/project";
 import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { lineEditCommand } from "insync/commands/line-edits";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -33,9 +35,18 @@ describe("createLanguageAutoRefresh failures", () => {
     await refresher.refreshNow();
     expect(requests.length).toBe(failedRequests);
 
-    useProjectStore.getState().updateLine("a", { text: "Сильный дождь" }, { deriveText: false });
+    useProjectStore.getState().commit(
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "a", updates: { text: "Сильный дождь" } }]),
+        {
+          copiesSharedTiming: false,
+        },
+      ),
+      "pending",
+    );
     await refresher.refreshNow();
-    expect(lineById("a").transliteration?.text).toBe("Silnyy  dozhd");
+    expect(lineById("a").languages?.transliteration?.main.text).toBe("Silnyy  dozhd");
   });
 
   it("asks Google again for a failed line when another project opens", async () => {
@@ -54,7 +65,7 @@ describe("createLanguageAutoRefresh failures", () => {
     });
     await refresher.refreshNow();
 
-    expect(lineById("a").transliteration?.text).toBe("Ranniy  sneg");
+    expect(lineById("a").languages?.transliteration?.main.text).toBe("Ranniy  sneg");
   });
 
   it("refreshes a failed line by itself when the browser comes back online", async () => {
@@ -72,7 +83,7 @@ describe("createLanguageAutoRefresh failures", () => {
     window.dispatchEvent(new Event("online"));
     await vi.advanceTimersByTimeAsync(1000);
 
-    await vi.waitFor(() => expect(lineById("a").transliteration?.text).toBe("Novaya  vesna"));
+    await vi.waitFor(() => expect(lineById("a").languages?.transliteration?.main.text).toBe("Novaya  vesna"));
   });
 
   it("regression: a request that fails while reconnecting does not block the line", async () => {
@@ -98,6 +109,6 @@ describe("createLanguageAutoRefresh failures", () => {
     });
     await refresher.refreshNow();
 
-    expect(lineById("a").transliteration?.text).toBe("Yarkoye  solntse");
+    expect(lineById("a").languages?.transliteration?.main.text).toBe("Yarkoye  solntse");
   });
 });

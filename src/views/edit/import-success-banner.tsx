@@ -1,7 +1,8 @@
+import { IconFileImport, IconX } from "@tabler/icons-react";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { IconButton } from "@/ui/icon-button";
 import type { ParseResult } from "@/utils/lyrics-parsers";
-import { pluralize } from "@/utils/pluralize";
-import { IconFileImport, IconX } from "@tabler/icons-react";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 
@@ -15,8 +16,8 @@ interface ImportSuccessBannerProps {
 
 const ImportSuccessBanner: React.FC<ImportSuccessBannerProps> = ({ result, filename, onDismiss }) => {
   const lineCount = result.lines.length;
-  const timedLineCount = result.lines.filter((l) => l.begin !== undefined).length;
-  const wordTimedCount = result.lines.filter((l) => l.words?.length).length;
+  const timedLineCount = result.lines.filter((l) => mainTrack(l).begin !== undefined).length;
+  const wordTimedCount = result.lines.filter((l) => timedSyllables(mainTrack(l)).length > 0).length;
 
   return (
     <div className="flex items-center justify-between gap-2 h-9 pl-3 pr-1 text-[13px] rounded-xl bg-composer-accent/10 text-composer-accent-text">

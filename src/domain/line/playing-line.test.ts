@@ -1,4 +1,4 @@
-import { playingLineIndex } from "@/domain/line/playing-line";
+import { playingLineIndex } from "insync/line-playing-line";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

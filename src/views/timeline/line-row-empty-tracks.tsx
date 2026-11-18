@@ -1,16 +1,22 @@
-import { useCallback } from "react";
 import { IconPlus } from "@tabler/icons-react";
-import type { TimeRange } from "@/domain/group/shared-timing";
-import { backgroundFields, manualBackgroundWordEdit } from "@/domain/line/background";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { useCallback } from "react";
+import { placeLineAt } from "insync/commands/line-timing";
+import { fillEmptyTrack } from "insync/commands/word-structure";
+import type { TimeRange } from "insync/group-shared-timing";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
+import type { WordTrack } from "insync/line-track";
+import { addressOf } from "insync/selection-resolve";
+import { newWordId } from "insync/word-id";
+import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
-import { stripSplitCharacter } from "@/utils/split-character";
-import { createTrackWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { findInsertionSlot } from "@/utils/word-spaces";
+import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
+import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
+import { findInsertionSlot } from "insync/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
 import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
@@ -62,33 +68,26 @@ function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: nu
   });
 }
 
-function addWordAt(line: LyricLine, time: number): void {
+function addTrackWordAt(line: LyricLine, type: WordTrack, time: number): void {
   const range = lineRangeOf(line);
   const slot = insertionSlotAt(range, time);
   if (!slot) return;
-  const { updateLineWithHistory } = useProjectStore.getState();
-  const timedText = createTrackWordsFromTextAt(line, "word", slot.begin, range.max);
+  const { commit } = useProjectStore.getState();
+  const timedText = createTrackWordsFromTextAt(line, type, slot.begin, range.max);
   if (timedText) {
-    updateLineWithHistory(line.id, { words: timedText });
+    commit(fillEmptyTrack({ lineId: line.id, type, timedText }));
     return;
   }
-  updateLineWithHistory(line.id, { words: [{ text: "...", begin: slot.begin, end: slot.end }] });
-  useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "word" });
-}
-
-function addBackgroundWordAt(line: LyricLine, time: number): void {
-  const range = lineRangeOf(line);
-  const slot = insertionSlotAt(range, time);
-  if (!slot) return;
-  const { updateLineWithHistory } = useProjectStore.getState();
-  const timedText = createTrackWordsFromTextAt(line, "bg", slot.begin, range.max);
-  if (timedText) {
-    updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
-    return;
-  }
-  const placeholder: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
-  updateLineWithHistory(line.id, backgroundFields({ text: placeholder.text, words: [placeholder], source: "manual" }));
-  useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "bg" });
+  const placeholder: WordTiming = {
+    id: newWordId(),
+    text: "...",
+    sep: "",
+    begin: slot.begin,
+    end: slot.end,
+    joinsNext: false,
+  };
+  commit(fillEmptyTrack({ lineId: line.id, type, placeholder }));
+  useTimelineStore.getState().setEditingWord(addressOf(line, type, placeholder));
 }
 
 function truncateLabel(text: string, maxChars: number): string {
@@ -105,10 +104,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
       const wordDuration = useSettingsStore.getState().defaultWordDuration;
       const lineDuration = Math.max(wordCount, 1) * wordDuration;
 
-      useProjectStore.getState().updateLineWithHistory(lineId, {
-        begin: currentTime,
-        end: currentTime + lineDuration,
-      });
+      useProjectStore.getState().commit(placeLineAt(lineId, currentTime, currentTime + lineDuration));
     },
     [lineId, wordCount],
   );
@@ -127,13 +123,13 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
 
 const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, duration, rowHeight }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const displayText = stripSplitCharacter(line.text);
+  const displayText = stripSplitCharacter(lineText(line, getSplitCharacter()));
 
   return (
     <div
       className="relative cursor-pointer"
       style={{ width: duration * zoom, height: rowHeight }}
-      onDoubleClick={(e) => addWordAt(line, pointerTime(e))}
+      onDoubleClick={(e) => addTrackWordAt(line, "word", pointerTime(e))}
       onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "word")}
     >
       <div
@@ -142,7 +138,10 @@ const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, durati
       >
         <span className="truncate pr-0.5">{truncateLabel(displayText, MAIN_LABEL_MAX_CHARS)}</span>
         {displayText.length > 0 && (
-          <SyncLineButton lineId={line.id} wordCount={splitIntoWordsWithMeta(line.text).parts.length} />
+          <SyncLineButton
+            lineId={line.id}
+            wordCount={splitIntoWordsWithMeta(lineText(line, getSplitCharacter()), getSplitCharacter()).parts.length}
+          />
         )}
       </div>
     </div>
@@ -154,16 +153,18 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     data-line-index={lineIndex}
     data-track="bg"
     className={cn(
-      "flex items-center px-2 text-xs font-mono truncate border-t border-(--divider) cursor-pointer",
+      "flex items-center text-xs font-mono border-t border-(--divider) cursor-pointer",
       isOver
         ? "bg-composer-accent/20 text-composer-text"
         : "text-composer-text-muted/50 bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
     )}
     style={{ height: BG_DROP_ZONE_HEIGHT }}
-    onDoubleClick={(e) => addBackgroundWordAt(line, pointerTime(e))}
+    onDoubleClick={(e) => addTrackWordAt(line, "bg", pointerTime(e))}
     onContextMenu={(e) => openTrackContextMenu(e, line.id, lineIndex, "bg")}
   >
-    {line.backgroundText ? truncateLabel(line.backgroundText, BG_LABEL_MAX_CHARS) : "BG"}
+    <span className="sticky left-[48px] max-w-[calc(100%-48px)] px-3 truncate">
+      {truncateLabel(stripSplitCharacter(backgroundText(line, getSplitCharacter()) ?? ""), BG_LABEL_MAX_CHARS) || "BG"}
+    </span>
   </div>
 );
 

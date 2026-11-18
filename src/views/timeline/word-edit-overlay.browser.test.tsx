@@ -1,17 +1,26 @@
+import { useEffect, useRef, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { useEffect, useRef, useState } from "react";
-import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
+import { lineText } from "insync/line-text";
+import { mainTrack, roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
+import { getSplitCharacter } from "@/utils/split-character";
+
+function firstWordId(lineId: string): string {
+  const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
+  return line ? wordAddress(line, 0).syllableId : `${lineId}-missing`;
+}
 
 function BareHarness({ lineId }: { lineId: string }) {
   const ref = useRef<HTMLDivElement>(null);
   return (
     <div ref={ref}>
-      <WordEditOverlay lineId={lineId} wordIndex={0} type="word" scrollContainerRef={ref} />
+      <WordEditOverlay lineId={lineId} syllableId={firstWordId(lineId)} type="word" scrollContainerRef={ref} />
     </div>
   );
 }
@@ -29,7 +38,9 @@ function PositionedHarness({ lineId, wordKey }: { lineId: string; wordKey: strin
         id={wordKey}
         style={{ position: "absolute", left: "0px", top: "100px", width: "60px", height: "20px" }}
       />
-      {mounted && <WordEditOverlay lineId={lineId} wordIndex={0} type="word" scrollContainerRef={ref} />}
+      {mounted && (
+        <WordEditOverlay lineId={lineId} syllableId={firstWordId(lineId)} type="word" scrollContainerRef={ref} />
+      )}
     </div>
   );
 }
@@ -64,10 +75,10 @@ describe("WordEditOverlay", () => {
     await screen.getByRole("textbox", { name: "Edit word" }).fill("New words");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("New words");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("New words");
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBe(0);
-    expect(after.end).toBe(3);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBe(0);
+    expect(mainTrack(after).end).toBe(3);
   });
 });

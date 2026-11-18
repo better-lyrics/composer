@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { stubClipboard } from "@/test/clipboard";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -12,12 +13,12 @@ function wordSyncedLines() {
     createLine({
       id: "L1",
       text: "Comin' at you, baby",
-      words: [
-        createWord({ text: "Comin' ", begin: 1.437, end: 2.067 }),
-        createWord({ text: "at ", begin: 2.067, end: 2.382 }),
-        createWord({ text: "you, ", begin: 2.382, end: 2.649 }),
-        createWord({ text: "baby", begin: 2.649, end: 3.012 }),
-      ],
+      words: createWords([
+        { text: "Comin'", sep: " ", begin: 1.437, end: 2.067 },
+        { text: "at", sep: " ", begin: 2.067, end: 2.382 },
+        { text: "you,", sep: " ", begin: 2.382, end: 2.649 },
+        { text: "baby", begin: 2.649, end: 3.012 },
+      ]),
     }),
   ];
 }
@@ -53,7 +54,7 @@ describe("ExportPanel · line timing", () => {
       await expect.poll(() => shownTtml(screen.container)).toContain('itunes:timing="Line"');
       expect(shownTtml(screen.container)).toMatch(/end="0:03.012" itunes:key="L1"[^>]*>Comin' at you, baby<\/p>/);
       expect(useProjectStore.getState().exportTiming).toBe("line");
-      expect(useProjectStore.getState().lines[0].words).toHaveLength(4);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toHaveLength(4);
     });
 
     it("copies the line-synced TTML", async () => {

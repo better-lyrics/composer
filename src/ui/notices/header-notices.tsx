@@ -9,7 +9,7 @@ import { useFitsWidth } from "@/ui/notices/use-fits-width";
 import { useNoticeUndo } from "@/ui/notices/use-notice-undo";
 import { Popover } from "@/ui/popover";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconBulbOff, IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { useState } from "react";
 

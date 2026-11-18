@@ -2,7 +2,7 @@ import { type RevisionChangeCounts, revisionChangeCounts, revisionDiffLines } fr
 import type { RevisionPreview } from "@/lib/unison/revision-types";
 import { Button } from "@/ui/button";
 import { DiffList } from "@/ui/unison/diff-list";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { unisonFailureReason } from "@/utils/unison-toast";
 import { PanelSection } from "@/views/export/unison/panel-section";
 import { SkeletonBar } from "@/views/unison/view-states";

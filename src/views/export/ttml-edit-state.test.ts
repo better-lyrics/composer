@@ -1,8 +1,9 @@
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { crossedProjectChange, keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -15,6 +16,7 @@ function exportOf(texts: string[], duration: number): string {
       lines: texts.map((text, index) => createLine({ id: `l${index}`, text, begin: index, end: index + 1 })),
     },
     duration,
+    DEFAULT_SPLIT_CHARACTER,
   );
 }
 

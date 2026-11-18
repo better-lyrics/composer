@@ -1,9 +1,16 @@
+import { fieldsOfLine } from "insync/line-from-fields";
+import { fieldUpdates } from "@/test/field-updates";
+import { roleWords } from "insync/line-track";
+import { lineText } from "insync/line-text";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
 import { useProjectStore } from "@/stores/project";
 import { lineById, romanizedWords, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { pasteLines } from "insync/commands/instance-rows";
+import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -30,18 +37,34 @@ describe("useLanguageAutoRefresh", () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(requests).toEqual([]);
 
-    useProjectStore.getState().updateLineWithHistory("a", {
+    const pasted = legacyLine({
+      ...fieldsOfLine(lineById("a"), getSplitCharacter()),
       text: "Где ты сейчас",
       words: [
-        { text: "Где ", begin: 1, end: 2, transliteration: "Gde" },
-        { text: "ты ", begin: 2, end: 3, transliteration: "ty" },
-        { text: "сейчас", begin: 3, end: 4 },
+        { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde", joinsNext: false },
+        { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty", joinsNext: false },
+        { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4, joinsNext: false },
       ],
+      ...legacyLanguages(lineById("a").languages),
     });
+    useProjectStore.getState().commit(
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "a",
+            updates: {
+              text: lineText(pasted, getSplitCharacter()),
+              words: roleWords(pasted, "main"),
+              languages: pasted.languages,
+            },
+          },
+        ]),
+      ),
+    );
 
     await vi.advanceTimersByTimeAsync(1000);
     await expect.poll(() => romanizedWords("a"), REFRESH_WAIT).toEqual(["Gde", "ty", "seychas"]);
-    expect(lineById("a").translations?.en.text).toBe("Where are you now");
+    expect(lineById("a").languages?.translations?.en.main.text).toBe("Where are you now");
   });
 
   it("refreshes tracks that were already out of date when the project opened", async () => {
@@ -78,7 +101,7 @@ describe("useLanguageAutoRefresh", () => {
       await vi.advanceTimersByTimeAsync(5000);
 
       expect(requests).toEqual([]);
-      expect(lineById("a").transliteration?.text).toBe("Shumnaya  ulitsa");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Shumnaya  ulitsa");
     });
   });
 });

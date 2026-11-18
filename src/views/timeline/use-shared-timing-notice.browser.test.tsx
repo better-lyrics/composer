@@ -1,12 +1,14 @@
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import { fieldsOfLine } from "insync/line-from-fields";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { HeaderNotices } from "@/ui/notices/header-notices";
 import { useSharedTimingNotice } from "@/views/timeline/use-shared-timing-notice";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -20,10 +22,10 @@ const member = (instanceIdx: number, begin?: number, groupId = "g1"): LyricLine 
     ...(begin === undefined
       ? {}
       : {
-          words: [
-            createWord({ text: "go ", begin, end: begin + 1 }),
-            createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-          ],
+          words: createWords([
+            { text: "go", sep: " ", begin, end: begin + 1 },
+            { text: "now", begin: begin + 1, end: begin + 2 },
+          ]),
         }),
   });
 
@@ -75,7 +77,7 @@ describe("Shared timing notice", () => {
     await screen.getByRole("button", { name: "Dismiss suggestion" }).click();
 
     await expect.poll(() => store().dismissedSuggestions).toEqual(["shared-timing:g1"]);
-    store().setLines([member(0, 10), member(1), member(2), member(3)]);
+    store().restoreLyrics({ lines: [member(0, 10), member(1), member(2), member(3)] });
     await expect.poll(() => store().lines.length).toBe(4);
     expect(screen.container.textContent).not.toContain("is synced");
   });
@@ -115,7 +117,10 @@ describe("Shared timing notice", () => {
         [OLD_CHORUS],
         [
           member(0, 10),
-          createLine({ ...member(1, 30), words: [createWord({ text: "go ", begin: 30, end: 31.5 })] }),
+          createLine({
+            ...fieldsOfLine(member(1, 30), getSplitCharacter()),
+            words: [createWord({ text: "go", sep: " ", begin: 30, end: 31.5 })],
+          }),
           member(2),
         ],
       );

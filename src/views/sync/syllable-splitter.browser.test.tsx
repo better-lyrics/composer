@@ -1,10 +1,13 @@
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
+import { useProjectStore } from "@/stores/project";
+import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { describe, expect, it } from "vitest";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 
-const SINGLE_CHAR: WordTiming = { text: "a", begin: 0, end: 1 };
-const MULTI_CHAR: WordTiming = { text: "hello", begin: 0, end: 1 };
+const SINGLE_CHAR: WordTiming = { id: "w1", text: "a", sep: "", begin: 0, end: 1, joinsNext: true };
+const MULTI_CHAR: WordTiming = { id: "w2", text: "hello", sep: "", begin: 0, end: 1, joinsNext: true };
 
 describe("SyllableSplitter", () => {
   it("renders nothing for single-character words", async () => {
@@ -32,14 +35,26 @@ describe("SyllableSplitter", () => {
   });
 
   it("shows an inferred split that lands on a transliteration space as selected", async () => {
+    const word: WordTiming = { id: "w3", text: "붙어있던", sep: "", begin: 0, end: 1, joinsNext: true };
+    useProjectStore.setState({
+      lines: [
+        legacyLine({
+          id: "test-line",
+          agentId: "v1",
+          text: "붙어있던",
+          words: [{ ...word, transliteration: "but eoissdeon" }],
+          transliteration: {
+            language: "ko-Latn",
+            text: "but eoissdeon",
+            segments: [],
+            origin: "manual",
+            sourceFingerprint: "test",
+          },
+        }),
+      ],
+    });
     const screen = await render(
-      <SyllableSplitter
-        lineId="test-line"
-        type="word"
-        word={{ text: "붙어있던", transliteration: "but eoissdeon", begin: 0, end: 1 }}
-        wordIndex={0}
-        onSplit={() => {}}
-      />,
+      <SyllableSplitter lineId="test-line" type="word" word={word} wordIndex={0} onSplit={() => {}} />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
     expect(document.querySelectorAll('button[aria-label^="Transliteration pronunciation break"]')).toHaveLength(1);
@@ -59,7 +74,7 @@ describe("SyllableSplitter", () => {
       <SyllableSplitter
         lineId="test-line"
         type="word"
-        word={{ text: "abcd", begin: 0, end: 1 }}
+        word={{ id: "w4", text: "abcd", sep: "", begin: 0, end: 1, joinsNext: true }}
         wordIndex={0}
         onSplit={(_, words) => {
           splits = words;
@@ -73,13 +88,13 @@ describe("SyllableSplitter", () => {
     expect((splits as unknown as WordTiming[]).length).toBeGreaterThan(1);
   });
 
-  it("stamps a fresh syllableGroupId shared across every produced syllable", async () => {
+  it("joins every produced syllable into one word", async () => {
     let splits: WordTiming[] | null = null;
     const screen = await render(
       <SyllableSplitter
         lineId="test-line"
         type="word"
-        word={{ text: "every", begin: 0, end: 1 }}
+        word={{ id: "w5", text: "every", sep: "", begin: 0, end: 1, joinsNext: true }}
         wordIndex={0}
         onSplit={(_, words) => {
           splits = words;
@@ -93,17 +108,16 @@ describe("SyllableSplitter", () => {
     const out = splits as unknown as WordTiming[];
     expect(out).not.toBeNull();
     expect(out.length).toBeGreaterThanOrEqual(2);
-    expect(out[0].syllableGroupId).toBeDefined();
-    expect(out.every((w) => w.syllableGroupId === out[0].syllableGroupId)).toBe(true);
+    expect(computeSyllableGroups(out)).toMatchObject([{ startIndex: 0, endIndex: out.length - 1 }]);
   });
 
-  it("reuses the source word's syllableGroupId when re-splitting", async () => {
+  it("keeps the source word's join on the last piece when re-splitting", async () => {
     let splits: WordTiming[] | null = null;
     const screen = await render(
       <SyllableSplitter
         lineId="test-line"
         type="word"
-        word={{ text: "ev", begin: 0, end: 1, syllableGroupId: "g_source" }}
+        word={{ id: "w6", text: "ev", sep: "", begin: 0, end: 1, joinsNext: true }}
         wordIndex={0}
         onSplit={(_, words) => {
           splits = words;
@@ -115,6 +129,6 @@ describe("SyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
     const out = splits as unknown as WordTiming[];
     expect(out).not.toBeNull();
-    expect(out.every((w) => w.syllableGroupId === "g_source")).toBe(true);
+    expect(out.every((w) => w.joinsNext)).toBe(true);
   });
 });

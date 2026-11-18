@@ -1,19 +1,25 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
 import { describe, expect, it } from "vitest";
-import { wouldDropCrossInstance } from "./cross-instance";
+import { wouldDropCrossInstance } from "insync/cross-instance";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-const grouped = (id: string, gid: string, inst: number): LyricLine => ({
-  id,
-  text: "x",
-  agentId: "v1",
-  groupId: gid,
-  instanceIdx: inst,
-  templateLineIdx: 0,
-});
-const plain = (id: string): LyricLine => ({ id, text: "x", agentId: "v1" });
+const grouped = (id: string, gid: string, inst: number): LyricLine =>
+  lineFromFields(
+    {
+      id,
+      text: "x",
+      agentId: "v1",
+      groupId: gid,
+      instanceIdx: inst,
+      templateLineIdx: 0,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
+const plain = (id: string): LyricLine => lineFromFields({ id, text: "x", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
 
 describe("wouldDropCrossInstance", () => {
   it("refuses move between two instances of the same group", () => {
@@ -42,7 +48,10 @@ describe("wouldDropCrossInstance", () => {
 
   it("treats a line with groupId but no instanceIdx as different from one with both", () => {
     // Edge case: a line that lost instanceIdx mid-edit shouldn't merge with a properly-grouped one
-    const partial: LyricLine = { id: "a", text: "x", agentId: "v1", groupId: "g1" };
+    const partial: LyricLine = lineFromFields(
+      { id: "a", text: "x", agentId: "v1", groupId: "g1" },
+      DEFAULT_SPLIT_CHARACTER,
+    );
     expect(wouldDropCrossInstance(partial, grouped("b", "g1", 0))).toBe(true);
   });
 });

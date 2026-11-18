@@ -1,4 +1,6 @@
-import { pastedRows } from "@/domain/language/paste-import";
+import { applyGeneratedLanguages, removeTranslation } from "insync/commands/languages";
+import { lineTranslations, lineTransliteration } from "insync/language-line-languages";
+import { pastedRows } from "insync/language-paste-import";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -15,7 +17,7 @@ import { RegenerateLanguageControl } from "@/views/languages/regenerate-language
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -41,7 +43,6 @@ const LanguagesPanel: React.FC = () => {
   const metadata = useProjectStore((state) => state.metadata);
   const projectSession = useProjectStore((state) => state.projectSession);
   const activeTab = useProjectStore((state) => state.activeTab);
-  const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const setMetadata = useProjectStore((state) => state.setMetadata);
   const { targets, targetsRef, setTargets, project } = useLanguageTargets(lines, metadata, projectSession);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -92,7 +93,7 @@ const LanguagesPanel: React.FC = () => {
           edits,
         );
         if (updates.length > 0) {
-          updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+          useProjectStore.getState().commit(applyGeneratedLanguages(updates));
           if (requestedTargets.length > 0) noteGuideSignal("languages.generate");
           if (generation.transliteration) noteGuideSignal("languages.romanize");
         }
@@ -112,7 +113,7 @@ const LanguagesPanel: React.FC = () => {
         }
       }
     },
-    [setMetadata, sourceLanguage, targetsRef, updateLinesWithHistory],
+    [setMetadata, sourceLanguage, targetsRef],
   );
   // Activity tears down effects on hide, even without a render of the new tab.
   // biome-ignore lint/correctness/useExhaustiveDependencies: Tab and project changes must cancel the previous generation lifecycle.
@@ -127,13 +128,7 @@ const LanguagesPanel: React.FC = () => {
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
   const removeTarget = (language: string) => {
-    const updates = lines.flatMap((line) => {
-      if (!line.translations?.[language]) return [];
-      const translations = { ...line.translations };
-      delete translations[language];
-      return [{ id: line.id, updates: { translations } }];
-    });
-    if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+    useProjectStore.getState().commit(removeTranslation(language));
     setTargets((all) => all.filter((item) => item !== language));
   };
   const addTarget = (language: string) => {
@@ -143,7 +138,7 @@ const LanguagesPanel: React.FC = () => {
   };
   const trackCount = targets.length + 1;
   const hasLanguageContent = lines.some(
-    (line) => line.transliteration !== undefined || Object.keys(line.translations ?? {}).length > 0,
+    (line) => lineTransliteration(line) !== undefined || Object.keys(lineTranslations(line) ?? {}).length > 0,
   );
   const sourceLanguageLabel =
     SOURCE_SELECT_OPTIONS.find((option) => option.value === (metadata.language ?? ""))?.label ?? metadata.language;

@@ -8,7 +8,7 @@ import {
   openProjectIdSnapshot,
 } from "@/lib/open-project-session";
 import { buildSavedProject } from "@/lib/persistence";
-import { cancelPendingSave, flushPendingSaveQuietly } from "@/lib/persistence-debounce";
+import { cancelPendingSave, flushPendingSaveQuietly, holdSaves } from "@/lib/persistence-debounce";
 import { saveProjectAudio } from "@/lib/project-audio";
 import {
   createProjectId,
@@ -54,6 +54,7 @@ const LOG_PREFIX = "[OpenProject]";
 let latestRequest = 0;
 let appliedRequest = 0;
 let openProjectChanges = 0;
+let releaseStartupSaves: (() => void) | null = null;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -67,13 +68,22 @@ function claimRequest(): number {
   return latestRequest;
 }
 
+// Saves queued during the startup restore hold the stores it would replace, so they are dropped, never written.
+function endStartupSaveHold(): void {
+  if (!releaseStartupSaves) return;
+  cancelPendingSave();
+  releaseStartupSaves();
+  releaseStartupSaves = null;
+}
+
 function markOpenProjectChanged(): void {
+  endStartupSaveHold();
   openProjectChanges++;
 }
 
 // -- Boot ---------------------------------------------------------------------
 
-async function restoreOpenProject(): Promise<void> {
+async function restoreStoredProject(): Promise<void> {
   const baseline = openProjectChanges;
   const id = await findOpenProjectId();
   if (!id) return;
@@ -85,8 +95,22 @@ async function restoreOpenProject(): Promise<void> {
     throw error;
   }
   if (openProjectChanges !== baseline || !hasRestorableContent(payload)) return;
+  cancelPendingSave();
   applyProjectToStores(payload);
   markProjectOpened(id, Date.now()).catch(logFailure("could not record when the project was opened"));
+}
+
+// The restore replaces whatever the stores held before it, so no save of that state may write while it loads.
+async function restoreOpenProject(): Promise<void> {
+  cancelPendingSave();
+  const releaseSaves = holdSaves();
+  releaseStartupSaves = releaseSaves;
+  try {
+    await restoreStoredProject();
+  } finally {
+    releaseSaves();
+    if (releaseStartupSaves === releaseSaves) releaseStartupSaves = null;
+  }
 }
 
 // -- Switching ----------------------------------------------------------------
@@ -132,6 +156,7 @@ async function openProject(id: string): Promise<void> {
 }
 
 function createProject(): string {
+  endStartupSaveHold();
   flushPendingSaveQuietly();
   saveResumePositionNow();
   return openEmptyProject();
@@ -213,7 +238,11 @@ async function forkOpenProject(): Promise<string> {
   const id = createProjectId();
   adoptOpenProjectId(id);
   const args = buildSaveInput();
-  if (args) await trackSave("project", saveProjectRecord(id, buildSavedProject(args), openProjectView()));
+  if (args)
+    await trackSave(
+      "project",
+      saveProjectRecord(id, buildSavedProject(args), { view: openProjectView(), lines: args.lines }),
+    );
   const file = storedAudioFile(useAudioStore.getState().source);
   if (file) await trackSave("audio", saveProjectAudio(id, file));
   await trackSave("audio", saveOpenStemsTo(id));

@@ -1,11 +1,15 @@
-import type { LyricLine } from "@/domain/line/model";
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { fieldsOfLine } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -15,8 +19,8 @@ function namedLines(untimed: string[] = []): LyricLine[] {
   return NAMES.map((name, index) => {
     const id = name[0]?.toLowerCase() ?? String(index);
     const timing = untimed.includes(name) ? {} : { begin: index, end: index + 1 };
-    return {
-      ...createLine({ id, text: name, ...timing }),
+    return legacyLine({
+      ...fieldsOfLine(createLine({ id, text: name, ...timing }), getSplitCharacter()),
       translations: {
         es: {
           language: "es",
@@ -25,7 +29,7 @@ function namedLines(untimed: string[] = []): LyricLine[] {
           sourceFingerprint: `fp-${id}`,
         },
       },
-    };
+    });
   });
 }
 
@@ -104,7 +108,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await doneShowsLyricsChanged(screen);
 
       expect(useProjectStore.getState().lines).toBe(synced);
-      expect(byId("b")).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
+      expect(fieldsOfLine(byId("b")!, getSplitCharacter())).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
     });
 
     it("regression: a clean change after Keep my edits still leaves the synced line in place on Done", async () => {
@@ -123,7 +127,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await editText(screen, "Echo", "Echo!");
       await doneShowsLyricsChanged(screen);
 
-      expect(byId("b")).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
+      expect(fieldsOfLine(byId("b")!, getSplitCharacter())).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
       expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "b", "c", "d", "e"]);
     });
 
@@ -165,7 +169,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await doneShowsLyricsChanged(screen);
 
       expect(useProjectStore.getState().lines).toBe(afterDelete);
-      expect(byId("d")?.translations).toBeUndefined();
+      expect(byId("d")?.languages?.translations).toBeUndefined();
     });
   });
 
@@ -181,8 +185,8 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await screen.getByRole("button", { name: "Done" }).click();
 
       await expect.element(screen.getByText(APPLIED)).toBeInTheDocument();
-      expect(byId("c")?.text).toBe("Charlie!");
-      expect(byId("e")?.text).toBe("Echo!");
+      expect(lineText(byId("c")!, getSplitCharacter())).toBe("Charlie!");
+      expect(lineText(byId("e")!, getSplitCharacter())).toBe("Echo!");
       expect(useProjectStore.getState().ttmlEditState).toBeNull();
     });
   });

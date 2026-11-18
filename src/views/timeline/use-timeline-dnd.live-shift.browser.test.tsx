@@ -1,7 +1,12 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { lineFromFields } from "insync/line-from-fields";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import {
   installScrollHost,
   makeDragEndEvent,
@@ -9,8 +14,7 @@ import {
   POINTER_Y_BG,
   POINTER_Y_MAIN,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineDnd · live shift state", () => {
   let scrollHost: HTMLDivElement;
@@ -20,16 +24,19 @@ describe("useTimelineDnd · live shift state", () => {
     useTimelineStore.setState({ rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        {
-          id: "l1",
-          text: "every",
-          agentId: "v1",
-          words: [
-            { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g" },
-            { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g" },
-            { text: "y ", begin: 0.6, end: 0.9, syllableGroupId: "g" },
-          ],
-        },
+        lineFromFields(
+          {
+            id: "l1",
+            text: "every",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
+              { id: "w2", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+              { id: "w3", text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
       ],
     });
     scrollHost = installScrollHost();
@@ -51,19 +58,16 @@ describe("useTimelineDnd · live shift state", () => {
     );
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.length ?? 0).toBe(0);
-    expect(after.backgroundWords?.length).toBe(3);
-    const sharedId = after.backgroundWords?.[0].syllableGroupId;
-    expect(sharedId).toBeDefined();
-    expect(after.backgroundWords?.[1].syllableGroupId).toBe(sharedId);
-    expect(after.backgroundWords?.[2].syllableGroupId).toBe(sharedId);
+    expect(timedSyllables(mainTrack(after)).length).toBe(0);
+    expect(roleWords(after, "bg")?.length).toBe(3);
+    expect(computeSyllableGroups(roleWords(after, "bg") ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 
   it("shifts every groupmate by the same delta when a non-leading syllable is shift-dragged", async () => {
     useTimelineStore.setState({ zoom: 100 });
     const zoom = useTimelineStore.getState().zoom;
     const lines = useProjectStore.getState().lines;
-    const before = lines[0].words ?? [];
+    const before = timedSyllables(mainTrack(lines[0]));
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
     result.current.handleDragStart(makeDragStartEvent(true));
@@ -81,7 +85,7 @@ describe("useTimelineDnd · live shift state", () => {
     );
 
     const after = useProjectStore.getState().lines[0];
-    const words = after.words ?? [];
+    const words = timedSyllables(mainTrack(after));
     expect(words.length).toBe(3);
 
     const expectedShift = deltaX / zoom;
@@ -93,10 +97,7 @@ describe("useTimelineDnd · live shift state", () => {
     for (let i = 1; i < words.length; i++) {
       expect(words[i].begin).toBeCloseTo(words[i - 1].end, 5);
     }
-    const sharedId = words[0].syllableGroupId;
-    expect(sharedId).toBeDefined();
-    expect(words[1].syllableGroupId).toBe(sharedId);
-    expect(words[2].syllableGroupId).toBe(sharedId);
+    expect(computeSyllableGroups(words)).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 
   it("moves the whole group when shift is released mid-drag, even though pointerdown had shift", async () => {
@@ -111,11 +112,8 @@ describe("useTimelineDnd · live shift state", () => {
     );
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.length ?? 0).toBe(0);
-    expect(after.backgroundWords?.length).toBe(3);
-    const sharedId = after.backgroundWords?.[0].syllableGroupId;
-    expect(sharedId).toBeDefined();
-    expect(after.backgroundWords?.[1].syllableGroupId).toBe(sharedId);
-    expect(after.backgroundWords?.[2].syllableGroupId).toBe(sharedId);
+    expect(timedSyllables(mainTrack(after)).length).toBe(0);
+    expect(roleWords(after, "bg")?.length).toBe(3);
+    expect(computeSyllableGroups(roleWords(after, "bg") ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 });

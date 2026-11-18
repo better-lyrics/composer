@@ -1,11 +1,12 @@
-import { withNewInstance } from "@/domain/group/own-timing";
-import { instanceCount } from "@/domain/instance/enumerate";
+import { addGroupWithLines, updateGroup } from "insync/commands/group-edits";
+import { conformToInstance } from "insync/commands/instance-rows";
+import { instanceCount } from "insync/instance-enumerate";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showGroupedToast } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
@@ -44,7 +45,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
   const handleCreateGroupFromSelection = useCallback(() => {
     if (!groupableSelection) return;
     const projectState = useProjectStore.getState();
-    projectState.addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines);
+    projectState.commit(addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines));
     noteGuideSignal("edit.group");
     showGroupedToast(groupableSelection.result.group, groupableSelection.count, groupableSelection.addedFromGaps);
     clearContextMenu();
@@ -85,10 +86,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
         toast.error(result.reason ? CONFORM_FAILURE_MESSAGE[result.reason] : "Could not conform those lines");
         return;
       }
-      projectState.setLinesWithHistory(
-        result.updatedLines,
-        withNewInstance(projectState.groups, groupId, result.instanceIdx),
-      );
+      projectState.commit(conformToInstance(groupId, result.instanceIdx, result.updatedLines));
       showGroupActionToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
     },
     [conformableSelection, confirm, clearContextMenu],
@@ -115,7 +113,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
   const handleRecolorGroup = useCallback(
     (color: string) => {
       if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-      useProjectStore.getState().updateGroup(contextMenu.target.groupId, { color });
+      useProjectStore.getState().commit(updateGroup(contextMenu.target.groupId, { color }));
       clearContextMenu();
     },
     [contextMenu, clearContextMenu],

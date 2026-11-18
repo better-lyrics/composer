@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import type { SyllableAddress } from "insync/selection-model";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
+import { wordAddress } from "@/test/word-address";
 import {
   multiSelectionSummary,
   selectedWordTiming,
@@ -20,12 +20,12 @@ function linkedLine(id: string, instanceIdx: number) {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [createWord({ text: "la ", begin: instanceIdx * 10, end: instanceIdx * 10 + 1 })],
+    words: [createWord({ text: "la", sep: " ", begin: instanceIdx * 10, end: instanceIdx * 10 + 1 })],
   });
 }
 
-function pick(lineId: string, lineIndex: number, type: WordSelection["type"] = "word"): WordSelection {
-  return { lineId, lineIndex, wordIndex: 0, type };
+function pick(lineId: string, _lineIndex: number, type: SyllableAddress["type"] = "word"): SyllableAddress {
+  return { lineId, type, syllableId: `${lineId}-first` };
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -70,17 +70,17 @@ describe("selectedWordTiming", () => {
   });
 
   it("reads a main word", () => {
-    expect(selectedWordTiming(pick("l1", 0), [line])).toEqual({ text: "hi", begin: 1, end: 2 });
+    expect(selectedWordTiming(wordAddress(line, 0), [line])).toEqual({ text: "hi", begin: 1, end: 2 });
   });
 
   it("reads a background word", () => {
-    expect(selectedWordTiming(pick("l1", 0, "bg"), [line])).toEqual({ text: "oh", begin: 1.5, end: 2.5 });
+    expect(selectedWordTiming(wordAddress(line, 0, "bg"), [line])).toEqual({ text: "oh", begin: 1.5, end: 2.5 });
   });
 
   describe("edge cases", () => {
     it("is null for a missing line or word", () => {
-      expect(selectedWordTiming(pick("l1", 4), [line])).toBeNull();
-      expect(selectedWordTiming({ ...pick("l1", 0), wordIndex: 9 }, [line])).toBeNull();
+      expect(selectedWordTiming({ ...wordAddress(line, 0), lineId: "gone" }, [line])).toBeNull();
+      expect(selectedWordTiming({ ...wordAddress(line, 0), syllableId: "gone" }, [line])).toBeNull();
     });
   });
 });
@@ -89,14 +89,17 @@ describe("multiSelectionSummary", () => {
   const wordLine = createLine({
     id: "w",
     text: "a b",
-    words: [createWord({ text: "a ", begin: 1, end: 2 }), createWord({ text: "b", begin: 2, end: 3 })],
+    words: createWords([
+      { text: "a", sep: " ", begin: 1, end: 2 },
+      { text: "b", begin: 2, end: 3 },
+    ]),
   });
   const syncedRow = createLine({ id: "s", text: "row", begin: 5, end: 7 });
 
   it("spans every selected word and counts line-synced rows as lines", () => {
-    const selection = [pick("w", 0), { ...pick("w", 0), wordIndex: 1 }, pick("s", 1)];
+    const selection = [wordAddress(wordLine, 0), wordAddress(wordLine, 1), wordAddress(syncedRow, 0)];
     const raw = [wordLine, syncedRow];
-    expect(multiSelectionSummary(selection, getEffectiveLines(raw), raw)).toEqual({
+    expect(multiSelectionSummary(selection, raw)).toEqual({
       wordCount: 2,
       lineCount: 1,
       begin: 1,
@@ -106,7 +109,7 @@ describe("multiSelectionSummary", () => {
 
   describe("edge cases", () => {
     it("is null for a single selection", () => {
-      expect(multiSelectionSummary([pick("w", 0)], [wordLine], [wordLine])).toBeNull();
+      expect(multiSelectionSummary([pick("w", 0)], [wordLine])).toBeNull();
     });
   });
 });

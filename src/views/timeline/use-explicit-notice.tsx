@@ -1,10 +1,13 @@
-import { useProjectStore } from "@/stores/project";
-import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
-import { getExplicitSnippet } from "@/utils/explicit-snippet";
-import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
-import { pluralize } from "@/utils/pluralize";
 import { IconAlertTriangle, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
+import { markWordsExplicit, toggleWordExplicit } from "insync/commands/word-edits";
+import { backgroundText, lineText } from "insync/line-text";
+import { useProjectStore } from "@/stores/project";
+import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
+import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
+import { getExplicitSnippet } from "@/utils/explicit-snippet";
+import { pluralize } from "insync/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const INLINE_WORD_MAX = 32;
 const MODAL_LINE_MAX = 80;
@@ -34,7 +37,11 @@ function useExplicitNotice(): NoticeKind | null {
     singleAction: only && { label: "Mark explicit", icon: IconAlertTriangle, run: () => markOne(only) },
     rows: visible.map((suggestion) => {
       const line = lineMap.get(suggestion.lineId);
-      const source = (suggestion.field === "words" ? line?.text : line?.backgroundText) ?? "";
+      const source = line
+        ? ((suggestion.field === "words"
+            ? lineText(line, getSplitCharacter())
+            : backgroundText(line, getSplitCharacter())) ?? "")
+        : "";
       return {
         key: suggestion.fingerprint,
         fingerprints: [suggestion.fingerprint],
@@ -63,13 +70,15 @@ function useExplicitNotice(): NoticeKind | null {
 }
 
 function markOne(suggestion: ExplicitSuggestion): void {
-  useProjectStore.getState().toggleWordExplicit(suggestion.lineId, suggestion.field, suggestion.wordIndices);
+  useProjectStore.getState().commit(toggleWordExplicit(suggestion.lineId, suggestion.field, suggestion.wordIndices));
 }
 
 function markAll(visible: readonly ExplicitSuggestion[]): void {
-  useProjectStore.getState().markWordsExplicit(
-    visible.flatMap((s) => s.wordIndices.map((wordIndex) => ({ lineId: s.lineId, field: s.field, wordIndex }))),
-    true,
+  useProjectStore.getState().commit(
+    markWordsExplicit(
+      visible.flatMap((s) => s.wordIndices.map((wordIndex) => ({ lineId: s.lineId, field: s.field, wordIndex }))),
+      true,
+    ),
   );
 }
 

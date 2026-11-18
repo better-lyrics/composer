@@ -1,18 +1,32 @@
 /**
  * @vitest-environment node
  */
-import type { LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine, Syllable } from "insync/line";
+import { backgroundTrack, mainTrack } from "insync/line-track";
 import { findExplicitWords } from "@/utils/explicit-detection";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-function lineWithText(id: string, text: string, words?: LooseLine["words"]): LyricLine {
-  return reconcileLine({
-    id,
-    text,
-    agentId: "v1",
-    ...(words ? { words } : {}),
-  });
+// Suggestions are for timed words only, so a line without given words is word synced, one second a word.
+function timedLine(fields: LineFields): LyricLine {
+  const untimed = lineFromFields(fields, DEFAULT_SPLIT_CHARACTER);
+  const timed = (syllables: readonly Syllable[]) =>
+    syllables.map((syllable, index) => ({ ...syllable, begin: index, end: index + 1 }));
+  const background = backgroundTrack(untimed);
+  return lineFromFields(
+    {
+      ...fields,
+      words: fields.words ?? timed(mainTrack(untimed).syllables),
+      ...(background && { backgroundWords: fields.backgroundWords ?? timed(background.syllables) }),
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
+}
+
+function lineWithText(id: string, text: string, words?: LineFields["words"]): LyricLine {
+  return timedLine({ id, text, agentId: "v1", ...(words ? { words } : {}) });
 }
 
 describe("findExplicitWords", () => {
@@ -38,6 +52,23 @@ describe("findExplicitWords", () => {
     expect(againHit?.wordIndices).toBe(firstHit?.wordIndices);
   });
 
+  it("regression: suggests no mark for a line-synced line or its line-synced background", () => {
+    const line = lineFromFields(
+      {
+        id: "L1",
+        text: "I fuck you",
+        agentId: "v1",
+        begin: 1,
+        end: 3,
+        backgroundText: "oh shit",
+        backgroundBegin: 2,
+        backgroundEnd: 3,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(findExplicitWords([line])).toEqual([]);
+  });
+
   it("returns no suggestions for clean lyrics", () => {
     const result = findExplicitWords([lineWithText("L1", "I love you so much")]);
     expect(result).toHaveLength(0);
@@ -46,21 +77,21 @@ describe("findExplicitWords", () => {
   it("skips a word that is already marked explicit", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fuck you", [
-        { text: "I ", begin: 0, end: 0.3 },
-        { text: "fuck ", begin: 0.3, end: 0.6, explicit: true },
-        { text: "you", begin: 0.6, end: 1 },
+        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w2", text: "fuck", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
+        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
       ]),
     ]);
     expect(result).toHaveLength(0);
   });
 
   it("detects a profanity in backgroundText with field='backgroundWords'", () => {
-    const line: LyricLine = {
+    const line: LyricLine = timedLine({
       id: "L1",
       text: "clean main",
       agentId: "v1",
       backgroundText: "oh shit",
-    };
+    });
     const result = findExplicitWords([line]);
     expect(result).toHaveLength(1);
     expect(result[0].field).toBe("backgroundWords");
@@ -142,11 +173,11 @@ describe("findExplicitWords · syllable-split words", () => {
   it("skips a syllable-split word when all of its syllables are already marked", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fu|cking love it", [
-        { text: "I ", begin: 0, end: 0.3 },
-        { text: "fu", begin: 0.3, end: 0.4, explicit: true },
-        { text: "cking ", begin: 0.4, end: 0.6, explicit: true },
-        { text: "love ", begin: 0.6, end: 0.8 },
-        { text: "it", begin: 0.8, end: 1 },
+        { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w5", text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true, joinsNext: true },
+        { id: "w6", text: "cking", sep: " ", begin: 0.4, end: 0.6, explicit: true, joinsNext: false },
+        { id: "w7", text: "love", sep: " ", begin: 0.6, end: 0.8, joinsNext: false },
+        { id: "w8", text: "it", sep: "", begin: 0.8, end: 1, joinsNext: false },
       ]),
     ]);
     expect(result).toHaveLength(0);
@@ -155,11 +186,11 @@ describe("findExplicitWords · syllable-split words", () => {
   it("emits a suggestion when at least one syllable of a profane word is unmarked", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fu|cking love it", [
-        { text: "I ", begin: 0, end: 0.3 },
-        { text: "fu", begin: 0.3, end: 0.4, explicit: true },
-        { text: "cking ", begin: 0.4, end: 0.6 },
-        { text: "love ", begin: 0.6, end: 0.8 },
-        { text: "it", begin: 0.8, end: 1 },
+        { id: "w9", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w10", text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true, joinsNext: true },
+        { id: "w11", text: "cking", sep: " ", begin: 0.4, end: 0.6, joinsNext: false },
+        { id: "w12", text: "love", sep: " ", begin: 0.6, end: 0.8, joinsNext: false },
+        { id: "w13", text: "it", sep: "", begin: 0.8, end: 1, joinsNext: false },
       ]),
     ]);
     expect(result).toHaveLength(1);
@@ -178,45 +209,54 @@ describe("findExplicitWords · syllable-split words", () => {
 describe("findExplicitWords · linked instances", () => {
   function linkedChorusLines(): LyricLine[] {
     return [
-      {
-        id: "C1",
-        text: "I fuck you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { text: "I ", begin: 0, end: 0.3 },
-          { text: "fuck ", begin: 0.3, end: 0.6 },
-          { text: "you", begin: 0.6, end: 1 },
-        ],
-      },
-      {
-        id: "C2",
-        text: "I fuck you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { text: "I ", begin: 30, end: 30.4 },
-          { text: "fuck ", begin: 30.4, end: 30.7 },
-          { text: "you", begin: 30.7, end: 31.2 },
-        ],
-      },
-      {
-        id: "C3",
-        text: "I fuck you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 2,
-        templateLineIdx: 0,
-        words: [
-          { text: "I ", begin: 60, end: 60.4 },
-          { text: "fuck ", begin: 60.4, end: 60.7 },
-          { text: "you", begin: 60.7, end: 61.2 },
-        ],
-      },
+      lineFromFields(
+        {
+          id: "C1",
+          text: "I fuck you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w14", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w15", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+            { id: "w16", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "C2",
+          text: "I fuck you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w17", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+            { id: "w18", text: "fuck", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
+            { id: "w19", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
+      lineFromFields(
+        {
+          id: "C3",
+          text: "I fuck you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 2,
+          templateLineIdx: 0,
+          words: [
+            { id: "w20", text: "I", sep: " ", begin: 60, end: 60.4, joinsNext: false },
+            { id: "w21", text: "fuck", sep: " ", begin: 60.4, end: 60.7, joinsNext: false },
+            { id: "w22", text: "you", sep: "", begin: 60.7, end: 61.2, joinsNext: false },
+          ],
+        },
+        DEFAULT_SPLIT_CHARACTER,
+      ),
     ];
   }
 

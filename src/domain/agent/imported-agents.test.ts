@@ -1,5 +1,7 @@
-import { agentsAfterImport } from "@/domain/agent/imported-agents";
-import type { Agent } from "@/domain/agent/model";
+import { mainTrack } from "insync/line-track";
+import { agentsAfterImport } from "insync/agent-imported-agents";
+import type { Agent } from "insync/agent";
+import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -9,7 +11,7 @@ const BOB: Agent = { id: "v2", type: "person", name: "Bob" };
 const CARA: Agent = { id: "v3", type: "person", name: "Cara" };
 
 function line(agentId: string, text = "Hello") {
-  return { text, agentId };
+  return createLine({ id: `line-${text}`, text, agentId });
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -28,6 +30,19 @@ describe("agentsAfterImport", () => {
   it("renames an existing singer the import declares again", () => {
     const result = agentsAfterImport([LEAD], [{ id: "v1", type: "group", name: "Everyone" }], [line("v1")]);
     expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Everyone" }]);
+  });
+
+  it("takes the kept TTML data of a singer the import declares again", () => {
+    const kept = { ...LEAD, passthrough: { attrs: [["x-range", "low"]] as const } };
+    const incoming = { ...LEAD, namePassthrough: { attrs: [["x-lang", "en"]] as const } };
+    const result = agentsAfterImport([kept], [incoming], [line("v1")]);
+    expect(result.agents).toEqual([incoming]);
+  });
+
+  it("clears the kept TTML data of the singers an import without singers keeps", () => {
+    const kept = { ...LEAD, passthrough: { attrs: [["x-range", "low"]] as const } };
+    const result = agentsAfterImport([kept], undefined, [line("v1")]);
+    expect(result.agents).toEqual([LEAD]);
   });
 
   it("drops a singer from a previous import that no imported line references", () => {
@@ -78,7 +93,7 @@ describe("agentsAfterImport", () => {
     it("every imported line references a singer in the result when the project had singers", () => {
       const result = agentsAfterImport([BOB], [CARA], [line("v3"), line("v2")]);
       const ids = new Set(result.agents.map((agent) => agent.id));
-      for (const imported of result.lines) expect(ids.has(imported.agentId)).toBe(true);
+      for (const imported of result.lines) expect(ids.has(mainTrack(imported).agentId)).toBe(true);
     });
 
     it("does not mutate its inputs", () => {

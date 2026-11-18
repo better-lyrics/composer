@@ -1,20 +1,22 @@
-import type { LyricLine } from "@/domain/line/model";
-import type { SyncGranularity } from "@/domain/line/sync-progress";
-import { storedSyncPosition } from "@/domain/sync/anchor-gesture";
-import { resolveSyncCursor } from "@/domain/sync/cursor";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import type { LyricLine } from "insync/line";
+import type { SyncGranularity } from "insync/line-sync-progress";
+import { syncAddressPosition } from "insync/sync-address";
+import { storedSyncPosition } from "insync/sync-anchor-gesture";
+import { resolveSyncCursor } from "insync/sync-cursor";
+import type { SyncCursor } from "insync/sync-cursor";
 import {
   type SkippedInstance,
   keptReRecording,
   reRecordingAt,
   skippedSharedInstances,
   syncPositionPastSkipped,
-} from "@/domain/sync/skipped-instances";
+} from "insync/sync-skipped-instances";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
 import type { SyncReRecording, SyncState } from "@/utils/sync-helpers";
 import { useMemo } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Re-recording -------------------------------------------------------------
 
@@ -42,8 +44,8 @@ function useSyncCursor(lines: readonly LyricLine[], syncState: SyncState, granul
   const history = useProjectStore((s) => s.history);
   const historyIndex = useProjectStore((s) => s.historyIndex);
   const groups = useProjectStore((s) => s.groups);
-  const skippedInstances = useMemo(() => skippedSharedInstances(lines, groups), [lines, groups]);
-  const stored = storedSyncPosition(syncState, { history, historyIndex });
+  const skippedInstances = useMemo(() => skippedSharedInstances(lines, groups, getSplitCharacter()), [lines, groups]);
+  const stored = storedSyncPosition(syncState, lines, { history, historyIndex });
   const openProjectId = useOpenProjectId();
   const reRecording = syncState.reRecording?.projectId === openProjectId ? syncState.reRecording : undefined;
   const { cursor, jumped } = useMemo(
@@ -51,8 +53,15 @@ function useSyncCursor(lines: readonly LyricLine[], syncState: SyncState, granul
       syncPositionPastSkipped(
         lines,
         skippedInstances,
-        resolveSyncCursor(lines, stored.position, stored.jumped, granularity),
+        resolveSyncCursor(
+          lines,
+          syncAddressPosition(lines, stored.position),
+          stored.jumped,
+          granularity,
+          getSplitCharacter(),
+        ),
         stored.jumped,
+        getSplitCharacter(),
         reRecording,
       ),
     [lines, skippedInstances, stored.position, stored.jumped, granularity, reRecording],

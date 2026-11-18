@@ -1,15 +1,14 @@
 import { restorePlayedRanges } from "@/audio/playback-ranges";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { readAlignedTimings } from "@/domain/alignment/fingerprint";
 import { readPlayedRanges } from "@/domain/alignment/played-ranges";
-import { withSeededBackground } from "@/domain/line/background";
 import { savedExportTiming } from "@/domain/project/export-timing";
-import { isMetadataKey } from "@/domain/project/imported-metadata";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { isMetadataKey } from "insync/project-imported-metadata";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
-import type { SavedProject } from "@/lib/saved-project";
+import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -32,12 +31,16 @@ function malformedFieldsOf(project: SavedProject): string[] {
 function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): string[] {
   const state = useProjectStore.getState();
   state.setMetadata(normalizeLoadedMetadata(project.metadata));
-  state.setLines((project.lines ?? []).map(withSeededBackground));
-  state.setGroups(project.groups ?? []);
+  state.restoreLyrics({
+    lines: linesFromSaved(project.lines ?? []),
+    groups: project.groups ?? [],
+    parts: project.parts ?? [],
+    passthrough: project.passthrough ?? {},
+    agents: project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS,
+  });
   state.setGranularity(project.granularity ?? useSettingsStore.getState().defaultGranularity);
   state.setExportTiming(savedExportTiming(project.exportTiming));
   state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
-  state.setAgents(project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS);
   state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
   state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
   state.setDismissedMetadataMatches(project.dismissedMetadataMatches ?? []);

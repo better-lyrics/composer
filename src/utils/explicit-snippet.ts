@@ -1,4 +1,5 @@
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "insync/lyric-words";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -14,7 +15,7 @@ interface ExplicitSnippet {
 
 function findWordCharRange(source: string, wordIndices: number[]): { start: number; end: number } | null {
   if (wordIndices.length === 0) return null;
-  const { parts } = splitIntoWordsWithMeta(source);
+  const { parts } = splitIntoWordsWithMeta(source, getSplitCharacter());
   const minIndex = Math.min(...wordIndices);
   const maxIndex = Math.max(...wordIndices);
   if (minIndex < 0 || maxIndex >= parts.length) return null;

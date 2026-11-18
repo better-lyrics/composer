@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { LinkGroup } from "@/domain/group/template";
+import { lineEditCommand } from "insync/commands/line-edits";
+import type { LinkGroup } from "insync/group";
+import type { LineUpdate } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { GroupBanner } from "@/views/timeline/group-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -10,16 +14,16 @@ import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 // -- Fixtures -----------------------------------------------------------------
 
 const GROUP_COLOR_RGB = "rgb(163, 201, 255)";
-const TIMING_WRITE = { deriveText: false, propagateToSiblings: false };
+const timingWrite = (updates: LineUpdate[]) => lineEditCommand({ command: "edit lines", args: [] }, () => updates);
 
 const chorus = (instanceIdx: number, begin: number) =>
   createLine({
     id: `c${instanceIdx}`,
     text: "go now",
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
@@ -81,10 +85,10 @@ describe("GroupBanner · shared timing", () => {
     await render(<PingSubscriber />);
     expect(useTimelineStore.getState().pingingGroupId).toBeNull();
 
-    const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word, i) =>
       i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
     );
-    useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words } }], TIMING_WRITE);
+    useProjectStore.getState().commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
 
     await expect.poll(() => useTimelineStore.getState().pingingGroupId).toBe("g1");
   });
@@ -127,12 +131,12 @@ describe("GroupBanner · shared timing", () => {
       seed(group);
       await render(<PingSubscriber />);
 
-      const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
+      const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word, i) =>
         i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
       );
-      useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words } }], TIMING_WRITE);
+      useProjectStore.getState().commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
 
-      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBeCloseTo(11.2, 6);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].begin).toBeCloseTo(11.2, 6);
       expect(useTimelineStore.getState().pingingGroupId).toBeNull();
     });
   });
@@ -144,12 +148,12 @@ describe("GroupBanner · shared timing", () => {
       const screen = await render(<PingSubscriber />);
       await screen.unmount();
 
-      const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
+      const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word, i) =>
         i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
       );
-      useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words } }], TIMING_WRITE);
+      useProjectStore.getState().commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
 
-      expect(useProjectStore.getState().lines[1].words?.[1].begin).toBeCloseTo(41.2, 6);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[1]))[1].begin).toBeCloseTo(41.2, 6);
       expect(useTimelineStore.getState().pingingGroupId).toBeNull();
     });
   });

@@ -1,5 +1,5 @@
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { IconAlertTriangle, IconBulb, IconLink } from "@tabler/icons-react";
 import { useState } from "react";
 

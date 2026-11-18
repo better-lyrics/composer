@@ -1,6 +1,11 @@
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LyricLine } from "@/domain/line/model";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { lineEditCommand } from "insync/commands/line-edits";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { fieldsOfLine } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
 import { useProjectStore } from "@/stores/project";
+import { fieldUpdates } from "@/test/field-updates";
 import {
   createRefresher,
   disposeRefreshers,
@@ -10,7 +15,8 @@ import {
   timedLine,
 } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -41,9 +47,11 @@ describe("createLanguageAutoRefresh", () => {
     await createRefresher().refreshNow();
 
     const line = lineById("a");
-    expect(line.transliteration?.text).toBe("Zdravstvuy  moy  drug");
-    expect(line.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(line.text));
-    expect(line.translations?.en.text).toBe("Hello my friend");
+    expect(line.languages?.transliteration?.main.text).toBe("Zdravstvuy  moy  drug");
+    expect(line.languages?.transliteration?.sourceFingerprint).toBe(
+      languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, lineText(line, DEFAULT_SPLIT_CHARACTER)),
+    );
+    expect(line.languages?.translations?.en.main.text).toBe("Hello my friend");
     expect(romanizedWords("a")).toEqual(["Zdravstvuy", "moy", "drug"]);
   });
 
@@ -78,10 +86,10 @@ describe("createLanguageAutoRefresh", () => {
     it("never overwrites a transliteration the user wrote", async () => {
       const requests = stubGoogleLanguageFetch({ detectedLanguage: "ru", romanizations: {}, translations: {} });
       const stale = timedLine("a", ["Тёмная", "ночь"], ["Svetlaya", "noch"], "Светлая ночь");
+      const track = stale.languages?.transliteration;
       const line: LyricLine = {
         ...stale,
-        transliteration: stale.transliteration && { ...stale.transliteration, origin: "manual" },
-        translations: {},
+        languages: { transliteration: track && { ...track, origin: "manual" }, translations: {} },
       };
       useProjectStore.setState({ lines: [line] });
 
@@ -115,11 +123,20 @@ describe("createLanguageAutoRefresh", () => {
 
       const refreshing = createRefresher().refreshNow();
       await vi.waitFor(() => expect(requests.length).toBeGreaterThan(0));
-      useProjectStore.getState().updateLine("a", { text: "Летний ливень" }, { deriveText: false });
+      useProjectStore.getState().commit(
+        lineEditCommand(
+          { command: "edit lines", args: [] },
+          () => fieldUpdates([{ id: "a", updates: { text: "Летний ливень" } }]),
+          {
+            copiesSharedTiming: false,
+          },
+        ),
+        "pending",
+      );
       answer.open();
       await refreshing;
 
-      expect(lineById("a").transliteration?.text).toBe("Zimniy  dozhd");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Zimniy  dozhd");
     });
 
     it("drops a result when another project opened during the request", async () => {
@@ -140,7 +157,7 @@ describe("createLanguageAutoRefresh", () => {
       answer.open();
       await refreshing;
 
-      expect(lineById("a").transliteration?.text).toBe("Staryy  den");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Staryy  den");
     });
 
     it("writes nothing after dispose", async () => {
@@ -162,7 +179,7 @@ describe("createLanguageAutoRefresh", () => {
       answer.open();
       await refreshing;
 
-      expect(lineById("a").transliteration?.text).toBe("Rechnoy  bereg");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Rechnoy  bereg");
     });
   });
 
@@ -184,7 +201,7 @@ describe("createLanguageAutoRefresh", () => {
       expect(requests).toEqual([]);
 
       await vi.advanceTimersByTimeAsync(1);
-      await vi.waitFor(() => expect(lineById("a").transliteration?.text).toBe("Yasnoye  nebo"));
+      await vi.waitFor(() => expect(lineById("a").languages?.transliteration?.main.text).toBe("Yasnoye  nebo"));
     });
   });
 
@@ -196,7 +213,7 @@ describe("createLanguageAutoRefresh", () => {
         translations: { "Okay baby": "Okay baby" },
       });
       const line = timedLine("a", ["Okay", "baby"], ["Okey", "detka"], "Окей детка");
-      useProjectStore.setState({ lines: [{ ...line, transliteration: undefined }] });
+      useProjectStore.setState({ lines: [{ ...line, languages: { translations: line.languages?.translations } }] });
       const refresher = createRefresher();
 
       await refresher.refreshNow();
@@ -204,7 +221,7 @@ describe("createLanguageAutoRefresh", () => {
       await refresher.refreshNow();
 
       // Untranslatable text has no translation, so the old one is removed (#309).
-      expect(settled.translations?.en).toBeUndefined();
+      expect(settled.languages?.translations?.en).toBeUndefined();
       expect(lineById("a")).toBe(settled);
     });
 
@@ -218,17 +235,17 @@ describe("createLanguageAutoRefresh", () => {
       const removedTransliteration = timedLine("c", ["Опять", "одна"], ["Opyat", "odin"], "Опять один");
       useProjectStore.setState({
         lines: [
-          { ...removedTranslation, translations: {} },
-          { ...removedTransliteration, transliteration: undefined },
+          { ...removedTranslation, languages: { ...removedTranslation.languages, translations: {} } },
+          { ...removedTransliteration, languages: { translations: removedTransliteration.languages?.translations } },
         ],
       });
 
       await createRefresher().refreshNow();
 
-      expect(lineById("b").transliteration?.text).toBe("Snova  doma");
-      expect(lineById("b").translations?.en).toBeUndefined();
-      expect(lineById("c").translations?.en.text).toBe("Alone again");
-      expect(lineById("c").transliteration).toBeUndefined();
+      expect(lineById("b").languages?.transliteration?.main.text).toBe("Snova  doma");
+      expect(lineById("b").languages?.translations?.en).toBeUndefined();
+      expect(lineById("c").languages?.translations?.en.main.text).toBe("Alone again");
+      expect(lineById("c").languages?.transliteration).toBeUndefined();
     });
 
     it("regression: #283 a lyrics edit outside Languages refreshes the word transliteration", async () => {
@@ -238,13 +255,23 @@ describe("createLanguageAutoRefresh", () => {
         translations: { "Здравствуй, мир": "Hello, world" },
       });
       useProjectStore.setState({ lines: [timedLine("a", ["Привет,", "мир"], ["Privet,", "mir"])] });
-      useProjectStore.getState().updateLine("a", {
+      const edited = legacyLine({
+        ...fieldsOfLine(lineById("a"), DEFAULT_SPLIT_CHARACTER),
         text: "Здравствуй, мир",
         words: [
-          { text: "Здравствуй, ", begin: 1, end: 2, transliteration: "Privet," },
-          { text: "мир", begin: 2, end: 3, transliteration: "mir" },
+          { id: "w1", text: "Здравствуй,", sep: " ", begin: 1, end: 2, transliteration: "Privet,", joinsNext: false },
+          { id: "w2", text: "мир", sep: "", begin: 2, end: 3, transliteration: "mir", joinsNext: false },
         ],
+        ...legacyLanguages(lineById("a").languages),
       });
+      useProjectStore.getState().commit(
+        lineEditCommand(
+          { command: "edit lines", args: [] },
+          () => [{ id: "a", updates: { tracks: edited.tracks, languages: edited.languages } }],
+          { copiesSharedTiming: false },
+        ),
+        "pending",
+      );
 
       await createRefresher().refreshNow();
 

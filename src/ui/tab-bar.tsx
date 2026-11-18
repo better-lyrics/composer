@@ -1,5 +1,5 @@
-import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
-import { getLanguageReviewItems } from "@/domain/language/review";
+import { getLanguageAlignmentErrorItems } from "insync/language-alignment-errors";
+import { getLanguageReviewItems } from "insync/language-review";
 import { PROJECT_TABS, type ProjectTab, TAB_LABELS } from "@/domain/project/tab";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
@@ -16,6 +16,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useId } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 const TAB_SHORTCUTS: Record<ProjectTab, string> = {
   import: "global.goToImport",
@@ -59,8 +60,8 @@ const TabBar: React.FC = () => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   useShortcutBindingsStore((s) => s.overrides);
   useShortcutBindingsStore((s) => s.preset);
-  const languageReviewCount = getLanguageReviewItems(lines).length;
-  const languageErrorCount = getLanguageAlignmentErrorItems(lines).length;
+  const languageReviewCount = getLanguageReviewItems(lines, getSplitCharacter()).length;
+  const languageErrorCount = getLanguageAlignmentErrorItems(lines, getSplitCharacter()).length;
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
   const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
   const groupOpen = useEffectiveFocus() !== null;

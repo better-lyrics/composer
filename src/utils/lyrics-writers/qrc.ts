@@ -1,4 +1,4 @@
-import type { Agent } from "@/domain/agent/model";
+import type { Agent } from "insync/agent";
 import { MS_PER_SECOND, readSingerMarker } from "@/utils/lyrics-parsers/qrc-metadata";
 import { type LyricsWriterInput, type WritableLine, songTags, writableLines } from "@/utils/lyrics-writers/shared";
 
@@ -27,7 +27,7 @@ function markerName(agent: Agent | undefined, agentId: string): string {
 
 function lineEntry(line: WritableLine): string {
   const body = line.hasWordTiming
-    ? line.words.map((word) => `${word.text}(${timeTag(word.begin, word.end)})`).join("")
+    ? line.words.map((word) => `${word.text}${word.sep}(${timeTag(word.begin, word.end)})`).join("")
     : line.text;
   return `[${timeTag(line.bounds.begin, line.bounds.end)}]${body}`;
 }

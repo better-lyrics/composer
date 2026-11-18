@@ -2,32 +2,34 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { effectiveWordTextEdit, getEffectiveLine } from "@/domain/line/effective-words";
-import { trackWords } from "@/domain/line/tracks";
+import { typeWordText } from "insync/commands/word-structure";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { trackRole } from "insync/line-track";
+import { addressOf } from "insync/selection-resolve";
+import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
 interface WordEditOverlayProps {
   lineId: string;
-  wordIndex: number;
+  syllableId: string;
   type: "word" | "bg";
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, type, scrollContainerRef }) => {
+const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, syllableId, type, scrollContainerRef }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const rawLines = useProjectStore((s) => s.lines);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
+  const lines = useProjectStore((s) => s.lines);
   const clearEditingWord = useTimelineStore((s) => s.clearEditingWord);
 
-  const rawLine = rawLines.find((l) => l.id === lineId);
-  const line = rawLine ? getEffectiveLine(rawLine) : undefined;
-  const wordsArray = line ? trackWords(line, type) : undefined;
+  const line = lines.find((l) => l.id === lineId);
+  const wordsArray = line ? drawnSyllables(line, trackRole(type), getSplitCharacter()) : undefined;
+  const wordIndex = wordsArray?.findIndex((candidate) => candidate.id === syllableId) ?? -1;
   const word = wordsArray?.[wordIndex];
 
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -36,7 +38,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
     const container = scrollContainerRef.current;
     if (!container || !word) return;
 
-    const key = `${lineId}-${type}-${wordIndex}`;
+    const key = wordBlockId(lineId, type, wordIndex);
 
     const zoom = useTimelineStore.getState().zoom;
     const expectedLeft = word.begin * zoom;
@@ -78,21 +80,15 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
 
   const handleCommit = useCallback(
     (value: string) => {
-      if (!line || !wordsArray || !word) return;
+      if (!line || !word) return;
       const trimmed = value.trim();
-      if (trimmed && trimmed !== word.text.trimEnd()) {
-        const updatedWords = [...wordsArray];
-        const hadTrailingSpace = word.text.endsWith(" ");
-        updatedWords[wordIndex] = { ...word, text: hadTrailingSpace ? `${trimmed} ` : trimmed };
-        updateLineWithHistory(
-          lineId,
-          type === "word" ? effectiveWordTextEdit(line, updatedWords) : manualBackgroundWordEdit(updatedWords),
-        );
+      if (trimmed && trimmed !== word.text) {
+        useProjectStore.getState().commit(typeWordText(addressOf(line, type, word), trimmed));
         noteGuideSignal("timeline.editText");
       }
       clearEditingWord();
     },
-    [line, wordsArray, word, wordIndex, type, lineId, updateLineWithHistory, clearEditingWord],
+    [line, word, type, clearEditingWord],
   );
 
   const handleKeyDown = useCallback(
@@ -122,7 +118,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
         ref={inputRef}
         type="text"
         aria-label="Edit word"
-        defaultValue={word.text.trimEnd()}
+        defaultValue={word.text}
         onKeyDown={handleKeyDown}
         onBlur={commitWordEdit}
         className="fixed layer-floating px-2 py-1.5 text-sm text-composer-text bg-composer-bg border border-composer-border rounded-lg cursor-text focus:outline-none focus:border-composer-accent"

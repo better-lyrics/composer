@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { roleWords } from "insync/line-track";
 import { createGroup, createLine } from "@/test/factories";
 import { instancePasteClipboard } from "@/views/timeline/instance-paste-template";
 
@@ -17,7 +18,13 @@ describe("instancePasteClipboard", () => {
         }),
       ];
       const clipboard = {
-        entries: [{ word: { text: "go", begin: 12, end: 13 }, lineOffset: 1, trackType: "word" as const }],
+        entries: [
+          {
+            word: { id: "w1", text: "go", sep: "", begin: 12, end: 13, joinsNext: true },
+            lineOffset: 1,
+            trackType: "word" as const,
+          },
+        ],
         sourceInstance: { groupId: "g", instanceIdx: 0 },
       };
 
@@ -28,5 +35,28 @@ describe("instancePasteClipboard", () => {
         ["go", 2, 1],
       ]);
     });
+  });
+
+  it("carries each syllable's reading", () => {
+    const source = createLine({
+      id: "a",
+      text: "海",
+      words: [{ text: "海", begin: 4, end: 5 }],
+      groupId: "g",
+      instanceIdx: 0,
+    });
+    const [sea] = roleWords(source, "main") ?? [];
+    const transliteration = {
+      language: "ja-Latn",
+      origin: "manual" as const,
+      sourceFingerprint: "",
+      main: { text: "umi", pieces: { [sea.id]: { text: "umi" } } },
+    };
+    const lines = [{ ...source, templateLineIdx: 0, languages: { transliteration } }];
+    const clipboard = { entries: [], sourceInstance: { groupId: "g", instanceIdx: 0 } };
+
+    const placed = instancePasteClipboard(lines, [createGroup({ id: "g" })], clipboard);
+
+    expect(placed.entries.map((entry) => entry.piece)).toEqual([{ text: "umi" }]);
   });
 });

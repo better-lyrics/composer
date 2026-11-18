@@ -1,11 +1,11 @@
-import { agentDisplayName } from "@/domain/agent/display-name";
-import { getAgentColor } from "@/domain/agent/colors";
+import { agentDisplayName } from "insync/agent-display-name";
+import { getAgentColor } from "insync/agent-colors";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
-import { classifyLine } from "@/utils/background-vocal-extraction";
+import { classifyLine } from "insync/background-vocal-extraction";
 import { cn } from "@/utils/cn";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconArrowBackUp, IconChevronDown, IconMicrophone } from "@tabler/icons-react";

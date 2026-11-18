@@ -1,34 +1,36 @@
+import { splitIdenticalSyllables } from "insync/commands/word-edits";
+import { splitWord } from "insync/commands/word-structure";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
-} from "@/domain/language/reconcile-syllable-split";
-import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import type { WordTiming } from "@/domain/word/timing";
+} from "insync/language-reconcile-syllable-split";
+import type { LanguagePiece } from "insync/language";
+import type { PositionalPieces } from "insync/language-pieces";
+import { splitTransliterationAtBoundaries } from "insync/language-transliteration-format";
+import type { SyllableAddress } from "insync/selection-model";
+import { resolveAddress } from "insync/selection-resolve";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
-import { findIdenticalWords } from "@/utils/identical-word-matcher";
-import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { findIdenticalWords } from "insync/identical-word-matcher";
+import { splitSyllablePieces, splitWordIntoSyllables } from "insync/single-word-syllable-split";
 import { getSplitCharacter } from "@/utils/split-character";
-import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
-import { splitSourceWord } from "@/utils/word-timing";
-import { nanoid } from "nanoid";
+import { splitSourceWord } from "insync/word-clone";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { isRefused } from "insync/commands/outcome";
 
 // -- Types --------------------------------------------------------------------
 
 type SplitMode = "syllable" | "word";
 
-interface SplitterTarget {
-  lineId: string;
-  wordIndex: number;
-  type: "word" | "bg";
+interface SplitterTarget extends SyllableAddress {
   word: WordTiming;
+  piece: LanguagePiece | undefined;
   mode: SplitMode;
 }
 
@@ -63,7 +65,7 @@ function useTimelineSyllableSplitterState({
   const [applyToAll, setApplyToAll] = useState(initialDefaults.applyToAll);
   const [caseInsensitive, setCaseInsensitive] = useState(initialDefaults.caseInsensitive);
 
-  const targetKey = target ? `${target.lineId}:${target.wordIndex}:${target.type}` : null;
+  const targetKey = target ? `${target.lineId}:${target.syllableId}:${target.type}` : null;
 
   useEffect(() => {
     if (!targetKey) return;
@@ -76,22 +78,24 @@ function useTimelineSyllableSplitterState({
   const confirm = useConfirm();
 
   const identicalCount = useMemo(() => {
-    if (!target || target.mode === "word") return 0;
+    const source = target?.mode === "syllable" ? resolveAddress(lines, target, getSplitCharacter()) : null;
+    if (!source) return 0;
     return findIdenticalWords(
       lines,
-      { lineId: target.lineId, wordIndex: target.wordIndex, type: target.type },
+      { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type },
       { caseInsensitive, excludeSource: true, splitPoints },
     ).length;
   }, [lines, target, caseInsensitive, splitPoints]);
 
-  const sourceText = target?.word.text.trimEnd() ?? "";
+  const sourceText = target?.word.text ?? "";
 
   const applySingleWordSplit = useCallback(() => {
     if (!target || splitPoints.length === 0) return;
-    const { lineId, wordIndex, type, word, mode } = target;
-    const trimmedText = word.text.trimEnd();
+    const { lineId, type, word, piece, mode } = target;
+    const trimmedText = word.text;
 
     let newWords: WordTiming[];
+    let newPieces: PositionalPieces | undefined;
     // A boundary placed at the playhead was set by ear, so the model doesn't move it.
     let placedByEar = false;
 
@@ -103,64 +107,54 @@ function useTimelineSyllableSplitterState({
 
       if (playheadOnWord && splitPoints.length === 1) {
         placedByEar = true;
-        const groupId = word.syllableGroupId ?? nanoid(8);
-        const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
         const partitions = [
           { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
           { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
         ];
-        newWords = splitSourceWord(sourceForSplit, partitions);
-        if (word.text.endsWith(" ") && newWords.length > 0) {
+        newWords = splitSourceWord(word, partitions);
+        if (word.sep.endsWith(" ") && newWords.length > 0) {
           const last = newWords[newWords.length - 1];
-          newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
+          newWords[newWords.length - 1] = { ...last, sep: `${last.sep} ` };
         }
       } else {
-        newWords = splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints, reuseGroupId: true });
+        newWords = splitWordIntoSyllables({ word, splitPoints });
+        newPieces = splitSyllablePieces(piece, transliterationSplitPoints, newWords.length);
       }
     }
 
-    if (word.transliteration && transliterationSplitPoints && newWords.length > 0) {
-      const romanParts = splitTransliterationAtBoundaries(word.transliteration.trim(), transliterationSplitPoints);
+    if (piece?.text && transliterationSplitPoints && newWords.length > 0) {
+      const romanParts = splitTransliterationAtBoundaries(piece.text.trim(), transliterationSplitPoints);
       if (romanParts.length === newWords.length) {
-        newWords = newWords.map((part, index) => {
-          const { transliterationJoinerAfter: _joiner, ...withoutJoiner } = part;
-          const slice = romanParts[index];
-          return {
-            ...withoutJoiner,
-            transliteration: slice.text,
-            ...(index < romanParts.length - 1
-              ? { transliterationJoinerAfter: slice.joinerAfter ?? "" }
-              : word.transliterationJoinerAfter !== undefined
-                ? { transliterationJoinerAfter: word.transliterationJoinerAfter }
-                : {}),
-          };
-        });
+        newPieces = romanParts.map((slice, index) => ({
+          text: slice.text,
+          ...(index < romanParts.length - 1
+            ? { joinerAfter: slice.joinerAfter ?? "" }
+            : piece.joinerAfter !== undefined
+              ? { joinerAfter: piece.joinerAfter }
+              : {}),
+        }));
       }
     }
 
     const currentLines = useProjectStore.getState().lines;
-    const line = currentLines.find((l) => l.id === lineId);
-    if (!line) return;
+    const source = resolveAddress(currentLines, target, getSplitCharacter());
+    if (!source) return;
+    const line = currentLines[source.lineIndex];
+    const { wordIndex } = source;
 
     const split =
       mode === "word"
-        ? splitWordIntoWordsKeepingTransliteration(line, type, wordIndex, newWords, getSplitCharacter())
-        : splitWordsKeepingTransliteration(line, type, wordIndex, newWords);
+        ? splitWordIntoWordsKeepingTransliteration(line, type, wordIndex, newWords, getSplitCharacter(), newPieces)
+        : splitWordsKeepingTransliteration(line, type, wordIndex, newWords, getSplitCharacter(), newPieces);
     if (!split) return;
-    const extraUpdates = split.transliteration ? { transliteration: split.transliteration } : {};
+    const extraUpdates = { languages: split.languages };
 
-    const done = (
-      type === "word"
-        ? handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates)
-        : handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
-            ...manualBackgroundWordEdit(split.words),
-            ...extraUpdates,
-          })
-    ).then((written) => {
-      if (written) noteGuideSignal("timeline.split");
-    });
+    const field = type === "word" ? "words" : "backgroundWords";
+    const outcome = useProjectStore.getState().commit(splitWord(lineId, field, split.words, extraUpdates));
+    if (isRefused(outcome)) return false;
+    noteGuideSignal("timeline.split");
     // Only a split that wasn't placed by ear is timed from the audio afterwards.
-    return placedByEar ? undefined : done;
+    return !placedByEar;
   }, [target, splitPoints, transliterationSplitPoints]);
 
   const confirmSplit = useCallback(async () => {
@@ -171,14 +165,18 @@ function useTimelineSyllableSplitterState({
     const before = useProjectStore.getState().lines;
     const retime = () => void useAlignmentStore.getState().retimeNewSyllables(before);
 
-    if (target.mode === "syllable" && !target.word.transliteration && applyToAll && identicalCount > 0) {
+    if (target.mode === "syllable" && !target.piece?.text && applyToAll && identicalCount > 0) {
       const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
       if (!ok) return;
-      useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-        source: { lineId: target.lineId, wordIndex: target.wordIndex, type: target.type },
-        splitPoints,
-        caseInsensitive,
-      });
+      const source = resolveAddress(useProjectStore.getState().lines, target, getSplitCharacter());
+      if (!source) return;
+      useProjectStore.getState().commit(
+        splitIdenticalSyllables({
+          source: { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type },
+          splitPoints,
+          caseInsensitive,
+        }),
+      );
       noteGuideSignal("timeline.split");
       retime();
       resetSplitPoints();
@@ -186,7 +184,7 @@ function useTimelineSyllableSplitterState({
       return;
     }
 
-    void applySingleWordSplit()?.then(retime);
+    if (applySingleWordSplit()) retime();
     resetSplitPoints();
     closeModal();
   }, [
@@ -215,5 +213,5 @@ function useTimelineSyllableSplitterState({
 
 // -- Exports ------------------------------------------------------------------
 
-export { useTimelineSyllableSplitterState };
 export type { SplitterTarget };
+export { useTimelineSyllableSplitterState };

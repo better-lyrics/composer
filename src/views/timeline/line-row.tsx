@@ -1,8 +1,12 @@
-import { getAgentColor } from "@/domain/agent/colors";
-import { belongsToInstance } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { memo, useCallback } from "react";
+import { getAgentColor } from "insync/agent-colors";
+import { belongsToInstance } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
+import { drawnPieces, drawnSyllables } from "insync/line-drawn-track";
+import { mainTrack } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
@@ -10,7 +14,7 @@ import { PitchLane } from "@/views/timeline/pitch/pitch-lane";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
-import { memo, useCallback } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -41,7 +45,7 @@ function dragShiftPxFor(line: LyricLine, shift: DraggedGroupShift): number {
 // -- Component -----------------------------------------------------------------
 
 const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
-  const color = getAgentColor(line.agentId);
+  const color = getAgentColor(mainTrack(line).agentId);
   const groupColor = useProjectStore((s) => s.groups.find((g) => g.id === line.groupId)?.color);
   const rowHeight = useTimelineStore((s) => s.rowHeights[line.id] ?? s.defaultRowHeight);
   const dragShiftPx = useTimelineStore((s) => dragShiftPxFor(line, s.draggedGroupShift));
@@ -63,8 +67,12 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
     s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
   );
 
-  const mainWords = line.words?.length ? line.words : null;
-  const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
+  // A line-synced block is drawn by the split character, so a new one redraws the row.
+  useSettingsStore((s) => s.splitCharacter);
+  const timedMain = drawnSyllables(line, "main", getSplitCharacter());
+  const timedBackground = drawnSyllables(line, "bg", getSplitCharacter());
+  const mainWords = timedMain.length ? timedMain : null;
+  const bgWords = timedBackground.length ? timedBackground : null;
 
   return (
     <div
@@ -75,10 +83,15 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       style={{ "--agent": color, "--group": groupColor }}
     >
       <div className="line-cell shrink-0 w-12 sticky left-0 z-60">
-        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} numberHeight={rowHeight} />
+        <GutterAgentPicker
+          lineId={line.id}
+          lineIndex={lineIndex}
+          agentId={mainTrack(line).agentId}
+          numberHeight={rowHeight}
+        />
       </div>
 
-      <div className={cn("flex-1 border-b border-(--divider) relative", mainWords && "overflow-hidden")}>
+      <div className={cn("flex-1 border-b border-(--divider) relative", mainWords && "overflow-clip")}>
         <div className="absolute inset-0 pointer-events-none" style={{ transform: shiftTransform }}>
           {groupColor && (
             <div
@@ -100,6 +113,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={mainWords}
+              pieces={drawnPieces(line, "main", getSplitCharacter())}
               color={color}
               trackType="word"
               duration={duration}
@@ -128,6 +142,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={bgWords}
+              pieces={drawnPieces(line, "bg", getSplitCharacter())}
               color={color}
               trackType="bg"
               duration={duration}
@@ -158,4 +173,5 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 // -- Exports -------------------------------------------------------------------
 
 const MemoizedLineRow = memo(LineRow);
+export type { LineWordUpdate };
 export { MemoizedLineRow as LineRow };

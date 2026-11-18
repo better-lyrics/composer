@@ -1,6 +1,6 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
 import { namedArtists } from "@/domain/project/display-title";
-import { normalizeLanguageTag } from "@/domain/project/language";
+import { normalizeLanguageTag } from "insync/project-language";
 import { type SubmitCheck, type SubmitChecks, type SubmitMode, submitChecks } from "@/domain/unison/submit-checks";
 import type { LyricsSubmission } from "@/lib/unison/api-types";
 import type { RevisionInput } from "@/lib/unison/revision-types";

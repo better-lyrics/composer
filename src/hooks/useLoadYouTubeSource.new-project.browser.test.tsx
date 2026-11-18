@@ -1,3 +1,4 @@
+import { lineFromFields } from "insync/line-from-fields";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { usePersistence } from "@/hooks/usePersistence";
 import { deleteProject, restoreOpenProject } from "@/lib/open-project";
@@ -18,6 +19,7 @@ import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -163,7 +165,7 @@ describe("useLoadYouTubeSource · projects", () => {
     const screen = await render(<PersistenceHost />);
     await getPersistenceSettled();
     useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-    useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
     useProjectStore.getState().setMetadata({ title: "Alpha" });
     expect(openProjectIdSnapshot()).toBeUndefined();
     const load = await loader();
@@ -183,7 +185,7 @@ describe("useLoadYouTubeSource · projects", () => {
     it("loads the video in place when the previous project cannot be resolved", async () => {
       allowConsole(/could not resolve the previous project/);
       useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-      useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
       useProjectStore.getState().setMetadata({ title: "Alpha" });
       await openAndCloseAtVersion(DB_NAME, DB_VERSION + 1);
       const load = await loader();
@@ -214,7 +216,9 @@ describe("useLoadYouTubeSource · projects", () => {
       const load = await loader();
       const loading = load(VIDEO_ID);
       const id = openProjectIdSnapshot();
-      useProjectStore.getState().setLines([{ id: "n1", text: "New words", agentId: "v1" }]);
+      useProjectStore.getState().restoreLyrics({
+        lines: [lineFromFields({ id: "n1", text: "New words", agentId: "v1" }, getSplitCharacter())],
+      });
       failLoad();
       await expect(loading).rejects.toThrow();
       expect(openProjectIdSnapshot()).toBe(id);

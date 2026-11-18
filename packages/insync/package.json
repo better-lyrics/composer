@@ -1,0 +1,12 @@
+{
+  "name": "insync",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.10.1"
+  }
+}

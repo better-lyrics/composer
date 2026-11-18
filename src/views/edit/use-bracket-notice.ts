@@ -1,11 +1,21 @@
-import { isLinked } from "@/domain/instance/predicates";
-import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
+import type { BackgroundBracketRefusal } from "insync/background-vocal-refusals";
+import { removeSectionTagLines } from "insync/commands/edit-text";
+import { isSectionTagLine } from "insync/lyrics-file-genius-text";
 import { useProjectStore } from "@/stores/project";
 import type { NoticeAction, NoticeKind } from "@/ui/notices/notice-model";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "insync/pluralize";
+import { linesKeepingBracketsAsText } from "@/views/edit/brackets-status";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconTrash } from "@tabler/icons-react";
 import { useMemo } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const BACKGROUND_REFUSAL_DETAIL: Record<BackgroundBracketRefusal, string> = {
+  own: "This line already has background vocals. Type inside their brackets to add to them.",
+  linked: "A linked copy of this line already has background vocals. Type inside their brackets to add to them.",
+  glued: "Put a space before the bracket to make it a background vocal.",
+};
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -13,14 +23,12 @@ function isRemovableSectionTag(line: ParsedLine): boolean {
   return line.lineId !== "" && line.groupId === undefined && isSectionTagLine(line.text);
 }
 
-function removeSectionTagLines(lineIds: ReadonlySet<string>): void {
-  const { lines, setLinesWithHistory } = useProjectStore.getState();
-  const kept = lines.filter((line) => !(lineIds.has(line.id) && isSectionTagLine(line.text) && !isLinked(line)));
-  if (kept.length !== lines.length) setLinesWithHistory(kept);
-}
-
 function removeAction(label: string, lineIds: readonly string[]): NoticeAction {
-  return { label, icon: IconTrash, run: () => removeSectionTagLines(new Set(lineIds)) };
+  return {
+    label,
+    icon: IconTrash,
+    run: () => useProjectStore.getState().commit(removeSectionTagLines(new Set(lineIds))),
+  };
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -55,6 +63,29 @@ function useBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
   }, [parsed]);
 }
 
+// Brackets typed beside a background timed by hand, or held by a timed word, stay as text.
+function useBackgroundBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
+  return useMemo(() => {
+    const keptLines = linesKeepingBracketsAsText(parsed);
+    if (keptLines.length === 0) return null;
+    return {
+      id: "background-brackets",
+      icon: IconAlertTriangle,
+      tone: "warn",
+      summary: `${pluralize(keptLines.length, "line")} ${pluralWord(keptLines.length, "keeps", "keep")} (brackets) as text`,
+      rows: keptLines.map((line) => ({
+        key: line.lineId,
+        fingerprints: [],
+        title: `Line ${line.lineNumber} · ${line.text.trim()}`,
+        detail: BACKGROUND_REFUSAL_DETAIL[line.backgroundBracketRefusal ?? "own"],
+        dismissedLabel: `Line ${line.lineNumber}`,
+      })),
+      dismissedFingerprints: [],
+      modalTitle: "Brackets beside background vocals",
+    };
+  }, [parsed]);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { useBracketNotice };
+export { useBackgroundBracketNotice, useBracketNotice };

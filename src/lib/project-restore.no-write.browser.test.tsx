@@ -6,6 +6,7 @@ import { flushPendingSave } from "@/lib/persistence-debounce";
 import { loadProjectIndexEntry, setProjectLastTab } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { getSaveStatus } from "@/lib/save-status";
+import { savedLines } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -23,7 +24,7 @@ const SAVED_AT = 1_758_900_000_000;
 
 async function seedAudioProject(id: string, audio: File, options: { open?: boolean; lastTab?: ProjectTab } = {}) {
   await seedStoredProject(id, {
-    project: { ...songTitled(id), savedAt: SAVED_AT, lines: [createLine({ text: `${id} line` })] },
+    project: { ...songTitled(id), savedAt: SAVED_AT, lines: savedLines([createLine({ text: `${id} line` })]) },
     audio,
     open: options.open,
   });

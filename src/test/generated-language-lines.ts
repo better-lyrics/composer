@@ -1,19 +1,26 @@
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LyricLine } from "@/domain/line/model";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import type { LyricLine } from "insync/line";
+import { roleWords } from "insync/line-track";
+import { newWordId } from "insync/word-id";
 import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
+import { legacyLine, legacyWords } from "@/test/legacy-languages";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers -----------------------------------------------------------------
 
 // The provider caches answers by text for the session, so every test uses its own lyrics.
 function timedLine(id: string, words: string[], romanized: string[], romanizedFrom = words.join(" ")): LyricLine {
-  const sourceFingerprint = languageSourceFingerprint(romanizedFrom);
-  return {
+  const sourceFingerprint = languageSourceFingerprint(DEFAULT_SPLIT_CHARACTER, romanizedFrom);
+  return legacyLine({
     id,
     agentId: "v1",
     text: words.join(" "),
     words: words.map((text, index) => ({
-      text: index < words.length - 1 ? `${text} ` : text,
+      id: newWordId(),
+      text,
+      sep: index < words.length - 1 ? " " : "",
+      joinsNext: false,
       begin: index + 1,
       end: index + 2,
       transliteration: romanized[index],
@@ -29,7 +36,7 @@ function timedLine(id: string, words: string[], romanized: string[], romanizedFr
     translations: {
       en: { language: "en", text: "Old translation", origin: "google", sourceFingerprint },
     },
-  };
+  });
 }
 
 function lineById(id: string): LyricLine {
@@ -39,7 +46,8 @@ function lineById(id: string): LyricLine {
 }
 
 function romanizedWords(id: string): Array<string | undefined> {
-  return lineById(id).words?.map((word) => word.transliteration) ?? [];
+  const line = lineById(id);
+  return legacyWords(roleWords(line, "main"), line.languages)?.map((word) => word.transliteration) ?? [];
 }
 
 function gate() {

@@ -19,6 +19,7 @@ interface PendingSave {
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let pendingSave: PendingSave | null = null;
+let saveHolds = 0;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -28,7 +29,16 @@ function clearSaveTimer(): void {
   saveTimeout = null;
 }
 
+function scheduleSave(): void {
+  clearSaveTimer();
+  saveTimeout = setTimeout(() => {
+    saveTimeout = null;
+    takePendingSave().catch((err: unknown) => console.error(LOG_PREFIX, "Auto-save failed:", err));
+  }, useSettingsStore.getState().autoSaveDelay);
+}
+
 function takePendingSave(): Promise<void> {
+  if (saveHolds > 0) return Promise.resolve();
   const pending = pendingSave;
   pendingSave = null;
   if (!pending) {
@@ -45,11 +55,19 @@ function takePendingSave(): Promise<void> {
 function debouncedSave(input: ProjectSaveInput): void {
   pendingSave = { target: bindSaveTarget(), input };
   setSavePending(true);
-  clearSaveTimer();
-  saveTimeout = setTimeout(() => {
-    saveTimeout = null;
-    takePendingSave().catch((err: unknown) => console.error(LOG_PREFIX, "Auto-save failed:", err));
-  }, useSettingsStore.getState().autoSaveDelay);
+  scheduleSave();
+}
+
+// Held saves stay queued and unwritten; the last release schedules what is still queued.
+function holdSaves(): () => void {
+  saveHolds++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    saveHolds--;
+    if (saveHolds === 0 && pendingSave) scheduleSave();
+  };
 }
 
 function cancelPendingSave(): void {
@@ -78,4 +96,12 @@ function saveNow(): Promise<void> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { debouncedSave, cancelPendingSave, flushPendingSave, flushPendingSaveQuietly, saveNow, saveOpenProjectNow };
+export {
+  debouncedSave,
+  cancelPendingSave,
+  holdSaves,
+  flushPendingSave,
+  flushPendingSaveQuietly,
+  saveNow,
+  saveOpenProjectNow,
+};

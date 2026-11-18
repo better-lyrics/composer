@@ -2,10 +2,11 @@ import { displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { byMostRecentlyEdited } from "@/domain/project/library-order";
 import { PROJECT_INDEX_STORE_NAME, PROJECT_STORE_NAME, getAllFromStore, getFromStore } from "@/lib/persistence-idb";
+import { type PreV4Record, listPreV4Records, loadPreV4Record, preV4IdOf, preV4Key } from "@/lib/pre-v4-records";
 import { buildProjectBundle, downloadProjectBundle } from "@/lib/project-bundle";
 import { downloadProjectFile, projectFileFrom, projectFileName } from "@/lib/project-file";
 import { LEGACY_PROJECT_KEY, clearAllProjects, getOpenProjectId, loadProjectRecord } from "@/lib/project-storage";
-import type { SavedProject } from "@/lib/saved-project";
+import type { StoredProject } from "@/lib/saved-project";
 
 // -- Types --------------------------------------------------------------------
 
@@ -18,7 +19,8 @@ interface RecoveredProject {
 
 interface StoredRecovery {
   projectId: string | undefined;
-  project: SavedProject;
+  project: StoredProject;
+  isPreviousVersion?: boolean;
 }
 
 interface RecoveryResult {
@@ -34,16 +36,18 @@ interface RecoverableProject {
   title: string;
   lineCount: number;
   savedAt: number | undefined;
+  isPreviousVersion: boolean;
 }
 
 interface RecoverySnapshot {
   entries: ProjectIndexEntry[];
-  legacyProject: SavedProject | undefined;
+  legacyProject: StoredProject | undefined;
 }
 
 // -- Constants ----------------------------------------------------------------
 
 const LEGACY_RECOVERY_KEY = "legacy";
+const PREVIOUS_VERSION_TITLE_SUFFIX = " (before update)";
 
 const NOT_FOUND_RESULT: RecoveryResult = {
   found: false,
@@ -55,7 +59,7 @@ const NOT_FOUND_RESULT: RecoveryResult = {
 
 // -- Reading ------------------------------------------------------------------
 
-function legacyIndexEntry(project: SavedProject): ProjectIndexEntry {
+function legacyIndexEntry(project: StoredProject): ProjectIndexEntry {
   return {
     id: LEGACY_RECOVERY_KEY,
     title: project.metadata?.title ?? "",
@@ -70,8 +74,8 @@ function legacyIndexEntry(project: SavedProject): ProjectIndexEntry {
   };
 }
 
-function readLegacyProject(): Promise<SavedProject | undefined> {
-  return getFromStore<SavedProject>(PROJECT_STORE_NAME, LEGACY_PROJECT_KEY);
+function readLegacyProject(): Promise<StoredProject | undefined> {
+  return getFromStore<StoredProject>(PROJECT_STORE_NAME, LEGACY_PROJECT_KEY);
 }
 
 async function readRecoverySnapshot(): Promise<RecoverySnapshot> {
@@ -86,10 +90,15 @@ async function readRecoverySnapshot(): Promise<RecoverySnapshot> {
 
 async function loadStoredRecovery(
   key: string,
-  legacyProject: SavedProject | undefined,
+  legacyProject: StoredProject | undefined,
 ): Promise<StoredRecovery | undefined> {
   if (key === LEGACY_RECOVERY_KEY) {
     return legacyProject ? { projectId: undefined, project: legacyProject } : undefined;
+  }
+  const previousVersionOf = preV4IdOf(key);
+  if (previousVersionOf !== undefined) {
+    const copy = await loadPreV4Record(previousVersionOf);
+    return copy ? { projectId: undefined, project: copy, isPreviousVersion: true } : undefined;
   }
   const project = await loadProjectRecord(key);
   return project ? { projectId: key, project } : undefined;
@@ -104,8 +113,17 @@ async function readProjectFromIDB(): Promise<StoredRecovery | undefined> {
   return first ? loadStoredRecovery(first.id, legacyProject) : undefined;
 }
 
-function buildRecoveryResult(project: RecoveredProject): RecoveryResult {
-  const title = displayTitle(project.metadata?.title?.trim() ?? "");
+function previousVersionTitle(title: string): string {
+  return `${title}${PREVIOUS_VERSION_TITLE_SUFFIX}`;
+}
+
+function recoveredTitle(project: RecoveredProject): string {
+  return displayTitle(project.metadata?.title?.trim() ?? "");
+}
+
+function buildRecoveryResult(project: RecoveredProject, isPreviousVersion = false): RecoveryResult {
+  const shownTitle = recoveredTitle(project);
+  const title = isPreviousVersion ? previousVersionTitle(shownTitle) : shownTitle;
   return {
     found: true,
     filename: projectFileName(title, new Date()),
@@ -116,11 +134,28 @@ function buildRecoveryResult(project: RecoveredProject): RecoveryResult {
 }
 
 function toRecoverableProject(entry: ProjectIndexEntry): RecoverableProject {
-  return { key: entry.id, title: displayTitle(entry.title), lineCount: entry.lineCount, savedAt: entry.updatedAt };
+  return {
+    key: entry.id,
+    title: displayTitle(entry.title),
+    lineCount: entry.lineCount,
+    savedAt: entry.updatedAt,
+    isPreviousVersion: false,
+  };
+}
+
+function toRecoverablePreviousVersion({ id, project }: PreV4Record): RecoverableProject {
+  const stored: RecoveredProject = project;
+  return {
+    key: preV4Key(id),
+    title: previousVersionTitle(recoveredTitle(stored)),
+    lineCount: stored.lines?.length ?? 0,
+    savedAt: stored.savedAt,
+    isPreviousVersion: true,
+  };
 }
 
 function downloadStored(stored: StoredRecovery): RecoveryResult {
-  const result = buildRecoveryResult(stored.project);
+  const result = buildRecoveryResult(stored.project, stored.isPreviousVersion);
   downloadProjectFile(projectFileFrom(stored.projectId, stored.project), result.filename);
   return result;
 }
@@ -138,8 +173,15 @@ async function downloadRecoveryFile(): Promise<RecoveryResult> {
 }
 
 async function listRecoverableProjects(): Promise<RecoverableProject[]> {
-  const { entries } = await readRecoverySnapshot();
-  return entries.map(toRecoverableProject);
+  const [{ entries }, previousVersions] = await Promise.all([readRecoverySnapshot(), listPreV4Records()]);
+  const unlisted = new Map(previousVersions.map((record) => [record.id, record]));
+  const rows = entries.flatMap((entry) => {
+    const previous = unlisted.get(entry.id);
+    unlisted.delete(entry.id);
+    const row = toRecoverableProject(entry);
+    return previous ? [row, toRecoverablePreviousVersion(previous)] : [row];
+  });
+  return [...rows, ...Array.from(unlisted.values(), toRecoverablePreviousVersion)];
 }
 
 async function downloadRecoverableProject(key: string): Promise<RecoveryResult> {
@@ -156,7 +198,7 @@ async function downloadAllRecoverableProjects(): Promise<number> {
   );
   if (stored.length === 0) return 0;
   const sources = stored.map(({ projectId, project }) => ({ id: projectId, project }));
-  downloadProjectBundle(buildProjectBundle(sources, Date.now()));
+  downloadProjectBundle(buildProjectBundle(sources, Date.now(), await listPreV4Records()));
   return stored.length;
 }
 
@@ -175,5 +217,6 @@ export {
   clearRecoveryStorage,
   buildRecoveryResult,
   NOT_FOUND_RESULT,
+  PREVIOUS_VERSION_TITLE_SUFFIX,
 };
 export type { RecoveredProject, RecoveryResult, RecoverableProject };

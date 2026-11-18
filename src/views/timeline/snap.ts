@@ -1,7 +1,12 @@
-import { isLineSynced } from "@/domain/line/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "insync/line-bounds";
+import { drawnSyllables } from "insync/line-drawn-track";
+import type { LyricLine } from "insync/line";
+import { isLineSynced } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { type GridPoint, gridPointLabel } from "@/domain/tempo/grid-points";
 import { SNAP_SWITCH_SETTING, type SnapSettings, type SnapSource, type SnapSwitchKey } from "@/stores/settings-snap";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -66,18 +71,18 @@ function collectSnapAnchors(
   const anchors: SnapAnchor[] = [];
 
   for (const line of lines) {
-    const words = line.words;
-    const wordCount = words?.length ?? 0;
+    const words = timedSyllables(mainTrack(line));
+    const wordCount = words.length;
     const wordTimed = wordCount > 0;
 
-    if (words && wordCount > 0) {
+    if (wordTimed) {
       for (let i = 0; i < wordCount; i++) {
         const word = words[i];
         if (!selfIds.has(selfKey(line.id, i, "word"))) {
           anchors.push({
             t: word.begin,
             kind: "word-begin",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "word",
@@ -85,7 +90,7 @@ function collectSnapAnchors(
           anchors.push({
             t: word.end,
             kind: "word-end",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "word",
@@ -94,16 +99,16 @@ function collectSnapAnchors(
       }
     }
 
-    const bgWords = line.backgroundWords;
-    const bgCount = bgWords?.length ?? 0;
-    if (bgWords && bgCount > 0) {
+    const bgWords = drawnSyllables(line, "bg", getSplitCharacter());
+    const bgCount = bgWords.length;
+    if (bgCount > 0) {
       for (let i = 0; i < bgCount; i++) {
         const word = bgWords[i];
         if (!selfIds.has(selfKey(line.id, i, "bg"))) {
           anchors.push({
             t: word.begin,
             kind: "word-begin",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "bg",
@@ -111,7 +116,7 @@ function collectSnapAnchors(
           anchors.push({
             t: word.end,
             kind: "word-end",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "bg",
@@ -120,9 +125,10 @@ function collectSnapAnchors(
       }
     }
 
-    if (!wordTimed && isLineSynced(line) && !selfIds.has(selfKey(line.id, 0, "word"))) {
-      anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
-      anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
+    const span = !wordTimed && isLineSynced(line) ? mainBounds(line) : null;
+    if (span && !selfIds.has(selfKey(line.id, 0, "word"))) {
+      anchors.push({ t: span.begin, kind: "line-begin", label: lineText(line, getSplitCharacter()), lineId: line.id });
+      anchors.push({ t: span.end, kind: "line-end", label: lineText(line, getSplitCharacter()), lineId: line.id });
     }
   }
 

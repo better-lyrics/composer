@@ -1,12 +1,13 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
-import { agentIdAt, createPerformerAgents } from "@/domain/agent/performer-agents";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
+import type { Agent } from "insync/agent";
+import { agentIdAt, createPerformerAgents } from "insync/agent-performer-agents";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import { hasAnyTiming } from "insync/line-predicates";
+import { syllablesText } from "insync/line-text";
 import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import type { WordTiming } from "@/domain/word/timing";
+import type { ProjectMetadata } from "insync/metadata";
+import { type SpacedWord, spacedText, wordsFromSpaced } from "insync/word-spaced-words";
+import type { WordTiming } from "insync/word-timing";
 import {
   MS_PER_SECOND,
   creditExtraKey,
@@ -18,7 +19,7 @@ import {
   parseHeaderTags,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
-import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { type ParseResult, generateLineId } from "insync/parse-result";
 import { getSplitCharacter } from "@/utils/split-character";
 import { parseXmlDocument } from "@/utils/xml-document";
 
@@ -44,7 +45,7 @@ interface QrcLineBody {
 }
 
 interface QrcPartition {
-  lines: LooseLine[];
+  lines: LineFields[];
   metadata: Partial<ProjectMetadata>;
   agents?: Agent[];
 }
@@ -70,14 +71,14 @@ function toSeconds(beginMs: string, durationMs: string): { begin: number; end: n
 // A word tag trails the word it times, so each word is the slice between the
 // previous tag and this one. Whatever follows the last tag is the residue.
 function parseWords(body: string): QrcLineBody {
-  const words: WordTiming[] = [];
+  const words: SpacedWord[] = [];
   let cursor = 0;
   for (const match of matchAllWordTags(body)) {
     const { begin, end } = toSeconds(match[1], match[2]);
     words.push({ text: body.slice(cursor, match.index), begin, end });
     cursor = match.index + match[0].length;
   }
-  return { words, residue: body.slice(cursor) };
+  return { words: wordsFromSpaced(words), residue: body.slice(cursor) };
 }
 
 function tokenizeLines(lyricContent: string): QrcLine[] {
@@ -98,8 +99,8 @@ function tokenizeLines(lyricContent: string): QrcLine[] {
       begin,
       end,
       words,
-      text: reconstructLineText(words, splitChar),
-      plainText: words.map((word) => word.text).join(""),
+      text: syllablesText(words, splitChar),
+      plainText: spacedText(words),
     };
   });
 }
@@ -137,7 +138,7 @@ function shiftQrcLine(line: QrcLine, offsetSeconds: number): QrcLine {
 // Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
 // credits block, the title line and the singer markers.
 function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcPartition {
-  const lines: LooseLine[] = [];
+  const lines: LineFields[] = [];
   const creditsByKey = new Map<string, string>();
   const performerAgents = createPerformerAgents();
   const agents = performerAgents.agents;
@@ -202,7 +203,7 @@ function parseQrc(content: string, fallbackDuration?: number): ParseResult {
   const parsed = backfillZeroDurations(shifted, fallbackDuration);
   const { lines, metadata, agents } = partitionQrcLines(parsed, header.metadata);
 
-  const reconciledLines = lines.map(reconcileLine);
+  const reconciledLines = lines.map((line) => lineFromFields(line, getSplitCharacter()));
   return {
     lines: reconciledLines,
     metadata,

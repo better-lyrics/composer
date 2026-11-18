@@ -1,4 +1,7 @@
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { beforeEach, describe, expect, it } from "vitest";
+import { fieldsOfLine } from "insync/line-from-fields";
+import { isLineSynced, isWordSynced } from "insync/line-predicates";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -7,7 +10,7 @@ import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { beforeEach, describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -16,7 +19,7 @@ const wordSynced = createLine({
   id: "word-synced",
   text: "Good night",
   words: [
-    { text: "Good ", begin: 4, end: 5 },
+    { text: "Good", sep: " ", begin: 4, end: 5 },
     { text: "night", begin: 5, end: 6 },
   ],
 });
@@ -48,8 +51,8 @@ describe("SyncPanel granularity switch", () => {
       await expect.poll(() => useProjectStore.getState().granularity).toBe("word");
       const synced = useProjectStore.getState().lines.find((line) => line.id === "line-synced");
       expect(synced && isLineSynced(synced)).toBe(true);
-      expect(synced).toMatchObject({ begin: 1, end: 3 });
-      expect(synced?.words).toBeUndefined();
+      expect(fieldsOfLine(synced!, getSplitCharacter())).toMatchObject({ begin: 1, end: 3 });
+      expect(synced && roleWords(synced, "main")).toBeUndefined();
     });
   });
 
@@ -91,9 +94,11 @@ describe("SyncPanel granularity switch", () => {
       setCurrentTime(1.5);
       window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }));
 
-      await expect.poll(() => useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual(["Hello "]);
+      await expect
+        .poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.map((word) => word.text + word.sep))
+        .toEqual(["Hello "]);
       const [tapped, next] = useProjectStore.getState().lines;
-      expect(tapped.words?.[0].begin).toBe(1.5);
+      expect(timedSyllables(mainTrack(tapped))[0].begin).toBe(1.5);
       expect(isLineSynced(tapped)).toBe(false);
       expect(next).toBe(untimed);
 
@@ -101,7 +106,7 @@ describe("SyncPanel granularity switch", () => {
 
       const restored = useProjectStore.getState().lines[0];
       expect(isLineSynced(restored)).toBe(true);
-      expect(restored).toMatchObject({ begin: 1, end: 3 });
+      expect(fieldsOfLine(restored, getSplitCharacter())).toMatchObject({ begin: 1, end: 3 });
     });
   });
 
@@ -130,9 +135,9 @@ describe("SyncPanel granularity switch", () => {
 
       const [, word, plain] = useProjectStore.getState().lines;
       expect(isWordSynced(word)).toBe(true);
-      expect(word.words).toEqual(wordSynced.words);
-      expect(plain.words).toBeUndefined();
-      expect(plain.begin).toBeUndefined();
+      expect(timedSyllables(mainTrack(word))).toEqual(timedSyllables(mainTrack(wordSynced)));
+      expect(roleWords(plain, "main")).toBeUndefined();
+      expect(mainTrack(plain).begin).toBeUndefined();
     });
   });
 });

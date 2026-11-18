@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
+import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -75,7 +79,7 @@ function seedSecondGroup() {
 function openGutterMenu(lineIds: string[]) {
   useTimelineStore.setState({
     contextMenu: { x: 100, y: 100, target: { kind: "gutter", lineId: lineIds[0], lineIndex: 2 } },
-    selectedWords: lineIds.map((lineId, i) => ({ lineId, lineIndex: 2 + i, wordIndex: 0, type: "word" as const })),
+    selectedWords: lineIds.map((lineId) => storedWordAddress(lineId, 0, "word")),
   });
 }
 
@@ -113,10 +117,7 @@ describe("TimelineContextMenu conform to group", () => {
   it("hides the action when a selected line already belongs to a group", async () => {
     useTimelineStore.setState({
       contextMenu: { x: 100, y: 100, target: { kind: "gutter", lineId: "c2", lineIndex: 1 } },
-      selectedWords: [
-        { lineId: "c2", lineIndex: 1, wordIndex: 0, type: "word" },
-        { lineId: "l3", lineIndex: 2, wordIndex: 0, type: "word" },
-      ],
+      selectedWords: [storedWordAddress("c2", 0, "word"), storedWordAddress("l3", 0, "word")],
     });
     const screen = await renderMenu();
 
@@ -143,9 +144,9 @@ describe("TimelineContextMenu conform to group", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g2");
     const [, , third, fourth] = useProjectStore.getState().lines;
-    expect(third.text).toBe("Hold on");
-    expect(third.words?.[0].begin).toBe(20);
-    expect(fourth.text).toBe("Just a while");
+    expect(lineText(third, getSplitCharacter())).toBe("Hold on");
+    expect(timedSyllables(mainTrack(third))[0].begin).toBe(20);
+    expect(lineText(fourth, getSplitCharacter())).toBe("Just a while");
     expect(fourth.instanceIdx).toBe(1);
   });
 
@@ -160,12 +161,12 @@ describe("TimelineContextMenu conform to group", () => {
     const [, , third, fourth] = useProjectStore.getState().lines;
     expect(third.instanceIdx).toBe(1);
     expect(third.templateLineIdx).toBe(0);
-    expect(third.text).toBe(DARK);
-    expect(third.words?.[0].begin).toBe(20);
+    expect(lineText(third, getSplitCharacter())).toBe(DARK);
+    expect(timedSyllables(mainTrack(third))[0].begin).toBe(20);
     expect(fourth.instanceIdx).toBe(1);
     expect(fourth.templateLineIdx).toBe(1);
-    expect(fourth.text).toBe(MORNING);
-    expect(fourth.words?.[0].begin).toBe(22.5);
+    expect(lineText(fourth, getSplitCharacter())).toBe(MORNING);
+    expect(timedSyllables(mainTrack(fourth))[0].begin).toBe(22.5);
   });
 
   it("restores the original lines on undo", async () => {
@@ -180,9 +181,9 @@ describe("TimelineContextMenu conform to group", () => {
 
     const [, , third, fourth] = useProjectStore.getState().lines;
     expect(third.groupId).toBeUndefined();
-    expect(third.text).toBe("we were dancin in the dark");
-    expect(third.words?.[0].begin).toBe(20);
-    expect(fourth.text).toBe("till mornin came");
+    expect(lineText(third, getSplitCharacter())).toBe("we were dancin in the dark");
+    expect(timedSyllables(mainTrack(third))[0].begin).toBe(20);
+    expect(lineText(fourth, getSplitCharacter())).toBe("till mornin came");
   });
 
   it("skips the confirmation when the setting is off", async () => {
@@ -264,7 +265,7 @@ describe("TimelineContextMenu conform to a group that shares timing", () => {
   it("copies the timing of a shared instance, not an own-timing one", async () => {
     await conformToChorus();
 
-    expect(useProjectStore.getState().lines[3].words?.[0].begin).toBe(23);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[3]))[0].begin).toBe(23);
   });
 
   describe("regressions", () => {

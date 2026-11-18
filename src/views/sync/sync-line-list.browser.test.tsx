@@ -1,3 +1,4 @@
+import { mainTrack } from "insync/line-track";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -19,6 +20,8 @@ import { renderHook } from "vitest-browser-react";
 
 const LIST_HEIGHT_PX = 600;
 const CENTRED_WITHIN_PX = 40;
+const MAX_SCROLL_PAGES = 200;
+const FRAMES_PER_PAGE = 3;
 
 function loadLongSong(): void {
   useSettingsStore.setState({ syncCountIn: 0 });
@@ -77,6 +80,16 @@ function rowOffsetFromCentre(scroller: HTMLElement, row: HTMLElement | null): nu
   return Math.abs(rowRect.top + rowRect.height / 2 - (scrollerRect.top + scrollerRect.height / 2));
 }
 
+// Pages are bounded by frames, never by time, so a slow machine only takes longer.
+async function scrollUntilRendered(container: HTMLElement, lineNumber: number): Promise<void> {
+  for (let page = 0; !lineRow(container, lineNumber); page++) {
+    if (page >= MAX_SCROLL_PAGES) throw new Error(`line ${lineNumber} not rendered after ${MAX_SCROLL_PAGES} pages`);
+    const scroller = container.querySelector("[data-sync-line]")?.closest<HTMLElement>(".overflow-y-auto");
+    if (scroller) scroller.scrollTop += LIST_HEIGHT_PX;
+    await stepFrames(FRAMES_PER_PAGE);
+  }
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("SyncLineList", () => {
@@ -111,26 +124,42 @@ describe("SyncLineList", () => {
       return element;
     };
 
-    await expect
-      .poll(() => {
-        if (lineRow(screen.container, 300)) return true;
-        scroller().scrollTop += LIST_HEIGHT_PX;
-        return false;
-      })
-      .toBe(true);
+    await scrollUntilRendered(screen.container, 300);
     lineRow(screen.container, 300)?.click();
     await expect.poll(() => lineRow(screen.container, 300)?.getAttribute("aria-current")).toBe("true");
 
     setIsPlaying(true);
     setCurrentTime(300);
     key({ key: " ", code: "Space" });
-    await expect.poll(() => useProjectStore.getState().lines[299].begin).toBe(300);
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[299]).begin).toBe(300);
     setIsPlaying(false);
 
     await expect
       .poll(() => rowOffsetFromCentre(scroller(), lineRow(screen.container, 301)))
       .toBeLessThan(CENTRED_WITHIN_PX);
     expect(lineRow(screen.container, 301)?.getAttribute("aria-current")).toBe("true");
+  });
+
+  it("regression: a partly synced line still shows its untimed words", async () => {
+    useSettingsStore.setState({ syncCountIn: 0 });
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 30, currentTime: 0 });
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          text: "paper lanterns drifting",
+          words: [
+            { text: "paper ", begin: 2, end: 3 },
+            { text: "lanterns ", begin: 3, end: 4 },
+          ],
+        }),
+      ],
+      activeTab: "sync",
+      granularity: "word",
+    });
+    const screen = await renderBoundedPanel();
+    await expect.poll(() => lineRow(screen.container, 1)).not.toBeNull();
+
+    expect(lineRow(screen.container, 1)?.textContent).toContain("drifting");
   });
 
   it("regression: Enter after clicking a line plays from the rewound time, not the line start", async () => {

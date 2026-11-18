@@ -7,10 +7,11 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -102,20 +103,20 @@ function loadSyncedProject(): void {
       createLine({
         text: "Paper lanterns over the bay",
         words: [
-          { text: "Paper ", begin: 1, end: 1.5 },
-          { text: "lanterns ", begin: 1.5, end: 2.2 },
-          { text: "over ", begin: 2.2, end: 2.6 },
-          { text: "the ", begin: 2.6, end: 2.8 },
+          { text: "Paper", sep: " ", begin: 1, end: 1.5 },
+          { text: "lanterns", sep: " ", begin: 1.5, end: 2.2 },
+          { text: "over", sep: " ", begin: 2.2, end: 2.6 },
+          { text: "the", sep: " ", begin: 2.6, end: 2.8 },
           { text: "bay", begin: 2.8, end: 3.6 },
         ],
       }),
       createLine({
         text: "Quiet bells along the pier",
         words: [
-          { text: "Quiet ", begin: 4, end: 4.5 },
-          { text: "bells ", begin: 4.5, end: 5.1 },
-          { text: "along ", begin: 5.1, end: 5.6 },
-          { text: "the ", begin: 5.6, end: 5.8 },
+          { text: "Quiet", sep: " ", begin: 4, end: 4.5 },
+          { text: "bells", sep: " ", begin: 4.5, end: 5.1 },
+          { text: "along", sep: " ", begin: 5.1, end: 5.6 },
+          { text: "the", sep: " ", begin: 5.6, end: 5.8 },
           { text: "pier", begin: 5.8, end: 6.7 },
         ],
       }),
@@ -127,7 +128,7 @@ function copiedTtml(): string {
   const project = useProjectStore.getState();
   return outgoingTtml({
     editedContent: null,
-    generatedContent: generateProjectTtml(project, SONG_SECONDS, project.exportTiming, VIDEO_ID),
+    generatedContent: generateProjectTtml(project, SONG_SECONDS, getSplitCharacter(), project.exportTiming, VIDEO_ID),
     duration: SONG_SECONDS,
     exportTiming: project.exportTiming,
     youtubeVideoId: VIDEO_ID,

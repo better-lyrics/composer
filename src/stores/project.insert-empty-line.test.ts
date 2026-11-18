@@ -1,11 +1,26 @@
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import { mainTrack } from "insync/line-track";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
+import { insertEmptyLine } from "insync/commands/line-edits";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-const LINE_SYNCED = { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 };
-const WORD_SYNCED = { id: "w", text: "hi", agentId: "v1", words: [{ text: "hi", begin: 0, end: 1 }] };
+const LINE_SYNCED = lineFromFields(
+  { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 },
+  DEFAULT_SPLIT_CHARACTER,
+);
+const WORD_SYNCED = lineFromFields(
+  {
+    id: "w",
+    text: "hi",
+    agentId: "v1",
+    words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
+  },
+  DEFAULT_SPLIT_CHARACTER,
+);
 
 describe("project store · insertEmptyLineWithHistory", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
@@ -13,19 +28,19 @@ describe("project store · insertEmptyLineWithHistory", () => {
   describe("happy paths", () => {
     it("inserts an empty line below the anchor", () => {
       useProjectStore.setState({ lines: [WORD_SYNCED, LINE_SYNCED] });
-      useProjectStore.getState().insertEmptyLineWithHistory("w", "below");
+      useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "below" }));
       const after = useProjectStore.getState().lines;
       expect(after.map((l) => l.id)[0]).toBe("w");
-      expect(after[1]).toMatchObject({ text: "", agentId: "v1" });
+      expect(fieldsOfLine(after[1], DEFAULT_SPLIT_CHARACTER)).toMatchObject({ text: "", agentId: "v1" });
       expect(after[2].id).toBe("ls");
     });
 
     it("inserts an empty line above the anchor", () => {
       useProjectStore.setState({ lines: [WORD_SYNCED, LINE_SYNCED] });
-      useProjectStore.getState().insertEmptyLineWithHistory("ls", "above");
+      useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "ls", position: "above" }));
       const after = useProjectStore.getState().lines;
       expect(after[0].id).toBe("w");
-      expect(after[1]).toMatchObject({ text: "", agentId: "v1" });
+      expect(fieldsOfLine(after[1], DEFAULT_SPLIT_CHARACTER)).toMatchObject({ text: "", agentId: "v1" });
       expect(after[2].id).toBe("ls");
     });
 
@@ -37,22 +52,22 @@ describe("project store · insertEmptyLineWithHistory", () => {
           { id: "v1", name: "One", type: "person" },
         ],
       });
-      useProjectStore.getState().insertEmptyLineWithHistory("w", "below");
-      expect(useProjectStore.getState().lines[1].agentId).toBe("v7");
+      useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "below" }));
+      expect(mainTrack(useProjectStore.getState().lines[1]).agentId).toBe("v7");
     });
   });
 
   describe("edge cases", () => {
     it("falls back to v1 when there are no agents", () => {
       useProjectStore.setState({ lines: [WORD_SYNCED], agents: [] });
-      useProjectStore.getState().insertEmptyLineWithHistory("w", "above");
-      expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+      useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "above" }));
+      expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
     });
 
     it("does nothing when the anchor is missing", () => {
       const lines = [WORD_SYNCED];
       useProjectStore.setState({ lines });
-      useProjectStore.getState().insertEmptyLineWithHistory("missing", "below");
+      useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "missing", position: "below" }));
       expect(useProjectStore.getState().lines).toBe(lines);
     });
   });
@@ -60,13 +75,13 @@ describe("project store · insertEmptyLineWithHistory", () => {
   describe("invariants", () => {
     it("regression N: leaves line-synced rows line-synced", () => {
       useProjectStore.setState({ lines: [WORD_SYNCED, LINE_SYNCED] });
-      useProjectStore.getState().insertEmptyLineWithHistory("w", "below");
+      useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "below" }));
       expect(useProjectStore.getState().lines.find((l) => l.id === "ls")).toEqual(LINE_SYNCED);
     });
 
     it("is undoable in one step", () => {
       useProjectStore.setState({ lines: [WORD_SYNCED] });
-      useProjectStore.getState().insertEmptyLineWithHistory("w", "below");
+      useProjectStore.getState().commit(insertEmptyLine({ anchorLineId: "w", position: "below" }));
       useProjectStore.getState().undo();
       expect(useProjectStore.getState().lines).toEqual([WORD_SYNCED]);
     });

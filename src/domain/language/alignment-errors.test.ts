@@ -1,22 +1,25 @@
-import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
-import type { LyricLine } from "@/domain/line/model";
+import { lineFromFields } from "insync/line-from-fields";
+import { getLanguageAlignmentErrorItems } from "insync/language-alignment-errors";
+import type { LyricLine } from "insync/line";
+import { legacyLine } from "@/test/legacy-languages";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 describe("getLanguageAlignmentErrorItems", () => {
   it("reports main and background transliteration errors by line", () => {
     const lines: LyricLine[] = [
-      {
+      legacyLine({
         id: "l1",
         text: "가|나",
         agentId: "v1",
         words: [
-          { text: "가", begin: 0, end: 0.5, syllableGroupId: "main" },
-          { text: "나", begin: 0.5, end: 1, syllableGroupId: "main" },
+          { id: "w1", text: "가", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w2", text: "나", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         backgroundText: "다|라",
         backgroundWords: [
-          { text: "다", begin: 0, end: 0.5, syllableGroupId: "background" },
-          { text: "라", begin: 0.5, end: 1, syllableGroupId: "background" },
+          { id: "w3", text: "다", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w4", text: "라", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         backgroundTextSource: "manual",
         transliteration: {
@@ -27,10 +30,10 @@ describe("getLanguageAlignmentErrorItems", () => {
           origin: "manual",
           sourceFingerprint: "current",
         },
-      },
+      }),
     ];
 
-    expect(getLanguageAlignmentErrorItems(lines)).toEqual([
+    expect(getLanguageAlignmentErrorItems(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([
       {
         lineId: "l1",
         lineIndex: 0,
@@ -51,14 +54,14 @@ describe("getLanguageAlignmentErrorItems", () => {
 
   it("omits aligned and empty transliterations", () => {
     const lines: LyricLine[] = [
-      { id: "empty", text: "가|나", agentId: "v1" },
-      {
+      lineFromFields({ id: "empty", text: "가|나", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER),
+      legacyLine({
         id: "aligned",
         text: "가|나",
         agentId: "v1",
         words: [
-          { text: "가", begin: 0, end: 0.5, syllableGroupId: "group" },
-          { text: "나", begin: 0.5, end: 1, syllableGroupId: "group" },
+          { id: "w5", text: "가", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w6", text: "나", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         transliteration: {
           language: "ko-Latn",
@@ -67,9 +70,9 @@ describe("getLanguageAlignmentErrorItems", () => {
           origin: "manual",
           sourceFingerprint: "current",
         },
-      },
+      }),
     ];
 
-    expect(getLanguageAlignmentErrorItems(lines)).toEqual([]);
+    expect(getLanguageAlignmentErrorItems(lines, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
   });
 });

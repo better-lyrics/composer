@@ -1,9 +1,11 @@
-import type { WordTiming } from "@/domain/word/timing";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 
@@ -30,12 +32,7 @@ async function renderStretchTrack(
   useProjectStore.setState({ lines: [line] });
   useTimelineStore.setState({
     zoom: ZOOM,
-    selectedWords: selected.map((wordIndex) => ({
-      lineId: line.id,
-      lineIndex: 0,
-      wordIndex,
-      type: "word" as const,
-    })),
+    selectedWords: selected.map((wordIndex) => wordAddress(line, wordIndex)),
   });
   useAudioStore.setState({ duration: 60 });
   useSettingsStore.setState({
@@ -61,14 +58,14 @@ async function renderStretchTrack(
   const fixture: Fixture = {
     lineId: line.id,
     blocks,
-    original: useProjectStore.getState().lines[0].words ?? [],
+    original: timedSyllables(mainTrack(useProjectStore.getState().lines[0])),
   };
   return fixture;
 }
 
 function storeWords(): WordTiming[] {
   const line = useProjectStore.getState().lines[0];
-  return line.words ?? [];
+  return timedSyllables(mainTrack(line));
 }
 
 function gripEdge(block: HTMLElement, edge: "left" | "right"): HTMLElement | null {

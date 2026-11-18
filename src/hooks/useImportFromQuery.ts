@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectMetadata } from "insync/metadata";
 import {
   getLinkProjectSettled,
   getLinkedFilesSettled,

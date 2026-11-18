@@ -3,7 +3,7 @@ import { Button } from "@/ui/button";
 import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { cn } from "@/utils/cn";
 import { focusOnMount } from "@/utils/focus-on-mount";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { IconArrowLeft, IconUpload } from "@tabler/icons-react";
 

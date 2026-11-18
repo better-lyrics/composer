@@ -1,21 +1,24 @@
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
-import { hasAnyTiming } from "@/domain/line/predicates";
+import { describe, expect, it } from "vitest";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
+import { hasAnyTiming } from "insync/line-predicates";
+import { lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
 function seed(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word") {
   useProjectStore.setState({ groups: [], lines });
   useProjectStore.getState().clearHistory();
-  const lineIndex = lines.findIndex((line) => line.id === lineId);
   useTimelineStore.setState({
-    contextMenu: { x: 100, y: 100, target: { kind: "word", lineId, lineIndex, wordIndex, type } },
+    contextMenu: { x: 100, y: 100, target: { kind: "word", ...storedWordAddress(lineId, wordIndex, type) } },
     selectedWords: [],
   });
 }
@@ -38,7 +41,7 @@ describe("TimelineContextMenu · delete word", () => {
           id: "l1",
           text: "hello world",
           words: [
-            { text: "hello ", begin: 1, end: 2 },
+            { text: "hello", sep: " ", begin: 1, end: 2 },
             { text: "world", begin: 2, end: 3 },
           ],
         }),
@@ -48,7 +51,7 @@ describe("TimelineContextMenu · delete word", () => {
     );
     await clickDelete();
 
-    expect(lineById("l1")?.words).toEqual([createWord({ text: "world", begin: 2, end: 3 })]);
+    expect(timedSyllables(mainTrack(lineById("l1")!))).toEqual([createWord({ text: "world", begin: 2, end: 3 })]);
   });
 
   it("removes the clicked background word", async () => {
@@ -60,7 +63,7 @@ describe("TimelineContextMenu · delete word", () => {
           words: [{ text: "hello", begin: 1, end: 2 }],
           backgroundText: "ooh aah",
           backgroundWords: [
-            { text: "ooh ", begin: 1, end: 1.5 },
+            { text: "ooh", sep: " ", begin: 1, end: 1.5 },
             { text: "aah", begin: 1.5, end: 2 },
           ],
         }),
@@ -71,8 +74,8 @@ describe("TimelineContextMenu · delete word", () => {
     );
     await clickDelete();
 
-    expect(lineById("l1")?.backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh"]);
-    expect(lineById("l1")?.words).toHaveLength(1);
+    expect(timedSyllables(backgroundTrack(lineById("l1")!)).map((word) => word.text.trim())).toEqual(["ooh"]);
+    expect(timedSyllables(mainTrack(lineById("l1")!))).toHaveLength(1);
   });
 
   describe("regressions", () => {
@@ -82,7 +85,7 @@ describe("TimelineContextMenu · delete word", () => {
           id: `c${instanceIdx}`,
           text: "go now",
           words: [
-            { text: "go ", begin, end: begin + 1 },
+            { text: "go", sep: " ", begin, end: begin + 1 },
             { text: "now", begin: begin + 1, end: begin + 2 },
           ],
           groupId: "g1",
@@ -93,8 +96,8 @@ describe("TimelineContextMenu · delete word", () => {
       useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })] });
       await clickDelete();
 
-      expect(lineById("c0")?.words?.map((word) => word.text)).toEqual(["now"]);
-      expect(lineById("c1")?.words?.map((word) => word.text)).toEqual(["now"]);
+      expect(timedSyllables(mainTrack(lineById("c0")!)).map((word) => word.text + word.sep)).toEqual(["now"]);
+      expect(timedSyllables(mainTrack(lineById("c1")!)).map((word) => word.text + word.sep)).toEqual(["now"]);
     });
 
     it("regression: removes the timing of a line-synced line (issue #285)", async () => {
@@ -103,7 +106,7 @@ describe("TimelineContextMenu · delete word", () => {
 
       const line = lineById("l1");
       expect(line && hasAnyTiming(line)).toBe(false);
-      expect(line?.text).toBe("hello world");
+      expect(lineText(line!, getSplitCharacter())).toBe("hello world");
     });
 
     const threeWords = () =>
@@ -111,8 +114,8 @@ describe("TimelineContextMenu · delete word", () => {
         id: "l1",
         text: "one two three",
         words: [
-          { text: "one ", begin: 1, end: 2 },
-          { text: "two ", begin: 2, end: 3 },
+          { text: "one", sep: " ", begin: 1, end: 2 },
+          { text: "two", sep: " ", begin: 2, end: 3 },
           { text: "three", begin: 3, end: 4 },
         ],
       });
@@ -120,28 +123,23 @@ describe("TimelineContextMenu · delete word", () => {
     it("regression: deletes the whole selection when the clicked word is in it", async () => {
       seed([threeWords()], "l1", 1);
       useTimelineStore.setState({
-        selectedWords: [
-          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
-        ],
+        selectedWords: [storedWordAddress("l1", 0, "word"), storedWordAddress("l1", 1, "word")],
       });
       await clickDelete("Delete 2 words");
 
-      expect(lineById("l1")?.words).toEqual([createWord({ text: "three", begin: 3, end: 4 })]);
+      expect(timedSyllables(mainTrack(lineById("l1")!))).toEqual([createWord({ text: "three", begin: 3, end: 4 })]);
       expect(useTimelineStore.getState().selectedWords).toEqual([]);
     });
 
     it("regression: deletes only the clicked word outside the selection and drops the stale selection", async () => {
       seed([threeWords()], "l1", 2);
       useTimelineStore.setState({
-        selectedWords: [
-          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
-        ],
+        selectedWords: [storedWordAddress("l1", 0, "word"), storedWordAddress("l1", 1, "word")],
       });
       await clickDelete();
 
-      expect(lineById("l1")?.words?.map((word) => word.text)).toEqual(["one ", "two "]);
+      // Deleting the last word leaves no trailing space on the word before it.
+      expect(timedSyllables(mainTrack(lineById("l1")!)).map((word) => word.text + word.sep)).toEqual(["one ", "two"]);
       expect(useTimelineStore.getState().selectedWords).toEqual([]);
     });
   });
@@ -164,8 +162,8 @@ describe("TimelineContextMenu · delete word", () => {
       );
       await clickDelete("Delete syllable");
 
-      expect(lineById("l1")?.words).toHaveLength(1);
-      expect(lineById("l1")?.words?.[0]?.begin).toBe(1);
+      expect(timedSyllables(mainTrack(lineById("l1")!))).toHaveLength(1);
+      expect(timedSyllables(mainTrack(lineById("l1")!))[0]?.begin).toBe(1);
     });
 
     it("unlinks an instance once its last word is gone", async () => {

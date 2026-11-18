@@ -1,17 +1,16 @@
-import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
-import { type WordIdentity, sameWordSelection } from "@/domain/selection/identity";
+import { sameAddress } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
+import { wordAt } from "insync/selection-resolve";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
 type LoupeEdge = "begin" | "end";
 
-interface LoupeTarget {
-  lineId: string;
-  track: "word" | "bg";
-  wordIndex: number;
+interface LoupeTarget extends SyllableAddress {
   edge: LoupeEdge;
   startTime: number;
   time: number;
@@ -30,12 +29,8 @@ let clearTimer: ReturnType<typeof setTimeout> | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
-function editedWord(edit: LoupeEdit): WordIdentity {
-  return { lineId: edit.lineId, wordIndex: edit.wordIndex, type: edit.track };
-}
-
 function sameEdge(a: LoupeEdit, b: LoupeEdit): boolean {
-  return a.edge === b.edge && sameWordSelection(editedWord(a), editedWord(b));
+  return a.edge === b.edge && sameAddress(a, b);
 }
 
 function cancelClear(): void {
@@ -65,21 +60,21 @@ function clearLoupe(): void {
   useTimelineStore.getState().setLoupeTarget(null);
 }
 
-function storedEdgeTime(word: WordIdentity, edge: LoupeEdge): number | null {
-  const rawLine = useProjectStore.getState().lines.find((candidate) => candidate.id === word.lineId);
-  const timing = rawLine ? effectiveTrackWords(getEffectiveLine(rawLine), word.type)?.[word.wordIndex] : undefined;
+function storedEdgeTime(word: SyllableAddress, edge: LoupeEdge): number | null {
+  const line = useProjectStore.getState().lines.find((candidate) => candidate.id === word.lineId);
+  const timing = line ? wordAt([line], word, getSplitCharacter()) : null;
   return timing ? timing[edge] : null;
 }
 
 // For key edits that write the store directly: the edge's new time is read back after the write.
-function showLoupeAfterKeyEdit(word: WordIdentity, edge: LoupeEdge, startTime: number): void {
+function showLoupeAfterKeyEdit(word: SyllableAddress, edge: LoupeEdge, startTime: number): void {
   if (!useSettingsStore.getState().showSpectrum) return;
   const time = storedEdgeTime(word, edge);
   if (time === null) return;
-  showLoupeEdit({ lineId: word.lineId, track: word.type, wordIndex: word.wordIndex, edge, startTime, time }, true);
+  showLoupeEdit({ lineId: word.lineId, type: word.type, syllableId: word.syllableId, edge, startTime, time }, true);
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { settleLoupe, showLoupeAfterKeyEdit, showLoupeEdit, storedEdgeTime };
 export type { LoupeTarget };
+export { settleLoupe, showLoupeAfterKeyEdit, showLoupeEdit, storedEdgeTime };

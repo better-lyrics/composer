@@ -1,24 +1,33 @@
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { instanceKey } from "@/domain/instance/key";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import { linesOfInstance } from "insync/instance-enumerate";
+import { instanceKey } from "insync/instance-key";
+import { isLinked } from "insync/instance-predicates";
+import type { LyricLine } from "insync/line";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers -------------------------------------------------------------------
 
 // Timing may cover only part of a line, so only the words both lines have timed must agree.
-function timedWordsAgree(a: readonly { text: string }[] = [], b: readonly { text: string }[] = []): boolean {
+function timedWordsAgree(
+  a: readonly { text: string; sep: string }[],
+  b: readonly { text: string; sep: string }[],
+): boolean {
   const shared = Math.min(a.length, b.length);
-  for (let i = 0; i < shared; i++) if (a[i].text !== b[i].text) return false;
+  for (let i = 0; i < shared; i++) if (a[i].text !== b[i].text || a[i].sep !== b[i].sep) return false;
   return true;
 }
 
 // -- Public --------------------------------------------------------------------
 
 function linesStructurallyEqual(a: LyricLine, b: LyricLine): boolean {
-  if (a.text !== b.text) return false;
-  if (a.agentId !== b.agentId) return false;
-  if ((a.backgroundText ?? "") !== (b.backgroundText ?? "")) return false;
-  return timedWordsAgree(a.words, b.words) && timedWordsAgree(a.backgroundWords, b.backgroundWords);
+  if (lineText(a, getSplitCharacter()) !== lineText(b, getSplitCharacter())) return false;
+  if (mainTrack(a).agentId !== mainTrack(b).agentId) return false;
+  if ((backgroundText(a, getSplitCharacter()) ?? "") !== (backgroundText(b, getSplitCharacter()) ?? "")) return false;
+  return (
+    timedWordsAgree(timedSyllables(mainTrack(a)), timedSyllables(mainTrack(b))) &&
+    timedWordsAgree(timedSyllables(backgroundTrack(a)), timedSyllables(backgroundTrack(b)))
+  );
 }
 
 function structurallyEqualLineSequences(a: readonly LyricLine[], b: readonly LyricLine[]): boolean {

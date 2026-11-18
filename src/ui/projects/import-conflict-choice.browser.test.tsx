@@ -1,17 +1,20 @@
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { loadProjectAudio } from "@/lib/project-audio";
 import { projectFileFrom } from "@/lib/project-file";
 import { importProjectFile } from "@/lib/project-import";
 import { listProjectIndex } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
+import { savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
-import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
+import { linesOfRecord, seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -19,7 +22,7 @@ function fileFrom(projectId: string, title: string, lineText: string): File {
   const project = storedProject({
     ...songTitled(title),
     savedAt: 1_758_300_000_000,
-    lines: [createLine({ text: lineText })],
+    lines: savedLines([createLine({ text: lineText })]),
   });
   return new File([JSON.stringify(projectFileFrom(projectId, project))], "song.ttml-project.json");
 }
@@ -30,7 +33,7 @@ async function seedAlpha(open = false): Promise<void> {
     project: {
       ...songTitled("Alpha"),
       audioSource: { kind: "file", name: "alpha.wav" },
-      lines: [createLine({ text: "Library line", begin: 1, end: 2 })],
+      lines: savedLines([createLine({ text: "Library line", begin: 1, end: 2 })]),
     },
     audio: createAudioFile("alpha.wav"),
   });
@@ -58,7 +61,7 @@ describe("import conflict dialog", () => {
     await screen.getByRole("button", { name: "Keep both" }).click();
     const id = await pending;
     expect(id).not.toBe("a");
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("Library line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0], getSplitCharacter())).toBe("Library line");
     expect((await listProjectIndex()).length).toBe(2);
   });
 
@@ -69,7 +72,7 @@ describe("import conflict dialog", () => {
     await screen.getByRole("button", { name: "Replace project" }).click();
     await expect(pending).resolves.toBe("a");
     const record = await loadProjectRecord("a");
-    expect(record?.lines[0]?.text).toBe("File line");
+    expect(lineText(linesOfRecord(record)[0], getSplitCharacter())).toBe("File line");
     expect(record?.audioSource).toEqual({ kind: "file", name: "alpha.wav" });
     expect((await loadProjectAudio("a"))?.name).toBe("alpha.wav");
   });
@@ -81,7 +84,7 @@ describe("import conflict dialog", () => {
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await screen.getByRole("button", { name: "Replace project" }).click();
     await pending;
-    expect(useProjectStore.getState().lines[0]?.text).toBe("File line");
+    expect(lineText(useProjectStore.getState().lines[0]!, getSplitCharacter())).toBe("File line");
   });
 
   it("matches a different project id by the same YouTube video, and cancelling writes nothing", async () => {

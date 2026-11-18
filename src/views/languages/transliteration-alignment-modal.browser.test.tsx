@@ -1,33 +1,37 @@
-import { getLanguageReviewTracks } from "@/domain/language/review";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
-import { useProjectStore } from "@/stores/project";
-import { createGroup } from "@/test/factories";
-import { render } from "@/test/render";
-import { TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { languageSourceFingerprint } from "insync/language-fingerprint";
+import { getLanguageReviewTracks } from "insync/language-review";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import { newWordId } from "insync/word-id";
+import { useProjectStore } from "@/stores/project";
+import { createGroup } from "@/test/factories";
+import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
+import { render } from "@/test/render";
+import { TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
 function setupLine({
   text = "가나",
   words = [
-    { text: "가", begin: 0, end: 0.5 },
-    { text: "나", begin: 0.5, end: 1 },
+    { id: newWordId(), text: "가", sep: "", begin: 0, end: 0.5, joinsNext: true },
+    { id: newWordId(), text: "나", sep: "", begin: 0.5, end: 1, joinsNext: false },
   ],
   language = "ko-Latn",
   transliterationText,
   withTransliteration = true,
 }: {
   text?: string;
-  words?: WordTiming[];
+  words?: LegacyWord[];
   language?: string;
   transliterationText?: string;
   withTransliteration?: boolean;
 } = {}): LyricLine {
-  const line: LyricLine = {
+  const line: LyricLine = legacyLine({
     id: "l1",
     agentId: "v1",
     text,
@@ -39,13 +43,17 @@ function setupLine({
             text: transliterationText ?? "gana",
             segments: [],
             origin: "manual",
-            sourceFingerprint: languageSourceFingerprint(text),
+            sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), text),
           },
         }
       : {}),
-  };
-  useProjectStore.getState().setLines([line]);
+  });
+  useProjectStore.getState().restoreLyrics({ lines: [line] });
   return line;
+}
+
+function readingWords(line: LyricLine): LegacyWord[] {
+  return legacyWords(timedSyllables(mainTrack(line)), line.languages) ?? [];
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -66,9 +74,9 @@ describe("TransliterationAlignmentModal", () => {
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.words?.[0].transliteration).toBe("ga");
-      expect(saved.words?.[1].transliteration).toBe("na");
-      expect(saved.transliteration?.alignmentStatus).toBe("confirmed");
+      expect(readingWords(saved)[0].transliteration).toBe("ga");
+      expect(readingWords(saved)[1].transliteration).toBe("na");
+      expect(saved.languages?.transliteration?.main.alignmentStatus).toBe("confirmed");
     });
 
     it("regression: saves as one undo step", async () => {
@@ -79,30 +87,33 @@ describe("TransliterationAlignmentModal", () => {
 
       expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
       useProjectStore.getState().undo();
-      expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBeUndefined();
+      expect(readingWords(useProjectStore.getState().lines[0])[0]?.transliteration).toBeUndefined();
     });
 
     it("regression: leaves the readings of another instance sharing timing alone", async () => {
       const line = { ...setupLine(), groupId: "g1", instanceIdx: 0, templateLineIdx: 0 };
-      const repeat: LyricLine = {
+      const repeat: LyricLine = legacyLine({
         id: "l2",
         agentId: "v1",
-        text: line.text,
-        transliteration: line.transliteration,
+        text: lineText(line, getSplitCharacter()),
+        transliteration: legacyLanguages(line.languages).transliteration,
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "가", begin: 10, end: 10.5, transliteration: "gan" },
-          { text: "나", begin: 10.5, end: 11, transliteration: "a" },
+          { id: "w1", text: "가", sep: "", begin: 10, end: 10.5, transliteration: "gan", joinsNext: true },
+          { id: "w2", text: "나", sep: "", begin: 10.5, end: 11, transliteration: "a", joinsNext: false },
         ],
-      };
+      });
       useProjectStore.setState({ lines: [line, repeat], groups: [createGroup({ id: "g1", sharesTiming: true })] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
 
-      expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBe("ga");
-      expect(useProjectStore.getState().lines[1].words?.map((word) => word.transliteration)).toEqual(["gan", "a"]);
+      expect(readingWords(useProjectStore.getState().lines[0])[0].transliteration).toBe("ga");
+      expect(readingWords(useProjectStore.getState().lines[1]).map((word) => word.transliteration)).toEqual([
+        "gan",
+        "a",
+      ]);
     });
   });
 
@@ -110,7 +121,7 @@ describe("TransliterationAlignmentModal", () => {
     it("needs no split point for a single-syllable word", async () => {
       const line = setupLine({
         text: "가",
-        words: [{ text: "가", begin: 0, end: 1 }],
+        words: [{ id: "w3", text: "가", sep: "", begin: 0, end: 1, joinsNext: false }],
         transliterationText: "ga",
       });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
@@ -132,8 +143,8 @@ describe("TransliterationAlignmentModal", () => {
       const line = setupLine({
         text: "to-do",
         words: [
-          { text: "to-", begin: 0, end: 0.5 },
-          { text: "do", begin: 0.5, end: 1 },
+          { id: "w4", text: "to-", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w5", text: "do", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         language: "en-Latn",
         transliterationText: "to-do",
@@ -148,8 +159,17 @@ describe("TransliterationAlignmentModal", () => {
       const line = setupLine({
         text: "abcd",
         words: [
-          { text: "ab", begin: 0, end: 0.5, transliteration: "ab", transliterationJoinerAfter: "  " },
-          { text: "cd", begin: 0.5, end: 1, transliteration: "cd" },
+          {
+            id: "w6",
+            text: "ab",
+            sep: "",
+            begin: 0,
+            end: 0.5,
+            transliteration: "ab",
+            transliterationJoinerAfter: "  ",
+            joinsNext: true,
+          },
+          { id: "w7", text: "cd", sep: "", begin: 0.5, end: 1, transliteration: "cd", joinsNext: false },
         ],
         language: "en-Latn",
         transliterationText: "ab  cd",
@@ -182,23 +202,45 @@ describe("TransliterationAlignmentModal", () => {
   describe("regressions", () => {
     it("clears the source-change warning after saving alignment for the only populated side", async () => {
       const line = setupLine();
-      line.transliteration!.sourceFingerprint = "old-source";
-      line.transliteration!.stale = true;
-      useProjectStore.getState().setLines([line]);
+      const track = line.languages?.transliteration;
+      if (!track) throw new Error("expected a transliteration");
+      track.sourceFingerprint = "old-source";
+      track.stale = true;
+      useProjectStore.getState().restoreLyrics({ lines: [line] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(line.text));
-      expect(getLanguageReviewTracks(saved)).toEqual([]);
+      expect(saved.languages?.transliteration?.sourceFingerprint).toBe(
+        languageSourceFingerprint(getSplitCharacter(), lineText(line, getSplitCharacter())),
+      );
+      expect(getLanguageReviewTracks(saved, getSplitCharacter())).toEqual([]);
     });
 
     it("regression: saves per-word transliteration and joiners for a pronunciation break inside one lexical group", async () => {
-      const words: WordTiming[] = [
-        { text: "밤", begin: 0, end: 0.5, transliteration: "bam", transliterationJoinerAfter: " " },
-        { text: "하", begin: 0.5, end: 1, transliteration: "ha", transliterationJoinerAfter: "  " },
-        { text: "늘", begin: 1, end: 1.5, transliteration: "neul" },
+      const words: LegacyWord[] = [
+        {
+          id: "w8",
+          text: "밤",
+          sep: "",
+          begin: 0,
+          end: 0.5,
+          transliteration: "bam",
+          transliterationJoinerAfter: " ",
+          joinsNext: true,
+        },
+        {
+          id: "w9",
+          text: "하",
+          sep: "",
+          begin: 0.5,
+          end: 1,
+          transliteration: "ha",
+          transliterationJoinerAfter: "  ",
+          joinsNext: true,
+        },
+        { id: "w10", text: "늘", sep: "", begin: 1, end: 1.5, transliteration: "neul", joinsNext: false },
       ];
-      const line: LyricLine = {
+      const line: LyricLine = legacyLine({
         id: "bam-ha-neul",
         agentId: "v1",
         text: "밤하늘",
@@ -208,10 +250,10 @@ describe("TransliterationAlignmentModal", () => {
           text: "bam ha  neul",
           segments: [],
           origin: "manual",
-          sourceFingerprint: languageSourceFingerprint("밤하늘"),
+          sourceFingerprint: languageSourceFingerprint(getSplitCharacter(), "밤하늘"),
         },
-      };
-      useProjectStore.getState().setLines([line]);
+      });
+      useProjectStore.getState().restoreLyrics({ lines: [line] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
 
       const pronunciationBreak = screen.getByRole("button", {
@@ -226,7 +268,7 @@ describe("TransliterationAlignmentModal", () => {
 
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.words).toEqual(words);
+      expect(readingWords(saved)).toEqual(words);
     });
   });
 

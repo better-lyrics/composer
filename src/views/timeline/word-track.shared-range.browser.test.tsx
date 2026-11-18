@@ -1,12 +1,14 @@
-import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import type { WordTiming } from "insync/word-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -19,21 +21,16 @@ const chorus = (id: string, instanceIdx: number, begin: number) =>
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
   });
 
 async function renderSharedTrack(sharesTiming: boolean, selectWholeLine = false) {
   const calls: Partial<WordTiming>[] = [];
   useSettingsStore.setState({ rollingEdit: false });
-  useTimelineStore.setState({
-    zoom: 100,
-    selectedWords: selectWholeLine
-      ? [0, 1].map((wordIndex) => ({ lineId: "c1", lineIndex: 1, wordIndex, type: "word" as const }))
-      : [],
-  });
+  useTimelineStore.setState({ zoom: 100, selectedWords: [] });
   useAudioStore.setState({ duration: 20 });
   useSettingsStore.setState({ minWordDuration: 0.1, defaultWordDuration: 1 });
   const source = chorus("c1", 1, 10);
@@ -41,11 +38,12 @@ async function renderSharedTrack(sharesTiming: boolean, selectWholeLine = false)
     lines: [chorus("c0", 0, 3), source, chorus("c2", 2, 16)],
     groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
   });
+  if (selectWholeLine) useTimelineStore.setState({ selectedWords: [0, 1].map((index) => wordAddress(source, index)) });
   const screen = await render(
     <WordTrack
       lineId={source.id}
       lineIndex={1}
-      words={source.words ?? []}
+      words={timedSyllables(mainTrack(source))}
       color="#a3c9ff"
       trackType="word"
       duration={20}
@@ -74,7 +72,11 @@ function doubleClickAt(track: HTMLElement, time: number) {
   );
 }
 
-const wordsOf = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id)?.words ?? [];
+const wordsOf = (id: string) =>
+  roleWords(
+    useProjectStore.getState().lines.find((line) => line.id === id),
+    "main",
+  ) ?? [];
 
 // -- Tests --------------------------------------------------------------------
 

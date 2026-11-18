@@ -3,7 +3,7 @@ import type { PitchRange } from "@/domain/pitch/line-range";
 import type { PitchPoint, PitchTrack } from "@/domain/pitch/track";
 import { backgroundLaneRuns, voicedRuns } from "@/domain/pitch/voiced-runs";
 import type { Rgb } from "@/domain/spectrum/palettes";
-import type { Bounds } from "@/domain/word/bounds";
+import type { Bounds } from "insync/word-bounds";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";
 
 // -- Types ---------------------------------------------------------------------

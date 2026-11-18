@@ -1,7 +1,8 @@
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
+import type { SyllableAddress } from "insync/selection-model";
 import { createLine } from "@/test/factories";
+import { wordAddress } from "@/test/word-address";
 import { computeRowLayout } from "@/views/timeline/utils";
 import {
   type FollowInput,
@@ -23,8 +24,8 @@ const verse = [
     id: "yeah",
     text: "yeah yeah yeah",
     words: [
-      { text: "yeah ", begin: 19.0, end: 19.6 },
-      { text: "yeah ", begin: 19.8, end: 20.4 },
+      { text: "yeah", sep: " ", begin: 19.0, end: 19.6 },
+      { text: "yeah", sep: " ", begin: 19.8, end: 20.4 },
       { text: "yeah", begin: 20.6, end: 21.1 },
     ],
   }),
@@ -32,8 +33,8 @@ const verse = [
     id: "too-hot",
     text: "Too hot for my own socks",
     words: [
-      { text: "Too ", begin: 20.95, end: 21.2 },
-      { text: "hot ", begin: 21.2, end: 21.6 },
+      { text: "Too", sep: " ", begin: 20.95, end: 21.2 },
+      { text: "hot", sep: " ", begin: 21.2, end: 21.6 },
       { text: "for my own socks", begin: 21.6, end: 23.0 },
     ],
   }),
@@ -53,13 +54,15 @@ function layoutOf(lines: LyricLine[], collapsedInstances: Record<string, boolean
   });
 }
 
-function word(lines: LyricLine[], lineId: string, wordIndex: number): WordSelection {
-  return { lineId, lineIndex: lines.findIndex((line) => line.id === lineId), wordIndex, type: "word" };
+function word(lines: LyricLine[], lineId: string, wordIndex: number): SyllableAddress {
+  const line = lines.find((candidate) => candidate.id === lineId);
+  if (!line) throw new Error(`No line ${lineId}`);
+  return wordAddress(line, wordIndex);
 }
 
 interface PlaybackOptions {
   lines?: LyricLine[];
-  selection?: WordSelection[] | null;
+  selection?: SyllableAddress[] | null;
   viewportHeight?: number;
   collapsedInstances?: Record<string, boolean>;
 }

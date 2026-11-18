@@ -1,3 +1,4 @@
+import { lineText } from "insync/line-text";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromUnisonLyric } from "@/hooks/useImportFromUnisonLyric";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
@@ -19,6 +20,7 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
+import { getSplitCharacter } from "@/utils/split-character";
 import { hasLoadedYouTubeSourceFor, isYouTubeSourceFor } from "@/utils/youtube-source";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -143,7 +145,7 @@ describe("useImportFromUnisonLyric", () => {
     expect(screen.getByText(CREATED_TOAST).elements()).toHaveLength(1);
     expect(useProjectStore.getState().activeTab).toBe("edit");
     expect(openProjectIdSnapshot()).not.toBe("a");
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
       "Paper lanterns over the bay",
       "Quiet bells along the pier",
     ]);

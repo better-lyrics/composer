@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -38,15 +42,16 @@ describe("auto-extract background vocals on blur", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Take me home (country roads)");
+    // A closed bracket group now becomes the background as it is typed; blur keeps it.
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
-      .toEqual(["Take me home (country roads)"]);
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter())))
+      .toEqual(["Take me home"]);
 
     blurTextarea(textarea);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(country roads)");
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("(country roads)");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 
   it("reflects the extracted result in the textarea and preview after blur", async () => {
@@ -57,7 +62,7 @@ describe("auto-extract background vocals on blur", () => {
     setTextareaValue(textarea, "Take me home (country roads)");
     blurTextarea(textarea);
 
-    await expect.poll(() => textarea.value).toBe("Take me home");
+    await expect.poll(() => textarea.value).toBe("Take me home (country roads)");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Take me home"]);
     await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["(country roads)"]);
   });
@@ -71,8 +76,10 @@ describe("auto-extract background vocals on blur", () => {
     setTextareaValue(textarea, "Take me home (country roads)");
     blurTextarea(textarea);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    await expect
+      .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
+      .toBe("Take me home (country roads)");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBeUndefined();
     expect(textarea.value).toBe("Take me home (country roads)");
   });
 
@@ -87,9 +94,9 @@ describe("auto-extract background vocals on blur", () => {
     blurTextarea(textarea);
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Real lyric line");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh yeah)");
-    await expect.poll(() => textarea.value).toBe("Real lyric line");
+    expect(lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Real lyric line");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("(ooh yeah)");
+    await expect.poll(() => textarea.value).toBe("Real lyric line (ooh yeah)");
   });
 
   it("keeps a standalone all-parens line on blur when merge setting is off", async () => {
@@ -102,7 +109,7 @@ describe("auto-extract background vocals on blur", () => {
     blurTextarea(textarea);
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
-    expect(useProjectStore.getState().lines[1].text).toBe("(ooh yeah)");
+    expect(lineText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("(ooh yeah)");
   });
 });
 
@@ -118,10 +125,14 @@ describe("auto-extract on blur leaves history untouched when nothing changes", (
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Plain lyric line");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Plain lyric line");
+    await expect
+      .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
+      .toBe("Plain lyric line");
 
     blurTextarea(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Plain lyric line");
+    await expect
+      .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
+      .toBe("Plain lyric line");
     const afterTypingRunIndex = useProjectStore.getState().historyIndex;
 
     blurTextarea(textarea);
@@ -149,20 +160,17 @@ describe("undo after auto-extract on blur", () => {
     useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
   });
 
-  it("reverts the extraction on the first undo and the typing on the second", async () => {
+  // Typed brackets now extract with the keystroke that closes them, so typing and extraction are one undo step.
+  it("reverts the typing and its extraction in one undo", async () => {
     useProjectStore.setState({ lines: [] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Take me home (country roads)");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
 
     blurTextarea(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
-
-    useProjectStore.getState().undo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
 
     useProjectStore.getState().undo();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(0);
@@ -175,14 +183,15 @@ describe("undo after auto-extract on blur", () => {
 
     setTextareaValue(textarea, "Take me home (country roads)");
     blurTextarea(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
 
+    // The typing and its extraction are one undo step.
     useProjectStore.getState().undo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(0);
 
     useProjectStore.getState().redo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(country roads)");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("Take me home");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("(country roads)");
   });
 });
 
@@ -198,11 +207,83 @@ describe("auto-extract on blur preserves existing blur behavior", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Plain lyric line");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Plain lyric line");
+    await expect
+      .poll(() => lineText(useProjectStore.getState().lines[0], getSplitCharacter()))
+      .toBe("Plain lyric line");
 
     blurTextarea(textarea);
 
     useProjectStore.getState().undo();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(0);
+  });
+});
+
+describe("brackets pasted into a row", () => {
+  beforeEach(() => {
+    useProjectStore.setState({ activeTab: "edit" });
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
+  });
+
+  it("regression: a group pasted right after a word keeps the caret after the paste", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    setTextareaValue(textarea, "Copper bells are ringing\nHarbour lights go down\nWillow branches sway");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(3);
+
+    const rowEnd = "Copper bells are ringing\nHarbour lights go down".length;
+    textarea.focus();
+    textarea.setSelectionRange(rowEnd, rowEnd);
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "(go down)");
+    textarea.dispatchEvent(new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }));
+    textarea.setRangeText("(go down)", rowEnd, rowEnd, "end");
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[1], getSplitCharacter())).toBe("(go down)");
+    await expect.poll(() => textarea.value.split("\n")[1]).toBe("Harbour lights go down (go down)");
+    expect(textarea.selectionStart).toBe(rowEnd + " (go down)".length);
+  });
+
+  it("regression: a space typed inside brackets kept as text stays where it was typed", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    setTextareaValue(textarea, "glimmer (low amber)\nember cinder lantern");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true });
+
+    textarea.focus();
+    const beforeClose = "glimmer (low amber".length;
+    textarea.setSelectionRange(beforeClose, beforeClose);
+    await userEvent.keyboard(" x");
+
+    await expect.poll(() => textarea.value.split("\n")).toEqual(["glimmer (low amber x)", "ember cinder lantern"]);
+    expect(textarea.selectionStart).toBe(beforeClose + 2);
+  });
+
+  it("regression: a bracket group typed with the caret inside extracts once the caret leaves it", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    setTextareaValue(textarea, "ember cinder lantern");
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
+    blurTextarea(textarea);
+    const lineTexts = () => useProjectStore.getState().lines.map((l) => lineText(l, getSplitCharacter()));
+
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    await userEvent.keyboard(" (){ArrowLeft}test");
+    await expect.poll(() => textarea.value).toBe("ember cinder lantern (test)");
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBeUndefined();
+
+    await userEvent.keyboard("{ArrowRight}");
+
+    await expect.poll(lineTexts).toEqual(["ember cinder lantern"]);
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBe("(test)");
+    await userEvent.keyboard("{Control>}z{/Control}");
+    await expect.poll(lineTexts).toEqual(["ember cinder lantern"]);
+    expect(backgroundText(useProjectStore.getState().lines[0], getSplitCharacter())).toBeUndefined();
   });
 });

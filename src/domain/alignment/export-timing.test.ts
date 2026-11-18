@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readExportTiming, withExportTiming } from "@/domain/alignment/export-timing";
-import type { LyricLine } from "@/domain/line/model";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import type { LyricLine } from "insync/line";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { withRoleWords } from "insync/line-track-writes";
+import { normalizeLoadedMetadata } from "insync/project-normalize-metadata";
 import { createLine } from "@/test/factories";
-import { generateTTML } from "@/utils/ttml";
+import { generateTTML } from "insync/ttml/write";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -11,10 +14,10 @@ const ALIGNED = createLine({
   id: "a",
   text: "Lanterns drift across the harbor",
   words: [
-    { text: "Lanterns ", begin: 12.34, end: 12.611 },
-    { text: "drift ", begin: 12.611, end: 12.902 },
-    { text: "across ", begin: 12.902, end: 13.153 },
-    { text: "the ", begin: 13.154, end: 13.48 },
+    { text: "Lanterns", sep: " ", begin: 12.34, end: 12.611 },
+    { text: "drift", sep: " ", begin: 12.611, end: 12.902 },
+    { text: "across", sep: " ", begin: 12.902, end: 13.153 },
+    { text: "the", sep: " ", begin: 13.154, end: 13.48 },
     { text: "harbor", begin: 13.48, end: 14.2 },
     { text: "oh", begin: 14.2, end: 14.204 },
   ],
@@ -24,18 +27,33 @@ const HAND = createLine({
   id: "h",
   text: "Salt on the evening wind",
   words: [
-    { text: "Salt ", begin: 15.012, end: 15.4 },
-    { text: "on ", begin: 15.4, end: 15.61 },
-    { text: "the ", begin: 15.61, end: 15.8 },
-    { text: "evening ", begin: 15.8, end: 16.33 },
+    { text: "Salt", sep: " ", begin: 15.012, end: 15.4 },
+    { text: "on", sep: " ", begin: 15.4, end: 15.61 },
+    { text: "the", sep: " ", begin: 15.61, end: 15.8 },
+    { text: "evening", sep: " ", begin: 15.8, end: 16.33 },
     { text: "wind", begin: 16.33, end: 17.1 },
   ],
 });
 
 const MS = 0.001 + 1e-9;
 
+// Vendor data on every word span and one untimed vendor span at the end of the line.
+function withVendorData(line: LyricLine): LyricLine {
+  const words = timedSyllables(mainTrack(line)).map((word) => ({
+    ...word,
+    passthrough: { attrs: [["x-vendor:cue", "1"]] as const },
+  }));
+  const note = { name: "span", attrs: [["x-vendor:note", ""]] as const, children: [] };
+  return { ...withRoleWords(line, "main", words), passthrough: { elements: [note] } };
+}
+
 function ttmlOf(lines: LyricLine[]): string {
-  return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines });
+  return generateTTML({
+    metadata: normalizeLoadedMetadata(null),
+    agents: [],
+    lines,
+    splitChar: DEFAULT_SPLIT_CHARACTER,
+  });
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -44,8 +62,8 @@ describe("withExportTiming", () => {
   it("marks only the given lines and keeps every word within 3 ms, ordered and never overlapping", () => {
     const [settled, hand] = withExportTiming([ALIGNED, HAND], new Set(["a"]));
     expect(hand).toBe(HAND);
-    const before = ALIGNED.words ?? [];
-    const after = settled.words ?? [];
+    const before = timedSyllables(mainTrack(ALIGNED));
+    const after = timedSyllables(mainTrack(settled));
     after.forEach((word, i) => {
       expect(Math.abs(word.begin - before[i].begin)).toBeLessThanOrEqual(3 * MS);
       expect(Math.abs(word.end - before[i].end)).toBeLessThanOrEqual(3 * MS);
@@ -62,14 +80,24 @@ describe("withExportTiming", () => {
       id: "b",
       text: "Home before the tide",
       words: [
-        { text: "Home ", begin: 14.204, end: 14.6 },
-        { text: "before ", begin: 14.6, end: 14.95 },
-        { text: "the ", begin: 14.95, end: 15.2 },
+        { text: "Home", sep: " ", begin: 14.204, end: 14.6 },
+        { text: "before", sep: " ", begin: 14.6, end: 14.95 },
+        { text: "the", sep: " ", begin: 14.95, end: 15.2 },
         { text: "tide", begin: 15.2, end: 15.9 },
       ],
     });
     const settled = withExportTiming([ALIGNED, next], new Set(["a", "b"]));
-    expect(settled.map((line) => line.words?.[0].begin)).toEqual([12.34, 14.204]);
+    expect(settled.map((line) => roleWords(line, "main")?.[0].begin)).toEqual([12.34, 14.204]);
     expect(readExportTiming(ttmlOf(settled)).markedLines).toBe(2);
+  });
+
+  it("reads the same marks when spans carry kept attributes and lines end in untimed kept spans", () => {
+    const untouched = new Set(["a", "h"]);
+    const plain = ttmlOf(withExportTiming([ALIGNED, HAND], untouched));
+    const kept = ttmlOf(withExportTiming([withVendorData(ALIGNED), withVendorData(HAND)], untouched));
+
+    expect(kept).toContain('x-vendor:cue="1"');
+    expect(kept).toContain('x-vendor:note=""');
+    expect(readExportTiming(kept)).toEqual(readExportTiming(plain));
   });
 });

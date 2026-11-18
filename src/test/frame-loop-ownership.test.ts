@@ -1,7 +1,6 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { walkScannedSources } from "@/test/source-files";
 
 // CI guard for frame ownership. A raw `requestAnimationFrame` loop reschedules
 // itself forever, so it keeps the main thread busy long after the app goes idle
@@ -15,23 +14,10 @@ import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
-const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const FRAME_LOOP_OWNER = "lib/frame-loop.ts";
 const RAW_FRAME_CALL = /\b(request|cancel)AnimationFrame\b/;
 
 // -- Helpers ------------------------------------------------------------------
-
-function* walk(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      if (entry === "node_modules" || entry === "dist" || entry === ".git") continue;
-      yield* walk(full);
-      continue;
-    }
-    if (entry.endsWith(".ts") || entry.endsWith(".tsx")) yield full;
-  }
-}
 
 function isTestFile(relPath: string): boolean {
   return relPath.endsWith(".test.ts") || relPath.endsWith(".test.tsx") || relPath.endsWith(".browser.test.tsx");
@@ -51,8 +37,7 @@ function describeOffender(relPath: string, lineNumber: number, call: string): st
 function rawFrameCallers(exemptOwner: boolean): string[] {
   const offenders: string[] = [];
 
-  for (const file of walk(SRC_ROOT)) {
-    const relPath = relative(SRC_ROOT, file).replace(/\\/g, "/");
+  for (const { file, rel: relPath } of walkScannedSources()) {
     if (isTestFile(relPath)) continue;
     if (exemptOwner && relPath === FRAME_LOOP_OWNER) continue;
 

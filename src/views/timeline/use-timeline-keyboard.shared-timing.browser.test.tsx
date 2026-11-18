@@ -1,16 +1,18 @@
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
-import { isMac } from "@/utils/platform";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { createRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import type { LinkGroup } from "insync/group";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { SyllableAddress } from "insync/selection-model";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
+import { storedWordAddress, wordAddress } from "@/test/word-address";
+import { isMac } from "@/utils/platform";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -22,20 +24,25 @@ const chorus = createLine({
   groupId: "g1",
   instanceIdx: 0,
   templateLineIdx: 0,
-  words: [createWord({ text: "go ", begin: 3, end: 4 }), createWord({ text: "now", begin: 4, end: 5 })],
+  words: createWords([
+    { text: "go", sep: " ", begin: 3, end: 4 },
+    { text: "now", begin: 4, end: 5 },
+  ]),
 });
 
-const chorusSelection: WordSelection[] = [
-  { lineId: "c0", lineIndex: 0, wordIndex: 0, type: "word" },
-  { lineId: "c0", lineIndex: 0, wordIndex: 1, type: "word" },
-];
+const chorusSelection: SyllableAddress[] = [wordAddress(chorus, 0), wordAddress(chorus, 1)];
 
-async function armTimeline(options: { lines: LyricLine[]; groups: LinkGroup[]; selection: WordSelection[] }) {
+async function armTimeline(options: {
+  lines: LyricLine[];
+  groups: LinkGroup[];
+  selection: SyllableAddress[] | (() => SyllableAddress[]);
+}) {
   useAudioStore.setState({ currentTime: 6, duration: DURATION });
   useProjectStore.setState({ activeTab: "timeline", lines: options.lines, groups: options.groups });
   useProjectStore.getState().clearHistory();
   useSettingsStore.setState({ rollingEdit: false });
-  useTimelineStore.setState({ selectedWords: options.selection });
+  const { selection } = options;
+  useTimelineStore.setState({ selectedWords: typeof selection === "function" ? selection() : selection });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() =>
     useTimelineKeyboard(
@@ -64,7 +71,7 @@ describe("useTimelineKeyboard · shared timing", () => {
     await armTimeline({
       lines: [createLine({ id: "a", text: "go now", words: [createWord({ text: "go now", begin: 1, end: 2 })] })],
       groups: [],
-      selection: [{ lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" }],
+      selection: () => [storedWordAddress("a", 0, "word")],
     });
 
     pressModKey("g");
@@ -77,7 +84,7 @@ describe("useTimelineKeyboard · shared timing", () => {
     await armTimeline({
       lines: [createLine({ id: "a", text: "go now", words: [createWord({ text: "go now", begin: 1, end: 2 })] })],
       groups: [],
-      selection: [{ lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" }],
+      selection: () => [storedWordAddress("a", 0, "word")],
     });
 
     pressModKey("g");
@@ -93,7 +100,10 @@ describe("useTimelineKeyboard · shared timing", () => {
       groupId: "g1",
       instanceIdx: 2,
       templateLineIdx: 0,
-      words: [createWord({ text: "go ", begin: 40, end: 41 }), createWord({ text: "now", begin: 41.5, end: 42.5 })],
+      words: createWords([
+        { text: "go", sep: " ", begin: 40, end: 41 },
+        { text: "now", begin: 41.5, end: 42.5 },
+      ]),
     });
     await armTimeline({
       lines: [chorus, createLine({ id: "e", text: "" }), sharedChorus],
@@ -104,7 +114,7 @@ describe("useTimelineKeyboard · shared timing", () => {
     pressModKey("d");
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
-    expect(lineById("e")?.words?.[1].begin).toBe(7.5);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(7.5);
   });
 
   describe("regressions", () => {

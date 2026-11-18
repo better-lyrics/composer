@@ -1,7 +1,7 @@
 import { forgetPlayedSpans } from "@/audio/playback-ranges";
 import { fingerprintChanged } from "@/domain/alignment/fingerprint";
-import { effectiveBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 
 // -- Functions ----------------------------------------------------------------

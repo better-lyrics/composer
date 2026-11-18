@@ -1,11 +1,11 @@
 import type { SeekReveal } from "@/audio/seek-reveal-intent";
-import { selectionBounds } from "@/domain/selection/bounds";
-import { isWordSelected } from "@/domain/selection/identity";
-import { lineWordSelections } from "@/domain/selection/line-selections";
-import type { LoopRegion } from "@/domain/selection/loop-region";
-import type { WordSelection } from "@/domain/selection/model";
-import { playbackRange } from "@/domain/selection/playback-range";
-import type { Bounds } from "@/domain/word/bounds";
+import { selectionBounds } from "insync/selection-bounds";
+import { sameAddress } from "insync/selection-identity";
+import { lineWordSelections } from "insync/selection-line-selections";
+import type { LoopRegion } from "insync/selection-loop-region";
+import type { SyllableAddress } from "insync/selection-model";
+import { playbackRange } from "insync/selection-playback-range";
+import type { Bounds } from "insync/word-bounds";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -14,6 +14,7 @@ import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { focusBounds } from "@/views/timeline/group-focus";
 import { soloPlayStart } from "@/views/timeline/solo-playback";
 import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- State --------------------------------------------------------------------
 
@@ -27,7 +28,11 @@ useAudioStore.subscribe((state, previous) => {
 // -- Reads --------------------------------------------------------------------
 
 function currentSelectionBounds(): Bounds | null {
-  return selectionBounds(useProjectStore.getState().lines, useTimelineStore.getState().selectedWords);
+  return selectionBounds(
+    useProjectStore.getState().lines,
+    useTimelineStore.getState().selectedWords,
+    getSplitCharacter(),
+  );
 }
 
 function currentPlaybackRange(): Bounds | null {
@@ -185,14 +190,14 @@ function toggleRangeLoop(): boolean {
   return true;
 }
 
-function selectWordUnlessSelected(target: WordSelection): void {
+function selectWordUnlessSelected(target: SyllableAddress): void {
   const { selectedWords, setSelectedWords } = useTimelineStore.getState();
-  if (!isWordSelected(selectedWords, target.lineId, target.wordIndex, target.type)) setSelectedWords([target]);
+  if (!selectedWords.some((selected) => sameAddress(selected, target))) setSelectedWords([target]);
 }
 
-function selectLine(lineId: string, lineIndex: number): void {
+function selectLine(lineId: string): void {
   const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
-  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line, lineIndex));
+  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line, getSplitCharacter()));
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -201,17 +206,17 @@ export {
   adoptLoopRegionForPlay,
   clearLoopRegion,
   commitDrawnLoopRegion,
+  currentlyLoops,
   currentPlaybackRange,
   currentSelectionBounds,
-  currentlyLoops,
-  loopsRange,
   loopSelection,
+  loopsRange,
   playLoopRegion,
   playPlain,
-  skipLoopRegionOnNextPlay,
   playSelection,
   selectLine,
   selectWordUnlessSelected,
+  skipLoopRegionOnNextPlay,
   stopSelectionPlayback,
   toggleLoop,
   toggleLoopShortcut,

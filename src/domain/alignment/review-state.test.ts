@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { fingerprintChanged, readAlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { alignmentBreakdown, alignmentReview } from "@/domain/alignment/review-state";
-import type { LyricLine } from "@/domain/line/model";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack, roleWords, timedSyllables } from "insync/line-track";
+import { newWordId } from "insync/word-id";
 import { createLine } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -11,10 +17,10 @@ function alignedLine(id: string, offset: number): LyricLine {
     id,
     text: "Is this the real life?",
     words: [
-      { text: "Is ", begin: 12.41 + offset, end: 12.77 + offset },
-      { text: "this ", begin: 12.77 + offset, end: 13.02 + offset },
-      { text: "the ", begin: 13.02 + offset, end: 13.39 + offset },
-      { text: "real ", begin: 13.39 + offset, end: 14.11 + offset },
+      { text: "Is", sep: " ", begin: 12.41 + offset, end: 12.77 + offset },
+      { text: "this", sep: " ", begin: 12.77 + offset, end: 13.02 + offset },
+      { text: "the", sep: " ", begin: 13.02 + offset, end: 13.39 + offset },
+      { text: "real", sep: " ", begin: 13.39 + offset, end: 14.11 + offset },
       { text: "life?", begin: 14.11 + offset, end: 15.88 + offset },
     ],
   });
@@ -25,8 +31,12 @@ function fingerprintsOf(lines: LyricLine[]): Record<string, string> {
 }
 
 function nudged(line: LyricLine, by: number): LyricLine {
-  const [first, ...rest] = line.words ?? [];
-  return createLine({ id: line.id, text: line.text, words: [{ ...first, begin: first.begin + by }, ...rest] });
+  const [first, ...rest] = timedSyllables(mainTrack(line));
+  return createLine({
+    id: line.id,
+    text: lineText(line, DEFAULT_SPLIT_CHARACTER),
+    words: [{ ...first, begin: first.begin + by }, ...rest],
+  });
 }
 
 const SONG = Array.from({ length: 8 }, (_, i) => alignedLine(`L${i + 1}`, i * 4));
@@ -59,21 +69,25 @@ describe("alignmentReview", () => {
   });
 
   it("ignores text and metadata changes", () => {
-    const retexted = SONG.map((line) => ({ ...line, agentId: "v2", backgroundText: "ooh" }));
+    const retexted = SONG.map((line) => withFields(line, { agentId: "v2", backgroundText: "ooh" }));
     expect(alignmentReview(retexted, fingerprintsOf(SONG)).tier).toBe("untouched");
   });
 
   it("counts a background vocal timing edit as review", () => {
     const withBackground = SONG.map((line) =>
       createLine({
-        ...line,
-        words: line.words,
+        ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER),
+        words: roleWords(line, "main"),
         backgroundText: "ooh",
         backgroundWords: [{ text: "ooh", begin: 15, end: 15.5 }],
       }),
     );
     const edited = withBackground.map((line, i) =>
-      i < 3 ? { ...line, backgroundWords: [{ text: "ooh", begin: 15.1, end: 15.5 }] } : line,
+      i < 3
+        ? withFields(line, {
+            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 15.1, end: 15.5, joinsNext: false }],
+          })
+        : line,
     );
     expect(alignmentReview(edited, fingerprintsOf(withBackground)).tier).toBe("reviewed");
   });
@@ -112,7 +126,15 @@ describe("fingerprintChanged", () => {
 
   it("regression: a linked sibling replaced with the same timing is not recorded as aligned", () => {
     const line = SONG[0];
-    expect(fingerprintChanged(line, { ...line, text: "Is this the real life?" })).toBe(false);
+    expect(
+      fingerprintChanged(
+        line,
+        lineFromFields(
+          { ...fieldsOfLine(line, DEFAULT_SPLIT_CHARACTER), text: "Is this the real life?" },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+      ),
+    ).toBe(false);
   });
 });
 

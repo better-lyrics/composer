@@ -1,4 +1,5 @@
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { mainTrack, roleWords } from "insync/line-track";
+import { fieldsOfLine, lineFromFields } from "insync/line-from-fields";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -11,6 +12,7 @@ import {
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 type Opts = Parameters<typeof makeCursorTargetingEvent>[0];
 
@@ -20,7 +22,7 @@ async function drag(result: { current: ReturnType<typeof useTimelineDnd> }, opts
   result.current.handleDragEnd(makeCursorTargetingEvent(opts));
 }
 
-describe("drag timing kind on effective lines", () => {
+describe("drag timing kind on drawn lines", () => {
   let host: HTMLDivElement;
   beforeEach(() => {
     useAudioStore.setState({ duration: 30 });
@@ -38,20 +40,31 @@ describe("drag timing kind on effective lines", () => {
   it("D6: cross-line word drag leaves an unrelated line-synced line line-synced", async () => {
     useProjectStore.setState({
       lines: [
-        {
-          id: "lA",
-          text: "alpha beta",
-          agentId: "v1",
-          words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
-          ],
-        },
-        { id: "lB", text: "delta", agentId: "v1", words: [{ text: "delta", begin: 5.0, end: 5.4 }] },
-        { id: "lC", text: "Line synced only", agentId: "v1", begin: 17, end: 20 },
+        lineFromFields(
+          {
+            id: "lA",
+            text: "alpha beta",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
+              { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields(
+          {
+            id: "lB",
+            text: "delta",
+            agentId: "v1",
+            words: [{ id: "w3", text: "delta", sep: "", begin: 5.0, end: 5.4, joinsNext: false }],
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 17, end: 20 }, getSplitCharacter()),
       ],
     });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));
     await drag(result, {
       lineId: "lA",
@@ -67,8 +80,13 @@ describe("drag timing kind on effective lines", () => {
       deltaY: 60,
     });
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "lB")?.words?.some((w) => w.text.trim() === "alpha")).toBe(true);
-    expect(after.find((l) => l.id === "lC")).toEqual({
+    expect(
+      roleWords(
+        after.find((l) => l.id === "lB"),
+        "main",
+      )?.some((w) => w.text.trim() === "alpha"),
+    ).toBe(true);
+    expect(fieldsOfLine(after.find((l) => l.id === "lC")!, getSplitCharacter())).toEqual({
       id: "lC",
       text: "Line synced only",
       agentId: "v1",
@@ -80,19 +98,22 @@ describe("drag timing kind on effective lines", () => {
   it("D6 sibling: dropping onto a line-synced target is rejected (validateMoves isLineSynced guard)", async () => {
     useProjectStore.setState({
       lines: [
-        {
-          id: "lA",
-          text: "alpha beta",
-          agentId: "v1",
-          words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
-          ],
-        },
-        { id: "lB", text: "delta", agentId: "v1", begin: 5.0, end: 5.4 },
+        lineFromFields(
+          {
+            id: "lA",
+            text: "alpha beta",
+            agentId: "v1",
+            words: [
+              { id: "w5", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
+              { id: "w6", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
+        lineFromFields({ id: "lB", text: "delta", agentId: "v1", begin: 5.0, end: 5.4 }, getSplitCharacter()),
       ],
     });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));
     await drag(result, {
       lineId: "lA",
@@ -108,15 +129,27 @@ describe("drag timing kind on effective lines", () => {
       deltaY: 60,
     });
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "lA")?.words?.length).toBe(2);
-    expect(after.find((l) => l.id === "lB")?.words).toBeUndefined();
+    expect(
+      roleWords(
+        after.find((l) => l.id === "lA"),
+        "main",
+      )?.length,
+    ).toBe(2);
+    expect(
+      roleWords(
+        after.find((l) => l.id === "lB"),
+        "main",
+      ),
+    ).toBeUndefined();
   });
 
   it("D7: same-line drag of a line-synced block keeps it line-synced and shifts begin/end", async () => {
     useProjectStore.setState({
-      lines: [{ id: "lC", text: "Line synced only", agentId: "v1", begin: 5, end: 8 }],
+      lines: [
+        lineFromFields({ id: "lC", text: "Line synced only", agentId: "v1", begin: 5, end: 8 }, getSplitCharacter()),
+      ],
     });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));
     await drag(result, {
       lineId: "lC",
@@ -132,8 +165,8 @@ describe("drag timing kind on effective lines", () => {
       deltaY: 0,
     });
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBeCloseTo(6);
-    expect(after.end).toBeCloseTo(9);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBeCloseTo(6);
+    expect(mainTrack(after).end).toBeCloseTo(9);
   });
 });

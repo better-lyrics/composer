@@ -1,10 +1,12 @@
+import { mainTrack } from "insync/line-track";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { pasteLyrics } from "insync/commands/edit-text";
 
 async function openAgents(screen: Awaited<ReturnType<typeof render>>): Promise<void> {
   await screen.getByRole("button", { name: /^Agents/ }).click();
@@ -50,7 +52,9 @@ describe("AgentManager", () => {
         { id: "v3", name: "Carol", type: "person" },
       ],
     });
-    useProjectStore.getState().setLinesWithHistory([createLine({ id: "a", agentId: "v3" })]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", agentId: "v3" })]));
     const screen = await render(<AgentManager />);
 
     await openAgents(screen);
@@ -61,11 +65,11 @@ describe("AgentManager", () => {
     trash.click();
 
     await expect.poll(() => useProjectStore.getState().agents.map((agent) => agent.id)).toEqual(["v1"]);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v1");
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().agents.map((agent) => agent.id)).toEqual(["v1", "v3"]);
-    expect(useProjectStore.getState().lines[0].agentId).toBe("v3");
+    expect(mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v3");
   });
 
   it("changes an agent's type via the type select and persists on save", async () => {

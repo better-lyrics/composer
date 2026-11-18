@@ -1,13 +1,15 @@
-import type { LyricLine } from "@/domain/line/model";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { Toaster, toast } from "sonner";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import { skippedSharedInstances } from "insync/sync-skipped-instances";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createLine, createWord } from "@/test/factories";
-import { render } from "@/test/render";
+import { createLine, createWords } from "@/test/factories";
 import { GroupingNotices } from "@/test/grouping-notices";
-import { Toaster, toast } from "sonner";
-import { beforeEach, describe, expect, it } from "vitest";
+import { render } from "@/test/render";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -15,10 +17,10 @@ function twoWordLine(id: string, [first, second]: [string, string], begin: numbe
   return createLine({
     id,
     text: `${first}${second}`,
-    words: [
-      createWord({ text: first, begin, end: begin + 1 }),
-      createWord({ text: second, begin: begin + 1 + secondWordShift, end: begin + 2 + secondWordShift }),
-    ],
+    words: createWords([
+      { text: first, begin, end: begin + 1 },
+      { text: second, begin: begin + 1 + secondWordShift, end: begin + 2 + secondWordShift },
+    ]),
   });
 }
 
@@ -78,14 +80,14 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].sharesTiming).toBe(true);
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41);
     await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
     await expect.element(screen.getByText(/kept (its|their) own timing/)).not.toBeInTheDocument();
     await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
 
     await screen.getByRole("button", { name: "Undo" }).click();
     await expect.poll(() => store().groups).toEqual([]);
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
   });
 
   it("regression: shares a partly synced instance mid-sync, so sync skips it", async () => {
@@ -104,11 +106,11 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
 
     await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
-    expect(lineById("two-b")?.begin).toBe(43);
-    expect(lineById("two-c")?.begin).toBe(46);
-    expect(skippedSharedInstances(store().lines, store().groups).map((skipped) => skipped.lineIds)).toEqual([
-      ["two-a", "two-b", "two-c"],
-    ]);
+    expect(mainTrack(lineById("two-b")!).begin).toBe(43);
+    expect(mainTrack(lineById("two-c")!).begin).toBe(46);
+    expect(
+      skippedSharedInstances(store().lines, store().groups, getSplitCharacter()).map((skipped) => skipped.lineIds),
+    ).toEqual([["two-a", "two-b", "two-c"]]);
     toast("Grouping settled");
     await expect.element(screen.getByText("Grouping settled")).toBeVisible();
     expect(screen.container.ownerDocument.body.textContent).not.toContain("was replaced");
@@ -129,20 +131,20 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     await screen.getByRole("button", { name: "Group them" }).click();
 
     await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
-    expect(lineById("two-b")?.begin).toBe(43);
+    expect(mainTrack(lineById("two-b")!).begin).toBe(43);
   });
 
   it("undoes the grouping and the realignment in one step", async () => {
     const screen = await renderBanner();
     await screen.getByRole("button", { name: "Group them" }).click();
     await expect.poll(() => store().groups.length).toBe(1);
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41);
 
     store().undo();
 
     expect(store().groups).toEqual([]);
     expect(lineById("two-a")?.groupId).toBeUndefined();
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
   });
 
   it("shares every group made by Group all", async () => {
@@ -159,7 +161,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     await screen.getByRole("button", { name: "Group all" }).click();
 
     await expect.poll(() => store().groups.map((group) => group.ownTimingInstances)).toEqual([undefined, undefined]);
-    expect(lineById("four-a")?.words?.[1].begin).toBe(81);
+    expect(timedSyllables(mainTrack(lineById("four-a")!))[1].begin).toBe(81);
     await expect.element(screen.getByText("The own timing of 2 instances was replaced.")).toBeVisible();
   });
 
@@ -182,8 +184,8 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         .element(screen.getByText("1 instance kept its own timing: the shared timing would start before the song"))
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
-      expect(lineById("two-b")?.begin).toBe(1);
-      expect(lineById("two-a")?.begin).toBeUndefined();
+      expect(mainTrack(lineById("two-b")!).begin).toBe(1);
+      expect(mainTrack(lineById("two-a")!).begin).toBeUndefined();
       await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
     });
 
@@ -209,7 +211,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         )
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
-      expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+      expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
     });
 
     it("keeps the own timing of an instance that would run past the end of the song and says why", async () => {
@@ -233,7 +235,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         )
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
-      expect(lineById("two-b")?.begin).toBeUndefined();
+      expect(mainTrack(lineById("two-b")!).begin).toBeUndefined();
     });
 
     it("says where to look when instances kept their own timing for different reasons", async () => {
@@ -273,7 +275,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
 
       await expect.poll(() => store().groups.length).toBe(1);
       expect(store().groups[0].sharesTiming).toBeUndefined();
-      expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+      expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
       await expect.element(screen.getByText(/kept (its|their) own timing/)).not.toBeInTheDocument();
     });
   });

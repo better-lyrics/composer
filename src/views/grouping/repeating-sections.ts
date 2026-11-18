@@ -1,6 +1,9 @@
-import { repeatKey, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
-import type { LyricLine } from "@/domain/line/model";
-import { hasMainLyrics } from "@/domain/line/predicates";
+import { repeatKey, withEvenSyllableSplits } from "insync/group-syllable-splits";
+import type { LyricLine } from "insync/line";
+import { hasMainLyrics } from "insync/line-predicates";
+import { backgroundText, lineText } from "insync/line-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "insync/line-track";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface RepeatingSection {
   starts: number[];
@@ -51,7 +54,7 @@ function scanInput(lines: LyricLine[], splitChar: string): ScanInput {
     }
     keyIds[p] = id;
     samePositions[id].push(p);
-    if (lines[p].groupId === undefined && hasMainLyrics(lines[p])) standaloneCandidate[p] = 1;
+    if (lines[p].groupId === undefined && hasMainLyrics(lines[p], getSplitCharacter())) standaloneCandidate[p] = 1;
   }
   return { lines, keyIds, samePositions, standaloneCandidate };
 }
@@ -132,8 +135,8 @@ function claimSections(
       results.push({
         starts,
         length: k,
-        preview: lines[i].text,
-        previewLines: lines.slice(i, i + k).map((l) => l.text),
+        preview: lineText(lines[i], getSplitCharacter()),
+        previewLines: lines.slice(i, i + k).map((l) => lineText(l, getSplitCharacter())),
         fingerprint: fingerprintBlock(lines, i, k),
         evenedSplitLines: changedLineCount(lines, evened, starts, k),
       });
@@ -150,7 +153,7 @@ function chantLoopLines(scan: ScanInput, k: number): number[] {
   const loopLines: number[] = [];
   for (let start = 0; start + 2 * k <= keyIds.length; start++) {
     if (!blocksRepeat(keyIds, start, start + k, k)) continue;
-    if (!lines.slice(start, start + 2 * k).every(hasMainLyrics)) continue;
+    if (!lines.slice(start, start + 2 * k).every((value) => hasMainLyrics(value, getSplitCharacter()))) continue;
     for (let p = start; p < start + 2 * k; p++) loopLines.push(p);
   }
   return loopLines;
@@ -196,9 +199,21 @@ function fingerprintBlock(lines: LyricLine[], start: number, length: number): st
   const parts: string[] = [];
   for (let p = start; p < start + length; p++) {
     const l = lines[p];
-    const wordsKey = (l.words ?? []).map((w) => w.text).join(FS);
-    const bgKey = (l.backgroundWords ?? []).map((w) => w.text).join(FS);
-    parts.push([l.text, l.agentId, l.backgroundText ?? "", wordsKey, bgKey].join(RS));
+    const wordsKey = timedSyllables(mainTrack(l))
+      .map((w) => w.text + w.sep)
+      .join(FS);
+    const bgKey = timedSyllables(backgroundTrack(l))
+      .map((w) => w.text + w.sep)
+      .join(FS);
+    parts.push(
+      [
+        lineText(l, getSplitCharacter()),
+        mainTrack(l).agentId,
+        backgroundText(l, getSplitCharacter()) ?? "",
+        wordsKey,
+        bgKey,
+      ].join(RS),
+    );
   }
   return parts.join("\n");
 }

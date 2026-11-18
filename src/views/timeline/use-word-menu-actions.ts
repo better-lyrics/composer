@@ -1,34 +1,35 @@
+import { snapSyllablesFlush } from "insync/commands/word-edits";
 import { useCallback } from "react";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { trackWords } from "@/domain/line/tracks";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import type { WordTiming } from "@/domain/word/timing";
+import { fillEmptyTrack, insertWord } from "insync/commands/word-structure";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { trackRole } from "insync/line-track";
+import { addressOf, toAddress } from "insync/selection-resolve";
+import { newWordId } from "insync/word-id";
+import type { WordTiming } from "insync/word-timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
-import { findInsertionSlot } from "@/utils/word-spaces";
+import { findInsertionSlot } from "insync/word-spaces";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { runExplicitToggle, runSyllableMerge, runWordMerge } from "@/views/timeline/word-commands";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
 function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
   const { lines, explicitToggle, wordCommandTargets, mergeInfo, groupedWordInfo, clickedSelectionCount } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
 
   const handleEditWord = useCallback(() => {
     const editable = wordCommandTargets?.editable;
     if (!editable) return;
-    useTimelineStore
-      .getState()
-      .setEditingWord({ lineId: editable.lineId, wordIndex: editable.wordIndex, type: editable.type });
+    useTimelineStore.getState().setEditingWord(editable);
     noteGuideSignal("timeline.menuEditText");
     clearContextMenu();
   }, [wordCommandTargets, clearContextMenu]);
@@ -55,8 +56,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleDeleteWord = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return;
     if (clickedSelectionCount === null) {
-      const { lineId, lineIndex, wordIndex, type } = contextMenu.target;
-      useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
+      useTimelineStore.getState().setSelectedWords([toAddress(contextMenu.target)]);
     }
     deleteSelectedWords();
     noteGuideSignal("timeline.menuDelete");
@@ -70,7 +70,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!line) return;
 
     const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-    const existingWords = trackWords(line, type);
+    const existingWords = drawnSyllables(line, trackRole(type), getSplitCharacter());
     const range = storedLineTimeRange(lineId, duration);
     const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, range, minWordDuration);
     if (!slot) {
@@ -80,25 +80,25 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
     const timedText = createTrackWordsFromTextAt(line, type, slot.begin, range.max);
     if (timedText) {
-      updateLineWithHistory(lineId, type === "word" ? { words: timedText } : manualBackgroundWordEdit(timedText));
+      useProjectStore.getState().commit(fillEmptyTrack({ lineId, type, timedText }));
       clearContextMenu();
       return;
     }
 
-    const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
-    const words = mergeWordsIntoTrack(existingWords ?? [], [newWord]);
-    const newIndex = words.findIndex((w) => w.begin === newWord.begin);
-
-    if (type === "word") {
-      updateLineWithHistory(lineId, { words });
-    } else {
-      updateLineWithHistory(lineId, manualBackgroundWordEdit(words));
-    }
+    const newWord: WordTiming = {
+      id: newWordId(),
+      text: "...",
+      sep: " ",
+      begin: slot.begin,
+      end: slot.end,
+      joinsNext: false,
+    };
+    useProjectStore.getState().commit(insertWord(lineId, type, newWord));
     const timeline = useTimelineStore.getState();
     timeline.clearSelection();
-    timeline.setEditingWord({ lineId, wordIndex: newIndex, type });
+    timeline.setEditingWord(addressOf(line, type, newWord));
     clearContextMenu();
-  }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
+  }, [contextMenu, lines, duration, clearContextMenu]);
 
   const handleMergeSyllables = useCallback(() => {
     const syllableMerge = wordCommandTargets?.syllableMerge;
@@ -109,7 +109,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleSnapSyllables = useCallback(() => {
     if (!groupedWordInfo) return;
-    useProjectStore.getState().snapSyllablesFlush(groupedWordInfo.lineId, groupedWordInfo.field);
+    useProjectStore.getState().commit(snapSyllablesFlush(groupedWordInfo.lineId, groupedWordInfo.field));
     clearContextMenu();
   }, [groupedWordInfo, clearContextMenu]);
 

@@ -9,7 +9,7 @@ import { EMPTY_SEARCH_INPUTS, initialSearchInputs, saveSearchDraft } from "@/vie
 import { Button } from "@/ui/button";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
 import { SearchResults } from "@/views/lyrics-import-modal/search-results";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import {
   IconAlbum,
   IconBrandYoutube,

@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import type { WordTiming } from "insync/word-timing";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
-const line = (id: string, words?: LyricLine["words"]): LyricLine =>
-  ({ id, agentId: "a", text: id, words: words ?? [{ text: id, begin: 0, end: 1 }] }) as LyricLine;
+const line = (id: string, words?: WordTiming[] | undefined): LyricLine =>
+  lineFromFields(
+    {
+      id,
+      agentId: "a",
+      text: id,
+      words: words ?? [{ id: `${id}-w`, text: id, sep: "", joinsNext: false, begin: 0, end: 1 }],
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 
 describe("getLineAndTrackAtY", () => {
   const layout = computeRowLayout({

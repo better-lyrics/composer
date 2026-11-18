@@ -1,11 +1,12 @@
-import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
-import type { LinkGroup } from "@/domain/group/template";
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
-import type { WordSelection } from "@/domain/selection/model";
-import type { WordTiming } from "@/domain/word/timing";
-import { pluralize } from "@/utils/pluralize";
+import type { LinkGroup } from "insync/group";
+import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
+import { isLineSynced } from "insync/line-predicates";
+import type { SyllableAddress } from "insync/selection-model";
+import { wordAt } from "insync/selection-resolve";
+import type { WordTiming } from "insync/word-timing";
+import { pluralize } from "insync/pluralize";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -23,15 +24,14 @@ interface MultiSelectionSummary {
 
 // -- Helpers ------------------------------------------------------------------
 
-function selectedWord(selection: WordSelection, lines: readonly ReadableLine[]): WordTiming | undefined {
-  const line = lines[selection.lineIndex];
-  return line ? effectiveTrackWords(line, selection.type)?.[selection.wordIndex] : undefined;
+function selectedWord(selection: SyllableAddress, lines: readonly LyricLine[]): WordTiming | null {
+  return wordAt(lines, selection, getSplitCharacter());
 }
 
 // -- Functions ----------------------------------------------------------------
 
 function selectionGroupHighlight(
-  selection: readonly WordSelection[],
+  selection: readonly SyllableAddress[],
   rawLines: readonly LyricLine[],
   groups: readonly LinkGroup[],
 ): GroupHighlight | null {
@@ -56,20 +56,19 @@ function selectionGroupHighlight(
 }
 
 function selectedWordTiming(
-  selection: WordSelection,
-  lines: readonly ReadableLine[],
+  selection: SyllableAddress,
+  lines: readonly LyricLine[],
 ): Pick<WordTiming, "text" | "begin" | "end"> | null {
   const word = selectedWord(selection, lines);
-  return word ? { text: word.text, begin: word.begin, end: word.end } : null;
+  return word ? { text: word.text + word.sep, begin: word.begin, end: word.end } : null;
 }
 
 function multiSelectionSummary(
-  selection: readonly WordSelection[],
-  lines: readonly ReadableLine[],
-  rawLines: readonly LyricLine[],
+  selection: readonly SyllableAddress[],
+  lines: readonly LyricLine[],
 ): MultiSelectionSummary | null {
   if (selection.length <= 1) return null;
-  const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
+  const linesById = new Map(lines.map((l) => [l.id, l] as const));
   const countedLineIds = new Set<string>();
   let begin = Number.POSITIVE_INFINITY;
   let end = 0;
@@ -78,8 +77,8 @@ function multiSelectionSummary(
     if (!word) continue;
     begin = Math.min(begin, word.begin);
     end = Math.max(end, word.end);
-    const raw = sel.type === "word" ? rawLinesById.get(sel.lineId) : undefined;
-    if (raw && isLineSynced(raw)) countedLineIds.add(raw.id);
+    const line = sel.type === "word" ? linesById.get(sel.lineId) : undefined;
+    if (line && isLineSynced(line)) countedLineIds.add(line.id);
   }
   if (begin === Number.POSITIVE_INFINITY) return null;
   const lineCount = countedLineIds.size;
@@ -96,5 +95,5 @@ function selectionCountLabel(wordCount: number, lineCount: number): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { multiSelectionSummary, selectedWordTiming, selectionCountLabel, selectionGroupHighlight };
 export type { GroupHighlight, MultiSelectionSummary };
+export { multiSelectionSummary, selectedWordTiming, selectionCountLabel, selectionGroupHighlight };

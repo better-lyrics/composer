@@ -1,12 +1,11 @@
 import { parseLamePriming } from "@/audio/lame-priming";
-import type { WordTiming } from "@/domain/word/timing";
 import { usePersistence } from "@/hooks/usePersistence";
 import { saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
 import { createProjectSaveInput } from "@/test/factories";
-import { loadOpenProjectForRestore, seedSavedProject } from "@/test/priming-projects";
+import { loadOpenProjectForRestore, restoredWords, seedSavedProject } from "@/test/priming-projects";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -20,7 +19,7 @@ describe("loadProjectForRestore · LAME priming", () => {
 
     const migrated = await loadOpenProjectForRestore();
 
-    const words = (migrated!.lines[0] as { words: WordTiming[] }).words;
+    const words = restoredWords(migrated);
     expect(words[0].begin).toBeCloseTo(1.0, 9);
     expect(words[1].end).toBeCloseTo(2.0, 9);
     expect(migrated).toMatchObject({ primingStripped: true, primingCorrected: true });
@@ -32,7 +31,7 @@ describe("loadProjectForRestore · LAME priming", () => {
     await seedSavedProject({ primingStripped: true });
 
     const loaded = await loadOpenProjectForRestore();
-    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
+    const words = restoredWords(loaded);
     expect(words[0].begin).toBeCloseTo(1.0);
     expect(words[1].end).toBeCloseTo(2.0);
     expect(loaded!.primingStripped).toBe(true);
@@ -44,7 +43,7 @@ describe("loadProjectForRestore · LAME priming", () => {
     const loaded = await loadOpenProjectForRestore();
     expect(loaded!.primingStripped).toBe(false);
     expect(loaded!.primingCorrected).toBe(false);
-    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
+    const words = restoredWords(loaded);
     expect(words[0].begin).toBeCloseTo(1.0);
     expect(words[1].end).toBeCloseTo(2.0);
   });
@@ -63,7 +62,7 @@ describe("loadProjectForRestore · LAME priming", () => {
     const loaded = await loadOpenProjectForRestore();
     expect(loaded!.primingStripped).toBe(true);
     expect(loaded!.primingCorrected).toBe(true);
-    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
+    const words = restoredWords(loaded);
     expect(words[0].begin).toBeCloseTo(1.0);
   });
 });

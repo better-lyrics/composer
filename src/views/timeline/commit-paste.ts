@@ -1,17 +1,18 @@
+import { addInstance } from "insync/commands/instance-edits";
 import { toast } from "sonner";
-import { withNewInstance } from "@/domain/group/own-timing";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LineTemplate } from "@/domain/group/template";
-import { templateSourceInstance } from "@/domain/group/template-source";
-import { instanceCount } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import { fillInstanceRows, pasteLines } from "insync/commands/instance-rows";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import type { LineTemplate } from "insync/group-template";
+import { templateSourceInstance } from "insync/group-template-source";
+import { instanceCount } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
+import type { WordTrack } from "insync/line-track";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -19,6 +20,7 @@ import { instancePasteTemplate } from "@/views/timeline/instance-paste-template"
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -62,8 +64,7 @@ async function placeInstance(
     return "no-line";
   }
   if (decision.kind === "fill") {
-    const { groups, setLinesWithHistory } = useProjectStore.getState();
-    setLinesWithHistory(decision.updatedLines, withNewInstance(groups, groupId, decision.instanceIdx));
+    useProjectStore.getState().commit(fillInstanceRows(groupId, decision.instanceIdx, decision.updatedLines));
     finishPaste();
     toast.success(successMessage);
     return "pasted";
@@ -79,7 +80,7 @@ async function placeInstance(
     useTimelineStore.getState().setPasteMode({ status: "idle" });
     return "cancelled";
   }
-  useProjectStore.getState().addInstance(groupId, template, decision.instanceStart, decision.insertAt);
+  useProjectStore.getState().commit(addInstance(groupId, template, decision.instanceStart, decision.insertAt));
   finishPaste();
   toast.success(successMessage);
   return "pasted";
@@ -116,7 +117,7 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
         return "cancelled";
       }
       if (answer === "link") {
-        const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx);
+        const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx, getSplitCharacter());
         const template = instanceToTemplate(lines, match.groupId, sourceIdx);
         return placeInstance(lines, target, match.groupId, template, `Linked as another ${groupLabel}`);
       }
@@ -133,7 +134,7 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
   const updates = applyPasteToLines({ lines, clipboard: wordsInLane, targetLineIndex: lineIndex, timeDelta, rangeOf });
   if (!updates || updates.length === 0) return "no-change";
 
-  useProjectStore.getState().updateLinesWithHistory(updates);
+  useProjectStore.getState().commit(pasteLines(updates));
   finishPaste();
   return "pasted";
 }

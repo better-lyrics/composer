@@ -1,4 +1,4 @@
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { instanceIndicesOf } from "insync/instance-enumerate";
 import { useProjectStore } from "@/stores/project";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type GroupFocus, adjacentHeardInstance, adjacentInstance } from "@/views/timeline/group-focus";

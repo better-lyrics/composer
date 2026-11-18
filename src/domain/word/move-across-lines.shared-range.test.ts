@@ -1,8 +1,11 @@
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LyricLine } from "@/domain/line/model";
-import { applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { updatedLine, withFields } from "@/test/field-updates";
+import { roleWords } from "insync/line-track";
+import { timeRangeResolver } from "insync/group-shared-timing";
+import type { LyricLine } from "insync/line";
+import { applyWordMoveAcrossLines } from "insync/word-move-across-lines";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const DURATION = 20;
 
@@ -13,19 +16,18 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
   });
 }
 
 function moveIntoChorus(sharesTiming: boolean) {
-  const target = {
-    ...chorus("c1", 1, 10),
+  const target = withFields(chorus("c1", 1, 10), {
     backgroundText: "hey",
     backgroundWords: [createWord({ text: "hey", begin: 13, end: 14.5 })],
-  };
+  });
   const lines = [chorus("c0", 0, 3), target, chorus("c2", 2, 16)];
   const groups = [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })];
   return applyWordMoveAcrossLines(
@@ -41,12 +43,13 @@ function moveIntoChorus(sharesTiming: boolean) {
       },
     ],
     timeRangeResolver(lines, groups, DURATION),
+    DEFAULT_SPLIT_CHARACTER,
   );
 }
 
 function targetWords(result: ReturnType<typeof applyWordMoveAcrossLines>) {
   if (!result.ok) throw new Error(`move rejected: ${result.reject}`);
-  return result.updates.find((update) => update.id === "c1")?.updates.words ?? [];
+  return roleWords(updatedLine(result.updates.find((update) => update.id === "c1")?.updates), "main") ?? [];
 }
 
 describe("applyWordMoveAcrossLines with a shared time range", () => {

@@ -1,9 +1,13 @@
-import type { Agent } from "@/domain/agent/model";
-import type { LinkGroup } from "@/domain/group/template";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
+import type { Agent } from "insync/agent";
+import type { LinkGroup } from "insync/group";
+import { lineFromFields } from "insync/line-from-fields";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { ProjectMetadata } from "insync/metadata";
+import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import { generateTTML } from "insync/ttml/write";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
@@ -16,6 +20,7 @@ describe("ttml export · groups registry", () => {
       agents: baseAgents,
       lines: [],
       groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     expect(ttml).toContain("<composer:groups>");
@@ -31,7 +36,13 @@ describe("ttml export · groups registry", () => {
       { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 2 },
       { id: "g2", label: "Verse", color: "#60a5fa", templateVersion: 1 },
     ];
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [],
+      groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
 
     const i1 = ttml.indexOf('id="g1"');
     const i2 = ttml.indexOf('id="g2"');
@@ -42,13 +53,24 @@ describe("ttml export · groups registry", () => {
 
   it("escapes label and color values", () => {
     const groups: LinkGroup[] = [{ id: "g1", label: "Pre & Post", color: "#aaaaaa", templateVersion: 1 }];
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [],
+      groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
 
     expect(ttml).toContain('label="Pre &amp; Post"');
   });
 
   it("omits the registry block when groups is undefined", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [] });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).not.toContain("<composer:groups>");
   });
 
@@ -58,6 +80,7 @@ describe("ttml export · groups registry", () => {
       agents: baseAgents,
       lines: [],
       groups: [],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(ttml).not.toContain("<composer:groups>");
   });
@@ -70,14 +93,17 @@ describe("ttml export · per-line group attrs", () => {
     id: string,
     extras: Partial<{ groupId: string; instanceIdx: number; templateLineIdx: number; detached: boolean }>,
   ) {
-    return {
-      id,
-      text: "hello",
-      agentId: "v1",
-      begin: 0,
-      end: 1,
-      ...extras,
-    };
+    return lineFromFields(
+      {
+        id,
+        text: "hello",
+        agentId: "v1",
+        begin: 0,
+        end: 1,
+        ...extras,
+      },
+      DEFAULT_SPLIT_CHARACTER,
+    );
   }
 
   it("emits composer:groupId/instanceIdx/templateLineIdx on grouped lines", () => {
@@ -86,6 +112,7 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("a", { groupId: "g1", instanceIdx: 2, templateLineIdx: 0 })],
       groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     expect(ttml).toContain('composer:groupId="g1"');
@@ -99,6 +126,7 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("a", {})],
       groups: [],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
 
     expect(ttml).not.toContain("composer:groupId");
@@ -111,6 +139,7 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("a", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0, detached: true })],
       groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(t1).toContain('composer:detached="true"');
 
@@ -119,6 +148,7 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("b", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0, detached: false })],
       groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(t2).not.toContain("composer:detached");
   });
@@ -130,7 +160,13 @@ describe("ttml import · groups registry", () => {
       { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 3 },
       { id: "g2", label: "Verse", color: "#60a5fa", templateVersion: 1 },
     ];
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [],
+      groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     const result = parseLyricsFile("test.ttml", ttml);
 
     expect(result.groups).toHaveLength(2);
@@ -140,7 +176,12 @@ describe("ttml import · groups registry", () => {
   });
 
   it("returns no groups when none in TTML", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [] });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     const result = parseLyricsFile("test.ttml", ttml);
     expect(result.groups).toBeUndefined();
   });
@@ -154,18 +195,22 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
-          id: "a",
-          text: "I love you",
-          agentId: "v1",
-          begin: 30,
-          end: 32,
-          groupId: "g1",
-          instanceIdx: 2,
-          templateLineIdx: 0,
-        },
+        lineFromFields(
+          {
+            id: "a",
+            text: "I love you",
+            agentId: "v1",
+            begin: 30,
+            end: 32,
+            groupId: "g1",
+            instanceIdx: 2,
+            templateLineIdx: 0,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     const result = parseLyricsFile("test.ttml", ttml);
 
@@ -180,19 +225,23 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
-          id: "a",
-          text: "yeah",
-          agentId: "v1",
-          begin: 30,
-          end: 32,
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 1,
-          detached: true,
-        },
+        lineFromFields(
+          {
+            id: "a",
+            text: "yeah",
+            agentId: "v1",
+            begin: 30,
+            end: 32,
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 1,
+            detached: true,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     const result = parseLyricsFile("test.ttml", ttml);
     expect(result.lines[0].detached).toBe(true);
@@ -203,18 +252,22 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
-          id: "a",
-          text: "hi",
-          agentId: "v1",
-          begin: 0,
-          end: 1,
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-        },
+        lineFromFields(
+          {
+            id: "a",
+            text: "hi",
+            agentId: "v1",
+            begin: 0,
+            end: 1,
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       groups: [],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     const result = parseLyricsFile("test.ttml", ttml);
     expect(result.lines[0].groupId).toBeUndefined();
@@ -228,7 +281,7 @@ describe("ttml import · per-line group attrs", () => {
       </div></body>
     </tt>`;
     const result = parseLyricsFile("flat.ttml", flatTtml);
-    expect(result.lines[0].text).toBe("Hello");
+    expect(lineText(result.lines[0], DEFAULT_SPLIT_CHARACTER)).toBe("Hello");
     expect(result.lines[0].groupId).toBeUndefined();
     expect(result.groups).toBeUndefined();
   });
@@ -240,7 +293,13 @@ describe("ttml namespace · betterlyrics rebrand + legacy compat", () => {
   const groups: LinkGroup[] = [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }];
 
   it("declares the new betterlyrics.org namespace on export, never the old one", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [],
+      groups,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
+    });
     expect(ttml).toContain(`xmlns:composer="${NEW_NS}"`);
     expect(ttml).not.toContain(OLD_NS);
   });
@@ -274,16 +333,20 @@ describe("ttml export · explicit word attribute", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
-          id: "a",
-          text: "clean dirty",
-          agentId: "v1",
-          words: [
-            { text: "clean ", begin: 1, end: 1.5 },
-            { text: "dirty", begin: 1.5, end: 2, explicit: true },
-          ],
-        },
+        lineFromFields(
+          {
+            id: "a",
+            text: "clean dirty",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "clean", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+              { id: "w2", text: "dirty", sep: "", begin: 1.5, end: 2, explicit: true, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(ttml).toContain(">clean</span>");
     expect(ttml).toMatch(/<span begin="[^"]*" end="[^"]*" composer:explicit="true">dirty<\/span>/);
@@ -295,18 +358,22 @@ describe("ttml export · explicit word attribute", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
-          id: "a",
-          text: "main",
-          agentId: "v1",
-          words: [{ text: "main", begin: 1, end: 2 }],
-          backgroundText: "oh shit",
-          backgroundWords: [
-            { text: "oh ", begin: 2, end: 2.25 },
-            { text: "shit", begin: 2.25, end: 2.5, explicit: true },
-          ],
-        },
+        lineFromFields(
+          {
+            id: "a",
+            text: "main",
+            agentId: "v1",
+            words: [{ id: "w3", text: "main", sep: "", begin: 1, end: 2, joinsNext: false }],
+            backgroundText: "oh shit",
+            backgroundWords: [
+              { id: "w4", text: "oh", sep: " ", begin: 2, end: 2.25, joinsNext: false },
+              { id: "w5", text: "shit", sep: "", begin: 2.25, end: 2.5, explicit: true, joinsNext: false },
+            ],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(ttml).toContain(`<span ttm:role="x-bg">`);
     expect(ttml).not.toMatch(/<span [^>]*ttm:role="x-bg"[^>]*composer:explicit/);
@@ -317,17 +384,18 @@ describe("ttml export · explicit word attribute", () => {
   it("round-trip: AMLL amll:obscene import → export normalizes to composer:explicit", () => {
     const amll = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">clean</span> <span begin="00:01.500" end="00:02.000" amll:obscene="true">dirty</span></p></div></body></tt>`;
     const imported = parseLyricsFile("amll.ttml", amll);
-    expect(imported.lines[0].words![1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(imported.lines[0]))[1].explicit).toBe(true);
 
     const exported = generateTTML({
       metadata: baseMetadata,
       agents: baseAgents,
       lines: imported.lines,
+      splitChar: DEFAULT_SPLIT_CHARACTER,
     });
     expect(exported).toMatch(/composer:explicit="true">dirty/);
     expect(exported).not.toContain("amll:obscene");
 
     const reimported = parseLyricsFile("re.ttml", exported);
-    expect(reimported.lines[0].words![1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(reimported.lines[0]))[1].explicit).toBe(true);
   });
 });

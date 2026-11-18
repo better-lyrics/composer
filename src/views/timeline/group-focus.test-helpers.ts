@@ -19,7 +19,7 @@ const chorus = (instanceIdx: number, begin: number) =>
     instanceIdx,
     templateLineIdx: 0,
     words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
+      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
       createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
     ],
   });

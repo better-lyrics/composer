@@ -1,3 +1,5 @@
+import { mainBounds } from "insync/line-bounds";
+import { savedLines } from "@/lib/saved-project";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { usePersistence } from "@/hooks/usePersistence";
 import { ensureOpenProjectId, openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -13,7 +15,7 @@ import { createAudioFile, createMp3File, createUnplayableAudioFile } from "@/tes
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { deleteDatabase, openAndCloseAtVersion } from "@/test/idb";
-import { seedStoredProject, songTitled } from "@/test/projects";
+import { linesOfRecord, seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -159,7 +161,7 @@ describe("useLoadAudioFile · projects", () => {
 
   it("replace keeps what the user typed and singer names, and swaps what the old file provided", async () => {
     await openAlpha({ lyrics: true, audio: true });
-    useProjectStore.getState().setAgents([{ id: "v1", name: "Gonzalez", type: "person" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v1", name: "Gonzalez", type: "person" }] });
     const agentsBefore = useProjectStore.getState().agents;
     const load = await loader();
     await load(createAudioFile("alpha-remaster.wav"), "replace");
@@ -239,7 +241,7 @@ describe("useLoadAudioFile · projects", () => {
       const screen = await render(<PersistenceHost />);
       await getPersistenceSettled();
       useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-      useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
       useProjectStore.getState().setMetadata({ title: "Alpha" });
       expect(openProjectIdSnapshot()).toBeUndefined();
       const load = await loader();
@@ -256,7 +258,7 @@ describe("useLoadAudioFile · projects", () => {
     it("falls back to an in-place load when the previous project id cannot be resolved", async () => {
       allowConsole(/could not resolve the previous project/);
       useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-      useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
       useProjectStore.getState().setMetadata({ title: "Alpha" });
       await openAndCloseAtVersion(DB_NAME, DB_VERSION + 1);
       const load = await loader();
@@ -278,7 +280,7 @@ describe("useLoadAudioFile priming flags", () => {
     await seedStoredProject("old", {
       open: true,
       project: {
-        lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+        lines: savedLines([createLine({ text: "Waiting in a car", begin: 1, end: 2 })]),
         primingStripped: true,
         primingCorrected: false,
       },
@@ -291,7 +293,7 @@ describe("useLoadAudioFile priming flags", () => {
     await saveOpenProjectNow();
     const reloaded = (await loadProjectForRestore("old")).project;
 
-    expect((reloaded?.lines[0] as { begin: number }).begin).toBeCloseTo(1, 9);
+    expect(mainBounds(linesOfRecord(reloaded)[0])?.begin).toBeCloseTo(1, 9);
     expect(reloaded).toMatchObject({ primingStripped: true, primingCorrected: true });
   });
 });

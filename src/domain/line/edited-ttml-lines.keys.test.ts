@@ -1,9 +1,11 @@
-import { mergeEditedTtmlLines, mergedLineIdsByKey } from "@/domain/line/edited-ttml-lines";
-import type { LyricLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
+import { mergeEditedTtmlLines, mergedLineIdsByKey } from "insync/line-edited-ttml-lines";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
 import { exportedTtml, mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { PARSERS } from "@/utils/lyrics-parsers";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -14,8 +16,16 @@ function paragraphs(ttml: string): string[] {
 function translated(id: string, text: string, begin: number, translation: string, origin: "manual" | "google") {
   return {
     ...createLine({ id, text, begin, end: begin + 1 }),
-    translations: {
-      es: { language: "es", text: translation, origin, sourceFingerprint: `fp-${id}`, stale: origin === "google" },
+    languages: {
+      translations: {
+        es: {
+          language: "es",
+          main: { text: translation },
+          origin,
+          sourceFingerprint: `fp-${id}`,
+          stale: origin === "google",
+        },
+      },
     },
   } satisfies LyricLine;
 }
@@ -56,12 +66,12 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         const edited = first.replace(">Hold me<", ">Hold me closer<");
         return ttml.replace(first, "\u0000").replace(second, edited).replace("\u0000", second);
       });
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
         ["c1", "Hold me"],
         ["c0", "Hold me closer"],
       ]);
       expect(merged[0]).toBe(stored[1]);
-      expect(merged[1]?.translations?.es).toEqual(stored[0]?.translations?.es);
+      expect(merged[1]?.languages?.translations?.es).toEqual(stored[0]?.languages?.translations?.es);
     });
   });
 
@@ -73,9 +83,9 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         return ttml.replace(original, `${original}${original.replace(">Bravo<", ">Bravo again<")}`);
       });
       expect(merged[0]).toBe(stored[0]);
-      expect(merged[1]?.text).toBe("Bravo again");
+      expect(lineText(merged[1]!, DEFAULT_SPLIT_CHARACTER)).toBe("Bravo again");
       expect(merged[1]?.id).not.toBe("b");
-      expect(merged[1]?.translations).toBeUndefined();
+      expect(merged[1]?.languages?.translations).toBeUndefined();
     });
   });
 
@@ -89,10 +99,10 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         const [charlie = "", delta = ""] = paragraphs(ttml);
         return ttml.replace(charlie, `${delta.replace(">Delta<", ">Delta copy<")}${charlie}`);
       });
-      expect(merged.map((line) => line.text)).toEqual(["Delta copy", "Charlie", "Delta"]);
+      expect(merged.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual(["Delta copy", "Charlie", "Delta"]);
       expect(merged[2]).toBe(stored[1]);
       expect(merged[0]?.id).not.toBe("d");
-      expect(merged[0]?.translations).toBeUndefined();
+      expect(merged[0]?.languages?.translations).toBeUndefined();
     });
 
     it("pairs the first copy when no copy exports like the stored line", () => {
@@ -104,12 +114,12 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
           `${delta.replace(">Delta<", ">Delta one<")}${delta.replace(">Delta<", ">Delta two<")}`,
         );
       });
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line, DEFAULT_SPLIT_CHARACTER)])).toEqual([
         ["d", "Delta one"],
         [merged[1]?.id, "Delta two"],
       ]);
       expect(merged[1]?.id).not.toBe("d");
-      expect(merged[0]?.translations?.es).toEqual(stored[0]?.translations?.es);
+      expect(merged[0]?.languages?.translations?.es).toEqual(stored[0]?.languages?.translations?.es);
     });
   });
 
@@ -131,8 +141,10 @@ describe("mergedLineIdsByKey", () => {
         '\n      <p begin="0:05.000" end="0:06.000" itunes:key="X" ttm:agent="v1">Extra</p>\n    </div>',
       ),
     );
-    const ids = mergedLineIdsByKey(stored, edit);
-    const extra = mergeEditedTtmlLines(stored, edit).find((line) => line.text === "Extra");
+    const ids = mergedLineIdsByKey(stored, edit, DEFAULT_SPLIT_CHARACTER);
+    const extra = mergeEditedTtmlLines(stored, edit, DEFAULT_SPLIT_CHARACTER).find(
+      (line) => lineText(line, DEFAULT_SPLIT_CHARACTER) === "Extra",
+    );
     expect(ids).toEqual({ L1: "a", L2: "b", X: edit.lines[2]?.id });
     expect(extra?.id).toBe(ids.X);
   });
@@ -142,6 +154,6 @@ describe("mergedLineIdsByKey", () => {
     const ttml = exportedTtml(stored);
     const [delta = ""] = paragraphs(ttml);
     const edit = PARSERS.ttml(ttml.replace(delta, `${delta.replace(">Delta<", ">Delta copy<")}${delta}`));
-    expect(mergedLineIdsByKey(stored, edit)).toEqual({ L1: "d" });
+    expect(mergedLineIdsByKey(stored, edit, DEFAULT_SPLIT_CHARACTER)).toEqual({ L1: "d" });
   });
 });

@@ -1,5 +1,5 @@
 import type { ConfirmOptions } from "@/stores/confirm-store";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 
 // -- Types --------------------------------------------------------------------
 

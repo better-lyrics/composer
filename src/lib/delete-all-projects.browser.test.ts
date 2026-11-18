@@ -33,7 +33,7 @@ describe("deleteAllProjects", () => {
       await seedStoredProject("a", { open: true, project: songTitled("Alpha") });
       await restoreOpenProject();
       await deleteAllProjects();
-      useProjectStore.getState().setLines([createLine({ text: "Fresh start" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Fresh start" })] });
       debouncedSave(currentSaveInput());
       await flushPendingSave();
       const entries = await listProjectIndex();
@@ -43,7 +43,7 @@ describe("deleteAllProjects", () => {
     });
 
     it("regression: a new project's first save that is still in flight does not come back after the clear", async () => {
-      useProjectStore.getState().setLines([createLine({ text: "Brand new" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Brand new" })] });
       debouncedSave(currentSaveInput());
       const firstSave = flushPendingSave();
       await deleteAllProjects();
@@ -54,7 +54,7 @@ describe("deleteAllProjects", () => {
     it("regression: an edit saved while the clear runs does not bring a project back", async () => {
       useSettingsStore.setState({ autoSaveDelay: 60_000 });
       const deleting = deleteAllProjects();
-      useProjectStore.getState().setLines([createLine({ text: "Typed during the clear" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Typed during the clear" })] });
       debouncedSave(currentSaveInput());
       await deleting;
       await flushPendingSave();

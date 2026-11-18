@@ -6,9 +6,10 @@ import { type StoredUnisonSession, UNISON_SESSION_STORAGE_KEY } from "@/lib/unis
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { generateProjectTtml } from "@/utils/ttml";
+import { generateProjectTtml } from "insync/ttml/write";
 import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -192,7 +193,7 @@ function copiedTtml(): string {
   const project = useProjectStore.getState();
   return outgoingTtml({
     editedContent: null,
-    generatedContent: generateProjectTtml(project, SONG_SECONDS, project.exportTiming, VIDEO_ID),
+    generatedContent: generateProjectTtml(project, SONG_SECONDS, getSplitCharacter(), project.exportTiming, VIDEO_ID),
     duration: SONG_SECONDS,
     exportTiming: project.exportTiming,
     youtubeVideoId: VIDEO_ID,

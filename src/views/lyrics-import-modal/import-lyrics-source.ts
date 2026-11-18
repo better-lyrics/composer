@@ -3,11 +3,12 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { FINISH_IMPORT_FIRST } from "@/lib/import-busy-message";
 import { type ProjectFileContents, isProjectFileName, parseProjectFileContents } from "@/lib/project-file-read";
 import { importProjectContents, reportUnreadableProjectFile, restoreBundleContents } from "@/lib/project-import";
+import { linesFromSaved } from "@/lib/saved-project";
 import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
-import { pluralize } from "@/utils/pluralize";
+import type { ParseResult } from "insync/parse-result";
+import { pluralize } from "insync/pluralize";
 import { formatProjectCount } from "@/utils/project-count";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE, isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
 import { type ImportContext, importLyrics, importProjectLyrics } from "@/views/lyrics-import-modal/import-lyrics";
@@ -55,7 +56,7 @@ function projectFileChoice(
     };
   }
   const title = choiceTitle(fileName, "Composer project");
-  if (!hasLyricLines(contents.project.lines)) {
+  if (!hasLyricLines(linesFromSaved(contents.project.lines))) {
     return {
       title,
       body: "It has no lyrics yet, so it can only open as its own project.",
@@ -92,11 +93,12 @@ async function importProjectFileForLyrics(
   ctx: ImportContext,
 ): Promise<boolean> {
   if (contents.kind === "bundle" && contents.projects.length === 0) {
-    return restoreBundleContents(contents.projects, contents.unreadable);
+    return restoreBundleContents(contents.projects, contents.unreadable, contents.previousVersions);
   }
   const choice = await askChoice({ ...projectFileChoice(contents, fileName), busyMessage: FINISH_IMPORT_FIRST });
   if (choice === "cancel") return false;
-  if (contents.kind === "bundle") return restoreBundleContents(contents.projects, contents.unreadable);
+  if (contents.kind === "bundle")
+    return restoreBundleContents(contents.projects, contents.unreadable, contents.previousVersions);
   if (choice === "use-lyrics") {
     const imported = await importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);
     if (imported) noteGuideSignal("edit.lyrics");

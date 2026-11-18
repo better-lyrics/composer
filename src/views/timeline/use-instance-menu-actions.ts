@@ -1,8 +1,9 @@
-import { withNewInstance } from "@/domain/group/own-timing";
-import { pickedTemplateSource } from "@/domain/group/template-source";
-import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { instanceKey } from "@/domain/instance/key";
+import { addInstance, removeInstance, shiftInstance } from "insync/commands/instance-edits";
+import { fillInstanceRows } from "insync/commands/instance-rows";
+import { pickedTemplateSource } from "insync/group-template-source";
+import { instanceBounds } from "insync/instance-bounds";
+import { linesOfInstance } from "insync/instance-enumerate";
+import { instanceKey } from "insync/instance-key";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -15,6 +16,7 @@ import { pingGroup } from "@/views/timeline/ping-group";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -24,7 +26,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
   const handleDetachInstance = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
     const { groupId, instanceIdx } = contextMenu.target;
-    useProjectStore.getState().removeInstance(groupId, instanceIdx);
+    useProjectStore.getState().commit(removeInstance(groupId, instanceIdx));
     showGroupActionToast("Instance detached");
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
@@ -43,7 +45,11 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     const playheadTime = livePlaybackTime();
     const { lines: projectLines, groups } = useProjectStore.getState();
     const group = groups.find((candidate) => candidate.id === groupId);
-    const template = instanceToTemplate(projectLines, groupId, pickedTemplateSource(projectLines, group, instanceIdx));
+    const template = instanceToTemplate(
+      projectLines,
+      groupId,
+      pickedTemplateSource(projectLines, group, instanceIdx, getSplitCharacter()),
+    );
     if (template.length === 0) {
       toast.error("Could not derive instance template");
       return;
@@ -55,12 +61,12 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       playheadTime,
     });
     if (placement.kind === "fill") {
-      useProjectStore
-        .getState()
-        .setLinesWithHistory(placement.updatedLines, withNewInstance(groups, groupId, placement.instanceIdx));
+      useProjectStore.getState().commit(fillInstanceRows(groupId, placement.instanceIdx, placement.updatedLines));
       toast.success("Linked instance placed in empty rows");
     } else if (placement.kind === "insert") {
-      useProjectStore.getState().addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
+      useProjectStore
+        .getState()
+        .commit(addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex));
       toast.success("Linked instance added at playhead");
     } else {
       copyInstanceToClipboardAndPreview(projectLines, groupId, instanceIdx);
@@ -77,7 +83,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     const bounds = instanceBounds(instanceLines);
     if (!bounds) return;
     const delta = playheadTime - bounds.begin;
-    useProjectStore.getState().shiftInstance(groupId, instanceIdx, delta, useAudioStore.getState().duration);
+    useProjectStore.getState().commit(shiftInstance(groupId, instanceIdx, delta, useAudioStore.getState().duration));
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 

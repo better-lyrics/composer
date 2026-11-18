@@ -1,11 +1,13 @@
+import { withFields } from "@/test/field-updates";
 import {
   keptReRecording,
   reRecordingAt,
   skippedSharedInstances,
   syncPositionPastSkipped,
-} from "@/domain/sync/skipped-instances";
+} from "insync/sync-skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -18,7 +20,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -39,7 +41,7 @@ const song = (secondBegin?: number, thirdBegin?: number) => [
 
 describe("skippedSharedInstances", () => {
   it("lists a placed later instance with its lines", () => {
-    expect(skippedSharedInstances(song(40), sharing)).toEqual([
+    expect(skippedSharedInstances(song(40), sharing, DEFAULT_SPLIT_CHARACTER)).toEqual([
       {
         groupId: "g1",
         instanceIdx: 1,
@@ -52,45 +54,49 @@ describe("skippedSharedInstances", () => {
   });
 
   it("lists every placed later instance in line order", () => {
-    expect(skippedSharedInstances(song(40, 70), sharing).map((skipped) => skipped.instanceIdx)).toEqual([1, 2]);
+    expect(
+      skippedSharedInstances(song(40, 70), sharing, DEFAULT_SPLIT_CHARACTER).map((skipped) => skipped.instanceIdx),
+    ).toEqual([1, 2]);
   });
 
   it("never lists the first instance, which is synced word by word", () => {
-    expect(skippedSharedInstances(song(40), sharing).some((skipped) => skipped.instanceIdx === 0)).toBe(false);
+    expect(
+      skippedSharedInstances(song(40), sharing, DEFAULT_SPLIT_CHARACTER).some((skipped) => skipped.instanceIdx === 0),
+    ).toBe(false);
   });
 
   describe("edge cases", () => {
     it("is empty when no later instance is placed", () => {
-      expect(skippedSharedInstances(song(), sharing)).toEqual([]);
+      expect(skippedSharedInstances(song(), sharing, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("is empty for an old group", () => {
-      expect(skippedSharedInstances(song(40), [createGroup({ id: "g1" })])).toEqual([]);
+      expect(skippedSharedInstances(song(40), [createGroup({ id: "g1" })], DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("leaves out an own-timing instance", () => {
       const groups = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })];
-      expect(skippedSharedInstances(song(40), groups)).toEqual([]);
+      expect(skippedSharedInstances(song(40), groups, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("leaves out a placed instance when no other instance is fully timed", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1), chorus(1, 0, 40), chorus(1, 1)];
-      expect(skippedSharedInstances(lines, sharing)).toEqual([]);
+      expect(skippedSharedInstances(lines, sharing, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
 
     it("leaves out a detached line and counts only syncable lines", () => {
       const lines = [
         ...song(40).slice(0, 3),
         chorus(1, 0, 40),
-        { ...chorus(1, 1, 41), text: "" },
+        withFields(chorus(1, 1, 41), { text: "", words: undefined }),
         { ...chorus(1, 2), detached: true },
       ];
-      const [skipped] = skippedSharedInstances(lines, sharing);
+      const [skipped] = skippedSharedInstances(lines, sharing, DEFAULT_SPLIT_CHARACTER);
       expect(skipped).toMatchObject({ lineIds: ["c1-0", "c1-1"], syncableLineCount: 1, lastLineIndex: 4 });
     });
 
     it("is empty for a song with no lines", () => {
-      expect(skippedSharedInstances([], sharing)).toEqual([]);
+      expect(skippedSharedInstances([], sharing, DEFAULT_SPLIT_CHARACTER)).toEqual([]);
     });
   });
 });
@@ -102,7 +108,15 @@ describe("syncPositionPastSkipped", () => {
     cursor: ReturnType<typeof at>,
     jumped: boolean,
     reRecording?: { lineIds: readonly string[] },
-  ) => syncPositionPastSkipped(lines, skippedSharedInstances(lines, sharing), cursor, jumped, reRecording);
+  ) =>
+    syncPositionPastSkipped(
+      lines,
+      skippedSharedInstances(lines, sharing, DEFAULT_SPLIT_CHARACTER),
+      cursor,
+      jumped,
+      DEFAULT_SPLIT_CHARACTER,
+      reRecording,
+    );
 
   it("moves a cursor inside a skipped instance to the first syncable line after it, as a jump", () => {
     expect(past(song(40), at(4), false)).toEqual({ cursor: at(5), jumped: true });
@@ -165,23 +179,25 @@ describe("syncPositionPastSkipped", () => {
 describe("reRecordingAt", () => {
   it("names the skipped instance a line belongs to", () => {
     const lines = song(40);
-    expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 4)).toEqual({ lineIds: ["c1-0", "c1-1"] });
+    expect(reRecordingAt(skippedSharedInstances(lines, sharing, DEFAULT_SPLIT_CHARACTER), lines, 4)).toEqual({
+      lineIds: ["c1-0", "c1-1"],
+    });
   });
 
   describe("edge cases", () => {
     it("is undefined for a line outside every skipped instance", () => {
       const lines = song(40);
-      expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 2)).toBeUndefined();
+      expect(reRecordingAt(skippedSharedInstances(lines, sharing, DEFAULT_SPLIT_CHARACTER), lines, 2)).toBeUndefined();
     });
 
     it("is undefined for an instance that is not skipped yet", () => {
       const lines = song();
-      expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 4)).toBeUndefined();
+      expect(reRecordingAt(skippedSharedInstances(lines, sharing, DEFAULT_SPLIT_CHARACTER), lines, 4)).toBeUndefined();
     });
 
     it("is undefined past the last line", () => {
       const lines = song(40);
-      expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 99)).toBeUndefined();
+      expect(reRecordingAt(skippedSharedInstances(lines, sharing, DEFAULT_SPLIT_CHARACTER), lines, 99)).toBeUndefined();
     });
   });
 });

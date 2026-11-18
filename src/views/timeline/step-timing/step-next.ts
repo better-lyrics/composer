@@ -1,6 +1,7 @@
+import type { LyricLine } from "insync/line";
 import { useLayoutEffect, useMemo, useSyncExternalStore } from "react";
-import type { ReadableLine } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
+import type { ResolvedAddress } from "insync/selection-resolve";
 import { nextCursorSlot } from "@/domain/step-timing/step-cursor";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -8,16 +9,17 @@ import { effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 import { type StepSkipView, stepSkipView } from "@/views/timeline/step-timing/step-skip-view";
 import { liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
 interface StepView extends StepSkipView {
-  next: WordSelection | null;
+  next: ResolvedAddress | null;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const NO_SELECTION: WordSelection[] = [];
+const NO_SELECTION: SyllableAddress[] = [];
 
 // -- State --------------------------------------------------------------------
 
@@ -40,7 +42,7 @@ function subscribeStepView(listener: () => void): () => void {
 
 // -- Hooks --------------------------------------------------------------------
 
-function useStepNext(lines: readonly ReadableLine[]): StepView | null {
+function useStepNext(lines: readonly LyricLine[]): StepView | null {
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const selected = useTimelineStore((s) => (s.stepTiming ? s.selectedWords : NO_SELECTION));
   const focusedGroup = useTimelineStore((s) => (s.stepTiming ? s.focusedGroup : null));
@@ -54,8 +56,11 @@ function useStepNext(lines: readonly ReadableLine[]): StepView | null {
     const skip = stepSkipView(lines, groups, collapsedInstances, live.cursor ? lines[live.cursor.lineIndex] : null);
     if (!live.cursor) return { ...skip, next: null };
     const focus = effectiveFocus(lines, focusedGroup);
-    const include = (line: ReadableLine) => isInFocus(line, focus) && !skip.skippedLineIds.has(line.id);
-    return { ...skip, next: nextCursorSlot(lines, live.cursor, live.queue, include, withBackground) };
+    const include = (line: LyricLine) => isInFocus(line, focus) && !skip.skippedLineIds.has(line.id);
+    return {
+      ...skip,
+      next: nextCursorSlot(lines, live.cursor, live.queue, include, getSplitCharacter(), withBackground),
+    };
   }, [stepTiming, selected, queue, lines, focusedGroup, groups, collapsedInstances, withBackground]);
 }
 
@@ -66,7 +71,7 @@ function useStepView<T>(select: (view: StepView | null) => T): T {
 
 // -- Components ---------------------------------------------------------------
 
-const StepViewPublisher: React.FC<{ lines: readonly ReadableLine[] }> = ({ lines }) => {
+const StepViewPublisher: React.FC<{ lines: readonly LyricLine[] }> = ({ lines }) => {
   const view = useStepNext(lines);
   useLayoutEffect(() => publishStepView(view), [view]);
   useLayoutEffect(() => () => publishStepView(null), []);

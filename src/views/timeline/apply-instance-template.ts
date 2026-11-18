@@ -1,6 +1,14 @@
-import { type LineTemplate, offsetTemplateWords } from "@/domain/group/template";
-import { nextInstanceIdx } from "@/domain/instance/enumerate";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import {
+  type LineTemplate,
+  offsetTemplateWords,
+  templateBackgroundFields,
+  templateLanguages,
+} from "insync/group-template";
+import { nextInstanceIdx } from "insync/instance-enumerate";
+import { lineFromFields } from "insync/line-from-fields";
+import type { LyricLine } from "insync/line";
+import { withLinePassthrough } from "insync/line-passthrough";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -42,29 +50,25 @@ function applyInstanceTemplate({
   const updatedLines = lines.map((line, idx) => {
     if (idx < startIndex || idx >= endIndex) return line;
     const tplLine = template[idx - startIndex];
-    return reconcileLine({
-      ...line,
-      text: tplLine.text,
-      agentId: tplLine.agentId,
-      groupId,
-      instanceIdx,
-      templateLineIdx: idx - startIndex,
-      detached: undefined,
-      ...(tplLine.relativeBegin !== undefined
-        ? { begin: tplLine.relativeBegin + instanceStart }
-        : { begin: undefined }),
-      ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : { end: undefined }),
-      ...(tplLine.words ? { words: offsetTemplateWords(tplLine.words, instanceStart) } : { words: undefined }),
-      ...(tplLine.backgroundText !== undefined
-        ? { backgroundText: tplLine.backgroundText }
-        : { backgroundText: undefined }),
-      ...(tplLine.backgroundWords
-        ? { backgroundWords: offsetTemplateWords(tplLine.backgroundWords, instanceStart) }
-        : { backgroundWords: undefined }),
-      backgroundTextSource: tplLine.backgroundTextSource,
-      translations: tplLine.translations && structuredClone(tplLine.translations),
-      transliteration: tplLine.transliteration && structuredClone(tplLine.transliteration),
-    });
+    const words = tplLine.words && offsetTemplateWords(tplLine.words, instanceStart);
+    const backgroundWords = tplLine.backgroundWords && offsetTemplateWords(tplLine.backgroundWords, instanceStart);
+    const instanceLine = lineFromFields(
+      {
+        id: line.id,
+        text: tplLine.text,
+        agentId: tplLine.agentId,
+        groupId,
+        instanceIdx,
+        templateLineIdx: tplLine.slot ?? idx - startIndex,
+        ...(tplLine.relativeBegin !== undefined && { begin: tplLine.relativeBegin + instanceStart }),
+        ...(tplLine.relativeEnd !== undefined && { end: tplLine.relativeEnd + instanceStart }),
+        ...(words && { words }),
+        ...templateBackgroundFields(tplLine, backgroundWords),
+        languages: templateLanguages(tplLine, words, backgroundWords),
+      },
+      getSplitCharacter(),
+    );
+    return withLinePassthrough(instanceLine, tplLine.passthrough);
   });
 
   return { updatedLines, instanceIdx };

@@ -1,14 +1,15 @@
-import { getAgentColor } from "@/domain/agent/colors";
-import { effectiveBounds } from "@/domain/line/bounds";
-import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { mainTrack } from "insync/line-track";
+import { getAgentColor } from "insync/agent-colors";
+import { effectiveBounds } from "insync/line-bounds";
+import type { LyricLine } from "insync/line";
 import type { PitchTrack } from "@/domain/pitch/track";
 import type { LoupeSize } from "@/domain/spectrum/loupe-size";
 import { type SpectrumLook, spectrumLookOf } from "@/domain/spectrum/settings";
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import type { GridLines } from "@/domain/tempo/grid-points";
-import type { WordTiming } from "@/domain/word/timing";
+import type { WordTiming } from "insync/word-timing";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { animateFrames } from "@/lib/frame-loop";
 import { livePlaybackTime } from "@/stores/audio";
@@ -35,6 +36,7 @@ import { resolveSpectrumPalette } from "@/views/timeline/spectrum/theme-palette"
 import { drawTiles } from "@/views/timeline/spectrum/tile-cache";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -69,8 +71,8 @@ function sameInputs(previous: DrawInputs | null, next: DrawInputs): boolean {
 
 // The store has not seen a drag yet, so the edited edge takes the live time.
 function withLiveEdge(words: readonly WordTiming[], target: LoupeTarget, track: "word" | "bg"): readonly WordTiming[] {
-  if (target.track !== track || !words[target.wordIndex]) return words;
-  return words.map((word, index) => (index === target.wordIndex ? { ...word, [target.edge]: target.time } : word));
+  if (target.type !== track) return words;
+  return words.map((word) => (word.id === target.syllableId ? { ...word, [target.edge]: target.time } : word));
 }
 
 function drawLoupe(
@@ -117,14 +119,13 @@ function drawLoupe(
   if (inputs.beatGrid && inputs.beatGridVisible) drawLoupeBeats(frame, inputs.beatGrid, inputs.beatGridLines);
   const { line } = inputs;
   if (line) {
-    const effective = getEffectiveLine(line);
-    const span = effectiveBounds(effective);
+    const span = effectiveBounds(line);
     if (inputs.pitchTrack && span) drawLoupePitch(frame, inputs.pitchTrack, span);
     drawLoupeLanes(frame, {
-      main: withLiveEdge(effectiveTrackWords(effective, "word") ?? [], target, "word"),
-      background: withLiveEdge(effectiveTrackWords(effective, "bg") ?? [], target, "bg"),
-      edited: { track: target.track, wordIndex: target.wordIndex },
-      agentColour: getAgentColor(line.agentId),
+      main: withLiveEdge(drawnSyllables(line, "main", getSplitCharacter()), target, "word"),
+      background: withLiveEdge(drawnSyllables(line, "bg", getSplitCharacter()), target, "bg"),
+      edited: { track: target.type, syllableId: target.syllableId },
+      agentColour: getAgentColor(mainTrack(line).agentId),
       playheadSeconds: inputs.playhead,
     });
   }

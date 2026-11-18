@@ -1,16 +1,17 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
-import { isWordSelected } from "@/domain/selection/identity";
-import type { WordSelection } from "@/domain/selection/model";
-import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
-import { reorderWordTrack } from "@/domain/word/reorder-track";
-import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { isRefused } from "insync/commands/outcome";
+import { moveWords, moveWordsAcrossLines } from "insync/commands/word-moves";
+import type { LyricLine } from "insync/line";
+import { drawnSyllables } from "insync/line-drawn-track";
+import { trackRole } from "insync/line-track";
+import { sameAddress } from "insync/selection-identity";
+import type { SyllableAddress } from "insync/selection-model";
+import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "insync/selection-resolve";
+import type { MoveRejectReason } from "insync/word-move-across-lines";
+import { expandSelectionToGroupmates } from "insync/word-syllable-groups";
 import { useProjectStore } from "@/stores/project";
-import { cloneWord } from "@/utils/word-timing";
+import { showLineDiffersToast } from "@/utils/group-toast";
 import { toast } from "sonner";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -25,6 +26,9 @@ interface DragData {
   initialShiftKey?: boolean;
 }
 
+// A word by its place in the lines a drag started from; valid only for that one gesture.
+type DragWord = Pick<ResolvedAddress, "lineId" | "lineIndex" | "wordIndex" | "type">;
+
 // -- Constants -----------------------------------------------------------------
 
 const DRAG_X_MIN_THRESHOLD = 5;
@@ -33,33 +37,36 @@ const OVERLAP_REJECT_MESSAGE = "That spot is taken. Drop into a gap";
 
 // -- Selection helpers --------------------------------------------------------
 
-function resolveWordsToOperate(activeData: DragData, selectedWords: WordSelection[]): WordSelection[] {
-  const isDraggedWordSelected = isWordSelected(
-    selectedWords,
-    activeData.lineId,
-    activeData.wordIndex,
-    activeData.trackType,
-  );
-  if (isDraggedWordSelected && selectedWords.length > 0) return selectedWords;
-  return [
-    {
-      lineId: activeData.lineId,
-      lineIndex: activeData.lineIndex,
-      wordIndex: activeData.wordIndex,
-      type: activeData.trackType,
-    },
-  ];
+function draggedWord(activeData: DragData): DragWord {
+  return {
+    lineId: activeData.lineId,
+    lineIndex: activeData.lineIndex,
+    wordIndex: activeData.wordIndex,
+    type: activeData.trackType,
+  };
 }
 
-function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections: WordSelection[]): WordSelection[] {
+function resolveWordsToOperate(
+  lines: readonly LyricLine[],
+  activeData: DragData,
+  selectedWords: readonly SyllableAddress[],
+): DragWord[] {
+  const dragged = addressAt(lines, activeData.lineId, activeData.trackType, activeData.wordIndex, getSplitCharacter());
+  const isDraggedWordSelected = dragged !== null && selectedWords.some((selected) => sameAddress(selected, dragged));
+  return isDraggedWordSelected
+    ? resolveAddresses(lines, selectedWords, getSplitCharacter())
+    : [draggedWord(activeData)];
+}
+
+function expandSelectionsAcrossLines(lines: readonly LyricLine[], selections: DragWord[]): DragWord[] {
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
   const seen = new Set<string>();
-  const result: WordSelection[] = [];
+  const result: DragWord[] = [];
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
-    const words = trackWords(line, sel.type);
+    const words = drawnSyllables(line, trackRole(sel.type), getSplitCharacter());
     if (!words) continue;
     const expanded = expandSelectionToGroupmates(words, [sel.wordIndex]);
     for (const idx of expanded) {
@@ -72,74 +79,30 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
   return result;
 }
 
-function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSelection[]> {
-  const grouped = new Map<string, WordSelection[]>();
-  for (const sel of selections) {
-    const arr = grouped.get(sel.lineId) ?? [];
-    arr.push(sel);
-    grouped.set(sel.lineId, arr);
-  }
-  return grouped;
+function resolvedWords(lines: readonly LyricLine[], words: readonly DragWord[]): ResolvedAddress[] {
+  return words.flatMap((word) => addressAt(lines, word.lineId, word.type, word.wordIndex, getSplitCharacter()) ?? []);
+}
+
+function addressesOf(lines: readonly LyricLine[], words: readonly DragWord[]): SyllableAddress[] {
+  return resolvedWords(lines, words).map(toAddress);
 }
 
 // -- Same-line reorder --------------------------------------------------------
 
 function applySameLineReorder(
-  activeData: DragData,
-  wordsToMove: WordSelection[],
-  lines: readonly ReadableLine[],
+  wordsToMove: DragWord[],
+  lines: readonly LyricLine[],
   timeDelta: number,
-  rangeOf: (line: LyricLine) => TimeRange,
-  updateLineWithHistory: ReturnType<typeof useProjectStore.getState>["updateLineWithHistory"],
+  duration: number,
 ) {
-  if (wordsToMove.length > 1) {
-    const grouped = groupSelectionsByLine(wordsToMove);
-    const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-    const linesById = new Map<string, LyricLine>();
-    for (const l of lines) linesById.set(l.id, l);
-
-    for (const [lineId, selections] of grouped) {
-      const line = linesById.get(lineId);
-      if (!line) continue;
-
-      const lineUpdates: Partial<LyricLine> = {};
-      const range = rangeOf(line);
-      const wordIndices = new Set(selections.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
-      const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
-
-      if (wordIndices.size > 0 && line.words) {
-        const edit = effectiveMainWordEdit(line, reorderWordTrack(line.words, wordIndices, timeDelta, range));
-        if (edit) Object.assign(lineUpdates, edit);
-      }
-      if (bgIndices.size > 0 && line.backgroundWords) {
-        const reordered = reorderWordTrack(line.backgroundWords, bgIndices, timeDelta, range);
-        Object.assign(lineUpdates, manualBackgroundWordEdit(reordered));
-      }
-
-      if (Object.keys(lineUpdates).length > 0) updates.push({ id: lineId, updates: lineUpdates });
-    }
-
-    if (updates.length > 0) {
-      useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
-    }
-    return;
-  }
-
-  const line = lines.find((l) => l.id === activeData.lineId);
-  if (!line) return;
-  const wordsArray = trackWords(line, activeData.trackType);
-  if (!wordsArray) return;
-
-  const wordIndex = activeData.wordIndex;
-  if (wordIndex < 0 || wordIndex >= wordsArray.length) return;
-
-  const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, rangeOf(line));
-  if (activeData.trackType === "word") {
-    const edit = effectiveMainWordEdit(line, normalized);
-    if (edit) updateLineWithHistory(activeData.lineId, edit, { propagateToSiblings: false });
-  } else {
-    updateLineWithHistory(activeData.lineId, manualBackgroundWordEdit(normalized), { propagateToSiblings: false });
-  }
+  const addresses = addressesOf(lines, wordsToMove);
+  let detachedIds: readonly string[] = [];
+  const outcome = useProjectStore.getState().commit(
+    moveWords({ addresses, timeDelta, duration }, (detached) => {
+      detachedIds = detached;
+    }),
+  );
+  if (!isRefused(outcome)) showLineDiffersToast(detachedIds);
 }
 
 // -- Cross-line move ----------------------------------------------------------
@@ -148,86 +111,53 @@ interface CrossLineMoveArgs {
   activeData: DragData;
   targetLine: LyricLine;
   targetTrack: "word" | "bg";
-  wordsToMove: WordSelection[];
-  lines: readonly ReadableLine[];
+  wordsToMove: DragWord[];
+  lines: readonly LyricLine[];
   timeDelta: number;
-  rangeOf: (line: LyricLine) => TimeRange;
+  duration: number;
 }
 
-function buildCrossLineMoves({
-  activeData,
-  targetLine,
-  targetTrack,
-  wordsToMove,
-  lines,
-  timeDelta,
-  rangeOf,
-}: CrossLineMoveArgs): WordMove[] {
-  const linesById = new Map<string, LyricLine>();
-  for (const l of lines) linesById.set(l.id, l);
-  const moves: WordMove[] = [];
-  const targetRange = rangeOf(targetLine);
+const MOVE_REJECT_MESSAGE: Record<MoveRejectReason, string> = {
+  "line-synced-target": LINE_SYNCED_REJECT_MESSAGE,
+  "line-synced-source": LINE_SYNCED_REJECT_MESSAGE,
+  overlap: OVERLAP_REJECT_MESSAGE,
+};
 
-  for (const sel of wordsToMove) {
-    if (sel.lineId !== activeData.lineId) continue;
-    const sourceLine = linesById.get(sel.lineId);
-    if (!sourceLine) continue;
-    const sourceArr = trackWords(sourceLine, sel.type);
-    const source = sourceArr?.[sel.wordIndex];
-    if (!source) continue;
-
-    const newBegin = Math.max(targetRange.min, source.begin + timeDelta);
-    const newEnd = Math.min(targetRange.max, source.end + timeDelta);
-    if (newEnd <= newBegin) continue;
-
-    moves.push({
-      sourceLineId: sel.lineId,
-      sourceWordIndex: sel.wordIndex,
-      sourceTrack: sel.type,
-      targetLineId: targetLine.id,
-      targetTrack,
-      word: cloneWord(source, { begin: newBegin, end: newEnd }),
-    });
-  }
-  return moves;
-}
-
-// Drives every cross-track drag: across different lines, AND across tracks on
-// the same line (main<->bg toggles). Routing both through the same primitive
-// keeps user-facing behaviour consistent: neither path propagates to linked
-// siblings. The cross-line case can't propagate cleanly anyway (two distinct
-// sibling sets), and matching same-line to cross-line removes a silent
-// divergence that previously made a same-line bg toggle mutate every linked
-// instance while a cross-line drag did not.
+// Drives every cross-track drag: across different lines, AND across tracks on the same line (main<->bg toggles).
 function applyCrossLineMove(args: CrossLineMoveArgs) {
-  const moves = buildCrossLineMoves(args);
-  if (moves.length === 0) return;
-
-  const result = applyWordMoveAcrossLines(args.lines, moves, args.rangeOf);
-  if (result.ok) {
-    useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
+  let detachedIds: readonly string[] = [];
+  const outcome = useProjectStore.getState().commit(
+    moveWordsAcrossLines(
+      {
+        addresses: addressesOf(args.lines, args.wordsToMove),
+        fromLineId: args.activeData.lineId,
+        targetLineId: args.targetLine.id,
+        targetTrack: args.targetTrack,
+        timeDelta: args.timeDelta,
+        duration: args.duration,
+      },
+      (detached) => {
+        detachedIds = detached;
+      },
+    ),
+  );
+  if (isRefused(outcome)) {
+    if (outcome.refused.reason === "move") toast.error(MOVE_REJECT_MESSAGE[outcome.refused.reject]);
     return;
   }
-  if (result.reject === "cross-instance") {
-    toast.error("Detach the line first to move it out of the group");
-    return;
-  }
-  if (result.reject === "line-synced-target" || result.reject === "line-synced-source") {
-    toast.error(LINE_SYNCED_REJECT_MESSAGE);
-    return;
-  }
-  if (result.reject === "overlap") toast.error(OVERLAP_REJECT_MESSAGE);
+  showLineDiffersToast(detachedIds);
 }
 
 // -- Exports -------------------------------------------------------------------
 
+export type { DragData, DragWord };
 export {
-  DRAG_X_MIN_THRESHOLD,
-  LINE_SYNCED_REJECT_MESSAGE,
   applyCrossLineMove,
   applySameLineReorder,
+  DRAG_X_MIN_THRESHOLD,
+  draggedWord,
   expandSelectionsAcrossLines,
-  groupSelectionsByLine,
+  LINE_SYNCED_REJECT_MESSAGE,
+  resolvedWords,
   resolveWordsToOperate,
 };
-export type { DragData };

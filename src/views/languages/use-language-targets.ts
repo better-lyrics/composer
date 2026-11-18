@@ -1,10 +1,11 @@
-import type { LyricLine } from "@/domain/line/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import { lineTranslations } from "insync/language-line-languages";
+import type { LyricLine } from "insync/line";
+import type { ProjectMetadata } from "insync/metadata";
+import { isStructurallyEqual } from "insync/structural-equal";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 function useLanguageTargets(lines: LyricLine[], metadata: ProjectMetadata, projectSession: number) {
-  const persisted = [...new Set(lines.flatMap((line) => Object.keys(line.translations ?? {})))];
+  const persisted = [...new Set(lines.flatMap((line) => Object.keys(lineTranslations(line) ?? {})))];
   const [context, setContext] = useState(() => ({
     session: projectSession,
     lineIds: new Set(lines.map((line) => line.id)),

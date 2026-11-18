@@ -1,12 +1,27 @@
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import type { LyricLine } from "@/domain/line/model";
+import { lineFromFields } from "insync/line-from-fields";
+import { instanceCount, instanceOrdinal } from "insync/instance-enumerate";
+import type { LyricLine } from "insync/line";
 import { useProjectStore } from "@/stores/project";
 import { resetAllStores } from "@/test/stores";
-import { getEffectiveRows } from "@/views/timeline/effective-rows";
+import { getDrawnRows } from "@/views/timeline/drawn-rows";
 import { beforeEach, describe, expect, it } from "vitest";
+import { detachLine, removeInstance } from "insync/commands/instance-edits";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 function linked(id: string, text: string, instanceIdx: number, templateLineIdx: number, begin: number): LyricLine {
-  return { id, text, agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx, begin, end: begin + 1 };
+  return lineFromFields(
+    {
+      id,
+      text,
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx,
+      begin,
+      end: begin + 1,
+    },
+    DEFAULT_SPLIT_CHARACTER,
+  );
 }
 
 function seed() {
@@ -16,7 +31,7 @@ function seed() {
       linked("a0", "Chorus a", 0, 0, 0),
       linked("a1", "Chorus b", 0, 1, 1),
       linked("a2", "Chorus c", 0, 2, 2),
-      { id: "v", text: "Verse", agentId: "v1", begin: 4, end: 5 },
+      lineFromFields({ id: "v", text: "Verse", agentId: "v1", begin: 4, end: 5 }, DEFAULT_SPLIT_CHARACTER),
       linked("b0", "Chorus a", 1, 0, 6),
       linked("b1", "Chorus b", 1, 1, 7),
       linked("b2", "Chorus c", 1, 2, 8),
@@ -25,14 +40,14 @@ function seed() {
 }
 
 function headerKeys(): string[] {
-  return getEffectiveRows(useProjectStore.getState().lines).flatMap((r) =>
+  return getDrawnRows(useProjectStore.getState().lines).flatMap((r) =>
     r.kind === "group-header" ? [`header:${r.firstLineId}`] : [],
   );
 }
 
 function instanceLabels(): string[] {
   const lines = useProjectStore.getState().lines;
-  return getEffectiveRows(lines).flatMap((r) =>
+  return getDrawnRows(lines).flatMap((r) =>
     r.kind === "group-header"
       ? [`${instanceOrdinal(lines, r.groupId, r.instanceIdx)} of ${instanceCount(lines, r.groupId)}`]
       : [],
@@ -46,13 +61,13 @@ describe("instance labels and header keys after detach", () => {
   });
 
   it("detaching a middle line (gutter Detach line / divergence Detach) keeps header keys unique", () => {
-    useProjectStore.getState().detachLine("a1");
+    useProjectStore.getState().commit(detachLine("a1"));
     const keys = headerKeys();
     expect(new Set(keys).size).toBe(keys.length);
   });
 
   it("detaching instance 1 of 2 leaves no '2 of 1' label", () => {
-    useProjectStore.getState().removeInstance("g1", 0);
+    useProjectStore.getState().commit(removeInstance("g1", 0));
     expect(instanceLabels()).not.toContain("2 of 1");
   });
 });

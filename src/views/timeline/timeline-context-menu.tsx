@@ -1,18 +1,19 @@
 import { useMemo } from "react";
-import { getAgentColor } from "@/domain/agent/colors";
-import { agentDisplayName } from "@/domain/agent/display-name";
-import { instanceKey } from "@/domain/instance/key";
-import type { LyricLine } from "@/domain/line/model";
-import { selectionBounds } from "@/domain/selection/bounds";
-import { lineWordSelections } from "@/domain/selection/line-selections";
-import type { WordSelection } from "@/domain/selection/model";
+import { getAgentColor } from "insync/agent-colors";
+import { agentDisplayName } from "insync/agent-display-name";
+import { instanceKey } from "insync/instance-key";
+import type { LyricLine } from "insync/line";
+import { selectionBounds } from "insync/selection-bounds";
+import { lineWordSelections } from "insync/selection-line-selections";
+import type { SyllableAddress } from "insync/selection-model";
+import { toAddress } from "insync/selection-resolve";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Menu, type MenuAnchor, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator } from "@/ui/menu";
 import { SingerTag } from "@/ui/singer-tag";
-import { GROUP_COLORS } from "@/utils/group-colors";
-import { pluralize } from "@/utils/pluralize";
+import { GROUP_COLORS } from "insync/group-colors";
+import { pluralize } from "insync/pluralize";
 import { CopyCutMenuItems, PasteHereMenuItem } from "@/views/timeline/clipboard-menu-items";
 import {
   loopSelection,
@@ -28,6 +29,7 @@ import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useSharedTimingMenuActions } from "@/views/timeline/use-shared-timing-menu-actions";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { WordEditMenuItems } from "@/views/timeline/word-edit-menu-items";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Grouping section ---------------------------------------------------------
 
@@ -127,12 +129,12 @@ function PlaybackMenuItems({
   clearContextMenu,
 }: {
   lines: readonly LyricLine[];
-  selections: readonly WordSelection[];
+  selections: readonly SyllableAddress[];
   noun: string;
   select?: () => void;
   clearContextMenu: () => void;
 }) {
-  if (!selectionBounds(lines, selections)) return null;
+  if (!selectionBounds(lines, selections, getSplitCharacter())) return null;
   const selectAndRun = (start: () => boolean) => {
     select?.();
     start();
@@ -172,12 +174,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
   const actions = useWordMenuActions(targets, clearContextMenu);
   const { handleToggleExplicit, handleDeleteWord } = actions;
   const { handleSplitIntoWords, handleAutoAlign } = useLineMenuActions(targets, clearContextMenu);
-  const word: WordSelection = {
-    lineId: target.lineId,
-    lineIndex: target.lineIndex,
-    wordIndex: target.wordIndex,
-    type: target.type,
-  };
+  const word = toAddress(target);
   const playedWords = clickedSelectionCount === null ? [word] : selectedWords;
   const noun =
     clickedSelectionCount !== null && clickedSelectionCount > 1 ? pluralize(clickedSelectionCount, "word") : "word";
@@ -217,7 +214,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
         <>
           <MenuSeparator />
           <MenuItem
-            label={explicitToggleLabel(explicitToggle.value, selectedWords.length)}
+            label={explicitToggleLabel(explicitToggle.value, explicitToggle.markable)}
             shortcut={getEffectiveKeysArray("timeline.toggleExplicit")}
             onSelect={handleToggleExplicit}
           />
@@ -262,9 +259,9 @@ function TrackMenuSection({ targets, clearContextMenu, target }: SectionProps & 
 
 function AgentAssignment({ targets, clearContextMenu, lineIndex }: SectionProps & { lineIndex: number }) {
   const agents = useProjectStore((s) => s.agents);
-  const { handleAssignAgent } = useLineMenuActions(targets, clearContextMenu);
+  const { handleAssignAgent, activeAgentIdAt } = useLineMenuActions(targets, clearContextMenu);
   if (agents.length <= 1) return null;
-  const activeAgentId = targets.lines[lineIndex]?.agentId;
+  const activeAgentId = activeAgentIdAt(lineIndex);
 
   return (
     <>
@@ -293,7 +290,7 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
   );
   const { lineId, lineIndex } = target;
   const line = targets.lines.find((candidate) => candidate.id === lineId);
-  const lineSelections = line ? lineWordSelections(line, lineIndex) : [];
+  const lineSelections = line ? lineWordSelections(line, getSplitCharacter()) : [];
 
   return (
     <>
@@ -301,7 +298,7 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
         lines={targets.lines}
         selections={lineSelections}
         noun="line"
-        select={() => selectLine(lineId, lineIndex)}
+        select={() => selectLine(lineId)}
         clearContextMenu={clearContextMenu}
       />
       <MenuItem

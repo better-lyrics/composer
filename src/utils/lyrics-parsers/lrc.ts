@@ -1,18 +1,19 @@
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
-import { hasAnyTiming } from "@/domain/line/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import type { WordTiming } from "@/domain/word/timing";
-import { type ParseIssue, type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { type LineFields, lineFromFields } from "insync/line-from-fields";
+import { hasAnyTiming } from "insync/line-predicates";
+import { syllablesText } from "insync/line-text";
+import type { ProjectMetadata } from "insync/metadata";
+import { type SpacedWord, wordsFromSpaced } from "insync/word-spaced-words";
+import type { WordTiming } from "insync/word-timing";
+import { type ParseIssue, type ParseResult, generateLineId } from "insync/parse-result";
 import { getSplitCharacter } from "@/utils/split-character";
-import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
+import { DEFAULT_MIN_WORD_DURATION } from "insync/word-spaces";
 
 // -- Constants ----------------------------------------------------------------
 
-const CLOCK = String.raw`(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?`;
-const LINE_TIMESTAMP_REGEX = new RegExp(String.raw`\[${CLOCK}\]`, "g");
-const INLINE_WORD_TAG_REGEX = new RegExp(`<${CLOCK}>`, "g");
-const LENGTH_REGEX = new RegExp(`^${CLOCK}$`);
+const LRC_CLOCK = String.raw`(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?`;
+const LINE_TIMESTAMP_REGEX = new RegExp(String.raw`\[${LRC_CLOCK}\]`, "g");
+const INLINE_WORD_TAG_REGEX = new RegExp(`<${LRC_CLOCK}>`, "g");
+const LENGTH_REGEX = new RegExp(`^${LRC_CLOCK}$`);
 const LRC_METADATA_TAG_REGEX = /^\[([a-z]+):(.*)\]$/i;
 const SINGER_OR_BACKGROUND_TAG_REGEX = /^(?:\[[\d:.]+\]\s*)*v\d+:|\[[bB][gG]:/;
 const PENDING_WORD_END = -1;
@@ -42,7 +43,7 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
 
   if (markers.length === 0) return null;
 
-  const words: WordTiming[] = [];
+  const words: SpacedWord[] = [];
 
   const leadingText = text.substring(0, markers[0].matchStart);
   if (leadingText.trim().length > 0) {
@@ -65,7 +66,8 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
 
   if (words.length === 0) return null;
 
-  return { cleanText: reconstructLineText(words, getSplitCharacter()), words };
+  const timed = wordsFromSpaced(words);
+  return { cleanText: syllablesText(timed, getSplitCharacter()), words: timed };
 }
 
 function applyMetadataTag(metadata: Partial<ProjectMetadata>, tag: string, rawValue: string): void {
@@ -89,7 +91,7 @@ function firstAfter(times: readonly number[], after: number): number | undefined
   return times.find((time) => time > after);
 }
 
-function fillLineEnds(lines: LooseLine[], gapMarkers: number[], songEnd: number | undefined): void {
+function fillLineEnds(lines: LineFields[], gapMarkers: number[], songEnd: number | undefined): void {
   lines.sort((a, b) => (a.begin ?? 0) - (b.begin ?? 0));
   gapMarkers.sort((a, b) => a - b);
   for (let i = 0; i < lines.length; i++) {
@@ -102,7 +104,7 @@ function fillLineEnds(lines: LooseLine[], gapMarkers: number[], songEnd: number 
 
   // The last line has no following line to source its end from. Prefer an
   // explicit [length:] tag, then the caller-supplied audio duration; if neither
-  // is available it stays begin-only and reconcileLine renders it untimed.
+  // is available it stays begin-only and the line builds untimed.
   const lastLine = lines[lines.length - 1];
   if (
     lastLine &&
@@ -138,7 +140,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
   if (unsupported) return { lines: [], metadata: {}, hasTimingData: false, issues: [unsupported] };
 
   const metadata: Partial<ProjectMetadata> = {};
-  const lines: LooseLine[] = [];
+  const lines: LineFields[] = [];
   const gapMarkers: number[] = [];
   const issues: ParseIssue[] = [];
 
@@ -202,7 +204,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
 
   fillLineEnds(lines, gapMarkers, metadata.duration ?? fallbackDuration);
 
-  const reconciledLines = lines.map(reconcileLine);
+  const reconciledLines = lines.map((line) => lineFromFields(line, getSplitCharacter()));
   return {
     lines: reconciledLines,
     metadata,
@@ -213,4 +215,4 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
 
 // -- Exports ------------------------------------------------------------------
 
-export { LRC_METADATA_TAG_REGEX, parseLrc, parseLrcClock };
+export { LRC_CLOCK, LRC_METADATA_TAG_REGEX, parseLrc, parseLrcClock };

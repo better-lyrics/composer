@@ -1,5 +1,6 @@
+import { roleWords } from "insync/line-track";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import {
   movePointer,
   pressEdge,
@@ -8,11 +9,12 @@ import {
 } from "@/views/timeline/word-track.stretch-harness";
 import { describe, expect, it } from "vitest";
 
-const words = () => [
-  createWord({ text: "go ", begin: 1, end: 2 }),
-  createWord({ text: "now ", begin: 2, end: 3 }),
-  createWord({ text: "yeah", begin: 5, end: 6 }),
-];
+const words = () =>
+  createWords([
+    { text: "go", sep: " ", begin: 1, end: 2 },
+    { text: "now", sep: " ", begin: 2, end: 3 },
+    { text: "yeah", begin: 5, end: 6 },
+  ]);
 
 async function renderSharedStretch() {
   const fixture = await renderStretchTrack(words(), [0, 1]);
@@ -35,7 +37,10 @@ async function renderSharedStretch() {
 }
 
 const siblingWordEnd = (index: number) =>
-  useProjectStore.getState().lines.find((line) => line.id === "sibling")?.words?.[index]?.end;
+  roleWords(
+    useProjectStore.getState().lines.find((line) => line.id === "sibling"),
+    "main",
+  )?.[index]?.end;
 
 describe("WordTrack selection stretch on a shared line", () => {
   it("regression: the preview moves the shared copy the way the release will", async () => {

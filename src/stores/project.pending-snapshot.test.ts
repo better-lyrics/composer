@@ -1,6 +1,10 @@
+import { fieldsOfLine } from "insync/line-from-fields";
+import { fieldUpdates } from "@/test/field-updates";
 import { useProjectStore } from "@/stores/project";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { describe, expect, it } from "vitest";
+import { pasteLines } from "insync/commands/instance-rows";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 const DUET_TTML = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Duet</ttm:title><ttm:agent type="person" xml:id="v1"><ttm:name type="full">Alice</ttm:name></ttm:agent><ttm:agent type="person" xml:id="v2"><ttm:name type="full">Bob</ttm:name></ttm:agent></metadata></head><body><div><p begin="1.0" end="2.0" ttm:agent="v1">Line one</p><p begin="2.0" end="3.0" ttm:agent="v2">Line two</p></div></body></tt>`;
 
@@ -14,9 +18,9 @@ function importDuet(): void {
   });
 }
 
-function timelineEdit(): void {
+function timelineEdit(begin = 1.5): void {
   const [first] = useProjectStore.getState().lines;
-  useProjectStore.getState().updateLineWithHistory(first.id, { begin: 1.5, end: 2 });
+  useProjectStore.getState().commit(pasteLines(fieldUpdates([{ id: first.id, updates: { begin, end: 2 } }])));
 }
 
 const agentNames = () => useProjectStore.getState().agents.map((agent) => agent.name);
@@ -32,7 +36,10 @@ describe("writes outside history leave a pending snapshot", () => {
       useProjectStore.getState().undo();
 
       expect(agentNames()).toEqual(["Lead", undefined]);
-      expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 1, end: 2 });
+      expect(fieldsOfLine(useProjectStore.getState().lines[0], DEFAULT_SPLIT_CHARACTER)).toMatchObject({
+        begin: 1,
+        end: 2,
+      });
     });
 
     it("regression: undo after restoring a song identity and a timeline edit keeps the restored names", () => {
@@ -41,7 +48,7 @@ describe("writes outside history leave a pending snapshot", () => {
       useProjectStore.getState().resetSongIdentity("New song");
       timelineEdit();
       useProjectStore.getState().restoreSongIdentity({ metadata, agents, hasUnexportedImport, importedMetadataKeys });
-      timelineEdit();
+      timelineEdit(1.6);
 
       useProjectStore.getState().undo();
 

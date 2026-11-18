@@ -1,16 +1,19 @@
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { lineFromFields } from "insync/line-from-fields";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import { computeSyllableGroups } from "insync/word-syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import {
   installScrollHost,
   makeReorderDragEndEvent,
   makeReorderDragStartEvent,
   POINTER_Y_MAIN,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
+import { getSplitCharacter } from "@/utils/split-character";
 
 describe("useTimelineDnd · within-track reorder seam", () => {
   let scrollHost: HTMLDivElement;
@@ -20,16 +23,19 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        {
-          id: "l1",
-          text: "word1 word2 word3",
-          agentId: "v1",
-          words: [
-            { text: "word1 ", begin: 0, end: 0.5 },
-            { text: "word2 ", begin: 1, end: 1.5 },
-            { text: "word3", begin: 2, end: 2.5 },
-          ],
-        },
+        lineFromFields(
+          {
+            id: "l1",
+            text: "word1 word2 word3",
+            agentId: "v1",
+            words: [
+              { id: "w1", text: "word1", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+              { id: "w2", text: "word2", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+              { id: "w3", text: "word3", sep: "", begin: 2, end: 2.5, joinsNext: false },
+            ],
+          },
+          getSplitCharacter(),
+        ),
       ],
     });
     scrollHost = installScrollHost();
@@ -47,14 +53,14 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     window.dispatchEvent(new PointerEvent("pointermove", { clientX: 250, clientY: POINTER_Y_MAIN }));
     result.current.handleDragEnd(makeReorderDragEndEvent());
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.length).toBe(3);
 
     expect(computeSyllableGroups(words)).toEqual([]);
 
     const word3 = words.find((w) => w.text.trim() === "word3");
-    expect(word3?.text).toBe("word3 ");
-    expect(words[words.length - 1].text.endsWith(" ")).toBe(false);
+    expect(word3).toMatchObject({ text: "word3", sep: " " });
+    expect(words[words.length - 1].sep.endsWith(" ")).toBe(false);
 
     expect(words.map((w) => w.text.trim())).toEqual(["word1", "word3", "word2"]);
   });

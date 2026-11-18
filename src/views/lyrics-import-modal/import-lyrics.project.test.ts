@@ -1,16 +1,19 @@
-import type { Agent } from "@/domain/agent/model";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Agent } from "insync/agent";
+import { lineText } from "insync/line-text";
+import { mainTrack } from "insync/line-track";
 import type { ProjectFile } from "@/lib/project-file";
-import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import type { ParseResult } from "insync/parse-result";
 import {
   type ImportContext,
   type ImportSourceInfo,
   importProjectLyrics,
 } from "@/views/lyrics-import-modal/import-lyrics";
-import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -32,10 +35,10 @@ function projectFile(overrides: Partial<ProjectFile> = {}): ProjectFile {
       duration: 264,
     },
     agents: SINGERS,
-    lines: [
+    lines: savedLines([
       createLine({ id: "f1", text: "Climb up the H of the Hollywood sign", agentId: "v2", begin: 12, end: 15 }),
       createLine({ id: "f2", text: "In these stolen moments", agentId: "v1", groupId: "chorus", instanceIdx: 0 }),
-    ],
+    ]),
     groups: [CHORUS],
     granularity: "word",
     audioSource: { kind: "file", name: "lust-for-life.opus" },
@@ -53,8 +56,7 @@ function recordingContext(): { ctx: ImportContext; results: { parsed: ParseResul
       },
       audioDuration: 0,
       applyBackgroundExtraction: true,
-      backgroundExtractionMergeStandalone: false,
-      backgroundExtractionPreserveBrackets: false,
+      backgroundExtraction: { mergeStandaloneLines: false, preserveBrackets: false, separator: "space" },
       sourceLabel: "File",
       onResult: (parsed, source) => results.push({ parsed, source }),
     },
@@ -76,7 +78,7 @@ describe("importProjectLyrics", () => {
     const { ctx } = recordingContext();
     expect(importProjectLyrics(projectFile(), "lust.ttml-project.json", ctx)).toBe(true);
     const state = useProjectStore.getState();
-    expect(state.lines.map((line) => line.text)).toEqual([
+    expect(state.lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
       "Climb up the H of the Hollywood sign",
       "In these stolen moments",
     ]);
@@ -100,7 +102,9 @@ describe("importProjectLyrics", () => {
     const { ctx } = recordingContext();
     importProjectLyrics(projectFile(), "lust.ttml-project.json", ctx);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Old line"]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+      "Old line",
+    ]);
   });
 
   describe("invariants", () => {
@@ -147,11 +151,11 @@ describe("importProjectLyrics", () => {
 
     it("keeps the file's timing and text exactly, with no background extraction or timing spread", () => {
       const { ctx } = recordingContext();
-      const file = projectFile({ lines: [createLine({ id: "p", text: "Hello (ooh)" })] });
+      const file = projectFile({ lines: savedLines([createLine({ id: "p", text: "Hello (ooh)" })]) });
       importProjectLyrics(file, "song.json", { ...ctx, audioDuration: 200 });
       const [line] = useProjectStore.getState().lines;
-      expect(line.text).toBe("Hello (ooh)");
-      expect(line.begin).toBeUndefined();
+      expect(lineText(line, DEFAULT_SPLIT_CHARACTER)).toBe("Hello (ooh)");
+      expect(mainTrack(line).begin).toBeUndefined();
     });
 
     it("does not mutate the project file it reads", () => {
@@ -191,22 +195,31 @@ describe("importProjectLyrics", () => {
   describe("edge cases", () => {
     it("refuses a project file with no lyric lines and leaves the project untouched", () => {
       const { ctx, results } = recordingContext();
-      const file = projectFile({ lines: [createLine({ id: "blank", text: "" })] });
+      const file = projectFile({ lines: savedLines([createLine({ id: "blank", text: "" })]) });
       expect(importProjectLyrics(file, "empty.json", ctx)).toBe(false);
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Old line"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line, DEFAULT_SPLIT_CHARACTER))).toEqual([
+        "Old line",
+      ]);
       expect(results).toEqual([]);
     });
 
     it("treats a file without groups as having none", () => {
       const { ctx } = recordingContext();
-      const file = projectFile({ groups: undefined, lines: [createLine({ id: "solo", text: "Solo line" })] });
+      const file = projectFile({
+        groups: undefined,
+        lines: savedLines([createLine({ id: "solo", text: "Solo line" })]),
+      });
       importProjectLyrics(file, "song.json", ctx);
       expect(useProjectStore.getState().groups).toEqual([]);
     });
 
     it("reports untimed lyrics as having no timing", () => {
       const { ctx, results } = recordingContext();
-      importProjectLyrics(projectFile({ lines: [createLine({ id: "u", text: "Untimed" })] }), "song.json", ctx);
+      importProjectLyrics(
+        projectFile({ lines: savedLines([createLine({ id: "u", text: "Untimed" })]) }),
+        "song.json",
+        ctx,
+      );
       expect(results[0].parsed.hasTimingData).toBe(false);
     });
   });

@@ -1,3 +1,6 @@
+import { groupRepeatingSections } from "insync/commands/group-edits";
+import { NOTHING_SHARED } from "insync/group-plans";
+import type { SharingOutcome } from "insync/group-shared-placement";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -9,7 +12,7 @@ import {
   showKeptOwnTimingToast,
   showReplacedOwnTimingToast,
 } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import type { RepeatingSection } from "@/views/grouping/repeating-sections";
 import { IconBulb, IconLink } from "@tabler/icons-react";
@@ -73,8 +76,12 @@ function dismissFingerprints(fingerprints: readonly string[]): void {
 
 function groupSections(sections: readonly RepeatingSection[]): number {
   const { duration } = useAudioStore.getState();
-  const { groupRepeatingSections } = useProjectStore.getState();
-  const outcomes = sections.map((section) => groupRepeatingSections(section.starts, section.length, { duration }));
+  const outcomes = sections.map((section) => {
+    let sharing: SharingOutcome = NOTHING_SHARED;
+    const grouping = { starts: section.starts, length: section.length, duration };
+    useProjectStore.getState().commit(groupRepeatingSections(grouping, (planned) => (sharing = planned)));
+    return sharing;
+  });
   noteGuideSignal("edit.group");
   showKeptOwnTimingToast(
     outcomes.flatMap((outcome) => outcome.keptOwnTiming),

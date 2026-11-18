@@ -1,8 +1,10 @@
-import type { LyricLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
 import { usePersistence } from "@/hooks/usePersistence";
 import { createProject, restoreOpenProject } from "@/lib/open-project";
+import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
-import { flushPendingSave } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import {
   loadProjectIndexEntry,
@@ -19,9 +21,10 @@ import {
   isRestoringProject,
   loadProjectForRestore,
 } from "@/lib/project-restore";
+import { currentSaveInput } from "@/lib/project-snapshot";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
 import { getSaveStatus } from "@/lib/save-status";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -29,21 +32,22 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
+import { seedStoredProject, v3StoredProject } from "@/test/projects";
 import { render } from "@/test/render";
-import { seedStoredProject } from "@/test/projects";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
 const TRANSLITERATED_LINE: LyricLine = {
   ...createLine({ text: "今日" }),
-  transliteration: {
-    language: "ja-Latn",
-    text: "kyou",
-    segments: [{ original: "今日", transliteration: "kyou" }],
-    origin: "manual",
-    sourceFingerprint: "test",
+  languages: {
+    transliteration: {
+      language: "ja-Latn",
+      main: { text: "kyou", segments: [{ original: "今日", transliteration: "kyou" }] },
+      origin: "manual",
+      sourceFingerprint: "test",
+    },
   },
 };
 
@@ -77,7 +81,7 @@ describe("project-restore", () => {
   });
 
   it("restores the project's Original or Transliteration choice", async () => {
-    await seedStoredProject("p1", { project: { lines: [TRANSLITERATED_LINE] } });
+    await seedStoredProject("p1", { project: { lines: savedLines([TRANSLITERATED_LINE]) } });
     await setProjectTextVariant("p1", "transliteration");
     applyProjectToStores(await loadProjectForRestore("p1"));
     expect(useTimelineStore.getState().textVariant).toBe("transliteration");
@@ -106,7 +110,10 @@ describe("project-restore", () => {
     applyProjectToStores(await loadProjectForRestore("p1"));
     const project = useProjectStore.getState();
     expect(project.metadata.title).toBe("Midnight City");
-    expect(project.lines.map((line) => line.text)).toEqual(["Waiting in a car", "Waiting for a ride"]);
+    expect(project.lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
+      "Waiting in a car",
+      "Waiting for a ride",
+    ]);
     expect(project.activeTab).toBe("timeline");
     expect(project.isDirty).toBe(false);
     expect(useSeparationStore.getState().currentStem).toBe("vocals");
@@ -120,7 +127,7 @@ describe("project-restore", () => {
       project: { audioSource: { kind: "file", name: "city.wav" } },
     });
     applyProjectToStores(await loadProjectForRestore("p1"));
-    useTimelineStore.getState().setSelectedWords([{ lineId: "x", lineIndex: 0, wordIndex: 0, type: "word" }]);
+    useTimelineStore.getState().setSelectedWords([{ lineId: "x", type: "word", syllableId: "x-word" }]);
     applyProjectToStores(EMPTY_RESTORE);
     expect(useProjectStore.getState().lines).toEqual([]);
     expect(useProjectStore.getState().metadata.title).toBe("");
@@ -175,7 +182,7 @@ describe("project-restore", () => {
     });
 
     it("upgrades an old record without moving its edit time", async () => {
-      await seedStoredProject("p1", { project: { version: 1, lines: [createLine({ text: "hello" })] } });
+      await saveProjectRecord("p1", v3StoredProject({ version: 1 }));
       await loadProjectForRestore("p1");
       expect((await loadProjectRecord("p1"))?.version).toBe(SAVED_PROJECT_VERSION);
       expect((await loadProjectRecord("p1"))?.savedAt).toBe(1_758_900_000_000);
@@ -234,6 +241,26 @@ describe("project-restore", () => {
       expect((await loadProjectIndexEntry("p1"))?.updatedAt).toBe(111);
     });
 
+    it("regression: a save scheduled before the boot restore never overwrites the restored project", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 60_000 });
+      await seedStoredProject("p1", { open: true, project: { savedAt: 444, lines: savedLines([createLine()]) } });
+      debouncedSave(currentSaveInput());
+      await restoreOpenProject();
+      await flushPendingSave();
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(444);
+    });
+
+    it("regression: a save that comes due while the boot restore loads never writes over the project", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 0 });
+      await seedStoredProject("p1", { open: true, project: { savedAt: 555, lines: savedLines([createLine()]) } });
+      debouncedSave(currentSaveInput());
+      const restoring = restoreOpenProject();
+      debouncedSave(currentSaveInput());
+      await restoring;
+      await flushPendingSave();
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(555);
+    });
+
     it("regression: switching tabs after boot remembers the tab without saving the record", async () => {
       useSettingsStore.setState({ autoSaveDelay: 20 });
       await seedStoredProject("p1", { open: true, project: { savedAt: 222 } });
@@ -245,7 +272,10 @@ describe("project-restore", () => {
     });
 
     it("switching to Transliteration remembers it for the open project without saving the record", async () => {
-      await seedStoredProject("p1", { open: true, project: { savedAt: 333, lines: [TRANSLITERATED_LINE] } });
+      await seedStoredProject("p1", {
+        open: true,
+        project: { savedAt: 333, lines: savedLines([TRANSLITERATED_LINE]) },
+      });
       await render(<PersistenceHost />);
       await getPersistenceSettled();
       useTimelineStore.getState().toggleTextVariant();
@@ -259,7 +289,7 @@ describe("project-restore", () => {
       await getPersistenceSettled();
       const id = createProject();
       useTimelineStore.getState().setTextVariant("transliteration");
-      useProjectStore.getState().setLines([TRANSLITERATED_LINE]);
+      useProjectStore.getState().restoreLyrics({ lines: [TRANSLITERATED_LINE] });
       await expect.poll(async () => (await loadProjectIndexEntry(id))?.textVariant).toBe("transliteration");
     });
   });

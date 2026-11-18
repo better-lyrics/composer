@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "insync/line";
 import { googleLanguageProvider } from "@/services/google-language-provider";
 import type { TranslationGeneration, TransliterationGeneration } from "@/views/languages/generated-language-updates";
 import { languageGenerationInputs } from "@/views/languages/generation-inputs";

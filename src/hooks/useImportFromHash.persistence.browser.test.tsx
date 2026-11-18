@@ -1,4 +1,6 @@
-import type { Agent } from "@/domain/agent/model";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Agent } from "insync/agent";
+import { lineText } from "insync/line-text";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getHashImportSettled, getPersistenceSettled } from "@/lib/persistence-settled";
@@ -6,7 +8,7 @@ import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
 import { seedProject } from "@/test/idb";
 import { render } from "@/test/render";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -179,6 +181,8 @@ describe("usePersistence + useImportFromHash: hash overrides persistence", () =>
     await waitForBootSettled();
 
     expect(useProjectStore.getState().metadata.title).toBe(SAVED_TITLE);
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([SAVED_LINE.text]);
+    expect(useProjectStore.getState().lines.map((line) => lineText(line, getSplitCharacter()))).toEqual([
+      SAVED_LINE.text,
+    ]);
   });
 });

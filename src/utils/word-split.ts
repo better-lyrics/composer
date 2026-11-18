@@ -1,17 +1,13 @@
-import type { WordTiming } from "@/domain/word/timing";
-import { distributeTiming } from "@/utils/syllable-utils";
+import { withSplitIds } from "insync/word-id";
+import type { WordTiming } from "insync/word-timing";
+import { distributeTiming } from "insync/syllable-utils";
 
 // -- Functions -----------------------------------------------------------------
 
 function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming[] {
-  const trimmed = word.text.trimEnd();
-  const hadTrailingSpace = word.text.endsWith(" ");
-  const {
-    syllableGroupId: _group,
-    transliteration: _transliteration,
-    transliterationJoinerAfter: _joiner,
-    ...base
-  } = word;
+  const trimmed = word.text;
+  const hadTrailingSpace = word.sep.endsWith(" ");
+  const { joinsNext, ...base } = word;
 
   const parts: Array<{ text: string; begin: number; end: number }> = [];
   let orphanBegin: number | null = null;
@@ -27,11 +23,13 @@ function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming
     orphanBegin = null;
   }
 
-  return parts.map((part, index) => {
-    const isLast = index === parts.length - 1;
-    const trailing = isLast ? (hadTrailingSpace ? " " : "") : " ";
-    return { ...base, text: `${part.text}${trailing}`, begin: part.begin, end: part.end };
-  });
+  return withSplitIds(
+    parts.map((part, index) => {
+      const isLast = index === parts.length - 1;
+      const sep = isLast ? (hadTrailingSpace ? " " : "") : " ";
+      return { ...base, text: part.text, sep, begin: part.begin, end: part.end, joinsNext: isLast && joinsNext };
+    }),
+  );
 }
 
 // -- Exports -------------------------------------------------------------------

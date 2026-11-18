@@ -1,6 +1,7 @@
 import { splitCjkPart } from "@/domain/alignment/cjk";
-import type { WordTiming } from "@/domain/word/timing";
-import { nanoid } from "nanoid";
+import { newWordId } from "insync/word-id";
+import type { WordTiming } from "insync/word-timing";
+import { splitTrailingWhitespace } from "insync/from-words";
 
 // -- Types --------------------------------------------------------------------
 
@@ -8,7 +9,8 @@ import { nanoid } from "nanoid";
 interface AlignmentWord {
   text: string;
   parts: string[];
-  trailingSpace: boolean;
+  /** The separator after each part; a word ends after its last part. */
+  seps: string[];
 }
 
 interface WordInterval {
@@ -43,7 +45,8 @@ function groupAlignmentWords(parts: string[], trailingSpace: boolean[]): Alignme
     current.push(...splitCjkPart(parts[i]));
     const isLast = i === parts.length - 1;
     if (trailingSpace[i] || isLast) {
-      words.push({ text: current.join(""), parts: current, trailingSpace: trailingSpace[i] ?? false });
+      const seps = current.map((_, k) => (k === current.length - 1 && trailingSpace[i] ? " " : ""));
+      words.push({ text: current.join(""), parts: current, seps });
       current = [];
     }
   }
@@ -51,17 +54,18 @@ function groupAlignmentWords(parts: string[], trailingSpace: boolean[]): Alignme
 }
 
 // Regroups a word-synced line's timings into whole words: a word runs until a
-// part ends with a space, so hand-split syllables stay together.
+// part stops joining the next, so hand-split syllables stay together.
 function groupTimedWords(timings: readonly WordTiming[]): AlignmentWord[] {
   const words: AlignmentWord[] = [];
   let current: string[] = [];
+  let seps: string[] = [];
   for (let i = 0; i < timings.length; i++) {
-    const text = timings[i].text;
-    current.push(text.trimEnd());
-    const trailingSpace = /\s$/.test(text);
-    if (trailingSpace || i === timings.length - 1) {
-      words.push({ text: current.join(""), parts: current, trailingSpace });
+    current.push(timings[i].text);
+    seps.push(timings[i].sep);
+    if (!timings[i].joinsNext || i === timings.length - 1) {
+      words.push({ text: current.join(""), parts: current, seps });
       current = [];
+      seps = [];
     }
   }
   return words;
@@ -95,9 +99,8 @@ function partPieces(part: string, interval: WordInterval, split: PartSplit | und
 }
 
 // Word timings for a line-timed line, one per part (or per syllable of a part
-// the audio split), with the space after each word kept on its last piece.
-// Every split word gets its own syllable group: a line groups syllables by id
-// as soon as any word has one, so a word without one would come apart.
+// the audio split), with each part's separator kept on its last piece and
+// every piece of a split word joined to the next.
 function timingsFromParts(
   words: AlignmentWord[],
   partIntervals: WordInterval[],
@@ -106,12 +109,19 @@ function timingsFromParts(
   const splitOf = new Map(splits.map((split) => [split.part, split]));
   const timings: WordTiming[] = [];
   let index = 0;
-  for (const { parts, trailingSpace } of words) {
-    const pieces = parts.flatMap((part) => partPieces(part, partIntervals[index], splitOf.get(index++)));
-    const groupId = pieces.length > 1 ? nanoid(8) : undefined;
+  for (const { parts, seps } of words) {
+    const pieces = parts.flatMap((part, p) => {
+      const partPiecesOf = partPieces(part, partIntervals[index], splitOf.get(index++));
+      return partPiecesOf.map((piece, k) => ({ ...piece, sep: k === partPiecesOf.length - 1 ? seps[p] : "" }));
+    });
     pieces.forEach((piece, k) => {
-      const text = k === pieces.length - 1 && trailingSpace ? `${piece.text} ` : piece.text;
-      timings.push({ text, begin: piece.begin, end: piece.end, ...(groupId ? { syllableGroupId: groupId } : {}) });
+      timings.push({
+        id: newWordId(),
+        ...splitTrailingWhitespace(piece.text + piece.sep),
+        begin: piece.begin,
+        end: piece.end,
+        joinsNext: k < pieces.length - 1,
+      });
     });
   }
   return timings;

@@ -1,11 +1,13 @@
 /**
  * @vitest-environment node
  */
-import { beforeEach, describe, expect, expectTypeOf, it } from "vitest";
-import { useProjectStore } from "@/stores/project";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 
-type StoreState = ReturnType<typeof useProjectStore.getState>;
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "insync/commands/edit-text";
+import { lineFromFields } from "insync/line-from-fields";
+import { mainTrack, roleWords } from "insync/line-track";
+import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // These pin the Task 1.4 contract: gutter add/delete operations on a project
 // containing line-synced rows must NOT flip those rows to word-synced.
@@ -25,93 +27,97 @@ describe("gutter add/delete preserves line-sync granularity", () => {
 
   it("inserting a line above a line-synced row leaves the row line-synced", () => {
     useProjectStore.setState({
-      lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }],
+      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }, DEFAULT_SPLIT_CHARACTER)],
     });
     // Simulating what the FIXED handler does: read raw lines, splice, write.
     const raw = useProjectStore.getState().lines;
     const targetIdx = raw.findIndex((l) => l.id === "L1");
-    const newLine = { id: "X", text: "", agentId: "v1" };
+    const newLine = lineFromFields({ id: "X", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER);
     const newLines = [...raw];
     newLines.splice(targetIdx, 0, newLine);
-    useProjectStore.getState().setLinesWithHistory(newLines);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
 
     const after = useProjectStore.getState().lines;
     expect(after).toHaveLength(2);
     const L1 = after.find((l) => l.id === "L1");
-    expect(L1?.words).toBeUndefined();
-    expect(L1?.begin).toBe(5);
-    expect(L1?.end).toBe(7);
-  });
-
-  it("regression: writing effective-line synthesised words back is a compile error (the bug shape)", () => {
-    useProjectStore.setState({
-      lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }],
-    });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
-    // effective[0] now has a synthesised single-word array
-    expect(effective[0].words).toHaveLength(1);
-    expectTypeOf([...effective]).not.toMatchTypeOf<Parameters<StoreState["setLinesWithHistory"]>[0]>();
+    expect(L1 && roleWords(L1, "main")).toBeUndefined();
+    expect(L1 && mainTrack(L1).begin).toBe(5);
+    expect(L1 && mainTrack(L1).end).toBe(7);
   });
 
   it("deleting a line by id (not effective index) does not perturb other rows", () => {
     useProjectStore.setState({
       lines: [
-        { id: "A", text: "synced", agentId: "v1", begin: 0, end: 2 },
-        {
-          id: "B",
-          text: "with words",
-          agentId: "v1",
-          words: [{ text: "with words", begin: 2, end: 4 }],
-        },
-        { id: "C", text: "another synced", agentId: "v1", begin: 4, end: 6 },
+        lineFromFields({ id: "A", text: "synced", agentId: "v1", begin: 0, end: 2 }, DEFAULT_SPLIT_CHARACTER),
+        lineFromFields(
+          {
+            id: "B",
+            text: "with words",
+            agentId: "v1",
+            words: [{ id: "w1", text: "with words", sep: "", begin: 2, end: 4, joinsNext: false }],
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields({ id: "C", text: "another synced", agentId: "v1", begin: 4, end: 6 }, DEFAULT_SPLIT_CHARACTER),
       ],
     });
     // Simulating the fixed delete: filter raw by id
     const raw = useProjectStore.getState().lines;
-    useProjectStore.getState().setLinesWithHistory(raw.filter((l) => l.id !== "B"));
+    useProjectStore.getState().commit(
+      pasteLyrics(
+        useProjectStore.getState().lines,
+        raw.filter((l) => l.id !== "B"),
+      ),
+    );
 
     const after = useProjectStore.getState().lines;
     expect(after).toHaveLength(2);
     const A = after.find((l) => l.id === "A");
     const C = after.find((l) => l.id === "C");
     // A and C remain line-synced
-    expect(A?.words).toBeUndefined();
-    expect(A?.begin).toBe(0);
-    expect(C?.words).toBeUndefined();
-    expect(C?.begin).toBe(4);
+    expect(A && roleWords(A, "main")).toBeUndefined();
+    expect(A && mainTrack(A).begin).toBe(0);
+    expect(C && roleWords(C, "main")).toBeUndefined();
+    expect(C && mainTrack(C).begin).toBe(4);
   });
 
   it("inserting between a grouped instance's lines does not detach the instance", () => {
     useProjectStore.setState({
       lines: [
-        {
-          id: "A",
-          text: "x",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-          begin: 0,
-          end: 1,
-        },
-        {
-          id: "B",
-          text: "y",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 1,
-          begin: 1,
-          end: 2,
-        },
+        lineFromFields(
+          {
+            id: "A",
+            text: "x",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            begin: 0,
+            end: 1,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
+        lineFromFields(
+          {
+            id: "B",
+            text: "y",
+            agentId: "v1",
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 1,
+            begin: 1,
+            end: 2,
+          },
+          DEFAULT_SPLIT_CHARACTER,
+        ),
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
     // The handler doesn't strip group attrs on adjacent rows
     const raw = useProjectStore.getState().lines;
     const newLines = [...raw];
-    newLines.splice(1, 0, { id: "X", text: "", agentId: "v1" });
-    useProjectStore.getState().setLinesWithHistory(newLines);
+    newLines.splice(1, 0, lineFromFields({ id: "X", text: "", agentId: "v1" }, DEFAULT_SPLIT_CHARACTER));
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
 
     const after = useProjectStore.getState().lines;
     expect(after).toHaveLength(3);

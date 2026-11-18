@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "insync/selection-model";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -87,7 +88,10 @@ describe("select word under playhead", () => {
         createLine({
           id: lineId,
           text: "alpha beta",
-          words: [createWord({ text: "alpha", begin: 0, end: 1 }), createWord({ text: "beta", begin: 1, end: 2 })],
+          words: createWords([
+            { text: "alpha", begin: 0, end: 1 },
+            { text: "beta", begin: 1, end: 2 },
+          ]),
           backgroundText: "echo",
           backgroundWords: [createWord({ text: "echo", begin: 0.4, end: 0.9 })],
         }),
@@ -95,8 +99,8 @@ describe("select word under playhead", () => {
     });
   }
 
-  const mainWordZero: WordSelection = { lineId, lineIndex: 0, wordIndex: 0, type: "word" };
-  const bgWordZero: WordSelection = { lineId, lineIndex: 0, wordIndex: 0, type: "bg" };
+  const mainWordZero = (): SyllableAddress => storedWordAddress(lineId, 0, "word");
+  const bgWordZero = (): SyllableAddress => storedWordAddress(lineId, 0, "bg");
 
   it("selects the main word under the playhead, then cycles to the overlapping background word and wraps", async () => {
     seedTimelineWithWords();
@@ -104,13 +108,13 @@ describe("select word under playhead", () => {
     seedPlayheadTime(0.5);
 
     pressSelectWordAtPlayhead();
-    await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([mainWordZero]);
+    await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([mainWordZero()]);
 
     pressSelectWordAtPlayhead();
-    await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([bgWordZero]);
+    await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([bgWordZero()]);
 
     pressSelectWordAtPlayhead();
-    await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([mainWordZero]);
+    await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([mainWordZero()]);
   });
 
   it("leaves the selection empty when the playhead is past every word", async () => {

@@ -1,6 +1,8 @@
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
-import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import type { LyricLine } from "insync/line";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import { withRoleWords } from "insync/line-track-writes";
+import type { WordTiming } from "insync/word-timing";
+import { parseTtmlTimestamp } from "insync/ttml/timestamp";
 
 // -- Types --------------------------------------------------------------------
 
@@ -47,8 +49,9 @@ function settleTrack(words: readonly WordTiming[], residue: number): WordTiming[
 
 function withExportTiming(lines: readonly LyricLine[], untouchedIds: ReadonlySet<string>): LyricLine[] {
   return lines.map((line) => {
-    if (!untouchedIds.has(line.id) || !line.words?.length) return line;
-    return { ...line, words: settleTrack(line.words, line.words.length % RESIDUE) };
+    const words = timedSyllables(mainTrack(line));
+    if (!untouchedIds.has(line.id) || !words.length) return line;
+    return withRoleWords(line, "main", settleTrack(words, words.length % RESIDUE));
   });
 }
 

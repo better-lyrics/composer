@@ -1,6 +1,10 @@
-import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import { describe, expect, it } from "vitest";
+import type { Agent } from "insync/agent";
+import { withSeededBackground } from "insync/line-background";
+import type { LyricLine } from "insync/line";
+import { lineText } from "insync/line-text";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { ProjectMetadata } from "insync/metadata";
 import { createLine } from "@/test/factories";
 import { parseLrc } from "@/utils/lyrics-parsers/lrc";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";
@@ -8,7 +12,7 @@ import { parseSrt } from "@/utils/lyrics-parsers/srt";
 import { writeLrc } from "@/utils/lyrics-writers/lrc";
 import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
-import { describe, expect, it } from "vitest";
+import { DEFAULT_SPLIT_CHARACTER } from "insync/split-character-text";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -24,10 +28,31 @@ function wordLine(id: string, agentId = "v1"): LyricLine {
     agentId,
     text: "Is it so",
     words: [
-      { text: "Is ", begin: 34.059, end: 34.189 },
-      { text: "it ", begin: 34.189, end: 34.309 },
+      { text: "Is", sep: " ", begin: 34.059, end: 34.189 },
+      { text: "it", sep: " ", begin: 34.189, end: 34.309 },
       { text: "so", begin: 34.309, end: 34.413 },
     ],
+  });
+}
+
+const PARTLY_SYNCED = {
+  id: "p",
+  text: "Is it so",
+  words: [
+    { text: "Is", sep: " ", begin: 34.059, end: 34.189 },
+    { text: "it", sep: " ", begin: 34.189, end: 34.309 },
+  ],
+};
+
+function partlySynced(): LyricLine {
+  return createLine(PARTLY_SYNCED);
+}
+
+function partlySyncedWithBackground(): LyricLine {
+  return createLine({
+    ...PARTLY_SYNCED,
+    backgroundText: "ooh ahh",
+    backgroundWords: [{ text: "ooh", sep: " ", begin: 34.4, end: 34.6 }],
   });
 }
 
@@ -54,6 +79,23 @@ describe("writeLrc", () => {
     expect(writeLrc(doc([wordLine("a")]))).toContain("[00:34.06]<00:34.06>Is <00:34.19>it <00:34.31>so<00:34.41>");
   });
 
+  it("regression: times a line-synced background by its own span", () => {
+    const line = withSeededBackground(
+      createLine({ text: "Low tide", begin: 10, end: 14, backgroundText: "ooh" }),
+      DEFAULT_SPLIT_CHARACTER,
+    );
+    expect(writeQrc(doc([line]))).toContain("(ooh)(12000,2000)");
+  });
+
+  it("regression: writes split marks of an untimed background as joined syllables, as it does for main text", () => {
+    const line = createLine({ text: "o|oh ah|ah", begin: 1, end: 3, backgroundText: "o|oh ah|ah" });
+    expect(writeLrc(doc([line]))).toContain("[00:01.00]ooh ahah (ooh ahah)");
+  });
+
+  it("regression: keeps the untimed rest of a partly synced line inside the last word's tags", () => {
+    expect(writeLrc(doc([partlySynced()]))).toContain("[00:34.06]<00:34.06>Is <00:34.19>it so<00:34.31>");
+  });
+
   it("writes plain lines for line-synced lyrics", () => {
     const lrc = writeLrc(doc([lineSynced("Hello", 1, 2), lineSynced("World", 2, 3)]));
 
@@ -63,7 +105,9 @@ describe("writeLrc", () => {
   it("round-trips line timing through the LRC parser", () => {
     const parsed = parseLrc(writeLrc(doc([lineSynced("Hello", 1, 2), lineSynced("World", 5, 7.5)])));
 
-    expect(parsed.lines.map((line) => [line.text, line.begin, line.end])).toEqual([
+    expect(
+      parsed.lines.map((line) => [lineText(line, DEFAULT_SPLIT_CHARACTER), mainTrack(line).begin, mainTrack(line).end]),
+    ).toEqual([
       ["Hello", 1, 2],
       ["World", 5, 7.5],
     ]);
@@ -72,7 +116,9 @@ describe("writeLrc", () => {
   it("round-trips word timing through the LRC parser", () => {
     const parsed = parseLrc(writeLrc(doc([wordLine("a")])));
 
-    expect(parsed.lines[0].words?.map((word) => [word.text, word.begin, word.end])).toEqual([
+    expect(
+      timedSyllables(mainTrack(parsed.lines[0])).map((word) => [word.text + word.sep, word.begin, word.end]),
+    ).toEqual([
       ["Is ", 34.06, 34.19],
       ["it ", 34.19, 34.31],
       ["so", 34.31, 34.41],
@@ -106,7 +152,7 @@ describe("writeLrc", () => {
         words: [{ text: "Main", begin: 1, end: 2 }],
         backgroundText: "oh yeah",
         backgroundWords: [
-          { text: "oh ", begin: 2, end: 2.5 },
+          { text: "oh", sep: " ", begin: 2, end: 2.5 },
           { text: "yeah", begin: 2.5, end: 3 },
         ],
       });
@@ -118,7 +164,7 @@ describe("writeLrc", () => {
       const line = createLine({
         text: "I'm here",
         words: [
-          { text: "I'm ", begin: 3, end: 3.5 },
+          { text: "I'm", sep: " ", begin: 3, end: 3.5 },
           { text: "here", begin: 3.5, end: 4 },
         ],
         backgroundText: "oh",
@@ -127,8 +173,8 @@ describe("writeLrc", () => {
 
       const parsed = parseLrc(writeLrc(doc([line])));
 
-      const words = parsed.lines[0].words ?? [];
-      expect(words.map((word) => word.text).join("")).toBe("I'm here (oh)");
+      const words = timedSyllables(mainTrack(parsed.lines[0]));
+      expect(words.map((word) => word.text + word.sep).join("")).toBe("I'm here (oh)");
       for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
     });
 
@@ -136,14 +182,26 @@ describe("writeLrc", () => {
       const line = createLine({
         text: "Main words",
         words: [
-          { text: "Main ", begin: 1, end: 2 },
+          { text: "Main", sep: " ", begin: 1, end: 2 },
           { text: "words", begin: 2, end: 3 },
         ],
         backgroundText: "oh",
       });
 
-      const words = parseLrc(writeLrc(doc([line]))).lines[0].words ?? [];
+      const words = timedSyllables(mainTrack(parseLrc(writeLrc(doc([line]))).lines[0]));
       for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
+    });
+
+    it("regression: a tab between untimed background words is written without a split mark", () => {
+      const line = createLine({ text: "Main", begin: 1, end: 2, backgroundText: "ooh\tyeah" });
+
+      expect(writeLrc(doc([line]))).toContain("[00:01.00]Main (ooh\tyeah)");
+    });
+
+    it("regression: keeps the untimed rest of a partly synced background inside its parentheses", () => {
+      expect(writeLrc(doc([partlySyncedWithBackground()]))).toContain(
+        "[00:34.06]<00:34.06>Is <00:34.19>it so <00:34.40>(ooh ahh)<00:34.60>",
+      );
     });
 
     it("keeps parentheses the background text already carries", () => {
@@ -167,10 +225,20 @@ describe("writeSrt", () => {
     expect(writeSrt(doc([wordLine("a")]))).toBe("1\n00:00:34,059 --> 00:00:34,413\nIs it so\n");
   });
 
+  it("regression: keeps the untimed rest of a partly synced line in the cue", () => {
+    expect(writeSrt(doc([partlySynced()]))).toBe("1\n00:00:34,059 --> 00:00:34,309\nIs it so\n");
+  });
+
+  it("regression: keeps the untimed rest of a partly synced background in the cue", () => {
+    expect(writeSrt(doc([partlySyncedWithBackground()]))).toContain("\nIs it so (ooh ahh)\n");
+  });
+
   it("round-trips through the SRT parser", () => {
     const parsed = parseSrt(writeSrt(doc([lineSynced("Hello", 1, 2.5), wordLine("a")])));
 
-    expect(parsed.lines.map((line) => [line.text, line.begin, line.end])).toEqual([
+    expect(
+      parsed.lines.map((line) => [lineText(line, DEFAULT_SPLIT_CHARACTER), mainTrack(line).begin, mainTrack(line).end]),
+    ).toEqual([
       ["Hello", 1, 2.5],
       ["Is it so", 34.059, 34.413],
     ]);
@@ -211,7 +279,9 @@ describe("writeQrc", () => {
   it("round-trips word timing through the QRC parser", () => {
     const parsed = parseQrc(writeQrc(doc([wordLine("a")])));
 
-    expect(parsed.lines[0].words?.map((word) => [word.text, word.begin, word.end])).toEqual([
+    expect(
+      timedSyllables(mainTrack(parsed.lines[0])).map((word) => [word.text + word.sep, word.begin, word.end]),
+    ).toEqual([
       ["Is ", 34.059, 34.189],
       ["it ", 34.189, 34.309],
       ["so", 34.309, 34.413],
@@ -231,7 +301,7 @@ describe("writeQrc", () => {
       expect(qrc).toContain("[1000,0]Lead：\n[1000,1000]A\n[2000,1000]B\n[3000,0]Duet：\n[3000,1000]C");
       const parsed = parseQrc(qrc);
       expect(parsed.agents?.map((agent) => agent.name)).toEqual(["Lead", "Duet"]);
-      expect(parsed.lines.map((line) => line.agentId)).toEqual(["v1", "v1", "v2"]);
+      expect(parsed.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1", "v2"]);
     });
 
     it("writes a combined voice with the slash QQ uses", () => {

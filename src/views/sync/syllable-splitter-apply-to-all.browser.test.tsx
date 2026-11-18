@@ -1,4 +1,6 @@
+import { roleWords } from "insync/line-track";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { newWordId } from "insync/word-id";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -141,7 +143,7 @@ function makeLine(id: string, wordText: string, beginOffset: number) {
   return createLine({
     id,
     text: wordText,
-    words: [{ text: wordText, begin: beginOffset, end: beginOffset + 1 }],
+    words: [{ text: wordText, sep: "", begin: beginOffset, end: beginOffset + 1 }],
   });
 }
 
@@ -151,7 +153,7 @@ async function openSplitterFor(lineId: string, wordText: string) {
       <SyllableSplitter
         lineId={lineId}
         type="word"
-        word={{ text: wordText, begin: 0, end: 1 }}
+        word={{ id: newWordId(), text: wordText, sep: "", begin: 0, end: 1, joinsNext: false }}
         wordIndex={0}
         onSplit={() => {}}
       />
@@ -212,7 +214,7 @@ describe("SyllableSplitter wiring", () => {
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
     await screen.getByRole("button", { name: "Split" }).click();
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
   });
 
   it("leaves the project unchanged when the confirm modal is cancelled", async () => {
@@ -239,7 +241,7 @@ describe("SyllableSplitter wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
   });
 
   it("routes through onSplit (not the store action) when apply-to-all is off", async () => {
@@ -253,7 +255,7 @@ describe("SyllableSplitter wiring", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ text: "running", begin: 0, end: 1 }}
+          word={{ id: "w1", text: "running", sep: "", begin: 0, end: 1, joinsNext: true }}
           wordIndex={0}
           onSplit={onSplit}
         />
@@ -264,7 +266,7 @@ describe("SyllableSplitter wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
     expect(onSplit).toHaveBeenCalledTimes(1);
-    expect(useProjectStore.getState().lines[1].words?.length).toBe(1);
+    expect(roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(1);
   });
 
   it("persists checkbox state to syllableSplitDefaults after a successful split", async () => {
@@ -295,7 +297,7 @@ describe("regressions: apply-to-all confirm stacking", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ text: "running", begin: 0, end: 1 }}
+          word={{ id: "w2", text: "running", sep: "", begin: 0, end: 1, joinsNext: true }}
           wordIndex={0}
           onSplit={() => {}}
         />

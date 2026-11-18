@@ -1,15 +1,15 @@
-import type { Agent } from "@/domain/agent/model";
-import { sharedTimingFanOut } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine, RawLine } from "@/domain/line/model";
-import { withDerivedText } from "@/domain/line/reconstruct-text";
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
+import type { Agent } from "insync/agent";
+import type { HistoryNote } from "insync/commands/command";
+import type { LinkGroup } from "insync/group";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
-import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import { deepFreeze } from "@/stores/project/deep-freeze";
-import type { HistoryEntry, ProjectState } from "@/stores/project/types";
-import { getSplitCharacter } from "@/utils/split-character";
-import { isStructurallyEqual } from "@/utils/structural-equal";
+import type { HistoryEntry, LyricBurst } from "@/stores/project/history-types";
+import type { ProjectState } from "@/stores/project/types";
+import { type DocLines, docOfLines } from "@/stores/project/with-body";
+import { isStructurallyEqual } from "insync/structural-equal";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -17,24 +17,34 @@ const MAX_HISTORY_SIZE = 100;
 
 // -- Snapshots ----------------------------------------------------------------
 
-type SnapshotFields = Pick<HistoryEntry, "lines" | "groups" | "agents" | "customSnapPoints" | "beatGrid">;
+type SnapshotFields = Pick<
+  HistoryEntry,
+  "doc" | "lines" | "groups" | "agents" | "parts" | "passthrough" | "customSnapPoints" | "beatGrid"
+>;
 
-function snapshotEntry(fields: SnapshotFields): HistoryEntry {
+function snapshotEntry(fields: SnapshotFields, note: HistoryNote | null): HistoryEntry {
   return deepFreeze({
+    doc: fields.doc,
     lines: fields.lines,
     groups: fields.groups,
     agents: fields.agents,
+    parts: fields.parts,
+    passthrough: fields.passthrough,
     customSnapPoints: fields.customSnapPoints,
     beatGrid: fields.beatGrid,
     timestamp: Date.now(),
+    note,
   });
 }
 
 function restoreEntry(entry: HistoryEntry): SnapshotFields {
   return {
+    doc: entry.doc,
     lines: entry.lines,
     groups: entry.groups,
     agents: entry.agents,
+    parts: entry.parts,
+    passthrough: entry.passthrough,
     customSnapPoints: entry.customSnapPoints,
     beatGrid: entry.beatGrid,
   };
@@ -50,41 +60,36 @@ function capHistory(history: HistoryEntry[]): HistoryEntry[] {
 function commitHistory(
   state: ProjectState,
   changes: {
-    lines?: RawLine[];
+    body?: DocLines;
     groups?: LinkGroup[];
     agents?: Agent[];
+    parts?: readonly Part[];
+    passthrough?: DocPassthrough;
     customSnapPoints?: SnapPoint[];
     beatGrid?: BeatGrid | null;
   },
-  options: { deriveText?: boolean } = {},
+  options: { note?: HistoryNote } = {},
 ) {
-  const splitChar = getSplitCharacter();
-  const deriveText = options.deriveText ?? true;
-  const unchangedLines = new Set<RawLine>(state.lines);
-  const previousById = new Map(state.lines.map((line) => [line.id, line]));
-  const nextLines = changes.lines
-    ? deriveText
-      ? changes.lines.map((line) =>
-          unchangedLines.has(line) ? line : withDerivedText(line, splitChar, previousById.get(line.id)),
-        )
-      : changes.lines
-    : state.lines;
   const next: SnapshotFields = {
-    lines: nextLines,
+    doc: changes.body?.doc ?? state.doc,
+    lines: changes.body?.lines ?? state.lines,
     groups: changes.groups ?? state.groups,
     agents: changes.agents ?? state.agents,
+    parts: changes.parts ?? state.parts,
+    passthrough: changes.passthrough ?? state.passthrough,
     customSnapPoints: changes.customSnapPoints ?? state.customSnapPoints,
     beatGrid: changes.beatGrid === undefined ? state.beatGrid : changes.beatGrid,
   };
 
   const newHistory = state.history.slice(0, state.historyIndex + 1);
-  if (newHistory.length === 0 || state.isDirtySinceHistory) newHistory.push(snapshotEntry(state));
-  newHistory.push(snapshotEntry(next));
+  if (newHistory.length === 0 || state.isDirtySinceHistory) newHistory.push(snapshotEntry(state, state.pendingNote));
+  newHistory.push(snapshotEntry(next, options.note ?? null));
   capHistory(newHistory);
   return {
     ...next,
     isDirty: true,
     isDirtySinceHistory: false,
+    pendingNote: null,
     history: newHistory,
     historyIndex: newHistory.length - 1,
   };
@@ -116,42 +121,25 @@ function commitBeatGridOffset(state: ProjectState, grid: BeatGrid) {
   if (isStructurallyEqual(previous.beatGrid, grid)) {
     return { beatGrid: grid, isDirty: true, history: state.history.slice(0, index), historyIndex: index - 1 };
   }
-  const joined = snapshotEntry({ ...state, beatGrid: grid });
+  const joined = snapshotEntry({ ...state, beatGrid: grid }, null);
   offsetNudgeSteps.add(joined);
   return { beatGrid: grid, isDirty: true, history: state.history.with(index, joined) };
 }
 
-function changedLineIds(before: readonly RawLine[], after: readonly RawLine[]): string[] {
-  const beforeById = new Map(before.map((line) => [line.id, line]));
-  return after.filter((line) => beforeById.get(line.id) !== line).map((line) => line.id);
-}
-
-// `finish` runs on the lines after the copy and can refuse the whole write by returning null.
-function commitSharedTimingHistory(
-  state: ProjectState,
-  lines: RawLine[],
-  changedIds: readonly string[] = changedLineIds(state.lines, lines),
-  options: { deriveText?: boolean; finish?: (copied: RawLine[]) => RawLine[] | null } = {},
-) {
-  const shared = sharedTimingFanOut(state.lines, lines, state.groups, changedIds);
-  if (shared.rejected) return state;
-  const finished = options.finish ? options.finish(shared.lines) : shared.lines;
-  if (!finished) return state;
-  if (shared.touchedGroupIds.length) notifySharedTimingCopied(shared.touchedGroupIds);
-  return commitHistory(state, { lines: finished }, { deriveText: options.deriveText });
-}
-
-function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineWasDirty = false) {
+function commitPendingEdit(state: ProjectState, burst: LyricBurst) {
   if (!state.isDirtySinceHistory) return {};
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   // Seed the pre-run baseline when a non-history mutation dirtied the store
   // before the run, otherwise undo would skip straight past it.
-  if (newHistory.length === 0 || baselineWasDirty) newHistory.push(snapshotEntry({ ...state, lines: baseline }));
-  newHistory.push(snapshotEntry(state));
+  const { lines, parts, passthrough } = burst;
+  if (newHistory.length === 0 || burst.wasPending)
+    newHistory.push(snapshotEntry({ ...state, doc: docOfLines(lines), lines, parts, passthrough }, null));
+  newHistory.push(snapshotEntry(state, state.pendingNote));
   capHistory(newHistory);
   return {
     isDirty: true,
     isDirtySinceHistory: false,
+    pendingNote: null,
     history: newHistory,
     historyIndex: newHistory.length - 1,
   };
@@ -166,11 +154,17 @@ function commitSnapPointEdit(state: ProjectState, baseline: SnapPoint[]) {
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   const top = newHistory[newHistory.length - 1];
   if (newHistory.length === 0 || !top || !snapPointsEqual(baseline, top.customSnapPoints)) {
-    newHistory.push(snapshotEntry({ ...state, customSnapPoints: baseline }));
+    newHistory.push(snapshotEntry({ ...state, customSnapPoints: baseline }, null));
   }
-  newHistory.push(snapshotEntry(state));
+  newHistory.push(snapshotEntry(state, state.pendingNote));
   capHistory(newHistory);
-  return { isDirty: true, isDirtySinceHistory: false, history: newHistory, historyIndex: newHistory.length - 1 };
+  return {
+    isDirty: true,
+    isDirtySinceHistory: false,
+    pendingNote: null,
+    history: newHistory,
+    historyIndex: newHistory.length - 1,
+  };
 }
 
 // A pending edit becomes its own entry first so redo can return to it.
@@ -178,7 +172,7 @@ function undoState(state: ProjectState) {
   const pending = state.isDirtySinceHistory && state.historyIndex >= 0;
   if (!pending && state.historyIndex <= 0) return state;
   const history = pending
-    ? capHistory([...state.history.slice(0, state.historyIndex + 1), snapshotEntry(state)])
+    ? capHistory([...state.history.slice(0, state.historyIndex + 1), snapshotEntry(state, state.pendingNote)])
     : state.history;
   const targetIndex = pending ? history.length - 2 : state.historyIndex - 1;
   return {
@@ -187,6 +181,7 @@ function undoState(state: ProjectState) {
     historyIndex: targetIndex,
     isDirty: true,
     isDirtySinceHistory: false,
+    pendingNote: null,
   };
 }
 
@@ -198,16 +193,18 @@ function redoState(state: ProjectState) {
     historyIndex: targetIndex,
     isDirty: true,
     isDirtySinceHistory: false,
+    pendingNote: null,
   };
 }
 
 // Data that follows the lyrics joins the step that changed them, so undo never stops between the two.
-function amendCurrentStep(state: ProjectState, lines: RawLine[]) {
-  if (state.isDirtySinceHistory || state.historyIndex < 0) return { lines, isDirty: true, isDirtySinceHistory: true };
+function amendCurrentStep(state: ProjectState, body: DocLines) {
+  if (state.isDirtySinceHistory || state.historyIndex < 0) return { ...body, isDirty: true, isDirtySinceHistory: true };
+  const current = state.history[state.historyIndex];
   return {
-    lines,
+    ...body,
     isDirty: true,
-    history: state.history.with(state.historyIndex, snapshotEntry({ ...state, lines })),
+    history: state.history.with(state.historyIndex, snapshotEntry({ ...state, ...body }, current.note)),
   };
 }
 
@@ -223,7 +220,6 @@ export {
   commitBeatGridOffset,
   commitHistory,
   commitPendingEdit,
-  commitSharedTimingHistory,
   commitSnapPointEdit,
   MAX_HISTORY_SIZE,
   redoState,

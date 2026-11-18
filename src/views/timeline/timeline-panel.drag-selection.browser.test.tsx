@@ -1,14 +1,16 @@
-import type { WordSelection } from "@/domain/selection/model";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { mainTrack, timedSyllables } from "insync/line-track";
+import type { SyllableAddress } from "insync/selection-model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -32,7 +34,7 @@ beforeEach(() => {
         id: "l0",
         text: "a a",
         words: [
-          { text: "a ", begin: 3, end: 4 },
+          { text: "a", sep: " ", begin: 3, end: 4 },
           { text: "a", begin: 4, end: 5 },
         ],
       }),
@@ -40,7 +42,7 @@ beforeEach(() => {
         id: "l1",
         text: "b b",
         words: [
-          { text: "b ", begin: 8, end: 9 },
+          { text: "b", sep: " ", begin: 8, end: 9 },
           { text: "b", begin: 9, end: 10 },
         ],
         backgroundText: "oh",
@@ -100,8 +102,8 @@ async function dragWithin(element: HTMLElement, fromX: number, toX: number, from
 }
 
 const selected = () => useTimelineStore.getState().selectedWords;
-const words = (lineId: string, lineIndex: number, type: "word" | "bg", indices: number[]): WordSelection[] =>
-  indices.map((wordIndex) => ({ lineId, lineIndex, wordIndex, type }));
+const words = (lineId: string, _lineIndex: number, type: "word" | "bg", indices: number[]): SyllableAddress[] =>
+  indices.map((wordIndex) => storedWordAddress(lineId, wordIndex, type));
 
 // -- Tests --------------------------------------------------------------------
 
@@ -164,7 +166,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 1, 7 * ZOOM);
 
-      expect(useProjectStore.getState().lines[0].words?.[1].end).toBeGreaterThan(5);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].end).toBeGreaterThan(5);
       expect(selected()).toEqual(words("l0", 0, "word", [1]));
     });
 
@@ -174,7 +176,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 1, 7 * ZOOM);
 
-      expect(useProjectStore.getState().lines[0].words?.[0].end).toBeGreaterThan(4);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].end).toBeGreaterThan(4);
       expect(selected()).toEqual(words("l0", 0, "word", [0, 1]));
     });
 
@@ -184,7 +186,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 0, 4.6 * ZOOM);
 
-      expect(useProjectStore.getState().lines[0].words?.[0].end).toBe(4);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].end).toBe(4);
       expect(selected()).toEqual(words("l0", 0, "word", [0]));
     });
 
@@ -194,7 +196,7 @@ describe("TimelinePanel · drag selection", () => {
 
       await dragRightEdgeTo(0, 1, 7 * ZOOM, ROW_HEIGHT - 2);
 
-      expect(useProjectStore.getState().lines[0].words?.[1].end).toBeGreaterThan(5);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].end).toBeGreaterThan(5);
       expect(selected()).toEqual(words("l0", 0, "word", [1]));
     });
 

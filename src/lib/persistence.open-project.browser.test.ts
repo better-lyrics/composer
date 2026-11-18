@@ -1,5 +1,5 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine } from "@/domain/line/model";
+import { lineFromFields } from "insync/line-from-fields";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
 import { findOpenProjectId, forgetOpenProjectId } from "@/lib/open-project-session";
 import { clearAudioFile, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { DB_NAME, DB_VERSION } from "@/lib/persistence-idb";
@@ -11,12 +11,13 @@ import { createProjectSaveInput } from "@/test/factories";
 import { deleteDatabase, openAndCloseAtVersion, seedAudioFile, seedProject } from "@/test/idb";
 import { loadOpenProjectAudio, loadOpenProjectRecord } from "@/test/projects";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 function save(title: string): Promise<void> {
   return saveCurrentProject(
     createProjectSaveInput({
       metadata: { title, artists: [], album: "", duration: 0 },
-      lines: [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
+      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }, getSplitCharacter())],
       audioSource: { kind: "file", name: "a.mp3" },
     }),
   );
@@ -68,7 +69,7 @@ describe("persistence · open project", () => {
         granularity: "word",
         agents: DEFAULT_AGENTS,
         lines: [
-          reconcileLine({
+          {
             id: "L1",
             text: "걸음은 Like a dance",
             agentId: "v1",
@@ -79,7 +80,7 @@ describe("persistence · open project", () => {
               origin: "google",
               sourceFingerprint: "legacy",
             },
-          }),
+          },
         ],
       });
       forgetOpenProjectId();
@@ -87,7 +88,7 @@ describe("persistence · open project", () => {
       expect(id).toBeDefined();
       const { project: loaded } = await loadProjectForRestore(id ?? "");
       expect(loaded?.version).toBe(SAVED_PROJECT_VERSION);
-      expect(loaded?.lines[0].transliteration?.alignmentStatus).toBe("inferred");
+      expect(loaded?.lines[0].languages?.transliteration?.main.alignmentStatus).toBe("inferred");
       expect((await loadProjectRecord(id ?? ""))?.version).toBe(SAVED_PROJECT_VERSION);
     });
   });

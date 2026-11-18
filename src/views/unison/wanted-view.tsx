@@ -9,7 +9,7 @@ import { Button } from "@/ui/button";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { YouTubeMusicLink } from "@/ui/unison/youtube-music-link";
 import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { pluralize } from "insync/pluralize";
 import { InlineError, ViewEmpty } from "@/views/unison/view-states";
 
 // -- Types ---------------------------------------------------------------------

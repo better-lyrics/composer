@@ -1,8 +1,8 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
 import type { CheckFix, SubmitCheck, SubmitCheckStatus, TtmlCheckProblem } from "@/domain/unison/submit-checks";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
-import { pluralize } from "@/utils/pluralize";
+import { formatTime } from "insync/format-time";
+import { pluralize } from "insync/pluralize";
 import { UNREVIEWED_REASON, UNREVIEWED_TITLE } from "@/views/export/alignment-review-copy";
 import { type CheckFixActions, CheckFixView } from "@/views/export/unison/check-fix-view";
 import { IconChevronDown, IconCircleCheckFilled, IconCircleXFilled, IconInfoCircleFilled } from "@tabler/icons-react";

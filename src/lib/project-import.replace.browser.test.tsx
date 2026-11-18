@@ -1,4 +1,6 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { DEFAULT_AGENTS } from "insync/agent-colors";
+import { mainBounds } from "insync/line-bounds";
+import { lineText } from "insync/line-text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import type { ProjectFile } from "@/lib/project-file";
@@ -8,12 +10,14 @@ import { loadProjectForRestore } from "@/lib/project-restore";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { getSaveStatus } from "@/lib/save-status";
-import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject, savedLines } from "@/lib/saved-project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
-import { saveInputTitled, seedStoredProject, songTitled } from "@/test/projects";
+import { savedTime } from "@/test/priming-projects";
+import { linesOfRecord, saveInputTitled, seedStoredProject, songTitled } from "@/test/projects";
 import { describe, expect, it } from "vitest";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -23,7 +27,7 @@ function fileWithLine(text: string): ProjectFile {
     savedAt: Date.now(),
     metadata: { title: "File", artists: [], album: "", duration: 0 },
     agents: DEFAULT_AGENTS,
-    lines: [createLine({ text })],
+    lines: savedLines([createLine({ text })]),
     granularity: "word",
   };
 }
@@ -34,7 +38,7 @@ describe("replaceProjectFromFile", () => {
   it("flushes the open project's pending save before replacing, leaving no later overwrite", async () => {
     await seedStoredProject("a", {
       open: true,
-      project: { ...songTitled("Alpha"), lines: [createLine({ text: "Library line", begin: 1, end: 2 })] },
+      project: { ...songTitled("Alpha"), lines: savedLines([createLine({ text: "Library line", begin: 1, end: 2 })]) },
     });
     await restoreOpenProject();
     useSettingsStore.setState({ autoSaveDelay: 60_000 });
@@ -42,9 +46,9 @@ describe("replaceProjectFromFile", () => {
 
     await replaceProjectFromFile("a", fileWithLine("File line"));
 
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0], getSplitCharacter())).toBe("File line");
     await flushPendingSave();
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
+    expect(lineText(linesOfRecord(await loadProjectRecord("a"))[0], getSplitCharacter())).toBe("File line");
   });
 
   describe("MP3 priming flags", () => {
@@ -58,10 +62,10 @@ describe("replaceProjectFromFile", () => {
       await replaceProjectFromFile("a", {
         ...fileWithLine("File line"),
         ...file,
-        lines: [createLine({ text: "File line", begin: 1, end: 2 })],
+        lines: savedLines([createLine({ text: "File line", begin: 1, end: 2 })]),
       });
       const reloaded = (await loadProjectForRestore("a")).project;
-      return (reloaded?.lines[0] as { begin: number }).begin;
+      return mainBounds(linesOfRecord(reloaded)[0])?.begin ?? Number.NaN;
     }
 
     it("regression: an older export into a corrected project still moves to the corrected decode", async () => {
@@ -69,7 +73,7 @@ describe("replaceProjectFromFile", () => {
         { primingStripped: true, primingCorrected: true },
         { primingStripped: true, primingCorrected: undefined },
       );
-      expect(begin).toBeCloseTo(1 + P, 9);
+      expect(begin).toBe(savedTime(1 + P));
     });
 
     it("regression: a corrected export into an old project is not moved again", async () => {
