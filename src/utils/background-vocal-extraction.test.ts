@@ -1167,6 +1167,24 @@ describe("extractBackgroundVocals: linked instances", () => {
     );
   });
 
+  it("regression: extraction leaves the background of a refused instance as typed, as the count says", () => {
+    const instance = (instanceIdx: number, backgroundWords?: { text: string; begin: number; end: number }[]) =>
+      createLine({
+        id: `chorus-${instanceIdx}`,
+        text: "ari|ka pelvin (tor zu)",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+        ...(backgroundWords ? { backgroundText: "sel", backgroundWords } : { backgroundText: "(mira) (sel)" }),
+      });
+    const lines = [instance(0), instance(1, [{ text: "sel", begin: 0.4, end: 0.6 }])];
+    const join: ExtractOptions = { mergeStandaloneLines: true, preserveBrackets: true, separator: "comma" };
+    expect(extractableLineCount(lines, join, DEFAULT_SPLIT_CHARACTER)).toBe(0);
+    expect(
+      backgroundText(extractBackgroundVocals(lines, join, DEFAULT_SPLIT_CHARACTER)[0], DEFAULT_SPLIT_CHARACTER),
+    ).toBe("(mira) (sel)");
+  });
+
   it("regression: a linked copy of a line with a timed background keeps its brackets for that reason", () => {
     const words = [
       { text: "Hold", sep: " ", begin: 7.8, end: 8.1 },

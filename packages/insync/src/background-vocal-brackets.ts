@@ -101,22 +101,22 @@ function wordsAsParts(words: readonly WordTiming[], separator: BackgroundSeparat
 // A background of more than one pair, or of a pair and bare text, that extraction makes one pair.
 function needsOnePair(text: string): boolean {
   const trimmed = text.trim();
-  if (!hasBalancedPairs(trimmed)) return false;
+  if (!hasBalancedPairs(trimmed) || backgroundParts(trimmed).length === 0) return false;
   const opens = [...trimmed].filter((char) => char === "(").length;
   return opens > 1 || !trimmed.startsWith("(") || !trimmed.endsWith(")");
 }
 
 function onePairText(text: string, join: BracketJoin): string {
-  const joined = joinExtractedParts(backgroundParts(text.trim()), join.separator);
-  return join.preserveBrackets ? `(${joined})` : joined;
+  return wrappedPair(joinExtractedParts(backgroundParts(text.trim()), join.separator), join);
 }
+
+const wrappedPair = (joined: string, join: BracketJoin) => (join.preserveBrackets ? `(${joined})` : joined);
 
 // -- Joins --------------------------------------------------------------------
 
 // A line's background is one pair: the parts it held, then each addition after the separator.
 function joinBackgroundText(existing: string | undefined, addition: string, join: BracketJoin): string {
-  const joined = joinExtractedParts([...backgroundParts(existing?.trim() ?? ""), addition], join.separator);
-  return join.preserveBrackets ? `(${joined})` : joined;
+  return wrappedPair(joinExtractedParts([...backgroundParts(existing?.trim() ?? ""), addition], join.separator), join);
 }
 
 // The word-level twin of `joinBackgroundText`, so timed words spell the same text.

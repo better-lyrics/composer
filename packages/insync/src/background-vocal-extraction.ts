@@ -194,6 +194,16 @@ function extractBracketGroups(
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine[] {
+  return extractLines(lines, options, splitChar, songEnd, false);
+}
+
+function extractLines(
+  lines: LyricLine[],
+  options: ExtractOptions,
+  splitChar: string,
+  songEnd: number,
+  onePair: boolean,
+): LyricLine[] {
   const result: LyricLine[] = [];
   const sameSessionWriteIndices = new Set<number>();
   const slotLines = new Map<number, LyricLine>();
@@ -244,9 +254,11 @@ function extractBracketGroups(
     result[index] = line;
     sameSessionWriteIndices.delete(index);
   }
-  return result.map((line, index) =>
-    sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar, songEnd) : line,
-  );
+  return result.map((line, index) => {
+    const seeded = sameSessionWriteIndices.has(index) ? withSeededBackground(line, splitChar, songEnd) : line;
+    const refused = refusedSlots.has(extractionSlot(seeded) ?? "");
+    return onePair && !refused ? withOnePairBackground(seeded, options, splitChar) : seeded;
+  });
 }
 
 // Brackets move to the background, and every background becomes one pair.
@@ -256,9 +268,7 @@ function extractBackgroundVocals(
   splitChar: string,
   songEnd = Number.POSITIVE_INFINITY,
 ): LyricLine[] {
-  return extractBracketGroups(lines, options, splitChar, songEnd).map((line) =>
-    withOnePairBackground(line, options, splitChar),
-  );
+  return extractLines(lines, options, splitChar, songEnd, true);
 }
 
 function lineHasInlineParens(line: LyricLine, splitChar: string): boolean {
