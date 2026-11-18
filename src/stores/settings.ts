@@ -181,7 +181,7 @@ const DEFAULTS: SettingsState = {
   autoExtractBackgroundVocals: true,
   mergeStandaloneBackgroundLines: true,
   preserveBracketsOnExtraction: true,
-  backgroundSeparator: "space",
+  backgroundSeparator: "comma",
 
   confirmReplaceLyrics: true,
   confirmSyncReset: true,

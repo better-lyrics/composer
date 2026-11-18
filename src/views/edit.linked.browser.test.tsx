@@ -178,7 +178,8 @@ describe("pasting over a linked line", () => {
     pasteTextareaValue(textarea, "Chorus song\nVerse\n(oh)\n(yeah)\nChorus line");
 
     await expect.poll(texts).toEqual(["Chorus song", "Verse", "Chorus song"]);
-    await expect.poll(() => textarea.value).toBe("Chorus song\nVerse (oh yeah)\nChorus song");
+    // Background parts now join with a comma by default.
+    await expect.poll(() => textarea.value).toBe("Chorus song\nVerse (oh, yeah)\nChorus song");
     expect(textarea.selectionStart).toBeLessThanOrEqual(textarea.value.length);
   });
 });

@@ -7,7 +7,7 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { Switch } from "@/ui/switch";
 import { BracketsExample } from "@/views/edit/brackets-example";
 import { bracketsStatus } from "@/views/edit/brackets-status";
-import { type Icon, IconBracketsContain, IconCornerLeftUp, IconMicrophone, IconSpace } from "@tabler/icons-react";
+import { type Icon, IconCornerLeftUp, IconMicrophone, IconSpace } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -74,11 +74,6 @@ const BracketsSettings: React.FC<BracketsSettingsProps> = ({ extractableCount, k
           setting="mergeStandaloneBackgroundLines"
           hint="A line that is only ( ) joins the line above"
           icon={IconCornerLeftUp}
-        />
-        <SettingSwitchRow
-          setting="preserveBracketsOnExtraction"
-          hint="Background vocals keep their ( )"
-          icon={IconBracketsContain}
         />
         <SeparatorRow />
       </PopGroup>
