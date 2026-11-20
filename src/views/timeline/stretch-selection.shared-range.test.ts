@@ -20,7 +20,7 @@ function wordChorus(id: string, instanceIdx: number, begin: number): LyricLine {
     instanceIdx,
     templateLineIdx: 0,
     words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
+      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
       createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
     ],
   });
@@ -61,7 +61,7 @@ describe("stretchSelections with a shared time range", () => {
     const outside = createLine({
       id: "x",
       text: "a b",
-      words: [createWord({ text: "a ", begin: 9, end: 9.5 }), createWord({ text: "b", begin: 9.5, end: 10 })],
+      words: [createWord({ text: "a", sep: " ", begin: 9, end: 9.5 }), createWord({ text: "b", begin: 9.5, end: 10 })],
     });
     const all = [...rows, outside];
     const result = stretchSelections(all, [word("x", 0), word("x", 1), word("c1", 0)], 10, {
@@ -94,7 +94,7 @@ describe("stretchSelections with a shared time range", () => {
       const outside = createLine({
         id: "x",
         text: "a b",
-        words: [createWord({ text: "a ", begin: 1, end: 2 }), createWord({ text: "b", begin: 2, end: 3 })],
+        words: [createWord({ text: "a", sep: " ", begin: 1, end: 2 }), createWord({ text: "b", begin: 2, end: 3 })],
       });
       const rows = [outside, lineChorus("c0", 0, 3), lineChorus("c1", 1, 10)];
       const result = stretchSelections(rows, [word("x", 0), word("x", 1), word("c1", 0)], 0.1, {

@@ -3,9 +3,9 @@ import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 
 const track: WordTiming[] = [
-  { text: "one ", begin: 10, end: 11 },
-  { text: "two ", begin: 12, end: 13 },
-  { text: "three", begin: 13, end: 14 },
+  { text: "one", sep: " ", begin: 10, end: 11 },
+  { text: "two", sep: " ", begin: 12, end: 13 },
+  { text: "three", sep: "", begin: 13, end: 14 },
 ];
 
 describe("reorderWordTrack with a time range", () => {

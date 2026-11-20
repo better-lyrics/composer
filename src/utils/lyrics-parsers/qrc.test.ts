@@ -95,9 +95,9 @@ describe("parseQrc", () => {
       const result = parseQrc(WANDERLUST_QRC);
       const first = result.lines.find((line) => line.text === FIRST_LYRIC_TEXT);
       expect(first).toBeDefined();
-      expect(first?.words?.[0]).toEqual({ text: "Is ", begin: 34.059, end: 34.189 });
-      expect(first?.words?.[1]).toEqual({ text: "it ", begin: 34.189, end: 34.309 });
-      expect(first?.words?.at(-1)).toEqual({ text: "thing", begin: 35.42, end: 36.358 });
+      expect(first?.words?.[0]).toEqual({ text: "Is", sep: " ", begin: 34.059, end: 34.189 });
+      expect(first?.words?.[1]).toEqual({ text: "it", sep: " ", begin: 34.189, end: 34.309 });
+      expect(first?.words?.at(-1)).toEqual({ text: "thing", sep: "", begin: 35.42, end: 36.358 });
     });
 
     it("converts milliseconds to seconds", () => {
@@ -110,7 +110,7 @@ describe("parseQrc", () => {
       const result = parseQrc(WANDERLUST_QRC);
       const first = result.lines.find((line) => line.text === FIRST_LYRIC_TEXT);
       const words = first?.words ?? [];
-      expect(words.map((word) => word.text).join("")).toBe(FIRST_LYRIC_TEXT);
+      expect(words.map((word) => word.text + word.sep).join("")).toBe(FIRST_LYRIC_TEXT);
     });
 
     it("parses a document whose body is not wrapped in QrcInfos XML", () => {
@@ -123,14 +123,20 @@ describe("parseQrc", () => {
       const result = parseQrc(
         '<?xml version="1.0" encoding="utf-8"?>\n<QrcInfos>\n<LyricInfo LyricCount="1">\n<Lyric_1 LyricType="1" LyricContent="[1000,800]Say "(1000,300)Come(1300,500)\n[2000,500]Ooh(2000,500)\n"/>\n</LyricInfo>\n</QrcInfos>',
       );
-      expect(result.lines.map((line) => line.words?.map((word) => word.text).join(""))).toEqual(['Say "Come', "Ooh"]);
+      expect(result.lines.map((line) => line.words?.map((word) => word.text + word.sep).join(""))).toEqual([
+        'Say "Come',
+        "Ooh",
+      ]);
     });
 
     it("regression: keeps reading past an unescaped quote followed by text that looks like an attribute", () => {
       const result = parseQrc(
         '<QrcInfos>\n<Lyric_1 LyricType="1" LyricContent="[1000,800]Say (1000,300)"E=mc²"(1300,500)\n[2000,500]Ooh(2000,500)\n"/>\n</QrcInfos>',
       );
-      expect(result.lines.map((line) => line.words?.map((word) => word.text).join(""))).toEqual(['Say "E=mc²"', "Ooh"]);
+      expect(result.lines.map((line) => line.words?.map((word) => word.text + word.sep).join(""))).toEqual([
+        'Say "E=mc²"',
+        "Ooh",
+      ]);
     });
   });
 
@@ -615,12 +621,12 @@ describe("parseQrc", () => {
 
     it("stretches a final word that declares no duration to the next line's start", () => {
       const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)\n[3000,500]Next(3000,500)");
-      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 3 });
+      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", sep: "", begin: 1.25, end: 3 });
     });
 
     it("stretches the last line of a document to the song duration", () => {
       const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)", 5);
-      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 5 });
+      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", sep: "", begin: 1.25, end: 5 });
     });
 
     it("stretches the last line-synced line of a document to the song duration", () => {
@@ -631,7 +637,7 @@ describe("parseQrc", () => {
     describe("edge cases", () => {
       it("leaves a zero duration alone when no song duration is known", () => {
         const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)");
-        expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 1.25 });
+        expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", sep: "", begin: 1.25, end: 1.25 });
       });
 
       it("leaves a zero duration alone when the next line starts no later", () => {
@@ -651,7 +657,7 @@ describe("parseQrc", () => {
 
       it("leaves a zero-duration word that is not the last one untouched", () => {
         const result = parseQrc("[1000,500]Hi (1000,0)there(1250,250)\n[3000,500]Next(3000,500)");
-        expect(result.lines[0].words?.[0]).toEqual({ text: "Hi ", begin: 1, end: 1 });
+        expect(result.lines[0].words?.[0]).toEqual({ text: "Hi", sep: " ", begin: 1, end: 1 });
       });
 
       it("reads the next line's start through a marker line", () => {
@@ -757,7 +763,7 @@ describe("parseQrc", () => {
     it("reads a malformed QrcInfos document as a raw body", () => {
       const result = parseQrc('<QrcInfos><LyricInfo LyricCount="1"></QrcInfos>\n[1000,500]Hi (1000,500)');
       expect(result.lines).toHaveLength(1);
-      expect(result.lines[0].words?.map((word) => word.text)).toEqual(["Hi "]);
+      expect(result.lines[0].words?.map((word) => word.text + word.sep)).toEqual(["Hi "]);
     });
 
     it("returns nothing when QrcInfos carries no LyricContent attribute", () => {

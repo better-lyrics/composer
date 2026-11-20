@@ -55,8 +55,8 @@ function mergeWordsIntoTrack(existing: WordTiming[], incoming: WordTiming[]): Wo
   const spaced = tagged.map((tag, index) => {
     const next = tagged[index + 1];
     if (!next || next.isIncoming === tag.isIncoming) return tag.word;
-    if (tag.word.text.endsWith(" ")) return tag.word;
-    return { ...tag.word, text: `${tag.word.text} ` };
+    if (tag.word.sep.endsWith(" ")) return tag.word;
+    return { ...tag.word, sep: `${tag.word.sep} ` };
   });
 
   return trimTrailingSpaceFromLast(spaced);

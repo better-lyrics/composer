@@ -10,13 +10,13 @@ function lineWithMappings(): LyricLine {
     agentId: "v1",
     text: "今日",
     words: [
-      { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: "-" },
-      { text: "日", begin: 1.5, end: 2, transliteration: "hi" },
+      { text: "今", sep: "", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: "-" },
+      { text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi" },
     ],
     backgroundText: "青空",
     backgroundWords: [
-      { text: "青", begin: 2, end: 2.5, transliteration: "ao", transliterationJoinerAfter: "" },
-      { text: "空", begin: 2.5, end: 3, transliteration: "sora" },
+      { text: "青", sep: "", begin: 2, end: 2.5, transliteration: "ao", transliterationJoinerAfter: "" },
+      { text: "空", sep: "", begin: 2.5, end: 3, transliteration: "sora" },
     ],
     backgroundTextSource: "manual",
     transliteration: {

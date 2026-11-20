@@ -48,8 +48,8 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
           createLine({
             text: "Half synced words here",
             words: [
-              { text: "Half ", begin: 1, end: 2 },
-              { text: "synced ", begin: 2, end: 3 },
+              { text: "Half", sep: " ", begin: 1, end: 2 },
+              { text: "synced", sep: " ", begin: 2, end: 3 },
             ],
           }),
         ],

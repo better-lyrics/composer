@@ -38,7 +38,7 @@ describe("TimelineContextMenu · delete word", () => {
           id: "l1",
           text: "hello world",
           words: [
-            { text: "hello ", begin: 1, end: 2 },
+            { text: "hello", sep: " ", begin: 1, end: 2 },
             { text: "world", begin: 2, end: 3 },
           ],
         }),
@@ -60,7 +60,7 @@ describe("TimelineContextMenu · delete word", () => {
           words: [{ text: "hello", begin: 1, end: 2 }],
           backgroundText: "ooh aah",
           backgroundWords: [
-            { text: "ooh ", begin: 1, end: 1.5 },
+            { text: "ooh", sep: " ", begin: 1, end: 1.5 },
             { text: "aah", begin: 1.5, end: 2 },
           ],
         }),
@@ -82,7 +82,7 @@ describe("TimelineContextMenu · delete word", () => {
           id: `c${instanceIdx}`,
           text: "go now",
           words: [
-            { text: "go ", begin, end: begin + 1 },
+            { text: "go", sep: " ", begin, end: begin + 1 },
             { text: "now", begin: begin + 1, end: begin + 2 },
           ],
           groupId: "g1",
@@ -93,8 +93,8 @@ describe("TimelineContextMenu · delete word", () => {
       useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })] });
       await clickDelete();
 
-      expect(lineById("c0")?.words?.map((word) => word.text)).toEqual(["now"]);
-      expect(lineById("c1")?.words?.map((word) => word.text)).toEqual(["now"]);
+      expect(lineById("c0")?.words?.map((word) => word.text + word.sep)).toEqual(["now"]);
+      expect(lineById("c1")?.words?.map((word) => word.text + word.sep)).toEqual(["now"]);
     });
 
     it("regression: removes the timing of a line-synced line (issue #285)", async () => {
@@ -111,8 +111,8 @@ describe("TimelineContextMenu · delete word", () => {
         id: "l1",
         text: "one two three",
         words: [
-          { text: "one ", begin: 1, end: 2 },
-          { text: "two ", begin: 2, end: 3 },
+          { text: "one", sep: " ", begin: 1, end: 2 },
+          { text: "two", sep: " ", begin: 2, end: 3 },
           { text: "three", begin: 3, end: 4 },
         ],
       });
@@ -141,7 +141,7 @@ describe("TimelineContextMenu · delete word", () => {
       });
       await clickDelete();
 
-      expect(lineById("l1")?.words?.map((word) => word.text)).toEqual(["one ", "two "]);
+      expect(lineById("l1")?.words?.map((word) => word.text + word.sep)).toEqual(["one ", "two "]);
       expect(useTimelineStore.getState().selectedWords).toEqual([]);
     });
   });

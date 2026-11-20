@@ -26,14 +26,14 @@ function lineWithoutPieces(): LyricLine {
     agentId: "v1",
     text: "Uh 일단은 나",
     words: [
-      { text: "Uh ", begin: 0, end: 0.5 },
-      { text: "일단은 ", begin: 0.5, end: 1.5 },
-      { text: "나", begin: 1.5, end: 2 },
+      { text: "Uh", sep: " ", begin: 0, end: 0.5 },
+      { text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
+      { text: "나", sep: "", begin: 1.5, end: 2 },
     ],
     backgroundText: "그래 yeah",
     backgroundWords: [
-      { text: "그래 ", begin: 2, end: 2.5 },
-      { text: "yeah", begin: 2.5, end: 3 },
+      { text: "그래", sep: " ", begin: 2, end: 2.5 },
+      { text: "yeah", sep: "", begin: 2.5, end: 3 },
     ],
     transliteration: track,
   };
@@ -106,7 +106,7 @@ describe("TimelineSyllableSplitter transliteration", () => {
 
       await expect.poll(() => savedLine().words?.length).toBe(4);
       const stored = savedLine().words ?? [];
-      expect(stored.map((word) => word.text)).toEqual(["Uh ", "일단 ", "은 ", "나"]);
+      expect(stored.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단 ", "은 ", "나"]);
       expect(stored.map((word) => word.transliteration)).toEqual(["Uh", "ild", "an eun", "na"]);
       expect(savedLine().transliteration?.text).toBe("Uh  ildan eun  na");
       expect(getEffectiveLines([savedLine()])[0].words?.map((word) => word.transliteration)).toEqual([

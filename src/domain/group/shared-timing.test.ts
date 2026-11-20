@@ -25,7 +25,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -232,7 +232,7 @@ describe("sharedTimingFanOut", () => {
     it("never copies a line outside the group", () => {
       const outside = createLine({ id: "x", text: "Hey", words: [{ text: "Hey", begin: 5, end: 6 }] });
       const before = [outside, chorus(0, 0, 10), chorus(1, 0, 40)];
-      const after = edit(before, "x", () => ({ words: [{ text: "Hey", begin: 5, end: 6.5 }] }));
+      const after = edit(before, "x", () => ({ words: [{ text: "Hey", sep: "", begin: 5, end: 6.5 }] }));
       const result = sharedTimingFanOut(before, after, sharing, ["x"]);
       expect(result.lines).toBe(after);
       expect(result.touchedGroupIds).toEqual([]);
@@ -253,7 +253,7 @@ describe("sharedTimingFanOut", () => {
 
     it("skips a source whose instance had no start before the edit", () => {
       const before = [chorus(0, 0), chorus(1, 0, 40)];
-      const after = edit(before, "c0-0", () => ({ words: [{ text: "I ", begin: 10, end: 10.4 }] }));
+      const after = edit(before, "c0-0", () => ({ words: [{ text: "I", sep: " ", begin: 10, end: 10.4 }] }));
       expect(sharedTimingFanOut(before, after, sharing, ["c0-0"]).lines).toBe(after);
     });
 

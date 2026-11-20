@@ -23,8 +23,8 @@ const verse = [
     id: "yeah",
     text: "yeah yeah yeah",
     words: [
-      { text: "yeah ", begin: 19.0, end: 19.6 },
-      { text: "yeah ", begin: 19.8, end: 20.4 },
+      { text: "yeah", sep: " ", begin: 19.0, end: 19.6 },
+      { text: "yeah", sep: " ", begin: 19.8, end: 20.4 },
       { text: "yeah", begin: 20.6, end: 21.1 },
     ],
   }),
@@ -32,8 +32,8 @@ const verse = [
     id: "too-hot",
     text: "Too hot for my own socks",
     words: [
-      { text: "Too ", begin: 20.95, end: 21.2 },
-      { text: "hot ", begin: 21.2, end: 21.6 },
+      { text: "Too", sep: " ", begin: 20.95, end: 21.2 },
+      { text: "hot", sep: " ", begin: 21.2, end: 21.6 },
       { text: "for my own socks", begin: 21.6, end: 23.0 },
     ],
   }),

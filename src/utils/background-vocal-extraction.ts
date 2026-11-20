@@ -6,6 +6,7 @@ import { reconcileLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { joinBackgroundText } from "@/utils/background-vocal-brackets";
 import { mergeStandaloneInto } from "@/utils/background-vocal-standalone-merge";
@@ -121,7 +122,7 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
   }
   if (survivors.length === 0) return line;
   const trimmedSurvivors = survivors.map((word, i) =>
-    i === survivors.length - 1 ? { ...word, text: word.text.replace(/ +$/, "") } : word,
+    i === survivors.length - 1 ? wordFromSpaced({ ...word, text: (word.text + word.sep).replace(/ +$/, "") }) : word,
   );
   const base = line.backgroundTextSource === "extraction" ? undefined : line.backgroundText;
   const backgroundText = joinBackgroundText(base, classified.bgText, options.preserveBrackets, false);

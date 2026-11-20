@@ -15,6 +15,7 @@ function proportionalRemap(sourceAfter: WordTiming[], siblingWords: WordTiming[]
   if (siblingSpan <= 0) return null;
   return sourceAfter.map((w) => ({
     text: w.text,
+    sep: w.sep,
     begin: siblingStart + ((w.begin - sourceStart) / sourceSpan) * siblingSpan,
     end: siblingStart + ((w.end - sourceStart) / sourceSpan) * siblingSpan,
     ...(w.explicit ? { explicit: true as const } : {}),
@@ -59,6 +60,7 @@ function applySiblingWords(
       result[i] = {
         ...siblingBase,
         text: sourceAfter[i].text,
+        sep: sourceAfter[i].sep,
         ...(sourceAfter[i].explicit ? { explicit: true as const } : {}),
       };
       lastMatchedBefore = bIdx;
@@ -111,6 +113,7 @@ function applySiblingWords(
       }
       result[k] = synthesizeBracketedWord({
         text: w.text,
+        sep: w.sep,
         begin,
         end,
         leftBracket,
@@ -169,7 +172,7 @@ function wordsDeepEqual(a: WordTiming[] | null, b: WordTiming[] | null): boolean
   if (a === null || b === null) return a === b;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
-    if (a[i].text !== b[i].text) return false;
+    if (a[i].text !== b[i].text || a[i].sep !== b[i].sep) return false;
     if (Math.abs(a[i].begin - b[i].begin) > 1e-9) return false;
     if (Math.abs(a[i].end - b[i].end) > 1e-9) return false;
   }

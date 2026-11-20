@@ -173,9 +173,8 @@ function generateTTML({
       const wordCount = words.length;
       for (let i = 0; i < wordCount; i++) {
         const word = words[i];
-        const text = word.text.trimEnd();
-        const needsSpace = i < wordCount - 1 && word.text.endsWith(" ");
-        content += `${emitWordSpan(word, text)}${needsSpace ? " " : ""}`;
+        const needsSpace = i < wordCount - 1 && word.sep.endsWith(" ");
+        content += `${emitWordSpan(word, word.text)}${needsSpace ? " " : ""}`;
       }
     } else {
       content = escapeXml(stripSplitCharacter(line.text));
@@ -187,9 +186,8 @@ function generateTTML({
       let bgContent = "";
       for (let i = 0; i < bgCount; i++) {
         const bgWord = bgWords[i];
-        const text = bgWord.text.trimEnd();
-        const needsSpace = i < bgCount - 1 && bgWord.text.endsWith(" ");
-        bgContent += `${emitWordSpan(bgWord, text)}${needsSpace ? " " : ""}`;
+        const needsSpace = i < bgCount - 1 && bgWord.sep.endsWith(" ");
+        bgContent += `${emitWordSpan(bgWord, bgWord.text)}${needsSpace ? " " : ""}`;
       }
       content += `<span ttm:role="x-bg">${bgContent}</span>`;
     } else if (line.backgroundText) {

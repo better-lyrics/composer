@@ -43,5 +43,5 @@ function syllablesFromWords(words: readonly WordsInput[]): SyllableTrack {
 
 // -- Exports ------------------------------------------------------------------
 
-export { syllablesFromWords };
+export { splitTrailingWhitespace, syllablesFromWords };
 export type { WordsInput };

@@ -115,10 +115,10 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
         id: "l0",
         text: ORIGINAL_TEXT,
         words: [
-          { text: "Hello ", begin: 0, end: 0.4 },
-          { text: "world ", begin: 0.4, end: 0.8 },
-          { text: "how ", begin: 0.8, end: 1.2 },
-          { text: "are ", begin: 1.2, end: 1.6 },
+          { text: "Hello", sep: " ", begin: 0, end: 0.4 },
+          { text: "world", sep: " ", begin: 0.4, end: 0.8 },
+          { text: "how", sep: " ", begin: 0.8, end: 1.2 },
+          { text: "are", sep: " ", begin: 1.2, end: 1.6 },
           { text: "you", begin: 1.6, end: 2.0 },
         ],
       }),
@@ -138,7 +138,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(words?.length).toBe(5);
     expect(words?.[1].begin).toBe(5.0);
     expect(words?.[0].end).toBe(5.0);
-    expect(words?.map((w) => w.text)).toEqual(["Hello ", "world ", "how ", "are ", "you"]);
+    expect(words?.map((w) => w.text + w.sep)).toEqual(["Hello ", "world ", "how ", "are ", "you"]);
     for (let i = 0; i < (words?.length ?? 0); i++) {
       const word = words?.[i];
       if (!word) continue;
@@ -153,10 +153,10 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
         id: "l0",
         text: ORIGINAL_TEXT,
         words: [
-          { text: "Hello ", begin: 0, end: 0.4 },
-          { text: "world ", begin: 0.4, end: 0.8 },
-          { text: "how ", begin: 0.8, end: 1.2 },
-          { text: "are ", begin: 1.2, end: 1.6 },
+          { text: "Hello", sep: " ", begin: 0, end: 0.4 },
+          { text: "world", sep: " ", begin: 0.4, end: 0.8 },
+          { text: "how", sep: " ", begin: 0.8, end: 1.2 },
+          { text: "are", sep: " ", begin: 1.2, end: 1.6 },
           { text: "you", begin: 1.6, end: 2.0 },
         ],
       }),
@@ -212,7 +212,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
       id: "l0",
       agentId: "v1",
       text: "일단은",
-      words: [{ text: "일단은", begin: 0, end: 1, transliteration: "ildan eun" }],
+      words: [{ text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun" }],
       transliteration: {
         language: "ko-Latn",
         text: "ildan eun",
@@ -228,6 +228,7 @@ describe("useSyncHandlers.handleSplitWord", () => {
       result.current.handleSplitWord(0, 0, [
         {
           text: "일",
+          sep: "",
           begin: 0,
           end: 0.3,
           transliteration: "i",
@@ -236,13 +237,14 @@ describe("useSyncHandlers.handleSplitWord", () => {
         },
         {
           text: "단",
+          sep: "",
           begin: 0.3,
           end: 0.6,
           transliteration: "ldan",
           transliterationJoinerAfter: " ",
           syllableGroupId: "group",
         },
-        { text: "은", begin: 0.6, end: 1, transliteration: "eun", syllableGroupId: "group" },
+        { text: "은", sep: "", begin: 0.6, end: 1, transliteration: "eun", syllableGroupId: "group" },
       ]);
     });
 
@@ -258,9 +260,9 @@ describe("useSyncHandlers.handleSplitWord", () => {
       agentId: "v1",
       text: "Uh 일단은 나",
       words: [
-        { text: "Uh ", begin: 0, end: 0.5 },
-        { text: "일단은 ", begin: 0.5, end: 1.5 },
-        { text: "나", begin: 1.5, end: 2 },
+        { text: "Uh", sep: " ", begin: 0, end: 0.5 },
+        { text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
+        { text: "나", sep: "", begin: 1.5, end: 2 },
       ],
       transliteration: {
         language: "ko-Latn",
@@ -277,13 +279,14 @@ describe("useSyncHandlers.handleSplitWord", () => {
       result.current.handleSplitWord(0, 1, [
         {
           text: "일",
+          sep: "",
           begin: 0.5,
           end: 0.8,
           transliteration: "il",
           transliterationJoinerAfter: "",
           syllableGroupId: "g",
         },
-        { text: "단은 ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
+        { text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
       ]);
     });
 
@@ -354,9 +357,9 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
       createLine({
         id: "l0",
         text: ORIGINAL_TEXT,
-        words: [createWord({ text: "Hello ", begin: 0, end: 0.5 })],
+        words: [createWord({ text: "Hello", sep: " ", begin: 0, end: 0.5 })],
       }),
-      createLine({ id: "l1", text: "Next line", words: [createWord({ text: "Next ", begin: 3, end: 4 })] }),
+      createLine({ id: "l1", text: "Next line", words: [createWord({ text: "Next", sep: " ", begin: 3, end: 4 })] }),
     ]);
 
     const TAP_TIME = 1.25;
@@ -452,7 +455,7 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
       createLine({
         id: "l0",
         text: TEXT,
-        words: [createWord({ text: "Hold ", begin: 0, end: 0.5 })],
+        words: [createWord({ text: "Hold", sep: " ", begin: 0, end: 0.5 })],
       }),
     ]);
 
@@ -476,7 +479,10 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
       createLine({
         id: "l0",
         text: TEXT,
-        words: [createWord({ text: "End ", begin: 0, end: 0 }), createWord({ text: "me ", begin: 1, end: 1 })],
+        words: [
+          createWord({ text: "End", sep: " ", begin: 0, end: 0 }),
+          createWord({ text: "me", sep: " ", begin: 1, end: 1 }),
+        ],
       }),
     ]);
 
@@ -507,8 +513,8 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
         id: "l0",
         text: REDO_TEXT,
         words: [
-          createWord({ text: "one ", begin: 0, end: 1 }),
-          createWord({ text: "two ", begin: 1, end: 2 }),
+          createWord({ text: "one", sep: " ", begin: 0, end: 1 }),
+          createWord({ text: "two", sep: " ", begin: 1, end: 2 }),
           createWord({ text: "three", begin: 2, end: 3 }),
         ],
       }),
@@ -543,8 +549,8 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
         id: "l0",
         text: REDO_TEXT,
         words: [
-          createWord({ text: "one ", begin: 0, end: 1 }),
-          createWord({ text: "two ", begin: 1, end: 2 }),
+          createWord({ text: "one", sep: " ", begin: 0, end: 1 }),
+          createWord({ text: "two", sep: " ", begin: 1, end: 2 }),
           createWord({ text: "three", begin: 10, end: 11 }),
         ],
       }),
@@ -608,7 +614,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
 
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words[1]).toMatchObject({ begin: 5, end: 6 });
-    expect(words[2]).toMatchObject({ text: "three", begin: 6, end: 6 });
+    expect(words[2]).toMatchObject({ text: "three", sep: "", begin: 6, end: 6 });
     expect(getSyncState().position.wordIndex).toBe(2);
   });
 
@@ -618,8 +624,8 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
         id: "l0",
         text: REDO_TEXT,
         words: [
-          createWord({ text: "one ", begin: 0, end: 1 }),
-          createWord({ text: "two ", begin: 1, end: 2, explicit: true, syllableGroupId: "g1" }),
+          createWord({ text: "one", sep: " ", begin: 0, end: 1 }),
+          createWord({ text: "two", sep: " ", begin: 1, end: 2, explicit: true, syllableGroupId: "g1" }),
           createWord({ text: "three", begin: 2, end: 3 }),
         ],
       }),
@@ -647,14 +653,17 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
         id: "l0",
         text: "Hello world",
         words: [
-          createWord({ text: "Hello ", begin: 0, end: 0.5 }),
+          createWord({ text: "Hello", sep: " ", begin: 0, end: 0.5 }),
           createWord({ text: "world", begin: 0.5, end: 1.0 }),
         ],
       }),
       createLine({
         id: "l1",
         text: "Second line",
-        words: [createWord({ text: "Second ", begin: 3, end: 3.5 }), createWord({ text: "line", begin: 3.5, end: 4 })],
+        words: [
+          createWord({ text: "Second", sep: " ", begin: 3, end: 3.5 }),
+          createWord({ text: "line", begin: 3.5, end: 4 }),
+        ],
       }),
     ];
   }
@@ -696,7 +705,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
         id: "l0",
         text: "Early line",
         words: [
-          createWord({ text: "Early ", begin: 0.4, end: 0.8 }),
+          createWord({ text: "Early", sep: " ", begin: 0.4, end: 0.8 }),
           createWord({ text: "line", begin: 0.8, end: 1.2 }),
         ],
       }),
@@ -759,14 +768,17 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
         id: "l0",
         text: "Hello world",
         words: [
-          createWord({ text: "Hello ", begin: 0, end: 0.5 }),
+          createWord({ text: "Hello", sep: " ", begin: 0, end: 0.5 }),
           createWord({ text: "world", begin: 0.5, end: 1.0 }),
         ],
       }),
       createLine({
         id: "l1",
         text: "Second line",
-        words: [createWord({ text: "Second ", begin: 3, end: 3.5 }), createWord({ text: "line", begin: 3.5, end: 4 })],
+        words: [
+          createWord({ text: "Second", sep: " ", begin: 3, end: 3.5 }),
+          createWord({ text: "line", begin: 3.5, end: 4 }),
+        ],
       }),
     ];
   }
@@ -815,8 +827,8 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
         id: "l0",
         text: "one two three",
         words: [
-          createWord({ text: "one ", begin: 0, end: 0.5 }),
-          createWord({ text: "two ", begin: 0.5, end: 1 }),
+          createWord({ text: "one", sep: " ", begin: 0, end: 0.5 }),
+          createWord({ text: "two", sep: " ", begin: 0.5, end: 1 }),
           createWord({ text: "three", begin: 1, end: 1.5 }),
         ],
       }),
@@ -831,7 +843,7 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
 
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words).toHaveLength(3);
-    expect(words.map((w) => w.text)).toEqual(["one ", "two ", "three"]);
+    expect(words.map((w) => w.text + w.sep)).toEqual(["one ", "two ", "three"]);
     expect(words[2].begin).toBe(4);
   });
 
@@ -860,12 +872,18 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
       createLine({
         id: "l0",
         text: "first line",
-        words: [createWord({ text: "first ", begin: 0, end: 0.5 }), createWord({ text: "line", begin: 0.5, end: 1 })],
+        words: [
+          createWord({ text: "first", sep: " ", begin: 0, end: 0.5 }),
+          createWord({ text: "line", begin: 0.5, end: 1 }),
+        ],
       }),
       createLine({
         id: "l1",
         text: "second line",
-        words: [createWord({ text: "second ", begin: 8, end: 8.5 }), createWord({ text: "line", begin: 8.5, end: 9 })],
+        words: [
+          createWord({ text: "second", sep: " ", begin: 8, end: 8.5 }),
+          createWord({ text: "line", begin: 8.5, end: 9 }),
+        ],
       }),
     ]);
     const { result, act, rerender, getSyncState } = await mountSyncHandlers({ initialCurrentTime: 7 });
@@ -884,12 +902,18 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
       createLine({
         id: "l0",
         text: "first line",
-        words: [createWord({ text: "first ", begin: 0, end: 0.5 }), createWord({ text: "line", begin: 0.5, end: 1 })],
+        words: [
+          createWord({ text: "first", sep: " ", begin: 0, end: 0.5 }),
+          createWord({ text: "line", begin: 0.5, end: 1 }),
+        ],
       }),
       createLine({
         id: "l1",
         text: "second line",
-        words: [createWord({ text: "second ", begin: 8, end: 8.5 }), createWord({ text: "line", begin: 8.5, end: 9 })],
+        words: [
+          createWord({ text: "second", sep: " ", begin: 8, end: 8.5 }),
+          createWord({ text: "line", begin: 8.5, end: 9 }),
+        ],
       }),
     ]);
     const { result, act, rerender, getSyncState } = await mountSyncHandlers({ initialCurrentTime: 7 });
@@ -960,10 +984,13 @@ describe("useSyncHandlers.handleJumpToBgWord", () => {
       createLine({
         id: "l0",
         text: "Main line",
-        words: [createWord({ text: "Main ", begin: 0, end: 1 }), createWord({ text: "line", begin: 1, end: 2 })],
+        words: [
+          createWord({ text: "Main", sep: " ", begin: 0, end: 1 }),
+          createWord({ text: "line", begin: 1, end: 2 }),
+        ],
         backgroundText: "ooh ahh",
         backgroundWords: [
-          createWord({ text: "ooh ", begin: 4, end: 4.5 }),
+          createWord({ text: "ooh", sep: " ", begin: 4, end: 4.5 }),
           createWord({ text: "ahh", begin: 4.5, end: 5 }),
         ],
       }),
@@ -980,10 +1007,13 @@ describe("useSyncHandlers.handleJumpToBgWord", () => {
       createLine({
         id: "l0",
         text: "Main line",
-        words: [createWord({ text: "Main ", begin: 0, end: 1 }), createWord({ text: "line", begin: 1, end: 2 })],
+        words: [
+          createWord({ text: "Main", sep: " ", begin: 0, end: 1 }),
+          createWord({ text: "line", begin: 1, end: 2 }),
+        ],
         backgroundText: "ooh ahh",
         backgroundWords: [
-          createWord({ text: "ooh ", begin: 4, end: 4.5 }),
+          createWord({ text: "ooh", sep: " ", begin: 4, end: 4.5 }),
           createWord({ text: "ahh", begin: 4.5, end: 5 }),
         ],
       }),
@@ -1015,12 +1045,18 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
       createLine({
         id: "l0",
         text: "Hello world",
-        words: [createWord({ text: "Hello ", begin: 0, end: 0.5 }), createWord({ text: "world", begin: 0.5, end: 1 })],
+        words: [
+          createWord({ text: "Hello", sep: " ", begin: 0, end: 0.5 }),
+          createWord({ text: "world", begin: 0.5, end: 1 }),
+        ],
       }),
       createLine({
         id: "l1",
         text: "Second line",
-        words: [createWord({ text: "Second ", begin: 3, end: 3.5 }), createWord({ text: "line", begin: 3.5, end: 4 })],
+        words: [
+          createWord({ text: "Second", sep: " ", begin: 3, end: 3.5 }),
+          createWord({ text: "line", begin: 3.5, end: 4 }),
+        ],
       }),
     ];
   }
@@ -1050,12 +1086,14 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
   });
 
   it("falls back to the first syncable line when the cursor sits on a non-syncable line", async () => {
-    useProjectStore
-      .getState()
-      .setLines([
-        createLine({ id: "l0", text: "" }),
-        createLine({ id: "l1", text: "Real line", words: [createWord({ text: "Real ", begin: 2, end: 2.5 })] }),
-      ]);
+    useProjectStore.getState().setLines([
+      createLine({ id: "l0", text: "" }),
+      createLine({
+        id: "l1",
+        text: "Real line",
+        words: [createWord({ text: "Real", sep: " ", begin: 2, end: 2.5 })],
+      }),
+    ]);
     const { result, act, getSyncState } = await mountSyncHandlers({
       initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: false },
     });
@@ -1076,7 +1114,10 @@ describe("sync-panel bg-init contract", () => {
         id: "l0",
         text: ORIGINAL_LINE_TEXT,
         backgroundText: BG_TEXT,
-        words: [createWord({ text: "Lead ", begin: 0, end: 0.5 }), createWord({ text: "vocal", begin: 0.5, end: 1.0 })],
+        words: [
+          createWord({ text: "Lead", sep: " ", begin: 0, end: 0.5 }),
+          createWord({ text: "vocal", begin: 0.5, end: 1.0 }),
+        ],
       }),
     ]);
 

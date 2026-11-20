@@ -25,7 +25,7 @@ interface StepWriteInput {
 const NO_ROOM: StepWrite = { kind: "refused", refusal: { reason: "noRoom" } };
 
 function beforePrevious(previous: WordTiming): StepWrite {
-  return { kind: "refused", refusal: { reason: "beforePrevious", previousWord: previous.text } };
+  return { kind: "refused", refusal: { reason: "beforePrevious", previousWord: previous.text + previous.sep } };
 }
 
 function pushAhead(words: WordTiming[], from: number, floor: number, minDuration: number, max: number): boolean {
@@ -53,7 +53,9 @@ function writeStart(words: WordTiming[], index: number, input: StepWriteInput): 
   if (end > input.range.max) return NO_ROOM;
   words[index] = { ...word, begin, end };
   if (!pushAhead(words, index + 1, end, input.minDuration, input.range.max)) return NO_ROOM;
-  return endsPrevious ? { kind: "written", words, endedPrevious: previous.text } : { kind: "written", words };
+  return endsPrevious
+    ? { kind: "written", words, endedPrevious: previous.text + previous.sep }
+    : { kind: "written", words };
 }
 
 function writeEnd(words: WordTiming[], index: number, input: StepWriteInput): StepWrite {

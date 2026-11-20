@@ -8,6 +8,7 @@ import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import type { ProjectFile } from "@/lib/project-file";
+import { linesFromSaved } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { type ConfirmOptions, useConfirm, useConfirmStore } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
@@ -164,14 +165,15 @@ function replaceWithParsedLyrics(parsed: ParseResult): number {
 }
 
 function importProjectLyrics(project: ProjectFile, filename: string, ctx: ImportContext): boolean {
-  if (!hasLyricLines(project.lines)) {
+  const lines = linesFromSaved(project.lines);
+  if (!hasLyricLines(lines)) {
     toast.error(noLyricsMessage(filename, []));
     return false;
   }
   const reported = replaceLyrics({
-    lines: project.lines,
+    lines,
     metadata: project.metadata,
-    hasTimingData: project.lines.some(hasAnyTiming),
+    hasTimingData: lines.some(hasAnyTiming),
     issues: [],
     agents: project.agents,
     groups: project.groups ?? [],

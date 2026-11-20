@@ -2,6 +2,8 @@
 
 interface WordTiming {
   text: string;
+  /** Literal text after this word (spaces, U+3000, nothing); `text` never ends with whitespace. */
+  sep: string;
   begin: number;
   end: number;
   explicit?: true;

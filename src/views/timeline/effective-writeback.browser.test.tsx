@@ -17,7 +17,7 @@ describe("effective line write-back", () => {
     useAudioStore.setState({ duration: 30 });
     useProjectStore.setState({
       activeTab: "timeline",
-      lines: [{ id: "w", text: "hi", agentId: "v1", words: [{ text: "hi", begin: 0, end: 1 }] }, LINE_SYNCED],
+      lines: [{ id: "w", text: "hi", agentId: "v1", words: [{ text: "hi", sep: "", begin: 0, end: 1 }] }, LINE_SYNCED],
     });
     useTimelineStore.setState({ selectedWords: [{ lineId: "w", lineIndex: 0, wordIndex: 0, type: "word" }] });
     const lines = getEffectiveLines(useProjectStore.getState().lines);

@@ -77,7 +77,7 @@ function collectSnapAnchors(
           anchors.push({
             t: word.begin,
             kind: "word-begin",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "word",
@@ -85,7 +85,7 @@ function collectSnapAnchors(
           anchors.push({
             t: word.end,
             kind: "word-end",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "word",
@@ -103,7 +103,7 @@ function collectSnapAnchors(
           anchors.push({
             t: word.begin,
             kind: "word-begin",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "bg",
@@ -111,7 +111,7 @@ function collectSnapAnchors(
           anchors.push({
             t: word.end,
             kind: "word-end",
-            label: word.text,
+            label: word.text + word.sep,
             lineId: line.id,
             wordIndex: i,
             track: "bg",

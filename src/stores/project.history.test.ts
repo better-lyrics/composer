@@ -166,8 +166,8 @@ describe("updateLinesWithHistory", () => {
   it("clears words and background words via undefined updates and is undoable", () => {
     useProjectStore.getState().setLines([
       seedLine("a", {
-        words: [{ text: "hi", begin: 0, end: 1 }],
-        backgroundWords: [{ text: "ah", begin: 0, end: 0.5 }],
+        words: [{ text: "hi", sep: "", begin: 0, end: 1 }],
+        backgroundWords: [{ text: "ah", sep: "", begin: 0, end: 0.5 }],
         backgroundText: "ah",
       }),
     ]);
@@ -185,8 +185,8 @@ describe("updateLinesWithHistory", () => {
 
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0];
-    expect(restored.words).toEqual([{ text: "hi", begin: 0, end: 1 }]);
-    expect(restored.backgroundWords).toEqual([{ text: "ah", begin: 0, end: 0.5 }]);
+    expect(restored.words).toEqual([{ text: "hi", sep: "", begin: 0, end: 1 }]);
+    expect(restored.backgroundWords).toEqual([{ text: "ah", sep: "", begin: 0, end: 0.5 }]);
   });
 });
 

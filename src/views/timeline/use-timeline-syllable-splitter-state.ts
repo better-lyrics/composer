@@ -84,12 +84,12 @@ function useTimelineSyllableSplitterState({
     ).length;
   }, [lines, target, caseInsensitive, splitPoints]);
 
-  const sourceText = target?.word.text.trimEnd() ?? "";
+  const sourceText = target?.word.text ?? "";
 
   const applySingleWordSplit = useCallback(() => {
     if (!target || splitPoints.length === 0) return;
     const { lineId, wordIndex, type, word, mode } = target;
-    const trimmedText = word.text.trimEnd();
+    const trimmedText = word.text;
 
     let newWords: WordTiming[];
     // A boundary placed at the playhead was set by ear, so the model doesn't move it.
@@ -110,9 +110,9 @@ function useTimelineSyllableSplitterState({
           { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
         ];
         newWords = splitSourceWord(sourceForSplit, partitions);
-        if (word.text.endsWith(" ") && newWords.length > 0) {
+        if (word.sep.endsWith(" ") && newWords.length > 0) {
           const last = newWords[newWords.length - 1];
-          newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
+          newWords[newWords.length - 1] = { ...last, sep: `${last.sep} ` };
         }
       } else {
         newWords = splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints, reuseGroupId: true });

@@ -8,10 +8,10 @@ function line(extras: Partial<LooseLine> = {}): LyricLine {
 }
 
 const mainWords = [
-  { text: "Hello ", begin: 0, end: 1 },
-  { text: "world", begin: 1, end: 2 },
+  { text: "Hello", sep: " ", begin: 0, end: 1 },
+  { text: "world", sep: "", begin: 1, end: 2 },
 ];
-const bgWords = [{ text: "ooh", begin: 1.2, end: 1.8 }];
+const bgWords = [{ text: "ooh", sep: "", begin: 1.2, end: 1.8 }];
 
 describe("trackWords", () => {
   it("returns the main words for the word track", () => {
@@ -47,7 +47,7 @@ describe("trackWords", () => {
 
     it("reads the synthesized word of an effective line-synced row", () => {
       const [effective] = getEffectiveLines([line({ begin: 3, end: 7 })]);
-      expect(trackWords(effective, "word")).toEqual([{ text: "Hello world", begin: 3, end: 7 }]);
+      expect(trackWords(effective, "word")).toEqual([{ text: "Hello world", sep: "", begin: 3, end: 7 }]);
     });
   });
 

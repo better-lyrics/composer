@@ -17,7 +17,7 @@ function seedProject() {
       createLine({
         id: "c0",
         text: "go now",
-        words: [createWord({ text: "go ", begin: 3, end: 4 }), createWord({ text: "now", begin: 4, end: 5 })],
+        words: [createWord({ text: "go", sep: " ", begin: 3, end: 4 }), createWord({ text: "now", begin: 4, end: 5 })],
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
@@ -79,7 +79,10 @@ describe("TimelineContextMenu · add instance from an own-timing banner", () => 
         createLine({
           id: "c2",
           text: "go now",
-          words: [createWord({ text: "go ", begin: 40, end: 41 }), createWord({ text: "now", begin: 41.5, end: 42.5 })],
+          words: [
+            createWord({ text: "go", sep: " ", begin: 40, end: 41 }),
+            createWord({ text: "now", begin: 41.5, end: 42.5 }),
+          ],
           groupId: "g1",
           instanceIdx: 2,
           templateLineIdx: 0,
@@ -148,7 +151,7 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
       id,
       text: "go now",
       words: [
-        createWord({ text: "go ", begin, end: begin + 1 }),
+        createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
         createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
       ],
       groupId: "g1",

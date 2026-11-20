@@ -143,7 +143,7 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
       (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - wordInsetPx(sel.type) * 2;
 
     return {
-      text: word.text.trimEnd(),
+      text: word.text,
       left: cellLeft,
       top: cellTop,
       syllablePosition: positionFor(sel.lineId, sel.type, sel.wordIndex),

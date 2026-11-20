@@ -61,7 +61,7 @@ describe("EmptyWordTrack", () => {
     track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 3) }));
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(after.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(after.words?.[0].begin).toBeLessThanOrEqual(3);
     expect(after.text).toBe("hello world");
     expect(useTimelineStore.getState().editingWord).toBeNull();
@@ -89,7 +89,7 @@ describe("EmptyWordTrack", () => {
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 1) }));
       const after = useProjectStore.getState().lines[0];
-      expect(after.words?.map((w) => w.text)).toEqual(["hel", "lo"]);
+      expect(after.words?.map((w) => w.text + w.sep)).toEqual(["hel", "lo"]);
       expect(after.text).toBe("hel|lo");
     });
 
@@ -146,7 +146,7 @@ describe("EmptyBgTrack", () => {
     zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.backgroundWords?.map((w) => w.text)).toEqual(["..."]);
+    expect(after.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["..."]);
     expect(after.backgroundTextSource).toBe("manual");
     expect(useTimelineStore.getState().editingWord).toEqual({ lineId: "l1", wordIndex: 0, type: "bg" });
   });
@@ -172,7 +172,7 @@ describe("EmptyBgTrack", () => {
       zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
       const after = useProjectStore.getState().lines[0];
-      expect(after.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "ah"]);
+      expect(after.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah"]);
       expect(after.backgroundText).toBe("ooh ah");
       expect(useTimelineStore.getState().editingWord).toBeNull();
     });
@@ -215,7 +215,7 @@ describe("empty tracks in a group that shares timing", () => {
         ? {}
         : {
             words: [
-              createWord({ text: "go ", begin, end: begin + 1 }),
+              createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
               createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
             ],
           }),

@@ -46,9 +46,9 @@ describe("findExplicitWords", () => {
   it("skips a word that is already marked explicit", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fuck you", [
-        { text: "I ", begin: 0, end: 0.3 },
-        { text: "fuck ", begin: 0.3, end: 0.6, explicit: true },
-        { text: "you", begin: 0.6, end: 1 },
+        { text: "I", sep: " ", begin: 0, end: 0.3 },
+        { text: "fuck", sep: " ", begin: 0.3, end: 0.6, explicit: true },
+        { text: "you", sep: "", begin: 0.6, end: 1 },
       ]),
     ]);
     expect(result).toHaveLength(0);
@@ -142,11 +142,11 @@ describe("findExplicitWords · syllable-split words", () => {
   it("skips a syllable-split word when all of its syllables are already marked", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fu|cking love it", [
-        { text: "I ", begin: 0, end: 0.3 },
-        { text: "fu", begin: 0.3, end: 0.4, explicit: true },
-        { text: "cking ", begin: 0.4, end: 0.6, explicit: true },
-        { text: "love ", begin: 0.6, end: 0.8 },
-        { text: "it", begin: 0.8, end: 1 },
+        { text: "I", sep: " ", begin: 0, end: 0.3 },
+        { text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true },
+        { text: "cking", sep: " ", begin: 0.4, end: 0.6, explicit: true },
+        { text: "love", sep: " ", begin: 0.6, end: 0.8 },
+        { text: "it", sep: "", begin: 0.8, end: 1 },
       ]),
     ]);
     expect(result).toHaveLength(0);
@@ -155,11 +155,11 @@ describe("findExplicitWords · syllable-split words", () => {
   it("emits a suggestion when at least one syllable of a profane word is unmarked", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fu|cking love it", [
-        { text: "I ", begin: 0, end: 0.3 },
-        { text: "fu", begin: 0.3, end: 0.4, explicit: true },
-        { text: "cking ", begin: 0.4, end: 0.6 },
-        { text: "love ", begin: 0.6, end: 0.8 },
-        { text: "it", begin: 0.8, end: 1 },
+        { text: "I", sep: " ", begin: 0, end: 0.3 },
+        { text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true },
+        { text: "cking", sep: " ", begin: 0.4, end: 0.6 },
+        { text: "love", sep: " ", begin: 0.6, end: 0.8 },
+        { text: "it", sep: "", begin: 0.8, end: 1 },
       ]),
     ]);
     expect(result).toHaveLength(1);
@@ -186,9 +186,9 @@ describe("findExplicitWords · linked instances", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 0, end: 0.3 },
-          { text: "fuck ", begin: 0.3, end: 0.6 },
-          { text: "you", begin: 0.6, end: 1 },
+          { text: "I", sep: " ", begin: 0, end: 0.3 },
+          { text: "fuck", sep: " ", begin: 0.3, end: 0.6 },
+          { text: "you", sep: "", begin: 0.6, end: 1 },
         ],
       },
       {
@@ -199,9 +199,9 @@ describe("findExplicitWords · linked instances", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 30, end: 30.4 },
-          { text: "fuck ", begin: 30.4, end: 30.7 },
-          { text: "you", begin: 30.7, end: 31.2 },
+          { text: "I", sep: " ", begin: 30, end: 30.4 },
+          { text: "fuck", sep: " ", begin: 30.4, end: 30.7 },
+          { text: "you", sep: "", begin: 30.7, end: 31.2 },
         ],
       },
       {
@@ -212,9 +212,9 @@ describe("findExplicitWords · linked instances", () => {
         instanceIdx: 2,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 60, end: 60.4 },
-          { text: "fuck ", begin: 60.4, end: 60.7 },
-          { text: "you", begin: 60.7, end: 61.2 },
+          { text: "I", sep: " ", begin: 60, end: 60.4 },
+          { text: "fuck", sep: " ", begin: 60.4, end: 60.7 },
+          { text: "you", sep: "", begin: 60.7, end: 61.2 },
         ],
       },
     ];

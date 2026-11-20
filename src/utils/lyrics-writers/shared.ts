@@ -5,6 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { Bounds } from "@/domain/word/bounds";
+import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { withTrailingSpace } from "@/utils/word-spaces";
 
@@ -29,15 +30,15 @@ interface WritableLine {
 function parenthesized(words: WordTiming[]): WordTiming[] {
   const first = words[0];
   const last = words.at(-1);
-  if (!first || !last || (first.text.startsWith("(") && last.text.trimEnd().endsWith(")"))) return words;
-  if (words.length === 1) return [{ ...first, text: `(${first.text.trimEnd()})` }];
-  return [{ ...first, text: `(${first.text}` }, ...words.slice(1, -1), { ...last, text: `${last.text.trimEnd()})` }];
+  if (!first || !last || (first.text.startsWith("(") && last.text.endsWith(")"))) return words;
+  if (words.length === 1) return [{ ...first, text: `(${first.text})`, sep: "" }];
+  return [{ ...first, text: `(${first.text}` }, ...words.slice(1, -1), { ...last, text: `${last.text})`, sep: "" }];
 }
 
 function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
   if (line.backgroundWords?.length) return parenthesized(line.backgroundWords);
   const text = line.backgroundText?.trim();
-  return text ? parenthesized([{ text, begin: bounds.begin, end: bounds.end }]) : [];
+  return text ? parenthesized([{ text, sep: "", begin: bounds.begin, end: bounds.end }]) : [];
 }
 
 // Background vocals follow the main words in parentheses: every target format
@@ -55,10 +56,7 @@ function writableLines(lines: readonly LyricLine[]): WritableLine[] {
         agentId: line.agentId,
         bounds,
         words,
-        text: words
-          .map((word) => word.text)
-          .join("")
-          .trim(),
+        text: spacedText(words).trim(),
         hasWordTiming: isWordSynced(line) || Boolean(line.backgroundWords?.length),
       },
     ];

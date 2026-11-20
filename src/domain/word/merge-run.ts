@@ -1,3 +1,4 @@
+import { splitTrailingWhitespace } from "insync/from-words";
 import { computeByGroupId } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -78,7 +79,7 @@ function mergedWord(run: WordTiming[], syllableGroupId: string | undefined): Wor
   const transliteration = mergedTransliteration(run);
   return {
     ...rest,
-    text: mergeWordText(run.map((word) => word.text)),
+    ...splitTrailingWhitespace(mergeWordText(run.map((word) => word.text + word.sep))),
     begin: first.begin,
     end: last.end,
     ...(syllableGroupId !== undefined ? { syllableGroupId } : {}),
@@ -106,7 +107,7 @@ function mergeWordRun(words: WordTiming[], indices: number[]): WordTiming[] | nu
 
 function textOffsets(words: WordTiming[]): number[] {
   const offsets = [0];
-  for (const word of words) offsets.push(offsets[offsets.length - 1] + word.text.length);
+  for (const word of words) offsets.push(offsets[offsets.length - 1] + word.text.length + word.sep.length);
   return offsets;
 }
 
