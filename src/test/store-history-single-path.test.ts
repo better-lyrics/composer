@@ -13,6 +13,13 @@ const FREEZE_IMPORT = /import \{ deepFreeze \} from "@\/stores\/project\/deep-fr
 const ENTRY_LITERAL = /\{[^{}]*\blines\b[^{}]*\btimestamp\s*:/;
 const TYPE_DECLARATION_BEFORE = /(?:interface\s+\w+|type\s+\w+\s*=)\s*$/;
 const ENTRY_CAST = /\bas\s+HistoryEntry\b|\bsatisfies\s+HistoryEntry\b/;
+const HISTORY_WRITE_CALL = /\b(?:commitHistory|amendCurrentStep)\(/;
+const LYRIC_FIELD = /\b(?:lines|groups|agents)\b/;
+const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);
+const NON_LYRIC_HISTORY_WRITERS = new Map<string, string>([
+  ["stores/project/beat-grid-slice.ts", "writes the beat grid only"],
+  ["stores/project/snap-points-slice.ts", "writes snap points only"],
+]);
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -38,6 +45,26 @@ describe("history has a single write path", () => {
       const src = readFileSync(join(SLICE_DIR, f), "utf8");
       if (/\bhistory(Index)?\s*:/.test(src)) offenders.push(f);
     }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("lyric edits reach history only through commit", () => {
+  it("records the command note on every entry", () => {
+    expect(snapshotEntryBody(sourceOf("stores/project/history-helpers.ts"))).toMatch(
+      /^function snapshotEntry\([^)]*\bnote: HistoryNote \| null\): HistoryEntry \{/,
+    );
+  });
+
+  it("calls the history writers only from commit, history-helpers and the non-lyric slices", () => {
+    const offenders = productionSources("")
+      .filter(({ relPath }) => !LYRIC_WRITE_OWNERS.has(relPath) && !NON_LYRIC_HISTORY_WRITERS.has(relPath))
+      .flatMap(({ relPath, code }) => matchLines(code, HISTORY_WRITE_CALL).map((line) => `${relPath}:${line}`));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the non-lyric history writers away from lines, groups and agents", () => {
+    const offenders = [...NON_LYRIC_HISTORY_WRITERS.keys()].filter((relPath) => LYRIC_FIELD.test(sourceOf(relPath)));
     expect(offenders).toEqual([]);
   });
 });
