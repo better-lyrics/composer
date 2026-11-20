@@ -8,7 +8,7 @@ import { listProjectIndex, removeProjectData, saveProjectRecord } from "@/lib/pr
 import { loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError, isProjectDeleted } from "@/lib/project-tombstones";
 import { allowConsole } from "@/test/console-guard";
-import { seedStoredProject, songTitled, storedProject, v4StoredProject } from "@/test/projects";
+import { seedStoredProject, songTitled, storedProject, v3StoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -82,8 +82,8 @@ describe("importProjectFile · backups", () => {
   });
 
   it("brings back the copy kept before an update with its project, without counting it", async () => {
-    await saveProjectRecord("a", storedProject(songTitled("Alpha")));
-    await saveProjectRecord("a", v4StoredProject(songTitled("Alpha now")));
+    await saveProjectRecord("a", v3StoredProject(songTitled("Alpha")));
+    await saveProjectRecord("a", storedProject(songTitled("Alpha now")));
     const bundle = buildProjectBundle(
       [{ id: "a", project: storedProject(songTitled("Alpha now")) }],
       1_759_000_000_000,

@@ -1,7 +1,9 @@
+import { msFromSeconds } from "insync/time";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup } from "@/domain/commands/group-edits";
+import { bgBounds } from "@/domain/line/bounds";
 import { lineText } from "@/domain/line/text";
 import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
@@ -9,8 +11,8 @@ import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
 import { buildSavedProject } from "@/lib/persistence";
 import { buildSaveInput, currentSaveInput } from "@/lib/project-snapshot";
-import type { SavedProject } from "@/lib/saved-project";
-import { savedLines } from "@/lib/saved-project";
+import type { SavedLine, SavedProject } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
@@ -84,6 +86,27 @@ describe("applySavedProject", () => {
       }
     });
 
+    it("regression: a line-synced background keeps its own span when a format 4 record opens", () => {
+      const lines: SavedLine[] = [
+        {
+          id: "l1",
+          tracks: [
+            {
+              role: "main",
+              agent: "v1",
+              span: [msFromSeconds(10), msFromSeconds(20)],
+              syllables: [{ text: "hello", sep: "" }],
+            },
+            { role: "bg", span: [msFromSeconds(12), msFromSeconds(14)], syllables: [{ text: "ooh", sep: "" }] },
+          ],
+        },
+      ];
+
+      applySavedProject(projectFile({ lines }), "storage");
+
+      expect(bgBounds(useProjectStore.getState().lines[0])).toEqual({ begin: 12, end: 14 });
+    });
+
     it("regression: drops imported metadata keys a hand-edited file does not know", () => {
       const keys = JSON.parse('["isrc", "producer"]');
 
@@ -150,7 +173,9 @@ describe("applySavedProject", () => {
       await resetAllStores();
 
       applySavedProject(
-        JSON.parse(JSON.stringify({ version: 3, savedAt: 0, ...saved, lines: savedLines(saved.lines) })),
+        JSON.parse(
+          JSON.stringify({ version: SAVED_PROJECT_VERSION, savedAt: 0, ...saved, lines: savedLines(saved.lines) }),
+        ),
         "storage",
       );
 

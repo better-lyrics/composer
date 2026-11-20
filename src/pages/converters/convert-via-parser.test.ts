@@ -228,7 +228,7 @@ describe("convertViaParser", () => {
       const { output: ttml } = expectConverted(result);
       const { agents, lines } = projectOf(result);
 
-      for (const id of new Set(lines.map((line) => line.agentId))) {
+      for (const id of new Set(lines.flatMap((line) => line.tracks.flatMap((track) => track.agent ?? [])))) {
         expect(agents.some((agent) => agent.id === id)).toBe(true);
         expect(ttml).toContain(`<ttm:agent xml:id="${id}"`);
       }

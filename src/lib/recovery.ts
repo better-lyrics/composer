@@ -6,7 +6,7 @@ import { type PreV4Record, listPreV4Records, loadPreV4Record, preV4IdOf, preV4Ke
 import { buildProjectBundle, downloadProjectBundle } from "@/lib/project-bundle";
 import { downloadProjectFile, projectFileFrom, projectFileName } from "@/lib/project-file";
 import { LEGACY_PROJECT_KEY, clearAllProjects, getOpenProjectId, loadProjectRecord } from "@/lib/project-storage";
-import type { SavedProject } from "@/lib/saved-project";
+import type { StoredProject } from "@/lib/saved-project";
 
 // -- Types --------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ interface RecoveredProject {
 
 interface StoredRecovery {
   projectId: string | undefined;
-  project: SavedProject;
+  project: StoredProject;
   isPreviousVersion?: boolean;
 }
 
@@ -41,7 +41,7 @@ interface RecoverableProject {
 
 interface RecoverySnapshot {
   entries: ProjectIndexEntry[];
-  legacyProject: SavedProject | undefined;
+  legacyProject: StoredProject | undefined;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -59,7 +59,7 @@ const NOT_FOUND_RESULT: RecoveryResult = {
 
 // -- Reading ------------------------------------------------------------------
 
-function legacyIndexEntry(project: SavedProject): ProjectIndexEntry {
+function legacyIndexEntry(project: StoredProject): ProjectIndexEntry {
   return {
     id: LEGACY_RECOVERY_KEY,
     title: project.metadata?.title ?? "",
@@ -74,8 +74,8 @@ function legacyIndexEntry(project: SavedProject): ProjectIndexEntry {
   };
 }
 
-function readLegacyProject(): Promise<SavedProject | undefined> {
-  return getFromStore<SavedProject>(PROJECT_STORE_NAME, LEGACY_PROJECT_KEY);
+function readLegacyProject(): Promise<StoredProject | undefined> {
+  return getFromStore<StoredProject>(PROJECT_STORE_NAME, LEGACY_PROJECT_KEY);
 }
 
 async function readRecoverySnapshot(): Promise<RecoverySnapshot> {
@@ -90,7 +90,7 @@ async function readRecoverySnapshot(): Promise<RecoverySnapshot> {
 
 async function loadStoredRecovery(
   key: string,
-  legacyProject: SavedProject | undefined,
+  legacyProject: StoredProject | undefined,
 ): Promise<StoredRecovery | undefined> {
   if (key === LEGACY_RECOVERY_KEY) {
     return legacyProject ? { projectId: undefined, project: legacyProject } : undefined;

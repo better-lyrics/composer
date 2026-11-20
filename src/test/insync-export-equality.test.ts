@@ -2,7 +2,6 @@ import { withRoleWords } from "@/domain/line/track-writes";
 import { roleWords } from "@/domain/line/track";
 import { joinsFromWords, syllablesFromWords } from "insync/from-words";
 import { wordsFromSyllables } from "insync/to-words";
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { withoutV3Piece } from "@/domain/language/v3-languages";
@@ -10,8 +9,11 @@ import type { LyricLine } from "@/domain/line/model";
 import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
-import { parseProjectFileContents } from "@/lib/project-file-read";
-import { type SavedLine, linesFromSaved, savedLines } from "@/lib/saved-project";
+import type { SavedProjectV3 } from "@/lib/saved-project";
+import { REAL_PROJECT_FILES, realStoredRecords } from "@/test/real-records";
+import { checkUpgrade, hasProblems } from "@/test/upgrade-check";
+import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
+import { savedLinesV3 } from "@/test/saved-v3";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { legacyLine } from "@/test/legacy-languages";
 import {
@@ -28,7 +30,6 @@ import { generateProjectTtml } from "@/utils/ttml";
 // -- Constants ----------------------------------------------------------------
 
 const EXPORT_DURATION_SECONDS = 30;
-const REAL_PROJECT_FILES = process.env.INSYNC_REAL_PROJECTS?.split("\n").filter(Boolean) ?? [];
 
 const TTML_FIXTURES: readonly (() => string)[] = [
   () => buildSyncedTtml(EXPORT_DURATION_SECONDS),
@@ -52,20 +53,16 @@ function fixtureProjects(): EditedTtmlProject[] {
 
 interface SavedRecord {
   name: string;
-  lines: SavedLine[];
+  lines: SavedLineV3[];
 }
 
 function realRecords(): SavedRecord[] {
-  return REAL_PROJECT_FILES.flatMap((path) => {
-    const contents = parseProjectFileContents(readFileSync(path, "utf8"));
-    const files = contents.kind === "bundle" ? contents.projects : [contents.project];
-    return files.map(({ metadata, lines }) => ({ name: `${path}: ${metadata.title}`, lines }));
-  });
+  return realStoredRecords().map(({ name, record }) => ({ name, lines: record.lines as SavedLineV3[] }));
 }
 
 // The load before split marks were restored, so real exports are compared with what 3.x exported.
-function linesLoadedAsSaved(lines: readonly SavedLine[]): LyricLine[] {
-  const storeWords = (words: SavedLine["words"]) => {
+function linesLoadedAsSaved(lines: readonly SavedLineV3[]): LyricLine[] {
+  const storeWords = (words: SavedLineV3["words"]) => {
     if (!words) return undefined;
     const timed = wordsFromSpaced(words.map(({ id: _id, ...word }) => withoutV3Piece(word)));
     return timed.map((word, index) => {
@@ -83,17 +80,13 @@ function linesLoadedAsSaved(lines: readonly SavedLine[]): LyricLine[] {
 }
 
 function realProjects(): EditedTtmlProject[] {
-  return REAL_PROJECT_FILES.flatMap((path) => {
-    const contents = parseProjectFileContents(readFileSync(path, "utf8"));
-    const files = contents.kind === "bundle" ? contents.projects : [contents.project];
-    return files.map(({ metadata, lines, groups, agents }) => ({
-      name: `${path}: ${metadata.title}`,
-      lines: linesLoadedAsSaved(lines),
-      groups: groups ?? [],
-      agents,
-      metadata,
-    }));
-  });
+  return realStoredRecords().map(({ name, record }) => ({
+    name,
+    lines: linesLoadedAsSaved(record.lines as SavedLineV3[]),
+    groups: record.groups ?? [],
+    agents: record.agents,
+    metadata: record.metadata,
+  }));
 }
 
 function expectRoundTripKeepsExport(projects: readonly EditedTtmlProject[]): void {
@@ -121,8 +114,8 @@ function throughSyllables(line: LyricLine): LyricLine {
   return background ? withRoleWords(withMain, "bg", wordsThroughSyllables(background)) : withMain;
 }
 
-function withoutGroupIds(line: SavedLine): SavedLine {
-  const strip = (words: SavedLine["words"]) => words?.map(({ syllableGroupId: _id, ...word }) => word);
+function withoutGroupIds(line: SavedLineV3): SavedLineV3 {
+  const strip = (words: SavedLineV3["words"]) => words?.map(({ syllableGroupId: _id, ...word }) => word);
   return {
     ...line,
     ...(line.words && { words: strip(line.words) }),
@@ -131,7 +124,7 @@ function withoutGroupIds(line: SavedLine): SavedLine {
 }
 
 // Saved ids are rewritten one per word run, so a reload must read the same joins the record spelled.
-function expectSameJoins(resaved: SavedLine, saved: SavedLine, name: string): void {
+function expectSameJoins(resaved: SavedLineV3, saved: SavedLineV3, name: string): void {
   for (const track of ["words", "backgroundWords"] as const) {
     const before = saved[track] ?? [];
     const after = resaved[track] ?? [];
@@ -154,9 +147,9 @@ const startsWithSpace = (text: string | undefined) => text !== undefined && text
 
 // A load may only put back syllable marks: everything else, the language fingerprint and the export stay.
 function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: SavedRecord): LoadCounts {
-  const storeLines = linesFromSaved(record.lines);
-  const resaved = savedLines(storeLines);
-  expect(savedLines(linesFromSaved(resaved)), record.name).toEqual(resaved);
+  const storeLines = linesFromSavedV3(record.lines);
+  const resaved = savedLinesV3(storeLines);
+  expect(savedLinesV3(linesFromSavedV3(resaved)), record.name).toEqual(resaved);
   let repaired = 0;
   let leadingSpaceDropped = 0;
   resaved.forEach((line, index) => {
@@ -179,6 +172,10 @@ function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: Sav
   return { repaired, leadingSpaceDropped };
 }
 
+function v3Record({ metadata, agents, groups }: EditedTtmlProject): SavedProjectV3 {
+  return { version: 3, savedAt: 0, metadata, agents, groups, granularity: "word", lines: [] };
+}
+
 function exportOf(project: EditedTtmlProject): string {
   return generateProjectTtml(project, EXPORT_DURATION_SECONDS);
 }
@@ -194,7 +191,7 @@ describe("insync export equality", () => {
 
   it("a v3 save and load keeps every word and exported byte", () => {
     for (const project of fixtureProjects()) {
-      expectSaveAndLoadKeepEverything(project, { name: project.name, lines: savedLines(project.lines) });
+      expectSaveAndLoadKeepEverything(project, { name: project.name, lines: savedLinesV3(project.lines) });
     }
   });
 
@@ -213,5 +210,30 @@ describe("insync export equality", () => {
     const projects = realProjects();
     expect(projects.length).toBeGreaterThan(0);
     expectRoundTripKeepsExport(projects);
+  });
+
+  it("a v3 record upgraded to v4 opens and exports the same", () => {
+    const reports = fixtureProjects().map((project) =>
+      checkUpgrade(project.name, { ...v3Record(project), lines: savedLinesV3(project.lines) }),
+    );
+    expect(reports.filter(hasProblems)).toEqual([]);
+  });
+
+  it.runIf(REAL_PROJECT_FILES.length > 0)("real v3 records upgraded to v4 open and export the same", () => {
+    const records = realStoredRecords().flatMap(({ name, record }) => (record.version < 4 ? [{ name, record }] : []));
+    expect(records.length).toBeGreaterThan(0);
+    const reports = records.map(({ name, record }) => checkUpgrade(name, record as SavedProjectV3));
+    const lines = reports.reduce((sum, report) => sum + report.lines, 0);
+    const lineSynced = reports.reduce((sum, report) => sum + report.lineSyncedBackgroundsInWordProjects, 0);
+    console.info(`[insync] v3 to v4: ${reports.length} projects, ${lines} lines`);
+    console.info(`[insync] line-synced backgrounds with no timed words in word-synced projects: ${lineSynced}`);
+    const lrcTolerated = reports.reduce((sum, report) => sum + report.lrcTolerated, 0);
+    const lrcExtraTags = reports.reduce((sum, report) => sum + report.lrcExtraTags, 0);
+    console.info(
+      `[insync] LRC values moved by one centisecond: ${lrcTolerated}, inline tags repeating a time: ${lrcExtraTags}`,
+    );
+    const problems = reports.filter(hasProblems);
+    if (problems.length > 0) console.info("[insync] v3 to v4 problems", JSON.stringify(problems, null, 2));
+    expect(problems).toEqual([]);
   });
 });

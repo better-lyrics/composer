@@ -1,10 +1,14 @@
+import { msFromSeconds, secondsFromMs } from "insync/time";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import type { TrackRole } from "@/domain/line/model";
+import { roleWords } from "@/domain/line/track";
+import type { WordTiming } from "@/domain/word/timing";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import { newWordId } from "@/domain/word/id";
 import { type ProjectSaveInput, saveCurrentProject } from "@/lib/persistence";
 import { loadProjectForRestore } from "@/lib/project-restore";
 import { getOpenProjectId } from "@/lib/project-storage";
-import type { SavedProject } from "@/lib/saved-project";
+import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import { createProjectSaveInput } from "@/test/factories";
 
 // -- Helpers ------------------------------------------------------------------
@@ -38,6 +42,17 @@ async function loadOpenProjectForRestore(): Promise<SavedProject | undefined> {
   return id ? (await loadProjectForRestore(id)).project : undefined;
 }
 
+// The timed syllables of one of a restored project's lines.
+function restoredWords(project: SavedProject | undefined, lineIndex = 0, role: TrackRole = "main"): WordTiming[] {
+  const line = project && linesFromSaved(project.lines)[lineIndex];
+  return line ? (roleWords(line, role) ?? []) : [];
+}
+
+// A time as a format 4 save keeps it.
+function savedTime(seconds: number): number {
+  return secondsFromMs(msFromSeconds(seconds));
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { loadOpenProjectForRestore, seedSavedProject };
+export { loadOpenProjectForRestore, restoredWords, savedTime, seedSavedProject };

@@ -1,192 +1,174 @@
-import { roleWords } from "@/domain/line/track";
-import { backgroundText, lineText } from "@/domain/line/text";
+import { msFromSeconds } from "insync/time";
+import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { pieceOf, trackPieces } from "@/domain/language/pieces";
+import { timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
+import { roleWords } from "@/domain/line/track";
 import {
+  linesFromLink,
   linesFromSaved,
   SAVED_PROJECT_VERSION,
-  type SavedLine,
   type SavedProject,
+  type SavedProjectV3,
   savedLines,
+  savedLinesForLink,
   upgradeSavedProject,
 } from "@/lib/saved-project";
-import { describe, expect, it } from "vitest";
+import { linesFromSavedV3, type SavedLineV3 } from "@/lib/saved-project-v3";
+import { withPositionIds, withTimesInWholeMs } from "@/test/saved-format-equality";
 
-function legacyProject(version: SavedProject["version"]): SavedProject {
+// -- Fixtures -----------------------------------------------------------------
+
+const V3_LINES: SavedLineV3[] = [
+  {
+    id: "L1",
+    text: "Paper lanterns",
+    agentId: "v1",
+    words: [
+      { text: "Pa", begin: 1.2345, end: 1.4, transliteration: "pē", transliterationJoinerAfter: "" },
+      { text: "per ", begin: 1.4, end: 1.6, transliteration: "pā" },
+      { text: "lanterns", begin: 1.6, end: 2.2004, explicit: true, transliteration: "rantan" },
+    ],
+    backgroundText: "drifting",
+    backgroundWords: [{ text: "drifting", begin: 2.2, end: 2.9 }],
+    backgroundTextSource: "manual",
+    translations: { fr: { language: "fr", text: "Lanternes", origin: "manual", sourceFingerprint: "a" } },
+    transliteration: {
+      language: "ja-Latn",
+      text: "pēpā rantan",
+      alignmentStatus: "confirmed",
+      origin: "manual",
+      sourceFingerprint: "a",
+    },
+  },
+  { id: "L2", text: "hel|lo you", agentId: "v2", words: [{ text: "hel", begin: 3, end: 3.3 }] },
+  { id: "L3", text: "Waiting in a car", agentId: "v1", begin: 4.0006, end: 5.5 },
+  { id: "L4", text: "Not synced yet", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+];
+
+function v3Record(lines: SavedLineV3[] = V3_LINES, version: SavedProjectV3["version"] = 3): SavedProjectV3 {
   return {
     version,
     savedAt: 1,
-    metadata: { title: "Legacy", artists: [], album: "", duration: 0 },
+    metadata: { title: "Lanterns", artists: [], album: "", duration: 0 },
     agents: DEFAULT_AGENTS,
     granularity: "word",
-    lines: [
-      {
-        id: "L1",
-        text: "걸음은 Like a dance",
-        agentId: "v1",
-        transliteration: {
-          language: "ko-Latn",
-          text: "geol-eum-eun Like a dance",
-          segments: [],
-          origin: "google",
-          sourceFingerprint: "legacy",
-        },
-      },
-    ],
+    lines,
   };
 }
 
+// -- Tests --------------------------------------------------------------------
+
 describe("upgradeSavedProject", () => {
+  it("a v3 record upgrades to v4 and loads to the same lines", () => {
+    const loadedV3 = linesFromSavedV3(V3_LINES);
+    const upgraded = upgradeSavedProject(structuredClone(v3Record()));
+    expect(upgraded.version).toBe(4);
+    expect(withPositionIds(linesFromSaved(upgraded.lines))).toEqual(withPositionIds(withTimesInWholeMs(loadedV3)));
+  });
+
+  it("re-keys an aligned line's fingerprint to its v4 timing and leaves an edited one as it was", () => {
+    const loadedV3 = linesFromSavedV3(V3_LINES);
+    const record = { ...v3Record(), alignedTimings: { L1: v3TimingFingerprint(loadedV3[0]), L2: "edited" } };
+    const upgraded = upgradeSavedProject(record);
+    const loaded = linesFromSaved(upgraded.lines);
+    expect(upgraded.alignedTimings).toEqual({ L1: timingFingerprint(loaded[0]), L2: "edited" });
+  });
+
   it("upgrades a version 1 record: transliterations migrate and the version becomes current", () => {
-    const project = legacyProject(1);
-    expect(upgradeSavedProject(project)).toBe(true);
-    expect(project.version).toBe(SAVED_PROJECT_VERSION);
-    expect(project.lines[0].transliteration?.text).toBe("geol eum eun  Like  a  dance");
-    expect(project.lines[0].transliteration?.alignmentStatus).toBe("inferred");
+    const legacy = v3Record(
+      [
+        {
+          id: "L1",
+          text: "걸음은 Like a dance",
+          agentId: "v1",
+          transliteration: {
+            language: "ko-Latn",
+            text: "geol-eum-eun Like a dance",
+            segments: [],
+            origin: "google",
+            sourceFingerprint: "legacy",
+          },
+        },
+      ],
+      1,
+    );
+    const upgraded = upgradeSavedProject(legacy);
+    expect(upgraded.version).toBe(SAVED_PROJECT_VERSION);
+    const romanization = upgraded.lines[0].languages?.transliteration;
+    expect(romanization?.main.text).toBe("geol eum eun  Like  a  dance");
+    expect(romanization?.main.alignmentStatus).toBe("inferred");
   });
 
-  it("upgrades a version 2 record", () => {
-    const project = legacyProject(2);
-    expect(upgradeSavedProject(project)).toBe(true);
-    expect(project.version).toBe(SAVED_PROJECT_VERSION);
+  it("leaves a current record as it is", () => {
+    const current = upgradeSavedProject(v3Record());
+    expect(upgradeSavedProject(current)).toBe(current);
   });
 
-  describe("invariants", () => {
-    it("leaves a current record untouched and reports no change", () => {
-      const project = legacyProject(3);
-      const lines = project.lines;
-      expect(upgradeSavedProject(project)).toBe(false);
-      expect(project.lines).toBe(lines);
-    });
-
-    it("is idempotent", () => {
-      const project = legacyProject(1);
-      upgradeSavedProject(project);
-      const once = structuredClone(project);
-      expect(upgradeSavedProject(project)).toBe(false);
-      expect(project).toEqual(once);
-    });
+  it("leaves a malformed record whose lines are not an array as it was stored", () => {
+    const project = { ...v3Record(), lines: undefined } as unknown as SavedProjectV3;
+    expect(upgradeSavedProject(project)).toBe(project);
+    expect(project.version).toBe(3);
   });
 
-  describe("edge cases", () => {
-    it("tolerates a malformed record whose lines are not an array", () => {
-      const project = { ...legacyProject(1), lines: undefined } as unknown as SavedProject;
-      expect(upgradeSavedProject(project)).toBe(true);
-      expect(project.version).toBe(SAVED_PROJECT_VERSION);
-    });
+  it("refuses a record from a newer Composer", () => {
+    const newer = { ...upgradeSavedProject(v3Record()), version: SAVED_PROJECT_VERSION + 1 } as unknown as SavedProject;
+    expect(() => upgradeSavedProject(newer)).toThrow(/Unsupported project version: 5/);
+  });
+
+  it("keeps every line id of the v3 record, so each open of an unsaved upgrade names the same lines", () => {
+    const ids = V3_LINES.map((line) => line.id);
+    expect(linesFromSaved(upgradeSavedProject(v3Record()).lines).map((line) => line.id)).toEqual(ids);
+    expect(linesFromSaved(upgradeSavedProject(v3Record()).lines).map((line) => line.id)).toEqual(ids);
   });
 });
 
-describe("linesFromSaved", () => {
-  it("gives loaded words new ids even when the file carries some", () => {
-    const [line] = linesFromSaved([
-      {
-        id: "line-1",
-        text: "Paper lanterns",
-        agentId: "v1",
-        words: [
-          { id: "x", text: "Paper ", begin: 1, end: 2 },
-          { id: "x", text: "lanterns", begin: 2, end: 3 },
-        ],
-      },
-    ]);
-    const ids = roleWords(line, "main")?.map((word) => word.id) ?? [];
-    expect(new Set(ids).size).toBe(2);
-    expect(ids).not.toContain("x");
+describe("format 4 lines", () => {
+  it("a v4 save and load keeps every line", () => {
+    const lines = linesFromSaved(savedLines(linesFromSavedV3(V3_LINES)));
+    expect(linesFromSaved(savedLines(lines))).toEqual(lines);
   });
 
-  it("regression: puts back syllable marks the saved text lost and keeps them on the next load", () => {
-    const [line] = linesFromSaved([
-      {
-        id: "line-1",
-        text: "Paper lanterns",
-        agentId: "v1",
-        words: [
-          { text: "Pa", begin: 1, end: 1.2 },
-          { text: "per ", begin: 1.2, end: 1.6 },
-          { text: "lanterns", begin: 1.6, end: 2.2 },
-        ],
-        backgroundText: "drifting",
-        backgroundWords: [
-          { text: "drif", begin: 2.2, end: 2.5 },
-          { text: "ting", begin: 2.5, end: 2.9 },
-        ],
-      },
+  it("regression: a line aligned at a half-millisecond time stays aligned after a save and load", () => {
+    const [line] = linesFromSavedV3([
+      { id: "L1", text: "Paper", agentId: "v1", words: [{ text: "Paper", begin: 1.2345, end: 1.6 }] },
     ]);
-    expect(lineText(line)).toBe("Pa|per lanterns");
-    expect(backgroundText(line)).toBe("drif|ting");
     const [reloaded] = linesFromSaved(savedLines([line]));
-    expect([lineText(reloaded), backgroundText(reloaded)]).toEqual(["Pa|per lanterns", "drif|ting"]);
+    expect(timingFingerprint(reloaded)).toBe(timingFingerprint(line));
   });
 
-  it("regression: a partly synced line's last timed syllable joins the untimed part after it", () => {
-    const [line] = linesFromSaved([
+  it("records keep syllable ids and a link leaves them out", () => {
+    const lines = linesFromSavedV3(V3_LINES);
+    const ids = roleWords(lines[0], "main")?.map((word) => word.id);
+    expect(roleWords(linesFromSaved(savedLines(lines))[0], "main")?.map((word) => word.id)).toEqual(ids);
+    expect(JSON.stringify(savedLinesForLink(lines))).not.toContain('"id":"L1:main"');
+    expect(savedLinesForLink(lines)[0].tracks[0].syllables.every((syllable) => syllable.id === undefined)).toBe(true);
+  });
+
+  it("a link made before format 4 and a format 4 link open the same lines", () => {
+    const fromV3Link = linesFromLink({ lines: V3_LINES });
+    const fromV4Link = linesFromLink({ version: SAVED_PROJECT_VERSION, lines: savedLinesForLink(fromV3Link) });
+    expect(withPositionIds(fromV4Link)).toEqual(withPositionIds(withTimesInWholeMs(fromV3Link)));
+  });
+
+  it("gives a loaded syllable a new id when its id is missing or already taken in the track", () => {
+    const saved: SavedProject["lines"] = [
       {
-        id: "line-1",
-        text: "hel|lo you",
-        agentId: "v1",
-        words: [{ text: "hel", begin: 1, end: 1.3 }],
-        backgroundText: "o|oh yeah",
-        backgroundWords: [{ text: "o", begin: 1, end: 1.2 }],
+        id: "L1",
+        tracks: [
+          {
+            role: "main",
+            agent: "v1",
+            syllables: [
+              { id: "x", text: "Paper", sep: " ", span: [msFromSeconds(1), msFromSeconds(1.6)] },
+              { id: "x", text: "lanterns", sep: "", span: [msFromSeconds(1.6), msFromSeconds(2.2)] },
+              { text: "glow", sep: "" },
+            ],
+          },
+        ],
       },
-    ]);
-    expect(roleWords(line, "main")?.map((word) => word.joinsNext)).toEqual([true]);
-    expect(roleWords(line, "bg")?.map((word) => word.joinsNext)).toEqual([true]);
-  });
-
-  it("keeps a line's languages and syllable readings where a version 3 record spells them", () => {
-    const saved: SavedLine = {
-      id: "line-1",
-      text: "Paper lanterns",
-      agentId: "v1",
-      words: [
-        { text: "Paper ", begin: 1, end: 1.6, transliteration: "pēpā", transliterationJoinerAfter: "  " },
-        { text: "lanterns", begin: 1.6, end: 2.2, transliteration: "rantan" },
-      ],
-      backgroundText: "drifting",
-      backgroundWords: [{ text: "drifting", begin: 2.2, end: 2.9, transliteration: "dorifuto" }],
-      translations: {
-        fr: { language: "fr", text: "Lanternes", backgroundText: "flottant", origin: "manual", sourceFingerprint: "a" },
-      },
-      transliteration: {
-        language: "ja-Latn",
-        text: "pēpā  rantan",
-        backgroundText: "dorifuto",
-        segments: [{ original: "Paper lanterns", transliteration: "pēpā  rantan" }],
-        backgroundSegments: [{ original: "drifting", transliteration: "dorifuto" }],
-        alignmentStatus: "confirmed",
-        backgroundAlignmentStatus: "inferred",
-        reviewedSourceFingerprint: "b",
-        origin: "manual",
-        sourceFingerprint: "a",
-      },
-    };
-    const [line] = linesFromSaved([saved]);
-    const firstWord = roleWords(line, "main")?.[0];
-    expect(firstWord && pieceOf(trackPieces(line, "main"), firstWord)).toEqual({ text: "pēpā", joinerAfter: "  " });
-    expect(line.languages?.transliteration?.bg?.alignmentStatus).toBe("inferred");
-    expect(savedLines([line])).toEqual([saved]);
-  });
-
-  it("keeps syllable readings a version 3 record holds without a romanization side for them", () => {
-    const withoutRomanization: SavedLine = {
-      id: "line-1",
-      text: "Paper",
-      agentId: "v1",
-      words: [{ text: "Paper", begin: 1, end: 1.6, transliteration: "pēpā" }],
-    };
-    const withoutBackground: SavedLine = {
-      id: "line-2",
-      text: "lanterns",
-      agentId: "v1",
-      words: [{ text: "lanterns", begin: 2, end: 2.6, transliteration: "rantan" }],
-      backgroundText: "drifting",
-      backgroundWords: [{ text: "drifting", begin: 2.6, end: 3, transliteration: "dorifuto" }],
-      transliteration: { language: "ja-Latn", text: "rantan", origin: "manual", sourceFingerprint: "a" },
-    };
-    expect(savedLines(linesFromSaved([withoutRomanization, withoutBackground]))).toEqual([
-      withoutRomanization,
-      withoutBackground,
-    ]);
+    ];
+    const ids = linesFromSaved(saved)[0].tracks[0].syllables.map((syllable) => syllable.id);
+    expect(ids[0]).toBe("x");
+    expect(new Set(ids).size).toBe(3);
   });
 });

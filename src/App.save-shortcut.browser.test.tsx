@@ -9,7 +9,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { assignBinding } from "@/stores/shortcut-bindings";
 import { allowConsole } from "@/test/console-guard";
 import { LocationProbe } from "@/test/location-probe";
-import { seedStoredProject, songTitled } from "@/test/projects";
+import { linesOfRecord, seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 
@@ -51,7 +51,7 @@ async function openEditTab(screen: Awaited<ReturnType<typeof renderApp>>): Promi
 }
 
 async function storedLineTexts(): Promise<string[]> {
-  return ((await loadProjectRecord("alpha"))?.lines ?? []).map((line) => line.text);
+  return linesOfRecord(await loadProjectRecord("alpha")).map((line) => lineText(line));
 }
 
 beforeEach(async () => {

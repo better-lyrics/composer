@@ -17,7 +17,8 @@ import { createAudioFile, createMp3File, createUnplayableAudioFile } from "@/tes
 import { createLine } from "@/test/factories";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
-import { seedStoredProject, songTitled } from "@/test/projects";
+import { savedTime } from "@/test/priming-projects";
+import { linesOfRecord, seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -216,7 +217,7 @@ describe("relinking LAME mp3 audio", () => {
     expect(useProjectStore.getState().history).toEqual([]);
     const saved = await loadProjectRecord("p");
     expect(saved?.primingCorrected).toBe(true);
-    expect(saved?.lines[0]?.begin).toBeCloseTo(1 + P, 9);
+    expect(mainBounds(linesOfRecord(saved)[0])?.begin).toBe(savedTime(1 + P));
   });
 
   it("regression: keeps edits made while the relinked audio decodes", async () => {
