@@ -4,6 +4,7 @@
 import { withAlignedTransliteration } from "@/domain/language/align";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -15,6 +16,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 function mappedWords(fragments: string[], start: number): WordTiming[] {
   const joiners = ["", "-", "", "  "];
   return fragments.map((transliteration, index) => ({
+    id: newWordId(),
     text: ["あ", "い", "う", "え", "お"][index],
     sep: index === 3 ? " " : "",
     begin: start + index,

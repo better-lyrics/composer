@@ -9,14 +9,14 @@ describe("reconcileMatchedTiming", () => {
       text: "Dengar|lah rindu yang menyik|sa i|ni",
       agentId: "v1",
       words: [
-        { text: "Dengar", sep: "", begin: 1, end: 1.2 },
-        { text: "lah", sep: " ", begin: 1.2, end: 1.4 },
-        { text: "rindu", sep: " ", begin: 1.4, end: 1.6 },
-        { text: "yang", sep: " ", begin: 1.6, end: 1.8 },
-        { text: "menyik", sep: "", begin: 1.8, end: 2 },
-        { text: "sa", sep: " ", begin: 2, end: 2.2 },
-        { text: "i", sep: "", begin: 2.2, end: 2.4 },
-        { text: "ni", sep: "", begin: 2.4, end: 2.6 },
+        { id: "w1", text: "Dengar", sep: "", begin: 1, end: 1.2 },
+        { id: "w2", text: "lah", sep: " ", begin: 1.2, end: 1.4 },
+        { id: "w3", text: "rindu", sep: " ", begin: 1.4, end: 1.6 },
+        { id: "w4", text: "yang", sep: " ", begin: 1.6, end: 1.8 },
+        { id: "w5", text: "menyik", sep: "", begin: 1.8, end: 2 },
+        { id: "w6", text: "sa", sep: " ", begin: 2, end: 2.2 },
+        { id: "w7", text: "i", sep: "", begin: 2.2, end: 2.4 },
+        { id: "w8", text: "ni", sep: "", begin: 2.4, end: 2.6 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rindu yang menyik|sa i|ni");
@@ -41,10 +41,10 @@ describe("reconcileMatchedTiming", () => {
       text: "Den|garlah rin|du",
       agentId: "v1",
       words: [
-        { text: "Den", sep: "", begin: 0, end: 0.5 },
-        { text: "garlah", sep: " ", begin: 0.5, end: 1 },
-        { text: "rin", sep: "", begin: 1, end: 1.5 },
-        { text: "du", sep: "", begin: 1.5, end: 2 },
+        { id: "w9", text: "Den", sep: "", begin: 0, end: 0.5 },
+        { id: "w10", text: "garlah", sep: " ", begin: 0.5, end: 1 },
+        { id: "w11", text: "rin", sep: "", begin: 1, end: 1.5 },
+        { id: "w12", text: "du", sep: "", begin: 1.5, end: 2 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
@@ -60,8 +60,8 @@ describe("reconcileMatchedTiming", () => {
       text: "Dengar|lah",
       agentId: "v1",
       words: [
-        { text: "Dengar", sep: "", begin: 0, end: 0.5 },
-        { text: "lah", sep: "", begin: 0.5, end: 1 },
+        { id: "w13", text: "Dengar", sep: "", begin: 0, end: 0.5 },
+        { id: "w14", text: "lah", sep: "", begin: 0.5, end: 1 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
@@ -92,8 +92,8 @@ describe("reconcileMatchedTiming", () => {
       text: "Dengar|lah",
       agentId: "v1",
       words: [
-        { text: "Dengar", sep: "", begin: 0, end: 0.5 },
-        { text: "lah", sep: "", begin: 0.5, end: 1 },
+        { id: "w15", text: "Dengar", sep: "", begin: 0, end: 0.5 },
+        { id: "w16", text: "lah", sep: "", begin: 0.5, end: 1 },
       ],
     };
     const result = reconcileMatchedTiming(line, "");
@@ -141,10 +141,10 @@ describe("reconcileMatchedTiming · edge cases", () => {
 
   it("does not mutate the input line or its words array", () => {
     const originalWords = [
-      { text: "Den", sep: "", begin: 0, end: 0.5 },
-      { text: "garlah", sep: " ", begin: 0.5, end: 1 },
-      { text: "rin", sep: "", begin: 1, end: 1.5 },
-      { text: "du", sep: "", begin: 1.5, end: 2 },
+      { id: "w17", text: "Den", sep: "", begin: 0, end: 0.5 },
+      { id: "w18", text: "garlah", sep: " ", begin: 0.5, end: 1 },
+      { id: "w19", text: "rin", sep: "", begin: 1, end: 1.5 },
+      { id: "w20", text: "du", sep: "", begin: 1.5, end: 2 },
     ];
     const line: LyricLine = {
       id: "L0",
@@ -167,13 +167,13 @@ describe("reconcileMatchedTiming · edge cases", () => {
       text: "Den|garlah rin|du",
       agentId: "v1",
       words: [
-        { text: "Den", sep: "", begin: 0, end: 0.5 },
-        { text: "garlah", sep: " ", begin: 0.5, end: 1 },
-        { text: "rin", sep: "", begin: 1, end: 1.5 },
-        { text: "du", sep: "", begin: 1.5, end: 2 },
+        { id: "w21", text: "Den", sep: "", begin: 0, end: 0.5 },
+        { id: "w22", text: "garlah", sep: " ", begin: 0.5, end: 1 },
+        { id: "w23", text: "rin", sep: "", begin: 1, end: 1.5 },
+        { id: "w24", text: "du", sep: "", begin: 1.5, end: 2 },
       ],
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }],
+      backgroundWords: [{ id: "w25", text: "ooh", sep: "", begin: 0.2, end: 0.8 }],
       backgroundTextSource: "manual",
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
@@ -188,11 +188,11 @@ describe("reconcileMatchedTiming · edge cases", () => {
       text: "Dengar|lah",
       agentId: "v1",
       words: [
-        { text: "Dengar", sep: "", begin: 0, end: 0.5 },
-        { text: "lah", sep: "", begin: 0.5, end: 1 },
+        { id: "w26", text: "Dengar", sep: "", begin: 0, end: 0.5 },
+        { id: "w27", text: "lah", sep: "", begin: 0.5, end: 1 },
       ],
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }],
+      backgroundWords: [{ id: "w28", text: "ooh", sep: "", begin: 0.2, end: 0.8 }],
       backgroundTextSource: "extraction",
     };
     const result = reconcileMatchedTiming(line, "");
@@ -207,10 +207,10 @@ describe("reconcileMatchedTiming · edge cases", () => {
       text: "Den|garlah rin|du",
       agentId: "v1",
       words: [
-        { text: "Den", sep: "", begin: 0, end: 0.5 },
-        { text: "garlah", sep: " ", begin: 0.5, end: 1 },
-        { text: "rin", sep: "", begin: 1, end: 1.5 },
-        { text: "du", sep: "", begin: 1.5, end: 2 },
+        { id: "w29", text: "Den", sep: "", begin: 0, end: 0.5 },
+        { id: "w30", text: "garlah", sep: " ", begin: 0.5, end: 1 },
+        { id: "w31", text: "rin", sep: "", begin: 1, end: 1.5 },
+        { id: "w32", text: "du", sep: "", begin: 1.5, end: 2 },
       ],
       groupId: "g1",
       instanceIdx: 0,
@@ -242,9 +242,9 @@ describe("reconcileMatchedTiming · regressions", () => {
       text: "Wish I could",
       agentId: "v1",
       words: [
-        { text: "Wish", sep: " ", begin: 1, end: 2 },
-        { text: "I", sep: " ", begin: 2, end: 3 },
-        { text: "could", sep: "", begin: 3, end: 4 },
+        { id: "w33", text: "Wish", sep: " ", begin: 1, end: 2 },
+        { id: "w34", text: "I", sep: " ", begin: 2, end: 3 },
+        { id: "w35", text: "could", sep: "", begin: 3, end: 4 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Wish I could get it");
@@ -262,9 +262,9 @@ describe("reconcileMatchedTiming · regressions", () => {
       text: "Wish I could",
       agentId: "v1",
       words: [
-        { text: "Wish", sep: " ", begin: 1, end: 2 },
-        { text: "I", sep: " ", begin: 2, end: 3 },
-        { text: "could", sep: "", begin: 3, end: 4 },
+        { id: "w36", text: "Wish", sep: " ", begin: 1, end: 2 },
+        { id: "w37", text: "I", sep: " ", begin: 2, end: 3 },
+        { id: "w38", text: "could", sep: "", begin: 3, end: 4 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Wish could");

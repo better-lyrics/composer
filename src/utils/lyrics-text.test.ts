@@ -18,9 +18,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I", sep: " ", begin: 0, end: 0.3 },
-          { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-          { text: "you", sep: "", begin: 0.6, end: 1 },
+          { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3 },
+          { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+          { id: "w3", text: "you", sep: "", begin: 0.6, end: 1 },
         ],
       },
     ];
@@ -42,9 +42,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I", sep: " ", begin: 0, end: 0.3 },
-          { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-          { text: "you", sep: "", begin: 0.6, end: 1 },
+          { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3 },
+          { id: "w5", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+          { id: "w6", text: "you", sep: "", begin: 0.6, end: 1 },
         ],
       },
     ];
@@ -79,7 +79,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         id: "L1",
         text: "I love",
         agentId: "v1",
-        words: [{ text: "I love", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w7", text: "I love", sep: "", begin: 0, end: 1 }],
       },
     ];
     const result = textToLyricLines("I luv", "v1", existing);
@@ -127,7 +127,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "chorus", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w8", text: "chorus", sep: "", begin: 10, end: 11 }],
       },
       {
         id: "L2",
@@ -136,7 +136,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "chorus", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w9", text: "chorus", sep: "", begin: 30, end: 31 }],
       },
     ];
     const result = textToLyricLines("chorus\nchorus", "v1", existing);
@@ -153,9 +153,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "I love you",
         agentId: "v1",
         words: [
-          { text: "I", sep: " ", begin: 0, end: 0.4 },
-          { text: "love", sep: " ", begin: 0.4, end: 0.8 },
-          { text: "you", sep: "", begin: 0.8, end: 1.2 },
+          { id: "w10", text: "I", sep: " ", begin: 0, end: 0.4 },
+          { id: "w11", text: "love", sep: " ", begin: 0.4, end: 0.8 },
+          { id: "w12", text: "you", sep: "", begin: 0.8, end: 1.2 },
         ],
       },
     ];
@@ -177,9 +177,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "I love you",
         agentId: "v1",
         words: [
-          { text: "I", sep: " ", begin: 0, end: 0.4 },
-          { text: "love", sep: " ", begin: 0.4, end: 0.8 },
-          { text: "you", sep: "", begin: 0.8, end: 1.2 },
+          { id: "w13", text: "I", sep: " ", begin: 0, end: 0.4 },
+          { id: "w14", text: "love", sep: " ", begin: 0.4, end: 0.8 },
+          { id: "w15", text: "you", sep: "", begin: 0.8, end: 1.2 },
         ],
       },
     ];
@@ -279,7 +279,7 @@ describe("textToLyricLines · group attrs preservation", () => {
   });
 
   it("regression: an unchanged row with doubled spaces keeps its timed background", () => {
-    const timedBackground = [{ text: "oh", sep: "", begin: 1, end: 2 }];
+    const timedBackground = [{ id: "w16", text: "oh", sep: "", begin: 1, end: 2 }];
     const existing: LyricLine[] = [
       { id: "L1", text: "Hold  on (hold on)", agentId: "v1", backgroundText: "oh", backgroundWords: timedBackground },
       { id: "L2", text: "Never let go", agentId: "v1" },
@@ -289,7 +289,7 @@ describe("textToLyricLines · group attrs preservation", () => {
   });
 
   it("regression: a row the edit did not change keeps its timed background, parentheses or not", () => {
-    const timedBackground = [{ text: "hold on", sep: "", begin: 1, end: 2 }];
+    const timedBackground = [{ id: "w17", text: "hold on", sep: "", begin: 1, end: 2 }];
     const existing: LyricLine[] = [
       {
         id: "L1",
@@ -313,7 +313,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "Hello world",
         agentId: "v1",
         backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", sep: "", begin: 0, end: 0.5 }],
+        backgroundWords: [{ id: "w18", text: "ooh", sep: "", begin: 0, end: 0.5 }],
       },
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
@@ -328,7 +328,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "Hello world",
         agentId: "v1",
         backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", sep: "", begin: 0, end: 0.5 }],
+        backgroundWords: [{ id: "w19", text: "ooh", sep: "", begin: 0, end: 0.5 }],
         backgroundTextSource: "extraction",
       },
     ];
@@ -378,7 +378,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "chorus", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w20", text: "chorus", sep: "", begin: 10, end: 11 }],
       },
       {
         id: "L2",
@@ -387,7 +387,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "chorus", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w21", text: "chorus", sep: "", begin: 30, end: 31 }],
       },
     ];
     const result = textToLyricLines("choru\nchorus", "v1", existing);
@@ -410,8 +410,8 @@ describe("textToLyricLines · split-character timing preservation", () => {
         text: "Suara hujan",
         agentId: "v1",
         words: [
-          { text: "Suara", sep: " ", begin: 0, end: 0.5 },
-          { text: "hujan", sep: "", begin: 0.5, end: 1 },
+          { id: "w22", text: "Suara", sep: " ", begin: 0, end: 0.5 },
+          { id: "w23", text: "hujan", sep: "", begin: 0.5, end: 1 },
         ],
       },
       {
@@ -419,14 +419,14 @@ describe("textToLyricLines · split-character timing preservation", () => {
         text: "Dengar|lah rindu yang menyik|sa i|ni",
         agentId: "v1",
         words: [
-          { text: "Dengar", sep: "", begin: 1, end: 1.2 },
-          { text: "lah", sep: " ", begin: 1.2, end: 1.4 },
-          { text: "rindu", sep: " ", begin: 1.4, end: 1.6 },
-          { text: "yang", sep: " ", begin: 1.6, end: 1.8 },
-          { text: "menyik", sep: "", begin: 1.8, end: 2 },
-          { text: "sa", sep: " ", begin: 2, end: 2.2 },
-          { text: "i", sep: "", begin: 2.2, end: 2.4 },
-          { text: "ni", sep: "", begin: 2.4, end: 2.6 },
+          { id: "w24", text: "Dengar", sep: "", begin: 1, end: 1.2 },
+          { id: "w25", text: "lah", sep: " ", begin: 1.2, end: 1.4 },
+          { id: "w26", text: "rindu", sep: " ", begin: 1.4, end: 1.6 },
+          { id: "w27", text: "yang", sep: " ", begin: 1.6, end: 1.8 },
+          { id: "w28", text: "menyik", sep: "", begin: 1.8, end: 2 },
+          { id: "w29", text: "sa", sep: " ", begin: 2, end: 2.2 },
+          { id: "w30", text: "i", sep: "", begin: 2.2, end: 2.4 },
+          { id: "w31", text: "ni", sep: "", begin: 2.4, end: 2.6 },
         ],
       },
     ];
@@ -444,9 +444,9 @@ describe("textToLyricLines · whitespace-normalized matching", () => {
     text: "Wish  I  could",
     agentId: "v1",
     words: [
-      { text: "Wish", sep: "  ", begin: 49, end: 50 },
-      { text: "I", sep: "  ", begin: 50, end: 51 },
-      { text: "could", sep: "", begin: 51, end: 52 },
+      { id: "w32", text: "Wish", sep: "  ", begin: 49, end: 50 },
+      { id: "w33", text: "I", sep: "  ", begin: 50, end: 51 },
+      { id: "w34", text: "could", sep: "", begin: 51, end: 52 },
     ],
   };
   const singleSpaced: LyricLine = { id: "chorus-2", text: "Wish I could", agentId: "v1", begin: 116, end: 118 };

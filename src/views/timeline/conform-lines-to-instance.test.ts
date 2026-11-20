@@ -30,20 +30,30 @@ const chorusTemplate: LineTemplate[] = [
 
 function songWithLooseChorus(): LyricLine[] {
   return [
-    { id: "verse", text: "I remember", agentId: "v1", words: [{ text: "I remember", sep: "", begin: 0, end: 4 }] },
+    {
+      id: "verse",
+      text: "I remember",
+      agentId: "v1",
+      words: [{ id: "w1", text: "I remember", sep: "", begin: 0, end: 4 }],
+    },
     {
       id: "loose1",
       text: "we were dancin in the dark",
       agentId: "v1",
-      words: [{ text: "we were dancin in the dark", sep: "", begin: 20, end: 22 }],
+      words: [{ id: "w2", text: "we were dancin in the dark", sep: "", begin: 20, end: 22 }],
     },
     {
       id: "loose2",
       text: "till mornin came",
       agentId: "v1",
-      words: [{ text: "till mornin came", sep: "", begin: 22.4, end: 24 }],
+      words: [{ id: "w3", text: "till mornin came", sep: "", begin: 22.4, end: 24 }],
     },
-    { id: "outro", text: "Goodnight", agentId: "v1", words: [{ text: "Goodnight", sep: "", begin: 30, end: 32 }] },
+    {
+      id: "outro",
+      text: "Goodnight",
+      agentId: "v1",
+      words: [{ id: "w4", text: "Goodnight", sep: "", begin: 30, end: 32 }],
+    },
   ];
 }
 

@@ -63,7 +63,7 @@ function mergedWords(stored: WordTiming[] | undefined, edited: WordTiming[] | un
   return edited.map((word, index) => {
     const kept = stored[index];
     if (!kept) return word;
-    return sameExportedWord(stored, edited, index) ? kept : inSyllableGroupOf(word, kept);
+    return sameExportedWord(stored, edited, index) ? kept : { ...inSyllableGroupOf(word, kept), id: kept.id };
   });
 }
 

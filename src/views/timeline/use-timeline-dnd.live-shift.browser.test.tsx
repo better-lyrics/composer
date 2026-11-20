@@ -25,9 +25,9 @@ describe("useTimelineDnd · live shift state", () => {
           text: "every",
           agentId: "v1",
           words: [
-            { text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
-            { text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
-            { text: "y", sep: " ", begin: 0.6, end: 0.9, syllableGroupId: "g" },
+            { id: "w1", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
+            { id: "w2", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
+            { id: "w3", text: "y", sep: " ", begin: 0.6, end: 0.9, syllableGroupId: "g" },
           ],
         },
       ],

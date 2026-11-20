@@ -33,9 +33,9 @@ describe("useLanguageAutoRefresh", () => {
     useProjectStore.getState().updateLineWithHistory("a", {
       text: "Где ты сейчас",
       words: [
-        { text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde" },
-        { text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty" },
-        { text: "сейчас", sep: "", begin: 3, end: 4 },
+        { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde" },
+        { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty" },
+        { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4 },
       ],
     });
 

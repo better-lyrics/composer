@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { trackWords } from "@/domain/line/tracks";
+import { newWordId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -85,7 +86,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       return;
     }
 
-    const newWord: WordTiming = { text: "...", sep: " ", begin: slot.begin, end: slot.end };
+    const newWord: WordTiming = { id: newWordId(), text: "...", sep: " ", begin: slot.begin, end: slot.end };
     const words = mergeWordsIntoTrack(existingWords ?? [], [newWord]);
     const newIndex = words.findIndex((w) => w.begin === newWord.begin);
 

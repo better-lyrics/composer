@@ -38,7 +38,7 @@ function parenthesized(words: WordTiming[]): WordTiming[] {
 function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
   if (line.backgroundWords?.length) return parenthesized(line.backgroundWords);
   const text = line.backgroundText?.trim();
-  return text ? parenthesized([{ text, sep: "", begin: bounds.begin, end: bounds.end }]) : [];
+  return text ? parenthesized([{ id: "background", text, sep: "", begin: bounds.begin, end: bounds.end }]) : [];
 }
 
 // Background vocals follow the main words in parentheses: every target format
