@@ -25,17 +25,17 @@ interface UntimedLyric {
 
 // -- Reading ------------------------------------------------------------------
 
-// The lyric text of a line or background with no timed syllables, trimmed, and the spans in it that kept data.
-function untimedLyric(container: Element, skippedRole: string): UntimedLyric {
+// The lyric text of a line or background with no timed syllables, trimmed, and the spans in it that kept data;
+// background, translation and romanization spans are not lyric text.
+function untimedLyric(container: Element): UntimedLyric {
   let text = "";
   const spans: KeptSpan[] = [];
   for (const node of container.childNodes) {
     if (node.nodeType === Node.TEXT_NODE) text += node.textContent ?? "";
     if (node.nodeType !== Node.ELEMENT_NODE) continue;
     const element = node as Element;
-    const role = elementRole(element);
-    if (role === skippedRole || !isLyricTextElement(element)) continue;
-    const kept = LYRIC_ROLES.has(role ?? "") ? undefined : mixedContentPassthrough("syllable", element);
+    if (LYRIC_ROLES.has(elementRole(element) ?? "") || !isLyricTextElement(element)) continue;
+    const kept = mixedContentPassthrough("syllable", element);
     const piece = kept?.markup ? markupBaseText(kept.markup) : (element.textContent ?? "");
     if (kept) spans.push({ start: text.length, end: text.length + piece.length, passthrough: kept });
     text += piece;

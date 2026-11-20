@@ -12,13 +12,12 @@ import { fromComposerMeta } from "@/domain/project/metadata-ttml";
 import type { WordTiming } from "@/domain/word/timing";
 import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
-import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
-import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { parseTtmlAlternates, withInlineAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
+import { extractTimedWords, parseTtmlDocument, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 import { partsFromDivs } from "@/utils/lyrics-parsers/ttml-parts-read";
 import { docPassthrough, withAgentCapture, withParagraphCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
 import { type UntimedLyric, untimedLyric, withUntimedSpans } from "@/utils/lyrics-parsers/ttml-untimed-read";
 import { getSplitCharacter } from "@/utils/split-character";
-import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -41,11 +40,9 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const lines: LyricLine[] = [];
   const lineIndexByKey = new Map<string, number>();
   const lineKeys: (string | undefined)[] = [];
-  const paragraphByKey = new Map<string, Element>();
   const lineByParagraph = new Map<Element, LyricLine>();
 
-  const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
-  const parsed = parseXmlDocument(declareMissingNamespaces(unescapedContent));
+  const parsed = parseTtmlDocument(content);
   if (!parsed.ok) {
     return { lines: [], metadata: {}, hasTimingData: false, issues: [{ line: 1, text: "", reason: "empty-document" }] };
   }
@@ -176,7 +173,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
       if (backgroundWords.length > 0) {
         backgroundText = syllablesText(backgroundWords, getSplitCharacter());
       } else {
-        untimedBackground = untimedLyric(bgContainer, "x-translation");
+        untimedBackground = untimedLyric(bgContainer);
         backgroundText = untimedBackground.text || undefined;
       }
     }
@@ -204,7 +201,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         }),
       );
     } else {
-      untimedMain = untimedLyric(p, "x-bg");
+      untimedMain = untimedLyric(p);
       const { text } = untimedMain;
 
       if (text) {
@@ -225,19 +222,18 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     }
     if (lines.length > lineCountBefore) {
       const captured = withUntimedSpans(lines[lines.length - 1], untimedMain, untimedBackground);
-      lines[lines.length - 1] = withParagraphCapture(captured, p, bgContainer);
+      lines[lines.length - 1] = withInlineAlternates(withParagraphCapture(captured, p, bgContainer), p, bgContainer);
       lineByParagraph.set(p, lines[lines.length - 1]);
       lineKeys.push(lineKey ?? undefined);
     }
     if (lineKey && lines.length > lineCountBefore && !lineIndexByKey.has(lineKey)) {
       lineIndexByKey.set(lineKey, lines.length - 1);
-      paragraphByKey.set(lineKey, p);
     }
   }
 
-  parseTtmlAlternates(doc, lines, lineIndexByKey, paragraphByKey);
+  parseTtmlAlternates(doc, lines, lineIndexByKey);
   const parts = partsFromDivs(doc, lineByParagraph);
-  const passthrough = docPassthrough(doc);
+  const passthrough = docPassthrough(doc, lineByParagraph);
 
   return {
     lines,
