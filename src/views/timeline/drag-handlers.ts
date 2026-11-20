@@ -1,8 +1,8 @@
 import { isRefused } from "@/domain/commands/outcome";
 import { moveWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
-import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressAt, type ResolvedAddress, resolveAddresses, toAddress } from "@/domain/selection/resolve";
@@ -45,7 +45,7 @@ function draggedWord(activeData: DragData): DragWord {
 }
 
 function resolveWordsToOperate(
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   activeData: DragData,
   selectedWords: readonly SyllableAddress[],
 ): DragWord[] {
@@ -54,7 +54,7 @@ function resolveWordsToOperate(
   return isDraggedWordSelected ? resolveAddresses(lines, selectedWords) : [draggedWord(activeData)];
 }
 
-function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections: DragWord[]): DragWord[] {
+function expandSelectionsAcrossLines(lines: readonly LyricLine[], selections: DragWord[]): DragWord[] {
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
   const seen = new Set<string>();
@@ -62,7 +62,7 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
-    const words = trackWords(line, sel.type);
+    const words = drawnSyllables(line, trackRole(sel.type));
     if (!words) continue;
     const expanded = expandSelectionToGroupmates(words, [sel.wordIndex]);
     for (const idx of expanded) {
@@ -75,11 +75,11 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
   return result;
 }
 
-function resolvedWords(lines: readonly ReadableLine[], words: readonly DragWord[]): ResolvedAddress[] {
+function resolvedWords(lines: readonly LyricLine[], words: readonly DragWord[]): ResolvedAddress[] {
   return words.flatMap((word) => addressAt(lines, word.lineId, word.type, word.wordIndex) ?? []);
 }
 
-function addressesOf(lines: readonly ReadableLine[], words: readonly DragWord[]): SyllableAddress[] {
+function addressesOf(lines: readonly LyricLine[], words: readonly DragWord[]): SyllableAddress[] {
   return resolvedWords(lines, words).map(toAddress);
 }
 
@@ -87,7 +87,7 @@ function addressesOf(lines: readonly ReadableLine[], words: readonly DragWord[])
 
 function applySameLineReorder(
   wordsToMove: DragWord[],
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   timeDelta: number,
   duration: number,
 ) {
@@ -102,7 +102,7 @@ interface CrossLineMoveArgs {
   targetLine: LyricLine;
   targetTrack: "word" | "bg";
   wordsToMove: DragWord[];
-  lines: readonly ReadableLine[];
+  lines: readonly LyricLine[];
   timeDelta: number;
   duration: number;
 }

@@ -1,6 +1,5 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { SyllableAddress } from "@/domain/selection/model";
@@ -24,7 +23,7 @@ interface MultiSelectionSummary {
 
 // -- Helpers ------------------------------------------------------------------
 
-function selectedWord(selection: SyllableAddress, lines: readonly ReadableLine[]): WordTiming | null {
+function selectedWord(selection: SyllableAddress, lines: readonly LyricLine[]): WordTiming | null {
   return wordAt(lines, selection);
 }
 
@@ -57,7 +56,7 @@ function selectionGroupHighlight(
 
 function selectedWordTiming(
   selection: SyllableAddress,
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
 ): Pick<WordTiming, "text" | "begin" | "end"> | null {
   const word = selectedWord(selection, lines);
   return word ? { text: word.text + word.sep, begin: word.begin, end: word.end } : null;
@@ -65,11 +64,10 @@ function selectedWordTiming(
 
 function multiSelectionSummary(
   selection: readonly SyllableAddress[],
-  lines: readonly ReadableLine[],
-  rawLines: readonly LyricLine[],
+  lines: readonly LyricLine[],
 ): MultiSelectionSummary | null {
   if (selection.length <= 1) return null;
-  const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
+  const linesById = new Map(lines.map((l) => [l.id, l] as const));
   const countedLineIds = new Set<string>();
   let begin = Number.POSITIVE_INFINITY;
   let end = 0;
@@ -78,8 +76,8 @@ function multiSelectionSummary(
     if (!word) continue;
     begin = Math.min(begin, word.begin);
     end = Math.max(end, word.end);
-    const raw = sel.type === "word" ? rawLinesById.get(sel.lineId) : undefined;
-    if (raw && isLineSynced(raw)) countedLineIds.add(raw.id);
+    const line = sel.type === "word" ? linesById.get(sel.lineId) : undefined;
+    if (line && isLineSynced(line)) countedLineIds.add(line.id);
   }
   if (begin === Number.POSITIVE_INFINITY) return null;
   const lineCount = countedLineIds.size;

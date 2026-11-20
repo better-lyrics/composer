@@ -2,9 +2,11 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
 import { withoutBackground } from "@/domain/line/background";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { type ReadableLine, effectiveMainWordEdit, isLineSyncedSource, rawLineOf } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { roleWords, trackWords, untimedSyllablesOf } from "@/domain/line/track";
+import { isLineSynced } from "@/domain/line/predicates";
+import { trackRole, untimedSyllablesOf } from "@/domain/line/track";
+import { mainTimingEdit } from "@/domain/line/track-writes";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -39,7 +41,7 @@ interface TargetInserts {
 
 // -- Validation ---------------------------------------------------------------
 
-function validateMoves(moves: WordMove[], linesById: Map<string, ReadableLine>): MoveResult | null {
+function validateMoves(moves: WordMove[], linesById: Map<string, LyricLine>): MoveResult | null {
   for (const move of moves) {
     const source = linesById.get(move.sourceLineId);
     const target = linesById.get(move.targetLineId);
@@ -47,14 +49,11 @@ function validateMoves(moves: WordMove[], linesById: Map<string, ReadableLine>):
     if (source.id !== target.id && wouldDropCrossInstance(source, target)) {
       return { ok: false, reject: "cross-instance" };
     }
-    if (move.targetTrack === "word" && isLineSyncedSource(target) && target.id !== source.id) {
+    if (move.targetTrack === "word" && isLineSynced(target) && target.id !== source.id) {
       return { ok: false, reject: "line-synced-target" };
     }
-    const targetArr = trackWords(target, move.targetTrack);
-    if (targetArr) {
-      for (const existing of targetArr) {
-        if (boundsOverlap(move.word, existing)) return { ok: false, reject: "overlap" };
-      }
+    for (const existing of drawnSyllables(target, trackRole(move.targetTrack))) {
+      if (boundsOverlap(move.word, existing)) return { ok: false, reject: "overlap" };
     }
   }
   return null;
@@ -102,14 +101,18 @@ function planInserts(moves: WordMove[]): Map<string, TargetInserts> {
   return insertByLine;
 }
 
+function nonEmpty(words: WordTiming[]): WordTiming[] | undefined {
+  return words.length > 0 ? words : undefined;
+}
+
 function lineUpdateFor(
-  line: ReadableLine,
+  line: LyricLine,
   removals: SourceRemovals | undefined,
   inserts: TargetInserts | undefined,
   rangeEnd: number,
 ): Partial<LyricLine> | null {
-  let words = roleWords(line, "main");
-  let backgroundWords = roleWords(line, "bg");
+  let words = nonEmpty(drawnSyllables(line, "main"));
+  let backgroundWords = nonEmpty(drawnSyllables(line, "bg"));
   let mainChanged = false;
   let bgChanged = false;
   if (removals?.word.size && words) {
@@ -122,14 +125,14 @@ function lineUpdateFor(
   }
   if (inserts?.word.length) {
     words = resolveOverlapsForward(
-      mergeWordsIntoTrack(words ?? [], inserts.word, untimedSyllablesOf(rawLineOf(line), "main")),
+      mergeWordsIntoTrack(words ?? [], inserts.word, untimedSyllablesOf(line, "main")),
       rangeEnd,
     );
     mainChanged = true;
   }
   if (inserts?.bg.length) {
     backgroundWords = resolveOverlapsForward(
-      mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg, untimedSyllablesOf(rawLineOf(line), "bg")),
+      mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg, untimedSyllablesOf(line, "bg")),
       rangeEnd,
     );
     bgChanged = true;
@@ -137,14 +140,14 @@ function lineUpdateFor(
 
   let updates: Partial<LyricLine> = {};
   if (mainChanged) {
-    const mainEdit = effectiveMainWordEdit(line, words ?? []);
+    const mainEdit = mainTimingEdit(line, words ?? []);
     if (!mainEdit) return null;
     updates = mainEdit;
   }
   if (bgChanged) {
     updates = backgroundWords?.length
       ? manualBackgroundWordEdit(line, backgroundWords, updates)
-      : { ...updates, tracks: withoutBackground({ ...rawLineOf(line), ...updates }).tracks };
+      : { ...updates, tracks: withoutBackground({ ...line, ...updates }).tracks };
   }
   return updates;
 }
@@ -152,13 +155,13 @@ function lineUpdateFor(
 // -- Entry point --------------------------------------------------------------
 
 function applyWordMoveAcrossLines(
-  lines: readonly ReadableLine[],
+  lines: readonly LyricLine[],
   moves: WordMove[],
   rangeOf: (line: LyricLine) => TimeRange,
 ): MoveResult {
   if (moves.length === 0) return { ok: true, updates: [] };
 
-  const linesById = new Map<string, ReadableLine>();
+  const linesById = new Map<string, LyricLine>();
   for (const line of lines) linesById.set(line.id, line);
 
   const validation = validateMoves(moves, linesById);

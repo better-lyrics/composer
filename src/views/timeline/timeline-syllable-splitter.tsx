@@ -1,5 +1,5 @@
-import { languageSide, pieceOf, trackPieces } from "@/domain/language/pieces";
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { languageSide, pieceOf } from "@/domain/language/pieces";
+import { drawnPieces } from "@/domain/line/drawn-track";
 import { toAddress, wordAt } from "@/domain/selection/resolve";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -38,14 +38,13 @@ const TimelineSyllableSplitter: React.FC = () => {
       if (selectedWords.length !== 1) return;
 
       const sel = selectedWords[0];
-      const lines = getEffectiveLines(useProjectStore.getState().lines);
-      const line = lines.find((l) => l.id === sel.lineId);
+      const line = useProjectStore.getState().lines.find((l) => l.id === sel.lineId);
       if (!line) return;
 
       const word: WordTiming | null = wordAt([line], sel);
       if (!word || word.text.length < 2) return;
 
-      const piece = pieceOf(trackPieces(line, languageSide(sel.type)), word);
+      const piece = pieceOf(drawnPieces(line, languageSide(sel.type)), word);
       setTarget({ ...toAddress(sel), word, piece, mode });
       setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       setIsOpen(true);

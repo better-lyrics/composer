@@ -2,12 +2,12 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { applied, changedLineIds, refused, withLines } from "@/domain/commands/outcome";
 import { withNewInstance } from "@/domain/group/own-timing";
-import type { LineUpdate, RawLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 
 // -- Helpers ------------------------------------------------------------------
 
 // The placement planners lay the instance into existing rows and hand back the whole lines array.
-function adoptInstance(command: string, groupId: string, instanceIdx: number, lines: RawLine[]): LyricCommand {
+function adoptInstance(command: string, groupId: string, instanceIdx: number, lines: LyricLine[]): LyricCommand {
   return {
     note: { command, args: [groupId, instanceIdx] },
     copiesSharedTiming: false,
@@ -21,11 +21,11 @@ function adoptInstance(command: string, groupId: string, instanceIdx: number, li
 
 // -- Commands -----------------------------------------------------------------
 
-function fillInstanceRows(groupId: string, instanceIdx: number, lines: RawLine[]): LyricCommand {
+function fillInstanceRows(groupId: string, instanceIdx: number, lines: LyricLine[]): LyricCommand {
   return adoptInstance("fill instance rows", groupId, instanceIdx, lines);
 }
 
-function conformToInstance(groupId: string, instanceIdx: number, lines: RawLine[]): LyricCommand {
+function conformToInstance(groupId: string, instanceIdx: number, lines: LyricLine[]): LyricCommand {
   return adoptInstance("conform to instance", groupId, instanceIdx, lines);
 }
 

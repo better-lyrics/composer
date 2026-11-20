@@ -18,7 +18,7 @@ import {
 } from "@/domain/selection/nudge";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
-import { type GroupHeaderRow, getEffectiveRows } from "@/views/timeline/effective-rows";
+import { type GroupHeaderRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { distributeLinesTiming, distributeWordsInLine, formatTime, getWordsInInstance } from "./utils";
 
 const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
@@ -308,9 +308,9 @@ describe("formatTime", () => {
   });
 });
 
-// -- getEffectiveRows ---------------------------------------------------------
+// -- getDrawnRows -------------------------------------------------------------
 
-describe("getEffectiveRows", () => {
+describe("getDrawnRows", () => {
   function l(id: string, extras: Partial<LineFields> = {}): LyricLine {
     return lineFromFields({ id, text: "x", agentId: "v1", ...extras });
   }
@@ -344,7 +344,7 @@ describe("getEffectiveRows", () => {
       }),
     ];
 
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     expect(rows.map((r) => r.kind)).toEqual(["group-header", "line", "line", "line", "group-header", "line", "line"]);
 
     const h0 = rows[0] as GroupHeaderRow;
@@ -362,7 +362,7 @@ describe("getEffectiveRows", () => {
 
   it("returns standalone-only rows for projects with no groups", () => {
     const lines: LyricLine[] = [l("a"), l("b"), l("c")];
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     expect(rows.every((r) => r.kind === "line")).toBe(true);
     expect(rows).toHaveLength(3);
   });
@@ -374,7 +374,7 @@ describe("getEffectiveRows", () => {
       l("c", { groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
       l("d"),
     ];
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     const lineRows = rows.filter((r) => r.kind === "line");
     expect(lineRows.map((r) => (r.kind === "line" ? r.lineIndex : -1))).toEqual([0, 1, 2, 3]);
   });
@@ -384,14 +384,14 @@ describe("getEffectiveRows", () => {
       l("a", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
       l("b", { groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
     ];
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     // Both lines still appear; the header is suppressed
     expect(rows.map((r) => r.kind)).toEqual(["line", "line"]);
   });
 
   it("emits a header for a line-synced instance (begin/end set, no words), that's real timing", () => {
     const lines: LyricLine[] = [l("a", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0, begin: 5, end: 7 })];
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     expect(rows[0].kind).toBe("group-header");
     const header = rows[0] as GroupHeaderRow;
     expect(header.instanceStart).toBe(5);
@@ -407,7 +407,7 @@ describe("getEffectiveRows", () => {
         backgroundWords: [{ id: "w19", text: "ah", sep: "", begin: 4, end: 5, joinsNext: false }],
       }),
     ];
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     expect(rows[0].kind).toBe("group-header");
     const header = rows[0] as GroupHeaderRow;
     expect(header.instanceStart).toBe(4);
@@ -427,7 +427,7 @@ describe("getEffectiveRows", () => {
         words: [{ id: "w20", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
       }),
     ];
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     expect(rows.map((r) => r.kind)).toEqual(["line", "line", "group-header", "line"]);
   });
 
@@ -442,7 +442,7 @@ describe("getEffectiveRows", () => {
       }),
       l("b", { groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
     ];
-    const rows = getEffectiveRows(lines);
+    const rows = getDrawnRows(lines);
     expect(rows.map((r) => r.kind)).toEqual(["group-header", "line", "line"]);
     expect((rows[0] as GroupHeaderRow).instanceStart).toBe(5);
     expect((rows[0] as GroupHeaderRow).instanceEnd).toBe(6);
@@ -859,7 +859,7 @@ describe("partitionNudgeSelections", () => {
   });
 
   it("dedupes line-synced selections so the same line shifts only once", () => {
-    // Effective lines synthesize a single 'word' for line-synced rows. If a user marquee-selected
+    // The Timeline draws a single 'word' for line-synced rows. If a user marquee-selected
     // a line-synced row from a viewport that briefly produced multiple synthetic indices,
     // we should still only shift the line once.
     const lines: LyricLine[] = [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })];

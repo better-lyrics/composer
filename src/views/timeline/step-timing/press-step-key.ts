@@ -1,8 +1,8 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { toast } from "sonner";
 import { pressStepKey as stepKeyCommand } from "@/domain/commands/word-timing";
-import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/track";
+import { type WordTrack, trackRole } from "@/domain/line/track";
 import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
@@ -58,7 +58,7 @@ function showEndedPreviousToast(previousWord: string): void {
 
 // -- Functions ----------------------------------------------------------------
 
-function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): void {
+function pressStepKey(key: StepKey, lines: LyricLine[], duration: number): void {
   const time = playheadTime();
   const focus = currentEffectiveFocus();
   const timeline = useTimelineStore.getState();
@@ -69,11 +69,11 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     return;
   }
   const line = lines[cursor.lineIndex];
-  const word = line ? effectiveTrackWords(line, cursor.type)?.[cursor.wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(cursor.type))[cursor.wordIndex] : undefined;
   if (!line || !word) return;
   const project = useProjectStore.getState();
   const { skippedLineIds } = stepSkipView(lines, project.groups, timeline.collapsedInstances, line);
-  const include = (candidate: ReadableLine) => isInFocus(candidate, focus) && !skippedLineIds.has(candidate.id);
+  const include = (candidate: LyricLine) => isInFocus(candidate, focus) && !skippedLineIds.has(candidate.id);
   const queue = live.cursor ? live.queue : null;
   if (queue && timeline.stepQueue && queue.length !== timeline.stepQueue.length) timeline.setSelectedWords(queue, true);
   const next =
@@ -102,7 +102,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   if (outcome?.endedPrevious) showEndedPreviousToast(outcome.endedPrevious);
   noteGuideSignal("timeline.stepTiming");
   const leftLine = cursor.type === "word" && next?.lineId !== cursor.lineId;
-  if (leftLine && effectiveTrackWords(line, "bg")?.length) noteGuideSignal("timeline.stepPastBackground");
+  if (leftLine && drawnSyllables(line, "bg").length) noteGuideSignal("timeline.stepPastBackground");
   if (queue && key !== "start" && !next) noteGuideSignal("timeline.stepQueueEnd");
   // The queue outlives its last word, so the keys never leave the chosen words.
   timeline.setSelectedWords([next ?? cursor]);
@@ -115,7 +115,7 @@ function setStepTimingMode(on: boolean): void {
 }
 
 // Returns false for a timing key outside Step timing, which then sets the word under the playhead as usual.
-function pressStepShortcut(id: string, lines: ReadableLine[], duration: number): boolean {
+function pressStepShortcut(id: string, lines: LyricLine[], duration: number): boolean {
   const { stepTiming } = useTimelineStore.getState();
   if (id === "timeline.stepTimingOff") setStepTimingMode(!stepTiming);
   else if (id === "timeline.stepWord" && !stepTiming) noteGuideSignal("timeline.stepKeyWhileOff");

@@ -2,6 +2,7 @@ import { firstFullyTimedInstance, sharedInstancesInLineOrder } from "@/domain/gr
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceKey } from "@/domain/instance/key";
 import { instanceName } from "@/domain/instance/name";
+import { drawnLine } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { stepSkippedLineIds } from "@/domain/step-timing/step-skip";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
@@ -17,11 +18,12 @@ interface StepSkipView {
 // -- Functions ----------------------------------------------------------------
 
 function stepSkipView(
-  lines: readonly LyricLine[],
+  storedLines: readonly LyricLine[],
   groups: readonly LinkGroup[],
   collapsedInstances: Readonly<Record<string, boolean>>,
   cursorLine: LyricLine | null,
 ): StepSkipView {
+  const lines = storedLines.map(drawnLine);
   const isCollapsed = (groupId: string, instanceIdx: number) =>
     collapsedInstances[instanceKey(groupId, instanceIdx)] ?? false;
   const skippedLineIds = stepSkippedLineIds(lines, groups, isCollapsed, cursorLine);

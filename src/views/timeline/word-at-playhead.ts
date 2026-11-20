@@ -1,5 +1,5 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
@@ -14,14 +14,14 @@ function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | n
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
-    const words = timedSyllables(mainTrack(line));
+    const words = drawnSyllables(line, "main");
     for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
       const word = words[wordIndex];
       if (time >= word.begin && time < word.end) {
         matches.push({ lineId: line.id, type: "word", syllableId: word.id, lineIndex, wordIndex });
       }
     }
-    const backgroundWords = timedSyllables(backgroundTrack(line));
+    const backgroundWords = drawnSyllables(line, "bg");
     for (let wordIndex = 0; wordIndex < backgroundWords.length; wordIndex++) {
       const word = backgroundWords[wordIndex];
       if (time >= word.begin && time < word.end) {
@@ -65,7 +65,7 @@ function nearestInTrack(
 }
 
 function findWordAcrossGap(
-  lines: LyricLine[],
+  lines: readonly LyricLine[],
   time: number,
   edge: BoundaryEdge,
   focus: GroupFocus | null,
@@ -76,12 +76,12 @@ function findWordAcrossGap(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
-    const main = nearestInTrack(timedSyllables(mainTrack(line)), time, edge);
+    const main = nearestInTrack(drawnSyllables(line, "main"), time, edge);
     if (main && main.distance < nearestDistance) {
       nearestDistance = main.distance;
       nearest = resolvedAt(lines, lineIndex, "word", main.wordIndex);
     }
-    const background = mainOnly ? null : nearestInTrack(timedSyllables(backgroundTrack(line)), time, edge);
+    const background = mainOnly ? null : nearestInTrack(drawnSyllables(line, "bg"), time, edge);
     if (background && background.distance < nearestDistance) {
       nearestDistance = background.distance;
       nearest = resolvedAt(lines, lineIndex, "bg", background.wordIndex);
@@ -99,7 +99,7 @@ function containsForEdge(word: WordTiming, time: number, edge: BoundaryEdge): bo
 }
 
 function findContainingWord(
-  lines: LyricLine[],
+  lines: readonly LyricLine[],
   time: number,
   edge: BoundaryEdge,
   focus: GroupFocus | null,
@@ -108,10 +108,10 @@ function findContainingWord(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
-    const mainIndex = timedSyllables(mainTrack(line)).findIndex((word) => containsForEdge(word, time, edge));
+    const mainIndex = drawnSyllables(line, "main").findIndex((word) => containsForEdge(word, time, edge));
     if (mainIndex !== -1) return resolvedAt(lines, lineIndex, "word", mainIndex);
     if (mainOnly) continue;
-    const bgIndex = timedSyllables(backgroundTrack(line)).findIndex((word) => containsForEdge(word, time, edge));
+    const bgIndex = drawnSyllables(line, "bg").findIndex((word) => containsForEdge(word, time, edge));
     if (bgIndex !== -1) return resolvedAt(lines, lineIndex, "bg", bgIndex);
   }
   return null;
@@ -120,7 +120,7 @@ function findContainingWord(
 // Containment resolves first, so anything the gap search still sees lies wholly on one
 // side of the playhead and can be ranked by plain distance. Step timing passes mainOnly: its keys skip background words.
 function findBoundaryTarget(
-  lines: LyricLine[],
+  lines: readonly LyricLine[],
   time: number,
   edge: BoundaryEdge,
   focus: GroupFocus | null = null,
