@@ -93,11 +93,12 @@ async function importProjectFileForLyrics(
   ctx: ImportContext,
 ): Promise<boolean> {
   if (contents.kind === "bundle" && contents.projects.length === 0) {
-    return restoreBundleContents(contents.projects, contents.unreadable);
+    return restoreBundleContents(contents.projects, contents.unreadable, contents.previousVersions);
   }
   const choice = await askChoice({ ...projectFileChoice(contents, fileName), busyMessage: FINISH_IMPORT_FIRST });
   if (choice === "cancel") return false;
-  if (contents.kind === "bundle") return restoreBundleContents(contents.projects, contents.unreadable);
+  if (contents.kind === "bundle")
+    return restoreBundleContents(contents.projects, contents.unreadable, contents.previousVersions);
   if (choice === "use-lyrics") {
     const imported = await importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);
     if (imported) noteGuideSignal("edit.lyrics");

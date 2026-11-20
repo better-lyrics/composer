@@ -33,6 +33,7 @@ describe("restoreProjectBundle · per-project failures", () => {
     const result = await restoreProjectBundle(
       [projectFileNamed("a", "Alpha"), poisonedProjectFile("b", "Bravo"), projectFileNamed("c", "Charlie")],
       0,
+      [],
     );
     unsubscribe();
     expect(result).toEqual({ restored: 2, alreadyInLibrary: 0, unreadable: 0, failed: 1 });
@@ -47,6 +48,7 @@ describe("restoreProjectBundle · per-project failures", () => {
       const result = await restoreProjectBundle(
         [projectFileNamed("pending", "Pending A"), projectFileNamed("pending", "Pending B")],
         0,
+        [],
       );
       await deletion.commit();
       expect(result).toEqual({ restored: 1, alreadyInLibrary: 1, unreadable: 0, failed: 0 });
@@ -61,6 +63,7 @@ describe("restoreProjectBundle · per-project failures", () => {
       const result = await restoreProjectBundle(
         [projectFileNamed("gone", "Gone A"), projectFileNamed("gone", "Gone B")],
         0,
+        [],
       );
       expect(result).toEqual({ restored: 1, alreadyInLibrary: 1, unreadable: 0, failed: 0 });
       const entries = await listProjectIndex();
