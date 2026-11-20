@@ -1,8 +1,9 @@
+import { describe, expect, it } from "vitest";
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -93,7 +94,7 @@ describe("initialGroupSharing", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1)];
       const result = share(lines);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines.find((line) => line.id === "c1-1")?.words?.[0]?.begin).toBeCloseTo(43, 6);
+      expect(timedSyllables(mainTrack(result.lines.find((line) => line.id === "c1-1")!))[0]?.begin).toBeCloseTo(43, 6);
       expect(skippedSharedInstances(result.lines, [result.group]).map((skipped) => skipped.instanceIdx)).toEqual([1]);
     });
 
@@ -117,7 +118,7 @@ describe("initialGroupSharing", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 50)];
       const result = share(lines);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines.find((line) => line.id === "c1-0")?.words?.[0]?.begin).toBeCloseTo(47, 6);
+      expect(timedSyllables(mainTrack(result.lines.find((line) => line.id === "c1-0")!))[0]?.begin).toBeCloseTo(47, 6);
     });
   });
 
@@ -142,7 +143,7 @@ describe("initialGroupSharing", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 1), chorus(2, 0, 70), chorus(2, 1)];
       const result = share(lines);
       expect(result.group.ownTimingInstances).toEqual([1]);
-      expect(result.lines.find((line) => line.id === "c2-1")?.words?.[0]?.begin).toBeCloseTo(73, 6);
+      expect(timedSyllables(mainTrack(result.lines.find((line) => line.id === "c2-1")!))[0]?.begin).toBeCloseTo(73, 6);
     });
 
     it("matches within the 10 ms tolerance without writing timing", () => {
@@ -202,7 +203,7 @@ describe("initialGroupSharing", () => {
       });
       const result = share([lineSynced, shifted(1, 40, 0.2)]);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines[0].words?.map((word) => word.begin)).toEqual([5, expect.closeTo(5.7, 6)]);
+      expect(timedSyllables(mainTrack(result.lines[0])).map((word) => word.begin)).toEqual([5, expect.closeTo(5.7, 6)]);
       expect(result.lines[1]).toEqual(shifted(1, 40, 0.2));
     });
 

@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -6,7 +8,6 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -25,7 +26,7 @@ function flushPairLine() {
 }
 
 function currentWords() {
-  return useProjectStore.getState().lines[0].words ?? [];
+  return timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -98,7 +99,7 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].begin).toBeCloseTo(1.3);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("stamps backgroundTextSource manual when a bg word's end is set to the cursor", async () => {
@@ -110,7 +111,7 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
     await screen.getByRole("button", { name: /Set End/ }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].end).toBeCloseTo(1.7);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word's begin is retimed", async () => {
@@ -122,7 +123,7 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].begin).toBeCloseTo(0.4);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
 
@@ -281,6 +282,6 @@ describe("TimelineInfoPanel cursor buttons · shared time range", () => {
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[1].words?.[0].begin).toBe(7);
-    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(0);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].begin).toBe(0);
   });
 });

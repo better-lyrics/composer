@@ -1,5 +1,8 @@
+import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { createLine } from "@/test/factories";
 import { parseLrc } from "@/utils/lyrics-parsers/lrc";
@@ -8,7 +11,6 @@ import { parseSrt } from "@/utils/lyrics-parsers/srt";
 import { writeLrc } from "@/utils/lyrics-writers/lrc";
 import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -63,7 +65,7 @@ describe("writeLrc", () => {
   it("round-trips line timing through the LRC parser", () => {
     const parsed = parseLrc(writeLrc(doc([lineSynced("Hello", 1, 2), lineSynced("World", 5, 7.5)])));
 
-    expect(parsed.lines.map((line) => [line.text, line.begin, line.end])).toEqual([
+    expect(parsed.lines.map((line) => [lineText(line), line.begin, line.end])).toEqual([
       ["Hello", 1, 2],
       ["World", 5, 7.5],
     ]);
@@ -72,7 +74,9 @@ describe("writeLrc", () => {
   it("round-trips word timing through the LRC parser", () => {
     const parsed = parseLrc(writeLrc(doc([wordLine("a")])));
 
-    expect(parsed.lines[0].words?.map((word) => [word.text + word.sep, word.begin, word.end])).toEqual([
+    expect(
+      timedSyllables(mainTrack(parsed.lines[0])).map((word) => [word.text + word.sep, word.begin, word.end]),
+    ).toEqual([
       ["Is ", 34.06, 34.19],
       ["it ", 34.19, 34.31],
       ["so", 34.31, 34.41],
@@ -127,7 +131,7 @@ describe("writeLrc", () => {
 
       const parsed = parseLrc(writeLrc(doc([line])));
 
-      const words = parsed.lines[0].words ?? [];
+      const words = timedSyllables(mainTrack(parsed.lines[0]));
       expect(words.map((word) => word.text + word.sep).join("")).toBe("I'm here (oh)");
       for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
     });
@@ -142,7 +146,7 @@ describe("writeLrc", () => {
         backgroundText: "oh",
       });
 
-      const words = parseLrc(writeLrc(doc([line]))).lines[0].words ?? [];
+      const words = timedSyllables(mainTrack(parseLrc(writeLrc(doc([line]))).lines[0]));
       for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
     });
 
@@ -170,7 +174,7 @@ describe("writeSrt", () => {
   it("round-trips through the SRT parser", () => {
     const parsed = parseSrt(writeSrt(doc([lineSynced("Hello", 1, 2.5), wordLine("a")])));
 
-    expect(parsed.lines.map((line) => [line.text, line.begin, line.end])).toEqual([
+    expect(parsed.lines.map((line) => [lineText(line), line.begin, line.end])).toEqual([
       ["Hello", 1, 2.5],
       ["Is it so", 34.059, 34.413],
     ]);
@@ -211,7 +215,9 @@ describe("writeQrc", () => {
   it("round-trips word timing through the QRC parser", () => {
     const parsed = parseQrc(writeQrc(doc([wordLine("a")])));
 
-    expect(parsed.lines[0].words?.map((word) => [word.text + word.sep, word.begin, word.end])).toEqual([
+    expect(
+      timedSyllables(mainTrack(parsed.lines[0])).map((word) => [word.text + word.sep, word.begin, word.end]),
+    ).toEqual([
       ["Is ", 34.059, 34.189],
       ["it ", 34.189, 34.309],
       ["so", 34.309, 34.413],

@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import {
   alignTrackToLine,
   mappedTransliteration,
@@ -6,8 +7,8 @@ import {
 } from "@/domain/language/align";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
-import { describe, expect, it } from "vitest";
 
 describe("transliteration alignment", () => {
   it("removes cached fragments and joiners when alternate text is cleared", () => {
@@ -216,8 +217,8 @@ describe("withAlignedWords", () => {
 
   it("replaces stale stored pieces with the plan from the track text", () => {
     const aligned = withAlignedWords(koreanLine);
-    expect(aligned.words?.map((word) => word.transliteration)).toEqual(["Uh", "ildan eun", "na"]);
-    expect(aligned.backgroundWords?.map((word) => word.transliteration)).toEqual(["geurae", "yeah"]);
+    expect(timedSyllables(mainTrack(aligned)).map((word) => word.transliteration)).toEqual(["Uh", "ildan eun", "na"]);
+    expect(timedSyllables(backgroundTrack(aligned)).map((word) => word.transliteration)).toEqual(["geurae", "yeah"]);
   });
 
   it("writes the plan status for each track onto the transliteration", () => {

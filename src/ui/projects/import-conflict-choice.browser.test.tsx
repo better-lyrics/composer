@@ -1,3 +1,6 @@
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { lineText } from "@/domain/line/text";
 import { restoreOpenProject } from "@/lib/open-project";
 import { loadProjectAudio } from "@/lib/project-audio";
 import { projectFileFrom } from "@/lib/project-file";
@@ -10,8 +13,6 @@ import { createLine } from "@/test/factories";
 import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -81,7 +82,7 @@ describe("import conflict dialog", () => {
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await screen.getByRole("button", { name: "Replace project" }).click();
     await pending;
-    expect(useProjectStore.getState().lines[0]?.text).toBe("File line");
+    expect(lineText(useProjectStore.getState().lines[0]!)).toBe("File line");
   });
 
   it("matches a different project id by the same YouTube video, and cancelling writes nothing", async () => {

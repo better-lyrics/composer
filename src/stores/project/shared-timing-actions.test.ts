@@ -1,19 +1,21 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it } from "vitest";
+import type { LyricCommand } from "@/domain/commands/command";
+import { groupRepeatingSections, shareGroupTiming } from "@/domain/commands/group-edits";
+import { addInstance, placeInstance, setInstanceOwnTiming } from "@/domain/commands/instance-edits";
+import { isRefused } from "@/domain/commands/outcome";
+import { NOTHING_SHARED } from "@/domain/group/group-plans";
+import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine } from "@/test/factories";
-import { beforeEach, describe, expect, it } from "vitest";
-import { groupRepeatingSections, shareGroupTiming } from "@/domain/commands/group-edits";
-import { addInstance, placeInstance, setInstanceOwnTiming } from "@/domain/commands/instance-edits";
-import type { LyricCommand } from "@/domain/commands/command";
-import { isRefused } from "@/domain/commands/outcome";
-import { NOTHING_SHARED } from "@/domain/group/group-plans";
-import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
 
 const chorus = (instanceIdx: number, begin?: number, secondWordShift = 0) =>
   createLine({
@@ -92,31 +94,31 @@ describe("groupRepeatingSections", () => {
     seed([], [plain("a", 10), plain("b", 40, 0.3)]);
     expect(grouped([0, 1], 1)).toEqual({ keptOwnTiming: [], replaced: [1] });
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
-    expect(lineById("b")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("b")!))[1]?.begin).toBeCloseTo(40.5, 6);
   });
 
   it("regression: shares a partly synced instance mid-sync and fills it from the source", () => {
     seed([], [go("a1", 10), stay("a2", 13), go("b1", 40), stay("b2")]);
     store().commit(groupRepeatingSections({ starts: [0, 2], length: 2 }));
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
-    expect(lineById("b2")?.words?.[0]?.begin).toBeCloseTo(43, 6);
+    expect(timedSyllables(mainTrack(lineById("b2")!))[0]?.begin).toBeCloseTo(43, 6);
   });
 
   it("groups and realigns as one undo step", () => {
     seed([], [plain("a", 10), plain("b", 40, 0.3)]);
     store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
-    expect(lineById("b")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("b")!))[1]?.begin).toBeCloseTo(40.5, 6);
     store().undo();
     expect(store().groups).toEqual([]);
     expect(lineById("b")?.groupId).toBeUndefined();
-    expect(lineById("b")?.words?.[1]?.begin).toBeCloseTo(40.8, 6);
+    expect(timedSyllables(mainTrack(lineById("b")!))[1]?.begin).toBeCloseTo(40.8, 6);
   });
 
   it("keeps its own timing for an instance the shared timing would put before the song starts", () => {
     seed([], [go("a1", 10), stay("a2", 13), go("b1"), stay("b2", 1)]);
     expect(grouped([0, 2], 2).keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "before-song-start" }]);
     expect(store().groups[0]).toMatchObject({ sharesTiming: true, ownTimingInstances: [1] });
-    expect(lineById("b2")?.words?.[0]?.begin).toBe(1);
+    expect(timedSyllables(mainTrack(lineById("b2")!))[0]?.begin).toBe(1);
     expect(lineById("b1")?.words).toBeUndefined();
   });
 
@@ -134,7 +136,7 @@ describe("groupRepeatingSections", () => {
     seed([], [plain("a", 10), plain("b", 40, 0.3)]);
     store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
     expect(store().groups[0].sharesTiming).toBeUndefined();
-    expect(lineById("b")?.words?.[1]?.begin).toBeCloseTo(40.8, 6);
+    expect(timedSyllables(mainTrack(lineById("b")!))[1]?.begin).toBeCloseTo(40.8, 6);
   });
 
   it("leaves an untimed instance unplaced", () => {
@@ -170,20 +172,23 @@ describe("groupRepeatingSections", () => {
       seed([], [whole("a", 10), split("b", 40)]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
       const a = lineById("a");
-      expect(a?.text).toBe("fal|ling too");
-      expect(a?.words?.map((word) => word.text + word.sep)).toEqual(["fal", "ling ", "too"]);
-      expect(a?.words?.[0]?.begin).toBe(10);
-      expect(a?.words?.[1]?.end).toBe(10.6);
-      expect(a?.words?.[2]).toMatchObject({ begin: 10.6, end: 11 });
-      expect(lineById("b")?.words?.map((word) => word.begin)).toEqual([40, 40.3, 40.6]);
+      expect(lineText(a!)).toBe("fal|ling too");
+      expect(timedSyllables(mainTrack(a!)).map((word) => word.text + word.sep)).toEqual(["fal", "ling ", "too"]);
+      expect(timedSyllables(mainTrack(a!))[0]?.begin).toBe(10);
+      expect(timedSyllables(mainTrack(a!))[1]?.end).toBe(10.6);
+      expect(timedSyllables(mainTrack(a!))[2]).toMatchObject({ begin: 10.6, end: 11 });
+      expect(timedSyllables(mainTrack(lineById("b")!)).map((word) => word.begin)).toEqual([40, 40.3, 40.6]);
     });
 
     it("undoes the split together with the grouping", () => {
       seed([], [whole("a", 10), split("b", 40)]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
       store().undo();
-      expect(lineById("a")?.text).toBe("falling too");
-      expect(lineById("a")?.words?.map((word) => word.text + word.sep)).toEqual(["falling ", "too"]);
+      expect(lineText(lineById("a")!)).toBe("falling too");
+      expect(timedSyllables(mainTrack(lineById("a")!)).map((word) => word.text + word.sep)).toEqual([
+        "falling ",
+        "too",
+      ]);
     });
 
     it("regression: keeps the trailing space of a line's last word when re-splitting it", () => {
@@ -194,7 +199,11 @@ describe("groupRepeatingSections", () => {
         [ending("a", "the outside ", ["the ", "outside "]), ending("b", "the out|side ", ["the ", "out", "side "])],
       );
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
-      expect(lineById("a")?.words?.map((word) => word.text + word.sep)).toEqual(["the ", "out", "side "]);
+      expect(timedSyllables(mainTrack(lineById("a")!)).map((word) => word.text + word.sep)).toEqual([
+        "the ",
+        "out",
+        "side ",
+      ]);
     });
 
     it("regression: refuses to group copies that differ beyond syllable splits", () => {
@@ -213,10 +222,10 @@ describe("groupRepeatingSections", () => {
       });
       seed([], [partial, createLine({ id: "b", text: "fal|ling t|oo" })]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
-      expect(lineById("a")?.text).toBe("fal|ling t|oo");
-      expect(lineById("a")?.words?.map((word) => word.text + word.sep)).toEqual(["fal", "ling "]);
-      expect(lineById("a")?.words?.[0]?.begin).toBe(10);
-      expect(lineById("a")?.words?.[1]?.end).toBe(10.3);
+      expect(lineText(lineById("a")!)).toBe("fal|ling t|oo");
+      expect(timedSyllables(mainTrack(lineById("a")!)).map((word) => word.text + word.sep)).toEqual(["fal", "ling "]);
+      expect(timedSyllables(mainTrack(lineById("a")!))[0]?.begin).toBe(10);
+      expect(timedSyllables(mainTrack(lineById("a")!))[1]?.end).toBe(10.3);
     });
 
     it("refuses to group when a partly synced copy's timing ends inside a re-split syllable", () => {
@@ -238,7 +247,7 @@ describe("groupRepeatingSections", () => {
       });
       seed([], [plain("a", 10), plain("b", 40), current]);
       store().commit(groupRepeatingSections({ starts: [0, 1], length: 1 }));
-      expect(lineById("v")?.text).toBe("walking home");
+      expect(lineText(lineById("v")!)).toBe("walking home");
     });
   });
 });
@@ -256,16 +265,16 @@ describe("setInstanceOwnTiming", () => {
     seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40, 0.3)]);
     store().commit(setInstanceOwnTiming("g1", 1, false, SONG_LENGTH));
     expect(groupById("g1")?.ownTimingInstances).toBeUndefined();
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.5, 6);
   });
 
   it("is one undo step", () => {
     seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40, 0.3)]);
     store().commit(setInstanceOwnTiming("g1", 1, false, SONG_LENGTH));
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.5, 6);
     store().undo();
     expect(groupById("g1")?.ownTimingInstances).toEqual([1]);
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.8, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.8, 6);
   });
 
   describe("edge cases", () => {
@@ -309,7 +318,7 @@ describe("shareGroupTiming", () => {
     expect(sharedGroup("g1", SONG_LENGTH)).toEqual({ keptOwnTiming: [], replaced: [1] });
     expect(groupById("g1")).toMatchObject({ sharesTiming: true });
     expect(groupById("g1")?.ownTimingInstances).toBeUndefined();
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.5, 6);
     expect(lineById("c2")?.words).toBeUndefined();
   });
 
@@ -323,7 +332,7 @@ describe("shareGroupTiming", () => {
     seed([createGroup({ id: "g1" })], [chorus(0, 10), chorus(1, 40, 0.3)]);
     store().commit(shareGroupTiming("g1", SONG_LENGTH));
     expect(groupById("g1")?.sharesTiming).toBe(true);
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.5, 6);
   });
 
   it("shares every own-timing instance of a sharing group", () => {
@@ -333,8 +342,8 @@ describe("shareGroupTiming", () => {
     );
     store().commit(shareGroupTiming("g1", SONG_LENGTH));
     expect(groupById("g1")?.ownTimingInstances).toBeUndefined();
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
-    expect(lineById("c2")?.words?.[1]?.begin).toBeCloseTo(70.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c2")!))[1]?.begin).toBeCloseTo(70.5, 6);
   });
 
   it("is one undo step", () => {
@@ -343,12 +352,12 @@ describe("shareGroupTiming", () => {
       [chorus(0, 10), chorus(1, 40, 0.3), chorus(2, 70, -0.2)],
     );
     store().commit(shareGroupTiming("g1", SONG_LENGTH));
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
-    expect(lineById("c2")?.words?.[1]?.begin).toBeCloseTo(70.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(timedSyllables(mainTrack(lineById("c2")!))[1]?.begin).toBeCloseTo(70.5, 6);
     store().undo();
     expect(groupById("g1")?.ownTimingInstances).toEqual([1, 2]);
-    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.8, 6);
-    expect(lineById("c2")?.words?.[1]?.begin).toBeCloseTo(70.3, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.8, 6);
+    expect(timedSyllables(mainTrack(lineById("c2")!))[1]?.begin).toBeCloseTo(70.3, 6);
   });
 
   describe("edge cases", () => {
@@ -356,7 +365,7 @@ describe("shareGroupTiming", () => {
       seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [0, 1] })], [chorus(0), chorus(1, 40)]);
       store().commit(shareGroupTiming("g1", SONG_LENGTH));
       expect(groupById("g1")?.ownTimingInstances).toBeUndefined();
-      expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+      expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.begin).toBeCloseTo(40.5, 6);
     });
 
     it("reports why an instance kept its own timing", () => {
@@ -394,7 +403,7 @@ describe("shareGroupTiming", () => {
       );
       const sharedBefore = lineById("c2");
       store().commit(shareGroupTiming("g1", SONG_LENGTH));
-      expect(lineById("c0")?.words).toEqual(chorus(0, 10).words);
+      expect(timedSyllables(mainTrack(lineById("c0")!))).toEqual(chorus(0, 10).words);
       expect(lineById("c2")).toBe(sharedBefore);
     });
   });
@@ -404,7 +413,7 @@ describe("placeInstance", () => {
   it("fills an unplaced instance at the start as one undo step", () => {
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
     store().commit(placeInstance("g1", 1, 40, SONG_LENGTH));
-    expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(40, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0]?.begin).toBeCloseTo(40, 6);
     store().undo();
     expect(lineById("c1")?.words).toBeUndefined();
   });
@@ -412,8 +421,8 @@ describe("placeInstance", () => {
   it("moves a placed instance without moving the others", () => {
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1, 40)]);
     expect(placed("g1", 1, 50, SONG_LENGTH)).toBe(true);
-    expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(50, 6);
-    expect(lineById("c0")?.words?.[0]?.begin).toBeCloseTo(10, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0]?.begin).toBeCloseTo(50, 6);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0]?.begin).toBeCloseTo(10, 6);
   });
 
   it("applies the preceding updates and the placement as one undo step", () => {
@@ -421,10 +430,10 @@ describe("placeInstance", () => {
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
     const preceding = [{ id: "v", updates: { words: [{ id: "w1", text: "Walking", sep: "", begin: 20, end: 39 }] } }];
     expect(placed("g1", 1, 40, SONG_LENGTH, preceding)).toBe(true);
-    expect(lineById("v")?.words?.[0]?.end).toBe(39);
-    expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(40, 6);
+    expect(timedSyllables(mainTrack(lineById("v")!))[0]?.end).toBe(39);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0]?.begin).toBeCloseTo(40, 6);
     store().undo();
-    expect(lineById("v")?.words?.[0]?.end).toBe(21);
+    expect(timedSyllables(mainTrack(lineById("v")!))[0]?.end).toBe(21);
     expect(lineById("c1")?.words).toBeUndefined();
   });
 
@@ -440,7 +449,7 @@ describe("placeInstance", () => {
       },
     };
     store().commit(placeInstance("g1", 1, 40, SONG_LENGTH, [closeLastWord]));
-    expect(lineById("c1")?.words?.[1]?.end).toBeCloseTo(42, 6);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[1]?.end).toBeCloseTo(42, 6);
   });
 
   it("keeps the line text, because placing only writes timing", () => {
@@ -451,7 +460,7 @@ describe("placeInstance", () => {
     });
     seed([createGroup({ id: "g1", sharesTiming: true })], [partial, chorus(0, 10), chorus(1)]);
     store().commit(placeInstance("g1", 1, 40, SONG_LENGTH));
-    expect(lineById("p")?.text).toBe("one two three");
+    expect(lineText(lineById("p")!)).toBe("one two three");
   });
 
   describe("edge cases", () => {

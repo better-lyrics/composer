@@ -1,11 +1,12 @@
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { lineText } from "@/domain/line/text";
+import { lineTimingWordId } from "@/domain/word/id";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useSettingsStore } from "@/stores/settings";
 import { getSplitCharacter } from "@/utils/split-character";
-import { lineTimingWordId } from "@/domain/word/id";
 import { convertLineToWord, createTrackWordsFromTextAt } from "@/utils/sync-helpers";
-import { describe, expect, it } from "vitest";
 
 describe("createTrackWordsFromTextAt", () => {
   const base: LyricLine = { id: "l", agentId: "v1", text: "main", backgroundText: "ooh yeah" };
@@ -86,7 +87,7 @@ describe("createTrackWordsFromTextAt", () => {
     describe("invariants", () => {
       it("rebuilds the exact line text, split characters included", () => {
         const words = createTrackWordsFromTextAt(untimed, "word", 0, 100) ?? [];
-        expect(reconstructLineText(words, split)).toBe(untimed.text);
+        expect(reconstructLineText(words, split)).toBe(lineText(untimed));
       });
     });
   });

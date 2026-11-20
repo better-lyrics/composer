@@ -1,6 +1,8 @@
+import { memo, useCallback } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
@@ -10,7 +12,6 @@ import { PitchLane } from "@/views/timeline/pitch/pitch-lane";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
-import { memo, useCallback } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -63,8 +64,10 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
     s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
   );
 
-  const mainWords = line.words?.length ? line.words : null;
-  const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
+  const timedMain = timedSyllables(mainTrack(line));
+  const timedBackground = timedSyllables(backgroundTrack(line));
+  const mainWords = timedMain.length ? timedMain : null;
+  const bgWords = timedBackground.length ? timedBackground : null;
 
   return (
     <div

@@ -1,3 +1,7 @@
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { PROJECT_FILE_NAME, projectFileNamed } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
@@ -5,8 +9,6 @@ import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { EditPanel } from "@/views/edit";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE } from "@/views/lyrics-import-modal/accepted-files";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -47,7 +49,7 @@ describe("EditPanel file drop", () => {
     dropFile(getEditPanel(), new File([WANDERLUST_QRC_CRLF], "wanderlust.qrc", { type: "text/plain" }));
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(84);
-    const withWords = useProjectStore.getState().lines.filter((line) => (line.words?.length ?? 0) > 0);
+    const withWords = useProjectStore.getState().lines.filter((line) => timedSyllables(mainTrack(line)).length > 0);
     expect(withWords.length).toBe(84);
   });
 
@@ -66,7 +68,7 @@ describe("EditPanel file drop", () => {
 
     dropFile(getEditPanel(), new File(["[00:01.00]Hello\n[00:03.00]World"], "song.lrc", { type: "text/plain" }));
 
-    await expect.poll(() => useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Hello", "World"]);
+    await expect.poll(() => useProjectStore.getState().lines.map((l) => lineText(l))).toEqual(["Hello", "World"]);
   });
 
   it("ignores a dropped file whose extension the app cannot parse", async () => {

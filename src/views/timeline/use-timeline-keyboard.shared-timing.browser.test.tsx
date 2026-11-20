@@ -1,5 +1,9 @@
+import { createRef } from "react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -9,9 +13,6 @@ import { storedWordAddress, wordAddress } from "@/test/word-address";
 import { isMac } from "@/utils/platform";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
-import { createRef } from "react";
-import { beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -110,7 +111,7 @@ describe("useTimelineKeyboard · shared timing", () => {
     pressModKey("d");
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
-    expect(lineById("e")?.words?.[1].begin).toBe(7.5);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(7.5);
   });
 
   describe("regressions", () => {

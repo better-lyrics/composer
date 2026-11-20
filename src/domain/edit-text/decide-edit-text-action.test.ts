@@ -1,9 +1,11 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { createLine } from "@/test/factories";
 import { decideEditTextAction } from "./decide-edit-text-action";
 
@@ -19,7 +21,7 @@ function chorusLines(): LyricLine[] {
   ];
 }
 
-const baseText = (lines: LyricLine[]) => lines.map((l) => l.text).join("\n");
+const baseText = (lines: LyricLine[]) => lines.map((l) => lineText(l)).join("\n");
 
 describe("decideEditTextAction", () => {
   it("returns ignore-modal-pending when modal already open and skips all computation", () => {
@@ -58,8 +60,8 @@ describe("decideEditTextAction", () => {
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
-    expect(action.finalLines.find((l) => l.id === "c1a")?.text).toBe("I luv you");
-    expect(action.finalLines.find((l) => l.id === "c2a")?.text).toBe("I luv you");
+    expect(lineText(action.finalLines.find((l) => l.id === "c1a")!)).toBe("I luv you");
+    expect(lineText(action.finalLines.find((l) => l.id === "c2a")!)).toBe("I luv you");
   });
 
   it("returns the edit text with linked siblings rewritten and typed rows verbatim", () => {
@@ -103,7 +105,7 @@ describe("decideEditTextAction", () => {
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
     expect(action.finalLines.length).toBe(lines.length + 1);
-    expect(action.finalLines[action.finalLines.length - 1].text).toBe("brand new outro");
+    expect(lineText(action.finalLines[action.finalLines.length - 1])).toBe("brand new outro");
   });
 
   it("returns needs-confirm when a chorus instance loses a row", () => {
@@ -196,12 +198,12 @@ describe("decideEditTextAction", () => {
     if (action.kind !== "apply") return;
     const a = action.finalLines.find((l) => l.id === "a");
     const b = action.finalLines.find((l) => l.id === "b");
-    expect(a?.text).toBe("I luv you");
-    expect(a?.words?.[1]).toMatchObject({ text: "luv", sep: " " });
-    expect(a?.words?.[1].begin).toBe(0.4);
-    expect(b?.text).toBe("I luv you");
-    expect(b?.words?.[1]).toMatchObject({ text: "luv", sep: " " });
-    expect(b?.words?.[1].begin).toBe(30.5);
+    expect(lineText(a!)).toBe("I luv you");
+    expect(timedSyllables(mainTrack(a!))[1]).toMatchObject({ text: "luv", sep: " " });
+    expect(timedSyllables(mainTrack(a!))[1].begin).toBe(0.4);
+    expect(lineText(b!)).toBe("I luv you");
+    expect(timedSyllables(mainTrack(b!))[1]).toMatchObject({ text: "luv", sep: " " });
+    expect(timedSyllables(mainTrack(b!))[1].begin).toBe(30.5);
   });
 
   it("returns apply (with empty group cleanup unrelated) when impacted is empty even on length change outside group", () => {
@@ -251,8 +253,8 @@ describe("regressions", () => {
       modalPending: false,
     });
     if (step2.kind !== "apply") throw new Error(step2.kind);
-    expect(step2.finalLines[0].words).toEqual(lines[0].words);
-    expect(step2.finalLines[1].words).toEqual(lines[1].words);
+    expect(timedSyllables(mainTrack(step2.finalLines[0]))).toEqual(timedSyllables(mainTrack(lines[0])));
+    expect(timedSyllables(mainTrack(step2.finalLines[1]))).toEqual(timedSyllables(mainTrack(lines[1])));
   });
   it("keeps every untouched line as the same object through a keystroke", () => {
     const lines: LyricLine[] = [

@@ -1,9 +1,10 @@
+import { describe, expect, it } from "vitest";
 import { mergeEditedTtmlLines, mergedLineIdsByKey } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { exportedTtml, mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { PARSERS } from "@/utils/lyrics-parsers";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -56,7 +57,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         const edited = first.replace(">Hold me<", ">Hold me closer<");
         return ttml.replace(first, "\u0000").replace(second, edited).replace("\u0000", second);
       });
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
         ["c1", "Hold me"],
         ["c0", "Hold me closer"],
       ]);
@@ -73,7 +74,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         return ttml.replace(original, `${original}${original.replace(">Bravo<", ">Bravo again<")}`);
       });
       expect(merged[0]).toBe(stored[0]);
-      expect(merged[1]?.text).toBe("Bravo again");
+      expect(lineText(merged[1]!)).toBe("Bravo again");
       expect(merged[1]?.id).not.toBe("b");
       expect(merged[1]?.translations).toBeUndefined();
     });
@@ -89,7 +90,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         const [charlie = "", delta = ""] = paragraphs(ttml);
         return ttml.replace(charlie, `${delta.replace(">Delta<", ">Delta copy<")}${charlie}`);
       });
-      expect(merged.map((line) => line.text)).toEqual(["Delta copy", "Charlie", "Delta"]);
+      expect(merged.map((line) => lineText(line))).toEqual(["Delta copy", "Charlie", "Delta"]);
       expect(merged[2]).toBe(stored[1]);
       expect(merged[0]?.id).not.toBe("d");
       expect(merged[0]?.translations).toBeUndefined();
@@ -104,7 +105,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
           `${delta.replace(">Delta<", ">Delta one<")}${delta.replace(">Delta<", ">Delta two<")}`,
         );
       });
-      expect(merged.map((line) => [line.id, line.text])).toEqual([
+      expect(merged.map((line) => [line.id, lineText(line)])).toEqual([
         ["d", "Delta one"],
         [merged[1]?.id, "Delta two"],
       ]);
@@ -132,7 +133,7 @@ describe("mergedLineIdsByKey", () => {
       ),
     );
     const ids = mergedLineIdsByKey(stored, edit);
-    const extra = mergeEditedTtmlLines(stored, edit).find((line) => line.text === "Extra");
+    const extra = mergeEditedTtmlLines(stored, edit).find((line) => lineText(line) === "Extra");
     expect(ids).toEqual({ L1: "a", L2: "b", X: edit.lines[2]?.id });
     expect(extra?.id).toBe(ids.X);
   });

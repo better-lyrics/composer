@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { WordTrack } from "@/views/timeline/word-track";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { WordTrack } from "@/views/timeline/word-track";
 
 // Double-clicking an empty spot on a line's background track inserts a new
 // background word. That is a user editing background vocals, so the line's
@@ -15,7 +16,7 @@ async function renderBgTrack(lineId: string) {
     <WordTrack
       lineId={lineId}
       lineIndex={0}
-      words={useProjectStore.getState().lines[0].backgroundWords ?? []}
+      words={timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]))}
       color="#a3c9ff"
       trackType="bg"
       duration={3}
@@ -47,7 +48,7 @@ describe("WordTrack background provenance", () => {
     );
 
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(2);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("keeps the existing background words intact apart from the added one", async () => {

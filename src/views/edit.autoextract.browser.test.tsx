@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
@@ -39,14 +41,14 @@ describe("auto-extract background vocals on blur", () => {
 
     setTextareaValue(textarea, "Take me home (country roads)");
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
       .toEqual(["Take me home (country roads)"]);
 
     blurTextarea(textarea);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(country roads)");
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("(country roads)");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 
   it("reflects the extracted result in the textarea and preview after blur", async () => {
@@ -71,8 +73,8 @@ describe("auto-extract background vocals on blur", () => {
     setTextareaValue(textarea, "Take me home (country roads)");
     blurTextarea(textarea);
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home (country roads)");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBeUndefined();
     expect(textarea.value).toBe("Take me home (country roads)");
   });
 
@@ -87,8 +89,8 @@ describe("auto-extract background vocals on blur", () => {
     blurTextarea(textarea);
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Real lyric line");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh yeah)");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Real lyric line");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("(ooh yeah)");
     await expect.poll(() => textarea.value).toBe("Real lyric line");
   });
 
@@ -102,7 +104,7 @@ describe("auto-extract background vocals on blur", () => {
     blurTextarea(textarea);
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
-    expect(useProjectStore.getState().lines[1].text).toBe("(ooh yeah)");
+    expect(lineText(useProjectStore.getState().lines[1])).toBe("(ooh yeah)");
   });
 });
 
@@ -118,10 +120,10 @@ describe("auto-extract on blur leaves history untouched when nothing changes", (
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Plain lyric line");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Plain lyric line");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Plain lyric line");
 
     blurTextarea(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Plain lyric line");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Plain lyric line");
     const afterTypingRunIndex = useProjectStore.getState().historyIndex;
 
     blurTextarea(textarea);
@@ -155,14 +157,14 @@ describe("undo after auto-extract on blur", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Take me home (country roads)");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home (country roads)");
 
     blurTextarea(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home");
 
     useProjectStore.getState().undo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home (country roads)");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBeUndefined();
 
     useProjectStore.getState().undo();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(0);
@@ -175,14 +177,14 @@ describe("undo after auto-extract on blur", () => {
 
     setTextareaValue(textarea, "Take me home (country roads)");
     blurTextarea(textarea);
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home");
 
     useProjectStore.getState().undo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home (country roads)");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home (country roads)");
 
     useProjectStore.getState().redo();
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(country roads)");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("(country roads)");
   });
 });
 
@@ -198,7 +200,7 @@ describe("auto-extract on blur preserves existing blur behavior", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Plain lyric line");
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Plain lyric line");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Plain lyric line");
 
     blurTextarea(textarea);
 

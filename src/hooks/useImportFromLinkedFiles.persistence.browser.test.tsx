@@ -1,3 +1,6 @@
+import { Toaster } from "sonner";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
 import { useImportFromLinkedFiles } from "@/hooks/useImportFromLinkedFiles";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { usePersistence } from "@/hooks/usePersistence";
@@ -12,8 +15,6 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
-import { Toaster } from "sonner";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -80,7 +81,7 @@ describe("useImportFromLinkedFiles", () => {
 
     expect(openProjectIdSnapshot()).not.toBe("a");
     expect(loadedFileName()).toBe("linked-song.wav");
-    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([
+    expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual([
       "First linked line",
       "Second linked line",
     ]);

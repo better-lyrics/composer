@@ -1,12 +1,14 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { setWordBoundary } from "@/domain/commands/word-timing";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
-import { beforeEach, describe, expect, it } from "vitest";
 
 const ember = createWord({ text: "Ember ", begin: 1, end: 1.6 });
 const verse = (id: string) =>
@@ -54,7 +56,7 @@ describe("word timing commands", () => {
 
     useProjectStore.getState().commit(boundary("p0", ash));
 
-    expect(lineById("p0")?.text).toBe("Ash-fall drifting slow");
+    expect(lineText(lineById("p0")!)).toBe("Ash-fall drifting slow");
   });
 
   it("retimes one copy of a linked line and leaves the other copy alone", () => {
@@ -79,7 +81,7 @@ describe("word timing commands", () => {
 
     useProjectStore.getState().commit(boundary("c0"));
 
-    expect(lineById("c0")?.words?.[0].end).toBe(1.5);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0].end).toBe(1.5);
     expect(lineById("c1")).toBe(copyBefore);
   });
 });

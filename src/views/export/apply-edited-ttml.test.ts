@@ -1,9 +1,11 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -16,7 +18,7 @@ const TWO_LINES = ttml(
 );
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => line.text);
+  return useProjectStore.getState().lines.map((line) => lineText(line));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -46,7 +48,7 @@ describe("applyEditedTtml", () => {
       0,
     );
     const [line] = useProjectStore.getState().lines;
-    expect(line?.words?.map((word) => word.text)).toEqual(["Hel", "lo"]);
+    expect(timedSyllables(mainTrack(line!)).map((word) => word.text)).toEqual(["Hel", "lo"]);
   });
 
   it("round-trips Composer's own export unchanged", () => {

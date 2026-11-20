@@ -1,11 +1,13 @@
+import { IconSeparatorVertical } from "@tabler/icons-react";
 import { alignTrackToLine } from "@/domain/language/align";
 import { alignmentNeedsReview, isTransliterationSourceStale } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { LanguageField as Field } from "@/views/languages/language-field";
 import type { AlignmentField } from "@/views/languages/transliteration-alignment-modal";
-import { IconSeparatorVertical } from "@tabler/icons-react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -71,7 +73,7 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
       error={error}
       pasteKind="transliteration"
       action={
-        line.backgroundWords?.length && line.transliteration?.backgroundText && !error ? (
+        timedSyllables(backgroundTrack(line)).length && line.transliteration?.backgroundText && !error ? (
           <AlignButton
             ariaLabel="Align background timing"
             needsReview={alignmentNeedsReview(line.transliteration, "background")}
@@ -93,7 +95,7 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
             ...current,
             backgroundText: value,
             backgroundSegments: value.trim()
-              ? [{ original: line.backgroundText ?? "", transliteration: value.trim() }]
+              ? [{ original: backgroundText(line) ?? "", transliteration: value.trim() }]
               : [],
             origin: "manual",
             sourceFingerprint: fingerprint,

@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
 import type { GenerationEdits } from "@/views/languages/generation-edit-guard";
 
@@ -14,7 +15,8 @@ function mergeGeneratedLanguageUpdates(
     const original = startingLines.get(line.id);
     // Results belong to the submitted source. Do not stamp old results with the
     // fingerprint of text edited while the provider was running.
-    if (!original || original.text !== line.text || original.backgroundText !== line.backgroundText) return [];
+    if (!original || lineText(original) !== lineText(line) || backgroundText(original) !== backgroundText(line))
+      return [];
     const updates = generatedLanguageUpdates(line, {
       force: options.force,
       // Force replaces edits present at request start, but edits made during

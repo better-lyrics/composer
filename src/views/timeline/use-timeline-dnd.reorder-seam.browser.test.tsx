@@ -1,16 +1,17 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import {
   installScrollHost,
   makeReorderDragEndEvent,
   makeReorderDragStartEvent,
   POINTER_Y_MAIN,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 describe("useTimelineDnd · within-track reorder seam", () => {
   let scrollHost: HTMLDivElement;
@@ -47,7 +48,7 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     window.dispatchEvent(new PointerEvent("pointermove", { clientX: 250, clientY: POINTER_Y_MAIN }));
     result.current.handleDragEnd(makeReorderDragEndEvent());
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.length).toBe(3);
 
     expect(computeSyllableGroups(words)).toEqual([]);

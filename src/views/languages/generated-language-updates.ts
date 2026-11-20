@@ -2,6 +2,7 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
@@ -28,7 +29,7 @@ function generatedLanguageUpdates(
   line: LyricLine,
   { force, transliteration: generatedRoman, translations: generatedTranslations }: GeneratedLanguageOptions,
 ): Partial<LyricLine> {
-  const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
   const updates: Partial<LyricLine> = {};
 
   const result = generatedRoman?.main.get(line.id);

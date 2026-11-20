@@ -1,14 +1,15 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { lineEditCommand } from "@/domain/commands/line-edits";
+import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
 import type { LinkGroup } from "@/domain/group/template";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "@/domain/word/timing";
-import { retimeSyncWord, shiftSyncLine } from "@/domain/commands/sync";
 import { useProjectStore } from "@/stores/project";
-import { beforeEach, describe, expect, it } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { pasteLines } from "@/domain/commands/instance-rows";
 
 // Regression coverage for issue #96: resyncing one instance of a group must not
 // retime the other instances. The shared root cause is that per-instance timing
@@ -90,22 +91,20 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
         ),
       );
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not retime a sibling when the source word count grows", () => {
     seedTwoWordSyncedInstances();
 
     const grown: WordTiming[] = [...INSTANCE_A_WORDS, { id: "w10", text: "you", sep: "", begin: 1.2, end: 1.6 }];
-    useProjectStore
-      .getState()
-      .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: grown } }], {
-          propagateToSiblings: false,
-        }),
-      );
+    useProjectStore.getState().commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: grown } }], {
+        propagateToSiblings: false,
+      }),
+    );
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not reorder a sibling's word texts when the source word order changes", () => {
@@ -116,15 +115,13 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       { id: "w12", text: "I", sep: " ", begin: 0.4, end: 0.8 },
       { id: "w13", text: "you", sep: "", begin: 0.8, end: 1.2 },
     ];
-    useProjectStore
-      .getState()
-      .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: reordered } }], {
-          propagateToSiblings: false,
-        }),
-      );
+    useProjectStore.getState().commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: reordered } }], {
+        propagateToSiblings: false,
+      }),
+    );
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not retime a sibling's background words", () => {
@@ -174,22 +171,20 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       ),
     );
 
-    expect(getLine("a1").backgroundWords).toEqual(bgB);
+    expect(timedSyllables(backgroundTrack(getLine("a1")))).toEqual(bgB);
   });
 
   it("still writes the source line", () => {
     seedTwoWordSyncedInstances();
     const sourceWords: WordTiming[] = [{ id: "w18", text: "I", sep: " ", begin: 9, end: 9.5 }];
 
-    useProjectStore
-      .getState()
-      .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: sourceWords } }], {
-          propagateToSiblings: false,
-        }),
-      );
+    useProjectStore.getState().commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a0", updates: { words: sourceWords } }], {
+        propagateToSiblings: false,
+      }),
+    );
 
-    expect(getLine("a0").words).toEqual(sourceWords);
+    expect(timedSyllables(mainTrack(getLine("a0")))).toEqual(sourceWords);
   });
 
   it("still propagates structural word changes by default (option defaults to true)", () => {
@@ -197,7 +192,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
 
     useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { words: MERGED_WORDS } }]));
 
-    expect(getLine("a1").words).toHaveLength(2);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toHaveLength(2);
   });
 
   it("works for a non-grouped line (regression)", () => {
@@ -213,7 +208,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
         ),
       );
 
-    expect(getLine("s").words).toEqual([{ text: "standalone", sep: "", begin: 1, end: 2 }]);
+    expect(timedSyllables(mainTrack(getLine("s")))).toEqual([{ text: "standalone", sep: "", begin: 1, end: 2 }]);
   });
 
   it("commits a single history entry that undo reverts", () => {
@@ -230,8 +225,8 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       );
     useProjectStore.getState().undo();
 
-    expect(getLine("a0").words).toEqual(INSTANCE_A_WORDS);
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a0")))).toEqual(INSTANCE_A_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 });
 
@@ -249,7 +244,7 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
         ),
       );
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("still propagates structural word changes by default", () => {
@@ -257,7 +252,7 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
 
     useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { words: MERGED_WORDS } }]));
 
-    expect(getLine("a1").words).toHaveLength(2);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toHaveLength(2);
   });
 });
 
@@ -273,14 +268,12 @@ describe("instance resync · issue #96 reproduction", () => {
       defaultWordDuration: 0.3,
     });
     if (!commit) throw new Error("expected a commit");
-    useProjectStore
-      .getState()
-      .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-          derivesText: false,
-          propagateToSiblings: false,
-        }),
-      );
+    useProjectStore.getState().commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
+        derivesText: false,
+        propagateToSiblings: false,
+      }),
+    );
   }
 
   it("resyncing instance A word-by-word leaves instance B's timing untouched", () => {
@@ -290,7 +283,7 @@ describe("instance resync · issue #96 reproduction", () => {
     tapResync("a0", 1, 1.0);
     tapResync("a0", 2, 1.5);
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("the resynced instance A keeps its full word set with the new timing", () => {
@@ -300,7 +293,7 @@ describe("instance resync · issue #96 reproduction", () => {
     tapResync("a0", 1, 1.0);
     tapResync("a0", 2, 1.5);
 
-    expect(getLine("a0").words).toEqual([
+    expect(timedSyllables(mainTrack(getLine("a0")))).toEqual([
       { text: "I", sep: " ", begin: 0.5, end: 1.0 },
       { text: "love", sep: " ", begin: 1.0, end: 1.5 },
       { text: "you", sep: "", begin: 1.5, end: 1.8 },
@@ -350,8 +343,8 @@ describe("instance resync · issue #96 reproduction", () => {
     tapResync("a0", 1, 1.0);
     tapResync("a0", 2, 1.5);
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
-    expect(getLine("a2").words).toEqual(cWords);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a2")))).toEqual(cWords);
   });
 
   it("a partial re-tap keeps the source's later words and leaves the sibling intact", () => {
@@ -359,10 +352,10 @@ describe("instance resync · issue #96 reproduction", () => {
 
     tapResync("a0", 0, 0.5);
 
-    expect(getLine("a0").words).toHaveLength(3);
-    expect(getLine("a0").words?.[0].begin).toBe(0.5);
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
-    expect(getLine("a1").words).toHaveLength(3);
+    expect(timedSyllables(mainTrack(getLine("a0")))).toHaveLength(3);
+    expect(timedSyllables(mainTrack(getLine("a0")))[0].begin).toBe(0.5);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toHaveLength(3);
   });
 
   it("preserve-in-place keeps the word count stable, so a propagating re-tap no longer squashes the sibling", () => {
@@ -381,8 +374,8 @@ describe("instance resync · issue #96 reproduction", () => {
       .getState()
       .commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, { derivesText: false }));
 
-    expect(getLine("a1").words).toHaveLength(3);
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toHaveLength(3);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 });
 
@@ -403,23 +396,21 @@ describe("propagateToSiblings: false · edge cases", () => {
         ),
       );
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not throw and changes nothing for an unknown line id", () => {
     seedTwoWordSyncedInstances();
 
     expect(() =>
-      useProjectStore
-        .getState()
-        .commit(
-          lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "nope", updates: { words: [] } }], {
-            propagateToSiblings: false,
-          }),
-        ),
+      useProjectStore.getState().commit(
+        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "nope", updates: { words: [] } }], {
+          propagateToSiblings: false,
+        }),
+      ),
     ).not.toThrow();
-    expect(getLine("a0").words).toEqual(INSTANCE_A_WORDS);
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a0")))).toEqual(INSTANCE_A_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("handles a single-instance group with no siblings", () => {
@@ -449,7 +440,7 @@ describe("propagateToSiblings: false · edge cases", () => {
           ),
         ),
     ).not.toThrow();
-    expect(getLine("solo").words).toEqual([{ text: "I", sep: " ", begin: 5, end: 5.4 }]);
+    expect(timedSyllables(mainTrack(getLine("solo")))).toEqual([{ text: "I", sep: " ", begin: 5, end: 5.4 }]);
   });
 
   it("does not touch lines belonging to a different group", () => {
@@ -480,7 +471,7 @@ describe("propagateToSiblings: false · edge cases", () => {
         ),
       );
 
-    expect(getLine("x").words).toEqual(otherWords);
+    expect(timedSyllables(mainTrack(getLine("x")))).toEqual(otherWords);
   });
 
   it("leaves the sibling intact even when the sibling already diverged in word count", () => {
@@ -522,7 +513,7 @@ describe("propagateToSiblings: false · edge cases", () => {
         ),
       );
 
-    expect(getLine("a1").words).toEqual(divergedB);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(divergedB);
   });
 
   it("updateLinesWithHistory opt-out does not throw on an empty batch", () => {
@@ -565,8 +556,8 @@ describe("propagateToSiblings: false · edge cases", () => {
       ),
     );
 
-    expect(getLine("t0i1").words).toEqual(INSTANCE_B_WORDS);
-    expect(getLine("t1i1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("t0i1")))).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("t1i1")))).toEqual(INSTANCE_B_WORDS);
   });
 });
 
@@ -585,7 +576,7 @@ describe("timing nudges · do not propagate to siblings", () => {
         ),
       );
 
-    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(timedSyllables(mainTrack(getLine("a1")))).toEqual(INSTANCE_B_WORDS);
   });
 
   it("setWordBegin does not overwrite a sibling word whose text has diverged", () => {
@@ -632,7 +623,7 @@ describe("timing nudges · do not propagate to siblings", () => {
         ),
       );
 
-    expect(getLine("a1").words?.[1]).toMatchObject({ text: "LOVE", sep: " " });
+    expect(timedSyllables(mainTrack(getLine("a1")))[1]).toMatchObject({ text: "LOVE", sep: " " });
   });
 
   it("nudgeLineBegin on one line-synced instance leaves the sibling's bounds untouched", () => {

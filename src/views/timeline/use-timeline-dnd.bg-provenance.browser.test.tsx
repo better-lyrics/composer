@@ -1,14 +1,15 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import {
   installScrollHost,
   makeBgReorderDragEndEvent,
   makeBgReorderDragStartEvent,
 } from "@/views/timeline/use-timeline-dnd.test-helpers";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 describe("useTimelineDnd · background-word drag provenance", () => {
   let scrollHost: HTMLDivElement;
@@ -48,7 +49,7 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     result.current.handleDragEnd(makeBgReorderDragEndEvent(-80));
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(after)?.source).toBe("manual");
     expect(after.backgroundWords?.length).toBe(2);
   });
 
@@ -60,7 +61,7 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     window.dispatchEvent(new PointerEvent("pointermove", { clientX: 220, clientY: 140 }));
     result.current.handleDragEnd(makeBgReorderDragEndEvent(-80));
 
-    const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
+    const bg = timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]));
     expect(bg).toHaveLength(2);
     expect(bg.map((w) => w.text.trim()).toSorted()).toEqual(["aah", "ooh"]);
   });

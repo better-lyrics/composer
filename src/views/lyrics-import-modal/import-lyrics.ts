@@ -1,7 +1,10 @@
+import { useMemo } from "react";
+import { toast } from "sonner";
+import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { withSeededBackground } from "@/domain/line/background";
 import type { RawLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
-import { detectNonLatinLanguage } from "@/domain/language/script-detection";
+import { lineText } from "@/domain/line/text";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { importableMetadata } from "@/domain/project/imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
@@ -26,8 +29,6 @@ import {
 } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
 import { distributeLinesTiming } from "@/views/timeline/utils";
-import { useMemo } from "react";
-import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -141,7 +142,8 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
   if (input.searchResult) noteGuideSignal("edit.search");
-  if (detectNonLatinLanguage(workingLines.map((line) => line.text).join("\n"))) noteGuideSignal("edit.nonLatinLyrics");
+  if (detectNonLatinLanguage(workingLines.map((line) => lineText(line)).join("\n")))
+    noteGuideSignal("edit.nonLatinLyrics");
   ctx.onResult?.(reported, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;
 }

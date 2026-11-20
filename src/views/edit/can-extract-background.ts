@@ -1,7 +1,8 @@
+import { useMemo } from "react";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
-import { useMemo } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -55,7 +56,7 @@ function canExtractBackgroundVocals(
 ): boolean {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.text.includes("(") && lineStartsChange(lines[i - 1], line, options, splitCharacter)) return true;
+    if (lineText(line).includes("(") && lineStartsChange(lines[i - 1], line, options, splitCharacter)) return true;
   }
   return false;
 }

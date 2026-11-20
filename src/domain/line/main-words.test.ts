@@ -1,8 +1,10 @@
+import { describe, expect, it } from "vitest";
 import { applyMainWordEdit, mainWordEditFields } from "@/domain/line/main-words";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
-import { describe, expect, it } from "vitest";
 
 const baseLine = (overrides: Partial<LyricLine> = {}): LyricLine =>
   ({
@@ -21,7 +23,7 @@ describe("applyMainWordEdit", () => {
     it("sets the new words", () => {
       const words: WordTiming[] = [{ id: "w1", text: "hey", sep: "", begin: 0, end: 0.5 }];
       const result = applyMainWordEdit(baseLine(), words);
-      expect(result.words).toEqual(words);
+      expect(timedSyllables(mainTrack(result))).toEqual(words);
     });
     it("re-derives text from the new words", () => {
       const words: WordTiming[] = [
@@ -29,7 +31,7 @@ describe("applyMainWordEdit", () => {
         { id: "w3", text: "hello", sep: "", begin: 0.5, end: 1 },
       ];
       const result = applyMainWordEdit(baseLine(), words);
-      expect(result.text).toBe("world hello");
+      expect(lineText(result)).toBe("world hello");
     });
   });
 
@@ -62,7 +64,7 @@ describe("applyMainWordEdit", () => {
         { id: "w7", text: "b", sep: "", begin: 0.5, end: 1 },
       ];
       const result = applyMainWordEdit(baseLine(), words);
-      expect(result.text).toBe(reconstructLineText(words, getSplitCharacter()));
+      expect(lineText(result)).toBe(reconstructLineText(words, getSplitCharacter()));
     });
   });
 });
@@ -98,8 +100,8 @@ describe("mainWordEditFields", () => {
       ];
       const direct = applyMainWordEdit(baseLine(), words);
       const fields = mainWordEditFields(words);
-      expect(direct.text).toBe(fields.text);
-      expect(direct.words).toEqual(fields.words);
+      expect(lineText(direct)).toBe(fields.text);
+      expect(timedSyllables(mainTrack(direct))).toEqual(fields.words);
     });
 
     it("does not mutate the input words array", () => {

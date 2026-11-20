@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -7,7 +9,6 @@ import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -42,7 +43,7 @@ async function renderSharedTrack(sharesTiming: boolean, selectWholeLine = false)
     <WordTrack
       lineId={source.id}
       lineIndex={1}
-      words={source.words ?? []}
+      words={timedSyllables(mainTrack(source))}
       color="#a3c9ff"
       trackType="word"
       duration={20}
