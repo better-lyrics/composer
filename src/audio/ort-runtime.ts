@@ -33,7 +33,10 @@ interface Ort {
   InferenceSession: {
     create(bytes: ArrayBuffer | Uint8Array, opts: SessionOptions): Promise<OrtSession>;
   };
-  Tensor: new (dtype: "float32", data: Float32Array, dims: number[]) => OrtTensor;
+  Tensor: {
+    new (dtype: "float32", data: Float32Array, dims: number[]): OrtTensor;
+    new (dtype: "int64", data: BigInt64Array, dims: number[]): OrtTensor;
+  };
   env: {
     wasm: { wasmPaths?: string; numThreads?: number };
     webgpu?: {

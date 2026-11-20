@@ -227,6 +227,7 @@ Auto-align uses HubertFA v0.0.7 by default. To try other checkpoints with the sa
 - The phone vocabulary is bundled with the app (`src/audio/alignment/hubertfa/vocab.json`), so a checkpoint with a different phone set needs a code change, not a manifest entry.
 - The browser caches each model by URL, so give every export a new file name. Re-uploading under the same name keeps serving the old copy.
 - The manifest is fetched once per page load, without caching. Upload it with `Cache-Control: no-cache` so the edge doesn't keep a stale copy. `./scripts/upload-hubertfa.sh` does this when `hubertfa-models.json` is in its assets folder.
+- A checkpoint that also finds the line itself takes more inputs (`ph_ids`, `ph_len`, `ph_role` and `tap`) and has a `line_logits` output; the app detects it and looks for each line from 2.5 s before its tap instead of running the CTC search. Builds from before this was added can't run such a checkpoint, so list it in `hubertfa-models-2.json`, which they never read. The app reads that manifest when it exists and `hubertfa-models.json` otherwise, so it has to list every checkpoint you want offered.
 - To test checkpoints on your machine without uploading them, serve a folder holding the manifest and models with CORS enabled (for example `npx serve --cors -l 8787 ./checkpoints`), set `VITE_ALIGNMENT_MODEL_MANIFEST_URL=http://localhost:8787/hubertfa-models.json` in `.env.local`, and restart `pnpm dev`.
 
 ## Tech stack

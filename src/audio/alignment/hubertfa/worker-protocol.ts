@@ -25,6 +25,10 @@ interface LineRequest {
   words: string[][];
   hanReading: HanReading;
   transliteration: string | null;
+  /** The previous and next lyric lines' words, for a model that finds lines. */
+  context?: { previous: string[][]; next: string[][] };
+  /** The begin tap, in seconds from the first sample. */
+  tap?: number;
 }
 
 type InboundMessage =
@@ -35,7 +39,7 @@ type InboundMessage =
 
 type OutboundMessage =
   | { type: "init-progress"; loaded: number; total: number }
-  | { type: "init-done"; backend: Backend }
+  | { type: "init-done"; backend: Backend; findsLines: boolean }
   | { type: "align-done"; outcome: AlignOutcome }
   | { type: "locate-done"; bounds: WordInterval | null }
   | { type: "cancelled" }
