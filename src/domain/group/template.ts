@@ -15,6 +15,7 @@ interface LinkGroup {
 interface WordTemplate {
   text: string;
   sep: string;
+  joinsNext: boolean;
   relativeBegin: number;
   relativeEnd: number;
   explicit?: true;
@@ -38,7 +39,7 @@ interface LineTemplate {
 // Keep exact alternate fragments and separators when moving between absolute
 // timings and templates; an empty string is meaningful for both fields.
 function wordsToTemplate(words: WordTiming[], instanceStart: number): WordTemplate[] {
-  return words.map(({ id: _id, begin, end, syllableGroupId: _groupId, ...word }) => ({
+  return words.map(({ id: _id, begin, end, ...word }) => ({
     ...word,
     relativeBegin: begin - instanceStart,
     relativeEnd: end - instanceStart,

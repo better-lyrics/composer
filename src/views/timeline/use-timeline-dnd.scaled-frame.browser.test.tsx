@@ -68,17 +68,27 @@ describe("useTimelineDnd · drop target under a scaled frame", () => {
         text: "alpha beta",
         agentId: "v1",
         words: [
-          { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
-          { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7 },
+          { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4, joinsNext: false },
+          { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7, joinsNext: false },
         ],
       },
-      { id: "l1", text: "gamma", agentId: "v1", words: [{ id: "w3", text: "gamma", sep: "", begin: 5.0, end: 5.3 }] },
-      { id: "l2", text: "delta", agentId: "v1", words: [{ id: "w4", text: "delta", sep: "", begin: 10.0, end: 10.3 }] },
+      {
+        id: "l1",
+        text: "gamma",
+        agentId: "v1",
+        words: [{ id: "w3", text: "gamma", sep: "", begin: 5.0, end: 5.3, joinsNext: false }],
+      },
+      {
+        id: "l2",
+        text: "delta",
+        agentId: "v1",
+        words: [{ id: "w4", text: "delta", sep: "", begin: 10.0, end: 10.3, joinsNext: false }],
+      },
       {
         id: "l3",
         text: "epsilon",
         agentId: "v1",
-        words: [{ id: "w5", text: "epsilon", sep: "", begin: 15.0, end: 15.3 }],
+        words: [{ id: "w5", text: "epsilon", sep: "", begin: 15.0, end: 15.3, joinsNext: false }],
       },
     ];
     useProjectStore.setState({ lines });

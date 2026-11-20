@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { trackWords } from "@/domain/line/tracks";
+import { isInSyllableGroup } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -50,7 +51,7 @@ function collectTrackMatches(
   for (let wordIndex = 0; wordIndex < track.length; wordIndex++) {
     const word = track[wordIndex];
     if (!word) continue;
-    if (word.syllableGroupId !== undefined) continue;
+    if (isInSyllableGroup(track, wordIndex)) continue;
     const isSource = line.id === source.lineId && type === source.type && wordIndex === source.wordIndex;
     if (options.excludeSource && isSource) continue;
     const trimmed = word.text;

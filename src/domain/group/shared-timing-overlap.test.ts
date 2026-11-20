@@ -11,7 +11,7 @@ import { clampBoundaryTime } from "@/domain/word/boundary";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -29,10 +29,10 @@ function chorusLines(instanceIdx: number): LyricLine[] {
       groupId: "g1",
       instanceIdx,
       templateLineIdx: 0,
-      words: [
-        createWord({ text: "I", sep: " ", begin: start, end: start + 0.4 }),
-        createWord({ text: "want", begin: start + 0.5, end: start + 1 }),
-      ],
+      words: createWords([
+        { text: "I", sep: " ", begin: start, end: start + 0.4 },
+        { text: "want", begin: start + 0.5, end: start + 1 },
+      ]),
       backgroundText: "oh",
       backgroundWords: [createWord({ text: "oh", begin: start + 0.2, end: start + 0.8 })],
     }),
@@ -42,10 +42,10 @@ function chorusLines(instanceIdx: number): LyricLine[] {
       groupId: "g1",
       instanceIdx,
       templateLineIdx: 1,
-      words: [
-        createWord({ text: "you", sep: " ", begin: start + 1.2, end: start + 1.6 }),
-        createWord({ text: "now", begin: start + 1.7, end: start + 2.2 }),
-      ],
+      words: createWords([
+        { text: "you", sep: " ", begin: start + 1.2, end: start + 1.6 },
+        { text: "now", begin: start + 1.7, end: start + 2.2 },
+      ]),
     }),
   ];
 }

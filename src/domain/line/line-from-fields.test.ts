@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { withTrailingJoinFromText } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
-import { createLine } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 
 describe("tracksFromFields", () => {
   it("timed syllables are today's words and the text reads back", () => {
@@ -20,5 +21,12 @@ describe("tracksFromFields", () => {
         .map((syllable) => syllable.text),
     ).toEqual(["drifting", "slow"]);
     expect(lineText(line)).toBe("Paper lan|terns drifting slow");
+  });
+});
+
+describe("withTrailingJoinFromText", () => {
+  it("reads the join after the last text part a timed word covers, not the word's index", () => {
+    const words = createWords([{ text: "oh yeah", sep: "", begin: 1, end: 2, joinsNext: false }]);
+    expect(withTrailingJoinFromText("oh yeah|ba by", words).map((word) => word.joinsNext)).toEqual([true]);
   });
 });

@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { getEffectiveRows } from "@/views/timeline/effective-rows";
 import { type RowLayout, computeRowLayout } from "@/views/timeline/utils";
 import { describe, expect, it } from "vitest";
@@ -13,10 +13,10 @@ const chorusLine = (id: string, instanceIdx: number, templateLineIdx: number, be
     groupId: "g1",
     instanceIdx,
     templateLineIdx,
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
   });
 
 const lines: LyricLine[] = [

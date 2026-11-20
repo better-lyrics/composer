@@ -12,6 +12,7 @@ function wordsAt(texts: string[], begin: number, end: number): WordTiming[] {
     id: newWordId(),
     text,
     sep: i < texts.length - 1 ? " " : "",
+    joinsNext: false,
     begin: begin + i * step,
     end: begin + (i + 1) * step,
   }));

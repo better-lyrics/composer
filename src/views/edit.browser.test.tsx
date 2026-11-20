@@ -336,8 +336,8 @@ describe("regressions: hand edits keep sync", () => {
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.map((w) => w.text + w.sep)).toEqual(["Wish ", "I ", "could ", "now"]);
     expect(words.slice(0, 2)).toEqual([
-      { text: "Wish", sep: " ", begin: 1, end: 2 },
-      { text: "I", sep: " ", begin: 2, end: 3 },
+      { text: "Wish", sep: " ", begin: 1, end: 2, joinsNext: false },
+      { text: "I", sep: " ", begin: 2, end: 3, joinsNext: false },
     ]);
     expect(words[2].begin).toBe(3);
     expect(words[3].end).toBe(4);
@@ -371,7 +371,7 @@ describe("regressions: hand edits keep sync", () => {
     await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("ooh ah yeah");
     const bg = timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]));
     expect(bg.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah ", "yeah"]);
-    expect(bg[0]).toEqual({ text: "ooh", sep: " ", begin: 0.5, end: 1 });
+    expect(bg[0]).toEqual({ text: "ooh", sep: " ", begin: 0.5, end: 1, joinsNext: false });
     expect(bg[2].end).toBe(1.5);
   });
 });

@@ -10,13 +10,13 @@ describe("getLanguageAlignmentErrorItems", () => {
         text: "가|나",
         agentId: "v1",
         words: [
-          { id: "w1", text: "가", sep: "", begin: 0, end: 0.5, syllableGroupId: "main" },
-          { id: "w2", text: "나", sep: "", begin: 0.5, end: 1, syllableGroupId: "main" },
+          { id: "w1", text: "가", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w2", text: "나", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         backgroundText: "다|라",
         backgroundWords: [
-          { id: "w3", text: "다", sep: "", begin: 0, end: 0.5, syllableGroupId: "background" },
-          { id: "w4", text: "라", sep: "", begin: 0.5, end: 1, syllableGroupId: "background" },
+          { id: "w3", text: "다", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w4", text: "라", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         backgroundTextSource: "manual",
         transliteration: {
@@ -57,8 +57,8 @@ describe("getLanguageAlignmentErrorItems", () => {
         text: "가|나",
         agentId: "v1",
         words: [
-          { id: "w5", text: "가", sep: "", begin: 0, end: 0.5, syllableGroupId: "group" },
-          { id: "w6", text: "나", sep: "", begin: 0.5, end: 1, syllableGroupId: "group" },
+          { id: "w5", text: "가", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w6", text: "나", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         transliteration: {
           language: "ko-Latn",

@@ -1,7 +1,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -14,10 +14,10 @@ const chorus = (instanceIdx: number, begin: number, secondWordOffset = 1.5) =>
   createLine({
     id: `c${instanceIdx}`,
     text: "go now",
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + secondWordOffset, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + secondWordOffset, end: begin + 2 },
+    ]),
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,

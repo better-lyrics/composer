@@ -26,9 +26,9 @@ describe("toggleWordExplicit · single line", () => {
       text: "I fuck you",
       agentId: "v1",
       words: [
-        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w2", text: "fuck", sep: " ", begin: 0.3, end: 0.6 },
-        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1 },
+        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w2", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
@@ -43,7 +43,7 @@ describe("toggleWordExplicit · single line", () => {
       id: "L1",
       text: "fuck",
       agentId: "v1",
-      words: [{ id: "w4", text: "fuck", sep: "", begin: 0, end: 1, explicit: true }],
+      words: [{ id: "w4", text: "fuck", sep: "", begin: 0, end: 1, explicit: true, joinsNext: false }],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0]));
     const word = timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0];
@@ -56,9 +56,9 @@ describe("toggleWordExplicit · single line", () => {
       text: "a b c",
       agentId: "v1",
       words: [
-        { id: "w5", text: "a", sep: " ", begin: 0, end: 0.3 },
-        { id: "w6", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true },
-        { id: "w7", text: "c", sep: "", begin: 0.6, end: 1 },
+        { id: "w5", text: "a", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w6", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
+        { id: "w7", text: "c", sep: "", begin: 0.6, end: 1, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0, 1, 2]));
@@ -74,9 +74,9 @@ describe("toggleWordExplicit · single line", () => {
       text: "a b c",
       agentId: "v1",
       words: [
-        { id: "w8", text: "a", sep: " ", begin: 0, end: 0.3, explicit: true },
-        { id: "w9", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true },
-        { id: "w10", text: "c", sep: "", begin: 0.6, end: 1 },
+        { id: "w8", text: "a", sep: " ", begin: 0, end: 0.3, explicit: true, joinsNext: false },
+        { id: "w9", text: "b", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
+        { id: "w10", text: "c", sep: "", begin: 0.6, end: 1, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0, 1]));
@@ -90,11 +90,11 @@ describe("toggleWordExplicit · single line", () => {
       id: "L1",
       text: "main",
       agentId: "v1",
-      words: [{ id: "w11", text: "main", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w11", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
       backgroundText: "oh shit",
       backgroundWords: [
-        { id: "w12", text: "oh", sep: " ", begin: 1, end: 1.25 },
-        { id: "w13", text: "shit", sep: "", begin: 1.25, end: 1.5 },
+        { id: "w12", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+        { id: "w13", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "backgroundWords", [1]));
@@ -119,9 +119,9 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w14", text: "I", sep: " ", begin: 0, end: 0.3 },
-            { id: "w15", text: "fuck", sep: " ", begin: 0.3, end: 0.6 },
-            { id: "w16", text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w14", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w15", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+            { id: "w16", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
         },
         {
@@ -132,9 +132,9 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { id: "w17", text: "I", sep: " ", begin: 30, end: 30.4 },
-            { id: "w18", text: "fuck", sep: " ", begin: 30.4, end: 30.7 },
-            { id: "w19", text: "you", sep: "", begin: 30.7, end: 31.2 },
+            { id: "w17", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+            { id: "w18", text: "fuck", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
+            { id: "w19", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
         },
       ],
@@ -175,9 +175,9 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w20", text: "I", sep: " ", begin: 0, end: 0.3 },
-            { id: "w21", text: "fuck", sep: " ", begin: 0.3, end: 0.6, explicit: true },
-            { id: "w22", text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w20", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w21", text: "fuck", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
+            { id: "w22", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
         },
         {
@@ -188,9 +188,9 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { id: "w23", text: "I", sep: " ", begin: 30, end: 30.4 },
-            { id: "w24", text: "fuck", sep: " ", begin: 30.4, end: 30.7, explicit: true },
-            { id: "w25", text: "you", sep: "", begin: 30.7, end: 31.2 },
+            { id: "w23", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+            { id: "w24", text: "fuck", sep: " ", begin: 30.4, end: 30.7, explicit: true, joinsNext: false },
+            { id: "w25", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
         },
       ],
@@ -213,9 +213,9 @@ describe("addInstance · template materialization carries explicit", () => {
         relativeBegin: 0,
         relativeEnd: 1,
         words: [
-          { text: "I", sep: " ", relativeBegin: 0, relativeEnd: 0.3 },
-          { text: "fuck", sep: " ", relativeBegin: 0.3, relativeEnd: 0.6, explicit: true },
-          { text: "you", sep: "", relativeBegin: 0.6, relativeEnd: 1 },
+          { text: "I", sep: " ", relativeBegin: 0, relativeEnd: 0.3, joinsNext: false },
+          { text: "fuck", sep: " ", relativeBegin: 0.3, relativeEnd: 0.6, explicit: true, joinsNext: false },
+          { text: "you", sep: "", relativeBegin: 0.6, relativeEnd: 1, joinsNext: false },
         ],
       },
     ];
@@ -237,11 +237,11 @@ describe("addInstance · template materialization carries explicit", () => {
         agentId: "v1",
         relativeBegin: 0,
         relativeEnd: 1,
-        words: [{ text: "main", sep: "", relativeBegin: 0, relativeEnd: 1 }],
+        words: [{ text: "main", sep: "", relativeBegin: 0, relativeEnd: 1, joinsNext: false }],
         backgroundText: "oh shit",
         backgroundWords: [
-          { text: "oh", sep: " ", relativeBegin: 0, relativeEnd: 0.5 },
-          { text: "shit", sep: "", relativeBegin: 0.5, relativeEnd: 1, explicit: true },
+          { text: "oh", sep: " ", relativeBegin: 0, relativeEnd: 0.5, joinsNext: false },
+          { text: "shit", sep: "", relativeBegin: 0.5, relativeEnd: 1, explicit: true, joinsNext: false },
         ],
       },
     ];
@@ -259,7 +259,7 @@ describe("toggleWordExplicit · history", () => {
       id: "L1",
       text: "fuck",
       agentId: "v1",
-      words: [{ id: "w26", text: "fuck", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w26", text: "fuck", sep: "", begin: 0, end: 1, joinsNext: false }],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [0]));
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].explicit).toBe(true);
@@ -275,11 +275,11 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
       text: "I fu|cking love it",
       agentId: "v1",
       words: [
-        { id: "w27", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w28", text: "fu", sep: "", begin: 0.3, end: 0.4 },
-        { id: "w29", text: "cking", sep: " ", begin: 0.4, end: 0.6 },
-        { id: "w30", text: "love", sep: " ", begin: 0.6, end: 0.8 },
-        { id: "w31", text: "it", sep: "", begin: 0.8, end: 1 },
+        { id: "w27", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w28", text: "fu", sep: "", begin: 0.3, end: 0.4, joinsNext: true },
+        { id: "w29", text: "cking", sep: " ", begin: 0.4, end: 0.6, joinsNext: false },
+        { id: "w30", text: "love", sep: " ", begin: 0.6, end: 0.8, joinsNext: false },
+        { id: "w31", text: "it", sep: "", begin: 0.8, end: 1, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
@@ -296,8 +296,8 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
       text: "fu|cking",
       agentId: "v1",
       words: [
-        { id: "w32", text: "fu", sep: "", begin: 0, end: 0.5, explicit: true },
-        { id: "w33", text: "cking", sep: "", begin: 0.5, end: 1, explicit: true },
+        { id: "w32", text: "fu", sep: "", begin: 0, end: 0.5, explicit: true, joinsNext: true },
+        { id: "w33", text: "cking", sep: "", begin: 0.5, end: 1, explicit: true, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(toggleWordExplicit("L1", "words", [1]));
@@ -319,9 +319,9 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w34", text: "fu", sep: "", begin: 0, end: 0.2 },
-            { id: "w35", text: "cking", sep: " ", begin: 0.2, end: 0.5 },
-            { id: "w36", text: "yeah", sep: "", begin: 0.5, end: 1 },
+            { id: "w34", text: "fu", sep: "", begin: 0, end: 0.2, joinsNext: true },
+            { id: "w35", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
+            { id: "w36", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
           ],
         },
         {
@@ -332,9 +332,9 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { id: "w37", text: "fu", sep: "", begin: 30, end: 30.2 },
-            { id: "w38", text: "cking", sep: " ", begin: 30.2, end: 30.5 },
-            { id: "w39", text: "yeah", sep: "", begin: 30.5, end: 31 },
+            { id: "w37", text: "fu", sep: "", begin: 30, end: 30.2, joinsNext: true },
+            { id: "w38", text: "cking", sep: " ", begin: 30.2, end: 30.5, joinsNext: false },
+            { id: "w39", text: "yeah", sep: "", begin: 30.5, end: 31, joinsNext: false },
           ],
         },
       ],
@@ -355,9 +355,9 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
       text: "fu|cking yeah",
       agentId: "v1",
       words: [
-        { id: "w40", text: "fu", sep: "", begin: 0, end: 0.2 },
-        { id: "w41", text: "cking", sep: " ", begin: 0.2, end: 0.5 },
-        { id: "w42", text: "yeah", sep: "", begin: 0.5, end: 1 },
+        { id: "w40", text: "fu", sep: "", begin: 0, end: 0.2, joinsNext: true },
+        { id: "w41", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
+        { id: "w42", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true));
@@ -380,9 +380,9 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w43", text: "fuck", sep: " ", begin: 0, end: 0.3 },
-            { id: "w44", text: "this", sep: " ", begin: 0.3, end: 0.6 },
-            { id: "w45", text: "shit", sep: "", begin: 0.6, end: 1, explicit: true },
+            { id: "w43", text: "fuck", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w44", text: "this", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+            { id: "w45", text: "shit", sep: "", begin: 0.6, end: 1, explicit: true, joinsNext: false },
           ],
         },
         {
@@ -393,9 +393,9 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { id: "w46", text: "fuck", sep: " ", begin: 30, end: 30.3 },
-            { id: "w47", text: "this", sep: " ", begin: 30.3, end: 30.6 },
-            { id: "w48", text: "shit", sep: "", begin: 30.6, end: 31, explicit: true },
+            { id: "w46", text: "fuck", sep: " ", begin: 30, end: 30.3, joinsNext: false },
+            { id: "w47", text: "this", sep: " ", begin: 30.3, end: 30.6, joinsNext: false },
+            { id: "w48", text: "shit", sep: "", begin: 30.6, end: 31, explicit: true, joinsNext: false },
           ],
         },
       ],
@@ -423,12 +423,12 @@ describe("toggleWordExplicit · background provenance", () => {
       id: "L1",
       text: "main",
       agentId: "v1",
-      words: [{ id: "w49", text: "main", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w49", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
       backgroundText: "oh shit",
       backgroundTextSource: "extraction",
       backgroundWords: [
-        { id: "w50", text: "oh", sep: " ", begin: 1, end: 1.25 },
-        { id: "w51", text: "shit", sep: "", begin: 1.25, end: 1.5 },
+        { id: "w50", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+        { id: "w51", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
       ],
     });
   }
@@ -463,12 +463,12 @@ describe("toggleWordExplicit · background provenance", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundText: "oh shit",
           backgroundTextSource: "extraction",
           backgroundWords: [
-            { id: "w53", text: "oh", sep: " ", begin: 1, end: 1.25 },
-            { id: "w54", text: "shit", sep: "", begin: 1.25, end: 1.5 },
+            { id: "w53", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+            { id: "w54", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
           ],
         },
         {
@@ -478,12 +478,12 @@ describe("toggleWordExplicit · background provenance", () => {
           groupId: "g1",
           instanceIdx: 1,
           templateLineIdx: 0,
-          words: [{ id: "w55", text: "main", sep: "", begin: 30, end: 31 }],
+          words: [{ id: "w55", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
           backgroundText: "oh shit",
           backgroundTextSource: "extraction",
           backgroundWords: [
-            { id: "w56", text: "oh", sep: " ", begin: 31, end: 31.25 },
-            { id: "w57", text: "shit", sep: "", begin: 31.25, end: 31.5 },
+            { id: "w56", text: "oh", sep: " ", begin: 31, end: 31.25, joinsNext: false },
+            { id: "w57", text: "shit", sep: "", begin: 31.25, end: 31.5, joinsNext: false },
           ],
         },
       ],
@@ -512,12 +512,12 @@ describe("markWordsExplicit · background provenance", () => {
       id: "L1",
       text: "main",
       agentId: "v1",
-      words: [{ id: "w58", text: "main", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w58", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
       backgroundText: "oh shit",
       backgroundTextSource: "extraction",
       backgroundWords: [
-        { id: "w59", text: "oh", sep: " ", begin: 1, end: 1.25 },
-        { id: "w60", text: "shit", sep: "", begin: 1.25, end: 1.5 },
+        { id: "w59", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+        { id: "w60", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
       ],
     });
     useProjectStore
@@ -534,12 +534,12 @@ describe("markWordsExplicit · background provenance", () => {
       id: "L1",
       text: "main",
       agentId: "v1",
-      words: [{ id: "w61", text: "main", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w61", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
       backgroundText: "oh shit",
       backgroundTextSource: "extraction",
       backgroundWords: [
-        { id: "w62", text: "oh", sep: " ", begin: 1, end: 1.25 },
-        { id: "w63", text: "shit", sep: "", begin: 1.25, end: 1.5 },
+        { id: "w62", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+        { id: "w63", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true));
@@ -560,12 +560,12 @@ describe("markWordsExplicit · background provenance", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          words: [{ id: "w64", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w64", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundText: "oh shit",
           backgroundTextSource: "extraction",
           backgroundWords: [
-            { id: "w65", text: "oh", sep: " ", begin: 1, end: 1.25 },
-            { id: "w66", text: "shit", sep: "", begin: 1.25, end: 1.5 },
+            { id: "w65", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+            { id: "w66", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
           ],
         },
         {
@@ -575,12 +575,12 @@ describe("markWordsExplicit · background provenance", () => {
           groupId: "g1",
           instanceIdx: 1,
           templateLineIdx: 0,
-          words: [{ id: "w67", text: "main", sep: "", begin: 30, end: 31 }],
+          words: [{ id: "w67", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
           backgroundText: "oh shit",
           backgroundTextSource: "extraction",
           backgroundWords: [
-            { id: "w68", text: "oh", sep: " ", begin: 31, end: 31.25 },
-            { id: "w69", text: "shit", sep: "", begin: 31.25, end: 31.5 },
+            { id: "w68", text: "oh", sep: " ", begin: 31, end: 31.25, joinsNext: false },
+            { id: "w69", text: "shit", sep: "", begin: 31.25, end: 31.5, joinsNext: false },
           ],
         },
       ],
@@ -605,8 +605,8 @@ describe("markWordsExplicit · batch action", () => {
           text: "fuck this",
           agentId: "v1",
           words: [
-            { id: "w70", text: "fuck", sep: " ", begin: 0, end: 0.5 },
-            { id: "w71", text: "this", sep: "", begin: 0.5, end: 1 },
+            { id: "w70", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+            { id: "w71", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
           ],
         },
         {
@@ -614,8 +614,8 @@ describe("markWordsExplicit · batch action", () => {
           text: "shit happens",
           agentId: "v1",
           words: [
-            { id: "w72", text: "shit", sep: " ", begin: 1, end: 1.5 },
-            { id: "w73", text: "happens", sep: "", begin: 1.5, end: 2 },
+            { id: "w72", text: "shit", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+            { id: "w73", text: "happens", sep: "", begin: 1.5, end: 2, joinsNext: false },
           ],
         },
         {
@@ -623,8 +623,8 @@ describe("markWordsExplicit · batch action", () => {
           text: "damn cool",
           agentId: "v1",
           words: [
-            { id: "w74", text: "damn", sep: " ", begin: 2, end: 2.5 },
-            { id: "w75", text: "cool", sep: "", begin: 2.5, end: 3 },
+            { id: "w74", text: "damn", sep: " ", begin: 2, end: 2.5, joinsNext: false },
+            { id: "w75", text: "cool", sep: "", begin: 2.5, end: 3, joinsNext: false },
           ],
         },
       ],
@@ -666,9 +666,9 @@ describe("markWordsExplicit · batch action", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w76", text: "I", sep: " ", begin: 0, end: 0.3 },
-            { id: "w77", text: "fuck", sep: " ", begin: 0.3, end: 0.6 },
-            { id: "w78", text: "you", sep: "", begin: 0.6, end: 1 },
+            { id: "w76", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+            { id: "w77", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+            { id: "w78", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
         },
         {
@@ -679,9 +679,9 @@ describe("markWordsExplicit · batch action", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { id: "w79", text: "I", sep: " ", begin: 30, end: 30.4 },
-            { id: "w80", text: "fuck", sep: " ", begin: 30.4, end: 30.7 },
-            { id: "w81", text: "you", sep: "", begin: 30.7, end: 31.2 },
+            { id: "w79", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+            { id: "w80", text: "fuck", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
+            { id: "w81", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
           ],
         },
       ],
@@ -698,7 +698,7 @@ describe("markWordsExplicit · batch action", () => {
       id: "L1",
       text: "fuck",
       agentId: "v1",
-      words: [{ id: "w82", text: "fuck", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w82", text: "fuck", sep: "", begin: 0, end: 1, joinsNext: false }],
     });
     const before = useProjectStore.getState().lines;
     useProjectStore.getState().commit(markWordsExplicit([], true));
@@ -711,8 +711,8 @@ describe("markWordsExplicit · batch action", () => {
       text: "fuck this",
       agentId: "v1",
       words: [
-        { id: "w83", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true },
-        { id: "w84", text: "this", sep: "", begin: 0.5, end: 1, explicit: true },
+        { id: "w83", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true, joinsNext: false },
+        { id: "w84", text: "this", sep: "", begin: 0.5, end: 1, explicit: true, joinsNext: false },
       ],
     });
     useProjectStore.getState().commit(

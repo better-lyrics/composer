@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
 import { stretchSelections } from "@/domain/selection/stretch";
 
@@ -19,10 +19,10 @@ function wordChorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
   });
 }
 
@@ -61,7 +61,10 @@ describe("stretchSelections with a shared time range", () => {
     const outside = createLine({
       id: "x",
       text: "a b",
-      words: [createWord({ text: "a", sep: " ", begin: 9, end: 9.5 }), createWord({ text: "b", begin: 9.5, end: 10 })],
+      words: createWords([
+        { text: "a", sep: " ", begin: 9, end: 9.5 },
+        { text: "b", begin: 9.5, end: 10 },
+      ]),
     });
     const all = [...rows, outside];
     const result = stretchSelections(all, [word("x", 0), word("x", 1), word("c1", 0)], 10, {
@@ -94,7 +97,10 @@ describe("stretchSelections with a shared time range", () => {
       const outside = createLine({
         id: "x",
         text: "a b",
-        words: [createWord({ text: "a", sep: " ", begin: 1, end: 2 }), createWord({ text: "b", begin: 2, end: 3 })],
+        words: createWords([
+          { text: "a", sep: " ", begin: 1, end: 2 },
+          { text: "b", begin: 2, end: 3 },
+        ]),
       });
       const rows = [outside, lineChorus("c0", 0, 3), lineChorus("c1", 1, 10)];
       const result = stretchSelections(rows, [word("x", 0), word("x", 1), word("c1", 0)], 0.1, {

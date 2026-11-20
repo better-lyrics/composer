@@ -14,13 +14,13 @@ import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 // -- Helpers ------------------------------------------------------------------
 
 const FLUSH_WORDS = [
-  { text: "hello", sep: " ", begin: 0, end: 1 },
-  { text: "world", sep: "", begin: 1, end: 2 },
+  { text: "hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+  { text: "world", sep: "", begin: 1, end: 2, joinsNext: false },
 ];
 
 const FLUSH_SYLLABLES = [
-  { text: "ev", sep: "", begin: 0, end: 1 },
-  { text: "er", sep: "", begin: 1, end: 2 },
+  { text: "ev", sep: "", begin: 0, end: 1, joinsNext: true },
+  { text: "er", sep: "", begin: 1, end: 2, joinsNext: false },
 ];
 
 async function armTimeline(options: {
@@ -124,8 +124,8 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
 
     useProjectStore.getState().undo();
 
-    expect(currentWords()[0]).toEqual({ text: "hello", sep: " ", begin: 0, end: 1 });
-    expect(currentWords()[1]).toEqual({ text: "world", sep: "", begin: 1, end: 2 });
+    expect(currentWords()[0]).toEqual({ text: "hello", sep: " ", begin: 0, end: 1, joinsNext: false });
+    expect(currentWords()[1]).toEqual({ text: "world", sep: "", begin: 1, end: 2, joinsNext: false });
   });
 
   it("caps the last word's end at the audio duration", async () => {
@@ -248,7 +248,7 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     pressBoundaryKey("]");
 
     await expect.poll(() => currentWords()[0].end).toBeCloseTo(3, 10);
-    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4 });
+    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4, joinsNext: false });
   });
 
   it("changes nothing when no word starts after the playhead", async () => {
@@ -257,8 +257,8 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     pressBoundaryKey("[");
 
     await expect.poll(() => currentWords()[1].end).toBe(4);
-    expect(currentWords()[0]).toEqual({ text: "done", sep: " ", begin: 1, end: 2 });
-    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4 });
+    expect(currentWords()[0]).toEqual({ text: "done", sep: " ", begin: 1, end: 2, joinsNext: false });
+    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4, joinsNext: false });
   });
 
   it("changes nothing when no word ends before the playhead", async () => {
@@ -267,7 +267,7 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     pressBoundaryKey("]");
 
     await expect.poll(() => currentWords()[0].begin).toBe(1);
-    expect(currentWords()[0]).toEqual({ text: "done", sep: " ", begin: 1, end: 2 });
-    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4 });
+    expect(currentWords()[0]).toEqual({ text: "done", sep: " ", begin: 1, end: 2, joinsNext: false });
+    expect(currentWords()[1]).toEqual({ text: "gave", sep: "", begin: 3, end: 4, joinsNext: false });
   });
 });

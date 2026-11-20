@@ -4,7 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
 import { installStyleSheet, POSITION_UTILITIES_CSS, WAVEFORM_SWEEP_CSS } from "@/test/browser-css";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
 import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
@@ -48,11 +48,11 @@ function seedTimeline(): void {
       createLine({
         id: `line-${i}`,
         text: `lyric line ${i}`,
-        words: [
-          createWord({ text: "lyric", sep: " ", begin: i * 2, end: i * 2 + 0.5 }),
-          createWord({ text: "line", sep: " ", begin: i * 2 + 0.5, end: i * 2 + 1 }),
-          createWord({ text: `${i}`, begin: i * 2 + 1, end: i * 2 + 1.5 }),
-        ],
+        words: createWords([
+          { text: "lyric", sep: " ", begin: i * 2, end: i * 2 + 0.5 },
+          { text: "line", sep: " ", begin: i * 2 + 0.5, end: i * 2 + 1 },
+          { text: `${i}`, begin: i * 2 + 1, end: i * 2 + 1.5 },
+        ]),
         backgroundText: i % 4 === 0 ? "ooh" : undefined,
         backgroundWords: i % 4 === 0 ? [createWord({ text: "ooh", begin: i * 2 + 0.2, end: i * 2 + 1.2 })] : undefined,
       }),

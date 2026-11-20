@@ -9,7 +9,7 @@ import { newWordId } from "@/domain/word/id";
 import { useAlignmentStore } from "@/stores/alignment";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
-import { createGroup } from "@/test/factories";
+import { createGroup, createWords } from "@/test/factories";
 
 const cached = vi.hoisted(() => ({ value: true }));
 const seen = vi.hoisted(() => ({
@@ -201,14 +201,11 @@ describe("alignment store", () => {
 
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.map((w) => w.text + w.sep)).toEqual(["hel", "lo ", "yel", "low ", "there"]);
-    const [a, b, c, d, e] = words.map((w) => w.syllableGroupId);
-    expect(a).toBeDefined();
-    expect(c).toBeDefined();
-    expect([a === b, c === d, a === c, e]).toEqual([true, true, false, undefined]);
+    expect(words.map((w) => w.joinsNext)).toEqual([true, false, true, false, false]);
   });
 
   it("leaves word-synced and unselected lines alone", async () => {
-    const words = [{ id: "w1", text: "kept", sep: "", begin: 3, end: 4 }];
+    const words = [{ id: "w1", text: "kept", sep: "", begin: 3, end: 4, joinsNext: false }];
     useProjectStore.getState().restoreLyrics({
       lines: [
         { id: "L1", text: "kept", agentId: "v1", words },
@@ -227,9 +224,9 @@ describe("alignment store", () => {
 
   it("re-aligns word-synced lines, keeping each part and only changing its times", async () => {
     const words = [
-      { id: "w2", text: "hel", sep: "", begin: 1, end: 1.1, syllableGroupId: "g1" },
-      { id: "w3", text: "lo", sep: " ", begin: 1.1, end: 1.2, syllableGroupId: "g1" },
-      { id: "w4", text: "you", sep: "", begin: 1.2, end: 3, explicit: true as const },
+      { id: "w2", text: "hel", sep: "", begin: 1, end: 1.1, joinsNext: true },
+      { id: "w3", text: "lo", sep: " ", begin: 1.1, end: 1.2, joinsNext: false },
+      { id: "w4", text: "you", sep: "", begin: 1.2, end: 3, explicit: true as const, joinsNext: false },
     ];
     useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "hel|lo you", agentId: "v1", words }] });
 
@@ -238,7 +235,7 @@ describe("alignment store", () => {
     expect(result).toMatchObject({ aligned: 1 });
     const after = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(after.map((w) => w.text + w.sep)).toEqual(["hel", "lo ", "you"]);
-    expect(after[0].syllableGroupId).toBe("g1");
+    expect(after[0].joinsNext).toBe(true);
     expect(after[2].explicit).toBe(true);
     expect(after[0].begin).toBe(1);
     expect(after[2].end).toBeCloseTo(3);
@@ -338,7 +335,7 @@ describe("alignment store", () => {
           id: "L2",
           text: "one more line",
           agentId: "v1",
-          words: [{ id: "w5", text: "one", sep: " ", begin: 3, end: 4 }],
+          words: [{ id: "w5", text: "one", sep: " ", begin: 3, end: 4, joinsNext: false }],
         },
       ],
     });
@@ -349,7 +346,7 @@ describe("alignment store", () => {
   });
 
   it("regression: a split and the syllable timing that follows it undo in one step", async () => {
-    const whole = { id: "w6", text: "hello", sep: "", begin: 1, end: 2 };
+    const whole = { id: "w6", text: "hello", sep: "", begin: 1, end: 2, joinsNext: true };
     useProjectStore
       .getState()
       .commit(
@@ -364,8 +361,8 @@ describe("alignment store", () => {
           text: "hello",
           agentId: "v1",
           words: [
-            { id: "w7", text: "hel", sep: "", begin: 1, end: 1.9, syllableGroupId: "g" },
-            { id: "w8", text: "lo", sep: "", begin: 1.9, end: 2, syllableGroupId: "g" },
+            { id: "w7", text: "hel", sep: "", begin: 1, end: 1.9, joinsNext: true },
+            { id: "w8", text: "lo", sep: "", begin: 1.9, end: 2, joinsNext: false },
           ],
         },
       ]),
@@ -386,7 +383,7 @@ describe("alignment store", () => {
       groupId: "g1",
       instanceIdx,
       templateLineIdx: 0,
-      words: [
+      words: createWords([
         { id: newWordId(), text: "hel", sep: "", begin, end: begin + split, syllableGroupId: `s${instanceIdx}` },
         {
           id: newWordId(),
@@ -396,7 +393,7 @@ describe("alignment store", () => {
           end: begin + 1,
           syllableGroupId: `s${instanceIdx}`,
         },
-      ],
+      ]),
     });
     useProjectStore.setState({ groups: [createGroup({ id: "g1", sharesTiming: true })] });
     useProjectStore.getState().commit(
@@ -408,7 +405,7 @@ describe("alignment store", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          words: [{ id: "w9", text: "hello", sep: "", begin: 10, end: 11 }],
+          words: [{ id: "w9", text: "hello", sep: "", begin: 10, end: 11, joinsNext: false }],
         },
         {
           id: "c1",
@@ -417,7 +414,7 @@ describe("alignment store", () => {
           groupId: "g1",
           instanceIdx: 1,
           templateLineIdx: 0,
-          words: [{ id: "w10", text: "hello", sep: "", begin: 40, end: 41 }],
+          words: [{ id: "w10", text: "hello", sep: "", begin: 40, end: 41, joinsNext: false }],
         },
       ]),
     );

@@ -1,5 +1,5 @@
 import type { SyllableAddress } from "@/domain/selection/model";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { wordAddress } from "@/test/word-address";
 import { selectedBannerInstance } from "@/views/timeline/selected-banner";
 import { getWordsInInstance } from "@/views/timeline/utils";
@@ -14,10 +14,10 @@ const chorusLine = (id: string, instanceIdx: number, begin: number) =>
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
   });
 
 const lineSyncedChorus = (id: string, instanceIdx: number, begin: number) =>

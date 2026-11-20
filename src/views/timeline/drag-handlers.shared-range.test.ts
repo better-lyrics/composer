@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { applyCrossLineMove, applySameLineReorder, type DragData } from "@/views/timeline/drag-handlers";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -16,10 +16,10 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 2, end: begin + 3 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 2, end: begin + 3 },
+    ]),
     backgroundText: "hey",
     backgroundWords: [createWord({ text: "hey", begin: begin + 1, end: begin + 1.5 })],
   });

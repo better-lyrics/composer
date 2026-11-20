@@ -61,7 +61,7 @@ describe("createWordTimingOps: setBoundary", () => {
         syllablesFollowRolling: true,
       });
       expect(words[1].begin).toBe(1.5);
-      expect(words[0]).toEqual({ text: "ev", sep: "", begin: 0, end: 1 });
+      expect(words[0]).toEqual({ text: "ev", sep: "", begin: 0, end: 1, joinsNext: true });
     });
 
     it("rolls the neighbouring syllable when rolling is on", () => {
@@ -87,7 +87,7 @@ describe("createWordTimingOps: setBoundary", () => {
   it("moves only the target word when rolling is off", () => {
     const { words } = run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: false });
     expect(words[1].begin).toBe(1.5);
-    expect(words[0]).toEqual({ text: "a", sep: " ", begin: 0, end: 1 });
+    expect(words[0]).toEqual({ text: "a", sep: " ", begin: 0, end: 1, joinsNext: false });
   });
 
   it("drags the previous word's end along a flush begin boundary when rolling", () => {
@@ -114,13 +114,13 @@ describe("createWordTimingOps: setBoundary", () => {
   it("does not roll at the first index for begin", () => {
     const { words } = run({ wordIdx: 0, edge: "begin", time: 0.5, rolling: true });
     expect(words[0].begin).toBe(0.5);
-    expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1, end: 2 });
+    expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1, end: 2, joinsNext: false });
   });
 
   it("does not roll at the last index for end", () => {
     const { words } = run({ wordIdx: 2, edge: "end", time: 4, rolling: true });
     expect(words[2].end).toBe(4);
-    expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1, end: 2 });
+    expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1, end: 2, joinsNext: false });
   });
 
   it("keeps the target word at least minDuration long", () => {
@@ -240,7 +240,7 @@ describe("createWordTimingOps: setBoundary", () => {
   describe("invariants", () => {
     it("never lets a word's begin exceed its end", () => {
       const { words } = run({ wordIdx: 1, edge: "begin", time: 99, rolling: true });
-      expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1.95, end: 2 });
+      expect(words[1]).toEqual({ text: "b", sep: " ", begin: 1.95, end: 2, joinsNext: false });
     });
 
     it("does not modify the input words array", () => {

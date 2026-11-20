@@ -20,9 +20,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3 },
-          { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6 },
-          { id: "w3", text: "you", sep: "", begin: 0.6, end: 1 },
+          { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+          { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -44,9 +44,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3 },
-          { id: "w5", text: "love", sep: " ", begin: 0.3, end: 0.6 },
-          { id: "w6", text: "you", sep: "", begin: 0.6, end: 1 },
+          { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w5", text: "love", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+          { id: "w6", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -81,13 +81,13 @@ describe("textToLyricLines · group attrs preservation", () => {
         id: "L1",
         text: "I love",
         agentId: "v1",
-        words: [{ id: "w7", text: "I love", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w7", text: "I love", sep: "", begin: 0, end: 1, joinsNext: false }],
       },
     ];
     const result = textToLyricLines("I luv", "v1", existing);
     expect(timedSyllables(mainTrack(result[0]))).toEqual([
-      { text: "I", sep: " ", begin: 0, end: 0.5 },
-      { text: "luv", sep: "", begin: 0.5, end: 1 },
+      { text: "I", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { text: "luv", sep: "", begin: 0.5, end: 1, joinsNext: false },
     ]);
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
@@ -129,7 +129,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w8", text: "chorus", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w8", text: "chorus", sep: "", begin: 10, end: 11, joinsNext: false }],
       },
       {
         id: "L2",
@@ -138,7 +138,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w9", text: "chorus", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w9", text: "chorus", sep: "", begin: 30, end: 31, joinsNext: false }],
       },
     ];
     const result = textToLyricLines("chorus\nchorus", "v1", existing);
@@ -155,9 +155,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "I love you",
         agentId: "v1",
         words: [
-          { id: "w10", text: "I", sep: " ", begin: 0, end: 0.4 },
-          { id: "w11", text: "love", sep: " ", begin: 0.4, end: 0.8 },
-          { id: "w12", text: "you", sep: "", begin: 0.8, end: 1.2 },
+          { id: "w10", text: "I", sep: " ", begin: 0, end: 0.4, joinsNext: false },
+          { id: "w11", text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
+          { id: "w12", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
         ],
       },
     ];
@@ -179,9 +179,9 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "I love you",
         agentId: "v1",
         words: [
-          { id: "w13", text: "I", sep: " ", begin: 0, end: 0.4 },
-          { id: "w14", text: "love", sep: " ", begin: 0.4, end: 0.8 },
-          { id: "w15", text: "you", sep: "", begin: 0.8, end: 1.2 },
+          { id: "w13", text: "I", sep: " ", begin: 0, end: 0.4, joinsNext: false },
+          { id: "w14", text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
+          { id: "w15", text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
         ],
       },
     ];
@@ -189,8 +189,8 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(lineText(result[0])).toBe("I really love you");
     expect(timedSyllables(mainTrack(result[0])).map((w) => w.text + w.sep)).toEqual(["I ", "really ", "love ", "you"]);
     expect(timedSyllables(mainTrack(result[0])).slice(2)).toEqual([
-      { text: "love", sep: " ", begin: 0.4, end: 0.8 },
-      { text: "you", sep: "", begin: 0.8, end: 1.2 },
+      { text: "love", sep: " ", begin: 0.4, end: 0.8, joinsNext: false },
+      { text: "you", sep: "", begin: 0.8, end: 1.2, joinsNext: false },
     ]);
   });
 
@@ -281,7 +281,7 @@ describe("textToLyricLines · group attrs preservation", () => {
   });
 
   it("regression: an unchanged row with doubled spaces keeps its timed background", () => {
-    const timedBackground = [{ id: "w16", text: "oh", sep: "", begin: 1, end: 2 }];
+    const timedBackground = [{ id: "w16", text: "oh", sep: "", begin: 1, end: 2, joinsNext: false }];
     const existing: LyricLine[] = [
       { id: "L1", text: "Hold  on (hold on)", agentId: "v1", backgroundText: "oh", backgroundWords: timedBackground },
       { id: "L2", text: "Never let go", agentId: "v1" },
@@ -291,7 +291,7 @@ describe("textToLyricLines · group attrs preservation", () => {
   });
 
   it("regression: a row the edit did not change keeps its timed background, parentheses or not", () => {
-    const timedBackground = [{ id: "w17", text: "hold on", sep: "", begin: 1, end: 2 }];
+    const timedBackground = [{ id: "w17", text: "hold on", sep: "", begin: 1, end: 2, joinsNext: false }];
     const existing: LyricLine[] = [
       {
         id: "L1",
@@ -315,7 +315,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "Hello world",
         agentId: "v1",
         backgroundText: "ooh",
-        backgroundWords: [{ id: "w18", text: "ooh", sep: "", begin: 0, end: 0.5 }],
+        backgroundWords: [{ id: "w18", text: "ooh", sep: "", begin: 0, end: 0.5, joinsNext: false }],
       },
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
@@ -330,7 +330,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         text: "Hello world",
         agentId: "v1",
         backgroundText: "ooh",
-        backgroundWords: [{ id: "w19", text: "ooh", sep: "", begin: 0, end: 0.5 }],
+        backgroundWords: [{ id: "w19", text: "ooh", sep: "", begin: 0, end: 0.5, joinsNext: false }],
         backgroundTextSource: "extraction",
       },
     ];
@@ -380,7 +380,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w20", text: "chorus", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w20", text: "chorus", sep: "", begin: 10, end: 11, joinsNext: false }],
       },
       {
         id: "L2",
@@ -389,7 +389,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w21", text: "chorus", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w21", text: "chorus", sep: "", begin: 30, end: 31, joinsNext: false }],
       },
     ];
     const result = textToLyricLines("choru\nchorus", "v1", existing);
@@ -412,8 +412,8 @@ describe("textToLyricLines · split-character timing preservation", () => {
         text: "Suara hujan",
         agentId: "v1",
         words: [
-          { id: "w22", text: "Suara", sep: " ", begin: 0, end: 0.5 },
-          { id: "w23", text: "hujan", sep: "", begin: 0.5, end: 1 },
+          { id: "w22", text: "Suara", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+          { id: "w23", text: "hujan", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
       },
       {
@@ -421,14 +421,14 @@ describe("textToLyricLines · split-character timing preservation", () => {
         text: "Dengar|lah rindu yang menyik|sa i|ni",
         agentId: "v1",
         words: [
-          { id: "w24", text: "Dengar", sep: "", begin: 1, end: 1.2 },
-          { id: "w25", text: "lah", sep: " ", begin: 1.2, end: 1.4 },
-          { id: "w26", text: "rindu", sep: " ", begin: 1.4, end: 1.6 },
-          { id: "w27", text: "yang", sep: " ", begin: 1.6, end: 1.8 },
-          { id: "w28", text: "menyik", sep: "", begin: 1.8, end: 2 },
-          { id: "w29", text: "sa", sep: " ", begin: 2, end: 2.2 },
-          { id: "w30", text: "i", sep: "", begin: 2.2, end: 2.4 },
-          { id: "w31", text: "ni", sep: "", begin: 2.4, end: 2.6 },
+          { id: "w24", text: "Dengar", sep: "", begin: 1, end: 1.2, joinsNext: true },
+          { id: "w25", text: "lah", sep: " ", begin: 1.2, end: 1.4, joinsNext: false },
+          { id: "w26", text: "rindu", sep: " ", begin: 1.4, end: 1.6, joinsNext: false },
+          { id: "w27", text: "yang", sep: " ", begin: 1.6, end: 1.8, joinsNext: false },
+          { id: "w28", text: "menyik", sep: "", begin: 1.8, end: 2, joinsNext: true },
+          { id: "w29", text: "sa", sep: " ", begin: 2, end: 2.2, joinsNext: false },
+          { id: "w30", text: "i", sep: "", begin: 2.2, end: 2.4, joinsNext: true },
+          { id: "w31", text: "ni", sep: "", begin: 2.4, end: 2.6, joinsNext: false },
         ],
       },
     ];
@@ -446,9 +446,9 @@ describe("textToLyricLines · whitespace-normalized matching", () => {
     text: "Wish  I  could",
     agentId: "v1",
     words: [
-      { id: "w32", text: "Wish", sep: "  ", begin: 49, end: 50 },
-      { id: "w33", text: "I", sep: "  ", begin: 50, end: 51 },
-      { id: "w34", text: "could", sep: "", begin: 51, end: 52 },
+      { id: "w32", text: "Wish", sep: "  ", begin: 49, end: 50, joinsNext: false },
+      { id: "w33", text: "I", sep: "  ", begin: 50, end: 51, joinsNext: false },
+      { id: "w34", text: "could", sep: "", begin: 51, end: 52, joinsNext: false },
     ],
   };
   const singleSpaced: LyricLine = { id: "chorus-2", text: "Wish I could", agentId: "v1", begin: 116, end: 118 };

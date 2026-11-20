@@ -78,9 +78,9 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4 },
-          { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.9 },
-          { id: "w3", text: "you", sep: "", begin: 30.9, end: 32 },
+          { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+          { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.9, joinsNext: false },
+          { id: "w3", text: "you", sep: "", begin: 30.9, end: 32, joinsNext: false },
         ],
       },
       {
@@ -90,7 +90,7 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 1,
-        words: [{ id: "w4", text: "yeah", sep: "", begin: 32, end: 33 }],
+        words: [{ id: "w4", text: "yeah", sep: "", begin: 32, end: 33, joinsNext: false }],
       },
     ];
 
@@ -112,8 +112,8 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        backgroundWords: [{ id: "w5", text: "yeah", sep: "", begin: 28, end: 29 }],
-        words: [{ id: "w6", text: "hi", sep: "", begin: 30, end: 31 }],
+        backgroundWords: [{ id: "w5", text: "yeah", sep: "", begin: 28, end: 29, joinsNext: false }],
+        words: [{ id: "w6", text: "hi", sep: "", begin: 30, end: 31, joinsNext: false }],
       },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
@@ -130,9 +130,9 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w7", text: "main", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w7", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
         backgroundText: "ooh",
-        backgroundWords: [{ id: "w8", text: "ooh", sep: "", begin: 30, end: 30.5 }],
+        backgroundWords: [{ id: "w8", text: "ooh", sep: "", begin: 30, end: 30.5, joinsNext: false }],
         backgroundTextSource: "extraction",
       },
     ];
@@ -149,7 +149,7 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w9", text: "main", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w9", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
         backgroundText: "ooh",
         backgroundTextSource: "manual",
       },
@@ -167,7 +167,7 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w10", text: "main", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w10", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
       },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
@@ -184,8 +184,8 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w11", text: "hello", sep: " ", begin: 5, end: 6 },
-          { id: "w12", text: "world", sep: "", begin: 6, end: 7 },
+          { id: "w11", text: "hello", sep: " ", begin: 5, end: 6, joinsNext: false },
+          { id: "w12", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
         ],
       },
     ];

@@ -12,14 +12,14 @@ const template: LineTemplate[] = [
     agentId: "v1",
     relativeBegin: 0,
     relativeEnd: 1,
-    words: [{ text: "chorus a", sep: "", relativeBegin: 0, relativeEnd: 1 }],
+    words: [{ text: "chorus a", sep: "", relativeBegin: 0, relativeEnd: 1, joinsNext: false }],
   },
   {
     text: "chorus b",
     agentId: "v1",
     relativeBegin: 1,
     relativeEnd: 2,
-    words: [{ text: "chorus b", sep: "", relativeBegin: 1, relativeEnd: 2 }],
+    words: [{ text: "chorus b", sep: "", relativeBegin: 1, relativeEnd: 2, joinsNext: false }],
   },
 ];
 
@@ -38,7 +38,12 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
 
   it("fills in place when destination has N consecutive empty rows", () => {
     const lines: LyricLine[] = [
-      { id: "intro", text: "intro", agentId: "v1", words: [{ id: "w1", text: "intro", sep: "", begin: 0, end: 5 }] },
+      {
+        id: "intro",
+        text: "intro",
+        agentId: "v1",
+        words: [{ id: "w1", text: "intro", sep: "", begin: 0, end: 5, joinsNext: false }],
+      },
       { id: "empty1", text: "chorus a", agentId: "v1" },
       { id: "empty2", text: "chorus b", agentId: "v1" },
     ];
@@ -62,7 +67,7 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
         id: "synced",
         text: "chorus a",
         agentId: "v1",
-        words: [{ id: "w2", text: "chorus a", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w2", text: "chorus a", sep: "", begin: 0, end: 1, joinsNext: false }],
       },
       { id: "empty", text: "chorus b", agentId: "v1" },
     ];

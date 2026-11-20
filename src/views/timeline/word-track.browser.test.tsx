@@ -6,7 +6,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
@@ -121,31 +121,31 @@ function pressEdgeMoveAndClick(
   releasePointer(el, last);
 }
 
-const WORDS = [
-  createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-  createWord({ text: "world", begin: 1, end: 2 }),
-];
+const WORDS = createWords([
+  { text: "hello", sep: " ", begin: 0, end: 1 },
+  { text: "world", begin: 1, end: 2 },
+]);
 
-const GAPPED_WORDS = [
-  createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-  createWord({ text: "world", begin: 1.2, end: 2 }),
-];
+const GAPPED_WORDS = createWords([
+  { text: "hello", sep: " ", begin: 0, end: 1 },
+  { text: "world", begin: 1.2, end: 2 },
+]);
 
-const SYLLABLE_GROUP_WORDS = [
-  createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-  createWord({ text: "ev", begin: 1, end: 1.2 }),
-  createWord({ text: "er", begin: 1.2, end: 1.5 }),
-  createWord({ text: "y", sep: " ", begin: 1.5, end: 1.8 }),
-  createWord({ text: "world", begin: 1.8, end: 2.5 }),
-];
+const SYLLABLE_GROUP_WORDS = createWords([
+  { text: "hello", sep: " ", begin: 0, end: 1 },
+  { text: "ev", begin: 1, end: 1.2 },
+  { text: "er", begin: 1.2, end: 1.5 },
+  { text: "y", sep: " ", begin: 1.5, end: 1.8 },
+  { text: "world", begin: 1.8, end: 2.5 },
+]);
 
-const SYLLABLE_GROUP_WORDS_SHIFTED = [
-  createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-  createWord({ text: "ev", begin: 1.4, end: 1.6 }),
-  createWord({ text: "er", begin: 1.6, end: 1.9 }),
-  createWord({ text: "y", sep: " ", begin: 1.9, end: 2.2 }),
-  createWord({ text: "world", begin: 2.2, end: 2.9 }),
-];
+const SYLLABLE_GROUP_WORDS_SHIFTED = createWords([
+  { text: "hello", sep: " ", begin: 0, end: 1 },
+  { text: "ev", begin: 1.4, end: 1.6 },
+  { text: "er", begin: 1.6, end: 1.9 },
+  { text: "y", sep: " ", begin: 1.9, end: 2.2 },
+  { text: "world", begin: 2.2, end: 2.9 },
+]);
 
 describe("WordTrack", () => {
   it("renders one WordBlock per word", async () => {
@@ -208,13 +208,13 @@ describe("WordTrack", () => {
   });
 
   it("renders id-encoded syllable groups (no trailing-space pattern needed)", async () => {
-    const ID_ENCODED = [
-      createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-      createWord({ text: "ev", begin: 1, end: 1.2, syllableGroupId: "g_every" }),
-      createWord({ text: "er", begin: 1.2, end: 1.5, syllableGroupId: "g_every" }),
-      createWord({ text: "y", begin: 1.5, end: 1.8, syllableGroupId: "g_every" }),
-      createWord({ text: "world", begin: 1.8, end: 2.5 }),
-    ];
+    const ID_ENCODED = createWords([
+      { text: "hello", sep: " ", begin: 0, end: 1 },
+      { text: "ev", begin: 1, end: 1.2, syllableGroupId: "g_every" },
+      { text: "er", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
+      { text: "y", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
+      { text: "world", begin: 1.8, end: 2.5 },
+    ]);
     const line = createLine({ words: ID_ENCODED });
     useProjectStore.setState({ lines: [line] });
     const screen = await render(
@@ -235,20 +235,20 @@ describe("WordTrack", () => {
   });
 
   it("preserves id-encoded syllable positions across a timing-only update", async () => {
-    const ID_ENCODED = [
-      createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-      createWord({ text: "ev", begin: 1, end: 1.2, syllableGroupId: "g_every" }),
-      createWord({ text: "er", begin: 1.2, end: 1.5, syllableGroupId: "g_every" }),
-      createWord({ text: "y", begin: 1.5, end: 1.8, syllableGroupId: "g_every" }),
-      createWord({ text: "world", begin: 1.8, end: 2.5 }),
-    ];
-    const ID_ENCODED_SHIFTED = [
-      createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-      createWord({ text: "ev", begin: 1.4, end: 1.6, syllableGroupId: "g_every" }),
-      createWord({ text: "er", begin: 1.6, end: 1.9, syllableGroupId: "g_every" }),
-      createWord({ text: "y", begin: 1.9, end: 2.2, syllableGroupId: "g_every" }),
-      createWord({ text: "world", begin: 2.2, end: 2.9 }),
-    ];
+    const ID_ENCODED = createWords([
+      { text: "hello", sep: " ", begin: 0, end: 1 },
+      { text: "ev", begin: 1, end: 1.2, syllableGroupId: "g_every" },
+      { text: "er", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
+      { text: "y", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
+      { text: "world", begin: 1.8, end: 2.5 },
+    ]);
+    const ID_ENCODED_SHIFTED = createWords([
+      { text: "hello", sep: " ", begin: 0, end: 1 },
+      { text: "ev", begin: 1.4, end: 1.6, syllableGroupId: "g_every" },
+      { text: "er", begin: 1.6, end: 1.9, syllableGroupId: "g_every" },
+      { text: "y", begin: 1.9, end: 2.2, syllableGroupId: "g_every" },
+      { text: "world", begin: 2.2, end: 2.9 },
+    ]);
     const line = createLine({ words: ID_ENCODED });
     useProjectStore.setState({ lines: [line] });
     const screen = await render(
@@ -270,10 +270,10 @@ describe("WordTrack", () => {
 
   // A timing gap inside a syllable group keeps both facing corners square and marks them as cut ends.
   it("squares and marks both facing syllable edges when the group has a timing gap", async () => {
-    const words = [
-      createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
-      createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
-    ];
+    const words = createWords([
+      { text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" },
+      { text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" },
+    ]);
     const { screen } = await renderTrack(words);
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     expect(blocks[0].className).toContain("rounded-r-none");
@@ -284,10 +284,10 @@ describe("WordTrack", () => {
 
   it("drags a flush syllable boundary conjoined, moving the shared edge as one", async () => {
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
-      createWord({ text: "er", begin: 0.5, end: 1, syllableGroupId: "g" }),
-    ];
+    const words = createWords([
+      { text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" },
+      { text: "er", begin: 0.5, end: 1, syllableGroupId: "g" },
+    ]);
     const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     dragRightEdge(blocks[0]);
@@ -297,10 +297,10 @@ describe("WordTrack", () => {
 
   it("drags a gapped syllable boundary independently, leaving the gap alone", async () => {
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
-      createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
-    ];
+    const words = createWords([
+      { text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" },
+      { text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" },
+    ]);
     const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     dragRightEdge(blocks[0]);
@@ -310,10 +310,10 @@ describe("WordTrack", () => {
 
   it("drags a gapped syllable boundary conjoined when Alt is held", async () => {
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
-      createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
-    ];
+    const words = createWords([
+      { text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" },
+      { text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" },
+    ]);
     const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     dragRightEdge(blocks[0], { altKey: true });
@@ -324,11 +324,11 @@ describe("WordTrack", () => {
   it("does not snap a syllable divider back to its start position (regression for issue #76)", async () => {
     useSettingsStore.setState({ timelineSnap: true });
     const calls: Array<{ index: number; updates: { begin?: number; end?: number }; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "ev", begin: 1, end: 1.2, syllableGroupId: "g" }),
-      createWord({ text: "er", begin: 1.2, end: 1.6, syllableGroupId: "g" }),
-      createWord({ text: "y", begin: 1.6, end: 2, syllableGroupId: "g" }),
-    ];
+    const words = createWords([
+      { text: "ev", begin: 1, end: 1.2, syllableGroupId: "g" },
+      { text: "er", begin: 1.2, end: 1.6, syllableGroupId: "g" },
+      { text: "y", begin: 1.6, end: 2, syllableGroupId: "g" },
+    ]);
     const { screen } = await renderTrack(words, (index, updates, adjacentIndex) =>
       calls.push({ index, updates, adjacentIndex }),
     );
@@ -344,10 +344,11 @@ describe("WordTrack", () => {
   });
 
   describe("syllables follow rolling edit", () => {
-    const flushSyllables = () => [
-      createWord({ text: "ev", begin: 0.5, end: 1.5, syllableGroupId: "g" }),
-      createWord({ text: "er", begin: 1.5, end: 2.5, syllableGroupId: "g" }),
-    ];
+    const flushSyllables = () =>
+      createWords([
+        { text: "ev", begin: 0.5, end: 1.5, syllableGroupId: "g" },
+        { text: "er", begin: 1.5, end: 2.5, syllableGroupId: "g" },
+      ]);
 
     async function renderFlushSyllables(rolling: boolean) {
       useSettingsStore.setState({ syllablesFollowRolling: true });
@@ -409,10 +410,10 @@ describe("WordTrack", () => {
       adjacentIndex?: number;
       adjacentUpdates?: { begin?: number; end?: number };
     }> = [];
-    const words = [
-      createWord({ text: "a", sep: " ", begin: 1, end: 1.5 }),
-      createWord({ text: "b", begin: 1.5, end: 2 }),
-    ];
+    const words = createWords([
+      { text: "a", sep: " ", begin: 1, end: 1.5 },
+      { text: "b", begin: 1.5, end: 2 },
+    ]);
     const { screen } = await renderTrack(words, (index, updates, adjacentIndex, adjacentUpdates) =>
       calls.push({ index, updates, adjacentIndex, adjacentUpdates }),
     );
@@ -437,10 +438,10 @@ describe("WordTrack", () => {
     useSettingsStore.setState({ rollingEdit: false });
     useTimelineStore.setState({ zoom: 100 });
     const calls: Array<{ index: number; adjacentIndex?: number; adjacentUpdates?: { begin?: number } }> = [];
-    const words = [
-      createWord({ text: "a", sep: " ", begin: 1, end: 1.5 }),
-      createWord({ text: "b", begin: 1.5, end: 2 }),
-    ];
+    const words = createWords([
+      { text: "a", sep: " ", begin: 1, end: 1.5 },
+      { text: "b", begin: 1.5, end: 2 },
+    ]);
     const { screen } = await renderTrack(words, (index, _updates, adjacentIndex, adjacentUpdates) =>
       calls.push({ index, adjacentIndex, adjacentUpdates }),
     );
@@ -462,10 +463,10 @@ describe("WordTrack", () => {
     useSettingsStore.setState({ rollingEdit: false });
     useTimelineStore.setState({ zoom: 100 });
     const calls: Array<{ adjacentIndex?: number; adjacentUpdates?: { begin?: number } }> = [];
-    const words = [
-      createWord({ text: "a", sep: " ", begin: 1, end: 1.5 }),
-      createWord({ text: "b", begin: 1.5, end: 2 }),
-    ];
+    const words = createWords([
+      { text: "a", sep: " ", begin: 1, end: 1.5 },
+      { text: "b", begin: 1.5, end: 2 },
+    ]);
     const { screen } = await renderTrack(words, (_index, _updates, adjacentIndex, adjacentUpdates) =>
       calls.push({ adjacentIndex, adjacentUpdates }),
     );
@@ -486,10 +487,10 @@ describe("WordTrack", () => {
     useSettingsStore.setState({ rollingEdit: true });
     useTimelineStore.setState({ zoom: 100 });
     const calls: Array<{ adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "a", sep: " ", begin: 1, end: 1.5 }),
-      createWord({ text: "b", begin: 1.5, end: 2 }),
-    ];
+    const words = createWords([
+      { text: "a", sep: " ", begin: 1, end: 1.5 },
+      { text: "b", begin: 1.5, end: 2 },
+    ]);
     const { screen } = await renderTrack(words, (_index, _updates, adjacentIndex) => calls.push({ adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
 
@@ -506,10 +507,10 @@ describe("WordTrack", () => {
     useSettingsStore.setState({ rollingEdit: true });
     useTimelineStore.setState({ zoom: 100 });
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "a", sep: " ", begin: 1, end: 1.5 }),
-      createWord({ text: "b", begin: 1.5, end: 2 }),
-    ];
+    const words = createWords([
+      { text: "a", sep: " ", begin: 1, end: 1.5 },
+      { text: "b", begin: 1.5, end: 2 },
+    ]);
     const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
 

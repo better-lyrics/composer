@@ -20,9 +20,9 @@ function chorusLine(
 ): LyricLine {
   const templateLineIdx = opts.templateLineIdx ?? 0;
   const words = opts.words ?? [
-    { id: newWordId(), text: "hold", sep: " ", begin: offset, end: offset + 0.5 },
-    { id: newWordId(), text: "me", sep: " ", begin: offset + 0.5, end: offset + 1 },
-    { id: newWordId(), text: "now", sep: "", begin: offset + 1, end: offset + 1.5 },
+    { id: newWordId(), text: "hold", sep: " ", begin: offset, end: offset + 0.5, joinsNext: false },
+    { id: newWordId(), text: "me", sep: " ", begin: offset + 0.5, end: offset + 1, joinsNext: false },
+    { id: newWordId(), text: "now", sep: "", begin: offset + 1, end: offset + 1.5, joinsNext: false },
   ];
   return {
     id: opts.id ?? `c${instanceIdx}-${templateLineIdx}`,
@@ -65,8 +65,8 @@ describe("applyWordDeletion · linked instances", () => {
     const result = applyWordDeletion(lines, [del("c0-0", 0)], SPLIT_CHAR);
 
     expect(timedSyllables(mainTrack(byId(result, "c1-0")!))).toEqual([
-      { text: "me", sep: " ", begin: 40.5, end: 41 },
-      { text: "now", sep: "", begin: 41, end: 41.5 },
+      { text: "me", sep: " ", begin: 40.5, end: 41, joinsNext: false },
+      { text: "now", sep: "", begin: 41, end: 41.5, joinsNext: false },
     ]);
   });
 
@@ -75,8 +75,8 @@ describe("applyWordDeletion · linked instances", () => {
       ...chorusLine(instanceIdx, offset),
       backgroundText: "oh yeah",
       backgroundWords: [
-        { id: newWordId(), text: "oh", sep: " ", begin: offset, end: offset + 0.5 },
-        { id: newWordId(), text: "yeah", sep: "", begin: offset + 0.5, end: offset + 1 },
+        { id: newWordId(), text: "oh", sep: " ", begin: offset, end: offset + 0.5, joinsNext: false },
+        { id: newWordId(), text: "yeah", sep: "", begin: offset + 0.5, end: offset + 1, joinsNext: false },
       ],
     });
     const lines = [withBg(0, 10), withBg(1, 40)];
@@ -89,8 +89,8 @@ describe("applyWordDeletion · linked instances", () => {
 
   it("absorbs a deleted syllable into its neighbor inside each instance", () => {
     const syllables = (offset: number): WordTiming[] => [
-      { id: newWordId(), text: "hel", sep: "", begin: offset, end: offset + 0.5, syllableGroupId: "s" },
-      { id: newWordId(), text: "lo", sep: "", begin: offset + 0.5, end: offset + 1, syllableGroupId: "s" },
+      { id: newWordId(), text: "hel", sep: "", begin: offset, end: offset + 0.5, joinsNext: true },
+      { id: newWordId(), text: "lo", sep: "", begin: offset + 0.5, end: offset + 1, joinsNext: false },
     ];
     const lines = [chorusLine(0, 10, { words: syllables(10) }), chorusLine(1, 40, { words: syllables(40) })];
 
@@ -127,9 +127,15 @@ describe("applyWordDeletion · linked instances", () => {
 
     it("spreads a delete on one line of a multi-line instance when the instance keeps other words", () => {
       const lines = [
-        chorusLine(0, 10, { templateLineIdx: 0, words: [{ id: "w1", text: "hey", sep: "", begin: 10, end: 11 }] }),
+        chorusLine(0, 10, {
+          templateLineIdx: 0,
+          words: [{ id: "w1", text: "hey", sep: "", begin: 10, end: 11, joinsNext: false }],
+        }),
         chorusLine(0, 12, { templateLineIdx: 1 }),
-        chorusLine(1, 40, { templateLineIdx: 0, words: [{ id: "w2", text: "hey", sep: "", begin: 40, end: 41 }] }),
+        chorusLine(1, 40, {
+          templateLineIdx: 0,
+          words: [{ id: "w2", text: "hey", sep: "", begin: 40, end: 41, joinsNext: false }],
+        }),
         chorusLine(1, 42, { templateLineIdx: 1 }),
       ];
 
@@ -226,7 +232,9 @@ describe("applyWordDeletion · linked instances", () => {
     it("leaves an instance whose words no longer line up with the source", () => {
       const lines = [
         chorusLine(0, 10),
-        chorusLine(1, 40, { words: [{ id: "w3", text: "hold me now", sep: "", begin: 40, end: 41 }] }),
+        chorusLine(1, 40, {
+          words: [{ id: "w3", text: "hold me now", sep: "", begin: 40, end: 41, joinsNext: false }],
+        }),
       ];
 
       const result = applyWordDeletion(lines, [del("c0-0", 1)], SPLIT_CHAR);
