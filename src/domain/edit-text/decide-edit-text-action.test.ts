@@ -41,18 +41,6 @@ function chorusLines(): LyricLine[] {
 const baseText = (lines: LyricLine[]) => lines.map((l) => lineText(l)).join("\n");
 
 describe("decideEditTextAction", () => {
-  it("returns ignore-modal-pending when modal already open and skips all computation", () => {
-    const lines = chorusLines();
-    const action = decideEditTextAction({
-      text: "totally\ndifferent\nstuff",
-      defaultAgentId: "v1",
-      lines,
-      groups: [groupChorus],
-      modalPending: true,
-    });
-    expect(action.kind).toBe("ignore-modal-pending");
-  });
-
   it("returns noop when text is unchanged", () => {
     const lines = chorusLines();
     const action = decideEditTextAction({
@@ -60,7 +48,6 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     expect(action.kind).toBe("noop");
   });
@@ -73,7 +60,6 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
@@ -89,7 +75,6 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.editText).toBe("I luv you \nmore than words\nverse  line\nI luv you\nmore than words");
@@ -103,7 +88,6 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
     expect(action.editText).toBe(text);
@@ -117,7 +101,6 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
@@ -125,26 +108,26 @@ describe("decideEditTextAction", () => {
     expect(lineText(action.finalLines[action.finalLines.length - 1])).toBe("brand new outro");
   });
 
-  it("returns needs-confirm when a chorus instance loses a row", () => {
+  it("a row split out of a chorus line makes only that line its instance's own", () => {
     const lines = chorusLines();
-    // Drop a chorus line from the textarea. textToLyricLines greedily reassigns the matching
-    // existing line, so the LAST chorus instance is the one detected as impacted (c2b is orphaned).
-    const text = ["I love you", "verse line", "I love you", "more than words"].join("\n");
+    const text = ["I love you", "more than words", "verse line", "I love", "you", "more than words"].join("\n");
     const action = decideEditTextAction({
       text,
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
-    expect(action.kind).toBe("needs-confirm");
-    if (action.kind !== "needs-confirm") return;
-    expect(action.impacted).toHaveLength(1);
-    expect(action.impacted[0]).toEqual({ groupId: "g1", instanceIdx: 1 });
-    expect(action.labels).toEqual(["Chorus"]);
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.detachedIds).toEqual(["c2a"]);
+    const byId = new Map(action.finalLines.map((line) => [line.id, line]));
+    expect(byId.get("c2a")).toMatchObject({ groupId: "g1", instanceIdx: 1, templateLineIdx: 0, detached: true });
+    expect(lineText(byId.get("c2a")!)).toBe("I love");
+    expect(lineText(byId.get("c1a")!)).toBe("I love you");
+    expect(byId.get("c1a")?.detached).toBeUndefined();
+    expect(byId.get("c2b")?.detached).toBeUndefined();
   });
 
-  it("returns needs-confirm but does NOT mutate input lines", () => {
+  it("does not mutate input lines", () => {
     const lines = chorusLines();
     const before = JSON.parse(JSON.stringify(lines));
     decideEditTextAction({
@@ -152,27 +135,8 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     expect(lines).toEqual(before);
-  });
-
-  it("dedups labels when multiple impacted instances share a group", () => {
-    const lines: LyricLine[] = [
-      lineFromFields({ id: "a", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-      lineFromFields({ id: "b", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
-    ];
-    const action = decideEditTextAction({
-      text: "",
-      defaultAgentId: "v1",
-      lines,
-      groups: [groupChorus],
-      modalPending: false,
-    });
-    expect(action.kind).toBe("needs-confirm");
-    if (action.kind !== "needs-confirm") return;
-    expect(action.labels).toEqual(["Chorus"]);
-    expect(action.impacted).toHaveLength(2);
   });
 
   it("propagates a content edit to a sibling instance via apply", () => {
@@ -209,7 +173,6 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
@@ -230,7 +193,6 @@ describe("decideEditTextAction", () => {
       defaultAgentId: "v1",
       lines,
       groups: [],
-      modalPending: false,
     });
     expect(action.kind).toBe("apply");
   });
@@ -254,7 +216,6 @@ describe("regressions", () => {
       defaultAgentId: "v1",
       lines: [line],
       groups: [],
-      modalPending: false,
       splitCharacter: "|",
     });
     if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
@@ -288,7 +249,6 @@ describe("regressions", () => {
       defaultAgentId: "v1",
       lines,
       groups: [],
-      modalPending: false,
     });
     if (step1.kind !== "apply") throw new Error(step1.kind);
     const step2 = decideEditTextAction({
@@ -296,7 +256,6 @@ describe("regressions", () => {
       defaultAgentId: "v1",
       lines: step1.finalLines,
       groups: [],
-      modalPending: false,
     });
     if (step2.kind !== "apply") throw new Error(step2.kind);
     expect(timedSyllables(mainTrack(step2.finalLines[0]))).toEqual(timedSyllables(mainTrack(lines[0])));
@@ -320,7 +279,6 @@ describe("regressions", () => {
       defaultAgentId: "v1",
       lines,
       groups: [groupChorus],
-      modalPending: false,
     });
     if (action.kind !== "apply") throw new Error(action.kind);
     expect(action.finalLines[0]).toBe(lines[0]);
@@ -333,5 +291,81 @@ describe("regressions", () => {
       instanceIdx: 0,
       templateLineIdx: 0,
     });
+  });
+});
+
+describe("typing in a line-synced instance", () => {
+  it("regression: keeps a word-synced instance's own word timing", () => {
+    const lines: LyricLine[] = [
+      lineFromFields({
+        id: "a",
+        text: "We glow tonight",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        begin: 10,
+        end: 12,
+      }),
+      lineFromFields({
+        id: "b",
+        text: "We glow tonight",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { id: "w1", text: "We", sep: " ", begin: 40, end: 40.5, joinsNext: false },
+          { id: "w2", text: "glow", sep: " ", begin: 40.5, end: 41, joinsNext: false },
+          { id: "w3", text: "tonight", sep: "", begin: 41, end: 41.5, joinsNext: false },
+        ],
+      }),
+    ];
+    for (const text of ["We glow tonight now\nWe glow tonight", "We glow so bright\nWe glow tonight"]) {
+      const action = decideEditTextAction({ text, defaultAgentId: "v1", lines, groups: [groupChorus] });
+      if (action.kind !== "apply") throw new Error(action.kind);
+      const copy = action.finalLines[1];
+      expect(lineText(copy)).toBe(lineText(action.finalLines[0]));
+      expect(
+        timedSyllables(mainTrack(copy))
+          .slice(0, 2)
+          .map((word) => [word.text, word.begin]),
+      ).toEqual([
+        ["We", 40],
+        ["glow", 40.5],
+      ]);
+    }
+  });
+});
+
+describe("removing a group row", () => {
+  it("regression: a group row removed with nothing in its place is named as that instance's own change", () => {
+    const lines = chorusLines();
+    const action = decideEditTextAction({
+      text: ["I love you", "more than words", "verse line", "I love you"].join("\n"),
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.detachedIds).toEqual([]);
+    expect(action.removedIds).toEqual(["c2b"]);
+    expect(action.finalLines.map((line) => line.id)).toEqual(["c1a", "c1b", "v1", "c2a"]);
+  });
+});
+
+describe("typing a split mark in an instance", () => {
+  it("regression: reports the split it carried to the other instances, for the one-time notice", () => {
+    const lines = chorusLines();
+    const text = baseText(lines).replace("I love you", "I lo|ve you");
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      splitCharacter: "|",
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.splits).toEqual([{ groupId: "g1", instances: 2 }]);
   });
 });

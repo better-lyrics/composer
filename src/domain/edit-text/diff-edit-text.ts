@@ -1,6 +1,5 @@
-import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
-import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
-import { instanceKey, parseInstanceKey } from "@/domain/instance/key";
+import { sameSharedContent } from "@/domain/group/carried-line";
+import { withLineIds } from "@/domain/group/line-ids";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { isStructurallyEqual } from "@/utils/structural-equal";
@@ -10,6 +9,13 @@ import { isStructurallyEqual } from "@/utils/structural-equal";
 interface ContentUpdate {
   id: string;
   updates: Partial<LyricLine>;
+}
+
+interface MovedText {
+  lines: LyricLine[];
+  detachedIds: string[];
+  // Group lines the edit removed with nothing in their place: their instance no longer has them.
+  removedIds: string[];
 }
 
 interface DiffResult {
@@ -41,107 +47,53 @@ function diffEditTextChange(oldLines: LyricLine[], newLines: LyricLine[]): DiffR
   return { contentUpdates, hasStructuralChange: false };
 }
 
-interface ImpactedInstance {
-  groupId: string;
-  instanceIdx: number;
-}
-
-function instancesByKey(lines: LyricLine[]): Map<string, Set<string>> {
-  const out = new Map<string, Set<string>>();
-  for (const line of lines) {
-    if (!isLinked(line)) continue;
-    const key = instanceKey(line.groupId, line.instanceIdx);
-    let bucket = out.get(key);
-    if (!bucket) {
-      bucket = new Set();
-      out.set(key, bucket);
+// Where a group line that left the text stood, a new row in its place is that line with the text it now has.
+function rowsTakingTheirPlace(oldLines: readonly LyricLine[], newLines: readonly LyricLine[]): Map<number, LyricLine> {
+  const newIndexById = new Map(newLines.map((line, index) => [line.id, index]));
+  const oldIds = new Set(oldLines.map((line) => line.id));
+  const taken = new Map<number, LyricLine>();
+  let nextIndex = 0;
+  for (const old of oldLines) {
+    const kept = newIndexById.get(old.id);
+    if (kept !== undefined) {
+      nextIndex = kept + 1;
+      continue;
     }
-    bucket.add(line.id);
+    const row = newLines[nextIndex];
+    if (!isLinked(old) || old.detached || !row || oldIds.has(row.id) || isLinked(row) || taken.has(nextIndex)) continue;
+    taken.set(nextIndex, old);
+    nextIndex++;
   }
-  return out;
+  return taken;
 }
 
-function findStructurallyImpactedInstances(oldLines: LyricLine[], newLines: LyricLine[]): ImpactedInstance[] {
-  const oldByKey = instancesByKey(oldLines);
-  const newByKey = instancesByKey(newLines);
-
-  const seen = new Set<string>();
-  const impacted: ImpactedInstance[] = [];
-
-  const push = (groupId: string, instanceIdx: number) => {
-    const key = instanceKey(groupId, instanceIdx);
-    if (seen.has(key)) return;
-    seen.add(key);
-    impacted.push({ groupId, instanceIdx });
-  };
-
-  // Detection 1: an instance gained or lost line ids between old and new.
-  for (const [key, oldIds] of oldByKey) {
-    const newIds = newByKey.get(key) ?? new Set<string>();
-    let differs = oldIds.size !== newIds.size;
-    if (!differs) {
-      for (const id of oldIds) {
-        if (!newIds.has(id)) {
-          differs = true;
-          break;
-        }
-      }
-    }
-    if (differs) {
-      const { groupId, instanceIdx } = parseInstanceKey(key);
-      push(groupId, instanceIdx);
-    }
-  }
-
-  // Detection 2: a non-grouped line was inserted positionally between two
-  // grouped lines from the same instance. The id-set check above misses this
-  // when textToLyricLines preserved every existing id and only added a fresh
-  // ungrouped row in the middle of an instance.
-  for (let i = 1; i < newLines.length - 1; i++) {
-    const middle = newLines[i];
-    if (middle.groupId !== undefined) continue;
-    const prev = newLines[i - 1];
-    const next = newLines[i + 1];
-    if (prev.groupId === undefined || next.groupId === undefined) continue;
-    if (prev.groupId !== next.groupId) continue;
-    if (prev.instanceIdx === undefined || prev.instanceIdx !== next.instanceIdx) continue;
-    push(prev.groupId, prev.instanceIdx);
-  }
-
-  return impacted;
-}
-
-function detachInstancesFromLines(lines: LyricLine[], instances: ImpactedInstance[]): LyricLine[] {
-  const impactedKeys = new Set(instances.map((i) => instanceKey(i.groupId, i.instanceIdx)));
-  return unlinkLines(lines, (line) => isLinked(line) && impactedKeys.has(instanceKey(line.groupId, line.instanceIdx)));
-}
-
-function propagateContentUpdates(
-  oldLines: LyricLine[],
-  newLines: LyricLine[],
-  contentUpdates: ContentUpdate[],
-): LyricLine[] {
-  if (contentUpdates.length === 0) return newLines;
+// A structural edit moves text between lines: a group line whose text it changed now differs from its template, so
+// it becomes that instance's own line, and a group line it removed is gone from that instance only. Its other
+// instances and every other line stay as they were.
+function withMovedTextDetached(oldLines: readonly LyricLine[], newLines: LyricLine[]): MovedText {
   const oldById = new Map(oldLines.map((line) => [line.id, line]));
-  const updatedIds = new Set(contentUpdates.map((update) => update.id));
-  const sources = contentUpdates.flatMap((update) => {
-    const source = oldById.get(update.id);
-    const scope = source && getLinkScope(source);
-    return source && scope ? [{ source, scope, updates: update.updates }] : [];
-  });
-  if (sources.length === 0) return newLines;
-
-  return newLines.map((line) => {
-    if (updatedIds.has(line.id)) return line;
-    let next = line;
-    for (const { source, scope, updates } of sources) {
-      if (isLinkedSibling(next, scope)) next = updatedLinkedSibling(next, source, updates);
+  const replacing = rowsTakingTheirPlace(oldLines, newLines);
+  const detachedIds: string[] = [];
+  const lines = newLines.map((line, index) => {
+    const replaced = replacing.get(index);
+    if (replaced && isLinked(replaced)) {
+      detachedIds.push(replaced.id);
+      const { groupId, instanceIdx, templateLineIdx } = replaced;
+      return { ...withLineIds(line, replaced.id, {}), groupId, instanceIdx, templateLineIdx, detached: true };
     }
-    return next;
+    const old = oldById.get(line.id);
+    if (!old || !isLinked(line) || line.detached || !isLinked(old) || sameSharedContent(old, line)) return line;
+    detachedIds.push(line.id);
+    return { ...line, detached: true };
   });
+  const newIds = new Set(newLines.map((line) => line.id));
+  const replacedIds = new Set([...replacing.values()].map((line) => line.id));
+  const removedIds = oldLines.flatMap((old) =>
+    isLinked(old) && !old.detached && !newIds.has(old.id) && !replacedIds.has(old.id) ? [old.id] : [],
+  );
+  return { lines: detachedIds.length ? lines : newLines, detachedIds, removedIds };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { detachInstancesFromLines, diffEditTextChange, findStructurallyImpactedInstances, propagateContentUpdates };
-export type { ImpactedInstance };
+export { diffEditTextChange, withMovedTextDetached };

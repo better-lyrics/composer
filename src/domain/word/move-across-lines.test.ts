@@ -297,8 +297,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
 
 // -- Rejections ---------------------------------------------------------------
 
-describe("applyWordMoveAcrossLines: rejections", () => {
-  it("rejects cross-instance moves", () => {
+describe("applyWordMoveAcrossLines: across instances", () => {
+  it("a move between instances makes both lines their instance's own", () => {
     const lineA = createLine({
       id: "A",
       groupId: "g1",
@@ -326,11 +326,13 @@ describe("applyWordMoveAcrossLines: rejections", () => {
       ],
       wholeSong,
     );
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("expected reject");
-    expect(result.reject).toBe("cross-instance");
+    if (!result.ok) throw new Error(`expected a move, got ${result.reject}`);
+    expect(result.detachedIds).toEqual(["A", "B"]);
+    expect(result.updates.every((update) => update.updates.detached === true)).toBe(true);
   });
+});
 
+describe("applyWordMoveAcrossLines: rejections", () => {
   it("rejects when target is line-synced and target track is word", () => {
     const lineA = createLine({
       id: "A",

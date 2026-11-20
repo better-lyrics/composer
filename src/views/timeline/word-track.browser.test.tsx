@@ -66,15 +66,13 @@ const commitToStore: UpdateWord = (index, updates, adjacentIndex, adjacentUpdate
     adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
   );
   if (!patched) return;
-  useProjectStore.getState().commit(
-    lineEditCommand(
-      { command: "edit lines", args: [] },
-      () => fieldUpdates([{ id: line.id, updates: { words: patched } }]),
-      {
-        propagateToSiblings: false,
-      },
-    ),
-  );
+  useProjectStore
+    .getState()
+    .commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () =>
+        fieldUpdates([{ id: line.id, updates: { words: patched } }]),
+      ),
+    );
 };
 
 async function renderTrackWritingToStore(words: WordTiming[]) {

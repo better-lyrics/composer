@@ -1,9 +1,10 @@
 import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricCommand } from "@/domain/commands/command";
-import { type Applied, type LyricRoot, type Outcome, applied, isRefused, refused } from "@/domain/commands/outcome";
+import { type Applied, applied, isRefused, type LyricRoot, type Outcome } from "@/domain/commands/outcome";
 import { foldLines } from "@/domain/group/fold";
 import type { LyricDoc } from "@/domain/group/model";
+import type { CarriedSplit } from "@/domain/group/template-edit";
 import { withoutOrphanPieces } from "@/domain/language/pieces";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
@@ -17,6 +18,7 @@ interface CommitResult {
   patch: Partial<ProjectState> | null;
   outcome: Outcome;
   copiedGroupIds: readonly string[];
+  splits: readonly CarriedSplit[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -58,28 +60,32 @@ interface Written {
   doc: LyricDoc;
 }
 
-// Command output goes back into the doc through the fold; a copy that would go below zero refuses the command.
-function folded(
-  state: ProjectState,
-  doc: LyricDoc,
-  root: LyricRoot,
-  ran: Applied,
-  copiesSharedTiming: boolean,
-): (Written & { copiedGroupIds: readonly string[] }) | null {
+interface FoldOptions {
+  copiesSharedTiming: boolean;
+  carriesTemplateEdits: boolean;
+  songEnd: number;
+}
+
+type Folded = Written & { copiedGroupIds: readonly string[]; splits: readonly CarriedSplit[] };
+
+// Command output goes back into the doc through the fold, which carries template edits and shared timing.
+function folded(state: ProjectState, doc: LyricDoc, root: LyricRoot, ran: Applied, options: FoldOptions): Folded {
   const after = withChangedLinesSettled(state.lines, ran.root.lines);
-  const fold = foldLines({ doc, after, touched: ran.touched, groups: root.groups, copiesSharedTiming });
-  if (fold.rejected) return null;
+  const fold = foldLines({ doc, after, touched: ran.touched, groups: root.groups, ...options });
   const settled = withChangedLinesSettled(state.lines, fold.lines);
+  const { copiedGroupIds, splits } = fold;
   if (settled === fold.lines)
-    return { root: { ...ran.root, lines: fold.lines }, doc: fold.doc, copiedGroupIds: fold.copiedGroupIds };
+    return { root: { ...ran.root, lines: fold.lines }, doc: fold.doc, copiedGroupIds, splits };
   const resettled = foldLines({
     doc: fold.doc,
     after: settled,
     touched: [],
     groups: root.groups,
     copiesSharedTiming: false,
+    carriesTemplateEdits: false,
+    songEnd: options.songEnd,
   });
-  return { root: { ...ran.root, lines: resettled.lines }, doc: resettled.doc, copiedGroupIds: fold.copiedGroupIds };
+  return { root: { ...ran.root, lines: resettled.lines }, doc: resettled.doc, copiedGroupIds, splits };
 }
 
 function writeRoot(
@@ -117,20 +123,32 @@ function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitM
   const before = rootOf(state);
   const doc = projectDoc(state);
   const ran = command.run(before, ctx);
-  if (isRefused(ran) || ran.root === before) return { patch: null, outcome: ran, copiedGroupIds: [] };
-  const copied = folded(state, doc, before, ran, command.copiesSharedTiming);
-  if (!copied) return { patch: null, outcome: refused({ reason: "copy-below-zero" }), copiedGroupIds: [] };
+  const nothing = { patch: null, copiedGroupIds: [], splits: [] };
+  if (isRefused(ran) || ran.root === before) return { ...nothing, outcome: ran };
+  const carriesTemplateEdits = command.writesEveryLine !== true;
+  const copied = folded(state, doc, before, ran, {
+    copiesSharedTiming: command.copiesSharedTiming,
+    carriesTemplateEdits,
+    songEnd: ctx.songEnd,
+  });
   const outcome = command.afterSharedCopy
     ? command.afterSharedCopy(copied.root, ctx)
     : applied(copied.root, ran.touched);
-  if (isRefused(outcome)) return { patch: null, outcome, copiedGroupIds: [] };
-  const written = outcome.root === copied.root ? copied : folded(state, copied.doc, copied.root, outcome, false);
-  if (!written) return { patch: null, outcome: refused({ reason: "copy-below-zero" }), copiedGroupIds: [] };
+  if (isRefused(outcome)) return { ...nothing, outcome };
+  const written =
+    outcome.root === copied.root
+      ? copied
+      : folded(state, copied.doc, copied.root, outcome, {
+          copiesSharedTiming: false,
+          carriesTemplateEdits,
+          songEnd: ctx.songEnd,
+        });
   const parted = withPartsSettled(before, written.root);
   return {
     patch: writeRoot(state, { root: parted, doc: written.doc }, command, mode),
     outcome,
     copiedGroupIds: command.announcesSharedCopy === false ? [] : copied.copiedGroupIds,
+    splits: [...copied.splits, ...(written === copied ? [] : written.splits)],
   };
 }
 

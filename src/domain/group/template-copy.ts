@@ -1,7 +1,9 @@
+import { sameSharedContent } from "@/domain/group/carried-line";
+import { withCopiesInSong } from "@/domain/group/copies-in-song";
 import { instanceSlotLine, templateBySlot } from "@/domain/group/flatten";
 import { invertedIds, withLineIds } from "@/domain/group/line-ids";
 import { type Instance, instanceSlots, isInstanceSpan, type LyricDoc, type TemplateLine } from "@/domain/group/model";
-import { hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
+import { offsetTimingFields } from "@/domain/group/offset-timing";
 import { sharesTiming, timingChanged } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { fittedAnchor, lineContent, toTemplateLine } from "@/domain/group/template-line";
@@ -22,11 +24,11 @@ interface CopyInput {
   groups: readonly LinkGroup[];
   touched: readonly string[];
   anchors: InstanceAnchors;
+  songEnd: number;
 }
 
 interface TemplateCopy {
   lines: LyricLine[];
-  rejected: boolean;
   copiedGroupIds: string[];
   // Per group: the template the copies came from and the instance that wrote it.
   templates: Map<string, readonly TemplateLine[]>;
@@ -118,12 +120,12 @@ function sourceTemplateLine(doc: LyricDoc, source: SlotLine, at: number): Templa
 
 // A timing edit in one shared instance is its group's template timing: it is written to the template, and every other
 // shared instance takes the same timing and readings at its own anchor, on its own syllables. The first edited line of
-// each template line wins, in song order.
+// each template line wins, in song order. The edit itself is never changed or refused: a copy with no room in the song
+// moves until it fits.
 function copyThroughTemplate(input: CopyInput): TemplateCopy {
   const { doc, after, anchors } = input;
   const result: TemplateCopy = {
     lines: after,
-    rejected: false,
     copiedGroupIds: [],
     templates: new Map(),
     sources: new Map(),
@@ -143,6 +145,9 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
   const claimed = new Set<string>();
   const copied = new Set<string>();
   let lines = after;
+  const copiedInstances = new Set<string>();
+  // An instance the command edited to other content than the source keeps its own edit.
+  const touched = new Set(input.touched);
   for (const source of sources) {
     const { groupId, instanceIdx, templateLineIdx: slot } = source;
     const claim = `${groupId}\u0000${slot}`;
@@ -164,16 +169,17 @@ function copyThroughTemplate(input: CopyInput): TemplateCopy {
       const index = indexBySlot.get(slotKey(groupId, idx, slot));
       if (idx === instanceIdx || index === undefined || !sharesTiming(groups.get(groupId), idx)) continue;
       const target = lines[index];
+      if (touched.has(target.id) && !sameSharedContent(target, source)) continue;
       const updates = offsetTimingFields(source, at - sourceAt, target);
-      if (hasNegativeTime(updates)) return { ...result, lines: after, rejected: true };
       const line = { ...target, ...updates };
       if (!timingChanged(target, line) && line.languages === target.languages) continue;
       if (lines === after) lines = [...after];
       lines[index] = line;
       copied.add(groupId);
+      copiedInstances.add(instanceKey(groupId, idx));
     }
   }
-  return { ...result, lines, copiedGroupIds: [...copied] };
+  return { ...result, lines: withCopiesInSong(lines, copiedInstances, input.songEnd), copiedGroupIds: [...copied] };
 }
 
 // -- Exports ------------------------------------------------------------------

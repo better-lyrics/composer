@@ -14,10 +14,7 @@ import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 // -- Fixtures -----------------------------------------------------------------
 
 const GROUP_COLOR_RGB = "rgb(163, 201, 255)";
-const timingWrite = (updates: LineUpdate[]) =>
-  lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
-    propagateToSiblings: false,
-  });
+const timingWrite = (updates: LineUpdate[]) => lineEditCommand({ command: "edit lines", args: [] }, () => updates);
 
 const chorus = (instanceIdx: number, begin: number) =>
   createLine({

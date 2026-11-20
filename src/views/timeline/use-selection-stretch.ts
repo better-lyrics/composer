@@ -8,6 +8,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { selfKey } from "@/views/timeline/snap";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
@@ -65,15 +66,15 @@ function applyStretchUpdates(
   updates: ReadonlyArray<{ id: string; updates: Partial<LyricLine> }>,
 ): LyricLine[] {
   const doc = docOfLines(snapshotLines);
-  const copy = copyThroughTemplate({
+  return copyThroughTemplate({
     doc,
     before: snapshotLines,
     after: applyLineUpdates(snapshotLines, updates),
     groups: useProjectStore.getState().groups,
     touched: updates.map((update) => update.id),
     anchors: instanceAnchors(doc),
-  });
-  return copy.rejected ? snapshotLines.slice() : copy.lines;
+    songEnd: songEndOrUnbounded(useAudioStore.getState().duration),
+  }).lines;
 }
 
 // -- Hook ----------------------------------------------------------------------

@@ -40,7 +40,6 @@ describe("createLanguageAutoRefresh failures", () => {
         { command: "edit lines", args: [] },
         () => fieldUpdates([{ id: "a", updates: { text: "Сильный дождь" } }]),
         {
-          propagateToSiblings: false,
           copiesSharedTiming: false,
         },
       ),

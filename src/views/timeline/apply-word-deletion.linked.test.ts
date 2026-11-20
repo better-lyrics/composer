@@ -2,14 +2,17 @@
  * @vitest-environment node
  */
 
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { deleteWords } from "@/domain/commands/word-structure";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
-import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
+import { addressAt } from "@/domain/selection/resolve";
+import type { DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
+import { useProjectStore } from "@/stores/project";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -42,10 +45,27 @@ const del = (lineId: string, wordIndex: number, type: "word" | "bg" = "word"): D
   wordIndex,
 });
 
+// A delete as the Timeline commits it: other instances take it from the template.
+function applyWordDeletion(lines: LyricLine[], selections: readonly DeletionSelection[]): LyricLine[] {
+  useProjectStore.getState().restoreLyrics({
+    lines,
+    groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
+  });
+  const addresses = selections.flatMap(
+    ({ lineId, type, wordIndex }) => addressAt(lines, lineId, type, wordIndex) ?? [],
+  );
+  useProjectStore.getState().commit(deleteWords(addresses));
+  return useProjectStore.getState().lines;
+}
+
 const texts = (line: LyricLine | undefined) => (line && roleWords(line, "main"))?.map((word) => word.text + word.sep);
 const byId = (lines: LyricLine[], id: string) => lines.find((line) => line.id === id);
 
 // -- Tests --------------------------------------------------------------------
+
+beforeEach(() => {
+  useProjectStore.getState().reset();
+});
 
 describe("applyWordDeletion · linked instances", () => {
   it("removes the word from every linked instance", () => {
@@ -227,7 +247,7 @@ describe("applyWordDeletion · linked instances", () => {
       expect(byId(result, "other")).toBe(lines[2]);
     });
 
-    it("leaves an instance whose words no longer line up with the source", () => {
+    it("gives an instance whose words no longer line up the template's words, spread over its own span", () => {
       const lines = [
         chorusLine(0, 10),
         chorusLine(1, 40, {
@@ -237,7 +257,10 @@ describe("applyWordDeletion · linked instances", () => {
 
       const result = applyWordDeletion(lines, [del("c0-0", 1)]);
 
-      expect(byId(result, "c1-0")).toBe(lines[1]);
+      const copy = byId(result, "c1-0");
+      expect(texts(copy)).toEqual(["hold ", "now"]);
+      const timed = copy ? timedSyllables(mainTrack(copy)) : [];
+      expect([timed[0]?.begin, timed.at(-1)?.end]).toEqual([40, 41]);
     });
   });
 

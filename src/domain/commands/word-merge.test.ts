@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { mergeWords } from "@/domain/commands/word-merge";
 import { deleteWords } from "@/domain/commands/word-structure";
@@ -28,12 +29,12 @@ describe("word merge command", () => {
   it("refuses a run whose words are gone and leaves history alone", () => {
     useProjectStore.getState().commit(deleteWords([run[1]]));
     const before = useProjectStore.getState().history;
-    const outcome = useProjectStore.getState().commit(mergeWords(run, "apply", 0));
+    const outcome = useProjectStore.getState().commit(mergeWords(run));
     expect(outcome).toEqual({ refused: { reason: "word-gone", address: run[0] } });
     expect(useProjectStore.getState().history).toBe(before);
   });
 
-  it("refuses to widen a linked copy that started crossing the run after the prompt", () => {
+  it("a merge in one instance reaches a copy split differently, where its letters sit in that copy", () => {
     const group = createGroup({ id: "chorus" });
     const link = { groupId: group.id, templateLineIdx: 0 };
     const source = createLine({
@@ -43,7 +44,7 @@ describe("word merge command", () => {
       text: "still water runs",
       words: [still, water, createWord({ text: "runs", begin: 2.1, end: 2.6 })],
     });
-    const crossingCopy = createLine({
+    const differentlySplit = createLine({
       ...link,
       id: "l2",
       instanceIdx: 1,
@@ -52,13 +53,18 @@ describe("word merge command", () => {
         createWord({ text, begin: 9 + index, end: 9.8 + index }),
       ),
     });
-    useProjectStore.setState({ lines: [source, crossingCopy], groups: [group] });
-    const before = useProjectStore.getState().history;
-    const crossingWhenPrompted = 0;
+    useProjectStore.setState({ lines: [source, differentlySplit], groups: [group] });
 
-    const outcome = useProjectStore.getState().commit(mergeWords(run, "apply", crossingWhenPrompted));
+    useProjectStore.getState().commit(mergeWords(run));
 
-    expect(outcome).toEqual({ refused: { reason: "needs-detach-confirm", impacted: ["l2"] } });
-    expect(useProjectStore.getState().history).toBe(before);
+    const [merged, copy] = useProjectStore.getState().lines;
+    const spans = copy.tracks[0].syllables.map((syllable) => [syllable.begin, syllable.end]);
+    expect(copy.tracks[0].syllables.map((syllable) => syllable.text)).toEqual(
+      merged.tracks[0].syllables.map((syllable) => syllable.text),
+    );
+    expect(spans).toEqual([
+      [9, 11.342857143],
+      [11.342857143, 11.8],
+    ]);
   });
 });

@@ -1,7 +1,5 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { type LyricRoot, type Outcome, applied, refused, withLines } from "@/domain/commands/outcome";
-import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
-import { withOwnPieces } from "@/domain/language/pieces";
 import type { LineLanguages } from "@/domain/language/model";
 import type { LyricLine } from "@/domain/line/model";
 import { fieldWords, type TrackField } from "@/domain/line/track";
@@ -15,7 +13,6 @@ import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-spli
 import type { IdenticalMatchSource } from "@/utils/identical-word-matcher";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { applySiblingWords } from "@/utils/word-diff";
 
 // -- Types --------------------------------------------------------------------
 
@@ -25,7 +22,6 @@ type WordField = TrackField;
 interface WordWriteExtras {
   languages?: LineLanguages;
 }
-type WordCountResolution = "apply" | "detach" | "cancel";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -34,36 +30,18 @@ function withWordWrite(line: LyricLine, field: WordField, words: WordTiming[], e
   return "languages" in extras ? { ...written, languages: extras.languages } : written;
 }
 
-function wordCountChange(
+function wordWrite(
   root: LyricRoot,
   lineId: string,
   newWords: WordTiming[],
   field: WordField,
-  resolution: WordCountResolution,
   extras: WordWriteExtras,
 ): Outcome {
-  if (resolution === "cancel") return applied(root, []);
-  const target = root.lines.find((line) => line.id === lineId);
-  if (!target) return refused({ reason: "line-gone", lineId });
-
-  if (resolution === "detach") {
-    const edited = root.lines.map((line) => (line.id === lineId ? withWordWrite(line, field, newWords, extras) : line));
-    return withLines(
-      root,
-      unlinkLines(edited, (line) => line.id === lineId),
-    );
-  }
-
-  const sourceBefore = fieldWords(target, field);
-  const linkScope = getLinkScope(target);
-  const lines = root.lines.map((line) => {
-    if (line.id === lineId) return withWordWrite(line, field, newWords, extras);
-    if (!isLinkedSibling(line, linkScope)) return line;
-    const propagated = applySiblingWords(newWords, sourceBefore, fieldWords(line, field));
-    const withLanguages = "languages" in extras ? { ...line, languages: withOwnPieces(extras.languages, line) } : line;
-    return propagated ? withFieldWords(withLanguages, field, propagated) : withLanguages;
-  });
-  return withLines(root, lines);
+  if (!root.lines.some((line) => line.id === lineId)) return refused({ reason: "line-gone", lineId });
+  return withLines(
+    root,
+    root.lines.map((line) => (line.id === lineId ? withWordWrite(line, field, newWords, extras) : line)),
+  );
 }
 
 function toggledExplicitWords(words: WordTiming[], wordIndices: readonly number[]): WordTiming[] | null {
@@ -82,20 +60,6 @@ function toggledExplicitWords(words: WordTiming[], wordIndices: readonly number[
 
 // -- Commands -----------------------------------------------------------------
 
-function applyWordCountChange(
-  lineId: string,
-  newWords: WordTiming[],
-  field: WordField,
-  resolution: WordCountResolution,
-  extras: WordWriteExtras = {},
-): LyricCommand {
-  return {
-    note: { command: "change word count", args: [lineId, field, resolution] },
-    copiesSharedTiming: true,
-    run: (root) => wordCountChange(root, lineId, newWords, field, resolution, extras),
-  };
-}
-
 function toggleWordExplicit(lineId: string, field: WordField, wordIndices: readonly number[]): LyricCommand {
   return {
     note: { command: "toggle explicit", args: [lineId, field, ...wordIndices] },
@@ -108,7 +72,7 @@ function toggleWordExplicit(lineId: string, field: WordField, wordIndices: reado
       if (!currentWords || currentWords.length === 0) return applied(root, []);
       const newWords = toggledExplicitWords(currentWords, wordIndices);
       if (!newWords) return applied(root, []);
-      return wordCountChange(root, lineId, newWords, field, "apply", {});
+      return wordWrite(root, lineId, newWords, field, {});
     },
   };
 }
@@ -170,11 +134,4 @@ function splitIdenticalSyllables({
 // -- Exports ------------------------------------------------------------------
 
 export type { WordWriteExtras };
-export {
-  applyWordCountChange,
-  markWordsExplicit,
-  mergeSyllableGroup,
-  snapSyllablesFlush,
-  splitIdenticalSyllables,
-  toggleWordExplicit,
-};
+export { markWordsExplicit, mergeSyllableGroup, snapSyllablesFlush, splitIdenticalSyllables, toggleWordExplicit };

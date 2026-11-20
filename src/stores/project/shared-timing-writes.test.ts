@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { applyAlignedTimings } from "@/domain/commands/alignment";
 import { lineEditCommand } from "@/domain/commands/line-edits";
+import { isRefused } from "@/domain/commands/outcome";
 import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -44,10 +45,7 @@ function secondWordBegin(id: string) {
   )?.[1]?.begin;
 }
 
-const timingWrite = (updates: LineUpdate[]) =>
-  lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
-    propagateToSiblings: false,
-  });
+const timingWrite = (updates: LineUpdate[]) => lineEditCommand({ command: "edit lines", args: [] }, () => updates);
 let unsubscribe: (() => void) | undefined;
 
 beforeEach(() => {
@@ -106,27 +104,28 @@ describe("shared timing in history writes", () => {
       expect(secondWordBegin("c1")).toBeCloseTo(40.5, 6);
     });
 
-    it("rejects a batch that would move a copy below zero", () => {
+    it("keeps a batch that would move a copy below zero and moves that copy alone", () => {
       seed(createGroup({ id: "g1", sharesTiming: true }), [chorus(0, 10), chorus(1, 0.05)]);
       const before = useProjectStore.getState();
       const words = timedSyllables(mainTrack(before.lines[0])).map((word, i) =>
         i === 0 ? { ...word, begin: 9.8 } : word,
       );
       before.commit(timingWrite(fieldUpdates([{ id: "c0", updates: { words } }])));
-      const after = useProjectStore.getState();
-      expect(after.lines).toBe(before.lines);
-      expect(after.history).toBe(before.history);
+      const [source, copy] = useProjectStore.getState().lines;
+      expect(timedSyllables(mainTrack(source))[0].begin).toBeCloseTo(9.8, 9);
+      expect(timedSyllables(mainTrack(copy))[0].begin).toBeCloseTo(0, 9);
+      expect(useProjectStore.getState().history).not.toBe(before.history);
     });
 
-    it("types the refusal of a copy below zero", () => {
+    it("never refuses an alignment that would move a copy below zero", () => {
       seed(createGroup({ id: "g1", sharesTiming: true }), [chorus(0, 10), chorus(1, 0.05)]);
       const before = useProjectStore.getState();
       const words = timedSyllables(mainTrack(before.lines[0])).map((word, i) =>
         i === 0 ? { ...word, begin: 9.8 } : word,
       );
       const outcome = before.commit(applyAlignedTimings(fieldUpdates([{ id: "c0", updates: { words } }])));
-      expect(outcome).toEqual({ refused: { reason: "copy-below-zero" } });
-      expect(useProjectStore.getState().history).toBe(before.history);
+      expect(isRefused(outcome)).toBe(false);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[1]))[0].begin).toBeCloseTo(0, 9);
     });
 
     it("does not notify when nothing is copied", () => {

@@ -1,4 +1,3 @@
-import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { isLinked } from "@/domain/instance/predicates";
 import { withBackground, withSeededBackground } from "@/domain/line/background";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -153,18 +152,12 @@ function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricL
   return extracted === line ? line : withSeededBackground(extracted);
 }
 
-function extractInlineAcrossLinkedLines(lines: LyricLine[], lineId: string, options: ExtractOptions): LineUpdate[] {
+// Other instances of a group line take the extraction from its template.
+function extractInlineOnLine(lines: LyricLine[], lineId: string, options: ExtractOptions): LineUpdate[] {
   const target = lines.find((line) => line.id === lineId);
   if (!target) return [];
-  const scope = getLinkScope(target);
-  const updates: LineUpdate[] = [];
-  for (const line of lines) {
-    if (line.id !== lineId && !isLinkedSibling(line, scope)) continue;
-    const extracted = extractInlineFromLine(line, options);
-    if (extracted === line) return [];
-    updates.push({ id: line.id, updates: { tracks: extracted.tracks } });
-  }
-  return updates;
+  const extracted = extractInlineFromLine(target, options);
+  return extracted === target ? [] : [{ id: lineId, updates: { tracks: extracted.tracks } }];
 }
 
 // -- Whole-list transform -----------------------------------------------------
@@ -219,8 +212,8 @@ export type { ExtractOptions };
 export {
   classifyLine,
   extractBackgroundVocals,
-  extractInlineAcrossLinkedLines,
   extractInlineFromLine,
+  extractInlineOnLine,
   lineHasInlineParens,
   scanParenGroups,
 };
