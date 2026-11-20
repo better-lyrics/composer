@@ -12,6 +12,7 @@ import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instan
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import { beforeEach, describe, expect, it } from "vitest";
+import { addInstance } from "@/domain/commands/instance-edits";
 
 function mappedWords(fragments: string[], start: number): WordTiming[] {
   const joiners = ["", "-", "", "  "];
@@ -94,7 +95,7 @@ describe("linked group alternate-language mappings", () => {
     expect(template[0].transliteration).not.toBe(source.transliteration);
     expect(template[0].translations?.en).not.toBe(source.translations?.en);
 
-    useProjectStore.getState().addInstance("g1", template, 30);
+    useProjectStore.getState().commit(addInstance("g1", template, 30));
     const copy = useProjectStore.getState().lines[1];
     expect(copy.instanceIdx).toBe(1);
     expectExactCopy(copy, source, 20);

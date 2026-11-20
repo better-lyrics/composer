@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { resetAllStores } from "@/test/stores";
 import { getEffectiveRows } from "@/views/timeline/effective-rows";
 import { beforeEach, describe, expect, it } from "vitest";
+import { detachLine, removeInstance } from "@/domain/commands/instance-edits";
 
 function linked(id: string, text: string, instanceIdx: number, templateLineIdx: number, begin: number): LyricLine {
   return { id, text, agentId: "v1", groupId: "g1", instanceIdx, templateLineIdx, begin, end: begin + 1 };
@@ -46,13 +47,13 @@ describe("instance labels and header keys after detach", () => {
   });
 
   it("detaching a middle line (gutter Detach line / divergence Detach) keeps header keys unique", () => {
-    useProjectStore.getState().detachLine("a1");
+    useProjectStore.getState().commit(detachLine("a1"));
     const keys = headerKeys();
     expect(new Set(keys).size).toBe(keys.length);
   });
 
   it("detaching instance 1 of 2 leaves no '2 of 1' label", () => {
-    useProjectStore.getState().removeInstance("g1", 0);
+    useProjectStore.getState().commit(removeInstance("g1", 0));
     expect(instanceLabels()).not.toContain("2 of 1");
   });
 });

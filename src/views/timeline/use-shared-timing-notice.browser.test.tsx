@@ -75,7 +75,7 @@ describe("Shared timing notice", () => {
     await screen.getByRole("button", { name: "Dismiss suggestion" }).click();
 
     await expect.poll(() => store().dismissedSuggestions).toEqual(["shared-timing:g1"]);
-    store().setLines([member(0, 10), member(1), member(2), member(3)]);
+    store().restoreLyrics({ lines: [member(0, 10), member(1), member(2), member(3)] });
     await expect.poll(() => store().lines.length).toBe(4);
     expect(screen.container.textContent).not.toContain("is synced");
   });

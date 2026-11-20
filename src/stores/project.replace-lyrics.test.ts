@@ -3,6 +3,7 @@ import { createGroup, createLine } from "@/test/factories";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 const SONG_A_TTML = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Song A</ttm:title><ttm:agent type="person" xml:id="v1"><ttm:name type="full">Alice</ttm:name></ttm:agent><ttm:agent type="person" xml:id="v2"><ttm:name type="full">Bob</ttm:name></ttm:agent></metadata></head><body><div><p begin="0.0" end="1.0" ttm:agent="v1">Line one</p><p begin="1.0" end="2.0" ttm:agent="v2">Line two</p></div></body></tt>`;
 
@@ -21,8 +22,8 @@ const agentIds = () => useProjectStore.getState().agents.map((a) => a.id);
 describe("D8 import vs history", () => {
   it("undo after import restores pre-import state and redo returns to the import", () => {
     const s = useProjectStore.getState();
-    s.setLinesWithHistory([createLine({ id: "a", text: "Old one" })]);
-    s.setLinesWithHistory([createLine({ id: "a", text: "Old one edited" })]);
+    s.commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", text: "Old one" })]));
+    s.commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", text: "Old one edited" })]));
     expect(useProjectStore.getState().historyIndex).toBe(2);
 
     importParsed(parseLyricsFile("new.txt", "New A\nNew B"));
@@ -38,7 +39,9 @@ describe("D8 import vs history", () => {
   });
 
   it("undo with a single history entry after import", () => {
-    useProjectStore.getState().setLinesWithHistory([createLine({ id: "a", text: "Old one" })]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", text: "Old one" })]));
     importParsed(parseLyricsFile("new.txt", "New A"));
     useProjectStore.getState().undo();
     expect(texts()).toEqual(["Old one"]);
@@ -58,8 +61,8 @@ describe("I2/I3 import leaves previous song state", () => {
 describe("replaceLyricsWithHistory", () => {
   it("undoes lines, groups and agents in one step and redoes back to the import", () => {
     const group = createGroup({ id: "g-old" });
-    useProjectStore.getState().setLines([createLine({ id: "old", text: "Old", agentId: "v1" })]);
-    useProjectStore.getState().setGroups([group]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "old", text: "Old", agentId: "v1" })] });
+    useProjectStore.getState().restoreLyrics({ groups: [group] });
     useProjectStore.getState().addAgent({ id: "v2", type: "person", name: "Bob" });
     const before = useProjectStore.getState();
     const snapshot = { lines: before.lines, groups: before.groups, agents: before.agents };

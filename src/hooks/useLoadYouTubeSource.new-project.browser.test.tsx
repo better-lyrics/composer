@@ -163,7 +163,7 @@ describe("useLoadYouTubeSource · projects", () => {
     const screen = await render(<PersistenceHost />);
     await getPersistenceSettled();
     useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-    useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
     useProjectStore.getState().setMetadata({ title: "Alpha" });
     expect(openProjectIdSnapshot()).toBeUndefined();
     const load = await loader();
@@ -183,7 +183,7 @@ describe("useLoadYouTubeSource · projects", () => {
     it("loads the video in place when the previous project cannot be resolved", async () => {
       allowConsole(/could not resolve the previous project/);
       useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-      useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
       useProjectStore.getState().setMetadata({ title: "Alpha" });
       await openAndCloseAtVersion(DB_NAME, DB_VERSION + 1);
       const load = await loader();
@@ -214,7 +214,7 @@ describe("useLoadYouTubeSource · projects", () => {
       const load = await loader();
       const loading = load(VIDEO_ID);
       const id = openProjectIdSnapshot();
-      useProjectStore.getState().setLines([{ id: "n1", text: "New words", agentId: "v1" }]);
+      useProjectStore.getState().restoreLyrics({ lines: [{ id: "n1", text: "New words", agentId: "v1" }] });
       failLoad();
       await expect(loading).rejects.toThrow();
       expect(openProjectIdSnapshot()).toBe(id);

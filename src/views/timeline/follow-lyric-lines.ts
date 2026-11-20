@@ -4,7 +4,7 @@ import type { WordTrack } from "@/domain/line/tracks";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveLineIndex } from "@/domain/selection/resolve";
 import { isInQueueOrder, queueOrder } from "@/domain/step-timing/step-queue";
-import { useProjectStore } from "@/stores/project";
+import { onLyricsChanged } from "@/stores/project/lyric-change-listeners";
 import { memoByIdentity } from "@/utils/memo-by-identity";
 import { selectionPatch } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -103,12 +103,11 @@ function liveTimelinePatch(
   return Object.keys(patch).length > 0 ? patch : null;
 }
 
-// Every lines change (edits, undo, redo, restore) drops the addresses whose word is gone in the same synchronous
-// set, before any row renders; addresses whose word survived keep naming it.
+// Every lines change (commands, undo, redo, restores, previews) drops the addresses whose word is gone right after
+// its write, before any row renders; addresses whose word survived keep naming it.
 function followLyricLines(): () => void {
-  return useProjectStore.subscribe((state, previous) => {
-    if (state.lines === previous.lines) return;
-    const patch = liveTimelinePatch(state.lines, previous.lines, useTimelineStore.getState());
+  return onLyricsChanged(({ before, after }) => {
+    const patch = liveTimelinePatch(after, before, useTimelineStore.getState());
     if (patch) useTimelineStore.setState(patch);
   });
 }

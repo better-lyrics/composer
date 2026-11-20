@@ -1,16 +1,22 @@
 /**
  * @vitest-environment node
  */
-import { editLines, replaceLines } from "@/domain/commands/line-edits";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
 
-const typed = (text: string) => editLines([{ id: "l1", updates: { text } }], { propagateToSiblings: false });
+const typed = (text: string) =>
+  lineEditCommand({ command: "edit lines", args: ["l1"] }, () => [{ id: "l1", updates: { text } }], {
+    propagateToSiblings: false,
+  });
 
 beforeEach(() => {
   useProjectStore.getState().reset();
-  useProjectStore.getState().commit(replaceLines([createLine({ id: "l1", text: "Lanterns" })]));
+  useProjectStore
+    .getState()
+    .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "Lanterns" })]));
 });
 
 describe("commit", () => {

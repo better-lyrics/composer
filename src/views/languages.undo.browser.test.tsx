@@ -4,6 +4,7 @@ import { isMac } from "@/utils/platform";
 import { EditorScreen } from "@/views/editor-screen";
 import { LanguagesPanel } from "@/views/languages";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -27,9 +28,9 @@ describe("Languages undo history", () => {
   beforeEach(() => {
     const store = useProjectStore.getState();
     store.setMetadata({ language: "ja" });
-    store.setLines([{ id: "line", text: FIRST_TEXT, agentId: "v1" }]);
+    store.restoreLyrics({ lines: [{ id: "line", text: FIRST_TEXT, agentId: "v1" }] });
     store.clearHistory();
-    store.updateLineWithHistory("line", { text: SECOND_TEXT });
+    store.commit(pasteLines([{ id: "line", updates: { text: SECOND_TEXT } }]));
     store.undo();
     store.setActiveTab("languages");
   });

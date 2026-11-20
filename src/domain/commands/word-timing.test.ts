@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { replaceLines } from "@/domain/commands/line-edits";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 import { setWordBoundary } from "@/domain/commands/word-timing";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
@@ -31,7 +31,7 @@ const lineById = (id: string) => useProjectStore.getState().lines.find((line) =>
 
 beforeEach(() => {
   useProjectStore.getState().reset();
-  useProjectStore.getState().commit(replaceLines([verse("v0")]));
+  useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [verse("v0")]));
 });
 
 describe("word timing commands", () => {

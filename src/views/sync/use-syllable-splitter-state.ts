@@ -1,3 +1,4 @@
+import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAlignmentStore } from "@/stores/alignment";
@@ -89,11 +90,13 @@ function useSyllableSplitterState({
         const sourceText = word.text;
         const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
         if (!ok) return;
-        useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-          source: { lineId, wordIndex, type },
-          splitPoints,
-          caseInsensitive,
-        });
+        useProjectStore.getState().commit(
+          splitIdenticalSyllables({
+            source: { lineId, wordIndex, type },
+            splitPoints,
+            caseInsensitive,
+          }),
+        );
         noteGuideSignal("sync.split");
         retime();
         setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });

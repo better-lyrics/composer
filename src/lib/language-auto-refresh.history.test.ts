@@ -3,6 +3,8 @@ import { useProjectStore } from "@/stores/project";
 import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -26,14 +28,25 @@ describe("createLanguageAutoRefresh history", () => {
         romanizations: { "Добрый вечер": "Dobryy vecher" },
         translations: { "Добрый вечер": "Good evening" },
       });
-      useProjectStore.getState().setLinesWithHistory([timedLine("a", ["Доброе", "утро"], ["Dobroye", "utro"])]);
-      useProjectStore.getState().updateLineWithHistory("a", {
-        text: "Добрый вечер",
-        words: [
-          { id: "w1", text: "Добрый", sep: " ", begin: 1, end: 2, transliteration: "Dobroye" },
-          { id: "w2", text: "вечер", sep: "", begin: 2, end: 3, transliteration: "utro" },
-        ],
-      });
+      useProjectStore
+        .getState()
+        .commit(
+          pasteLyrics(useProjectStore.getState().lines, [timedLine("a", ["Доброе", "утро"], ["Dobroye", "utro"])]),
+        );
+      useProjectStore.getState().commit(
+        pasteLines([
+          {
+            id: "a",
+            updates: {
+              text: "Добрый вечер",
+              words: [
+                { id: "w1", text: "Добрый", sep: " ", begin: 1, end: 2, transliteration: "Dobroye" },
+                { id: "w2", text: "вечер", sep: "", begin: 2, end: 3, transliteration: "utro" },
+              ],
+            },
+          },
+        ]),
+      );
 
       await createRefresher().refreshNow();
       expect(lineById("a").transliteration?.text).toBe("Dobryy  vecher");
@@ -55,9 +68,13 @@ describe("createLanguageAutoRefresh history", () => {
         romanizations: { "Тихая река": "Tikhaya reka" },
         translations: { "Тихая река": "Quiet river" },
       });
-      useProjectStore.getState().setLinesWithHistory([timedLine("a", ["Быстрая", "река"], ["Bystraya", "reka"])]);
+      useProjectStore
+        .getState()
+        .commit(
+          pasteLyrics(useProjectStore.getState().lines, [timedLine("a", ["Быстрая", "река"], ["Bystraya", "reka"])]),
+        );
       const typed = timedLine("a", ["Тихая", "река"], ["Bystraya", "reka"], "Быстрая река");
-      useProjectStore.getState().setLines([typed]);
+      useProjectStore.getState().restoreLyrics({ lines: [typed] });
 
       await createRefresher().refreshNow();
       expect(lineById("a").transliteration?.text).toBe("Tikhaya  reka");
@@ -87,25 +104,31 @@ describe("createLanguageAutoRefresh history", () => {
         },
         answer.opened,
       );
-      useProjectStore.getState().setLinesWithHistory([timedLine("a", ["Короткая", "дорога"], ["Korotkaya", "doroga"])]);
+      useProjectStore
+        .getState()
+        .commit(
+          pasteLyrics(useProjectStore.getState().lines, [
+            timedLine("a", ["Короткая", "дорога"], ["Korotkaya", "doroga"]),
+          ]),
+        );
       const edited = timedLine("a", ["Длинная", "дорога", `${typed}`], ["Korotkaya", "doroga"], "Короткая дорога");
-      if (typed) useProjectStore.getState().setLines([edited]);
-      else useProjectStore.getState().setLinesWithHistory([edited]);
+      if (typed) useProjectStore.getState().restoreLyrics({ lines: [edited] });
+      else useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [edited]));
       const historyBefore = useProjectStore.getState().history;
       const refresher = createRefresher();
 
       const refreshing = refresher.refreshNow();
       await vi.waitFor(() => expect(requests.length).toBeGreaterThan(0));
       const preview = [stretched(lineById("a"))];
-      useProjectStore.getState().setTransientLines(preview);
+      useProjectStore.getState().previewLines(preview);
       answer.open();
       await refreshing;
 
       expect(useProjectStore.getState().lines).toBe(preview);
       expect(useProjectStore.getState().history).toBe(historyBefore);
 
-      useProjectStore.getState().setTransientLines([edited]);
-      useProjectStore.getState().updateLinesWithHistory([{ id: "a", updates: { words: preview[0].words } }]);
+      useProjectStore.getState().previewLines([edited]);
+      useProjectStore.getState().commit(pasteLines([{ id: "a", updates: { words: preview[0].words } }]));
       await refresher.refreshNow();
       expect(lineById("a").transliteration?.text).toBe(`Dlinnaya  doroga  ${typed}`);
     });
@@ -118,11 +141,15 @@ describe("createLanguageAutoRefresh history", () => {
       });
       useProjectStore
         .getState()
-        .setLinesWithHistory([timedLine("a", ["Тихий", "берег"], ["Shumnyy", "bereg"], "Шумный берег")]);
+        .commit(
+          pasteLyrics(useProjectStore.getState().lines, [
+            timedLine("a", ["Тихий", "берег"], ["Shumnyy", "bereg"], "Шумный берег"),
+          ]),
+        );
       const committed = useProjectStore.getState().lines;
 
-      useProjectStore.getState().setTransientLines([stretched(lineById("a"))]);
-      useProjectStore.getState().restoreTransientLines(committed);
+      useProjectStore.getState().previewLines([stretched(lineById("a"))]);
+      useProjectStore.getState().restorePreviewLines(committed);
       await createRefresher().refreshNow();
 
       expect(lineById("a").transliteration?.text).toBe("Tikhiy  bereg");

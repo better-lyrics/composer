@@ -9,6 +9,7 @@ import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 const FILE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "File Lead" },
@@ -31,9 +32,11 @@ function projectFile(overrides: Partial<SavedProject> = {}): SavedProject {
 
 function editProjectA(): void {
   const store = useProjectStore.getState();
-  store.setLinesWithHistory([createLine({ id: "a1", text: "first" })]);
+  store.commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "first" })]));
   useProjectStore.getState().addGroup(createGroup({ id: "ga", label: "Old group" }));
-  useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "second" })]);
+  useProjectStore
+    .getState()
+    .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "second" })]));
 }
 
 describe("applySavedProject", () => {
@@ -91,7 +94,9 @@ describe("applySavedProject", () => {
       editProjectA();
       applySavedProject(projectFile(), "file");
 
-      useProjectStore.getState().setLinesWithHistory([createLine({ id: "b1", text: "edited" })]);
+      useProjectStore
+        .getState()
+        .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "b1", text: "edited" })]));
       useProjectStore.getState().undo();
       useProjectStore.getState().undo();
 
@@ -132,7 +137,9 @@ describe("applySavedProject", () => {
     const grid = withOffset(detectedGrid({ beats, downbeats: [0.5, 2.5] }), 20);
 
     it("round-trips through save and restore", async () => {
-      useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "line" })]);
+      useProjectStore
+        .getState()
+        .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "line" })]));
       useProjectStore.getState().applyBeatGridWithHistory(grid);
       const saved = buildSaveInput();
       if (!saved) throw new Error("expected a save input");
@@ -162,7 +169,9 @@ describe("unison link", () => {
   beforeEach(resetAllStores);
 
   it("round-trips through save and restore", async () => {
-    useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "line" })]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "line" })]));
     useProjectStore.getState().linkUnisonLyric("4821");
     expect(useProjectStore.getState().isDirty).toBe(true);
     const saved = buildSaveInput();

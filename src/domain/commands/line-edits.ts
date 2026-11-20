@@ -1,17 +1,9 @@
 import type { CommandContext, HistoryNote, LyricCommand } from "@/domain/commands/command";
-import {
-  type Applied,
-  type LyricRoot,
-  type Refusal,
-  applied,
-  changedLineIds,
-  refused,
-} from "@/domain/commands/outcome";
+import { type Applied, type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
 import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
-import type { LinkGroup } from "@/domain/group/template";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { type LineUpdate, type RawLine, reconcileLine } from "@/domain/line/model";
+import { type LineUpdate, reconcileLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
 
@@ -72,17 +64,6 @@ function lineEditCommand(
 
 // -- Commands -----------------------------------------------------------------
 
-// Generic line patch for callers that still compute lines themselves; named commands replace it.
-function editLines(updates: readonly LineUpdate[], options: EditLinesOptions = {}): LyricCommand {
-  const { derivesText = true, propagateToSiblings = true, copiesSharedTiming = true } = options;
-  return {
-    note: { command: "edit lines", args: updates.map((update) => update.id) },
-    derivesText,
-    copiesSharedTiming,
-    run: (root) => withLineUpdates(root, updates, propagateToSiblings),
-  };
-}
-
 // Data that follows the lyrics (language refresh, alignment retime): no siblings, no shared copy, no text.
 function patchLines(updates: readonly LineUpdate[]): LyricCommand {
   return {
@@ -94,15 +75,6 @@ function patchLines(updates: readonly LineUpdate[]): LyricCommand {
         { ...root, lines: applyLineUpdates(root.lines, updates) },
         updates.map((update) => update.id),
       ),
-  };
-}
-
-function replaceLines(lines: RawLine[], groups?: LinkGroup[]): LyricCommand {
-  return {
-    note: { command: "replace lines", args: [lines.length] },
-    derivesText: true,
-    copiesSharedTiming: false,
-    run: (root) => applied({ ...root, lines, groups: groups ?? root.groups }, changedLineIds(root.lines, lines)),
   };
 }
 
@@ -129,4 +101,4 @@ function insertEmptyLine({
 
 // -- Exports ------------------------------------------------------------------
 
-export { editLines, insertEmptyLine, lineEditCommand, patchLines, replaceLines, withLineUpdates };
+export { insertEmptyLine, lineEditCommand, patchLines, withLineUpdates };
