@@ -1,0 +1,135 @@
+import { describe, expect, it } from "vitest";
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { agentsAfterImport } from "@/domain/agent/imported-agents";
+import { lineText } from "@/domain/line/text";
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import edgeCasesTtml from "@/test/fixtures/ttml/edge-cases.ttml?raw";
+import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { generateTTML } from "@/utils/ttml";
+import { parseXmlDocument } from "@/utils/xml-document";
+
+// -- Helpers ------------------------------------------------------------------
+
+function exported(): string {
+  const parsed = parseTtml(edgeCasesTtml);
+  return generateTTML({
+    metadata: normalizeLoadedMetadata(parsed.metadata),
+    agents: parsed.agents ?? [],
+    lines: parsed.lines,
+    parts: parsed.parts,
+    passthrough: parsed.passthrough,
+  });
+}
+
+const occurrences = (text: string, needle: string) => text.split(needle).length - 1;
+
+// -- Tests --------------------------------------------------------------------
+
+// Expected output is spelled out here, apart from the modelled table the lossless test walks with.
+describe("ttml kept data edges", () => {
+  it("the export is well formed as written, with every prefix declared and no attribute twice", () => {
+    expect(parseXmlDocument(exported()).ok).toBe(true);
+  });
+
+  it("elements kept on the root are written back", () => {
+    const ttml = exported();
+    expect(ttml).toContain('<x-vendor:preamble version="2"/>');
+    expect(ttml).toContain("<x-vendor:trailer/>");
+  });
+
+  it("several metadata blocks keep the first value of each attribute and every element", () => {
+    const ttml = exported();
+    expect(occurrences(ttml, "x-vendor:pass=")).toBe(1);
+    expect(ttml).toContain('x-vendor:pass="first"');
+    expect(ttml).toContain('x-vendor:origin="desk"');
+    expect(ttml).toContain("<x-vendor:tag>second block</x-vendor:tag>");
+  });
+
+  it("a song part holding nested sections covers their lines, and an empty one is kept", () => {
+    const parsed = parseTtml(edgeCasesTtml);
+    const verse = parsed.parts?.find((part) => part.kind === "Verse");
+    expect(verse?.lineIds).toEqual([parsed.lines[0].id, parsed.lines[1].id]);
+    const ttml = exported();
+    expect(ttml).toContain('itunes:songPart="Verse" x-vendor:section="outer"');
+    expect(ttml).toContain('itunes:songPart="Intro"');
+    expect(ttml).toContain('x-vendor:mood="hush"');
+  });
+
+  it("a singer's name is its own ttm:name; a nested one is kept once", () => {
+    expect(parseTtml(edgeCasesTtml).agents?.[0].name).toBe("Ilse Marr");
+    expect(occurrences(exported(), "Shade Wren")).toBe(1);
+  });
+
+  it("an element inside a line-synced line that is not lyric text stays out of the lyric and is kept", () => {
+    expect(lineText(parseTtml(edgeCasesTtml).lines[2])).toBe("Quiet harbour bright");
+    expect(exported()).toContain("<x-vendor:note>aside</x-vendor:note>");
+  });
+
+  it("kept ruby that ends in a space is not followed by a second one", () => {
+    expect(exported()).toContain("</ruby> </span><span");
+  });
+
+  it("only prefixes of kept names are declared, with the owning tool's namespace when known", () => {
+    const ttml = exported();
+    expect(ttml).not.toContain("xmlns:mode");
+    expect(ttml).not.toContain("xmlns:b=");
+    expect(ttml).toContain('xmlns:amll="http://www.example.com/ns/amll"');
+    expect(ttml).toContain('xmlns:y-tool="urn:composer:unbound:y-tool"');
+  });
+
+  it("a second round trip changes nothing", () => {
+    const once = exported();
+    const parsed = parseTtml(once);
+    const twice = generateTTML({
+      metadata: normalizeLoadedMetadata(parsed.metadata),
+      agents: parsed.agents ?? [],
+      lines: parsed.lines,
+      parts: parsed.parts,
+      passthrough: parsed.passthrough,
+    });
+    expect(twice).toBe(once);
+  });
+
+  it("a file naming the default singer keeps that singer's kept data on import", () => {
+    const parsed = parseTtml(edgeCasesTtml);
+    const { agents } = agentsAfterImport(DEFAULT_AGENTS, parsed.agents, parsed.lines);
+    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents, lines: parsed.lines });
+    expect(ttml).toContain('<ttm:agent xml:id="v1" type="person" x-vendor:voice="alto">');
+    expect(ttml).toContain("<x-vendor:alias><ttm:name>Shade Wren</ttm:name></x-vendor:alias>");
+  });
+
+  it("sections nested in a song part keep their own label, times, attributes and elements", () => {
+    const ttml = exported();
+    expect(ttml).toContain('<div begin="0:00.900" itunes:songPart="Hook" x-vendor:sub="a" z-tool:depth="2">');
+    expect(ttml).toContain('<x-vendor:cue at="start"/>');
+    expect(ttml).toContain('<div end="0:06.500">');
+  });
+
+  it("untimed spans of a line-synced line and background keep their attributes", () => {
+    const ttml = exported();
+    expect(ttml).toContain('Quiet harbour <span tts:color="red">bright</span>');
+    expect(ttml).toContain('<span x-vendor:echo="2">(far)</span>');
+  });
+
+  it("a singer name holding an element writes its text once", () => {
+    const ttml = exported();
+    expect(ttml).toContain("<ttm:name>Juno <x-vendor:nick>JP</x-vendor:nick></ttm:name>");
+    expect(occurrences(ttml, "JP")).toBe(1);
+  });
+
+  it("a prefix used only inside a nested section is declared", () => {
+    const ttml = exported();
+    expect(ttml).toContain('z-tool:depth="2"');
+    expect(ttml).toContain('xmlns:z-tool="urn:composer:unbound:z-tool"');
+  });
+
+  it("a line-synced line and its background write their untimed span back with its attribute", () => {
+    const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling"><head><metadata/></head><body><div><p begin="0:01.000" end="0:03.000"><span tts:color="red">Hello</span> world<span ttm:role="x-bg"><span tts:color="red">Hello</span> world</span></p></div></body></tt>`;
+    const parsed = parseTtml(source);
+    const ttml = generateTTML({ metadata: normalizeLoadedMetadata(parsed.metadata), agents: [], lines: parsed.lines });
+    expect(ttml).toContain('ttm:agent="v1"><span tts:color="red">Hello</span> world<span ttm:role="x-bg">');
+    expect(ttml).toContain(
+      '<span ttm:role="x-bg"><span begin="0:01.000" end="0:03.000"><span tts:color="red">Hello</span> world</span></span>',
+    );
+  });
+});

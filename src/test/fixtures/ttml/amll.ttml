@@ -1,0 +1,18 @@
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal">
+  <head>
+    <metadata>
+      <ttm:agent type="person" xml:id="v1"/>
+      <ttm:agent type="other" xml:id="v2"/>
+      <amll:meta key="musicName" value="Paper Harbour"/>
+      <amll:meta key="artists" value="Juno Park"/>
+      <amll:meta key="album" value="Low Tide Letters"/>
+    </metadata>
+  </head>
+  <body dur="00:16.000">
+    <div begin="00:01.000" end="00:15.500">
+      <p begin="00:01.000" end="00:05.000" ttm:agent="v1" itunes:key="L1"><span begin="00:01.000" end="00:01.400">Pa</span><span begin="00:01.400" end="00:02.000" amll:empty-beat="2">per </span><span begin="00:02.000" end="00:03.200">boats </span><span begin="00:03.200" end="00:05.000">sail</span><span ttm:role="x-translation" xml:lang="fr">Les bateaux de papier</span><span ttm:role="x-roman" xml:lang="en-Latn">pei-pa boats sail</span></p>
+      <p begin="00:05.500" end="00:10.000" ttm:agent="v2" itunes:key="L2"><span begin="00:05.500" end="00:07.000">Into </span><span begin="00:07.000" end="00:10.000">fog</span></p>
+      <p begin="00:10.500" end="00:15.500" ttm:agent="v1" itunes:key="L3"><span begin="00:10.500" end="00:12.000">And </span><span begin="00:12.000" end="00:15.500">home</span><span ttm:role="x-bg"><span begin="00:13.000" end="00:14.000" amll:obscene="false">(home)</span></span></p>
+    </div>
+  </body>
+</tt>

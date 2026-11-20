@@ -1,3 +1,4 @@
+import { isEmptyDocPassthrough } from "insync/passthrough";
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
@@ -13,6 +14,9 @@ import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { partsFromDivs } from "@/utils/lyrics-parsers/ttml-parts-read";
+import { docPassthrough, withAgentCapture, withParagraphCapture } from "@/utils/lyrics-parsers/ttml-passthrough-read";
+import { type UntimedLyric, untimedLyric, withUntimedSpans } from "@/utils/lyrics-parsers/ttml-untimed-read";
 import { getSplitCharacter } from "@/utils/split-character";
 import { parseXmlDocument } from "@/utils/xml-document";
 
@@ -30,10 +34,6 @@ function getComposerAttribute(el: Element, name: string): string | null {
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 
-function elementRole(element: Element): string | null {
-  return element.getAttribute("ttm:role") || element.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
-}
-
 // -- TTML Parser --------------------------------------------------------------
 
 function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
@@ -42,6 +42,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const lineIndexByKey = new Map<string, number>();
   const lineKeys: (string | undefined)[] = [];
   const paragraphByKey = new Map<string, Element>();
+  const lineByParagraph = new Map<Element, LyricLine>();
 
   const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
   const parsed = parseXmlDocument(declareMissingNamespaces(unescapedContent));
@@ -89,10 +90,10 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   for (const el of agentEls) {
     const id = el.getAttribute("xml:id");
     const type = (el.getAttribute("type") as AgentType) || "person";
-    const nameEl = el.getElementsByTagName("ttm:name")[0];
+    const nameEl = Array.from(el.children).find((child) => child.tagName === "ttm:name");
     const name = nameEl?.textContent || placeholderAgentName(agents.length);
     if (id) {
-      agents.push({ id, type, name });
+      agents.push(withAgentCapture({ id, type, name }, el, nameEl));
     }
   }
 
@@ -167,20 +168,16 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
     let backgroundText: string | undefined;
     let backgroundWords: WordTiming[] | undefined;
+    let untimedBackground: UntimedLyric | undefined;
+    let untimedMain: UntimedLyric | undefined;
 
     if (bgContainer) {
       backgroundWords = extractTimedWords(bgContainer, null);
       if (backgroundWords.length > 0) {
         backgroundText = syllablesText(backgroundWords, getSplitCharacter());
       } else {
-        let baseBackground = "";
-        for (const node of bgContainer.childNodes) {
-          if (node.nodeType === Node.TEXT_NODE) baseBackground += node.textContent ?? "";
-          else if (node.nodeType === Node.ELEMENT_NODE && elementRole(node as Element) !== "x-translation") {
-            baseBackground += node.textContent ?? "";
-          }
-        }
-        backgroundText = baseBackground.trim() || undefined;
+        untimedBackground = untimedLyric(bgContainer, "x-translation");
+        backgroundText = untimedBackground.text || undefined;
       }
     }
 
@@ -207,20 +204,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         }),
       );
     } else {
-      // Line-level timing only - extract text without bg content
-      let text = "";
-      for (const node of p.childNodes) {
-        if (node.nodeType === Node.TEXT_NODE) {
-          text += node.textContent ?? "";
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          const el = node as Element;
-          const role = el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
-          if (role !== "x-bg") {
-            text += el.textContent ?? "";
-          }
-        }
-      }
-      text = text.trim();
+      untimedMain = untimedLyric(p, "x-bg");
+      const { text } = untimedMain;
 
       if (text) {
         lines.push(
@@ -238,7 +223,12 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         );
       }
     }
-    if (lines.length > lineCountBefore) lineKeys.push(lineKey ?? undefined);
+    if (lines.length > lineCountBefore) {
+      const captured = withUntimedSpans(lines[lines.length - 1], untimedMain, untimedBackground);
+      lines[lines.length - 1] = withParagraphCapture(captured, p, bgContainer);
+      lineByParagraph.set(p, lines[lines.length - 1]);
+      lineKeys.push(lineKey ?? undefined);
+    }
     if (lineKey && lines.length > lineCountBefore && !lineIndexByKey.has(lineKey)) {
       lineIndexByKey.set(lineKey, lines.length - 1);
       paragraphByKey.set(lineKey, p);
@@ -246,6 +236,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   }
 
   parseTtmlAlternates(doc, lines, lineIndexByKey, paragraphByKey);
+  const parts = partsFromDivs(doc, lineByParagraph);
+  const passthrough = docPassthrough(doc);
 
   return {
     lines,
@@ -256,6 +248,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     lineKeys,
     madeInAmllTool: amllMetaEls.length > 0,
     issues: [],
+    ...(parts.length > 0 && { parts }),
+    ...(!isEmptyDocPassthrough(passthrough) && { passthrough }),
   };
 }
 

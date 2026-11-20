@@ -24,6 +24,17 @@ function linesOnExistingAgents<L extends LyricLine>(existing: readonly Agent[], 
   );
 }
 
+// The imported file decides a known singer's name, type and kept TTML data.
+function updatedAgent({ passthrough: _kept, namePassthrough: _keptName, ...agent }: Agent, update: Agent): Agent {
+  return {
+    ...agent,
+    name: update.name,
+    type: update.type,
+    ...(update.passthrough && { passthrough: update.passthrough }),
+    ...(update.namePassthrough && { namePassthrough: update.namePassthrough }),
+  };
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function agentsAfterImport<L extends LyricLine>(
@@ -37,7 +48,7 @@ function agentsAfterImport<L extends LyricLine>(
   const referenced = new Set(lines.map((line) => mainTrack(line).agentId));
   const kept = existing.flatMap((agent) => {
     const update = incomingById.get(agent.id);
-    if (update) return [{ ...agent, name: update.name, type: update.type }];
+    if (update) return [updatedAgent(agent, update)];
     return referenced.has(agent.id) ? [agent] : [];
   });
   const existingIds = new Set(existing.map((agent) => agent.id));

@@ -1,4 +1,4 @@
-import type { Part } from "./part";
+import type { Part, PartSection } from "./part";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -6,8 +6,15 @@ function sameIds(before: readonly string[], after: readonly string[]): boolean {
   return before.length === after.length && before.every((id, index) => id === after[index]);
 }
 
-function sameMembers(part: Part, lineIds: readonly string[]): boolean {
+function sameMembers(part: PartSection, lineIds: readonly string[]): boolean {
   return sameIds(part.lineIds, lineIds);
+}
+
+// A part with new members: its nested sections follow the same rule within the part's own lines.
+function withMembers<T extends PartSection>(part: T, lineIds: readonly string[]): T {
+  if (!part.sections) return { ...part, lineIds };
+  const sections = stretchesAfterLineChange(part.sections, part.lineIds, lineIds);
+  return { ...part, lineIds, sections: sections.length > 0 ? sections : undefined };
 }
 
 // Lines that kept their order: all lines still there when none moved, else a longest run by position before. Every
@@ -88,11 +95,11 @@ function withMovedParts(
 // A part is one stretch of lines. Lines that are gone leave their part; a new or moved line joins the part whose
 // stretch it lands inside, that is when the lines on both sides of it belong to that part; a part left without lines
 // goes. Unchanged parts keep their identity.
-function partsAfterLineChange(
-  parts: readonly Part[],
+function stretchesAfterLineChange<T extends PartSection>(
+  parts: readonly T[],
   before: readonly string[],
   after: readonly string[],
-): readonly Part[] {
+): readonly T[] {
   if (parts.length === 0 || sameIds(before, after)) return parts;
   const inOrder = linesInOrder(before, after);
   const partOf = new Map<string, number>();
@@ -110,10 +117,12 @@ function partsAfterLineChange(
   });
   const result = parts.flatMap((part, index) => {
     if (members[index].length === 0) return [];
-    return [sameMembers(part, members[index]) ? part : { ...part, lineIds: members[index] }];
+    return [sameMembers(part, members[index]) ? part : withMembers(part, members[index])];
   });
   return result.length === parts.length && result.every((part, index) => part === parts[index]) ? parts : result;
 }
+
+const partsAfterLineChange = stretchesAfterLineChange<Part>;
 
 // -- Exports ------------------------------------------------------------------
 
