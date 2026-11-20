@@ -1,13 +1,15 @@
 import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "@/domain/line/model";
-import type { CommandContext, LyricCommand } from "@/domain/commands/command";
+import type { LyricCommand } from "@/domain/commands/command";
 import { type Applied, type LyricRoot, type Outcome, applied, isRefused, refused } from "@/domain/commands/outcome";
-import { sharedTimingFanOut } from "@/domain/group/shared-timing";
+import { foldLines } from "@/domain/group/fold";
+import type { LyricDoc } from "@/domain/group/model";
 import { withoutOrphanPieces } from "@/domain/language/pieces";
 import { commandContext } from "@/stores/project/command-context";
 import { amendCurrentStep, commitHistory } from "@/stores/project/history-helpers";
 import type { CommitMode } from "@/stores/project/history-types";
 import type { ProjectState } from "@/stores/project/types";
+import { projectDoc, withBody } from "@/stores/project/with-body";
 
 // -- Types --------------------------------------------------------------------
 
@@ -51,36 +53,47 @@ function withPartsSettled(before: LyricRoot, after: LyricRoot): LyricRoot {
   return parts === after.parts ? after : { ...after, parts };
 }
 
-// A command that touched no line keeps the lines array, so line subscribers and history sharing see no change.
-function sameLines(before: readonly LyricLine[], after: readonly LyricLine[]): boolean {
-  return before === after || (before.length === after.length && after.every((line, index) => line === before[index]));
+interface Written {
+  root: LyricRoot;
+  doc: LyricDoc;
 }
 
-function withSharedCopy(
-  before: LyricRoot,
+// Command output goes back into the doc through the fold; a copy that would go below zero refuses the command.
+function folded(
+  state: ProjectState,
+  doc: LyricDoc,
+  root: LyricRoot,
   ran: Applied,
-  command: LyricCommand,
-  ctx: CommandContext,
-): { outcome: Outcome; copiedGroupIds: readonly string[] } {
-  const shared = sharedTimingFanOut(before.lines, ran.root.lines, before.groups, ran.touched);
-  if (shared.rejected) return { outcome: refused({ reason: "copy-below-zero" }), copiedGroupIds: [] };
-  const copied = applied({ ...ran.root, lines: shared.lines }, ran.touched);
-  const outcome = command.afterSharedCopy ? command.afterSharedCopy(copied.root, ctx) : copied;
-  return { outcome, copiedGroupIds: isRefused(outcome) ? [] : shared.touchedGroupIds };
+  copiesSharedTiming: boolean,
+): (Written & { copiedGroupIds: readonly string[] }) | null {
+  const after = withChangedLinesSettled(state.lines, ran.root.lines);
+  const fold = foldLines({ doc, after, touched: ran.touched, groups: root.groups, copiesSharedTiming });
+  if (fold.rejected) return null;
+  const settled = withChangedLinesSettled(state.lines, fold.lines);
+  if (settled === fold.lines)
+    return { root: { ...ran.root, lines: fold.lines }, doc: fold.doc, copiedGroupIds: fold.copiedGroupIds };
+  const resettled = foldLines({
+    doc: fold.doc,
+    after: settled,
+    touched: [],
+    groups: root.groups,
+    copiesSharedTiming: false,
+  });
+  return { root: { ...ran.root, lines: resettled.lines }, doc: resettled.doc, copiedGroupIds: fold.copiedGroupIds };
 }
 
 function writeRoot(
   state: ProjectState,
-  root: LyricRoot,
+  written: Written,
   command: LyricCommand,
   mode: CommitMode,
 ): Partial<ProjectState> {
-  const written = withChangedLinesSettled(state.lines, root.lines);
-  const lines = sameLines(state.lines, written) ? state.lines : written;
-  if (mode === "amend") return amendCurrentStep(state, lines);
+  const { root } = written;
+  const body = withBody(written.doc);
+  if (mode === "amend") return amendCurrentStep(state, body);
   if (mode === "pending") {
     return {
-      lines,
+      ...body,
       groups: root.groups,
       agents: root.agents,
       parts: root.parts,
@@ -92,7 +105,7 @@ function writeRoot(
   }
   return commitHistory(
     state,
-    { lines, groups: root.groups, agents: root.agents, parts: root.parts, passthrough: root.passthrough },
+    { body, groups: root.groups, agents: root.agents, parts: root.parts, passthrough: root.passthrough },
     { note: command.note },
   );
 }
@@ -102,13 +115,23 @@ function writeRoot(
 function commitCommand(state: ProjectState, command: LyricCommand, mode: CommitMode): CommitResult {
   const ctx = commandContext();
   const before = rootOf(state);
+  const doc = projectDoc(state);
   const ran = command.run(before, ctx);
   if (isRefused(ran) || ran.root === before) return { patch: null, outcome: ran, copiedGroupIds: [] };
-  const { outcome, copiedGroupIds } = command.copiesSharedTiming
-    ? withSharedCopy(before, ran, command, ctx)
-    : { outcome: ran, copiedGroupIds: [] };
+  const copied = folded(state, doc, before, ran, command.copiesSharedTiming);
+  if (!copied) return { patch: null, outcome: refused({ reason: "copy-below-zero" }), copiedGroupIds: [] };
+  const outcome = command.afterSharedCopy
+    ? command.afterSharedCopy(copied.root, ctx)
+    : applied(copied.root, ran.touched);
   if (isRefused(outcome)) return { patch: null, outcome, copiedGroupIds: [] };
-  return { patch: writeRoot(state, withPartsSettled(before, outcome.root), command, mode), outcome, copiedGroupIds };
+  const written = outcome.root === copied.root ? copied : folded(state, copied.doc, copied.root, outcome, false);
+  if (!written) return { patch: null, outcome: refused({ reason: "copy-below-zero" }), copiedGroupIds: [] };
+  const parted = withPartsSettled(before, written.root);
+  return {
+    patch: writeRoot(state, { root: parted, doc: written.doc }, command, mode),
+    outcome,
+    copiedGroupIds: command.announcesSharedCopy === false ? [] : copied.copiedGroupIds,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------

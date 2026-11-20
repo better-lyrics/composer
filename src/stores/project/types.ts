@@ -3,6 +3,7 @@ import type { DocPassthrough } from "insync/passthrough";
 import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricRoot } from "@/domain/commands/outcome";
+import type { LyricDoc } from "@/domain/group/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { EditedLyrics } from "@/domain/project/edited-lyrics";
@@ -45,6 +46,7 @@ interface AgentsState {
 }
 
 interface LinesState {
+  doc: LyricDoc;
   lines: LyricLine[];
   parts: readonly Part[];
   passthrough: DocPassthrough;
