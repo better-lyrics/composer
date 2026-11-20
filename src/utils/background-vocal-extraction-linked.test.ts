@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { bgBounds } from "@/domain/line/bounds";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
@@ -59,10 +60,10 @@ describe("extractInlineAcrossLinkedLines", () => {
       [111, 111.5],
       [111.5, 112],
     ]);
-    const lineSynced = roleWords(updatedLine(byId.get("a1")), "bg") ?? [];
-    expect(lineSynced.length).toBe(2);
-    expect(lineSynced[0].begin).toBeGreaterThanOrEqual(60);
-    expect(lineSynced.at(-1)?.end).toBeLessThanOrEqual(63);
+    const lineSynced = updatedLine(byId.get("a1"))!;
+    expect(roleWords(lineSynced, "bg")).toBeUndefined();
+    expect(bgBounds(lineSynced)?.begin).toBeGreaterThanOrEqual(60);
+    expect(bgBounds(lineSynced)?.end).toBeLessThanOrEqual(63);
   });
 
   it("regression: refuses the whole linked edit when one copy cannot extract its own words", () => {

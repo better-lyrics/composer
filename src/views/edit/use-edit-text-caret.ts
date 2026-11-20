@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { shiftCaretPastRewrittenRows } from "@/domain/edit-text/edit-text";
+import type { ShownEditText } from "@/domain/edit-text/shown-row";
 
 interface PendingCaret {
   typedText: string;
@@ -7,7 +8,7 @@ interface PendingCaret {
   end: number;
 }
 
-function useEditTextCaret(rawText: string, setRawText: (text: string) => void) {
+function useEditTextCaret(rawText: string, showText: (edit: ShownEditText) => void) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaretRef = useRef<PendingCaret | null>(null);
 
@@ -23,20 +24,20 @@ function useEditTextCaret(rawText: string, setRawText: (text: string) => void) {
   }, [rawText]);
 
   const showEditText = useCallback(
-    (typedText: string, editText: string, textarea: HTMLTextAreaElement) => {
-      if (editText !== typedText) {
+    (typedText: string, edit: ShownEditText, textarea: HTMLTextAreaElement) => {
+      if (edit.text !== typedText) {
         pendingCaretRef.current = { typedText, start: textarea.selectionStart, end: textarea.selectionEnd };
       }
-      setRawText(editText);
+      showText(edit);
     },
-    [setRawText],
+    [showText],
   );
 
   return { textareaRef, showEditText };
 }
 
 function useComposedTextareaChange(
-  setRawText: (text: string) => void,
+  setRawText: (text: string, caret?: number) => void,
   applyTextareaText: (textarea: HTMLTextAreaElement) => void,
 ) {
   const composingRef = useRef(false);
@@ -44,7 +45,7 @@ function useComposedTextareaChange(
   // Rewriting textarea.value mid-composition cancels the IME, so the text is applied once at compositionend.
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      if (composingRef.current) setRawText(e.target.value);
+      if (composingRef.current) setRawText(e.target.value, e.target.selectionEnd);
       else applyTextareaText(e.target);
     },
     [setRawText, applyTextareaText],

@@ -3,7 +3,7 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { isSpanTimed, mainTrack, trackRole, trackWords } from "@/domain/line/track";
+import { isSpanTimed, mainTrack, trackRole } from "@/domain/line/track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -81,8 +81,8 @@ function drawnTarget(
 }
 
 function patchedTrack(line: LyricLine, patch: WordPatch, neighbour: WordPatch | undefined): LineUpdate[] {
-  const words = trackWords(line, patch.address.type);
-  if (!words) return [];
+  const words = drawnSyllables(line, trackRole(patch.address.type));
+  if (words.length === 0) return [];
   const wordIndex = words.findIndex((word) => word.id === patch.address.syllableId);
   const neighbourIndex = neighbour ? words.findIndex((word) => word.id === neighbour.address.syllableId) : undefined;
   const adjacent =

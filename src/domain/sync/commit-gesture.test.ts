@@ -1,3 +1,5 @@
+import { withSeededBackground } from "@/domain/line/background";
+import { withBackgroundTrack, withTrackSpan } from "@/domain/line/track-writes";
 import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { mainBounds } from "@/domain/line/bounds";
 import { changedFields, updatedLine } from "@/test/field-updates";
@@ -269,10 +271,24 @@ describe("tap-line", () => {
     expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
   });
 
-  it("regression: moving a line-synced line seeds background words it never stored", () => {
+  it("regression: moving a line-synced line seeds a background span it never stored", () => {
     const lines = [createLine({ id: "l0", text: "a", begin: 10, end: 12, backgroundText: "oh" })];
     const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
-    expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
+    expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundText: "oh" });
+    expect(backgroundTrack(after[0])).toMatchObject({ begin: 5, end: 6 });
+  });
+
+  it("regression: a word-mode tap never moves a background span before zero", () => {
+    const seeded = withSeededBackground(createLine({ id: "l0", text: "a", begin: 10, end: 14, backgroundText: "oh" }));
+    const lines = [withBackgroundTrack(seeded, withTrackSpan(backgroundTrack(seeded)!, 6, 8))];
+    const after = apply(lines, run(lines, "tap-word", [0, 0], 1));
+    expect(backgroundTrack(after[0])).toMatchObject({ begin: 0, end: 2 });
+  });
+
+  it("a word-mode tap moves a line-synced background span with its line", () => {
+    const lines = [withSeededBackground(createLine({ id: "l0", text: "a", begin: 10, end: 12, backgroundText: "oh" }))];
+    const after = apply(lines, run(lines, "tap-word", [0, 0], 4));
+    expect(backgroundTrack(after[0])).toMatchObject({ begin: 5, end: 6 });
   });
 
   it("closes a word-synced previous line's last word in line mode", () => {

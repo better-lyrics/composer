@@ -1,4 +1,9 @@
-import { type LineTemplate, offsetTemplateWords, templateLanguages } from "@/domain/group/template";
+import {
+  type LineTemplate,
+  offsetTemplateWords,
+  templateBackgroundFields,
+  templateLanguages,
+} from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
@@ -55,9 +60,7 @@ function applyInstanceTemplate({
       ...(tplLine.relativeBegin !== undefined && { begin: tplLine.relativeBegin + instanceStart }),
       ...(tplLine.relativeEnd !== undefined && { end: tplLine.relativeEnd + instanceStart }),
       ...(words && { words }),
-      ...(tplLine.backgroundText !== undefined && { backgroundText: tplLine.backgroundText }),
-      ...(backgroundWords && { backgroundWords }),
-      ...(tplLine.backgroundTextSource && { backgroundTextSource: tplLine.backgroundTextSource }),
+      ...templateBackgroundFields(tplLine, backgroundWords),
       languages: templateLanguages(tplLine, words, backgroundWords),
     });
   });

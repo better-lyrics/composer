@@ -1,10 +1,18 @@
 /**
  * @vitest-environment node
  */
-import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+
 import { describe, expect, it } from "vitest";
+import { addInstance } from "@/domain/commands/instance-edits";
+import type { LinkGroup } from "@/domain/group/template";
+import { withSeededBackground } from "@/domain/line/background";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
+import { useProjectStore } from "@/stores/project";
+import { createGroup } from "@/test/factories";
 import {
   createGroupFromSelection,
   instanceToTemplate,
@@ -102,6 +110,66 @@ describe("instanceToTemplate", () => {
     expect(tpl[0].words?.[2].relativeEnd).toBeCloseTo(2);
     expect(tpl[1].relativeBegin).toBeCloseTo(2);
     expect(tpl[1].words?.[0].relativeEnd).toBeCloseTo(3);
+  });
+
+  it("regression: keeps the timing of a line-synced background", () => {
+    const line = withSeededBackground(
+      lineFromFields({
+        id: "a",
+        text: "hi",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        begin: 10,
+        end: 14,
+        backgroundText: "ooh",
+      }),
+    );
+    const [template] = instanceToTemplate([line], "g1", 0);
+    expect(template.backgroundWords?.map((word) => [word.relativeBegin, word.relativeEnd])).toEqual([[0, 2]]);
+  });
+
+  it("regression: an instance added from a line-synced background keeps a background span", () => {
+    const line = withSeededBackground(
+      lineFromFields({
+        id: "a",
+        text: "hi",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        begin: 10,
+        end: 14,
+        backgroundText: "ooh",
+      }),
+    );
+    useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
+    const added = useProjectStore.getState().lines[1];
+    expect(backgroundTrack(added)).toMatchObject({ begin: 40, end: 42 });
+    expect(timedSyllables(backgroundTrack(added))).toEqual([]);
+  });
+
+  it("regression: an instance added from an explicit line-synced background keeps the mark", () => {
+    const seeded = withSeededBackground(
+      lineFromFields({
+        id: "a",
+        text: "hi",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        begin: 10,
+        end: 14,
+        backgroundText: "damn",
+      }),
+    );
+    const background = backgroundTrack(seeded)!;
+    const line = withBackgroundTrack(seeded, withTrackExplicit(background, true));
+    useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
+    useProjectStore.getState().commit(addInstance("g1", instanceToTemplate([line], "g1", 0), 40));
+    expect(drawnSyllables(useProjectStore.getState().lines[1], "bg")[0].explicit).toBe(true);
   });
 
   it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {

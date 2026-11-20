@@ -10,13 +10,11 @@ import {
   typeLyrics,
 } from "@/domain/commands/edit-text";
 import { assignSinger } from "@/domain/commands/singer";
+import { remapBackgroundRanges } from "@/domain/edit-text/background-ranges";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
-import { linesToEditText } from "@/domain/edit-text/edit-text";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import type { LyricLine } from "@/domain/line/model";
-import { lineText } from "@/domain/line/text";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
-import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -39,6 +37,7 @@ import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
+import { lyricsText, noteTypedLyrics } from "@/views/edit/typed-lyrics-signals";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
 import { useShownEditText } from "@/views/edit/use-shown-edit-text";
@@ -57,15 +56,6 @@ Or paste or drop a whole lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
-const lyricsText = (lines: readonly LyricLine[]) => lines.map((line) => lineText(line)).join("\n");
-
-const noteTypedLyrics = (lines: readonly LyricLine[]) => {
-  if (!hasLyricLines(lines)) return;
-  noteGuideSignal("edit.type");
-  const { splitCharacter } = useSettingsStore.getState();
-  if (splitCharacter && lyricsText(lines).includes(splitCharacter)) noteGuideSignal("edit.presplit");
-};
-
 // -- Components ---------------------------------------------------------------
 
 const EditPanel: React.FC = () => {
@@ -81,9 +71,9 @@ const EditPanel: React.FC = () => {
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
-  const { shownText, setRawText } = useShownEditText(lines);
+  const { shownText, setRawText, showEditText: showShownText, showLines } = useShownEditText(lines);
   const rawText = shownText.text;
-  const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
+  const { textareaRef, showEditText } = useEditTextCaret(rawText, showShownText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
@@ -102,8 +92,8 @@ const EditPanel: React.FC = () => {
       linesSetByUs.current = null;
       return;
     }
-    setRawText(linesToEditText(lines));
-  }, [lines, setRawText]);
+    showLines(lines);
+  }, [lines, showLines]);
 
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
@@ -126,10 +116,10 @@ const EditPanel: React.FC = () => {
       const committed = useProjectStore.getState().lines;
       if (committed === before) return false;
       linesSetByUs.current = committed;
-      setRawText(linesToEditText(committed));
+      showLines(committed);
       return true;
     },
-    [setRawText],
+    [showLines],
   );
 
   const handleExtractBackgroundVocals = useCallback(() => {
@@ -289,6 +279,7 @@ const EditPanel: React.FC = () => {
 
       const text = textarea.value;
       const { splitCharacter } = shownText;
+      const ranges = remapBackgroundRanges(shownText.text, text, shownText.ranges, textarea.selectionEnd);
       const action = decideEditTextAction({
         text,
         defaultAgentId,
@@ -296,6 +287,7 @@ const EditPanel: React.FC = () => {
         groups,
         modalPending: modalPendingRef.current,
         splitCharacter,
+        ranges,
       });
 
       // Snap the controlled DOM input back to the source-of-truth rawText whenever
@@ -320,7 +312,7 @@ const EditPanel: React.FC = () => {
           modalPendingRef.current = false;
           if (!ok) return;
           finalizeRun();
-          commitAndShow(applyEditTextDetaching(text, defaultAgentId, splitCharacter));
+          commitAndShow(applyEditTextDetaching({ text, ranges }, defaultAgentId, splitCharacter));
         });
         return;
       }
@@ -328,7 +320,7 @@ const EditPanel: React.FC = () => {
       useImportModalStore.getState().clearImportResult();
 
       if (action.kind === "noop") {
-        showEditText(text, text, textarea);
+        showEditText(text, { text, ranges }, textarea);
         return;
       }
 
@@ -351,7 +343,7 @@ const EditPanel: React.FC = () => {
         return;
       }
 
-      showEditText(text, action.editText, textarea);
+      showEditText(text, { text: action.editText, ranges: action.editRanges }, textarea);
 
       runBurstRef.current ??= useProjectStore.getState().beginLyricBurst();
       linesSetByUs.current = finalLines;

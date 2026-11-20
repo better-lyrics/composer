@@ -3,7 +3,7 @@ import { withKeptSyllablePieces } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { convertLineToWord } from "@/domain/line/span-to-words";
+import { convertBackgroundToWord, convertMainToWord } from "@/domain/line/span-to-words";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -56,11 +56,10 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
   for (const [id, tracks] of tracksByLine) {
     const realLine = rawLinesById.get(id);
     if (!realLine) continue;
-    let lineUpdates: Partial<LyricLine> = {};
-    if (tracks.has("word") && isLineSynced(realLine)) {
-      const converted = convertLineToWord(realLine);
-      if (converted !== realLine) lineUpdates = { tracks: converted.tracks };
-    }
+    const withBackgroundWords = tracks.has("bg") ? convertBackgroundToWord(realLine) : realLine;
+    const converted =
+      tracks.has("word") && isLineSynced(realLine) ? convertMainToWord(withBackgroundWords) : withBackgroundWords;
+    let lineUpdates: Partial<LyricLine> = converted === realLine ? {} : { tracks: converted.tracks };
     const bgWords = timedSyllables(backgroundTrack(realLine));
     const splitBg = tracks.has("bg") ? splitMultiWordBgWords(bgWords) : null;
     if (splitBg) {

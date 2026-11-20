@@ -1,6 +1,7 @@
+import { bgBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
 import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Predicates ---------------------------------------------------------------
@@ -14,7 +15,7 @@ function isWordSynced(line: LyricLine): boolean {
 }
 
 function hasAnyTiming(line: LyricLine): boolean {
-  return isWordSynced(line) || isLineSynced(line) || timedSyllables(backgroundTrack(line)).length > 0;
+  return isWordSynced(line) || isLineSynced(line) || bgBounds(line) !== null;
 }
 
 function hasMainLyrics(line: LyricLine): boolean {

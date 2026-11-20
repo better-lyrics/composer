@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { withSeededBackground } from "@/domain/line/background";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 
@@ -34,6 +37,44 @@ describe("mergeEditedTtmlLines · background vocals", () => {
       expect(backgroundText(merged[0]!)).toBe("ooh no");
       expect(merged[0] && roleWords(merged[0], "bg")).toBeUndefined();
       expect(isProjectFullySynced(merged)).toBe(true);
+    });
+
+    it("regression: a line-synced background keeps its span through an edit of the line", () => {
+      const stored = [
+        withSeededBackground(createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" })),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Main<", ">Mane<"));
+      expect(lineText(merged[0]!)).toBe("Mane");
+      expect(backgroundTrack(merged[0]!)).toMatchObject({ begin: 2, end: 3 });
+      expect(timedSyllables(backgroundTrack(merged[0]!))).toEqual([]);
+    });
+
+    it("regression: a line-synced background keeps its explicit mark, and takes one the edit sets", () => {
+      const seeded = withSeededBackground(
+        createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" }),
+      );
+      const marked = [withBackgroundTrack(seeded, withTrackExplicit(backgroundTrack(seeded)!, true))];
+      const kept = mergeEditedExport(marked, (ttml) => ttml.replace(">Main<", ">Mane<"));
+      expect(drawnSyllables(kept[0]!, "bg")[0].explicit).toBe(true);
+
+      const set = mergeEditedExport([seeded], (ttml) =>
+        ttml.replace(
+          '<span begin="0:02.000" end="0:03.000">',
+          '<span begin="0:02.000" end="0:03.000" composer:explicit="true">',
+        ),
+      );
+      expect(drawnSyllables(set[0]!, "bg")[0].explicit).toBe(true);
+    });
+
+    it("regression: a retimed line-synced background stays line synced", () => {
+      const stored = [
+        withSeededBackground(createLine({ id: "a", text: "Main", begin: 1, end: 3, backgroundText: "ooh yeah" })),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) =>
+        ttml.replace('<span begin="0:02.000" end="0:03.000">', '<span begin="0:02.200" end="0:02.900">'),
+      );
+      expect(backgroundText(merged[0]!)).toBe("ooh yeah");
+      expect(backgroundTrack(merged[0]!)).toMatchObject({ begin: 2.2, end: 2.9 });
     });
 
     it("stores background words the edit timed on its own", () => {

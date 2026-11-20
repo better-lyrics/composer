@@ -1,9 +1,10 @@
-import { type BackgroundSource, withBackground, withSeededBackground } from "@/domain/line/background";
+import { type BackgroundSource, withBackground, withSeededBackgroundWords } from "@/domain/line/background";
 import { effectiveBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { backgroundText, syllablesText } from "@/domain/line/text";
-import { backgroundTrack, roleWords } from "@/domain/line/track";
+import { spreadSpan } from "@/domain/line/span-to-words";
+import { backgroundTrack, isSpanTimed, roleWords, timedSyllables } from "@/domain/line/track";
 import { lastEnd } from "@/domain/word/bounds";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
@@ -49,6 +50,12 @@ function spanAfter(line: LyricLine, words: WordTiming[]): TimeSpan {
   return { begin, end: end !== undefined && end > begin ? end : undefined };
 }
 
+function backgroundWords(line: LyricLine): WordTiming[] | undefined {
+  const background = backgroundTrack(line);
+  if (!background || !isSpanTimed(background)) return roleWords(line, "bg");
+  return timedSyllables(spreadSpan(line.id, background));
+}
+
 function mergeStandaloneInto(
   prev: LyricLine,
   standalone: LyricLine,
@@ -63,7 +70,8 @@ function mergeStandaloneInto(
   const prevIsExtraction = backgroundTrack(prev)?.source === "extraction";
   const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
   const baseText = prevIsStaleExtraction ? undefined : backgroundText(prev);
-  const storedBaseWords = prevIsStaleExtraction ? undefined : roleWords(prev, "bg");
+  // A line-synced background counts as the words it spans, as 3.x stored seeded words for it.
+  const storedBaseWords = prevIsStaleExtraction ? undefined : backgroundWords(prev);
   const carried = carriedBackgroundWords(
     standalone,
     bgText,
@@ -71,7 +79,9 @@ function mergeStandaloneInto(
     prevTrailingBracketFromSamePass && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
   );
   const baseWords =
-    carried?.length && !prevIsStaleExtraction ? roleWords(withSeededBackground(prev), "bg") : storedBaseWords;
+    carried?.length && !prevIsStaleExtraction
+      ? (roleWords(withSeededBackgroundWords(prev), "bg") ?? storedBaseWords)
+      : storedBaseWords;
 
   // Source for a result that keeps the prev base: a surviving extraction base
   // is necessarily fresh same-pass output (stale extraction was dropped above),

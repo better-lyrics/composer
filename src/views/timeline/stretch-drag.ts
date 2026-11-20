@@ -1,5 +1,6 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/track";
+import { trackRole } from "@/domain/line/track";
 import {
   STRETCH_EPS,
   type StretchAnchor,
@@ -58,7 +59,7 @@ function planStretchDrag(
   }
 
   const draggedTrack = targets.tracks.get(`${drag.lineId}:${drag.type}`);
-  const draggedWords = draggedTrack ? trackWords(draggedTrack.line, draggedTrack.type) : null;
+  const draggedWords = draggedTrack ? drawnSyllables(draggedTrack.line, trackRole(draggedTrack.type)) : null;
   const draggedWord = draggedTrack?.indices.has(drag.wordIndex) ? draggedWords?.[drag.wordIndex] : undefined;
   if (!isFiniteWord(draggedWord)) return null;
 

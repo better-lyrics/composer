@@ -1,3 +1,4 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainTrack, roleWords } from "@/domain/line/track";
 import { withSharing } from "@/domain/group/own-timing";
 import { sameTime } from "@/domain/group/same-timing";
@@ -43,7 +44,7 @@ function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source
       sameTime(mainTrack(match).begin, mainTrack(line).begin, offset) &&
       sameTime(mainTrack(match).end, mainTrack(line).end, offset) &&
       sameWords(roleWords(match, "main"), roleWords(line, "main"), offset) &&
-      sameWords(roleWords(match, "bg"), roleWords(line, "bg"), offset)
+      sameWords(drawnSyllables(match, "bg"), drawnSyllables(line, "bg"), offset)
     );
   });
 }
