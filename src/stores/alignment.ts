@@ -6,12 +6,13 @@ import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import type { AnchorChain } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
+import { applyAlignedTimings, retimeNewSyllables } from "@/domain/commands/alignment";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
-import { isUnchanged, type PlannedLine, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import { isUnchanged, type PlannedLine, planLines, segmentFor } from "@/stores/alignment-plan";
 import { recordRealignedLines } from "@/stores/alignment-record";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -181,8 +182,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       const currentById = new Map(latest.lines.map((l) => [l.id, l]));
       const applicable = updates.filter((u) => isUnchanged(currentById.get(u.id), plannedById.get(u.id)!));
       if (applicable.length > 0) {
-        // Timing only: deriving text would drop the untimed words of partly synced lines.
-        latest.updateLinesWithHistory(applicable, { deriveText: false });
+        latest.commit(applyAlignedTimings(applicable));
         // Shared group copies change in the same write; linked siblings may be replaced with their timing unchanged.
         recordRealignedLines(currentById);
         // Lines are tapped in Line mode; once they have word timing, refine words.
@@ -259,7 +259,6 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       if (latest.projectSession !== project.projectSession) return;
       const currentById = new Map(latest.lines.map((l) => [l.id, l]));
       const plannedById = new Map(planned.map((p) => [p.line.id, p]));
-      const stepIsCurrent = latest.history[latest.historyIndex] === step && !latest.isDirtySinceHistory;
       const applicable = updates.filter((u) => {
         const planned = plannedById.get(u.id)!;
         const moved = u.updates.words?.some(
@@ -268,9 +267,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         return moved && isUnchanged(currentById.get(u.id), planned);
       });
       // Part of the split, so one undo takes back both; anything done since leaves the split as it was.
-      const shared =
-        stepIsCurrent && applicable.length > 0 ? withSharedTiming(latest.lines, latest.groups, applicable) : null;
-      if (shared) latest.applyLineUpdatesToCurrentStep(shared);
+      if (latest.isCurrentStep(step) && applicable.length > 0) latest.commit(retimeNewSyllables(applicable), "amend");
     } catch (err) {
       if (!isAbortError(err) && !signal.aborted) {
         console.warn(`${LOG_PREFIX} could not time the new syllables`, err);

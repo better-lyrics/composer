@@ -1,16 +1,16 @@
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
+import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "@/domain/commands/sync";
+import type { WordTrack } from "@/domain/line/tracks";
+import type { BoundaryEdge } from "@/domain/word/boundary";
+import type { RetimeChange } from "@/utils/timing/word-timing-ops";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
-import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { SYNC_START, syncAddressAt } from "@/domain/sync/address";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
 import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
-import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import type { GestureCommit, SyncGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
-import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -21,10 +21,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showPlacementBlockedToast } from "@/utils/group-toast";
 import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
-import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
-import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
-import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -57,6 +54,32 @@ function triggerPulse(setShowPulse: (show: boolean) => void): void {
   setTimeout(() => setShowPulse(false), 100);
 }
 
+// Each word edge handler commits one retime; they change only when the lines do.
+function syncWordTimingHandlers(lines: readonly LyricLine[]) {
+  const retime = (track: WordTrack, edge: BoundaryEdge) => (lineIdx: number, wordIdx: number, change: RetimeChange) => {
+    const lineId = lines[lineIdx]?.id;
+    if (!lineId) return;
+    const duration = useAudioStore.getState().duration;
+    useProjectStore.getState().commit(retimeSyncWord({ lineId, track, wordIndex: wordIdx }, edge, change, duration));
+  };
+  const [mainBegin, mainEnd, bgBegin, bgEnd] = [
+    retime("word", "begin"),
+    retime("word", "end"),
+    retime("bg", "begin"),
+    retime("bg", "end"),
+  ];
+  return {
+    handleNudgeWord: (lineIdx: number, wordIdx: number, delta: number) => mainBegin(lineIdx, wordIdx, { by: delta }),
+    handleSetWordTime: (lineIdx: number, wordIdx: number, time: number) => mainBegin(lineIdx, wordIdx, { to: time }),
+    handleNudgeWordEnd: (lineIdx: number, wordIdx: number, delta: number) => mainEnd(lineIdx, wordIdx, { by: delta }),
+    handleSetWordEndTime: (lineIdx: number, wordIdx: number, time: number) => mainEnd(lineIdx, wordIdx, { to: time }),
+    handleNudgeBgWord: (lineIdx: number, wordIdx: number, delta: number) => bgBegin(lineIdx, wordIdx, { by: delta }),
+    handleSetBgWordTime: (lineIdx: number, wordIdx: number, time: number) => bgBegin(lineIdx, wordIdx, { to: time }),
+    handleNudgeBgWordEnd: (lineIdx: number, wordIdx: number, delta: number) => bgEnd(lineIdx, wordIdx, { by: delta }),
+    handleSetBgWordEndTime: (lineIdx: number, wordIdx: number, time: number) => bgEnd(lineIdx, wordIdx, { to: time }),
+  };
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useSyncHandlers({
@@ -70,8 +93,6 @@ function useSyncHandlers({
   onPlacementSkip,
 }: UseSyncHandlersProps) {
   const seekTo = useAudioStore((s) => s.seekTo);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-  const updateLinesWithHistory = useProjectStore((s) => s.updateLinesWithHistory);
   const confirm = useConfirm();
 
   const ignoreNextHoldEndRef = useRef(false);
@@ -87,10 +108,9 @@ function useSyncHandlers({
         jumped,
         time: livePlaybackTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
-        groups: useProjectStore.getState().groups,
         skippedInstances,
       };
-      const anchor = anchorGesture(lines, gesture, ctx);
+      const anchor = anchorGesture(lines, gesture, { ...ctx, groups: useProjectStore.getState().groups });
       const { placeInstance } = useProjectStore.getState();
       const duration = useAudioStore.getState().duration;
       if (
@@ -128,9 +148,14 @@ function useSyncHandlers({
         toastEarlyTap(anchor.clampedTo);
         return true;
       }
-      const commit = commitGesture(lines, gesture, ctx);
+      const planned: { commit: GestureCommit | null } = { commit: null };
+      useProjectStore.getState().commit(
+        syncGesture(gesture, ctx, (commit) => {
+          planned.commit = commit;
+        }),
+      );
+      const { commit } = planned;
       if (!commit) return false;
-      updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
       const position = syncAddressAt(useProjectStore.getState().lines, commit.nextCursor);
       setSyncState((prev) => ({
         ...prev,
@@ -141,7 +166,7 @@ function useSyncHandlers({
       toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [lines, cursor, jumped, skippedInstances, updateLinesWithHistory, setSyncState, seekTo, onPlacementSkip],
+    [lines, cursor, jumped, skippedInstances, setSyncState, seekTo, onPlacementSkip],
   );
 
   const handleTap = useCallback(() => {
@@ -183,16 +208,7 @@ function useSyncHandlers({
       if (!ok) return;
     }
 
-    const updates = lines.map((line) => ({
-      id: line.id,
-      updates: {
-        words: undefined,
-        begin: undefined,
-        end: undefined,
-        backgroundWords: undefined,
-      },
-    }));
-    useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
+    useProjectStore.getState().commit(resetSync());
     setSyncState({ position: SYNC_START, isActive: false });
   }, [lines, setSyncState, confirm]);
 
@@ -275,86 +291,23 @@ function useSyncHandlers({
     [lines, seekForRedo],
   );
 
-  const handleNudgeWord = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeWordBegin(
-        lines,
-        lineIdx,
-        wordIdx,
-        delta,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
+  const shiftLine = useCallback(
+    (lineIdx: number, change: RetimeChange) => {
+      const lineId = lines[lineIdx]?.id;
+      if (!lineId) return;
+      useProjectStore.getState().commit(shiftSyncLine(lineId, change, useAudioStore.getState().duration));
+    },
+    [lines],
   );
-
-  const handleSetWordTime = useCallback(
-    (lineIdx: number, wordIdx: number, newBegin: number) =>
-      setWordBegin(
-        lines,
-        lineIdx,
-        wordIdx,
-        newBegin,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleNudgeWordEnd = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeWordEnd(
-        lines,
-        lineIdx,
-        wordIdx,
-        delta,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleSetWordEndTime = useCallback(
-    (lineIdx: number, wordIdx: number, newEnd: number) =>
-      setWordEnd(
-        lines,
-        lineIdx,
-        wordIdx,
-        newEnd,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
-  );
-
+  const wordTiming = useMemo(() => syncWordTimingHandlers(lines), [lines]);
+  const { handleNudgeWord } = wordTiming;
   const handleNudgeLine = useCallback(
-    (lineIdx: number, delta: number) =>
-      nudgeLineBegin(
-        lines,
-        lineIdx,
-        delta,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
+    (lineIdx: number, delta: number) => shiftLine(lineIdx, { by: delta }),
+    [shiftLine],
   );
-
   const handleSetLineTime = useCallback(
-    (lineIdx: number, newBegin: number) =>
-      setLineBegin(
-        lines,
-        lineIdx,
-        newBegin,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
+    (lineIdx: number, newBegin: number) => shiftLine(lineIdx, { to: newBegin }),
+    [shiftLine],
   );
 
   const handleNudgeLastSynced = useCallback(
@@ -366,91 +319,17 @@ function useSyncHandlers({
         handleNudgeWord(slot.lineIndex, slot.wordIndex, delta);
         return;
       }
-      const line = lines[slot.lineIndex];
-      const range = timeRangeResolver(
-        lines,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      )(line);
-      updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta, range) }], {
-        deriveText: false,
-        propagateToSiblings: false,
-      });
+      shiftLine(slot.lineIndex, { by: delta });
     },
-    [lines, cursor, granularity, handleNudgeWord, updateLinesWithHistory],
+    [lines, cursor, granularity, handleNudgeWord, shiftLine],
   );
 
   const handleSplitWord = useCallback(
     (lineIdx: number, wordIdx: number, newWords: WordTiming[]) => {
-      const line = lines[lineIdx];
-      if (!line?.words) return;
-
-      const split = splitWordsKeepingTransliteration(line, "word", wordIdx, newWords);
-      if (!split) return;
-      const newLineText = spacedText(split.words).trimEnd();
-      updateLineWithHistory(line.id, {
-        words: split.words,
-        text: newLineText,
-        ...(split.transliteration ? { transliteration: split.transliteration } : {}),
-      });
+      const lineId = lines[lineIdx]?.id;
+      if (lineId) useProjectStore.getState().commit(splitSyncWord(lineId, wordIdx, newWords));
     },
-    [lines, updateLineWithHistory],
-  );
-
-  const handleNudgeBgWord = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeBgWordBegin(
-        lines,
-        lineIdx,
-        wordIdx,
-        delta,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleSetBgWordTime = useCallback(
-    (lineIdx: number, wordIdx: number, newBegin: number) =>
-      setBgWordBegin(
-        lines,
-        lineIdx,
-        wordIdx,
-        newBegin,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleNudgeBgWordEnd = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeBgWordEnd(
-        lines,
-        lineIdx,
-        wordIdx,
-        delta,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleSetBgWordEndTime = useCallback(
-    (lineIdx: number, wordIdx: number, newEnd: number) =>
-      setBgWordEnd(
-        lines,
-        lineIdx,
-        wordIdx,
-        newEnd,
-        updateLineWithHistory,
-        useProjectStore.getState().groups,
-        useAudioStore.getState().duration,
-      ),
-    [lines, updateLineWithHistory],
+    [lines],
   );
 
   return {
@@ -463,18 +342,11 @@ function useSyncHandlers({
     handleJumpToLine,
     handleJumpToWord,
     handleJumpToBgWord,
-    handleNudgeWord,
-    handleSetWordTime,
-    handleNudgeWordEnd,
-    handleSetWordEndTime,
+    ...wordTiming,
     handleNudgeLine,
     handleSetLineTime,
     handleNudgeLastSynced,
     handleSplitWord,
-    handleNudgeBgWord,
-    handleSetBgWordTime,
-    handleNudgeBgWordEnd,
-    handleSetBgWordEndTime,
     cursor,
     isComplete,
     currentLine,

@@ -1,5 +1,4 @@
-import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
-import type { LinkGroup } from "@/domain/group/template";
+import type { TimeRange } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { applyStepKey, type StepKey, type StepRefusal } from "@/domain/step-timing/step-write";
@@ -9,27 +8,22 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-type UpdateLineWithHistory = (
-  id: string,
-  updates: Partial<LyricLine>,
-  options?: { deriveText?: boolean; propagateToSiblings?: boolean },
-) => void;
-
 interface WordFieldConfig {
   getWords: (line: LyricLine) => WordTiming[] | undefined;
   writeWords: (line: ReadableLine, words: WordTiming[]) => Partial<LyricLine>;
-  // mutateWord deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
+  // retimeEdit deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
   buildBoundaryUpdate?: (words: WordTiming[]) => Partial<LyricLine>;
 }
 
-interface NeighborContext {
-  word: WordTiming;
-  prevWord: WordTiming | undefined;
-  nextWord: WordTiming | undefined;
+type RetimeChange = { by: number } | { to: number };
+
+interface RetimeEditInput {
+  line: ReadableLine;
+  wordIdx: number;
+  edge: BoundaryEdge;
+  change: RetimeChange;
   range: TimeRange;
 }
-
-type WordMutator = (ctx: NeighborContext) => WordTiming;
 
 interface BoundaryEditInput {
   line: ReadableLine;
@@ -64,96 +58,22 @@ function createWordTimingOps(config: WordFieldConfig) {
   const boundaryUpdate = (line: ReadableLine, words: WordTiming[]) =>
     buildBoundaryUpdate ? buildBoundaryUpdate(words) : writeWords(line, words);
 
-  function mutateWord(
-    lines: readonly ReadableLine[],
-    lineIdx: number,
-    wordIdx: number,
-    updateLineWithHistory: UpdateLineWithHistory,
-    groups: readonly LinkGroup[],
-    duration: number,
-    mutator: WordMutator,
-  ): void {
-    const line = lines[lineIdx];
-    if (!line) return;
+  // A Sync nudge or typed time: one edge of one word, kept between its neighbours and inside the range.
+  function retimeEdit({ line, wordIdx, edge, change, range }: RetimeEditInput): LineUpdate | null {
     const words = getWords(line);
-    if (!words?.[wordIdx]) return;
-
+    const word = words?.[wordIdx];
+    if (!words || !word) return null;
     const updatedWords = [...words];
-    const word = updatedWords[wordIdx];
-    const range = timeRangeResolver(lines, groups, duration)(line);
-    updatedWords[wordIdx] = mutator({
-      word,
-      prevWord: updatedWords[wordIdx - 1],
-      nextWord: updatedWords[wordIdx + 1],
-      range,
-    });
-
-    updateLineWithHistory(line.id, writeWords(line, updatedWords), {
-      deriveText: false,
-      propagateToSiblings: false,
-    });
-  }
-
-  function clampBegin({ word, prevWord, range }: NeighborContext, candidate: number): WordTiming {
-    const minBegin = prevWord?.end ?? range.min;
-    return { ...word, begin: Math.min(word.end, Math.max(minBegin, candidate)) };
-  }
-
-  function clampEnd({ word, nextWord, range }: NeighborContext, candidate: number): WordTiming {
-    const maxEnd = nextWord?.begin ?? range.max;
-    return { ...word, end: Math.min(maxEnd, Math.max(word.begin, candidate)) };
-  }
-
-  function nudgeBegin(
-    lines: readonly ReadableLine[],
-    lineIdx: number,
-    wordIdx: number,
-    delta: number,
-    updateLineWithHistory: UpdateLineWithHistory,
-    groups: readonly LinkGroup[] = [],
-    duration = Number.POSITIVE_INFINITY,
-  ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) =>
-      clampBegin(ctx, ctx.word.begin + delta),
-    );
-  }
-
-  function setBegin(
-    lines: readonly ReadableLine[],
-    lineIdx: number,
-    wordIdx: number,
-    newBegin: number,
-    updateLineWithHistory: UpdateLineWithHistory,
-    groups: readonly LinkGroup[] = [],
-    duration = Number.POSITIVE_INFINITY,
-  ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) => clampBegin(ctx, newBegin));
-  }
-
-  function nudgeEnd(
-    lines: readonly ReadableLine[],
-    lineIdx: number,
-    wordIdx: number,
-    delta: number,
-    updateLineWithHistory: UpdateLineWithHistory,
-    groups: readonly LinkGroup[] = [],
-    duration = Number.POSITIVE_INFINITY,
-  ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) =>
-      clampEnd(ctx, ctx.word.end + delta),
-    );
-  }
-
-  function setEnd(
-    lines: readonly ReadableLine[],
-    lineIdx: number,
-    wordIdx: number,
-    newEnd: number,
-    updateLineWithHistory: UpdateLineWithHistory,
-    groups: readonly LinkGroup[] = [],
-    duration = Number.POSITIVE_INFINITY,
-  ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) => clampEnd(ctx, newEnd));
+    if (edge === "begin") {
+      const candidate = "by" in change ? word.begin + change.by : change.to;
+      const minBegin = words[wordIdx - 1]?.end ?? range.min;
+      updatedWords[wordIdx] = { ...word, begin: Math.min(word.end, Math.max(minBegin, candidate)) };
+    } else {
+      const candidate = "by" in change ? word.end + change.by : change.to;
+      const maxEnd = words[wordIdx + 1]?.begin ?? range.max;
+      updatedWords[wordIdx] = { ...word, end: Math.min(maxEnd, Math.max(word.begin, candidate)) };
+    }
+    return { id: line.id, updates: writeWords(line, updatedWords) };
   }
 
   function boundaryEdit({
@@ -204,10 +124,10 @@ function createWordTimingOps(config: WordFieldConfig) {
     return { kind: "written", update, endedPrevious: result.endedPrevious };
   }
 
-  return { nudgeBegin, setBegin, nudgeEnd, setEnd, boundaryEdit, stepEdit };
+  return { retimeEdit, boundaryEdit, stepEdit };
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export type { StepEdit };
+export type { RetimeChange, StepEdit };
 export { createWordTimingOps };
