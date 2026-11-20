@@ -1,12 +1,11 @@
 import { memo, useCallback, useMemo, useState } from "react";
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { insertWord } from "@/domain/commands/word-structure";
 import { isAddressed } from "@/domain/selection/identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";
 import { addressOf } from "@/domain/selection/resolve";
 import { shouldRollNeighbour } from "@/domain/word/boundary";
 import { newWordId } from "@/domain/word/id";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -174,13 +173,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     if (!slot) return;
 
     const newWord: WordTiming = { id: newWordId(), text: "...", sep: " ", begin: slot.begin, end: slot.end };
-    const newWords = mergeWordsIntoTrack(words, [newWord]);
-    const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
-    if (trackType === "word") {
-      updateLineWithHistory(lineId, { words: newWords });
-    } else {
-      updateLineWithHistory(lineId, manualBackgroundWordEdit(newWords));
-    }
+    useProjectStore.getState().commit(insertWord(lineId, trackType, newWord));
 
     const timeline = useTimelineStore.getState();
     timeline.clearSelection();

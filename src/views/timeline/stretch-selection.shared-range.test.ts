@@ -3,7 +3,7 @@ import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
-import { stretchSelections } from "@/views/timeline/stretch-selection";
+import { stretchSelections } from "@/domain/selection/stretch";
 
 // -- Fixtures -----------------------------------------------------------------
 

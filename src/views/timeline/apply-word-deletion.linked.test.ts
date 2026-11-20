@@ -4,8 +4,10 @@
 import type { LyricLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
-import { applyWordDeletion, type DeletionSelection } from "@/views/timeline/apply-word-deletion";
+import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { describe, expect, it } from "vitest";
+
+const SPLIT_CHAR = "|";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -47,7 +49,7 @@ describe("applyWordDeletion · linked instances", () => {
   it("removes the word from every linked instance", () => {
     const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
 
-    const result = applyWordDeletion(lines, [del("c1-0", 1)]);
+    const result = applyWordDeletion(lines, [del("c1-0", 1)], SPLIT_CHAR);
 
     for (const id of ["c0-0", "c1-0", "c2-0"]) {
       expect(texts(byId(result, id))).toEqual(["hold ", "now"]);
@@ -58,7 +60,7 @@ describe("applyWordDeletion · linked instances", () => {
   it("keeps each instance's own timing for the words that remain", () => {
     const lines = [chorusLine(0, 10), chorusLine(1, 40)];
 
-    const result = applyWordDeletion(lines, [del("c0-0", 0)]);
+    const result = applyWordDeletion(lines, [del("c0-0", 0)], SPLIT_CHAR);
 
     expect(byId(result, "c1-0")?.words).toEqual([
       { text: "me", sep: " ", begin: 40.5, end: 41 },
@@ -77,7 +79,7 @@ describe("applyWordDeletion · linked instances", () => {
     });
     const lines = [withBg(0, 10), withBg(1, 40)];
 
-    const result = applyWordDeletion(lines, [del("c0-0", 0, "bg")]);
+    const result = applyWordDeletion(lines, [del("c0-0", 0, "bg")], SPLIT_CHAR);
 
     expect(byId(result, "c1-0")?.backgroundWords?.map((word) => word.text)).toEqual(["yeah"]);
     expect(texts(byId(result, "c1-0"))).toHaveLength(3);
@@ -90,7 +92,7 @@ describe("applyWordDeletion · linked instances", () => {
     ];
     const lines = [chorusLine(0, 10, { words: syllables(10) }), chorusLine(1, 40, { words: syllables(40) })];
 
-    const result = applyWordDeletion(lines, [del("c0-0", 1)]);
+    const result = applyWordDeletion(lines, [del("c0-0", 1)], SPLIT_CHAR);
 
     expect(byId(result, "c1-0")?.words).toHaveLength(1);
     expect(byId(result, "c1-0")?.words?.[0]).toMatchObject({ begin: 40, end: 41 });
@@ -100,7 +102,7 @@ describe("applyWordDeletion · linked instances", () => {
     it("clears and unlinks only that instance", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40)];
 
-      const result = applyWordDeletion(lines, [del("c1-0", 0), del("c1-0", 1), del("c1-0", 2)]);
+      const result = applyWordDeletion(lines, [del("c1-0", 0), del("c1-0", 1), del("c1-0", 2)], SPLIT_CHAR);
 
       expect(byId(result, "c1-0")?.words).toBeUndefined();
       expect(byId(result, "c1-0")?.groupId).toBeUndefined();
@@ -110,7 +112,11 @@ describe("applyWordDeletion · linked instances", () => {
     it("still spreads a partial delete from another instance in the same pass", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
 
-      const result = applyWordDeletion(lines, [del("c1-0", 0), del("c1-0", 1), del("c1-0", 2), del("c0-0", 2)]);
+      const result = applyWordDeletion(
+        lines,
+        [del("c1-0", 0), del("c1-0", 1), del("c1-0", 2), del("c0-0", 2)],
+        SPLIT_CHAR,
+      );
 
       expect(byId(result, "c1-0")?.groupId).toBeUndefined();
       expect(texts(byId(result, "c0-0"))).toEqual(["hold ", "me "]);
@@ -125,7 +131,7 @@ describe("applyWordDeletion · linked instances", () => {
         chorusLine(1, 42, { templateLineIdx: 1 }),
       ];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 0)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 0)], SPLIT_CHAR);
 
       expect(byId(result, "c0-0")?.words).toBeUndefined();
       expect(byId(result, "c1-0")?.words).toBeUndefined();
@@ -141,7 +147,7 @@ describe("applyWordDeletion · linked instances", () => {
       const untimedSecond: LyricLine = { ...secondLine, id: "b1", instanceIdx: 1 };
       const lines = [chorusLine(0, 10), timedSecond, chorusLine(1, 40), untimedSecond];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c0-0", 1), del("c0-0", 2)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c0-0", 1), del("c0-0", 2)], SPLIT_CHAR);
 
       expect(byId(result, "c1-0")?.words).toBeUndefined();
       expect(byId(result, "c1-0")?.groupId).toBe("g1");
@@ -153,7 +159,7 @@ describe("applyWordDeletion · linked instances", () => {
     it("keeps every instance linked when partial deletes in two instances add up to all the words", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c0-0", 1), del("c1-0", 2)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c0-0", 1), del("c1-0", 2)], SPLIT_CHAR);
 
       for (const id of ["c0-0", "c1-0", "c2-0"]) {
         expect(byId(result, id)?.words).toBeUndefined();
@@ -164,7 +170,7 @@ describe("applyWordDeletion · linked instances", () => {
     it("deletes a word once when the same word is selected in two instances", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 1), del("c1-0", 1)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 1), del("c1-0", 1)], SPLIT_CHAR);
 
       for (const id of ["c0-0", "c1-0", "c2-0"]) expect(texts(byId(result, id))).toEqual(["hold ", "now"]);
     });
@@ -172,7 +178,7 @@ describe("applyWordDeletion · linked instances", () => {
     it("applies the words selected across instances to every instance", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c1-0", 2)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c1-0", 2)], SPLIT_CHAR);
 
       for (const id of ["c0-0", "c1-0", "c2-0"]) expect(texts(byId(result, id))).toEqual(["me "]);
     });
@@ -190,7 +196,7 @@ describe("applyWordDeletion · linked instances", () => {
       });
       const lines = [chorusLine(0, 10), synced(0, 12), chorusLine(1, 40), synced(1, 42)];
 
-      const result = applyWordDeletion(lines, [del("s0", 0)]);
+      const result = applyWordDeletion(lines, [del("s0", 0)], SPLIT_CHAR);
 
       expect(byId(result, "s1")?.begin).toBeUndefined();
       expect(byId(result, "s1")?.groupId).toBe("g1");
@@ -200,7 +206,7 @@ describe("applyWordDeletion · linked instances", () => {
     it("leaves a detached instance alone", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40, { detached: true })];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 1)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 1)], SPLIT_CHAR);
 
       expect(byId(result, "c1-0")).toBe(lines[1]);
     });
@@ -209,7 +215,7 @@ describe("applyWordDeletion · linked instances", () => {
       const otherGroup: LyricLine = { ...chorusLine(1, 40), id: "other", groupId: "g2" };
       const lines = [chorusLine(0, 10), chorusLine(0, 12, { templateLineIdx: 1 }), otherGroup];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 1)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 1)], SPLIT_CHAR);
 
       expect(byId(result, "c0-1")).toBe(lines[1]);
       expect(byId(result, "other")).toBe(lines[2]);
@@ -221,7 +227,7 @@ describe("applyWordDeletion · linked instances", () => {
         chorusLine(1, 40, { words: [{ id: "w3", text: "hold me now", sep: "", begin: 40, end: 41 }] }),
       ];
 
-      const result = applyWordDeletion(lines, [del("c0-0", 1)]);
+      const result = applyWordDeletion(lines, [del("c0-0", 1)], SPLIT_CHAR);
 
       expect(byId(result, "c1-0")).toBe(lines[1]);
     });
@@ -232,7 +238,7 @@ describe("applyWordDeletion · linked instances", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40)];
       const snapshot = structuredClone(lines);
 
-      applyWordDeletion(lines, [del("c0-0", 1)]);
+      applyWordDeletion(lines, [del("c0-0", 1)], SPLIT_CHAR);
 
       expect(lines).toEqual(snapshot);
     });
@@ -240,7 +246,7 @@ describe("applyWordDeletion · linked instances", () => {
     it("keeps every linked instance's words identical in text after a delete", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
 
-      const result = applyWordDeletion(lines, [del("c2-0", 0), del("c0-0", 2)]);
+      const result = applyWordDeletion(lines, [del("c2-0", 0), del("c0-0", 2)], SPLIT_CHAR);
 
       const shapes = new Set(result.map((line) => JSON.stringify(texts(line))));
       expect(shapes.size).toBe(1);

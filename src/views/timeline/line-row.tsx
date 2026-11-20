@@ -158,4 +158,5 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 // -- Exports -------------------------------------------------------------------
 
 const MemoizedLineRow = memo(LineRow);
+export type { LineWordUpdate };
 export { MemoizedLineRow as LineRow };
