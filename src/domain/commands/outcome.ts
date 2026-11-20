@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "@/domain/agent/model";
 import type { RealignRefusal } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
@@ -12,6 +14,8 @@ interface LyricRoot {
   lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[];
+  parts: readonly Part[];
+  passthrough: DocPassthrough;
 }
 
 type Refusal =

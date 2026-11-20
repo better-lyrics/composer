@@ -7,6 +7,7 @@ import {
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
+import { withLinePassthrough } from "@/domain/line/passthrough";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -50,7 +51,7 @@ function applyInstanceTemplate({
     const tplLine = template[idx - startIndex];
     const words = tplLine.words && offsetTemplateWords(tplLine.words, instanceStart);
     const backgroundWords = tplLine.backgroundWords && offsetTemplateWords(tplLine.backgroundWords, instanceStart);
-    return lineFromFields({
+    const instanceLine = lineFromFields({
       id: line.id,
       text: tplLine.text,
       agentId: tplLine.agentId,
@@ -63,6 +64,7 @@ function applyInstanceTemplate({
       ...templateBackgroundFields(tplLine, backgroundWords),
       languages: templateLanguages(tplLine, words, backgroundWords),
     });
+    return withLinePassthrough(instanceLine, tplLine.passthrough);
   });
 
   return { updatedLines, instanceIdx };

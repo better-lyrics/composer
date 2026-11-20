@@ -2,6 +2,7 @@ import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
 import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
+import { linePassthroughOf, withLinePassthrough } from "@/domain/line/passthrough";
 import { backgroundTrack } from "@/domain/line/track";
 import { trackText } from "@/domain/line/text";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
@@ -152,7 +153,7 @@ function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLin
     id: stored.id,
     ...(languages ? { languages } : {}),
   });
-  return withUntimedIdsOf(merged, storedLine);
+  return withUntimedIdsOf(withLinePassthrough(merged, linePassthroughOf(storedLine)), storedLine);
 }
 
 function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
