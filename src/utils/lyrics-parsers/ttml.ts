@@ -1,8 +1,10 @@
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { syllablesText } from "@/domain/line/text";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { fromComposerMeta } from "@/domain/project/metadata-ttml";
@@ -169,7 +171,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     if (bgContainer) {
       backgroundWords = extractTimedWords(bgContainer, null);
       if (backgroundWords.length > 0) {
-        backgroundText = reconstructLineText(backgroundWords, getSplitCharacter());
+        backgroundText = syllablesText(backgroundWords, getSplitCharacter());
       } else {
         let baseBackground = "";
         for (const node of bgContainer.childNodes) {
@@ -193,9 +195,9 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
     if (words.length > 0) {
       lines.push(
-        reconcileLine({
+        lineFromFields({
           id: generateLineId(),
-          text: reconstructLineText(words, getSplitCharacter()),
+          text: syllablesText(words, getSplitCharacter()),
           agentId,
           words,
           backgroundText,
@@ -222,7 +224,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
       if (text) {
         lines.push(
-          reconcileLine({
+          lineFromFields({
             id: generateLineId(),
             text,
             agentId,
@@ -248,7 +250,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   return {
     lines,
     metadata,
-    hasTimingData: lines.some((l) => l.begin !== undefined || l.words?.length),
+    hasTimingData: lines.some((line) => isLineSynced(line) || isWordSynced(line)),
     agents: agents.length > 0 ? agents : undefined,
     groups: groups.length > 0 ? groups : undefined,
     lineKeys,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { parseLrcClock } from "@/utils/lyrics-parsers/lrc";
@@ -57,7 +57,7 @@ describe("parseLrcClock", () => {
 describe("parseLyricsFile - LRC separators", () => {
   it("accepts a colon before the fraction", () => {
     const result = parseLyricsFile("song.lrc", "[00:01:50]First\n[00:03.00]Second", 10);
-    expect(result.lines[0].begin).toBeCloseTo(1.5, 3);
+    expect(mainTrack(result.lines[0]).begin).toBeCloseTo(1.5, 3);
   });
 });
 
@@ -77,7 +77,7 @@ describe("T6 LRC empty timed line", () => {
   it("ends the last line at a trailing gap marker", () => {
     const parsed = parseLyricsFile("song.lrc", "[00:01.00]Only line\n[00:04.00]", 30);
     expect(parsed.lines).toHaveLength(1);
-    expect(parsed.lines[0].end).toBe(4);
+    expect(mainTrack(parsed.lines[0]).end).toBe(4);
   });
 });
 
@@ -85,7 +85,7 @@ describe("T7 enhanced LRC last word", () => {
   it("does not import the last word of the song zero-length", () => {
     const parsed = parseLyricsFile("enhanced.lrc", ENHANCED_LRC, 30);
     const lastLine = parsed.lines[parsed.lines.length - 1];
-    const lastWord = lastLine.words?.[lastLine.words.length - 1];
+    const lastWord = roleWords(lastLine, "main")?.[roleWords(lastLine, "main")!.length - 1];
     expect(lastWord?.text).toBe("here");
     expect((lastWord?.end ?? 0) - (lastWord?.begin ?? 0)).toBeGreaterThan(0);
   });
@@ -99,7 +99,7 @@ describe("T7 enhanced LRC last word", () => {
   it("gives the last word a positive length with no duration at all", () => {
     const parsed = parseLyricsFile("enhanced.lrc", ENHANCED_LRC);
     const lastLine = parsed.lines[parsed.lines.length - 1];
-    const lastWord = lastLine.words?.[lastLine.words.length - 1];
+    const lastWord = roleWords(lastLine, "main")?.[roleWords(lastLine, "main")!.length - 1];
     expect((lastWord?.end ?? 0) - (lastWord?.begin ?? 0)).toBeGreaterThan(0);
   });
 });
@@ -107,7 +107,7 @@ describe("T7 enhanced LRC last word", () => {
 describe("T13 invalid LRC timestamps", () => {
   it("rejects [00:99.99] instead of reading it as 1:39.99", () => {
     const parsed = parseLyricsFile("weird.lrc", WEIRD_LRC, 200);
-    expect(parsed.lines.some((line) => line.begin === 99.99)).toBe(false);
+    expect(parsed.lines.some((line) => mainTrack(line).begin === 99.99)).toBe(false);
   });
 
   it("reports rejected or untimed LRC lines instead of dropping them silently", () => {
@@ -145,7 +145,7 @@ describe("T13 invalid LRC timestamps", () => {
 
   it("ignores an invalid [length:] tag", () => {
     const parsed = parseLyricsFile("song.lrc", "[length:00:70.00]\n[00:01.00]Only", 20);
-    expect(parsed.lines[0].end).toBe(20);
+    expect(mainTrack(parsed.lines[0]).end).toBe(20);
   });
 });
 

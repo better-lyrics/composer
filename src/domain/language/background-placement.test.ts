@@ -1,10 +1,13 @@
+import { withFields } from "@/test/field-updates";
+import type { WordTiming } from "@/domain/word/timing";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { alternateBackgroundPlacement } from "@/domain/language/background-placement";
 import type { LyricLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
 import { describe, expect, it } from "vitest";
 
-function timedLine(backgroundBegin: number, mainWords: NonNullable<LyricLine["words"]>): LyricLine {
-  return {
+function timedLine(backgroundBegin: number, mainWords: WordTiming[]): LyricLine {
+  return lineFromFields({
     id: "line",
     agentId: "v1",
     text: "one two three",
@@ -13,7 +16,7 @@ function timedLine(backgroundBegin: number, mainWords: NonNullable<LyricLine["wo
     backgroundWords: [
       { id: newWordId(), text: "ooh", sep: "", begin: backgroundBegin, end: backgroundBegin + 0.4, joinsNext: false },
     ],
-  };
+  });
 }
 
 describe("alternateBackgroundPlacement", () => {
@@ -67,7 +70,7 @@ describe("alternateBackgroundPlacement", () => {
 
   it("defaults to the end when alternate timing is unavailable", () => {
     const line = timedLine(1.2, [{ id: "w14", text: "one", sep: "", begin: 1, end: 2, joinsNext: false }]);
-    line.backgroundWords = undefined;
+    line.tracks = withFields(line, { backgroundWords: undefined }).tracks;
 
     expect(alternateBackgroundPlacement(line)).toEqual({ position: "end" });
   });

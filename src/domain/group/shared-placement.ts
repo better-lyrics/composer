@@ -1,12 +1,11 @@
+import { roleWords } from "@/domain/line/track";
+import { endsAfter, hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import {
   attachedLinesOfInstance,
-  endsAfter,
   firstFullyTimedInstance,
-  hasNegativeTime,
   instanceOffset,
   instanceStart,
-  offsetTimingFields,
   sharedInstancesInLineOrder,
   sharesTiming,
 } from "@/domain/group/shared-timing";
@@ -80,8 +79,9 @@ function dropsWordTiming(lines: readonly LyricLine[], updates: readonly LineUpda
   return updates.some(({ id, updates: copied }) => {
     const target = byId.get(id);
     if (!target) return false;
-    const dropsMain = isWordSynced(target) && !copied.words?.length;
-    return dropsMain || (!!target.backgroundWords?.length && !copied.backgroundWords?.length);
+    const after = { ...target, ...copied };
+    const dropsMain = isWordSynced(target) && !isWordSynced(after);
+    return dropsMain || (!!roleWords(target, "bg")?.length && !roleWords(after, "bg")?.length);
   });
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { shiftSyncLine } from "@/domain/commands/sync";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
@@ -45,7 +46,7 @@ describe("nudgeLineBegin", () => {
 
     useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { by: 0.5 }, Number.POSITIVE_INFINITY));
 
-    expect(lineAt(0)).toMatchObject({ begin: 10.5, end: 12.5 });
+    expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 10.5, end: 12.5 });
     expect(timedSyllables(backgroundTrack(lineAt(0)))).toEqual([
       { text: "ooh", sep: "", begin: 10.75, end: 11.25, joinsNext: false },
     ]);
@@ -81,7 +82,7 @@ describe("nudgeLineBegin", () => {
 
       useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { by: -1 }, Number.POSITIVE_INFINITY));
 
-      expect(lineAt(0)).toMatchObject({ begin: 0, end: 1.5 });
+      expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 0, end: 1.5 });
       expect(timedSyllables(backgroundTrack(lineAt(0)))).toEqual([
         { text: "ooh", sep: "", begin: 0.25, end: 0.75, joinsNext: false },
       ]);
@@ -104,7 +105,7 @@ describe("nudgeLineBegin", () => {
       useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { by: 0.5 }, Number.POSITIVE_INFINITY));
       store().undo();
 
-      expect(lineAt(0)).toMatchObject({ begin: 10, end: 12 });
+      expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 10, end: 12 });
       expect(timedSyllables(backgroundTrack(lineAt(0)))).toEqual([
         { text: "ooh", sep: "", begin: 10.25, end: 10.75, joinsNext: false },
       ]);
@@ -118,7 +119,7 @@ describe("setLineBegin", () => {
 
     useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { to: 20 }, Number.POSITIVE_INFINITY));
 
-    expect(lineAt(0)).toMatchObject({ begin: 20, end: 22 });
+    expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 20, end: 22 });
     expect(timedSyllables(backgroundTrack(lineAt(0)))).toEqual([
       { text: "ooh", sep: "", begin: 20.25, end: 20.75, joinsNext: false },
     ]);
@@ -141,7 +142,7 @@ describe("setLineBegin", () => {
 
       useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { to: -1 }, Number.POSITIVE_INFINITY));
 
-      expect(lineAt(0)).toMatchObject({ begin: 0, end: 2 });
+      expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 0, end: 2 });
     });
   });
 });
@@ -162,8 +163,8 @@ describe("shared timing", () => {
 
     useProjectStore.getState().commit(shiftSyncLine(store().lines[1].id, { by: -5 }, Number.POSITIVE_INFINITY));
 
-    expect(lineAt(1)).toMatchObject({ begin: 7, end: 9 });
-    expect(lineAt(0)).toMatchObject({ begin: 0, end: 2 });
+    expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 7, end: 9 });
+    expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 0, end: 2 });
   });
 
   it("stops a shared line set to a time before the range", () => {
@@ -171,8 +172,8 @@ describe("shared timing", () => {
 
     useProjectStore.getState().commit(shiftSyncLine(store().lines[1].id, { to: 1 }, Number.POSITIVE_INFINITY));
 
-    expect(lineAt(1)).toMatchObject({ begin: 7, end: 9 });
-    expect(lineAt(0)).toMatchObject({ begin: 0, end: 2 });
+    expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 7, end: 9 });
+    expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 0, end: 2 });
   });
 
   describe("regressions", () => {
@@ -184,8 +185,8 @@ describe("shared timing", () => {
 
       useProjectStore.getState().commit(shiftSyncLine(store().lines[1].id, { by: -5 }, Number.POSITIVE_INFINITY));
 
-      expect(lineAt(1)).toMatchObject({ begin: 5, end: 7 });
-      expect(lineAt(0)).toMatchObject({ begin: 3, end: 5 });
+      expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 5, end: 7 });
+      expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 3, end: 5 });
     });
   });
 });
@@ -207,8 +208,8 @@ describe("song end", () => {
 
     useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { by: 20 }, SONG_END));
 
-    expect(lineAt(0)).toMatchObject({ begin: 5, end: 7 });
-    expect(lineAt(1)).toMatchObject({ begin: 12, end: 14 });
+    expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 5, end: 7 });
+    expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 12, end: 14 });
   });
 
   it("stops a shared line set past the range", () => {
@@ -216,8 +217,8 @@ describe("song end", () => {
 
     useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { to: 30 }, SONG_END));
 
-    expect(lineAt(0)).toMatchObject({ begin: 5, end: 7 });
-    expect(lineAt(1)).toMatchObject({ begin: 12, end: 14 });
+    expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 5, end: 7 });
+    expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 12, end: 14 });
   });
 
   describe("edge cases", () => {
@@ -226,8 +227,8 @@ describe("song end", () => {
 
       useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { by: 20 }, duration));
 
-      expect(lineAt(0)).toMatchObject({ begin: 23, end: 25 });
-      expect(lineAt(1)).toMatchObject({ begin: 30, end: 32 });
+      expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 23, end: 25 });
+      expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 30, end: 32 });
     });
   });
 
@@ -237,7 +238,7 @@ describe("song end", () => {
 
       useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { by: 20 }, Number.POSITIVE_INFINITY));
 
-      expect(lineAt(0)).toMatchObject({ begin: 23, end: 25 });
+      expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 23, end: 25 });
     });
 
     it("moves a line of an old group without touching its sibling", () => {
@@ -245,8 +246,8 @@ describe("song end", () => {
 
       useProjectStore.getState().commit(shiftSyncLine(store().lines[0].id, { by: 5 }, SONG_END));
 
-      expect(lineAt(0)).toMatchObject({ begin: 8, end: 10 });
-      expect(lineAt(1)).toMatchObject({ begin: 10, end: 12 });
+      expect(fieldsOfLine(lineAt(0))).toMatchObject({ begin: 8, end: 10 });
+      expect(fieldsOfLine(lineAt(1))).toMatchObject({ begin: 10, end: 12 });
     });
   });
 });

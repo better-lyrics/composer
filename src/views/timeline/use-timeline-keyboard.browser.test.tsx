@@ -1,3 +1,4 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -119,7 +120,7 @@ describe("useTimelineKeyboard", () => {
 
   it("toggles original and transliteration labels when L is pressed", async () => {
     const line = legacyLine({
-      ...createLine({ text: "일단은" }),
+      ...fieldsOfLine(createLine({ text: "일단은" })),
       transliteration: {
         language: "ko-Latn",
         text: "ildan eun",

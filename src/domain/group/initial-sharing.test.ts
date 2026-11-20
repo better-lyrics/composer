@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
   createLine({
@@ -42,7 +44,10 @@ const sharingOf = (lines: LyricLine[]) => {
   return { sharesTiming, ownTimingInstances };
 };
 const secondWordBegin = (lines: readonly LyricLine[], id: string) =>
-  lines.find((line) => line.id === id)?.words?.[1]?.begin;
+  roleWords(
+    lines.find((line) => line.id === id),
+    "main",
+  )?.[1]?.begin;
 
 describe("initialGroupSharing", () => {
   it("leaves the group and the lines alone when the setting is off", () => {
@@ -64,7 +69,12 @@ describe("initialGroupSharing", () => {
     const lines = [chorus(0, 0, 10), chorus(1, 0)];
     const result = share(lines);
     expect(sharingOf(lines)).toEqual({ sharesTiming: true, ownTimingInstances: undefined });
-    expect(result.lines.find((line) => line.id === "c1-0")?.words).toBeUndefined();
+    expect(
+      roleWords(
+        result.lines.find((line) => line.id === "c1-0"),
+        "main",
+      ),
+    ).toBeUndefined();
   });
 
   it("shares an instance with different timing and realigns it from the source at its start", () => {
@@ -110,7 +120,7 @@ describe("initialGroupSharing", () => {
         });
       const result = share([lineSynced(0, 0, 10), lineSynced(0, 1, 13), lineSynced(1, 0, 40), lineSynced(1, 1)]);
       expect(result.group.ownTimingInstances).toBeUndefined();
-      expect(result.lines.find((line) => line.id === "l1-1")).toMatchObject({ begin: 43, end: 45 });
+      expect(fieldsOfLine(result.lines.find((line) => line.id === "l1-1")!)).toMatchObject({ begin: 43, end: 45 });
       expect(skippedSharedInstances(result.lines, [result.group]).map((skipped) => skipped.instanceIdx)).toEqual([1]);
     });
 
@@ -178,8 +188,8 @@ describe("initialGroupSharing", () => {
     });
 
     it("shares half-synced instances that match when none is fully timed", () => {
-      const lines = [chorus(0, 0, 10), { ...chorus(1, 0, 40), text: "I want you", id: "x" }];
-      expect(sharingOf([{ ...lines[0], text: "I want you" }, lines[1]])).toEqual({
+      const lines = [chorus(0, 0, 10), { ...withFields(chorus(1, 0, 40), { text: "I want you" }), id: "x" }];
+      expect(sharingOf([withFields(lines[0], { text: "I want you" }), lines[1]])).toEqual({
         sharesTiming: true,
         ownTimingInstances: undefined,
       });

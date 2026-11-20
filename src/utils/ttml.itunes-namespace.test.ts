@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -8,7 +9,7 @@ const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
-const wordLine: LyricLine = {
+const wordLine: LyricLine = lineFromFields({
   id: "a",
   text: "hello world",
   agentId: "v1",
@@ -16,9 +17,9 @@ const wordLine: LyricLine = {
     { id: "w1", text: "hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
     { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
   ],
-};
+});
 
-const lineSyncedLine: LyricLine = { id: "b", text: "hello world", agentId: "v1", begin: 1, end: 2 };
+const lineSyncedLine: LyricLine = lineFromFields({ id: "b", text: "hello world", agentId: "v1", begin: 1, end: 2 });
 
 describe("ttml export · itunes namespace signal", () => {
   it("declares the itunes namespace on the root element", () => {
@@ -80,7 +81,7 @@ describe("ttml export · Apple Music dialect regressions", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "hi there",
           agentId: "v1",
@@ -88,7 +89,7 @@ describe("ttml export · Apple Music dialect regressions", () => {
             { id: "w3", text: "hi", sep: " ", begin: 65.5, end: 66, joinsNext: false },
             { id: "w4", text: "there", sep: "", begin: 66, end: 66.75, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     // spans carry absolute media times, not offsets measured from the line begin
@@ -115,18 +116,18 @@ describe("ttml export · Apple Music dialect regressions", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        lineFromFields({
           id: "a",
           text: "hi",
           agentId: "v1",
           words: [{ id: "w5", text: "hi", sep: "", begin: 65.25, end: 66, joinsNext: false }],
-        },
-        {
+        }),
+        lineFromFields({
           id: "b",
           text: "yo",
           agentId: "v1",
           words: [{ id: "w6", text: "yo", sep: "", begin: 3665.25, end: 3666, joinsNext: false }],
-        },
+        }),
       ],
     });
     // single-digit minutes stay unpadded (1:05.250, never 01:05.250)

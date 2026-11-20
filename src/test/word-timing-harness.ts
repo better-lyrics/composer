@@ -1,4 +1,6 @@
-import { effectiveTimingWrite } from "@/domain/line/effective-words";
+import { roleWords } from "@/domain/line/track";
+import { effectiveTimingWrite, rawLineOf } from "@/domain/line/effective-words";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
@@ -26,10 +28,10 @@ function retimeInto(
 
 // -- Factory instances --------------------------------------------------------
 
-const wordsOps = createWordTimingOps({ getWords: (line) => line.words, writeWords: effectiveTimingWrite });
+const wordsOps = createWordTimingOps({ getWords: (line) => roleWords(line, "main"), writeWords: effectiveTimingWrite });
 const bgOps = createWordTimingOps({
-  getWords: (line) => line.backgroundWords,
-  writeWords: (_line, words) => ({ backgroundWords: words }),
+  getWords: (line) => roleWords(line, "bg"),
+  writeWords: (line, words) => ({ tracks: withRoleWords(rawLineOf(line), "bg", words).tracks }),
 });
 
 // -- Fixtures -----------------------------------------------------------------

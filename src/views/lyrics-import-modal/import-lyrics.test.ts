@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { ConfirmOptions } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -14,7 +15,7 @@ import { type ImportContext, importLyrics } from "@/views/lyrics-import-modal/im
 // -- Helpers ------------------------------------------------------------------
 
 function lineFactory(id: string, text: string, agentId = "v1"): LyricLine {
-  return { id, text, agentId };
+  return lineFromFields({ id, text, agentId });
 }
 
 const EMPTY_FILE = { filename: "empty.txt", content: "" };
@@ -173,19 +174,19 @@ describe("importLyrics timing distribution", () => {
   it("does not distribute timing when audioDuration is zero and there is no timing data", async () => {
     await importLyrics(HELLO_WORLD, buildContext({ audioDuration: 0 }));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeUndefined();
-    expect(lines[0].begin).toBeUndefined();
-    expect(lines[0].end).toBeUndefined();
+    expect(roleWords(lines[0], "main")).toBeUndefined();
+    expect(mainTrack(lines[0]).begin).toBeUndefined();
+    expect(mainTrack(lines[0]).end).toBeUndefined();
   });
 
   it("distributes timing across the audio when parsed lacks timing data", async () => {
     await importLyrics(HELLO_WORLD, buildContext({ audioDuration: 120 }));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeDefined();
-    expect(lines[0].words?.length).toBeGreaterThan(0);
-    const firstWord = lines[0].words?.[0];
+    expect(roleWords(lines[0], "main")).toBeDefined();
+    expect(roleWords(lines[0], "main")?.length).toBeGreaterThan(0);
+    const firstWord = roleWords(lines[0], "main")?.[0];
     const lastLine = lines[lines.length - 1];
-    const lastWord = lastLine.words?.[lastLine.words.length - 1];
+    const lastWord = roleWords(lastLine, "main")?.[roleWords(lastLine, "main")!.length - 1];
     expect(firstWord?.begin).toBe(0);
     expect(lastWord?.end).toBeCloseTo(120, 3);
   });
@@ -275,7 +276,7 @@ describe("importLyrics default singer", () => {
     useProjectStore.getState().restoreLyrics({ agents: [{ id: "v2", type: "person", name: "Bob" }] });
     await importLyrics(HELLO_WORLD, buildContext());
     const { lines, agents } = useProjectStore.getState();
-    expect(lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
+    expect(lines.map((line) => mainTrack(line).agentId)).toEqual(["v2", "v2"]);
     expect(agents).toEqual([{ id: "v2", type: "person", name: "Bob" }]);
   });
 });
@@ -402,7 +403,7 @@ describe("importLyrics groups", () => {
     const content = generateTTML({
       metadata: { title: "", artists: [], album: "", duration: 0 },
       agents: [{ id: "v1", type: "person", name: "Lead" }],
-      lines: [{ id: "a", text: "Hello", agentId: "v1", begin: 1, end: 2 }],
+      lines: [lineFromFields({ id: "a", text: "Hello", agentId: "v1", begin: 1, end: 2 })],
       groups,
     });
     await importLyrics({ filename: "grouped.ttml", content }, buildContext());

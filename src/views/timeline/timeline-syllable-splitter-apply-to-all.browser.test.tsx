@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -92,7 +92,7 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split all" }).click();
     await screen.getByRole("button", { name: "Split" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
     await expect.poll(() => document.querySelector("dialog")).toBeNull();
   });
 
@@ -127,7 +127,7 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
   });
 
   it("single-word path (apply-to-all off) writes via the divergence-aware flow", async () => {
@@ -141,8 +141,8 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
-    expect(useProjectStore.getState().lines[1].words?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
+    expect(roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(1);
   });
 
   it("persists checkbox state to syllableSplitDefaults after a successful split", async () => {
@@ -181,7 +181,7 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(wordsAfter[0].end).toBeCloseTo(0.42, 5);
     expect(wordsAfter[1].begin).toBeCloseTo(0.42, 5);

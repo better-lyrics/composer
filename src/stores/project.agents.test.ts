@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -36,7 +37,7 @@ describe("groupRepeatingSections", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
 
   function plain(id: string, text: string): LyricLine {
-    return { id, text, agentId: "v1" };
+    return lineFromFields({ id, text, agentId: "v1" });
   }
 
   it("creates one group with one instance per start", () => {
@@ -91,7 +92,7 @@ describe("groupRepeatingSections", () => {
 
   it("does nothing if any covered line is already grouped", () => {
     const lines: LyricLine[] = [
-      { id: "a", text: "x", agentId: "v1", groupId: "gExisting", instanceIdx: 0, templateLineIdx: 0 },
+      lineFromFields({ id: "a", text: "x", agentId: "v1", groupId: "gExisting", instanceIdx: 0, templateLineIdx: 0 }),
       plain("b", "y"),
       plain("c", "x"),
       plain("d", "y"),

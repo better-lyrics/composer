@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { backgroundText, lineText } from "@/domain/line/text";
+import { mainTrack } from "@/domain/line/track";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -107,7 +108,7 @@ describe("pasted LRC", () => {
     const screen = await render(host());
     await pasteAndImport(screen, LRCLIB_STYLE_PASTE);
     const { lines, metadata } = useProjectStore.getState();
-    expect(lines.map((line) => [lineText(line), line.begin])).toEqual([
+    expect(lines.map((line) => [lineText(line), mainTrack(line).begin])).toEqual([
       ["Is this the real life?", 0.63],
       ["Is this just fantasy?", 4.21],
     ]);
@@ -118,7 +119,7 @@ describe("pasted LRC", () => {
     useProjectStore.getState().restoreLyrics({ agents: [{ id: "v2", type: "person", name: "Bob" }] });
     const screen = await render(host());
     await pasteAndImport(screen, "First line\nSecond line");
-    expect(useProjectStore.getState().lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
+    expect(useProjectStore.getState().lines.map((line) => mainTrack(line).agentId)).toEqual(["v2", "v2"]);
   });
 
   it("regression: never imports a rich text paste as timed lines", async () => {

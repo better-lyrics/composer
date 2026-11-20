@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
+import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+function line(extras: Partial<LineFields> = {}): LyricLine {
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- getLinkScope -------------------------------------------------------------
@@ -71,93 +72,6 @@ describe("isLinkedSibling", () => {
   });
 });
 
-// -- extractLinkedFields ------------------------------------------------------
-
-describe("extractLinkedFields", () => {
-  it("propagates text, agentId, and backgroundText when present", () => {
-    expect(extractLinkedFields({ text: "Hi", agentId: "v2", backgroundText: "ah" })).toEqual({
-      text: "Hi",
-      agentId: "v2",
-      backgroundText: "ah",
-    });
-  });
-
-  it("ignores fields absent from the update", () => {
-    expect(extractLinkedFields({ text: "Hi" })).toEqual({ text: "Hi" });
-  });
-
-  it("propagates an explicit clear of words, begin, end, and backgroundWords", () => {
-    expect(
-      extractLinkedFields({ words: undefined, begin: undefined, end: undefined, backgroundWords: undefined }),
-    ).toEqual({ words: undefined, begin: undefined, end: undefined, backgroundWords: undefined });
-  });
-
-  it("does not propagate a words update carrying a defined value", () => {
-    expect(
-      extractLinkedFields({ words: [{ id: "w1", text: "a", sep: "", begin: 0, end: 1, joinsNext: false }] }),
-    ).toEqual({});
-  });
-
-  it("does not propagate a begin/end update carrying a defined value", () => {
-    expect(extractLinkedFields({ begin: 5, end: 9 })).toEqual({});
-  });
-
-  it("carries the background provenance flag", () => {
-    const fields = extractLinkedFields({ backgroundText: "ooh", backgroundTextSource: "extraction" });
-    expect(fields.backgroundText).toBe("ooh");
-    expect(fields.backgroundTextSource).toBe("extraction");
-  });
-
-  it("carries a manual background provenance flag", () => {
-    const fields = extractLinkedFields({ backgroundText: "yeah", backgroundTextSource: "manual" });
-    expect(fields.backgroundText).toBe("yeah");
-    expect(fields.backgroundTextSource).toBe("manual");
-  });
-
-  it("does not invent a provenance flag when only backgroundText is updated", () => {
-    const fields = extractLinkedFields({ backgroundText: "hey" });
-    expect(fields.backgroundText).toBe("hey");
-    expect("backgroundTextSource" in fields).toBe(false);
-  });
-
-  it("propagates an explicit clear of backgroundText and its provenance flag", () => {
-    expect(extractLinkedFields({ backgroundText: undefined, backgroundTextSource: undefined })).toEqual({
-      backgroundText: undefined,
-      backgroundTextSource: undefined,
-    });
-  });
-
-  it("carries the provenance flag alongside other linked fields without regression", () => {
-    expect(
-      extractLinkedFields({
-        text: "Hi",
-        agentId: "v2",
-        backgroundText: "ah",
-        backgroundTextSource: "extraction",
-      }),
-    ).toEqual({
-      text: "Hi",
-      agentId: "v2",
-      backgroundText: "ah",
-      backgroundTextSource: "extraction",
-    });
-  });
-
-  it("excludes non-linked fields even when a provenance flag is present", () => {
-    expect(
-      extractLinkedFields({
-        id: "l9",
-        instanceIdx: 3,
-        backgroundText: "ah",
-        backgroundTextSource: "manual",
-      }),
-    ).toEqual({
-      backgroundText: "ah",
-      backgroundTextSource: "manual",
-    });
-  });
-});
-
 // -- unlinkLines --------------------------------------------------------------
 
 describe("unlinkLines", () => {
@@ -167,7 +81,7 @@ describe("unlinkLines", () => {
       line({ id: "b", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
     ];
     const result = unlinkLines(lines, (l) => l.id === "a");
-    expect(result[0]).toMatchObject({ id: "a", text: "Hello" });
+    expect(fieldsOfLine(result[0])).toMatchObject({ id: "a", text: "Hello" });
     for (const field of ["groupId", "instanceIdx", "templateLineIdx", "detached"] as const) {
       expect(result[0][field]).toBeUndefined();
     }

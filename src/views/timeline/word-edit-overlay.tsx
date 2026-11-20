@@ -4,7 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { typeWordText } from "@/domain/commands/word-structure";
 import { getEffectiveLine } from "@/domain/line/effective-words";
-import { trackWords } from "@/domain/line/tracks";
+import { trackWords } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";

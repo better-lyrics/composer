@@ -1,3 +1,4 @@
+import { withFields } from "@/test/field-updates";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { changedParts, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import { createGroup, createLine } from "@/test/factories";
@@ -63,7 +64,7 @@ describe("changesProject", () => {
   describe("cross-field interactions", () => {
     it("sees a changed line", () => {
       const current = project();
-      const edit = { ...sameEdit(current), lines: [{ ...current.lines[0], text: "Hi" }] };
+      const edit = { ...sameEdit(current), lines: [withFields(current.lines[0], { text: "Hi" })] };
       expect(changesProject(current, editedLyricsWrite(current, edit))).toBe(true);
     });
 
@@ -89,7 +90,7 @@ describe("changesProject", () => {
   describe("edge cases", () => {
     it("sees key order and unset keys as no change", () => {
       const current = project();
-      const lines = current.lines.map(({ id, text, ...rest }) => ({ ...rest, text, id, detached: undefined }));
+      const lines = current.lines.map(({ id, tracks, ...rest }) => ({ ...rest, tracks, id, detached: undefined }));
       const reordered = { ...sameEdit(current), lines };
       expect(changesProject(current, editedLyricsWrite(current, reordered))).toBe(false);
     });
@@ -105,7 +106,7 @@ describe("changedParts", () => {
   it("names every part the edit changes, lines first", () => {
     const current = project();
     const edit = {
-      lines: [{ ...current.lines[0], text: "Hi" }],
+      lines: [withFields(current.lines[0], { text: "Hi" })],
       groups: [createGroup({ id: "g1", label: "Chorus 2" })],
       agents: current.agents.map((agent) => ({ ...agent, name: "Renamed" })),
       metadata: { title: "Other" },

@@ -1,6 +1,6 @@
-import { applyWordCountChange } from "@/domain/commands/word-edits";
+import { applyWordCountChange, type WordWriteExtras } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
-import type { LyricLine } from "@/domain/line/model";
+import { fieldWords, type TrackField } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { askWordDivergence } from "@/ui/divergence-prompt";
@@ -18,14 +18,14 @@ import { wouldDivergenceCauseRetiming } from "@/utils/word-diff";
 async function handleWordChangeWithDivergenceCheck(
   lineId: string,
   newWords: WordTiming[],
-  field: "words" | "backgroundWords" = "words",
-  extraUpdates: Partial<LyricLine> = {},
+  field: TrackField = "words",
+  extraUpdates: WordWriteExtras = {},
 ): Promise<boolean> {
   const lines = useProjectStore.getState().lines;
   const target = lines.find((l) => l.id === lineId);
   if (!target) return false;
 
-  const sourceBefore = target[field];
+  const sourceBefore = fieldWords(target, field);
   const oldCount = sourceBefore?.length ?? 0;
   const isLinked = target.groupId !== undefined && target.templateLineIdx !== undefined && !target.detached;
   const countChanged = isLinked && newWords.length !== oldCount;
@@ -43,7 +43,12 @@ async function handleWordChangeWithDivergenceCheck(
   const groupId = target.groupId as string;
   const templateLineIdx = target.templateLineIdx as number;
   const affectedSiblingCount = lines.filter(
-    (l) => l.id !== lineId && l.groupId === groupId && l.templateLineIdx === templateLineIdx && !l.detached && l[field],
+    (l) =>
+      l.id !== lineId &&
+      l.groupId === groupId &&
+      l.templateLineIdx === templateLineIdx &&
+      !l.detached &&
+      fieldWords(l, field),
   ).length;
   const groupLabel = useProjectStore.getState().groups.find((g) => g.id === groupId)?.label;
 

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { fingerprintChanged, readAlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { alignmentBreakdown, alignmentReview } from "@/domain/alignment/review-state";
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { createLine } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -62,25 +64,24 @@ describe("alignmentReview", () => {
   });
 
   it("ignores text and metadata changes", () => {
-    const retexted = SONG.map((line) => ({ ...line, agentId: "v2", backgroundText: "ooh" }));
+    const retexted = SONG.map((line) => withFields(line, { agentId: "v2", backgroundText: "ooh" }));
     expect(alignmentReview(retexted, fingerprintsOf(SONG)).tier).toBe("untouched");
   });
 
   it("counts a background vocal timing edit as review", () => {
     const withBackground = SONG.map((line) =>
       createLine({
-        ...line,
-        words: line.words,
+        ...fieldsOfLine(line),
+        words: roleWords(line, "main"),
         backgroundText: "ooh",
         backgroundWords: [{ text: "ooh", begin: 15, end: 15.5 }],
       }),
     );
     const edited = withBackground.map((line, i) =>
       i < 3
-        ? {
-            ...line,
+        ? withFields(line, {
             backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 15.1, end: 15.5, joinsNext: false }],
-          }
+          })
         : line,
     );
     expect(alignmentReview(edited, fingerprintsOf(withBackground)).tier).toBe("reviewed");
@@ -120,7 +121,9 @@ describe("fingerprintChanged", () => {
 
   it("regression: a linked sibling replaced with the same timing is not recorded as aligned", () => {
     const line = SONG[0];
-    expect(fingerprintChanged(line, { ...line, text: "Is this the real life?" })).toBe(false);
+    expect(fingerprintChanged(line, lineFromFields({ ...fieldsOfLine(line), text: "Is this the real life?" }))).toBe(
+      false,
+    );
   });
 });
 

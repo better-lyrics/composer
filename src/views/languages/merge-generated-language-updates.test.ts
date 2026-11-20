@@ -1,10 +1,12 @@
 /**
  * @vitest-environment node
  */
+
 import { describe, expect, it } from "vitest";
 import { saveTransliterationAlignment } from "@/domain/commands/languages";
 import { moveWords } from "@/domain/commands/word-moves";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { roleWords } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
@@ -42,7 +44,7 @@ describe("mergeGeneratedLanguageUpdates", () => {
     const startingLines = new Map([[target.id, target]]);
     const request = new AbortController();
     const { edits, stop } = watchGenerationEdits(startingLines, [], request.signal);
-    const [word] = source.words ?? [];
+    const [word] = roleWords(source, "main") ?? [];
     useProjectStore
       .getState()
       .commit(moveWords({ addresses: [addressOf(source, "word", word)], timeDelta: 0.1, duration: 60 }));
@@ -63,7 +65,7 @@ describe("mergeGeneratedLanguageUpdates", () => {
       },
       edits,
     );
-    expect(useProjectStore.getState().lines[1].words?.[0].begin).toBe(11.1);
+    expect(roleWords(useProjectStore.getState().lines[1], "main")?.[0].begin).toBe(11.1);
     expect(updates.map((update) => update.updates.languages?.transliteration?.main.text)).toEqual(["ha neul"]);
   });
 

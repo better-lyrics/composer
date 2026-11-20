@@ -1,3 +1,4 @@
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LanguageContentOrigin } from "@/domain/language/model";
 import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
@@ -18,7 +19,7 @@ function lineWithTracks(
   } = {},
 ): LyricLine {
   const sourceFingerprint = languageSourceFingerprint(sourceText);
-  return {
+  return lineFromFields({
     id,
     agentId: "v1",
     text,
@@ -40,7 +41,7 @@ function lineWithTracks(
         ]),
       ),
     },
-  };
+  });
 }
 
 describe("staleGeneratedLanguages", () => {
@@ -86,7 +87,7 @@ describe("staleGeneratedLanguages", () => {
     });
 
     it("finds nothing in lines without language tracks", () => {
-      expect(staleGeneratedLanguages([{ id: "a", agentId: "v1", text: "Привет" }])).toEqual([]);
+      expect(staleGeneratedLanguages([lineFromFields({ id: "a", agentId: "v1", text: "Привет" })])).toEqual([]);
     });
 
     it("does not count a syllable split as a text change", () => {
@@ -98,7 +99,7 @@ describe("staleGeneratedLanguages", () => {
     it("counts a background vocal change as a text change", () => {
       const line = lineWithTracks("a", "Привет", { transliteration: "google" });
 
-      expect(staleGeneratedLanguages([{ ...line, backgroundText: "эй" }])).toEqual([
+      expect(staleGeneratedLanguages([lineFromFields({ ...fieldsOfLine(line), backgroundText: "эй" })])).toEqual([
         { lineIds: ["a"], transliteration: true, translations: [] },
       ]);
     });

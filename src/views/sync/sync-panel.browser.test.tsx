@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { lineText } from "@/domain/line/text";
+import { roleWords } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { firstBegin, tapAt } from "@/test/shared-timing-sync";
@@ -165,7 +167,7 @@ describe("SyncPanel · tap while already playing", () => {
 
     pressTap();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.begin).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.begin).toBe(5);
   });
 
   it("marks the session active after tapping so Reset becomes available", async () => {
@@ -191,7 +193,7 @@ describe("SyncPanel · touch sync", () => {
 
     firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.begin).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.begin).toBe(5);
   });
 
   it("opens the word on hold press and closes it on release", async () => {
@@ -201,13 +203,13 @@ describe("SyncPanel · touch sync", () => {
     const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
     firePointer(holdCircle.element(), "pointerdown");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.begin).toBe(5);
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.begin).toBe(5);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(5);
 
     setCurrentTime(7);
     firePointer(holdCircle.element(), "pointerup");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
   });
 
   it("advances to the next word when the tap circle is pressed during a hold", async () => {
@@ -215,13 +217,13 @@ describe("SyncPanel · touch sync", () => {
     const screen = await render(<SyncPanel />);
 
     firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
 
     setCurrentTime(7);
     firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.begin).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[1]?.begin).toBe(7);
   });
 
   it("releases the hold when the pointer is cancelled", async () => {
@@ -230,12 +232,12 @@ describe("SyncPanel · touch sync", () => {
 
     const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
     firePointer(holdCircle.element(), "pointerdown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
 
     setCurrentTime(8);
     firePointer(holdCircle.element(), "pointercancel");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(8);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(8);
   });
 
   it("releases the hold when the pointer leaves the circle", async () => {
@@ -244,14 +246,14 @@ describe("SyncPanel · touch sync", () => {
 
     const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
     firePointer(holdCircle.element(), "pointerdown");
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
 
     setCurrentTime(8);
     // React derives onPointerLeave from the native pointerout event, so a raw
     // "pointerleave" dispatch would never reach the handler.
     firePointer(holdCircle.element(), "pointerout");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(8);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.end).toBe(8);
   });
 
   describe("invariants", () => {
@@ -307,13 +309,13 @@ describe("SyncPanel · touch sync", () => {
       const screen = await render(<SyncPanel />);
 
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "f", code: "KeyF", bubbles: true }));
-      await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.begin).toBe(5);
+      await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.begin).toBe(5);
 
       setCurrentTime(7);
       firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown");
 
-      await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.begin).toBe(5);
-      await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+      await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.begin).toBe(5);
+      await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(1);
     });
   });
 
@@ -337,7 +339,7 @@ describe("SyncPanel · touch sync", () => {
       setIsPlaying(true);
       window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
 
-      await expect.poll(() => useProjectStore.getState().lines[0].words).toBeUndefined();
+      await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")).toBeUndefined();
     });
 
     it("prevents the default press action on both circles so the press cannot steal focus", async () => {
@@ -356,7 +358,7 @@ describe("SyncPanel · touch sync", () => {
 
       window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
 
-      await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.begin).toBe(5);
+      await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0]?.begin).toBe(5);
     });
   });
 });
@@ -383,12 +385,10 @@ describe("bg-init derivation", () => {
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60, isPlaying: false });
     useProjectStore.setState({ activeTab: "sync", granularity: "word", lines: [createLine({ id: "l0", text: "a" })] });
     const store = useProjectStore.getState();
-    store.commit(pasteLines([{ id: "l0", updates: { text: "a b" } }]));
+    store.commit(pasteLines(fieldUpdates([{ id: "l0", updates: { text: "a b" } }])));
     store.commit(
-      lineEditCommand(
-        { command: "edit lines", args: [] },
-        () => [{ id: "l0", updates: { begin: 1, end: 2, backgroundText: "oh" } }],
-        { derivesText: false },
+      lineEditCommand({ command: "edit lines", args: [] }, () =>
+        fieldUpdates([{ id: "l0", updates: { begin: 1, end: 2, backgroundText: "oh" } }]),
       ),
     );
     await render(<SyncPanel />);

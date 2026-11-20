@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import { validateTransliterationAlignment } from "@/domain/language/align";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
@@ -209,7 +210,7 @@ describe("PasteImportModal", () => {
     it("disables importing when a transliteration cannot be aligned to its timing", async () => {
       const words = ["가", "나", "다"].map((text, index) => ({ text, begin: index, end: index + 1 }));
       const lines = [createLine({ id: "l0", text: "가나다", words })];
-      const expectedError = validateTransliterationAlignment("가나다", "a", lines[0].words);
+      const expectedError = validateTransliterationAlignment("가나다", "a", roleWords(lines[0], "main"));
       expect(expectedError).not.toBeNull();
 
       const props = buildProps({ lines, initialText: "a" });

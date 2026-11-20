@@ -1,6 +1,6 @@
 import { markWordsExplicit, mergeSyllableGroup } from "@/domain/commands/word-edits";
 import type { LyricLine } from "@/domain/line/model";
-import { type TrackField, trackField, trackWords } from "@/domain/line/tracks";
+import { type TrackField, trackField, trackWords } from "@/domain/line/track";
 import { contiguousSelectionRun, type SelectionRun } from "@/domain/selection/contiguous";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";

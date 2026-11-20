@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
@@ -45,7 +46,9 @@ describe("usePersistence · hand-edited TTML", () => {
   it("saves the edit with the project", async () => {
     await mountPersistence();
 
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })] });
     useProjectStore.getState().setTtmlEditState(EDIT);
 
     await expect.poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 }).toEqual(EDIT);

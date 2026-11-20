@@ -154,7 +154,7 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           displayText={displayLine.text}
           displayWordTexts={displayLine.wordTexts}
           isCurrent={index === currentLineIndex}
-          agentId={line.agentId}
+          agentId={mainTrack(line).agentId}
           backgroundText={backgroundText(line)}
           displayBackgroundText={displayLine.backgroundText}
           displayBackgroundWordTexts={displayLine.backgroundWordTexts}

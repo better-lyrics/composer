@@ -1,3 +1,4 @@
+import { withFields } from "@/test/field-updates";
 import {
   keptReRecording,
   reRecordingAt,
@@ -82,7 +83,7 @@ describe("skippedSharedInstances", () => {
       const lines = [
         ...song(40).slice(0, 3),
         chorus(1, 0, 40),
-        { ...chorus(1, 1, 41), text: "" },
+        withFields(chorus(1, 1, 41), { text: "", words: undefined }),
         { ...chorus(1, 2), detached: true },
       ];
       const [skipped] = skippedSharedInstances(lines, sharing);

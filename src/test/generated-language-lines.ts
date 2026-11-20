@@ -1,5 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
+import { roleWords } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
@@ -45,7 +46,7 @@ function lineById(id: string): LyricLine {
 
 function romanizedWords(id: string): Array<string | undefined> {
   const line = lineById(id);
-  return legacyWords(line.words, line.languages)?.map((word) => word.transliteration) ?? [];
+  return legacyWords(roleWords(line, "main"), line.languages)?.map((word) => word.transliteration) ?? [];
 }
 
 function gate() {

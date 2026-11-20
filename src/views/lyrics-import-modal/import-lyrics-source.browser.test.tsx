@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -57,7 +58,7 @@ async function openAlpha(): Promise<void> {
     open: true,
     project: {
       metadata: { title: "Alpha", artists: [], album: "", duration: 0 },
-      lines: [createLine({ text: "Alpha line one" }), createLine({ text: "Alpha line two" })],
+      lines: savedLines([createLine({ text: "Alpha line one" }), createLine({ text: "Alpha line two" })]),
     },
   });
   await restoreOpenProject();

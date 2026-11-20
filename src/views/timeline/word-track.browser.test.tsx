@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWords } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
@@ -57,7 +58,7 @@ function dragRightEdgeBy(block: HTMLElement, offsetPx: number) {
 
 const commitToStore: UpdateWord = (index, updates, adjacentIndex, adjacentUpdates) => {
   const line = useProjectStore.getState().lines[0];
-  if (!line.words) return;
+  if (!roleWords(line, "main")) return;
   const patched = applyWordPatch(
     timedSyllables(mainTrack(line)),
     index,
@@ -66,9 +67,13 @@ const commitToStore: UpdateWord = (index, updates, adjacentIndex, adjacentUpdate
   );
   if (!patched) return;
   useProjectStore.getState().commit(
-    lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: line.id, updates: { words: patched } }], {
-      propagateToSiblings: false,
-    }),
+    lineEditCommand(
+      { command: "edit lines", args: [] },
+      () => fieldUpdates([{ id: line.id, updates: { words: patched } }]),
+      {
+        propagateToSiblings: false,
+      },
+    ),
   );
 };
 
@@ -556,7 +561,7 @@ describe("WordTrack", () => {
       new MouseEvent("dblclick", { bubbles: true, clientX: rect.left + 250, clientY: rect.top + 10 }),
     );
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(3);
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text + w.sep)).toEqual([
       "hello ",
       "world ",
@@ -660,8 +665,8 @@ describe("WordTrack", () => {
 
       pressEdgeMoveAndClick(blocks[1], "left", { dx: 30, dy: 0 });
 
-      await expect.poll(() => useProjectStore.getState().lines[0].words?.[1].begin).not.toBe(1.2);
-      const movedBegin = useProjectStore.getState().lines[0].words?.[1].begin;
+      await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[1].begin).not.toBe(1.2);
+      const movedBegin = roleWords(useProjectStore.getState().lines[0], "main")?.[1].begin;
       expect(movedBegin).toBeGreaterThan(1.4);
       expect(movedBegin).toBeLessThan(1.6);
       expect(useTimelineStore.getState().selectedWords).toHaveLength(0);

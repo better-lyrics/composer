@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { applyCrossLineMove, applySameLineReorder, type DragData } from "@/views/timeline/drag-handlers";
@@ -84,8 +84,8 @@ describe("applyCrossLineMove with a shared time range", () => {
       duration: DURATION,
     });
 
-    const moved = lineById("c1")?.words?.at(-1);
-    const copied = lineById("c2")?.words?.at(-1);
+    const moved = roleWords(lineById("c1"), "main")?.at(-1);
+    const copied = roleWords(lineById("c2"), "main")?.at(-1);
     expect(moved?.begin).toBeCloseTo(13.8, 6);
     expect(moved?.end).toBe(14);
     expect(copied?.begin).toBeCloseTo(19.8, 6);

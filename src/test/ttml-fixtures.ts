@@ -1,5 +1,6 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { legacyLine } from "@/test/legacy-languages";
@@ -90,8 +91,8 @@ function buildAlternateLanguageTtml(): string {
     }),
   ];
   lines[0] = legacyLine({
-    ...lines[0],
-    words: lines[0].words?.map((word, index) => ({
+    ...fieldsOfLine(lines[0]),
+    words: roleWords(lines[0], "main")?.map((word, index) => ({
       ...word,
       transliteration: index === 0 ? "annyeong" : "sesang",
     })),
@@ -133,7 +134,7 @@ function buildAlternateBackgroundLanguageTtml(): string {
   const [annyeong, sesang] = timedSyllables(mainTrack(lines[0]));
   const [oh] = timedSyllables(backgroundTrack(lines[0]));
   lines[0] = legacyLine({
-    ...lines[0],
+    ...fieldsOfLine(lines[0]),
     words: [
       { ...annyeong, transliteration: "annyeong" },
       { ...sesang, transliteration: "sesang" },
@@ -176,7 +177,7 @@ function buildMatchingAlternateLanguageTtml(): string {
     }),
   ];
   lines[0] = legacyLine({
-    ...lines[0],
+    ...fieldsOfLine(lines[0]),
     words: timedSyllables(mainTrack(lines[0])).map((word, index) => ({
       ...word,
       transliteration: index === 0 ? "Same," : "LINE!",

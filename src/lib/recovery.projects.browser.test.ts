@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { removeProjectData, saveProjectRecord, setOpenProjectId } from "@/lib/project-repository";
 import { LEGACY_PROJECT_KEY } from "@/lib/project-storage";
@@ -86,7 +87,10 @@ describe("recovery · every project", () => {
     it("counts lines the same way the library does, not every stored array entry", async () => {
       await saveProjectRecord(
         "a",
-        storedProject({ ...songTitled("Alpha"), lines: [createLine({ text: "Real line" }), createLine({ text: "" })] }),
+        storedProject({
+          ...songTitled("Alpha"),
+          lines: savedLines([createLine({ text: "Real line" }), createLine({ text: "" })]),
+        }),
       );
       const [project] = await listRecoverableProjects();
       expect(project.lineCount).toBe(1);

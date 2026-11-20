@@ -97,7 +97,7 @@ const FORBIDDEN: ForbiddenPattern[] = [
   },
   {
     name: "inline project timing granularity",
-    regex: /\.some\(\s*(?:isWordSynced\b|\(?\s*(\w+)\s*\)?\s*=>\s*\1\.words\?\.length)/,
+    regex: /\.some\(\s*isWordSynced\b/,
     use: "timingGranularityOf from @/domain/project/timing-granularity",
   },
   {
@@ -132,18 +132,10 @@ const FORBIDDEN: ForbiddenPattern[] = [
     use: "instanceCount from @/domain/instance/enumerate",
   },
   {
-    name: "inline word track pick",
-    regex:
-      /=== "word" \?\s*\(?[\w.?]+\.words\b[^:]*:\s*\(?[\w.?]+\.backgroundWords\b|=== "bg" \?\s*\(?[\w.?]+\.backgroundWords\b[^:]*:\s*\(?[\w.?]+\.words\b/,
-    use: "trackWords from @/domain/line/tracks",
-    ownerFile: "domain/line/tracks.ts",
-    includeDomain: true,
-  },
-  {
-    name: "inline word track field name",
-    regex: /=== "word" \?\s*"words"\s*:\s*"backgroundWords"|=== "bg" \?\s*"backgroundWords"\s*:\s*"words"/,
-    use: "trackField from @/domain/line/tracks",
-    ownerFile: "domain/line/tracks.ts",
+    name: "inline track pick",
+    regex: /\.tracks\[[01]\]|\.tracks\.find\(/,
+    use: "mainTrack / backgroundTrack from @/domain/line/track",
+    ownerFile: "domain/line/track.ts",
     includeDomain: true,
   },
   {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getLanguageDisplayLine } from "@/domain/language/display";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
@@ -40,7 +41,7 @@ describe("language display alignment", () => {
       { id: "w6", text: "風", sep: "", begin: 1, end: 2, transliteration: "ra", joinsNext: false },
     ];
     const dashed: LyricLine = legacyLine({
-      ...line,
+      ...fieldsOfLine(line),
       text: "空|風",
       words,
       backgroundText: "空|風",
@@ -48,7 +49,7 @@ describe("language display alignment", () => {
       transliteration: { ...legacyLanguages(line.languages).transliteration!, text: "so-ra", backgroundText: "so-ra" },
     });
     const before = structuredClone(dashed);
-    for (const candidate of [dashed, reconcileLine({ ...dashed, words: [], backgroundWords: [] })]) {
+    for (const candidate of [dashed, lineFromFields({ ...fieldsOfLine(dashed), words: [], backgroundWords: [] })]) {
       const display = getLanguageDisplayLine(candidate, "transliteration");
       expect(display.wordTexts).toEqual(["so-", "ra"]);
       expect(display.backgroundWordTexts).toEqual(["so-", "ra"]);
@@ -58,7 +59,7 @@ describe("language display alignment", () => {
 
   it("displays a background-only alternate while retaining the original foreground", () => {
     const backgroundOnly: LyricLine = legacyLine({
-      ...line,
+      ...fieldsOfLine(line),
       text: "Hello",
       words: [{ id: "w7", text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale", joinsNext: false }],
       backgroundText: "空",
@@ -93,7 +94,7 @@ describe("language display alignment", () => {
   });
 
   it("keeps all labels visible while only the timed prefix has timing", () => {
-    const partial = reconcileLine({ ...line, words: timedSyllables(mainTrack(line)).slice(0, 1) });
+    const partial = lineFromFields({ ...fieldsOfLine(line), words: timedSyllables(mainTrack(line)).slice(0, 1) });
     const display = getLanguageDisplayLine(partial, "transliteration");
     expect(display.wordTexts).toEqual(["geol eum eun", "Like", "a", "dance"]);
     expect(display.words).toHaveLength(1);

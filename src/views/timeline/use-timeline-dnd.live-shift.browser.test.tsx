@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -22,7 +23,7 @@ describe("useTimelineDnd · live shift state", () => {
     useTimelineStore.setState({ rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "l1",
           text: "every",
           agentId: "v1",
@@ -31,7 +32,7 @@ describe("useTimelineDnd · live shift state", () => {
             { id: "w2", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
             { id: "w3", text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
     scrollHost = installScrollHost();
@@ -54,8 +55,8 @@ describe("useTimelineDnd · live shift state", () => {
 
     const after = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(after)).length).toBe(0);
-    expect(after.backgroundWords?.length).toBe(3);
-    expect(computeSyllableGroups(after.backgroundWords ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
+    expect(roleWords(after, "bg")?.length).toBe(3);
+    expect(computeSyllableGroups(roleWords(after, "bg") ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 
   it("shifts every groupmate by the same delta when a non-leading syllable is shift-dragged", async () => {
@@ -108,7 +109,7 @@ describe("useTimelineDnd · live shift state", () => {
 
     const after = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(after)).length).toBe(0);
-    expect(after.backgroundWords?.length).toBe(3);
-    expect(computeSyllableGroups(after.backgroundWords ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
+    expect(roleWords(after, "bg")?.length).toBe(3);
+    expect(computeSyllableGroups(roleWords(after, "bg") ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 });

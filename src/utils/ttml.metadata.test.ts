@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
@@ -12,7 +13,7 @@ const metadata: ProjectMetadata = {
   songwriters: ["W1"],
   extra: { spotifyId: "abc" },
 };
-const lines = [{ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" }];
+const lines = [lineFromFields({ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" })];
 
 describe("generateTTML metadata", () => {
   const ttml = generateTTML({ metadata, agents: [], lines });
@@ -80,7 +81,7 @@ describe("generateTTML xml:lang", () => {
 
   describe("U9 language validation", () => {
     const agents = [{ id: "v1", type: "person" as const, name: "Lead" }];
-    const wordLine = {
+    const wordLine = lineFromFields({
       id: "a",
       text: "Hello world",
       agentId: "v1",
@@ -88,7 +89,7 @@ describe("generateTTML xml:lang", () => {
         { id: "w1", text: "Hello", sep: " ", begin: 1, end: 1.5, joinsNext: false },
         { id: "w2", text: "world", sep: "", begin: 1.5, end: 2, joinsNext: false },
       ],
-    };
+    });
 
     it("does not export an invalid BCP-47 tag as xml:lang", () => {
       const ttml = generateTTML({

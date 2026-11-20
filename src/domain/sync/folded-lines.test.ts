@@ -1,3 +1,4 @@
+import { withFields } from "@/test/field-updates";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { foldedLineIds } from "@/domain/sync/folded-lines";
@@ -52,7 +53,7 @@ describe("foldedLineIds", () => {
 
   describe("edge cases", () => {
     it("folds nothing without a timed instance to copy from", () => {
-      const lines = song().map((line) => (line.groupId ? { ...line, words: undefined } : line));
+      const lines = song().map((line) => (line.groupId ? withFields(line, { words: undefined }) : line));
       expect(folded(lines, 0)).toEqual([]);
     });
 

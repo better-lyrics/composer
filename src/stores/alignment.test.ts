@@ -1,10 +1,12 @@
 /**
  * @vitest-environment node
  */
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { useAlignmentStore } from "@/stores/alignment";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
@@ -92,8 +94,8 @@ describe("alignment store", () => {
   it("turns line-synced lines into word-synced lines inside their taps", async () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "hello there", agentId: "v1", begin: 10, end: 12 },
-        { id: "L2", text: "", agentId: "v1", begin: 13, end: 14 },
+        lineFromFields({ id: "L1", text: "hello there", agentId: "v1", begin: 10, end: 12 }),
+        lineFromFields({ id: "L2", text: "", agentId: "v1", begin: 13, end: 14 }),
       ],
     });
 
@@ -104,14 +106,14 @@ describe("alignment store", () => {
     expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "there"]);
     expect(timedSyllables(mainTrack(line))[0].begin).toBeGreaterThanOrEqual(10);
     expect(timedSyllables(mainTrack(line))[1].end).toBeLessThanOrEqual(12);
-    expect(empty.words).toBeUndefined();
+    expect(roleWords(empty, "main")).toBeUndefined();
   });
 
   it("regression: aligns the last line tapped in Line mode, which a tap never ended", async () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "first line", agentId: "v1", begin: 10, end: 12 },
-        { id: "L2", text: "last line", agentId: "v1", begin: 12, end: 12 },
+        lineFromFields({ id: "L1", text: "first line", agentId: "v1", begin: 10, end: 12 }),
+        lineFromFields({ id: "L2", text: "last line", agentId: "v1", begin: 12, end: 12 }),
       ],
     });
 
@@ -127,9 +129,9 @@ describe("alignment store", () => {
   it("regression: aligns the line a jump left without an end, up to the line jumped to", async () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "before the jump", agentId: "v1", begin: 1, end: 1 },
-        { id: "L2", text: "skipped", agentId: "v1" },
-        { id: "L3", text: "jumped to", agentId: "v1", begin: 10, end: 12 },
+        lineFromFields({ id: "L1", text: "before the jump", agentId: "v1", begin: 1, end: 1 }),
+        lineFromFields({ id: "L2", text: "skipped", agentId: "v1" }),
+        lineFromFields({ id: "L3", text: "jumped to", agentId: "v1", begin: 10, end: 12 }),
       ],
     });
 
@@ -138,15 +140,15 @@ describe("alignment store", () => {
     const [before, skipped] = useProjectStore.getState().lines;
     expect(timedSyllables(mainTrack(before))[0].begin).toBeGreaterThanOrEqual(0.4);
     expect(timedSyllables(mainTrack(before)).at(-1)?.end).toBeLessThanOrEqual(10.15);
-    expect(skipped.words).toBeUndefined();
+    expect(roleWords(skipped, "main")).toBeUndefined();
   });
 
   it("anchors each line on the one before, and after a rejected anchor leaves the next line unanchored", async () => {
     const tapped = [
-      { id: "L1", text: "one two", agentId: "v1", begin: 10, end: 11.5 },
-      { id: "L2", text: "three four", agentId: "v1", begin: 11.5, end: 13 },
-      { id: "L3", text: "five six", agentId: "v1", begin: 13, end: 14.5 },
-      { id: "L4", text: "seven eight", agentId: "v1", begin: 14.5, end: 16 },
+      lineFromFields({ id: "L1", text: "one two", agentId: "v1", begin: 10, end: 11.5 }),
+      lineFromFields({ id: "L2", text: "three four", agentId: "v1", begin: 11.5, end: 13 }),
+      lineFromFields({ id: "L3", text: "five six", agentId: "v1", begin: 13, end: 14.5 }),
+      lineFromFields({ id: "L4", text: "seven eight", agentId: "v1", begin: 14.5, end: 16 }),
     ];
     useProjectStore.getState().restoreLyrics({ lines: tapped });
     seen.anchorMoves = { three: 0.25 };
@@ -171,8 +173,8 @@ describe("alignment store", () => {
     useProjectStore.setState({ metadata: { ...INITIAL_STATE.metadata, language: "zh" } });
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "one two", agentId: "v1", begin: 10, end: 11.5 },
-        { id: "L2", text: "three four", agentId: "v1", begin: 11.5, end: 13 },
+        lineFromFields({ id: "L1", text: "one two", agentId: "v1", begin: 10, end: 11.5 }),
+        lineFromFields({ id: "L2", text: "three four", agentId: "v1", begin: 11.5, end: 13 }),
       ],
     });
 
@@ -184,7 +186,7 @@ describe("alignment store", () => {
   it("keeps syllable splits from the lyrics", async () => {
     useProjectStore
       .getState()
-      .restoreLyrics({ lines: [{ id: "L1", text: "hel|lo you", agentId: "v1", begin: 1, end: 2 }] });
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "hel|lo you", agentId: "v1", begin: 1, end: 2 })] });
     await useAlignmentStore.getState().alignLines();
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text + w.sep)).toEqual([
       "hel",
@@ -194,9 +196,9 @@ describe("alignment store", () => {
   });
 
   it("regression: groups every split word it writes, from the lyrics or from the audio, separately", async () => {
-    useProjectStore
-      .getState()
-      .restoreLyrics({ lines: [{ id: "L1", text: "hel|lo yellow there", agentId: "v1", begin: 1, end: 4 }] });
+    useProjectStore.getState().restoreLyrics({
+      lines: [lineFromFields({ id: "L1", text: "hel|lo yellow there", agentId: "v1", begin: 1, end: 4 })],
+    });
     await useAlignmentStore.getState().alignLines();
 
     const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
@@ -208,9 +210,9 @@ describe("alignment store", () => {
     const words = [{ id: "w1", text: "kept", sep: "", begin: 3, end: 4, joinsNext: false }];
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "kept", agentId: "v1", words },
-        { id: "L2", text: "not chosen", agentId: "v1", begin: 5, end: 6 },
-        { id: "L3", text: "chosen", agentId: "v1", begin: 7, end: 8 },
+        lineFromFields({ id: "L1", text: "kept", agentId: "v1", words }),
+        lineFromFields({ id: "L2", text: "not chosen", agentId: "v1", begin: 5, end: 6 }),
+        lineFromFields({ id: "L3", text: "chosen", agentId: "v1", begin: 7, end: 8 }),
       ],
     });
 
@@ -218,7 +220,7 @@ describe("alignment store", () => {
 
     const [first, second, third] = useProjectStore.getState().lines;
     expect(timedSyllables(mainTrack(first))).toEqual(words);
-    expect(second.words).toBeUndefined();
+    expect(roleWords(second, "main")).toBeUndefined();
     expect(timedSyllables(mainTrack(third)).map((w) => w.text)).toEqual(["chosen"]);
   });
 
@@ -228,7 +230,9 @@ describe("alignment store", () => {
       { id: "w3", text: "lo", sep: " ", begin: 1.1, end: 1.2, joinsNext: false },
       { id: "w4", text: "you", sep: "", begin: 1.2, end: 3, explicit: true as const, joinsNext: false },
     ];
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "hel|lo you", agentId: "v1", words }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "hel|lo you", agentId: "v1", words })] });
 
     const result = await useAlignmentStore.getState().alignLines(undefined, { realign: true });
 
@@ -246,7 +250,7 @@ describe("alignment store", () => {
     useProjectStore.getState().setGranularity("line");
     useProjectStore
       .getState()
-      .restoreLyrics({ lines: [{ id: "L1", text: "one two", agentId: "v1", begin: 1, end: 2 }] });
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "one two", agentId: "v1", begin: 1, end: 2 })] });
 
     await useAlignmentStore.getState().alignLines();
 
@@ -254,26 +258,28 @@ describe("alignment store", () => {
   });
 
   it("applies the whole run as one undo step", async () => {
-    useProjectStore.getState().commit(
-      pasteLyrics(useProjectStore.getState().lines, [
-        { id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 },
-        { id: "L2", text: "two", agentId: "v1", begin: 3, end: 4 },
-      ]),
-    );
+    useProjectStore
+      .getState()
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [
+          lineFromFields({ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }),
+          lineFromFields({ id: "L2", text: "two", agentId: "v1", begin: 3, end: 4 }),
+        ]),
+      );
 
     await useAlignmentStore.getState().alignLines();
     useProjectStore.getState().undo();
 
     const lines = useProjectStore.getState().lines;
-    expect(lines.every((l) => l.words === undefined)).toBe(true);
-    expect(lines[0].begin).toBe(1);
+    expect(lines.every((l) => roleWords(l, "main") === undefined)).toBe(true);
+    expect(mainTrack(lines[0]).begin).toBe(1);
   });
 
   it("reports lines with unknown words without stopping the run", async () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "zzz now", agentId: "v1", begin: 1, end: 2 },
-        { id: "L2", text: "fine", agentId: "v1", begin: 3, end: 4 },
+        lineFromFields({ id: "L1", text: "zzz now", agentId: "v1", begin: 1, end: 2 }),
+        lineFromFields({ id: "L2", text: "fine", agentId: "v1", begin: 3, end: 4 }),
       ],
     });
 
@@ -284,11 +290,13 @@ describe("alignment store", () => {
 
   it("asks before downloading the model", async () => {
     cached.value = false;
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 })] });
 
     expect(await useAlignmentStore.getState().alignLines()).toBeNull();
     expect(useAlignmentStore.getState().error?.code).toBe("needs-model");
-    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "main")).toBeUndefined();
 
     expect(await useAlignmentStore.getState().alignLines(undefined, { allowDownload: true })).toMatchObject({
       aligned: 1,
@@ -296,7 +304,9 @@ describe("alignment store", () => {
   });
 
   it("regression: ignores a second run started while the first is still resolving its model", async () => {
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 })] });
 
     const { alignLines } = useAlignmentStore.getState();
     const [first, second] = await Promise.all([alignLines(), alignLines()]);
@@ -307,36 +317,40 @@ describe("alignment store", () => {
   });
 
   it("regression: saves nothing into a project opened while the run was going", async () => {
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 })] });
 
     const run = useAlignmentStore.getState().alignLines();
     useProjectStore.getState().startProjectSession();
 
     expect(await run).toBeNull();
-    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "main")).toBeUndefined();
   });
 
   it("regression: saves nothing when cancelled before the model has loaded", async () => {
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 })] });
 
     const run = useAlignmentStore.getState().alignLines();
     useAlignmentStore.getState().cancel();
 
     expect(await run).toBeNull();
-    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "main")).toBeUndefined();
     expect(useAlignmentStore.getState().status).toBe("idle");
   });
 
   it("regression: keeps the untimed text of a partly synced line it doesn't touch", async () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "hello there", agentId: "v1", begin: 1, end: 2 },
-        {
+        lineFromFields({ id: "L1", text: "hello there", agentId: "v1", begin: 1, end: 2 }),
+        lineFromFields({
           id: "L2",
           text: "one more line",
           agentId: "v1",
           words: [{ id: "w5", text: "one", sep: " ", begin: 3, end: 4, joinsNext: false }],
-        },
+        }),
       ],
     });
 
@@ -350,13 +364,15 @@ describe("alignment store", () => {
     useProjectStore
       .getState()
       .commit(
-        pasteLyrics(useProjectStore.getState().lines, [{ id: "L1", text: "hello", agentId: "v1", words: [whole] }]),
+        pasteLyrics(useProjectStore.getState().lines, [
+          lineFromFields({ id: "L1", text: "hello", agentId: "v1", words: [whole] }),
+        ]),
       );
     const before = useProjectStore.getState().lines;
     // Split off-centre, so the model's even-by-letter timing moves the boundary.
     useProjectStore.getState().commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        {
+        lineFromFields({
           id: "L1",
           text: "hello",
           agentId: "v1",
@@ -364,41 +380,42 @@ describe("alignment store", () => {
             { id: "w7", text: "hel", sep: "", begin: 1, end: 1.9, joinsNext: true },
             { id: "w8", text: "lo", sep: "", begin: 1.9, end: 2, joinsNext: false },
           ],
-        },
+        }),
       ]),
     );
 
     await useAlignmentStore.getState().retimeNewSyllables(before);
-    expect(useProjectStore.getState().lines[0].words?.[0].end).not.toBe(1.9);
+    expect(roleWords(useProjectStore.getState().lines[0], "main")?.[0].end).not.toBe(1.9);
 
     useProjectStore.getState().undo();
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual([whole]);
   });
 
   it("regression: syllable timing found for one shared instance reaches the others", async () => {
-    const chorus = (instanceIdx: number, begin: number, split: number) => ({
-      id: `c${instanceIdx}`,
-      text: "hello",
-      agentId: "v1",
-      groupId: "g1",
-      instanceIdx,
-      templateLineIdx: 0,
-      words: createWords([
-        { id: newWordId(), text: "hel", sep: "", begin, end: begin + split, syllableGroupId: `s${instanceIdx}` },
-        {
-          id: newWordId(),
-          text: "lo",
-          sep: "",
-          begin: begin + split,
-          end: begin + 1,
-          syllableGroupId: `s${instanceIdx}`,
-        },
-      ]),
-    });
+    const chorus = (instanceIdx: number, begin: number, split: number) =>
+      lineFromFields({
+        id: `c${instanceIdx}`,
+        text: "hello",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+        words: createWords([
+          { id: newWordId(), text: "hel", sep: "", begin, end: begin + split, syllableGroupId: `s${instanceIdx}` },
+          {
+            id: newWordId(),
+            text: "lo",
+            sep: "",
+            begin: begin + split,
+            end: begin + 1,
+            syllableGroupId: `s${instanceIdx}`,
+          },
+        ]),
+      });
     useProjectStore.setState({ groups: [createGroup({ id: "g1", sharesTiming: true })] });
     useProjectStore.getState().commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        {
+        lineFromFields({
           id: "c0",
           text: "hello",
           agentId: "v1",
@@ -406,8 +423,8 @@ describe("alignment store", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [{ id: "w9", text: "hello", sep: "", begin: 10, end: 11, joinsNext: false }],
-        },
-        {
+        }),
+        lineFromFields({
           id: "c1",
           text: "hello",
           agentId: "v1",
@@ -415,7 +432,7 @@ describe("alignment store", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [{ id: "w10", text: "hello", sep: "", begin: 40, end: 41, joinsNext: false }],
-        },
+        }),
       ]),
     );
     const before = useProjectStore.getState().lines;
@@ -434,7 +451,9 @@ describe("alignment store", () => {
 
   it("refuses without separated vocals", async () => {
     useSeparationStore.setState({ stemUrls: {} });
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 })] });
 
     expect(await useAlignmentStore.getState().alignLines()).toBeNull();
     expect(useAlignmentStore.getState().error?.code).toBe("needs-vocals");
@@ -443,7 +462,7 @@ describe("alignment store", () => {
   it("times unspaced Chinese one character at a time, read as Mandarin", async () => {
     useProjectStore
       .getState()
-      .restoreLyrics({ lines: [{ id: "L1", text: "我爱你", agentId: "v1", begin: 1, end: 2 }] });
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "我爱你", agentId: "v1", begin: 1, end: 2 })] });
 
     await useAlignmentStore.getState().alignLines();
 
@@ -459,8 +478,8 @@ describe("alignment store", () => {
   it("reads kanji as Japanese when any line has kana, and loads the kanji dictionary", async () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
-        { id: "L1", text: "夜空", agentId: "v1", begin: 1, end: 2 },
-        { id: "L2", text: "きみと dance", agentId: "v1", begin: 3, end: 4 },
+        lineFromFields({ id: "L1", text: "夜空", agentId: "v1", begin: 1, end: 2 }),
+        lineFromFields({ id: "L2", text: "きみと dance", agentId: "v1", begin: 3, end: 4 }),
       ],
     });
 
@@ -473,7 +492,9 @@ describe("alignment store", () => {
 
   it("refuses lyrics in other languages", async () => {
     useProjectStore.setState({ metadata: { ...INITIAL_STATE.metadata, language: "ko" } });
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }] });
+    useProjectStore
+      .getState()
+      .restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 })] });
 
     expect(await useAlignmentStore.getState().alignLines()).toBeNull();
     expect(useAlignmentStore.getState().error?.code).toBe("unsupported-language");

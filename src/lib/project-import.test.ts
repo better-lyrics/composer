@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import type { ProjectFile } from "@/lib/project-file";
 import { findImportConflict, projectFileSummary } from "@/lib/project-import";
 import { createLine } from "@/test/factories";
@@ -55,7 +56,11 @@ describe("projectFileSummary", () => {
   it("counts lyric lines and synced lines with the domain predicates", () => {
     const summary = projectFileSummary(
       file({
-        lines: [createLine({ text: "a", begin: 1, end: 2 }), createLine({ text: "b" }), createLine({ text: "" })],
+        lines: savedLines([
+          createLine({ text: "a", begin: 1, end: 2 }),
+          createLine({ text: "b" }),
+          createLine({ text: "" }),
+        ]),
       }),
     );
     expect(summary).toEqual({ savedAt: 100, lineCount: 2, syncedLineCount: 1 });

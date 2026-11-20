@@ -136,7 +136,7 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByText(APPLIED, { exact: true })).toBeInTheDocument();
       expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["one", "blank", "split", "two"]);
-      expect(lineTexts()).toEqual(["One", "", "|", "Two2"]);
+      expect(lineTexts()).toEqual(["One", "", "", "Two2"]);
     });
 
     it("regression: a project with a field the export does not carry keeps the edit in the export only", async () => {

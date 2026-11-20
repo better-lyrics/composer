@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { roleWords } from "@/domain/line/track";
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { trackPieces } from "@/domain/language/pieces";
@@ -31,7 +32,7 @@ describe("word structure commands", () => {
 
   it("drops the reading of a deleted word with it", () => {
     const [line] = useProjectStore.getState().lines;
-    const [, turns] = line.words ?? [];
+    const [, turns] = roleWords(line, "main") ?? [];
     const pieces = { [tide.id]: { text: "taido" }, [turns.id]: { text: "taanzu" } };
     const main = { text: "taido taanzu", pieces };
     useProjectStore.setState({

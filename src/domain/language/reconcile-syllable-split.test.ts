@@ -1,3 +1,5 @@
+import { withFields } from "@/test/field-updates";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { describe, expect, it } from "vitest";
 import { planTransliterationAlignment } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
@@ -12,8 +14,7 @@ import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
-import type { WordTrack } from "@/domain/line/tracks";
+import { mainTrack, timedSyllables, type WordTrack } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { createWords } from "@/test/factories";
 import {
@@ -254,7 +255,7 @@ describe("splitWordsKeepingTransliteration", () => {
     });
 
     it("drops the stale flag and keeps the rest of the track", () => {
-      const line = legacyLine({ ...koreanLine(), transliteration: { ...track, stale: true } });
+      const line = legacyLine({ ...fieldsOfLine(koreanLine()), transliteration: { ...track, stale: true } });
       const result = splitKeeping(line, "word", 1, ILDAN_SPLIT);
       expect(result?.transliteration).not.toHaveProperty("stale");
       expect(result?.transliteration?.language).toBe("ko-Latn");
@@ -378,7 +379,7 @@ describe("splitWordsKeepingTransliteration", () => {
 
     it("splits the background track and writes backgroundText", () => {
       const line: LyricLine = legacyLine({
-        ...koreanLine(),
+        ...fieldsOfLine(koreanLine()),
         backgroundText: "그래 yeah",
         backgroundWords: [
           { id: "w28", text: "그래", sep: " ", begin: 2, end: 2.5, joinsNext: false },
@@ -467,8 +468,8 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
   });
 
   it("re-stamps the track of a line-timed line, whose words are derived", () => {
-    const { words: _words, ...lineTimed } = line(languageSourceFingerprint("хорошо"));
-    const result = splitIntoWordsKeeping({ ...lineTimed, begin: 0, end: 1 }, "word", 0, pieces)?.transliteration;
+    const lineTimed = withFields(line(languageSourceFingerprint("хорошо")), { words: undefined, begin: 0, end: 1 });
+    const result = splitIntoWordsKeeping(lineTimed, "word", 0, pieces)?.transliteration;
 
     expect(result?.text).toBe("khorosho");
     expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));

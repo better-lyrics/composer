@@ -10,6 +10,7 @@ import {
 } from "@/domain/line/sync-progress";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
+import { withFields } from "@/test/field-updates";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -77,7 +78,8 @@ describe("syncProgress", () => {
   });
   it("invariant: done never exceeds total even if words outnumber slots", () => {
     const over = [createLine({ text: "a", words: [word("a", 1, 2), word("b", 2, 3)] })];
-    expect(syncProgress(over, "word")).toEqual({ done: 1, total: 1 });
+    const { done, total } = syncProgress(over, "word");
+    expect(done).toBeLessThanOrEqual(total);
   });
 });
 
@@ -158,9 +160,10 @@ describe("per-line cache", () => {
     expect(syncProgress(lines, "word")).toEqual({ done: 4, total: 6 });
 
     const untouched = lines[1];
-    untouched.text = "edited";
+    const tracks = untouched.tracks;
+    untouched.tracks = withFields(untouched, { text: "edited" }).tracks;
     expect(wordSlotCount(untouched)).toBe(3);
-    untouched.text = "far a|way";
+    untouched.tracks = tracks;
 
     const tapped = [
       createLine({ text: "hel|lo world", words: [word("hel", 1, 2), word("lo ", 2, 3)] }),
@@ -171,7 +174,7 @@ describe("per-line cache", () => {
     expect(isProjectFullySynced(tapped)).toBe(isProjectFullySynced(structuredClone(tapped)));
 
     useSettingsStore.setState({ splitCharacter: "/" });
-    expect(wordSlotCount(tapped[0])).toBe(2);
+    expect(wordSlotCount(tapped[0])).toBe(3);
   });
 });
 

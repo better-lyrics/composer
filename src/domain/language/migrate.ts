@@ -6,6 +6,8 @@ import { mappedTransliteration, trackPieces } from "@/domain/language/pieces";
 import { languageSourceText } from "@/domain/language/source-text";
 import { DASHES, normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { roleWords } from "@/domain/line/track";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -47,25 +49,26 @@ function migrateLegacyTransliterationLine(line: LyricLine): LyricLine {
   const track = lineTransliteration(line);
   if (!track || track.main.alignmentStatus !== undefined || track.bg?.alignmentStatus !== undefined) return line;
 
-  const mappedMain = completeMappedText(line.text, line.words, trackPieces(line, "main"));
-  const main = mappedMain ? { text: mappedMain, ambiguous: false } : legacyDisplayText(line.text, track.main.text);
-  const mappedBackground = line.backgroundText
-    ? completeMappedText(line.backgroundText, line.backgroundWords, trackPieces(line, "bg"))
+  const mappedMain = completeMappedText(lineText(line), roleWords(line, "main"), trackPieces(line, "main"));
+  const main = mappedMain ? { text: mappedMain, ambiguous: false } : legacyDisplayText(lineText(line), track.main.text);
+  const lineBackground = backgroundText(line);
+  const mappedBackground = lineBackground
+    ? completeMappedText(lineBackground, roleWords(line, "bg"), trackPieces(line, "bg"))
     : null;
   const background = track.bg?.text
     ? mappedBackground
       ? { text: mappedBackground, ambiguous: false }
-      : legacyDisplayText(line.backgroundText ?? "", track.bg.text)
+      : legacyDisplayText(backgroundText(line) ?? "", track.bg.text)
     : null;
   const migratedTrack: LineLanguage = {
     ...track,
-    main: { ...track.main, text: main.text, segments: wholeLineSegments(line.text, main.text) },
+    main: { ...track.main, text: main.text, segments: wholeLineSegments(lineText(line), main.text) },
     ...(background && track.bg
       ? {
           bg: {
             ...track.bg,
             text: background.text,
-            segments: wholeLineSegments(line.backgroundText ?? "", background.text),
+            segments: wholeLineSegments(backgroundText(line) ?? "", background.text),
           },
         }
       : {}),

@@ -1,3 +1,5 @@
+import { savedLines } from "@/lib/saved-project";
+import { mainTrack } from "@/domain/line/track";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
@@ -165,7 +167,7 @@ describe("ExportPanel · project file customSnapPoints", () => {
       savedAt: Date.now(),
       metadata: { title: "Imported", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
-      lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+      lines: savedLines([createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })]),
       groups: [],
       granularity: "word" as const,
       customSnapPoints: [7, 8],
@@ -310,7 +312,7 @@ describe("ExportPanel · project file keeps the hand-edited TTML with its projec
       savedAt: Date.now(),
       metadata: { title: "Project B", artists: [], album: "Album B", duration: 0 },
       agents: DEFAULT_AGENTS,
-      lines: [createLine({ text: "B", words: [createWord({ text: "B", begin: 0, end: 1 })] })],
+      lines: savedLines([createLine({ text: "B", words: [createWord({ text: "B", begin: 0, end: 1 })] })]),
       groups: [],
       granularity: "word" as const,
       ...extra,
@@ -433,7 +435,7 @@ describe("ExportPanel · Done applies TTML edits to the project", () => {
     );
     await screen.getByRole("button", { name: "Done" }).click();
     await expect.poll(() => useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["Pasted in"]);
-    expect(useProjectStore.getState().lines[0]?.begin).toBe(5);
+    expect(mainTrack(useProjectStore.getState().lines[0]!).begin).toBe(5);
   });
 
   describe("error paths", () => {

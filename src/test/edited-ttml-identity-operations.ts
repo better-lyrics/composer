@@ -1,6 +1,7 @@
 import { expect } from "vitest";
 import { lineTranslations } from "@/domain/language/line-languages";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
+import type { LyricLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { lineText } from "@/domain/line/text";
 import {
@@ -42,7 +43,13 @@ function groupInstancePair(project: EditedTtmlProject): [LyricLine, LyricLine] {
 }
 
 function untimed(line: LyricLine): LyricLine {
-  return reconcileLine({ ...line, words: undefined, begin: undefined, end: undefined, backgroundWords: undefined });
+  return lineFromFields({
+    ...fieldsOfLine(line),
+    words: undefined,
+    begin: undefined,
+    end: undefined,
+    backgroundWords: undefined,
+  });
 }
 
 // -- Operations ---------------------------------------------------------------

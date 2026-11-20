@@ -1,7 +1,7 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { SavedLine } from "@/lib/saved-project";
 import { type ConversionResult, type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
 import { LRC_OUTPUT, TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
@@ -30,7 +30,7 @@ const ELRC_INPUT = "[00:00.50]<00:00.50>Hello <00:01.00>world<00:01.50>";
 interface ConvertedProject {
   metadata: ProjectMetadata;
   agents: Agent[];
-  lines: LyricLine[];
+  lines: SavedLine[];
   granularity: "line" | "word";
 }
 

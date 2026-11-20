@@ -10,6 +10,7 @@ import { applySavedProject } from "@/lib/apply-saved-project";
 import { buildSavedProject } from "@/lib/persistence";
 import { buildSaveInput, currentSaveInput } from "@/lib/project-snapshot";
 import type { SavedProject } from "@/lib/saved-project";
+import { savedLines } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
@@ -75,7 +76,7 @@ describe("applySavedProject", () => {
       const legacy = createLine({ id: "l1", text: "hello", begin: 10, end: 14, backgroundText: "ooh" });
 
       for (const origin of ["storage", "file"] as const) {
-        applySavedProject(projectFile({ lines: [legacy] }), origin);
+        applySavedProject(projectFile({ lines: savedLines([legacy]) }), origin);
 
         const state = useProjectStore.getState();
         expect(timedSyllables(backgroundTrack(state.lines[0]))[0]).toMatchObject({ begin: 12, end: 14 });
@@ -148,7 +149,10 @@ describe("applySavedProject", () => {
       if (!saved) throw new Error("expected a save input");
       await resetAllStores();
 
-      applySavedProject(JSON.parse(JSON.stringify({ version: 3, savedAt: 0, ...saved })), "storage");
+      applySavedProject(
+        JSON.parse(JSON.stringify({ version: 3, savedAt: 0, ...saved, lines: savedLines(saved.lines) })),
+        "storage",
+      );
 
       expect(useProjectStore.getState().beatGrid).toEqual(grid);
     });

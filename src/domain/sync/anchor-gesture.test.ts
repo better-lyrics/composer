@@ -149,8 +149,8 @@ describe("anchorGesture", () => {
 
 describe("storedSyncPosition", () => {
   const lines = song();
-  const resume = syncAddressAt(lines, { lineIndex: 5, wordIndex: 0 });
-  const anchorSlot = syncAddressAt(lines, { lineIndex: 3, wordIndex: 0 });
+  const resume: SyncAddress = syncAddressAt(lines, { lineIndex: 5, wordIndex: 0 });
+  const anchorSlot: SyncAddress = syncAddressAt(lines, { lineIndex: 3, wordIndex: 0 });
   const before = { name: "before placing" };
   const placed = { name: "placed" };
   const anchorUndo: AnchorUndo = {
@@ -197,7 +197,7 @@ describe("storedSyncPosition", () => {
     });
 
     it("regression: returns the anchor slot when the resume position was rebuilt with the same place", () => {
-      const rebuilt: SyncAddress = { ...resume, at: { ...resume.at }, storedAt: { ...resume.storedAt } };
+      const rebuilt: SyncAddress = { ...resume, storedAt: { ...resume.storedAt } };
       const state = { position: rebuilt, jumpedToPosition: true, anchorUndo };
       expect(storedSyncPosition(state, lines, at([before, placed], 0)).position).toBe(anchorSlot);
     });
@@ -219,7 +219,7 @@ describe("storedSyncPosition", () => {
     it("ignores the record once the cursor has moved", () => {
       const moved: SyncAddress = {
         lineId: "bridge",
-        at: { syllableId: "y4" },
+        syllableId: "y4",
         storedAt: { lineIndex: 6, wordIndex: 1 },
       };
       expect(storedSyncPosition({ position: moved, anchorUndo }, lines, at([before, placed], 0))).toEqual({

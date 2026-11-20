@@ -13,7 +13,7 @@ import { currentInstanceFromSelection } from "@/domain/instance/selection-instan
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
+import { trackWords } from "@/domain/line/track";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import { resolveAddress, toAddress } from "@/domain/selection/resolve";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";

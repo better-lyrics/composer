@@ -1,18 +1,19 @@
-import { withSeededBackground } from "@/domain/line/background";
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
-import { type LineUpdate, type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { withBackgroundSeededFrom, withSeededBackground } from "@/domain/line/background";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { closeSlotWords, closingUpdate, previousSlotEnd, tapEnd } from "@/domain/sync/slot-close";
-import { slotWords, withSlotWord } from "@/domain/sync/slot-words";
+import { withSlotWord } from "@/domain/sync/slot-words";
+import type { Bounds } from "@/domain/word/bounds";
 import { enforceOrderAround } from "@/domain/word/order";
-import type { WordTiming } from "@/domain/word/timing";
-import { createInitialBgWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -48,8 +49,9 @@ interface Anchor {
 }
 
 function closableSlot(lines: readonly LyricLine[], slot: SyncSlot): SyncSlot {
-  const words = lines[slot.lineIndex]?.words;
-  return slot.wordIndex === null && words?.length ? { lineIndex: slot.lineIndex, wordIndex: words.length - 1 } : slot;
+  const line = lines[slot.lineIndex];
+  const words = line ? timedSyllables(mainTrack(line)) : [];
+  return slot.wordIndex === null && words.length ? { lineIndex: slot.lineIndex, wordIndex: words.length - 1 } : slot;
 }
 
 // A re-record may start inside the previous slot; one that lands before that slot begins is early and snaps to its end.
@@ -85,18 +87,10 @@ function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureC
 
 // -- Background -----------------------------------------------------------------
 
-function backgroundFor(line: LyricLine, begin: number): { backgroundWords?: WordTiming[] } {
-  const oldMain = mainBounds(line);
-  if (line.backgroundWords?.length) {
-    return oldMain ? { backgroundWords: shiftWords(line.backgroundWords, begin - oldMain.begin) } : {};
-  }
-  if (line.backgroundText) return { backgroundWords: createInitialBgWords(line.backgroundText, begin) };
-  return {};
-}
-
-function withSeededBackgroundUpdate(line: LyricLine, updates: Partial<LyricLine>): Partial<LyricLine> {
-  const backgroundWords = withSeededBackground(reconcileLine({ ...line, ...updates })).backgroundWords;
-  return backgroundWords === line.backgroundWords ? updates : { ...updates, backgroundWords };
+function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null): LyricLine {
+  const words = timedSyllables(backgroundTrack(line));
+  if (words.length) return oldMain ? withRoleWords(line, "bg", shiftWords(words, begin - oldMain.begin)) : line;
+  return withBackgroundSeededFrom(line, begin);
 }
 
 // -- Word slot writing ----------------------------------------------------------
@@ -106,8 +100,8 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line)) return null;
-  const slots = slotWords(line);
-  const existing = line.words ?? [];
+  const slots = mainTrack(line).syllables;
+  const existing = timedSyllables(mainTrack(line));
   if (!slots[cursor.wordIndex]?.text || cursor.wordIndex > existing.length) return null;
 
   const anchor = anchorBefore(lines, ctx, "word");
@@ -136,10 +130,11 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   }
   words = enforceOrderAround(words, cursor.wordIndex);
 
-  const background = cursor.wordIndex === 0 ? backgroundFor(line, begin) : {};
+  const timed = withRoleWords(line, "main", words);
+  const written = cursor.wordIndex === 0 ? withBackgroundFrom(timed, begin, mainBounds(line)) : timed;
 
   return {
-    update: { id: line.id, updates: { words, ...background } },
+    update: { id: line.id, updates: { tracks: written.tracks } },
     clampedTo: ctx.time < floor ? floor : null,
     closes: closingUpdate(lines, crossLine, previousEnd),
   };
@@ -160,12 +155,12 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
   const oldMain = mainBounds(line);
   const delta = oldMain ? clampShiftDelta([line], Math.max(ctx.time, floor) - oldMain.begin, range) : 0;
   const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
-  const updates: Partial<LyricLine> = oldMain
-    ? withSeededBackgroundUpdate(line, shiftLineTiming(line, delta))
-    : { begin, end: begin, ...backgroundFor(line, begin) };
+  const written = oldMain
+    ? withSeededBackground({ ...line, ...shiftLineTiming(line, delta) })
+    : withBackgroundFrom(withMainTrack(line, withTrackSpan(mainTrack(line), begin, begin)), begin, null);
 
   return {
-    update: { id: line.id, updates },
+    update: { id: line.id, updates: { tracks: written.tracks } },
     clampedTo: ctx.time < floor ? floor : null,
     closes: closingUpdate(
       lines,
@@ -195,12 +190,13 @@ interface ClosedHold {
 function closeHeld(lines: readonly LyricLine[], cursor: SyncCursor, time: number): ClosedHold | null {
   const line = lines[cursor.lineIndex];
   if (!line) return null;
-  const held = line.words?.[cursor.wordIndex];
+  const timed = timedSyllables(mainTrack(line));
+  const held = timed[cursor.wordIndex];
   if (!held || held.begin !== held.end) return null;
 
-  const words = enforceOrderAround(closeSlotWords(line.words ?? [], cursor.wordIndex, time), cursor.wordIndex);
+  const words = enforceOrderAround(closeSlotWords(timed, cursor.wordIndex, time), cursor.wordIndex);
   return {
-    update: { id: line.id, updates: { words } },
+    update: { id: line.id, updates: { tracks: withRoleWords(line, "main", words).tracks } },
     clampedTo: time < held.begin ? held.begin : null,
     closeEnd: Math.max(time, held.begin),
   };
@@ -208,24 +204,11 @@ function closeHeld(lines: readonly LyricLine[], cursor: SyncCursor, time: number
 
 // -- Merge and apply ---------------------------------------------------------------
 
-// Narrows like reconcileLine for timed words, so one merged update lands the same as the two applied in order.
-function mergeLineUpdate(first: Partial<LyricLine>, second: Partial<LyricLine>): Partial<LyricLine> {
-  const merged: Partial<LooseLine> = { ...first, ...second };
-  const { words, begin, end, ...rest } = merged;
-  if (words !== undefined) return { ...rest, words };
-  return {
-    ...rest,
-    ...("words" in merged ? { words } : {}),
-    ...("begin" in merged ? { begin } : {}),
-    ...("end" in merged ? { end } : {}),
-  };
-}
-
 function mergeUpdates(a: readonly LineUpdate[], b: readonly LineUpdate[]): LineUpdate[] {
   const merged = new Map(a.map((u) => [u.id, u.updates]));
   for (const u of b) {
     const earlier = merged.get(u.id);
-    merged.set(u.id, earlier ? mergeLineUpdate(earlier, u.updates) : u.updates);
+    merged.set(u.id, earlier ? { ...earlier, ...u.updates } : u.updates);
   }
   return [...merged].map(([id, updates]) => ({ id, updates }));
 }

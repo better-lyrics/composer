@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
@@ -25,7 +26,7 @@ const template: LineTemplate[] = [
 
 describe("decidePasteInstanceAction · invariants both paste flows must respect", () => {
   it("returns no-target when dropped in midair (negative hoveredLineIndex)", () => {
-    const lines: LyricLine[] = [{ id: "1", text: "x", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "1", text: "x", agentId: "v1" })];
     const result = decidePasteInstanceAction({
       lines,
       groupId: "g1",
@@ -38,14 +39,14 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
 
   it("fills in place when destination has N consecutive empty rows", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "intro",
         text: "intro",
         agentId: "v1",
         words: [{ id: "w1", text: "intro", sep: "", begin: 0, end: 5, joinsNext: false }],
-      },
-      { id: "empty1", text: "chorus a", agentId: "v1" },
-      { id: "empty2", text: "chorus b", agentId: "v1" },
+      }),
+      lineFromFields({ id: "empty1", text: "chorus a", agentId: "v1" }),
+      lineFromFields({ id: "empty2", text: "chorus b", agentId: "v1" }),
     ];
     const result = decidePasteInstanceAction({
       lines,
@@ -63,13 +64,13 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
 
   it("requests confirmation to insert when destination row is occupied (no destructive default)", () => {
     const lines: LyricLine[] = [
-      {
+      lineFromFields({
         id: "synced",
         text: "chorus a",
         agentId: "v1",
         words: [{ id: "w2", text: "chorus a", sep: "", begin: 0, end: 1, joinsNext: false }],
-      },
-      { id: "empty", text: "chorus b", agentId: "v1" },
+      }),
+      lineFromFields({ id: "empty", text: "chorus b", agentId: "v1" }),
     ];
     const result = decidePasteInstanceAction({
       lines,
@@ -86,15 +87,15 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
 
   it("requests confirmation to insert when destination is partially empty (some rows already grouped)", () => {
     const lines: LyricLine[] = [
-      { id: "empty", text: "chorus a", agentId: "v1" },
-      {
+      lineFromFields({ id: "empty", text: "chorus a", agentId: "v1" }),
+      lineFromFields({
         id: "grouped",
         text: "chorus b",
         agentId: "v1",
         groupId: "other",
         instanceIdx: 0,
         templateLineIdx: 0,
-      },
+      }),
     ];
     const result = decidePasteInstanceAction({
       lines,
@@ -107,7 +108,7 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
   });
 
   it("clamps negative cursorTime to 0 in the instanceStart it returns", () => {
-    const lines: LyricLine[] = [{ id: "x", text: "synced", agentId: "v1", begin: 0, end: 1 }];
+    const lines: LyricLine[] = [lineFromFields({ id: "x", text: "synced", agentId: "v1", begin: 0, end: 1 })];
     const result = decidePasteInstanceAction({
       lines,
       groupId: "g1",
@@ -121,7 +122,7 @@ describe("decidePasteInstanceAction · invariants both paste flows must respect"
   });
 
   it("requests confirmation when destination range overflows the project", () => {
-    const lines: LyricLine[] = [{ id: "empty1", text: "chorus a", agentId: "v1" }];
+    const lines: LyricLine[] = [lineFromFields({ id: "empty1", text: "chorus a", agentId: "v1" })];
     const result = decidePasteInstanceAction({
       lines,
       groupId: "g1",

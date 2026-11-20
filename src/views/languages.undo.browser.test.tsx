@@ -1,3 +1,6 @@
+import { fieldUpdates } from "@/test/field-updates";
+import { lineText } from "@/domain/line/text";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
@@ -18,8 +21,8 @@ function press(target: EventTarget, init: KeyboardEventInit): void {
   target.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init }));
 }
 
-function lineText(): string {
-  return useProjectStore.getState().lines[0].text;
+function firstLineText(): string {
+  return lineText(useProjectStore.getState().lines[0]);
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -28,9 +31,9 @@ describe("Languages undo history", () => {
   beforeEach(() => {
     const store = useProjectStore.getState();
     store.setMetadata({ language: "ja" });
-    store.restoreLyrics({ lines: [{ id: "line", text: FIRST_TEXT, agentId: "v1" }] });
+    store.restoreLyrics({ lines: [lineFromFields({ id: "line", text: FIRST_TEXT, agentId: "v1" })] });
     store.clearHistory();
-    store.commit(pasteLines([{ id: "line", updates: { text: SECOND_TEXT } }]));
+    store.commit(pasteLines(fieldUpdates([{ id: "line", updates: { text: SECOND_TEXT } }])));
     store.undo();
     store.setActiveTab("languages");
   });
@@ -41,9 +44,9 @@ describe("Languages undo history", () => {
 
     expect(useProjectStore.getState().canRedo()).toBe(true);
     useProjectStore.getState().redo();
-    expect(lineText()).toBe(SECOND_TEXT);
+    expect(firstLineText()).toBe(SECOND_TEXT);
     useProjectStore.getState().undo();
-    expect(lineText()).toBe(FIRST_TEXT);
+    expect(firstLineText()).toBe(FIRST_TEXT);
   });
 
   it("redoes and undoes with the history shortcuts on the Languages tab", async () => {
@@ -51,9 +54,9 @@ describe("Languages undo history", () => {
     await expect.element(screen.getByRole("button", { name: "Add language", exact: true })).toBeInTheDocument();
 
     press(window, { key: "z", code: "KeyZ", shiftKey: true, ...MOD });
-    await expect.poll(lineText).toBe(SECOND_TEXT);
+    await expect.poll(firstLineText).toBe(SECOND_TEXT);
     press(window, { key: "z", code: "KeyZ", ...MOD });
-    await expect.poll(lineText).toBe(FIRST_TEXT);
+    await expect.poll(firstLineText).toBe(FIRST_TEXT);
   });
 
   it("leaves held repeats and typing in a field to one step and the field", async () => {
@@ -64,7 +67,7 @@ describe("Languages undo history", () => {
     const field = screen.getByRole("textbox", { name: "Transliteration", exact: true }).element();
     press(field, { key: "z", code: "KeyZ", shiftKey: true, ...MOD });
 
-    expect(lineText()).toBe(FIRST_TEXT);
+    expect(firstLineText()).toBe(FIRST_TEXT);
     expect(useProjectStore.getState().canRedo()).toBe(true);
   });
 });

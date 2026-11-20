@@ -3,7 +3,7 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { shiftLineTiming } from "@/domain/line/shift";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { nudgeSelectedWords } from "@/domain/selection/nudge";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { commitGesture } from "@/domain/sync/commit-gesture";
@@ -12,6 +12,7 @@ import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord, createWords } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -71,7 +72,6 @@ const rangeOf = () => timeRangeResolver(store().lines, store().groups, DURATION)
 function commit(updates: LineUpdate[]): void {
   store().commit(
     lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
-      derivesText: false,
       propagateToSiblings: false,
     }),
   );
@@ -93,8 +93,8 @@ function expectTrackClean(track: readonly WordTiming[] | undefined, label: strin
 
 function expectNoOverlapInSharedInstances(): void {
   for (const line of store().lines.filter((candidate) => candidate.groupId === "g1")) {
-    expectTrackClean(line.words, `${line.id} main`);
-    expectTrackClean(line.backgroundWords, `${line.id} background`);
+    expectTrackClean(roleWords(line, "main"), `${line.id} main`);
+    expectTrackClean(roleWords(line, "bg"), `${line.id} background`);
   }
 }
 
@@ -132,12 +132,14 @@ describe("shared timing edits leave no overlap in any placed instance", () => {
       rollNeighbour: false,
       range: rangeOf()(lineById("b1")),
     });
-    commit([
-      {
-        id: "b1",
-        updates: { words: words.map((word, index) => (index === words.length - 1 ? { ...word, end } : word)) },
-      },
-    ]);
+    commit(
+      fieldUpdates([
+        {
+          id: "b1",
+          updates: { words: words.map((word, index) => (index === words.length - 1 ? { ...word, end } : word)) },
+        },
+      ]),
+    );
 
     expect(timedSyllables(mainTrack(lineById("b1"))).at(-1)?.end).toBe(12.5);
     expectCopiesFollowSource("b");

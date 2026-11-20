@@ -5,7 +5,7 @@ import { fillEmptyTrack } from "@/domain/commands/word-structure";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
