@@ -4,6 +4,7 @@ import { applied, refused } from "@/domain/commands/outcome";
 import { applyWordCountChange } from "@/domain/commands/word-edits";
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { withAlignedWords } from "@/domain/language/align";
+import { regroupedLanguages } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { type TrackField, trackField } from "@/domain/line/tracks";
@@ -28,10 +29,13 @@ interface MergePlan {
 // -- Helpers ------------------------------------------------------------------
 
 function mergedFieldUpdate(line: LyricLine, field: TrackField, indices: number[]): LineUpdate | null {
-  const words = withAlignedWords(line)[field];
+  const aligned = withAlignedWords(line);
+  const words = aligned[field];
   const merged = words && mergeWordRun(words, indices);
   if (!merged) return null;
-  return { id: line.id, updates: field === "backgroundWords" ? manualBackgroundWordEdit(merged) : { words: merged } };
+  const languages = regroupedLanguages(line, aligned, field === "words" ? "main" : "bg", words, merged);
+  const wordUpdate = field === "backgroundWords" ? manualBackgroundWordEdit(merged) : { words: merged };
+  return { id: line.id, updates: { ...wordUpdate, languages } };
 }
 
 function linkedCopyCovers(
@@ -86,7 +90,7 @@ function mergeWords(
       if (!plan) return addresses[0] ? refused({ reason: "word-gone", address: addresses[0] }) : applied(root, []);
       const { source, field, sourceUpdate } = plan;
       if (resolution === "detach") {
-        const extras = field === "backgroundWords" ? sourceUpdate.updates : {};
+        const extras = sourceUpdate.updates;
         return applyWordCountChange(source.id, sourceUpdate.updates[field] ?? [], field, "detach", extras).run(
           root,
           ctx,

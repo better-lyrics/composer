@@ -1,3 +1,5 @@
+import { lineTransliteration } from "@/domain/language/line-languages";
+import { pieceOf } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
@@ -18,12 +20,12 @@ function comparable(text: string): string {
  * song) use the dictionaries, as do stale transliterations of edited lyrics.
  */
 function sungTransliteration(line: LyricLine): string | null {
-  const track = line.transliteration;
+  const track = lineTransliteration(line);
   if (!track || track.stale) return null;
   const text =
-    track.text?.trim() ||
+    track.main.text?.trim() ||
     timedSyllables(mainTrack(line))
-      .map((word) => word.transliteration ?? "")
+      .map((word) => pieceOf(track.main.pieces, word)?.text ?? "")
       .join(" ")
       .trim();
   if (!text || comparable(text) === comparable(lineText(line))) return null;

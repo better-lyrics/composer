@@ -1,5 +1,6 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { withAlignedWords } from "@/domain/language/align";
+import { regroupedLanguages } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { mergedWord } from "@/domain/word/merge-run";
@@ -82,7 +83,8 @@ function applyMergeSyllableGroup(
     const isSource = line.id === lineId;
     const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
     if (!isSource && !isSibling) return line;
-    const lineWords = withAlignedWords(line)[field];
+    const aligned = withAlignedWords(line);
+    const lineWords = aligned[field];
     if (!lineWords) return line;
 
     const runs = computeSyllableGroups(lineWords);
@@ -110,7 +112,8 @@ function applyMergeSyllableGroup(
     }
     if (!changed) return line;
     mutated = true;
-    return writeFieldWords(line, field, collapsed);
+    const languages = regroupedLanguages(line, aligned, field === "words" ? "main" : "bg", lineWords, collapsed);
+    return writeFieldWords({ ...line, languages }, field, collapsed);
   });
   if (!mutated) return null;
   return newLines;

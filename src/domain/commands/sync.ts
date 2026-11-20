@@ -2,6 +2,7 @@ import type { LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
+import type { PositionalPieces } from "@/domain/language/pieces";
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
@@ -102,12 +103,17 @@ function shiftSyncLine(lineId: string, change: RetimeChange, duration: number): 
   );
 }
 
-function splitSyncWord(lineId: string, wordIndex: number, newWords: WordTiming[]): LyricCommand {
+function splitSyncWord(
+  lineId: string,
+  wordIndex: number,
+  newWords: WordTiming[],
+  pieces?: PositionalPieces,
+): LyricCommand {
   return lineEditCommand({ command: "split sync word", args: [lineId, wordIndex, newWords.length] }, (root) => {
     const line = lineOf(root.lines, lineId);
     if (!line) return refused({ reason: "line-gone", lineId });
     if (!line.words) return [];
-    const split = splitWordsKeepingTransliteration(line, "word", wordIndex, newWords);
+    const split = splitWordsKeepingTransliteration(line, "word", wordIndex, newWords, pieces);
     if (!split) return [];
     return [
       {
@@ -115,7 +121,7 @@ function splitSyncWord(lineId: string, wordIndex: number, newWords: WordTiming[]
         updates: {
           words: split.words,
           text: spacedText(split.words).trimEnd(),
-          ...(split.transliteration ? { transliteration: split.transliteration } : {}),
+          languages: split.languages,
         },
       },
     ];

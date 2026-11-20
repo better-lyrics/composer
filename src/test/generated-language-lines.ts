@@ -3,13 +3,14 @@ import type { LyricLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
 import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
+import { legacyLine, legacyWords } from "@/test/legacy-languages";
 
 // -- Helpers -----------------------------------------------------------------
 
 // The provider caches answers by text for the session, so every test uses its own lyrics.
 function timedLine(id: string, words: string[], romanized: string[], romanizedFrom = words.join(" ")): LyricLine {
   const sourceFingerprint = languageSourceFingerprint(romanizedFrom);
-  return {
+  return legacyLine({
     id,
     agentId: "v1",
     text: words.join(" "),
@@ -33,7 +34,7 @@ function timedLine(id: string, words: string[], romanized: string[], romanizedFr
     translations: {
       en: { language: "en", text: "Old translation", origin: "google", sourceFingerprint },
     },
-  };
+  });
 }
 
 function lineById(id: string): LyricLine {
@@ -43,7 +44,8 @@ function lineById(id: string): LyricLine {
 }
 
 function romanizedWords(id: string): Array<string | undefined> {
-  return lineById(id).words?.map((word) => word.transliteration) ?? [];
+  const line = lineById(id);
+  return legacyWords(line.words, line.languages)?.map((word) => word.transliteration) ?? [];
 }
 
 function gate() {

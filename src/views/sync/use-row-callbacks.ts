@@ -1,3 +1,4 @@
+import type { PositionalPieces } from "@/domain/language/pieces";
 import type { WordTiming } from "@/domain/word/timing";
 import type { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
@@ -32,7 +33,7 @@ interface RowCallbacks {
   onSetWordEndTime: (wordIdx: number, newEnd: number) => void;
   onNudgeLine: (delta: number) => void;
   onSetLineTime: (newBegin: number) => void;
-  onSplitWord: (wordIdx: number, newWords: WordTiming[]) => void;
+  onSplitWord: (wordIdx: number, newWords: WordTiming[], pieces?: PositionalPieces) => void;
   onNudgeBgWord: (wordIdx: number, delta: number) => void;
   onSetBgWordTime: (wordIdx: number, newBegin: number) => void;
   onNudgeBgWordEnd: (wordIdx: number, delta: number) => void;
@@ -54,7 +55,7 @@ function rowCallbacksFor(latest: LatestHandlers, index: number): RowCallbacks {
     onSetWordEndTime: (wordIdx, newEnd) => latest.current.handleSetWordEndTime(index, wordIdx, newEnd),
     onNudgeLine: (delta) => latest.current.handleNudgeLine(index, delta),
     onSetLineTime: (newBegin) => latest.current.handleSetLineTime(index, newBegin),
-    onSplitWord: (wordIdx, newWords) => latest.current.handleSplitWord(index, wordIdx, newWords),
+    onSplitWord: (wordIdx, newWords, pieces) => latest.current.handleSplitWord(index, wordIdx, newWords, pieces),
     onNudgeBgWord: (wordIdx, delta) => latest.current.handleNudgeBgWord(index, wordIdx, delta),
     onSetBgWordTime: (wordIdx, newBegin) => latest.current.handleSetBgWordTime(index, wordIdx, newBegin),
     onNudgeBgWordEnd: (wordIdx, delta) => latest.current.handleNudgeBgWordEnd(index, wordIdx, delta),

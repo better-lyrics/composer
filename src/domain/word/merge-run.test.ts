@@ -5,7 +5,6 @@ import {
   isWholeSyllableGroupRun,
   mergeWordRun,
   mergeWordText,
-  mergedTransliteration,
 } from "@/domain/word/merge-run";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -30,26 +29,6 @@ describe("mergeWordText", () => {
   });
   it("keeps the final word's trailing space", () => {
     expect(mergeWordText(["every ", "day "])).toBe("everyday ");
-  });
-});
-
-describe("mergedTransliteration", () => {
-  it("joins the pieces with the joiner stored after each piece", () => {
-    expect(
-      mergedTransliteration([
-        {
-          id: "w1",
-          text: "a",
-          sep: "",
-          begin: 0,
-          end: 1,
-          transliteration: "ka",
-          transliterationJoinerAfter: "-",
-          joinsNext: true,
-        },
-        { id: "w2", text: "b", sep: "", begin: 1, end: 2, transliteration: "na", joinsNext: false },
-      ]),
-    ).toBe("ka-na");
   });
 });
 
@@ -112,26 +91,6 @@ describe("mergeWordRun", () => {
 
     it("returns null for a run outside the words", () => {
       expect(mergeWordRun([{ id: "w12", text: "a", sep: "", begin: 0, end: 1, joinsNext: false }], [3, 4])).toBeNull();
-    });
-  });
-
-  describe("transliteration", () => {
-    it("joins the pieces with the joiners between them", () => {
-      const words = [
-        syl("a", 0, 1, { transliteration: "a", transliterationJoinerAfter: "" }),
-        syl("b", 1, 2, { transliteration: "bi", transliterationJoinerAfter: "-" }),
-        syl("c ", 2, 3, { transliteration: "si" }),
-      ];
-      expect(mergeWordRun(words, [0, 1])?.[0]).toMatchObject({
-        transliteration: "abi",
-        transliterationJoinerAfter: "-",
-        joinsNext: true,
-      });
-    });
-
-    it("drops the transliteration when one piece is missing", () => {
-      const words = [syl("a", 0, 1, { transliteration: "a" }), syl("b ", 1, 2)];
-      expect(mergeWordRun(words, [0, 1])?.[0].transliteration).toBeUndefined();
     });
   });
 

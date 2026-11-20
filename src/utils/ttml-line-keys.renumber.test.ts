@@ -1,4 +1,5 @@
 import { createLine } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
 import { generateTTML } from "@/utils/ttml";
 import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
 import { describe, expect, it } from "vitest";
@@ -8,10 +9,10 @@ import { describe, expect, it } from "vitest";
 const METADATA = { title: "Song", artists: [], album: "", duration: 0 };
 
 function translated(id: string, text: string, begin: number) {
-  return {
+  return legacyLine({
     ...createLine({ id, text, begin, end: begin + 1 }),
     translations: { es: { language: "es", text: `${text} es`, origin: "manual" as const, sourceFingerprint: "fp" } },
-  };
+  });
 }
 
 const ALPHA = translated("a", "Alpha", 1);

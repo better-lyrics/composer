@@ -1,5 +1,6 @@
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
-import { type LineTemplate, type LinkGroup, wordsToTemplate } from "@/domain/group/template";
+import { type LineTemplate, type LinkGroup, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
+import { trackPieces } from "@/domain/language/pieces";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
@@ -121,8 +122,9 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
   const templates: LineTemplate[] = [];
 
   for (const line of matched) {
-    const tplWords = line.words && wordsToTemplate(line.words, startTime);
-    const tplBgWords = line.backgroundWords && wordsToTemplate(line.backgroundWords, startTime);
+    const tplWords = line.words && wordsToTemplate(line.words, startTime, trackPieces(line, "main"));
+    const tplBgWords =
+      line.backgroundWords && wordsToTemplate(line.backgroundWords, startTime, trackPieces(line, "bg"));
 
     const lineBounds = mainBounds(line);
     templates.push({
@@ -134,8 +136,7 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       backgroundText: backgroundText(line),
       backgroundWords: tplBgWords,
       backgroundTextSource: backgroundTrack(line)?.source,
-      translations: line.translations && structuredClone(line.translations),
-      transliteration: line.transliteration && structuredClone(line.transliteration),
+      languages: languagesToTemplate(line.languages),
     });
   }
   return templates;

@@ -1,6 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
+import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
@@ -107,13 +108,16 @@ function generateTTML({
 
   const translationLanguages = new Set<string>();
   for (const { line } of keyedLines) {
-    for (const [language, track] of Object.entries(line.translations ?? {})) {
+    for (const [language, track] of Object.entries(lineTranslations(line) ?? {})) {
       if (hasAlternateText(track)) {
         translationLanguages.add(language);
       }
     }
   }
-  const transliterationLines = keyedLines.filter(({ line }) => hasAlternateText(line.transliteration));
+  const transliterationLines = keyedLines.flatMap(({ line, key }) => {
+    const transliteration = lineTransliteration(line);
+    return transliteration && hasAlternateText(transliteration) ? [{ line, key, transliteration }] : [];
+  });
   if (translationLanguages.size > 0 || transliterationLines.length > 0) {
     parts.push(`${ind(3)}<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">`);
     if (translationLanguages.size > 0) {
@@ -121,10 +125,10 @@ function generateTTML({
       for (const language of translationLanguages) {
         parts.push(`${ind(5)}<translation xml:lang="${escapeXml(language)}" type="subtitle">`);
         for (const { line, key } of keyedLines) {
-          const track = line.translations?.[language];
+          const track = lineTranslations(line)?.[language];
           if (track && hasAlternateText(track)) {
             parts.push(
-              `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.text, track.backgroundText)}</text>`,
+              `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.main.text, track.bg?.text)}</text>`,
             );
           }
         }
@@ -135,7 +139,7 @@ function generateTTML({
     if (transliterationLines.length > 0) {
       const byLanguage = new Map<string, typeof transliterationLines>();
       for (const item of transliterationLines) {
-        const language = item.line.transliteration!.language;
+        const language = item.transliteration.language;
         byLanguage.set(language, [...(byLanguage.get(language) ?? []), item]);
       }
       parts.push(`${ind(4)}<transliterations>`);

@@ -6,6 +6,7 @@ import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
+import { legacyLanguages, legacyLine } from "@/test/legacy-languages";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -34,31 +35,31 @@ describe("createLanguageAutoRefresh history", () => {
         .commit(
           pasteLyrics(useProjectStore.getState().lines, [timedLine("a", ["Доброе", "утро"], ["Dobroye", "utro"])]),
         );
-      useProjectStore.getState().commit(
-        pasteLines([
-          {
-            id: "a",
-            updates: {
-              text: "Добрый вечер",
-              words: [
-                { id: "w1", text: "Добрый", sep: " ", begin: 1, end: 2, transliteration: "Dobroye", joinsNext: false },
-                { id: "w2", text: "вечер", sep: "", begin: 2, end: 3, transliteration: "utro", joinsNext: false },
-              ],
-            },
-          },
-        ]),
-      );
+      const pasted = legacyLine({
+        ...lineById("a"),
+        text: "Добрый вечер",
+        words: [
+          { id: "w1", text: "Добрый", sep: " ", begin: 1, end: 2, transliteration: "Dobroye", joinsNext: false },
+          { id: "w2", text: "вечер", sep: "", begin: 2, end: 3, transliteration: "utro", joinsNext: false },
+        ],
+        ...legacyLanguages(lineById("a").languages),
+      });
+      useProjectStore
+        .getState()
+        .commit(
+          pasteLines([{ id: "a", updates: { text: pasted.text, words: pasted.words, languages: pasted.languages } }]),
+        );
 
       await createRefresher().refreshNow();
-      expect(lineById("a").transliteration?.text).toBe("Dobryy  vecher");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Dobryy  vecher");
 
       useProjectStore.getState().undo();
       expect(lineText(lineById("a"))).toBe("Доброе утро");
-      expect(lineById("a").transliteration?.text).toBe("Dobroye  utro");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Dobroye  utro");
 
       useProjectStore.getState().redo();
       expect(lineText(lineById("a"))).toBe("Добрый вечер");
-      expect(lineById("a").transliteration?.text).toBe("Dobryy  vecher");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Dobryy  vecher");
     });
   });
 
@@ -78,12 +79,12 @@ describe("createLanguageAutoRefresh history", () => {
       useProjectStore.getState().restoreLyrics({ lines: [typed] });
 
       await createRefresher().refreshNow();
-      expect(lineById("a").transliteration?.text).toBe("Tikhaya  reka");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Tikhaya  reka");
       expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
 
       useProjectStore.getState().undo();
       expect(lineText(lineById("a"))).toBe("Быстрая река");
-      expect(lineById("a").transliteration?.text).toBe("Bystraya  reka");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Bystraya  reka");
     });
   });
 
@@ -131,7 +132,7 @@ describe("createLanguageAutoRefresh history", () => {
       useProjectStore.getState().previewLines([edited]);
       useProjectStore.getState().commit(pasteLines([{ id: "a", updates: { words: preview[0].words } }]));
       await refresher.refreshNow();
-      expect(lineById("a").transliteration?.text).toBe(`Dlinnaya  doroga  ${typed}`);
+      expect(lineById("a").languages?.transliteration?.main.text).toBe(`Dlinnaya  doroga  ${typed}`);
     });
 
     it("regression: refreshes after a drag that was discarded", async () => {
@@ -153,7 +154,7 @@ describe("createLanguageAutoRefresh history", () => {
       useProjectStore.getState().restorePreviewLines(committed);
       await createRefresher().refreshNow();
 
-      expect(lineById("a").transliteration?.text).toBe("Tikhiy  bereg");
+      expect(lineById("a").languages?.transliteration?.main.text).toBe("Tikhiy  bereg");
     });
   });
 });

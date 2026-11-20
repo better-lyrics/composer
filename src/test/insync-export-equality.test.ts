@@ -3,6 +3,7 @@ import { wordsFromSyllables } from "insync/to-words";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { withoutV3Piece } from "@/domain/language/v3-languages";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -10,6 +11,7 @@ import { useProjectStore } from "@/stores/project";
 import { parseProjectFileContents } from "@/lib/project-file-read";
 import { type SavedLine, linesFromSaved, savedLines } from "@/lib/saved-project";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
+import { legacyLine } from "@/test/legacy-languages";
 import {
   buildAlternateBackgroundLanguageTtml,
   buildAlternateLanguageTtml,
@@ -61,9 +63,16 @@ function realRecords(): SavedRecord[] {
 
 // The load before split marks were restored, so real exports are compared with what 3.x exported.
 function linesLoadedAsSaved(lines: readonly SavedLine[]): LyricLine[] {
-  const storeWords = (words: SavedLine["words"]) => words && wordsFromSpaced(words.map(({ id: _id, ...word }) => word));
+  const storeWords = (words: SavedLine["words"]) => {
+    if (!words) return undefined;
+    const timed = wordsFromSpaced(words.map(({ id: _id, ...word }) => withoutV3Piece(word)));
+    return timed.map((word, index) => {
+      const { transliteration, transliterationJoinerAfter } = words[index];
+      return { ...word, transliteration, transliterationJoinerAfter };
+    });
+  };
   return lines.map(({ words, backgroundWords, ...fields }) =>
-    reconcileLine({
+    legacyLine({
       ...fields,
       words: storeWords(words),
       ...(backgroundWords && { backgroundWords: storeWords(backgroundWords) }),
@@ -100,7 +109,7 @@ function wordsThroughSyllables(words: readonly WordTiming[]): WordTiming[] {
   expect(syllablesFromWords(spacedFromWords(roundTripped)).map((syllable) => syllable.joinsNext)).toEqual(
     track.map((syllable) => syllable.joinsNext),
   );
-  return words.map((word, index) => ({ ...word, ...roundTripped[index] }));
+  return words.map((word, index) => ({ ...word, ...roundTripped[index], id: word.id }));
 }
 
 function throughSyllables(line: LyricLine): LyricLine {

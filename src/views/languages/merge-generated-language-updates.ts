@@ -1,7 +1,9 @@
+import { lineTranslations } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
 import type { GenerationEdits } from "@/views/languages/generation-edit-guard";
+import { sameTransliteration } from "@/views/languages/same-transliteration";
 
 function mergeGeneratedLanguageUpdates(
   startingLines: ReadonlyMap<string, LyricLine>,
@@ -22,14 +24,14 @@ function mergeGeneratedLanguageUpdates(
       // Force replaces edits present at request start, but edits made during
       // that request take precedence. Track identity also catches removals.
       transliteration:
-        !edits.transliteration.has(line.id) && original.transliteration === line.transliteration
+        !edits.transliteration.has(line.id) && sameTransliteration(original, line)
           ? options.transliteration
           : undefined,
       translations: options.translations.filter(
         ({ language }) =>
           targetLanguages.has(language) &&
           !edits.translations.get(line.id)?.has(language) &&
-          original.translations?.[language] === line.translations?.[language],
+          lineTranslations(original)?.[language] === lineTranslations(line)?.[language],
       ),
     });
     return Object.keys(updates).length > 0 ? [{ id: line.id, updates }] : [];

@@ -1,6 +1,7 @@
-import { type LineTemplate, type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
+import { type LineTemplate, type LinkGroup, offsetTemplateWords, type WordTemplate } from "@/domain/group/template";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
@@ -20,13 +21,16 @@ function instancePasteTemplate(
   return instanceToTemplate(lines, groupId, pickedTemplateSource(lines, group, instanceIdx));
 }
 
+function trackEntries(words: WordTemplate[] | undefined, lineOffset: number, trackType: WordTrack): ClipboardEntry[] {
+  return offsetTemplateWords(words ?? [], 0).map((word, index) => {
+    const piece = words?.[index].piece;
+    return { word, lineOffset, trackType, ...(piece && { piece }) };
+  });
+}
+
 function templateEntries(line: LineTemplate, lineOffset: number): ClipboardEntry[] {
-  const main = offsetTemplateWords(line.words ?? [], 0);
-  const background = offsetTemplateWords(line.backgroundWords ?? [], 0);
-  const entries: ClipboardEntry[] = [
-    ...main.map((word) => ({ word, lineOffset, trackType: "word" as const })),
-    ...background.map((word) => ({ word, lineOffset, trackType: "bg" as const })),
-  ];
+  const main = trackEntries(line.words, lineOffset, "word");
+  const entries: ClipboardEntry[] = [...main, ...trackEntries(line.backgroundWords, lineOffset, "bg")];
   if (main.length === 0 && line.relativeBegin !== undefined && line.relativeEnd !== undefined)
     entries.push({
       word: wordFromSpaced({ text: line.text, begin: line.relativeBegin, end: line.relativeEnd }),

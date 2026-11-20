@@ -158,7 +158,7 @@ function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<n
     const split = splitWordsKeepingTransliteration(current, track.type, index, syllables);
     const currentWords = track.words(current) ?? words;
     current = track.write(current, text, split?.words ?? currentWords.toSpliced(index, 1, ...syllables));
-    if (split?.transliteration) current = { ...current, transliteration: split.transliteration };
+    if (split) current = { ...current, languages: split.languages };
   }
   return track.write(current, target, track.words(current));
 }

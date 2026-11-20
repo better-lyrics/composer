@@ -7,6 +7,7 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
+import { legacyLine, legacyWords } from "@/test/legacy-languages";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   computeSplitIntoWordsUpdates,
@@ -144,7 +145,7 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
   });
 
   it("does not copy a bg word's transliteration onto every split piece", () => {
-    const line: LyricLine = {
+    const line = legacyLine({
       ...sentenceBg,
       backgroundWords: [
         {
@@ -158,9 +159,19 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
           joinsNext: false,
         },
       ],
-    };
+      transliteration: {
+        language: "en-Latn",
+        text: "",
+        backgroundText: "u  ye  bei",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: "test",
+      },
+    });
     const [update] = computeSplitIntoWordsUpdates(bg("L4"), [line]);
-    for (const word of update.updates.backgroundWords ?? []) {
+    const words = legacyWords(update.updates.backgroundWords, update.updates.languages, "bg") ?? [];
+    expect(words.length).toBeGreaterThan(1);
+    for (const word of words) {
       expect(word).not.toHaveProperty("transliteration");
       expect(word).not.toHaveProperty("transliterationJoinerAfter");
     }
