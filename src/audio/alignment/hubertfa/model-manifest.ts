@@ -31,11 +31,13 @@ const MIB = 1024 * 1024;
 
 // HubertFA v0.0.7 (Apache-2.0) in fp32, with its two fp32 -> fp16 -> fp32 Cast
 // round-trips removed: WebGPU can only run fp16 casts on GPUs with shader-f16,
-// and the round-trips only dropped precision.
+// and the round-trips only dropped precision. v2 splits the encoder's two
+// longest Convs into short dispatches with the same result: an Intel iGPU
+// resets the device when another app needs the GPU during a long dispatch.
 const BUILTIN_ALIGNMENT_MODEL = {
   id: "hubertfa-v007",
   label: "HubertFA v0.0.7",
-  filename: "hubertfa_v007_fp32_webgpu.onnx",
+  filename: "hubertfa_v007_fp32_webgpu_v2.onnx",
   approxBytes: 396 * MIB,
   languages: ["en", "zh", "ja"],
 };
