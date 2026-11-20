@@ -1,9 +1,9 @@
 import type { SeekReveal } from "@/audio/seek-reveal-intent";
 import { selectionBounds } from "@/domain/selection/bounds";
-import { isWordSelected } from "@/domain/selection/identity";
+import { sameAddress } from "@/domain/selection/identity";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import type { LoopRegion } from "@/domain/selection/loop-region";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { playbackRange } from "@/domain/selection/playback-range";
 import type { Bounds } from "@/domain/word/bounds";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -185,14 +185,14 @@ function toggleRangeLoop(): boolean {
   return true;
 }
 
-function selectWordUnlessSelected(target: WordSelection): void {
+function selectWordUnlessSelected(target: SyllableAddress): void {
   const { selectedWords, setSelectedWords } = useTimelineStore.getState();
-  if (!isWordSelected(selectedWords, target.lineId, target.wordIndex, target.type)) setSelectedWords([target]);
+  if (!selectedWords.some((selected) => sameAddress(selected, target))) setSelectedWords([target]);
 }
 
-function selectLine(lineId: string, lineIndex: number): void {
+function selectLine(lineId: string): void {
   const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
-  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line, lineIndex));
+  if (line) useTimelineStore.getState().setSelectedWords(lineWordSelections(line));
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -201,17 +201,17 @@ export {
   adoptLoopRegionForPlay,
   clearLoopRegion,
   commitDrawnLoopRegion,
+  currentlyLoops,
   currentPlaybackRange,
   currentSelectionBounds,
-  currentlyLoops,
-  loopsRange,
   loopSelection,
+  loopsRange,
   playLoopRegion,
   playPlain,
-  skipLoopRegionOnNextPlay,
   playSelection,
   selectLine,
   selectWordUnlessSelected,
+  skipLoopRegionOnNextPlay,
   stopSelectionPlayback,
   toggleLoop,
   toggleLoopShortcut,

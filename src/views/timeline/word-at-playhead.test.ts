@@ -1,6 +1,6 @@
+import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { describe, expect, it } from "vitest";
 import { createLine } from "@/test/factories";
-import type { WordSelection } from "@/domain/selection/model";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 
 describe("findWordsAtTime", () => {
@@ -23,7 +23,7 @@ describe("findWordsAtTime", () => {
       backgroundWords: [{ text: "bg", begin: 0.5, end: 1.5 }],
     });
     const matches = findWordsAtTime([line], 1);
-    expect(matches).toEqual<WordSelection[]>([
+    expect(matches).toMatchObject([
       { lineId: "line-a", lineIndex: 0, wordIndex: 0, type: "word" },
       { lineId: "line-a", lineIndex: 0, wordIndex: 0, type: "bg" },
     ]);
@@ -33,7 +33,7 @@ describe("findWordsAtTime", () => {
     const lineOne = createLine({ id: "line-1", words: [{ text: "one", begin: 0, end: 3 }] });
     const lineTwo = createLine({ id: "line-2", words: [{ text: "two", begin: 1, end: 4 }] });
     const matches = findWordsAtTime([lineOne, lineTwo], 2);
-    expect(matches).toEqual<WordSelection[]>([
+    expect(matches).toMatchObject([
       { lineId: "line-1", lineIndex: 0, wordIndex: 0, type: "word" },
       { lineId: "line-2", lineIndex: 1, wordIndex: 0, type: "word" },
     ]);
@@ -41,9 +41,9 @@ describe("findWordsAtTime", () => {
 });
 
 describe("pickNextWordAtPlayhead", () => {
-  const matchA: WordSelection = { lineId: "line-1", lineIndex: 0, wordIndex: 0, type: "word" };
-  const matchB: WordSelection = { lineId: "line-1", lineIndex: 0, wordIndex: 0, type: "bg" };
-  const matchC: WordSelection = { lineId: "line-2", lineIndex: 1, wordIndex: 0, type: "word" };
+  const matchA: ResolvedAddress = { lineId: "line-1", lineIndex: 0, wordIndex: 0, type: "word", syllableId: "one" };
+  const matchB: ResolvedAddress = { lineId: "line-1", lineIndex: 0, wordIndex: 0, type: "bg", syllableId: "echo" };
+  const matchC: ResolvedAddress = { lineId: "line-2", lineIndex: 1, wordIndex: 0, type: "word", syllableId: "two" };
 
   it("returns null when matches are empty", () => {
     expect(pickNextWordAtPlayhead([], [matchA])).toBeNull();
@@ -66,7 +66,7 @@ describe("pickNextWordAtPlayhead", () => {
   });
 
   it("falls back to the first match when the selection is not among the matches", () => {
-    const outsider: WordSelection = { lineId: "line-9", lineIndex: 8, wordIndex: 3, type: "word" };
+    const outsider: ResolvedAddress = { lineId: "line-9", lineIndex: 8, wordIndex: 3, type: "word", syllableId: "far" };
     expect(pickNextWordAtPlayhead([matchA, matchB, matchC], [outsider])).toEqual(matchA);
   });
 });
@@ -81,7 +81,7 @@ describe("findBoundaryTarget", () => {
         backgroundWords: [{ text: "ooh", begin: 2.5, end: 4 }],
       }),
     ];
-    expect(findBoundaryTarget(lines, 3, "end", null, true)).toEqual({
+    expect(findBoundaryTarget(lines, 3, "end", null, true)).toMatchObject({
       lineId: "bg",
       lineIndex: 0,
       wordIndex: 0,
@@ -102,12 +102,12 @@ describe("findBoundaryTarget", () => {
   it("prefers the word under the playhead over any neighbour, on both edges", () => {
     const lines = [gappedLine()];
     const inside = { lineId: "gapped", lineIndex: 0, wordIndex: 0, type: "word" as const };
-    expect(findBoundaryTarget(lines, 1.5, "begin")).toEqual(inside);
-    expect(findBoundaryTarget(lines, 1.5, "end")).toEqual(inside);
+    expect(findBoundaryTarget(lines, 1.5, "begin")).toMatchObject(inside);
+    expect(findBoundaryTarget(lines, 1.5, "end")).toMatchObject(inside);
   });
 
   it("reaches forward to the word starting after the playhead on the begin edge", () => {
-    expect(findBoundaryTarget([gappedLine()], 2.5, "begin")).toEqual({
+    expect(findBoundaryTarget([gappedLine()], 2.5, "begin")).toMatchObject({
       lineId: "gapped",
       lineIndex: 0,
       wordIndex: 1,
@@ -116,7 +116,7 @@ describe("findBoundaryTarget", () => {
   });
 
   it("reaches back to the word ending before the playhead on the end edge", () => {
-    expect(findBoundaryTarget([gappedLine()], 2.5, "end")).toEqual({
+    expect(findBoundaryTarget([gappedLine()], 2.5, "end")).toMatchObject({
       lineId: "gapped",
       lineIndex: 0,
       wordIndex: 0,
@@ -127,7 +127,7 @@ describe("findBoundaryTarget", () => {
   it("picks the nearest word in time rather than the earliest line", () => {
     const far = createLine({ id: "far", words: [{ text: "far", begin: 9, end: 10 }] });
     const near = createLine({ id: "near", words: [{ text: "near", begin: 5, end: 6 }] });
-    expect(findBoundaryTarget([far, near], 4, "begin")).toEqual({
+    expect(findBoundaryTarget([far, near], 4, "begin")).toMatchObject({
       lineId: "near",
       lineIndex: 1,
       wordIndex: 0,
@@ -143,7 +143,7 @@ describe("findBoundaryTarget", () => {
       backgroundText: "ooh",
       backgroundWords: [{ text: "ooh", begin: 5, end: 5.5 }],
     });
-    expect(findBoundaryTarget([line], 4, "begin")).toEqual({
+    expect(findBoundaryTarget([line], 4, "begin")).toMatchObject({
       lineId: "mixed",
       lineIndex: 0,
       wordIndex: 0,
@@ -166,7 +166,7 @@ describe("findBoundaryTarget", () => {
     it("has nothing to pull back when the playhead sits past every word", () => {
       const lines = [gappedLine()];
       expect(findBoundaryTarget(lines, 8, "begin")).toBeNull();
-      expect(findBoundaryTarget(lines, 8, "end")).toEqual({
+      expect(findBoundaryTarget(lines, 8, "end")).toMatchObject({
         lineId: "gapped",
         lineIndex: 0,
         wordIndex: 1,
@@ -177,7 +177,7 @@ describe("findBoundaryTarget", () => {
     it("has nothing to push forward when the playhead sits before every word", () => {
       const lines = [gappedLine()];
       expect(findBoundaryTarget(lines, 0.5, "end")).toBeNull();
-      expect(findBoundaryTarget(lines, 0.5, "begin")).toEqual({
+      expect(findBoundaryTarget(lines, 0.5, "begin")).toMatchObject({
         lineId: "gapped",
         lineIndex: 0,
         wordIndex: 0,
@@ -187,13 +187,13 @@ describe("findBoundaryTarget", () => {
 
     it("treats a playhead resting exactly on a word's end as outside that word", () => {
       const lines = [gappedLine()];
-      expect(findBoundaryTarget(lines, 2, "end")).toEqual({
+      expect(findBoundaryTarget(lines, 2, "end")).toMatchObject({
         lineId: "gapped",
         lineIndex: 0,
         wordIndex: 0,
         type: "word",
       });
-      expect(findBoundaryTarget(lines, 2, "begin")).toEqual({
+      expect(findBoundaryTarget(lines, 2, "begin")).toMatchObject({
         lineId: "gapped",
         lineIndex: 0,
         wordIndex: 1,
@@ -202,7 +202,7 @@ describe("findBoundaryTarget", () => {
     });
 
     it("keeps the begin edge on the word the playhead starts", () => {
-      expect(findBoundaryTarget([gappedLine()], 3, "begin")).toEqual({
+      expect(findBoundaryTarget([gappedLine()], 3, "begin")).toMatchObject({
         lineId: "gapped",
         lineIndex: 0,
         wordIndex: 1,
@@ -211,7 +211,7 @@ describe("findBoundaryTarget", () => {
     });
 
     it("sends the end edge back a word when the playhead rests on a word's begin", () => {
-      expect(findBoundaryTarget([gappedLine()], 3, "end")).toEqual({
+      expect(findBoundaryTarget([gappedLine()], 3, "end")).toMatchObject({
         lineId: "gapped",
         lineIndex: 0,
         wordIndex: 0,
@@ -237,7 +237,7 @@ describe("findBoundaryTarget", () => {
     it("breaks a tie on equal distance by scan order", () => {
       const first = createLine({ id: "first", words: [{ text: "a", begin: 3, end: 4 }] });
       const second = createLine({ id: "second", words: [{ text: "b", begin: 3, end: 4 }] });
-      expect(findBoundaryTarget([first, second], 2, "begin")).toEqual({
+      expect(findBoundaryTarget([first, second], 2, "begin")).toMatchObject({
         lineId: "first",
         lineIndex: 0,
         wordIndex: 0,
@@ -262,7 +262,7 @@ describe("findBoundaryTarget", () => {
     it("prefers a word spanning the playhead over one that merely ends on it", () => {
       const ending = createLine({ id: "ending", words: [{ text: "x", begin: 1, end: 2 }] });
       const spanning = createLine({ id: "spanning", words: [{ text: "y", begin: 1.5, end: 2.5 }] });
-      expect(findBoundaryTarget([ending, spanning], 2, "end")).toEqual({
+      expect(findBoundaryTarget([ending, spanning], 2, "end")).toMatchObject({
         lineId: "spanning",
         lineIndex: 1,
         wordIndex: 0,
@@ -289,13 +289,13 @@ describe("group focus", () => {
 
   it("finds only words of the focused instance at the playhead", () => {
     expect(findWordsAtTime(lines, 0.5, focusOnSecond)).toEqual([]);
-    expect(findWordsAtTime(lines, 10.5, focusOnSecond)).toEqual<WordSelection[]>([
+    expect(findWordsAtTime(lines, 10.5, focusOnSecond)).toMatchObject([
       { lineId: "c1", lineIndex: 2, wordIndex: 0, type: "word" },
     ]);
   });
 
   it("reaches only words of the focused instance across a gap", () => {
-    expect(findBoundaryTarget(lines, 1.5, "begin", focusOnSecond)).toEqual<WordSelection>({
+    expect(findBoundaryTarget(lines, 1.5, "begin", focusOnSecond)).toMatchObject({
       lineId: "c1",
       lineIndex: 2,
       wordIndex: 0,

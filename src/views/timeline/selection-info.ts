@@ -1,9 +1,10 @@
-import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
+import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { wordAt } from "@/domain/selection/resolve";
 import type { WordTiming } from "@/domain/word/timing";
 import { pluralize } from "@/utils/pluralize";
 
@@ -23,15 +24,14 @@ interface MultiSelectionSummary {
 
 // -- Helpers ------------------------------------------------------------------
 
-function selectedWord(selection: WordSelection, lines: readonly ReadableLine[]): WordTiming | undefined {
-  const line = lines[selection.lineIndex];
-  return line ? effectiveTrackWords(line, selection.type)?.[selection.wordIndex] : undefined;
+function selectedWord(selection: SyllableAddress, lines: readonly ReadableLine[]): WordTiming | null {
+  return wordAt(lines, selection);
 }
 
 // -- Functions ----------------------------------------------------------------
 
 function selectionGroupHighlight(
-  selection: readonly WordSelection[],
+  selection: readonly SyllableAddress[],
   rawLines: readonly LyricLine[],
   groups: readonly LinkGroup[],
 ): GroupHighlight | null {
@@ -56,7 +56,7 @@ function selectionGroupHighlight(
 }
 
 function selectedWordTiming(
-  selection: WordSelection,
+  selection: SyllableAddress,
   lines: readonly ReadableLine[],
 ): Pick<WordTiming, "text" | "begin" | "end"> | null {
   const word = selectedWord(selection, lines);
@@ -64,7 +64,7 @@ function selectedWordTiming(
 }
 
 function multiSelectionSummary(
-  selection: readonly WordSelection[],
+  selection: readonly SyllableAddress[],
   lines: readonly ReadableLine[],
   rawLines: readonly LyricLine[],
 ): MultiSelectionSummary | null {
@@ -96,5 +96,5 @@ function selectionCountLabel(wordCount: number, lineCount: number): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { multiSelectionSummary, selectedWordTiming, selectionCountLabel, selectionGroupHighlight };
 export type { GroupHighlight, MultiSelectionSummary };
+export { multiSelectionSummary, selectedWordTiming, selectionCountLabel, selectionGroupHighlight };

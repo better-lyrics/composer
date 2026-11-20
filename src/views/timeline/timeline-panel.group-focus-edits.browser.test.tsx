@@ -1,3 +1,4 @@
+import { storedWordAddress } from "@/test/word-address";
 import {
   focus,
   press,
@@ -22,7 +23,7 @@ describe("TimelinePanel · editing lines in an open group", () => {
   describe("regressions", () => {
     it("regression: shows a line inserted with the shortcut instead of hiding it", async () => {
       await renderOpen(1);
-      useTimelineStore.getState().setSelectedWords([{ lineId: "c1", lineIndex: 2, wordIndex: 0, type: "word" }]);
+      useTimelineStore.getState().setSelectedWords([storedWordAddress("c1", 0, "word")]);
 
       press("n", { code: "KeyN" });
 
@@ -76,7 +77,7 @@ describe("TimelinePanel · editing lines in an open group", () => {
   describe("invariants", () => {
     it("inserts the line outside the group", async () => {
       await renderOpen(1);
-      useTimelineStore.getState().setSelectedWords([{ lineId: "c1", lineIndex: 2, wordIndex: 0, type: "word" }]);
+      useTimelineStore.getState().setSelectedWords([storedWordAddress("c1", 0, "word")]);
 
       press("n", { code: "KeyN" });
 

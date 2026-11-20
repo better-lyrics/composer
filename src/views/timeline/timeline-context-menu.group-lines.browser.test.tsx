@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { Toaster } from "sonner";
@@ -13,7 +14,7 @@ async function groupTwoLines() {
   useProjectStore.setState({ lines: [createLine({ id: "a", text: "one" }), createLine({ id: "b", text: "two" })] });
   useTimelineStore.setState({
     contextMenu: { x: 100, y: 100, target: { kind: "gutter", lineId: "b", lineIndex: 1 } },
-    selectedWords: [{ lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" }],
+    selectedWords: [storedWordAddress("a", 0, "word")],
   });
   const screen = await render(
     <>

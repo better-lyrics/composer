@@ -2,7 +2,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { convertLineToWord } from "@/utils/sync-helpers";
@@ -17,7 +17,7 @@ interface LineWordsUpdate {
 
 // -- Pure computation ----------------------------------------------------------
 
-type SplitTarget = Pick<WordSelection, "lineId" | "type">;
+type SplitTarget = Pick<SyllableAddress, "lineId" | "type">;
 
 function splitMultiWordWord(word: WordTiming): WordTiming[] {
   const asLine: { text: string; begin: number; end: number; words?: WordTiming[] } = {
@@ -70,26 +70,24 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
   return updates;
 }
 
-function splitTargetsForMenu(target: SplitTarget, selectedWords: WordSelection[]): SplitTarget[] {
+function splitTargetsForMenu(target: SplitTarget, selectedWords: SyllableAddress[]): SplitTarget[] {
   return selectedWords.some((w) => w.lineId === target.lineId) ? [target, ...selectedWords] : [target];
 }
 
-function computeSplitSelections(updates: LineWordsUpdate[], effectiveLines: readonly ReadableLine[]): WordSelection[] {
-  const lineIndexById = new Map<string, number>();
-  for (let i = 0; i < effectiveLines.length; i++) lineIndexById.set(effectiveLines[i].id, i);
-
-  const selections: WordSelection[] = [];
+function computeSplitSelections(
+  updates: LineWordsUpdate[],
+  effectiveLines: readonly ReadableLine[],
+): SyllableAddress[] {
+  const shownLineIds = new Set(effectiveLines.map((line) => line.id));
+  const selections: SyllableAddress[] = [];
   for (const update of updates) {
-    const lineIndex = lineIndexById.get(update.id);
-    if (lineIndex === undefined) continue;
+    if (!shownLineIds.has(update.id)) continue;
     const tracks = [
       ["word", update.updates.words],
       ["bg", update.updates.backgroundWords],
     ] as const;
     for (const [type, words] of tracks) {
-      for (let wi = 0; wi < (words?.length ?? 0); wi++) {
-        selections.push({ lineId: update.id, lineIndex, wordIndex: wi, type });
-      }
+      for (const word of words ?? []) selections.push({ lineId: update.id, type, syllableId: word.id });
     }
   }
   return selections;

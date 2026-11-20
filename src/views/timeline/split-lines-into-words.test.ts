@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+
 import type { LyricLine } from "@/domain/line/model";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useProjectStore } from "@/stores/project";
@@ -69,11 +70,11 @@ describe("computeSplitIntoWordsUpdates", () => {
 });
 
 describe("computeSplitSelections", () => {
-  it("produces a word selection per converted word, indexed against effective lines", () => {
+  it("produces a word selection per converted word, addressed by the new word ids", () => {
     const updates = computeSplitIntoWordsUpdates(main("L1"), [lineSynced]);
     const selections = computeSplitSelections(updates, [lineSynced]);
-    expect(selections.length).toBe(updates[0].updates.words?.length);
-    expect(selections.every((s) => s.lineId === "L1" && s.lineIndex === 0 && s.type === "word")).toBe(true);
+    expect(selections.map((s) => s.syllableId)).toEqual(updates[0].updates.words?.map((word) => word.id));
+    expect(selections.every((s) => s.lineId === "L1" && s.type === "word")).toBe(true);
   });
 
   it("returns no selections when an update id is absent from the effective lines", () => {
@@ -290,16 +291,19 @@ describe("computeSplitSelections · background track", () => {
   it("selects the new bg words on the bg track", () => {
     const updates = computeSplitIntoWordsUpdates(bg("L4"), [sentenceBg]);
     const selections = computeSplitSelections(updates, [sentenceBg]);
-    expect(selections).toEqual([
-      { lineId: "L4", lineIndex: 0, wordIndex: 0, type: "bg" },
-      { lineId: "L4", lineIndex: 0, wordIndex: 1, type: "bg" },
-      { lineId: "L4", lineIndex: 0, wordIndex: 2, type: "bg" },
-    ]);
+    expect(selections).toEqual(
+      (updates[0].updates.backgroundWords ?? []).map((word) => ({ lineId: "L4", type: "bg", syllableId: word.id })),
+    );
+    expect(selections).toHaveLength(3);
   });
 });
 
 describe("splitTargetsForMenu", () => {
-  const selection = (lineId: string, type: "word" | "bg", wordIndex = 0) => ({ lineId, lineIndex: 0, wordIndex, type });
+  const selection = (lineId: string, type: "word" | "bg", wordIndex = 0) => ({
+    lineId,
+    type,
+    syllableId: `w${wordIndex}`,
+  });
 
   it("uses the target alone when nothing on its line is selected", () => {
     expect(splitTargetsForMenu({ lineId: "L1", type: "word" }, [selection("L2", "word")])).toEqual([

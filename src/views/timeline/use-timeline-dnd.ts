@@ -1,6 +1,5 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
@@ -12,6 +11,7 @@ import {
   type DragData,
   applyCrossLineMove,
   applySameLineReorder,
+  draggedWord,
   expandSelectionsAcrossLines,
   resolveWordsToOperate,
 } from "@/views/timeline/drag-handlers";
@@ -118,17 +118,9 @@ function useTimelineDnd(lines: ReadableLine[]) {
       if (!targetLine) return;
 
       const { selectedWords } = useTimelineStore.getState();
-      const draggedOnly: WordSelection[] = [
-        {
-          lineId: activeData.lineId,
-          lineIndex: activeData.lineIndex,
-          wordIndex: activeData.wordIndex,
-          type: activeData.trackType,
-        },
-      ];
       const wordsToMove = expandSelectionsAcrossLines(
         lines,
-        isShiftDrag ? draggedOnly : resolveWordsToOperate(activeData, selectedWords),
+        isShiftDrag ? [draggedWord(activeData)] : resolveWordsToOperate(lines, activeData, selectedWords),
       );
       const timeDelta = delta.x / zoom;
 

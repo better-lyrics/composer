@@ -1,53 +1,50 @@
-import { isWordSelected, sameWordSelection } from "@/domain/selection/identity";
-import type { WordSelection } from "@/domain/selection/model";
+import { isAddressed, sameAddress } from "@/domain/selection/identity";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function sel(extras: Partial<WordSelection> = {}): WordSelection {
-  return { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word", ...extras };
+function sel(extras: { lineId?: string; wordIndex?: number; type?: "word" | "bg" } = {}): SyllableAddress {
+  const { lineId = "l1", wordIndex = 0, type = "word" } = extras;
+  return { lineId, type, syllableId: `w${wordIndex}` };
 }
 
-// -- sameWordSelection --------------------------------------------------------
+// -- sameAddress --------------------------------------------------------
 
-describe("sameWordSelection", () => {
-  it("is true when lineId, wordIndex, and type all match", () => {
-    expect(sameWordSelection(sel(), sel())).toBe(true);
-  });
-
-  it("ignores lineIndex, which is not part of selection identity", () => {
-    expect(sameWordSelection(sel({ lineIndex: 0 }), sel({ lineIndex: 7 }))).toBe(true);
+describe("sameAddress", () => {
+  it("is true when lineId, word, and type all match", () => {
+    expect(sameAddress(sel(), sel())).toBe(true);
   });
 
   it("is false when lineId differs", () => {
-    expect(sameWordSelection(sel({ lineId: "l1" }), sel({ lineId: "l2" }))).toBe(false);
+    expect(sameAddress(sel({ lineId: "l1" }), sel({ lineId: "l2" }))).toBe(false);
   });
 
-  it("is false when wordIndex differs", () => {
-    expect(sameWordSelection(sel({ wordIndex: 0 }), sel({ wordIndex: 1 }))).toBe(false);
+  it("is false when the word differs", () => {
+    expect(sameAddress(sel({ wordIndex: 0 }), sel({ wordIndex: 1 }))).toBe(false);
   });
 
   it("is false when type differs", () => {
-    expect(sameWordSelection(sel({ type: "word" }), sel({ type: "bg" }))).toBe(false);
+    expect(sameAddress(sel({ type: "word" }), sel({ type: "bg" }))).toBe(false);
   });
 });
 
-// -- isWordSelected -----------------------------------------------------------
+// -- isAddressed -----------------------------------------------------------
 
-describe("isWordSelected", () => {
+describe("isAddressed", () => {
   it("is true when a matching selection is present", () => {
-    expect(isWordSelected([sel({ wordIndex: 2 })], "l1", 2, "word")).toBe(true);
+    expect(isAddressed([sel({ wordIndex: 2 })], "l1", "word", "w2")).toBe(true);
   });
 
   it("is false for an empty selection list", () => {
-    expect(isWordSelected([], "l1", 0, "word")).toBe(false);
+    expect(isAddressed([], "l1", "word", "w0")).toBe(false);
   });
 
   it("distinguishes a bg-track query from a word-track selection at the same index", () => {
-    expect(isWordSelected([sel({ type: "word" })], "l1", 0, "bg")).toBe(false);
+    expect(isAddressed([sel({ type: "word" })], "l1", "bg", "w0")).toBe(false);
   });
 
   it("is false when no selection matches the query", () => {
-    expect(isWordSelected([sel({ wordIndex: 0 }), sel({ wordIndex: 1 })], "l1", 5, "word")).toBe(false);
+    expect(isAddressed([sel({ wordIndex: 0 }), sel({ wordIndex: 1 })], "l1", "word", "w5")).toBe(false);
   });
 });

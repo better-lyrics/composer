@@ -5,6 +5,7 @@ import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { trackWords } from "@/domain/line/tracks";
+import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
@@ -36,26 +37,15 @@ function distributeLinesTiming<T extends { id: string; text: string }>(
 
 const formatTime = (seconds: number) => formatTimeBase(seconds, 2);
 
-interface WordSelectionRef {
-  lineId: string;
-  lineIndex: number;
-  wordIndex: number;
-  type: "word" | "bg";
-}
-
-function getWordsInInstance(lines: readonly LyricLine[], groupId: string, instanceIdx: number): WordSelectionRef[] {
-  const out: WordSelectionRef[] = [];
+function getWordsInInstance(lines: readonly LyricLine[], groupId: string, instanceIdx: number): ResolvedAddress[] {
+  const out: ResolvedAddress[] = [];
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (line.groupId !== groupId || line.instanceIdx !== instanceIdx) continue;
-    const mainWordCount = effectiveTrackWords(line, "word")?.length ?? 0;
-    for (let wordIndex = 0; wordIndex < mainWordCount; wordIndex++) {
-      out.push({ lineId: line.id, lineIndex, wordIndex, type: "word" });
-    }
-    if (line.backgroundWords?.length) {
-      for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
-        out.push({ lineId: line.id, lineIndex, wordIndex, type: "bg" });
-      }
+    for (const type of ["word", "bg"] as const) {
+      (effectiveTrackWords(line, type) ?? []).forEach((word, wordIndex) => {
+        out.push({ lineId: line.id, type, syllableId: word.id, lineIndex, wordIndex });
+      });
     }
   }
   return out;
@@ -360,17 +350,17 @@ function getLineAndTrackAtY(
 
 // -- Exports -------------------------------------------------------------------
 
+export type { RowLayout, RowLayoutInput };
 export {
-  distributeWordsInLine,
-  distributeLinesTiming,
-  formatTime,
-  getWordsInInstance,
   computeRowLayout,
-  getLineIndexAtY,
+  distributeLinesTiming,
+  distributeWordsInLine,
+  formatTime,
   getLineAndTrackAtY,
+  getLineIndexAtY,
+  getWordsInInstance,
   nudgeSelectedWords,
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 };
-export type { RowLayout, RowLayoutInput };

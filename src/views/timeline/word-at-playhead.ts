@@ -1,14 +1,15 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
-import { sameWordSelection } from "@/domain/selection/identity";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { sameAddress } from "@/domain/selection/identity";
+import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
 import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";
 
 // -- Functions -----------------------------------------------------------------
 
-function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | null = null): WordSelection[] {
-  const matches: WordSelection[] = [];
+function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | null = null): ResolvedAddress[] {
+  const matches: ResolvedAddress[] = [];
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
@@ -16,7 +17,7 @@ function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | n
       for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
         const word = line.words[wordIndex];
         if (time >= word.begin && time < word.end) {
-          matches.push({ lineId: line.id, lineIndex, wordIndex, type: "word" });
+          matches.push({ lineId: line.id, type: "word", syllableId: word.id, lineIndex, wordIndex });
         }
       }
     }
@@ -24,7 +25,7 @@ function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | n
       for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
         const word = line.backgroundWords[wordIndex];
         if (time >= word.begin && time < word.end) {
-          matches.push({ lineId: line.id, lineIndex, wordIndex, type: "bg" });
+          matches.push({ lineId: line.id, type: "bg", syllableId: word.id, lineIndex, wordIndex });
         }
       }
     }
@@ -32,11 +33,14 @@ function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | n
   return matches;
 }
 
-function pickNextWordAtPlayhead(matches: WordSelection[], selectedWords: WordSelection[]): WordSelection | null {
+function pickNextWordAtPlayhead(
+  matches: ResolvedAddress[],
+  selectedWords: readonly SyllableAddress[],
+): ResolvedAddress | null {
   if (matches.length === 0) return null;
   if (selectedWords.length === 1) {
     const current = selectedWords[0];
-    const index = matches.findIndex((match) => sameWordSelection(match, current));
+    const index = matches.findIndex((match) => sameAddress(match, current));
     if (index >= 0) return matches[(index + 1) % matches.length];
   }
   return matches[0];
@@ -68,8 +72,8 @@ function findWordAcrossGap(
   edge: BoundaryEdge,
   focus: GroupFocus | null,
   mainOnly: boolean,
-): WordSelection | null {
-  let nearest: WordSelection | null = null;
+): ResolvedAddress | null {
+  let nearest: ResolvedAddress | null = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
@@ -77,12 +81,12 @@ function findWordAcrossGap(
     const main = nearestInTrack(line.words, time, edge);
     if (main && main.distance < nearestDistance) {
       nearestDistance = main.distance;
-      nearest = { lineId: line.id, lineIndex, wordIndex: main.wordIndex, type: "word" };
+      nearest = resolvedAt(lines, lineIndex, "word", main.wordIndex);
     }
     const background = mainOnly ? null : nearestInTrack(line.backgroundWords, time, edge);
     if (background && background.distance < nearestDistance) {
       nearestDistance = background.distance;
-      nearest = { lineId: line.id, lineIndex, wordIndex: background.wordIndex, type: "bg" };
+      nearest = resolvedAt(lines, lineIndex, "bg", background.wordIndex);
     }
   }
   return nearest;
@@ -102,15 +106,15 @@ function findContainingWord(
   edge: BoundaryEdge,
   focus: GroupFocus | null,
   mainOnly: boolean,
-): WordSelection | null {
+): ResolvedAddress | null {
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
     const mainIndex = line.words?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
-    if (mainIndex !== -1) return { lineId: line.id, lineIndex, wordIndex: mainIndex, type: "word" };
+    if (mainIndex !== -1) return resolvedAt(lines, lineIndex, "word", mainIndex);
     if (mainOnly) continue;
     const bgIndex = line.backgroundWords?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
-    if (bgIndex !== -1) return { lineId: line.id, lineIndex, wordIndex: bgIndex, type: "bg" };
+    if (bgIndex !== -1) return resolvedAt(lines, lineIndex, "bg", bgIndex);
   }
   return null;
 }
@@ -123,7 +127,7 @@ function findBoundaryTarget(
   edge: BoundaryEdge,
   focus: GroupFocus | null = null,
   mainOnly = false,
-): WordSelection | null {
+): ResolvedAddress | null {
   return (
     findContainingWord(lines, time, edge, focus, mainOnly) ?? findWordAcrossGap(lines, time, edge, focus, mainOnly)
   );

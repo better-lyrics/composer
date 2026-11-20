@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { clearLoopRegion, loopSelection, playSelection } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRangePlayback } from "@/views/timeline/use-range-playback";
@@ -37,7 +38,7 @@ async function selectLastWordOfSong(): Promise<HTMLAudioElement> {
   useProjectStore.setState({
     lines: [createLine({ id: "a", text: "end", words: [{ text: "end", begin: WORD_BEGIN, end: SONG_SECONDS }] })],
   });
-  useTimelineStore.getState().setSelectedWords([{ lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" }]);
+  useTimelineStore.getState().setSelectedWords([storedWordAddress("a", 0, "word")]);
   return audio;
 }
 
@@ -83,6 +84,7 @@ describe("useRangePlayback", () => {
     useProjectStore.setState({
       lines: [createLine({ id: "a", text: "up", words: [{ text: "up", begin: 0.2, end: 0.3 }] })],
     });
+    useTimelineStore.getState().setSelectedWords([storedWordAddress("a", 0, "word")]);
     expect(loopSelection()).toBe(true);
     await expect.poll(() => audio.paused).toBe(false);
     await expect.poll(() => audio.currentTime).toBeGreaterThan(0.25);

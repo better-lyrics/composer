@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { describe, expect, it } from "vitest";
@@ -15,9 +16,9 @@ function openWordContextMenu(lineId: string) {
     contextMenu: {
       x: 100,
       y: 100,
-      target: { kind: "word", lineId, lineIndex: 0, wordIndex: 0, type: "word" },
+      target: { kind: "word", ...storedWordAddress(lineId, 0, "word") },
     },
-    selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "word" }],
+    selectedWords: [storedWordAddress(lineId, 0, "word")],
   });
 }
 
@@ -78,9 +79,9 @@ describe("TimelineContextMenu", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+        target: { kind: "word", ...storedWordAddress(line.id, 1, "word") },
       },
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 1, "word")],
     });
     await render(<TimelineContextMenu />);
 
@@ -105,9 +106,9 @@ describe("TimelineContextMenu", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
+        target: { kind: "word", ...storedWordAddress(line.id, 0, "word") },
       },
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     await render(<TimelineContextMenu />);
 
@@ -152,9 +153,9 @@ describe("TimelineContextMenu", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+        target: { kind: "word", ...storedWordAddress(line.id, 1, "word") },
       },
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 1, "word")],
     });
     await render(<TimelineContextMenu />);
 
@@ -193,9 +194,9 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "bg") },
       },
-      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress("l1", 0, "bg")],
     });
     await render(<TimelineContextMenu />);
 
@@ -220,9 +221,9 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "bg") },
       },
-      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress("l1", 0, "bg")],
     });
     await render(<TimelineContextMenu />);
 
@@ -259,12 +260,9 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "bg") },
       },
-      selectedWords: [
-        { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
-        { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "bg" },
-      ],
+      selectedWords: [storedWordAddress("l1", 0, "bg"), storedWordAddress("l1", 1, "bg")],
     });
     await render(<TimelineContextMenu />);
 
@@ -292,9 +290,9 @@ describe("TimelineContextMenu background provenance", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
+        target: { kind: "word", ...storedWordAddress("l1", 0, "word") },
       },
-      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress("l1", 0, "word")],
     });
     await render(<TimelineContextMenu />);
 
@@ -310,9 +308,9 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId, lineIndex: 0, wordIndex: 0, type: "bg" },
+        target: { kind: "word", ...storedWordAddress(lineId, 0, "bg") },
       },
-      selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress(lineId, 0, "bg")],
     });
   }
 
@@ -392,12 +390,9 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
         contextMenu: {
           x: 100,
           y: 100,
-          target: { kind: "word", lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
+          target: { kind: "word", ...storedWordAddress(lines[last].id, 0, "word") },
         },
-        selectedWords: [
-          { lineId: lines[0].id, lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
-        ],
+        selectedWords: [storedWordAddress(lines[0].id, 0, "word"), storedWordAddress(lines[last].id, 0, "word")],
       });
     }
 

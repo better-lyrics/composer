@@ -5,7 +5,8 @@ import { instanceKey } from "@/domain/instance/key";
 import type { LyricLine } from "@/domain/line/model";
 import { selectionBounds } from "@/domain/selection/bounds";
 import { lineWordSelections } from "@/domain/selection/line-selections";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { toAddress } from "@/domain/selection/resolve";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
@@ -127,7 +128,7 @@ function PlaybackMenuItems({
   clearContextMenu,
 }: {
   lines: readonly LyricLine[];
-  selections: readonly WordSelection[];
+  selections: readonly SyllableAddress[];
   noun: string;
   select?: () => void;
   clearContextMenu: () => void;
@@ -172,12 +173,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
   const actions = useWordMenuActions(targets, clearContextMenu);
   const { handleToggleExplicit, handleDeleteWord } = actions;
   const { handleSplitIntoWords, handleAutoAlign } = useLineMenuActions(targets, clearContextMenu);
-  const word: WordSelection = {
-    lineId: target.lineId,
-    lineIndex: target.lineIndex,
-    wordIndex: target.wordIndex,
-    type: target.type,
-  };
+  const word = toAddress(target);
   const playedWords = clickedSelectionCount === null ? [word] : selectedWords;
   const noun =
     clickedSelectionCount !== null && clickedSelectionCount > 1 ? pluralize(clickedSelectionCount, "word") : "word";
@@ -293,7 +289,7 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
   );
   const { lineId, lineIndex } = target;
   const line = targets.lines.find((candidate) => candidate.id === lineId);
-  const lineSelections = line ? lineWordSelections(line, lineIndex) : [];
+  const lineSelections = line ? lineWordSelections(line) : [];
 
   return (
     <>
@@ -301,7 +297,7 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
         lines={targets.lines}
         selections={lineSelections}
         noun="line"
-        select={() => selectLine(lineId, lineIndex)}
+        select={() => selectLine(lineId)}
         clearContextMenu={clearContextMenu}
       />
       <MenuItem

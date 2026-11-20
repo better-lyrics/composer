@@ -1,18 +1,19 @@
 import { afterEach, beforeEach, expect, it } from "vitest";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { followStepUndo, rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
-const slot = (wordIndex: number): WordSelection => ({ lineId: "a", lineIndex: 0, wordIndex, type: "word" });
+const WORD_IDS = ["paper", "boats"];
+const slot = (wordIndex: number): SyllableAddress => ({ lineId: "a", type: "word", syllableId: WORD_IDS[wordIndex] });
 const line = (end: number) =>
   createLine({
     id: "a",
     text: "Paper boats",
     words: [
-      { text: "Paper", sep: " ", begin: 1, end },
-      { text: "boats", begin: end, end: 2 },
+      { id: WORD_IDS[0], text: "Paper", sep: " ", begin: 1, end },
+      { id: WORD_IDS[1], text: "boats", begin: end, end: 2 },
     ],
   });
 
