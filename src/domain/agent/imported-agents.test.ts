@@ -32,6 +32,19 @@ describe("agentsAfterImport", () => {
     expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Everyone" }]);
   });
 
+  it("takes the kept TTML data of a singer the import declares again", () => {
+    const kept = { ...LEAD, passthrough: { attrs: [["x-range", "low"]] as const } };
+    const incoming = { ...LEAD, namePassthrough: { attrs: [["x-lang", "en"]] as const } };
+    const result = agentsAfterImport([kept], [incoming], [line("v1")]);
+    expect(result.agents).toEqual([incoming]);
+  });
+
+  it("clears the kept TTML data of the singers an import without singers keeps", () => {
+    const kept = { ...LEAD, passthrough: { attrs: [["x-range", "low"]] as const } };
+    const result = agentsAfterImport([kept], undefined, [line("v1")]);
+    expect(result.agents).toEqual([LEAD]);
+  });
+
   it("drops a singer from a previous import that no imported line references", () => {
     const result = agentsAfterImport([LEAD, BOB], [LEAD], [line("v1")]);
     expect(result.agents).toEqual([LEAD]);

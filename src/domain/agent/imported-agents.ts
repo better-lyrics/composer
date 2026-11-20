@@ -1,3 +1,4 @@
+import { agentWithoutKeptData } from "@/domain/agent/kept-data";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { mainTrack } from "@/domain/line/track";
@@ -24,10 +25,10 @@ function linesOnExistingAgents<L extends LyricLine>(existing: readonly Agent[], 
   );
 }
 
-// The imported file decides a known singer's name, type and kept TTML data.
-function updatedAgent({ passthrough: _kept, namePassthrough: _keptName, ...agent }: Agent, update: Agent): Agent {
+// An import replaces kept TTML data: a singer it declares brings its own, every other singer keeps none.
+function updatedAgent(agent: Agent, update: Agent): Agent {
   return {
-    ...agent,
+    ...agentWithoutKeptData(agent),
     name: update.name,
     type: update.type,
     ...(update.passthrough && { passthrough: update.passthrough }),
@@ -49,12 +50,12 @@ function agentsAfterImport<L extends LyricLine>(
   const kept = existing.flatMap((agent) => {
     const update = incomingById.get(agent.id);
     if (update) return [updatedAgent(agent, update)];
-    return referenced.has(agent.id) ? [agent] : [];
+    return referenced.has(agent.id) ? [agentWithoutKeptData(agent)] : [];
   });
   const existingIds = new Set(existing.map((agent) => agent.id));
   const added = declared.filter((agent) => !existingIds.has(agent.id));
   const agents = [...kept, ...added];
-  return { agents: agents.length > 0 ? agents : [...existing], lines };
+  return { agents: agents.length > 0 ? agents : existing.map(agentWithoutKeptData), lines };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -184,5 +184,5 @@ function fieldsOfLine(line: LyricLine): LineFields {
 
 // -- Exports ------------------------------------------------------------------
 
-export { fieldsOfLine, lineFromFields, syllablesFromFields };
+export { fieldsOfLine, lineFromFields, syllablesFromFields, untimedRest };
 export type { LineFields };
