@@ -68,16 +68,19 @@ for file in "${KUROMOJI_DIR}"/dict/*.dat.gz "${KUROMOJI_DIR}/NOTICE.md"; do
     --no-progress
 done
 
-# The checkpoint manifest changes as models are added, so it must not be
-# cached the way the immutable model files are.
-if [[ -f "${ASSETS_DIR}/hubertfa-models.json" ]]; then
-  echo "==> uploading hubertfa-models.json"
-  aws s3 cp "${ASSETS_DIR}/hubertfa-models.json" "s3://${BUCKET}/hubertfa-models.json" \
-    --endpoint-url "${ENDPOINT}" \
-    --content-type 'application/json; charset=utf-8' \
-    --cache-control 'no-cache' \
-    --no-progress
-fi
+# The checkpoint manifests change as models are added, so they must not be
+# cached the way the immutable model files are. hubertfa-models-2.json is the
+# one the app reads first; it lists checkpoints older builds can't run.
+for manifest in hubertfa-models.json hubertfa-models-2.json; do
+  if [[ -f "${ASSETS_DIR}/${manifest}" ]]; then
+    echo "==> uploading ${manifest}"
+    aws s3 cp "${ASSETS_DIR}/${manifest}" "s3://${BUCKET}/${manifest}" \
+      --endpoint-url "${ENDPOINT}" \
+      --content-type 'application/json; charset=utf-8' \
+      --cache-control 'no-cache' \
+      --no-progress
+  fi
+done
 
 echo ""
 echo "Done. Verify, e.g.:"
