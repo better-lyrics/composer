@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 // biome-ignore assist/source/organizeImports: the webworker triple-slash reference must stay before imports.
-import { decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
 import japaneseDictionaryText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinDictionaryText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { type G2pContext, type PhoneUnit, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
@@ -13,8 +12,13 @@ import type {
   LineRequest,
   OutboundMessage,
 } from "@/audio/alignment/hubertfa/worker-protocol";
-import { ctcLineBounds } from "@/audio/alignment/hubertfa/ctc-bounds";
-import { CTC_BLANK } from "@/audio/alignment/hubertfa/ctc-viterbi";
+import {
+  alignPhones,
+  ctcSpan,
+  isLineFinder,
+  lineFeeds,
+  linesAround,
+} from "@/audio/alignment/hubertfa/line-search";
 import {
   type PhoneSequence,
   buildPhoneSequence,
@@ -35,7 +39,6 @@ declare const self: DedicatedWorkerGlobalScope;
 // -- Constants ----------------------------------------------------------------
 
 const MODEL_SAMPLE_RATE = 44100;
-const HOP_SIZE = 441;
 
 // -- State --------------------------------------------------------------------
 
@@ -148,7 +151,7 @@ async function handleInit(assets: AlignmentAssets, forceWasm?: boolean, japanese
     }
     ort = runtime;
     activeBackend = backend;
-    post({ type: "init-done", backend });
+    post({ type: "init-done", backend, findsLines: isLineFinder(session) });
   } catch (err) {
     log("alignment init failed:", err);
     post({ type: "error", code: "ort-failed", message: describeError(err) });
@@ -173,9 +176,16 @@ async function fallBackToWasm(reason: unknown): Promise<void> {
   activeBackend = "wasm";
 }
 
-async function runModel(samples: Float32Array) {
+// The lines around the request's and what a model that finds lines is given beside the audio; null for any other.
+async function lineInputs(request: LineRequest, own: PhoneSequence) {
+  if (!session || !ort || !isLineFinder(session)) return null;
+  const context = await linesAround(request, (words) => prepareLine({ ...request, words, transliteration: null }));
+  return { context, feeds: lineFeeds(ort, own, context, request.tap) };
+}
+
+async function runModel(samples: Float32Array, extra: Record<string, OrtTensor> = {}) {
   if (!session || !ort) throw new Error("Alignment model is not loaded.");
-  const feeds = { waveform: new ort.Tensor("float32", samples, [1, samples.length]) };
+  const feeds = { waveform: new ort.Tensor("float32", samples, [1, samples.length]), ...extra };
   try {
     return await session.run(feeds);
   } catch (err) {
@@ -226,20 +236,12 @@ async function handleAlign(request: LineRequest, anchor: string[] | null) {
     post({ type: "align-done", outcome: line.outcome });
     return;
   }
-  const { samples, sampleRate } = request;
   try {
-    const outputs = await runModel(samples);
-    const logits = outputs.ph_frame_logits;
-    const phones = decodeAlignment({
-      frameLogits: logits.data,
-      edgeLogits: outputs.ph_edge_logits.data,
-      vocabSize: logits.dims[1],
-      frames: logits.dims[2],
-      numSamples: samples.length,
-      sampleRate,
-      hopSize: HOP_SIZE,
-      phoneIds: line.sequence.phoneIds,
-    });
+    const inputs = await lineInputs(request, line.sequence);
+    const outputs = await runModel(request.samples, inputs?.feeds);
+    // A wide window holds the neighbours' singing too: the line is aligned among their words, not alone.
+    const among = request.wide && !anchor ? (inputs?.context ?? null) : null;
+    const phones = alignPhones(line.units, line.sequence, among, request, outputs);
     if (!phones) {
       post({ type: "align-done", outcome: { kind: "no-path" } });
       return;
@@ -264,18 +266,8 @@ async function handleLocate(request: LineRequest) {
   let bounds: WordInterval | null = null;
   try {
     if (line.kind === "ready" && session?.outputNames.includes("ctc_logits")) {
-      const ctc = (await runModel(request.samples)).ctc_logits as OrtTensor | undefined;
-      const found =
-        ctc &&
-        ctcLineBounds({
-          logits: ctc.data,
-          outputFrames: ctc.dims[2],
-          numSamples: request.samples.length,
-          hopSize: HOP_SIZE,
-          phoneIds: line.sequence.phoneIds.filter((id) => id !== CTC_BLANK),
-        });
-      const frame = HOP_SIZE / request.sampleRate;
-      if (found) bounds = { begin: found.first * frame, end: found.end * frame };
+      const feeds = (await lineInputs(request, line.sequence))?.feeds;
+      bounds = ctcSpan(line.sequence, request, (await runModel(request.samples, feeds)).ctc_logits);
     }
   } catch (err) {
     post({ type: "error", code: "ort-failed", message: describeError(err) });

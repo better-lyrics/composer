@@ -1,4 +1,4 @@
-import { alignmentWindow, refinedWindow, searchWindow, sliceWindow } from "@/domain/alignment/window";
+import { alignmentWindow, lineSearchWindow, refinedWindow, searchWindow, sliceWindow } from "@/domain/alignment/window";
 import { describe, expect, it } from "vitest";
 
 // -- alignmentWindow ----------------------------------------------------------
@@ -44,6 +44,20 @@ describe("searchWindow", () => {
   it("looks from 1 s before the tap to 0.3 s past the end, capped like every window", () => {
     expect(searchWindow({ begin: 10, end: 12 }, 60)).toEqual({ begin: 9, end: 12.3 });
     expect(searchWindow({ begin: 10, end: 95 }, 200)).toEqual({ begin: 9, end: 24 });
+  });
+});
+
+describe("lineSearchWindow", () => {
+  it("looks from 2.5 s before the tap, and 2 s past an end that is the next line's tap", () => {
+    expect(lineSearchWindow({ begin: 10, end: 14 }, 100, true)).toEqual({ begin: 7.5, end: 16 });
+    expect(lineSearchWindow({ begin: 10, end: 14 }, 100, false)).toEqual({ begin: 7.5, end: 14.3 });
+  });
+
+  it("gives up lead-in to keep a long line's end in view", () => {
+    // 13.5 s of line: 2.5 s of lead-in would end the 15 s window a second before the line does.
+    expect(lineSearchWindow({ begin: 10, end: 23.5 }, 100, true)).toEqual({ begin: 8.5, end: 23.5 });
+    // A guide the plain window couldn't hold either (an instrumental break) keeps the full lead-in.
+    expect(lineSearchWindow({ begin: 10, end: 40 }, 100, true)).toEqual({ begin: 7.5, end: 22.5 });
   });
 });
 

@@ -3,7 +3,7 @@ import { type AnchorChain, type AnchorWord, anchorWindow, keepsAnchored, lastWor
 import { hasCjk } from "@/domain/alignment/cjk";
 import type { HanReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
-import { type AlignmentWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
+import { type AlignmentWindow, lineSearchWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
 import { type WordInterval, retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
 import type { WordTiming } from "@/domain/word/timing";
 import { type PlannedLine, guideTaps, hasTappedEnd, plainWindow, segmentIn } from "@/stores/alignment-plan";
@@ -11,7 +11,9 @@ import { type PlannedLine, guideTaps, hasTappedEnd, plainWindow, segmentIn } fro
 // One planned line through the aligner, as hubertfa-posttrain's step 1
 // validated it (STEP1.md): anchored on the previous line's last word when it
 // qualifies; otherwise a CTC search for the line's phones narrows the window,
-// and the model aligns that window afresh.
+// and the model aligns that window afresh. A model that finds lines itself
+// (results/trainv3/line_head, one_pass) replaces both: it aligns the line
+// once, among its neighbours' words, in a window from well before the tap.
 
 // -- Types --------------------------------------------------------------------
 
@@ -97,6 +99,14 @@ async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain
   const duration = pcm.samples.length / pcm.sampleRate;
   const taps = guideTaps(plan, duration);
   const plain = plainWindow(plan, duration);
+  if (ctx.aligner.findsLines()) {
+    const search = lineSearchWindow(taps, duration, plan.endsAtNextTap);
+    const found = await ctx.aligner.align({ ...segmentIn(plan, hanReading, pcm, search), wide: true }, ctx.signal);
+    // A line it can't place there is aligned alone in its plain window, as with any other model.
+    if (!found.fellBack) return finish(plan, found, search, false);
+    const result = await ctx.aligner.align(segmentIn(plan, hanReading, pcm, plain), ctx.signal);
+    return finish(plan, result, plain, false);
+  }
   let cooling = false;
   const anchor = chain?.word;
   if (ctx.anchors && canAnchor(plan, anchor)) {

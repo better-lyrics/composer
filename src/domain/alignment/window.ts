@@ -40,6 +40,12 @@ const SEARCH_TAIL = 0.3;
 const CTC_MARGIN = 0.3;
 const CTC_START_GATE = 0.5;
 const MIN_REFINED_SECONDS = 0.1;
+// A model that finds lines is given the line from 2.5 s before the begin tap, so a tap a couple of seconds late
+// still has the line's start in view. Where the line ends at the next line's tap, which may be early too, the
+// window runs 2 s past it; an end tap of the line's own keeps the usual tail (hubertfa-posttrain
+// results/trainv3/line_head_release, one_pass).
+const LINE_SEARCH_LEAD_IN = 2.5;
+const LINE_SEARCH_TAIL = 2;
 // A line followed by an instrumental break runs to the next tap, a minute or
 // more of audio: a WebGPU hang or out-of-memory risk. 99.97% of sung lines in
 // the benchmark's 626k are under 15 s with these margins.
@@ -67,9 +73,21 @@ function alignmentWindow(taps: LineTaps, options: WindowOptions): AlignmentWindo
   return capWindow({ begin, end: Math.max(begin, end) });
 }
 
-function searchWindow(taps: LineTaps, duration: number): AlignmentWindow {
-  const begin = Math.max(0, taps.begin - SEARCH_LEAD_IN);
-  return capWindow({ begin, end: Math.max(begin, Math.min(duration, taps.end + SEARCH_TAIL)) });
+function searchWindow(taps: LineTaps, duration: number, leadIn = SEARCH_LEAD_IN, tail = SEARCH_TAIL): AlignmentWindow {
+  const begin = Math.max(0, taps.begin - leadIn);
+  return capWindow({ begin, end: Math.max(begin, Math.min(duration, taps.end + tail)) });
+}
+
+/**
+ * The window a model that finds lines aligns one in. Its long lead-in comes out of the same 15 s as the rest, so a
+ * long line gives lead-in back: a guide the plain window would hold whole keeps its end in view.
+ */
+function lineSearchWindow(taps: LineTaps, duration: number, endsAtNextTap: boolean): AlignmentWindow {
+  const wide = searchWindow(taps, duration, LINE_SEARCH_LEAD_IN, endsAtNextTap ? LINE_SEARCH_TAIL : SEARCH_TAIL);
+  const end = Math.min(duration, taps.end + (endsAtNextTap ? 0 : SEARCH_TAIL));
+  const plainBegin = Math.max(0, taps.begin - LEAD_IN);
+  if (end <= wide.end || end - plainBegin > MAX_WINDOW_SECONDS) return wide;
+  return { begin: end - MAX_WINDOW_SECONDS, end };
 }
 
 /**
@@ -97,5 +115,5 @@ function sliceWindow(samples: Float32Array, sampleRate: number, window: Alignmen
 
 // -- Exports ------------------------------------------------------------------
 
-export { LEAD_IN, alignmentWindow, capWindow, refinedWindow, searchWindow, sliceWindow };
+export { LEAD_IN, alignmentWindow, capWindow, lineSearchWindow, refinedWindow, searchWindow, sliceWindow };
 export type { AlignmentWindow };

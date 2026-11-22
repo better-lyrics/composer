@@ -23,6 +23,16 @@ interface AlignmentSegment {
    * aligned ahead of the line's own words and left out of `intervals`.
    */
   anchor?: string[];
+  /**
+   * The previous and next lyric lines' words (parts per word), by position in the lyrics, whatever their timing:
+   * what a model that finds lines is told around the line.
+   */
+  context?: { previous: string[][]; next: string[][] };
+  /**
+   * The window reaches well past the line on both sides, so it holds other singing. Only for a model that finds
+   * lines, which then aligns the line among its neighbours' words.
+   */
+  wide?: boolean;
 }
 
 interface SegmentAlignment {
@@ -65,6 +75,11 @@ interface Aligner {
    * can't tell.
    */
   locate: (segment: AlignmentSegment, signal: AbortSignal) => Promise<WordInterval | null>;
+  /**
+   * Whether the loaded model finds a line itself among the singing around it. The line is then aligned once, in a
+   * `wide` window from well before the begin tap, with no search and no anchor.
+   */
+  findsLines: () => boolean;
   /** Whether a model that fits these options is already in memory, so a run needs no load. */
   isLoaded: (options: { japanese: boolean; modelId: string }) => boolean;
   /** Frees the model. The next run prepares again from the download cache. */
