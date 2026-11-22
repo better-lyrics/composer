@@ -2,6 +2,7 @@ import { lookupInflected } from "@/audio/alignment/hubertfa/inflection";
 import { guessPhones } from "@/audio/alignment/hubertfa/letter-to-sound";
 import { stripMarks } from "@/audio/alignment/hubertfa/romanization";
 import { hasLetterOrDigit } from "@/domain/alignment/cjk";
+import { hasLatinLetter } from "@/domain/language/script-detection";
 
 // Word → phone lookup against HubertFA's English dictionary (ds_cmudict-07b).
 // Mirrors the benchmark's normalisation so lyric spellings like "Don’t,",
@@ -33,6 +34,20 @@ const LYRIC_SPELLINGS: Record<string, string[]> = {
   coz: ["k", "ax", "z"],
 };
 
+// Cyrillic and Greek letters drawn like Latin ones, by code point because they can't be told apart on screen.
+// Lyrics copied from the web sometimes carry them inside an English word ("really" with a Cyrillic e), and dropping
+// the letter would look up "rally".
+const LOOKALIKE_LETTERS: Record<string, string> = Object.fromEntries(
+  [
+    // Cyrillic capitals, then small letters.
+    ["\u0410\u0412\u0415\u041a\u041c\u041d\u041e\u0420\u0421\u0422\u0425", "ABEKMHOPCTX"],
+    ["\u0430\u0435\u043e\u0440\u0441\u0443\u0445\u0455\u0456\u0458", "aeopcyxsij"],
+    // Greek capitals and omicron.
+    ["\u0391\u0392\u0395\u0397\u0399\u039a\u039c\u039d\u039f\u03a1\u03a4\u03a7\u03bf", "ABEHIKMNOPTXo"],
+  ].flatMap(([from = "", to = ""]) => [...from].map((letter, index): [string, string] => [letter, to.charAt(index)])),
+);
+const LOOKALIKE_PATTERN = new RegExp(`[${Object.keys(LOOKALIKE_LETTERS).join("")}]`, "g");
+
 // -- Functions ----------------------------------------------------------------
 
 function parseDictionary(text: string): Pronunciations {
@@ -51,8 +66,14 @@ function parseDictionary(text: string): Pronunciations {
   return entries;
 }
 
+// Only a word that also has a Latin letter is read this way: one without is in the other script.
+function foldLookalikes(word: string): string {
+  if (!hasLatinLetter(word)) return word;
+  return word.replace(LOOKALIKE_PATTERN, (letter) => LOOKALIKE_LETTERS[letter] ?? letter);
+}
+
 function normalizeWord(word: string): string {
-  return stripMarks(word.normalize("NFKC"))
+  return foldLookalikes(stripMarks(word.normalize("NFKC")))
     .toLowerCase()
     .replace(/[‘’ʼ`´]/g, "'")
     .replace(/[^a-z0-9'\- ]/g, "")
