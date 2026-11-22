@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 // biome-ignore assist/source/organizeImports: the webworker triple-slash reference must stay before imports.
-import { decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
 import japaneseDictionaryText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinDictionaryText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { type G2pContext, type PhoneUnit, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
@@ -13,7 +12,13 @@ import type {
   LineRequest,
   OutboundMessage,
 } from "@/audio/alignment/hubertfa/worker-protocol";
-import { ctcSpan, findLine, isLineFinder, lineFeeds, linesAround } from "@/audio/alignment/hubertfa/line-search";
+import {
+  alignPhones,
+  ctcSpan,
+  isLineFinder,
+  lineFeeds,
+  linesAround,
+} from "@/audio/alignment/hubertfa/line-search";
 import {
   type PhoneSequence,
   buildPhoneSequence,
@@ -34,7 +39,6 @@ declare const self: DedicatedWorkerGlobalScope;
 // -- Constants ----------------------------------------------------------------
 
 const MODEL_SAMPLE_RATE = 44100;
-const HOP_SIZE = 441;
 
 // -- State --------------------------------------------------------------------
 
@@ -232,20 +236,12 @@ async function handleAlign(request: LineRequest, anchor: string[] | null) {
     post({ type: "align-done", outcome: line.outcome });
     return;
   }
-  const { samples, sampleRate } = request;
   try {
-    const outputs = await runModel(samples, (await lineInputs(request, line.sequence))?.feeds);
-    const logits = outputs.ph_frame_logits;
-    const phones = decodeAlignment({
-      frameLogits: logits.data,
-      edgeLogits: outputs.ph_edge_logits.data,
-      vocabSize: logits.dims[1],
-      frames: logits.dims[2],
-      numSamples: samples.length,
-      sampleRate,
-      hopSize: HOP_SIZE,
-      phoneIds: line.sequence.phoneIds,
-    });
+    const inputs = await lineInputs(request, line.sequence);
+    const outputs = await runModel(request.samples, inputs?.feeds);
+    // A wide window holds the neighbours' singing too: the line is aligned among their words, not alone.
+    const among = request.wide && !anchor ? (inputs?.context ?? null) : null;
+    const phones = alignPhones(line.units, line.sequence, among, request, outputs);
     if (!phones) {
       post({ type: "align-done", outcome: { kind: "no-path" } });
       return;
@@ -263,17 +259,15 @@ async function handleAlign(request: LineRequest, anchor: string[] | null) {
   }
 }
 
-// Where the line is in the window; null, without a model run, when the model neither finds lines nor has CTC output.
+// Where the line's phones are in the window, by CTC Viterbi; null, without a model run, when it has no CTC output.
 async function handleLocate(request: LineRequest) {
   const line = await prepareLine(request);
   if (!line) return;
   let bounds: WordInterval | null = null;
   try {
-    const inputs = line.kind === "ready" ? await lineInputs(request, line.sequence) : null;
-    if (line.kind === "ready" && inputs) {
-      bounds = findLine(line.units, inputs.context, request, await runModel(request.samples, inputs.feeds));
-    } else if (line.kind === "ready" && session?.outputNames.includes("ctc_logits")) {
-      bounds = ctcSpan(line.sequence, request, (await runModel(request.samples)).ctc_logits);
+    if (line.kind === "ready" && session?.outputNames.includes("ctc_logits")) {
+      const feeds = (await lineInputs(request, line.sequence))?.feeds;
+      bounds = ctcSpan(line.sequence, request, (await runModel(request.samples, feeds)).ctc_logits);
     }
   } catch (err) {
     post({ type: "error", code: "ort-failed", message: describeError(err) });

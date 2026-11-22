@@ -28,6 +28,11 @@ interface AlignmentSegment {
    * what a model that finds lines is told around the line.
    */
   context?: { previous: string[][]; next: string[][] };
+  /**
+   * The window reaches well past the line on both sides, so it holds other singing. Only for a model that finds
+   * lines, which then aligns the line among its neighbours' words.
+   */
+  wide?: boolean;
 }
 
 interface SegmentAlignment {
@@ -71,8 +76,8 @@ interface Aligner {
    */
   locate: (segment: AlignmentSegment, signal: AbortSignal) => Promise<WordInterval | null>;
   /**
-   * Whether the loaded model finds a line itself among the singing around it. `locate` then looks from well before
-   * the begin tap and returns the line's own span, and the line is aligned in that span with no anchor.
+   * Whether the loaded model finds a line itself among the singing around it. The line is then aligned once, in a
+   * `wide` window from well before the begin tap, with no search and no anchor.
    */
   findsLines: () => boolean;
   /** Whether a model that fits these options is already in memory, so a run needs no load. */

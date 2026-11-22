@@ -17,6 +17,9 @@ const seen = vi.hoisted(() => ({
   calls: [] as { line: string; anchor: string | null }[],
   // How far the model moves a line's anchor word from where the line before put it, by the line's first word.
   anchorMoves: {} as Record<string, number>,
+  // Whether the loaded model finds lines itself, and each call's window: where it begins and whether it is wide.
+  findsLines: false,
+  windows: [] as { begin: number; wide: boolean }[],
 }));
 
 // Real model resolution: hosting is configured, the manifest fetch finds none
@@ -38,6 +41,7 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
     hanReading: string;
     windowBegin: number;
     anchor?: string[];
+    wide?: boolean;
   };
   return {
     hubertfaAligner: {
@@ -48,12 +52,13 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       },
       release: () => {},
       isLoaded: () => true,
-      findsLines: () => false,
+      findsLines: () => seen.findsLines,
       locate: async () => null,
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
         const line = segment.words[0].text;
         seen.calls.push({ line, anchor: segment.anchor?.join("") ?? null });
+        seen.windows.push({ begin: segment.windowBegin, wide: segment.wide ?? false });
         // An anchored window starts 0.1 s before the anchor word.
         const placed = segment.windowBegin + 0.1 + (seen.anchorMoves[line] ?? 0);
         const anchor = segment.anchor ? { begin: placed, end: placed + 0.2 } : null;
@@ -80,6 +85,8 @@ describe("alignment store", () => {
     seen.fallBackAfter = null;
     seen.calls = [];
     seen.anchorMoves = {};
+    seen.findsLines = false;
+    seen.windows = [];
     useProjectStore.setState({ groups: [] });
     useProjectStore.setState(INITIAL_STATE);
     useAlignmentStore.setState({ status: "idle", progress: { done: 0, total: 0 }, error: null });
@@ -100,6 +107,26 @@ describe("alignment store", () => {
     expect(line.words?.[0].begin).toBeGreaterThanOrEqual(10);
     expect(line.words?.[1].end).toBeLessThanOrEqual(12);
     expect(empty.words).toBeUndefined();
+  });
+
+  it("aligns a line once, in a wide window, with a model that finds lines", async () => {
+    seen.findsLines = true;
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "hello there", agentId: "v1", begin: 10, end: 12 },
+      { id: "L2", text: "again now", agentId: "v1", begin: 12, end: 14 },
+    ]);
+
+    await useAlignmentStore.getState().alignLines();
+
+    // No search before it, no anchor on the line before, and no second pass in a tighter window.
+    expect(seen.calls).toEqual([
+      { line: "hello", anchor: null },
+      { line: "again", anchor: null },
+    ]);
+    expect(seen.windows).toEqual([
+      { begin: 7.5, wide: true },
+      { begin: 9.5, wide: true },
+    ]);
   });
 
   it("regression: aligns the last line tapped in Line mode, which a tap never ended", async () => {

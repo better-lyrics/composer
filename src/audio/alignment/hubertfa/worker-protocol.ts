@@ -29,6 +29,8 @@ interface LineRequest {
   context?: { previous: string[][]; next: string[][] };
   /** The begin tap, in seconds from the first sample. */
   tap?: number;
+  /** The window reaches well past the line on both sides: a model that finds lines aligns it among its neighbours. */
+  wide?: boolean;
 }
 
 type InboundMessage =

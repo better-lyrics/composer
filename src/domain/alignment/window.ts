@@ -40,13 +40,12 @@ const SEARCH_TAIL = 0.3;
 const CTC_MARGIN = 0.3;
 const CTC_START_GATE = 0.5;
 const MIN_REFINED_SECONDS = 0.1;
-// A model that finds lines looks from 2.5 s before the begin tap, so a tap a couple of seconds late still has the
-// line's start in view. Where the line ends at the next line's tap, which may be early too, it looks 2 s past it;
-// an end tap of the line's own keeps the usual tail. The line is then aligned from 0.2 s before the span it found
-// to 0.3 s after (hubertfa-posttrain results/trainv3/line_head_release).
+// A model that finds lines is given the line from 2.5 s before the begin tap, so a tap a couple of seconds late
+// still has the line's start in view. Where the line ends at the next line's tap, which may be early too, the
+// window runs 2 s past it; an end tap of the line's own keeps the usual tail (hubertfa-posttrain
+// results/trainv3/line_head_release, one_pass).
 const LINE_SEARCH_LEAD_IN = 2.5;
 const LINE_SEARCH_TAIL = 2;
-const LINE_SPAN_MARGIN = { before: 0.2, after: 0.3 };
 // A line followed by an instrumental break runs to the next tap, a minute or
 // more of audio: a WebGPU hang or out-of-memory risk. 99.97% of sung lines in
 // the benchmark's 626k are under 15 s with these margins.
@@ -79,9 +78,16 @@ function searchWindow(taps: LineTaps, duration: number, leadIn = SEARCH_LEAD_IN,
   return capWindow({ begin, end: Math.max(begin, Math.min(duration, taps.end + tail)) });
 }
 
-/** Where a model that finds lines looks for one. */
+/**
+ * The window a model that finds lines aligns one in. Its long lead-in comes out of the same 15 s as the rest, so a
+ * long line gives lead-in back: a guide the plain window would hold whole keeps its end in view.
+ */
 function lineSearchWindow(taps: LineTaps, duration: number, endsAtNextTap: boolean): AlignmentWindow {
-  return searchWindow(taps, duration, LINE_SEARCH_LEAD_IN, endsAtNextTap ? LINE_SEARCH_TAIL : SEARCH_TAIL);
+  const wide = searchWindow(taps, duration, LINE_SEARCH_LEAD_IN, endsAtNextTap ? LINE_SEARCH_TAIL : SEARCH_TAIL);
+  const end = Math.min(duration, taps.end + (endsAtNextTap ? 0 : SEARCH_TAIL));
+  const plainBegin = Math.max(0, taps.begin - LEAD_IN);
+  if (end <= wide.end || end - plainBegin > MAX_WINDOW_SECONDS) return wide;
+  return { begin: end - MAX_WINDOW_SECONDS, end };
 }
 
 /**
@@ -101,17 +107,6 @@ function refinedWindow(
   return end - begin < MIN_REFINED_SECONDS ? plain : { begin, end };
 }
 
-/**
- * The window the line is aligned in once the model found it at `span` (song seconds) inside `search`, or `plain`
- * when it didn't.
- */
-function spanWindow(plain: AlignmentWindow, search: AlignmentWindow, span: AlignmentWindow | null): AlignmentWindow {
-  if (!span) return plain;
-  const begin = Math.max(search.begin, span.begin - LINE_SPAN_MARGIN.before);
-  const end = Math.min(search.end, span.end + LINE_SPAN_MARGIN.after);
-  return end - begin < MIN_REFINED_SECONDS ? plain : { begin, end };
-}
-
 function sliceWindow(samples: Float32Array, sampleRate: number, window: AlignmentWindow): Float32Array {
   const from = Math.max(0, Math.floor(window.begin * sampleRate));
   const to = Math.min(samples.length, Math.ceil(window.end * sampleRate));
@@ -120,5 +115,5 @@ function sliceWindow(samples: Float32Array, sampleRate: number, window: Alignmen
 
 // -- Exports ------------------------------------------------------------------
 
-export { LEAD_IN, alignmentWindow, capWindow, lineSearchWindow, refinedWindow, searchWindow, sliceWindow, spanWindow };
+export { LEAD_IN, alignmentWindow, capWindow, lineSearchWindow, refinedWindow, searchWindow, sliceWindow };
 export type { AlignmentWindow };

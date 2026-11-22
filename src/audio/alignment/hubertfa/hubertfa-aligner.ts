@@ -22,6 +22,7 @@ function lineRequest(segment: AlignmentSegment): LineRequest {
     hanReading: segment.hanReading,
     transliteration: segment.transliteration,
     ...(segment.context ? { context: segment.context } : {}),
+    ...(segment.wide ? { wide: true } : {}),
     tap: segment.taps.begin - segment.windowBegin,
   };
 }

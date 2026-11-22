@@ -1,6 +1,6 @@
 import { ctcLineBounds } from "@/audio/alignment/hubertfa/ctc-bounds";
 import { CTC_BLANK } from "@/audio/alignment/hubertfa/ctc-viterbi";
-import { decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
+import { type PhoneInterval, decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
 import type { PhoneUnit } from "@/audio/alignment/hubertfa/g2p";
 import { type PhoneSequence, buildPhoneSequence } from "@/audio/alignment/hubertfa/sequence";
 import vocab from "@/audio/alignment/hubertfa/vocab.json";
@@ -8,8 +8,10 @@ import type { LineRequest } from "@/audio/alignment/hubertfa/worker-protocol";
 import type { Ort, OrtTensor } from "@/audio/ort-runtime";
 import type { WordInterval } from "@/domain/alignment/words";
 
-// Where a line is in a window that also holds other singing: by the model's own "this line" output when it has
-// one (hubertfa-posttrain results/trainv3/line_head), otherwise by a CTC search for the line's phones.
+// A line aligned in a window that also holds other singing, by a model with a "this line" output
+// (hubertfa-posttrain results/trainv3/line_head): the decoder runs over the line's words and its lyric neighbours',
+// and the line's own phones are what comes back. The line isn't aligned a second time in a tighter window: that
+// stretched its first and last words over the neighbours' singing (results/trainv3/one_pass).
 
 // -- Types --------------------------------------------------------------------
 
@@ -96,17 +98,19 @@ function nearestUnits(units: PhoneUnit[], last: boolean): PhoneUnit[] {
 }
 
 /**
- * The line's span in the window, in seconds from its first sample, from a line-finding model's outputs: the
+ * The line's phones in the window, in seconds from its first sample, from a line-finding model's outputs: the
  * decoder over the previous line's last words, the line's and the next line's first, each neighbour free to go
- * unplaced, with the begin tap as a soft hint and the model's line frames as a soft gate. Null when none of the
- * line's phones is placed.
+ * unplaced, with the begin tap as a soft hint and the model's line frames as a soft gate. The phones are indexed
+ * into `own`, the line's sequence alone, as an alignment of the line by itself would give them. Null when none of
+ * the line's phones is placed.
  */
-function findLine(
+function alignAmongNeighbours(
   units: PhoneUnit[],
+  own: PhoneSequence,
   context: LineContext,
   request: LineRequest,
   outputs: ModelOutputs,
-): WordInterval | null {
+): PhoneInterval[] | null {
   const previous = nearestUnits(context.previous, true);
   const built = buildPhoneSequence([...previous, ...units, ...nearestUnits(context.next, false)]);
   if (built.kind !== "sequence") return null;
@@ -134,8 +138,39 @@ function findLine(
       gate: { logits: outputs[LINE_OUTPUT].data, ...LINE_GATE },
     },
   });
-  const placed = phones?.filter((phone) => isOwn(phone.index)) ?? [];
-  return placed.length > 0 ? { begin: placed[0].begin, end: placed[placed.length - 1].end } : null;
+  // The line's k-th phone sits at another index in its own sequence than among the neighbours'.
+  const among = Array.from(unitOf.keys()).filter(isOwn);
+  const alone = Array.from(own.unitOf.keys()).filter((index) => own.unitOf[index] >= 0);
+  if (among.length !== alone.length) return null;
+  const ownIndex = new Map(among.map((index, k) => [index, alone[k]]));
+  const placed: PhoneInterval[] = [];
+  for (const phone of phones ?? []) {
+    const index = ownIndex.get(phone.index);
+    if (index !== undefined) placed.push({ ...phone, index });
+  }
+  return placed.length > 0 ? placed : null;
+}
+
+/** The phones of `own` in the window: among the line's neighbours when `context` is given, alone otherwise. */
+function alignPhones(
+  units: PhoneUnit[],
+  own: PhoneSequence,
+  context: LineContext | null,
+  request: LineRequest,
+  outputs: ModelOutputs,
+): PhoneInterval[] | null {
+  if (context) return alignAmongNeighbours(units, own, context, request, outputs);
+  const logits = outputs.ph_frame_logits;
+  return decodeAlignment({
+    frameLogits: logits.data,
+    edgeLogits: outputs.ph_edge_logits.data,
+    vocabSize: logits.dims[1],
+    frames: logits.dims[2],
+    numSamples: request.samples.length,
+    sampleRate: request.sampleRate,
+    hopSize: HOP_SIZE,
+    phoneIds: own.phoneIds,
+  });
 }
 
 /** Where the line's phones are in the window by CTC Viterbi, in seconds from its first sample. */
@@ -155,4 +190,4 @@ function ctcSpan(sequence: PhoneSequence, request: LineRequest, ctc: OrtTensor |
 
 // -- Exports ------------------------------------------------------------------
 
-export { ctcSpan, findLine, isLineFinder, lineFeeds, linesAround };
+export { alignPhones, ctcSpan, isLineFinder, lineFeeds, linesAround };
