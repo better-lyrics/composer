@@ -4,7 +4,7 @@ import {
   parseAlignmentManifest,
   pickAlignmentModel,
 } from "@/audio/alignment/hubertfa/model-manifest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const MANIFEST_URL = "https://models.example.com/hubertfa/models.json";
 const BASE_URL = "https://models.example.com";
@@ -142,5 +142,25 @@ describe("pickAlignmentModel", () => {
   it("falls back to the built-in model with no recommendation, or for a model that left the manifest", () => {
     expect(pickAlignmentModel(models.slice(0, 2), RECOMMENDED_ALIGNMENT_MODEL)?.id).toBe(BUILTIN_ALIGNMENT_MODEL.id);
     expect(pickAlignmentModel(models, "gone")?.id).toBe(BUILTIN_ALIGNMENT_MODEL.id);
+  });
+});
+
+describe("loadAlignmentModels", () => {
+  it("regression: reads the first manifest when the host refuses the second one instead of answering 404", async () => {
+    vi.stubEnv("VITE_VOCAL_MODEL_BASE_URL", BASE_URL);
+    vi.stubGlobal("fetch", async (url: string) =>
+      url.endsWith("/hubertfa-models.json")
+        ? Response.json({ models: [{ id: "ft-1", model: "ft1.onnx" }] })
+        : new Response(null, { status: 403 }),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.resetModules();
+    const { loadAlignmentModels } = await import("@/audio/alignment/hubertfa/model-manifest");
+
+    expect((await loadAlignmentModels()).map((model) => model.id)).toEqual([BUILTIN_ALIGNMENT_MODEL.id, "ft-1"]);
+
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 });

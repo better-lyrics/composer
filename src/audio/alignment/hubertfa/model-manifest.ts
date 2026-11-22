@@ -145,7 +145,8 @@ function getManifestUrls(baseUrl: string): string[] {
   return MANIFEST_FILENAMES.map((name) => `${baseUrl}/${name}`);
 }
 
-// No manifest is the normal case for a deployment: only the built-in model.
+// No manifest is the normal case for a deployment: only the built-in model. A host may answer a missing file
+// with something other than a 404 (a 403, or a page that isn't JSON), so any failure moves on to the next one.
 async function fetchModels(baseUrl: string): Promise<AlignmentModel[]> {
   for (const url of getManifestUrls(baseUrl)) {
     try {
@@ -155,8 +156,7 @@ async function fetchModels(baseUrl: string): Promise<AlignmentModel[]> {
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       return parseAlignmentManifest(await response.json(), url, baseUrl);
     } catch (err) {
-      console.warn(`${LOG_PREFIX} could not load ${url}; only the built-in model is available`, err);
-      break;
+      console.warn(`${LOG_PREFIX} could not load ${url}`, err);
     }
   }
   return [builtinModel(baseUrl)];
