@@ -32,6 +32,14 @@ describe("lookupWord", () => {
     expect(phones("thats")).toBe("dh ae t s");
   });
 
+  it("reads look-alike letters from other scripts inside a Latin word", () => {
+    // A Cyrillic e (U+0435) and H (U+041D), as lyrics copied from the web sometimes carry.
+    expect(phones("h\u0435llo")).toBe("hh ax l ow");
+    expect(phones("\u041d\u0435llo")).toBe("hh ax l ow");
+    // A word with no Latin letter is in another script, and stays unknown.
+    expect(phones("\u043e\u0445")).toBe("unknown");
+  });
+
   it("keeps leading-apostrophe elisions", () => {
     expect(phones("'cause")).toBe("k ax z");
   });
