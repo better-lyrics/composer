@@ -1,4 +1,5 @@
 import type { Suggestion } from "@/domain/musicbrainz/suggestion";
+import type { CreditKind } from "@/domain/project/credit-list";
 import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
@@ -6,6 +7,7 @@ import { DETAILS_FIELD_STYLES, DETAILS_LABEL_STYLES } from "@/views/export/song-
 import { cn } from "@/utils/cn";
 import { type Row, reconcileRows, sameStrings, seedRows } from "@/views/export/metadata-field-rows";
 import { SuggestedRow, SuggestionNote } from "@/views/export/musicbrainz/suggested-value";
+import { useCreditPaste } from "@/views/export/use-credit-paste";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
 
@@ -14,6 +16,7 @@ import { nanoid } from "nanoid";
 interface MetadataFieldListProps {
   label: string;
   itemNoun: string;
+  creditKind: CreditKind;
   values: string[];
   placeholder?: string;
   onChange: (next: string[]) => void;
@@ -26,6 +29,7 @@ interface MetadataFieldListProps {
 const MetadataFieldList: React.FC<MetadataFieldListProps> = ({
   label,
   itemNoun,
+  creditKind,
   values,
   placeholder,
   onChange,
@@ -39,8 +43,12 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({
     emit: (next) => next.map((row) => row.value),
   });
 
-  const handleEdit = (id: string, value: string) =>
+  const paste = useCreditPaste(rows, commit, creditKind);
+
+  const handleEdit = (id: string, value: string) => {
+    paste.forget();
     commit(rows.map((row) => (row.id === id ? { ...row, value } : row)));
+  };
   const handleRemove = (id: string) => commit(rows.filter((row) => row.id !== id));
   const handleAdd = () => commit([...rows, { id: nanoid(), value: "" }]);
   const handleUseOne = (value: string) =>
@@ -57,6 +65,9 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({
             value={row.value}
             placeholder={placeholder}
             onChange={(e) => handleEdit(row.id, e.target.value)}
+            onPaste={(e) => paste.onPaste(row.id, e)}
+            onKeyDown={(e) => paste.onKeyDown(row.id, e)}
+            onBlur={paste.forget}
             className={cn("flex-1 min-w-0", DETAILS_FIELD_STYLES)}
           />
           <IconButton

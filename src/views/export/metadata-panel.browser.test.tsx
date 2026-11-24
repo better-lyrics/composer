@@ -51,6 +51,23 @@ describe("MetadataPanel", () => {
     await expect.poll(() => useProjectStore.getState().metadata.artists).toEqual(["Tyler, The Creator"]);
   });
 
+  it("splits a pasted list into rows, and undo right after keeps the paste as one name", async () => {
+    seedMetadata();
+    const screen = await render(<MetadataPanel />);
+
+    await screen.getByRole("button", { name: "Add artist" }).click();
+    const input = screen.getByRole("textbox", { name: "Artist 1" }).element() as HTMLInputElement;
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "Earth, Wind & Fire");
+    input.focus();
+    input.dispatchEvent(new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }));
+    await expect.poll(() => useProjectStore.getState().metadata.artists).toEqual(["Earth", "Wind", "Fire"]);
+
+    await userEvent.keyboard("{ControlOrMeta>}z{/ControlOrMeta}");
+    await expect.poll(() => useProjectStore.getState().metadata.artists).toEqual(["Earth, Wind & Fire"]);
+    await expect.element(screen.getByRole("textbox", { name: "Artist 1" })).toHaveFocus();
+  });
+
   it("removes an artist row", async () => {
     seedMetadata({ artists: ["Alpha", "Beta"] });
     const screen = await render(<MetadataPanel />);
