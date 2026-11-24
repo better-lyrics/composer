@@ -141,6 +141,7 @@ const MetadataPanel: React.FC = () => {
           <MetadataFieldList
             label="Artists"
             itemNoun="Artist"
+            creditKind="acts"
             placeholder="Artist name"
             values={metadata.artists}
             onChange={(next) => setMetadata({ artists: next })}
@@ -152,6 +153,7 @@ const MetadataPanel: React.FC = () => {
         <MetadataFieldList
           label="Songwriters"
           itemNoun="Songwriter"
+          creditKind="people"
           placeholder="Songwriter name"
           values={metadata.songwriters ?? []}
           onChange={(next) => setMetadata({ songwriters: next })}
