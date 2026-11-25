@@ -25,6 +25,7 @@ export default defineConfig({
   server: { host: "127.0.0.1" },
   preview: { host: "127.0.0.1" },
   build: {
+    sourcemap: true,
     rollupOptions: {
       input: {
         app: resolve(__dirname, "index.html"),
