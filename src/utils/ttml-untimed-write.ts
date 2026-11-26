@@ -1,11 +1,11 @@
 import type { Passthrough } from "insync/passthrough";
-import { escapeXmlText, writeXmlAttrs } from "insync/xml-node";
+import { escapeXmlText, writeXmlAttrs, type XmlAttr } from "insync/xml-node";
 import type { LineTrack, Syllable } from "@/domain/line/model";
 import { syllableJoint } from "@/domain/line/text";
 import { isTimedSyllable } from "@/domain/line/track";
 import { getSplitCharacter, stripSplitCharacter, withoutSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
-import { spanContent } from "@/utils/ttml-markup";
+import { spanContent, timedSpan } from "@/utils/ttml-markup";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -42,6 +42,25 @@ function untimedTrackContent(track: LineTrack | undefined, text: string): string
   return content;
 }
 
+// The attributes of one kept span holding a whole untimed track, when none clash with what a timed span writes.
+function wholeTrackKeptAttrs(track: LineTrack | undefined): readonly XmlAttr[] | undefined {
+  const syllables = track?.syllables ?? [];
+  const kept = syllables.length > 0 ? keptOf(syllables[0]) : undefined;
+  if (!kept?.attrs?.length || kept.markup) return undefined;
+  if (!syllables.every((syllable) => isStructurallyEqual(keptOf(syllable), kept))) return undefined;
+  const clashes = kept.attrs.some(([name]) => name === "begin" || name === "end" || name.startsWith("ttm:"));
+  return clashes ? undefined : kept.attrs;
+}
+
+// A track written as one timed span without syllable times; a kept span holding all of it gives the timed span its
+// attributes instead of nesting inside it, so players never meet a span inside a word.
+function untimedTrackSpan(word: { begin: number; end: number; explicit?: true }, track: LineTrack, text: string) {
+  const attrs = wholeTrackKeptAttrs(track);
+  return attrs
+    ? timedSpan(word, escapeXmlText(stripSplitCharacter(text)), writeXmlAttrs(attrs))
+    : timedSpan(word, untimedTrackContent(track, text));
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { untimedTrackContent };
+export { untimedTrackContent, untimedTrackSpan };

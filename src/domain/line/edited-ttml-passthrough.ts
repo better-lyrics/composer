@@ -1,5 +1,11 @@
+import { withRenamedAnchors } from "insync/passthrough";
 import type { BackgroundTrack, LineTrack, LyricLine, Syllable } from "@/domain/line/model";
-import { linePassthroughOf, withLinePassthrough, withoutKeptData } from "@/domain/line/passthrough";
+import {
+  type LinePassthrough,
+  linePassthroughOf,
+  withLinePassthrough,
+  withoutKeptData,
+} from "@/domain/line/passthrough";
 import { backgroundTrack, isTimedSyllable, mainTrack, timedSyllables } from "@/domain/line/track";
 import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 import { withSpansFromMarkup } from "@/utils/lyrics-parsers/ttml-untimed-read";
@@ -30,12 +36,36 @@ function withTimedPassthroughOf<T extends LineTrack>(track: T, source: LineTrack
   return { ...track, syllables: track.syllables.map(restore) };
 }
 
-// A background with no timed syllables exports as one timed span holding its kept spans; an edited file reads them
-// back as that span's markup.
+// A background with no timed syllables exports as one timed span holding its kept spans, or carrying the attributes
+// of the one kept span that held all of it; an edited file reads them back as that span's markup or attributes.
 function withSpanMarkupOf(track: BackgroundTrack, edited: BackgroundTrack | undefined): BackgroundTrack {
   const [span, ...rest] = timedSyllables(edited);
-  const markup = span?.passthrough?.markup;
-  return markup && rest.length === 0 && timedSyllables(track).length === 0 ? withSpansFromMarkup(track, markup) : track;
+  if (!span || rest.length > 0 || timedSyllables(track).length > 0) return track;
+  const { markup, attrs } = span.passthrough ?? {};
+  if (markup) return withSpansFromMarkup(track, markup);
+  return attrs ? withSpansFromMarkup(track, [{ name: "span", attrs, children: [{ text: span.text }] }]) : track;
+}
+
+// Kept elements follow syllables by id; an edited track's timed syllables pair with the merged one's by position.
+function timedIdsOn(edited: LineTrack | undefined, merged: LineTrack | undefined): Map<string, string> {
+  const mergedTimed = timedSyllables(merged);
+  return new Map(
+    timedSyllables(edited).flatMap((syllable, index) => {
+      const partner = mergedTimed[index];
+      return partner ? [[syllable.id, partner.id] as const] : [];
+    }),
+  );
+}
+
+function withAnchorsOn(kept: LinePassthrough | undefined, edited: LyricLine, merged: LyricLine) {
+  if (!kept) return kept;
+  return {
+    ...kept,
+    ...(kept.line && { line: withRenamedAnchors(kept.line, timedIdsOn(mainTrack(edited), mainTrack(merged))) }),
+    ...(kept.background && {
+      background: withRenamedAnchors(kept.background, timedIdsOn(backgroundTrack(edited), backgroundTrack(merged))),
+    }),
+  };
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -49,7 +79,7 @@ function withKeptDataOf(line: LyricLine, edited: LyricLine): LyricLine {
     withMainTrack(bare, withTimedPassthroughOf(mainTrack(bare), mainTrack(edited))),
     background && withTimedPassthroughOf(background, backgroundTrack(edited)),
   );
-  const kept = withLinePassthrough(timed, linePassthroughOf(edited));
+  const kept = withLinePassthrough(timed, withAnchorsOn(linePassthroughOf(edited), edited, timed));
   const keptBackground = backgroundTrack(kept);
   return keptBackground ? withBackgroundTrack(kept, withSpanMarkupOf(keptBackground, backgroundTrack(edited))) : kept;
 }
