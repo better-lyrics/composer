@@ -51,6 +51,14 @@ const SETTINGS_CATALOG = {
     keywords: ["bridge", "yt-dlp", "local"],
     readOn: (state: SettingsState) => state.experiments.youtubeBridge,
   },
+  mcpAccess: {
+    section: "advanced",
+    label: "Let AI agents edit through Composer Bridge",
+    description:
+      "MCP clients such as Claude Code and Codex can read the open project and write its transliterations, translations and transliteration alignment. Every change is one undo step.",
+    keywords: ["mcp", "ai", "agent", "claude", "codex", "llm", "translation", "transliteration", "align"],
+    settingKey: "mcpAccess",
+  },
   cobaltInstances: {
     section: "advanced",
     label: "Cobalt instances",
