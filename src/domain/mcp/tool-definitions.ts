@@ -40,7 +40,7 @@ const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     name: "get_project",
     title: "Get project",
     description:
-      "Summarize the open project: song details, lyric language, which translations and transliteration exist, and how many lines carry a warning in the Languages tab.",
+      "Summarize the open project: song details, lyric language, the syllable split character, which translations and transliteration exist, and how many lines carry a warning in the Languages tab.",
     inputSchema: { type: "object", properties: { projectId: PROJECT_ID } },
     annotations: { readOnlyHint: true },
   },
@@ -51,7 +51,7 @@ const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
       "Read lyric lines with their timed syllables, transliteration, translations and warnings.",
       "Each syllable is one timing slot: `text` is the original lyrics in that slot, `transliteration` is the part of the reading currently mapped to it.",
       "Issue codes: transliteration-alignment-needs-review (the reading was split across syllables by estimate; check it and fix it with align_transliteration),",
-      "transliteration-does-not-fit-syllables (no split could be estimated), transliteration-source-changed and translation-source-changed:<lang> (the lyrics changed after that text was written; rewrite it).",
+      "transliteration-does-not-fit-syllables (no split could be estimated), transliteration-syllables-unmapped (a lyric edit added syllables with no reading yet; align the line again), transliteration-source-changed and translation-source-changed:<lang> (the lyrics changed after that text was written; rewrite it).",
     ].join(" "),
     inputSchema: {
       type: "object",
@@ -64,6 +64,36 @@ const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
       },
     },
     annotations: { readOnlyHint: true },
+  },
+  {
+    name: "edit_lines",
+    title: "Edit lyrics",
+    description: [
+      "Change the text of existing lines, as if the user typed it in Composer's Edit tab: fix typos, swap in official lyrics, or move syllable splits.",
+      "Write each line in the same form get_lines returns: spaces between words, and the project's split character (get_project splitCharacter, usually |) between syllables inside a word. Each syllable is one timing slot.",
+      "Timing is never set here: syllables that still match keep theirs, and added or changed syllables get timing Composer reconciles the same way it does for a person, which the user may want to re-sync.",
+      "Lines cannot be added or removed. A changed line's transliteration and translations then report *-source-changed; rewrite them with set_transliterations and set_translations, then align.",
+      "One undo step in Composer.",
+    ].join(" "),
+    inputSchema: {
+      type: "object",
+      required: ["lines"],
+      properties: {
+        projectId: PROJECT_ID,
+        lines: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["lineId", "text"],
+            properties: {
+              lineId: { type: "string" },
+              text: { type: "string", description: "The line's new main lyrics, on one line." },
+            },
+          },
+        },
+      },
+    },
   },
   {
     name: "set_transliterations",
