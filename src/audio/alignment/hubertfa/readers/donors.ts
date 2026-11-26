@@ -45,17 +45,18 @@ function isKnownSound(sound: string): boolean {
  * The model phones for one sound: its first candidate in a language the model
  * lists. Every sound ends on an English candidate, which every model has.
  */
-function donorPhones(sound: string, modelLanguages: readonly string[]): ModelPhone[] {
+function donorPhones(sound: string, modelLanguages: ReadonlySet<string>): ModelPhone[] {
   const candidates = DONORS.get(sound);
   if (!candidates) throw new Error(`No donor phones for sound ${JSON.stringify(sound)}`);
-  const pick = candidates.find(([language]) => modelLanguages.includes(language)) ?? candidates[candidates.length - 1];
+  const pick = candidates.find(([language]) => modelLanguages.has(language)) ?? candidates[candidates.length - 1];
   const [language, phones] = pick;
   if (!isPhoneLanguage(language)) throw new Error(`Donor language ${language} has no model phones`);
   return phones.map((phone) => ({ language, phone }));
 }
 
 function soundsToPhones(sounds: readonly string[], modelLanguages: readonly string[]): ModelPhone[] {
-  return sounds.flatMap((sound) => donorPhones(sound, modelLanguages));
+  const listed = new Set(modelLanguages);
+  return sounds.flatMap((sound) => donorPhones(sound, listed));
 }
 
 // -- Exports ------------------------------------------------------------------
