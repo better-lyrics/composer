@@ -6,7 +6,7 @@ import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import type { AnchorChain } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
-import { hanReadingFor, songLanguage } from "@/domain/alignment/language";
+import { lineReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -124,8 +124,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     try {
       const assets = await resolveAlignmentAssets(modelId);
       if (!assets) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-      const hanReading = hanReadingFor(project.metadata.language, project.lines);
-      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+      const reading = lineReadingFor(project.metadata.language, project.lines);
+      const japanese = reading.hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
       const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
       if (!vocalsUrl) {
         return fail(
@@ -155,11 +155,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       for (const [index, plan] of planned.entries()) {
         signal.throwIfAborted();
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lines align in order: each may anchor on the one before
-        const { result, timings, ...next } = await alignLine(
-          plan,
-          { aligner, pcm, hanReading, signal, anchors },
-          chain,
-        );
+        const { result, timings, ...next } = await alignLine(plan, { aligner, pcm, reading, signal, anchors }, chain);
         chain = next.chain;
         for (const word of result.unknownWords) unknownWords.add(word);
         for (const word of result.guessedWords) guessedWords.add(word);
@@ -222,8 +218,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       }),
     );
     const planned = planLines(project.lines, [...groupsOf.keys()], true);
-    const hanReading = hanReadingFor(project.metadata.language, project.lines);
-    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+    const reading = lineReadingFor(project.metadata.language, project.lines);
+    const japanese = reading.hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
     const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.
@@ -236,7 +232,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       const updates: LineUpdate[] = [];
       for (const plan of planned) {
         signal.throwIfAborted();
-        const { segment, window } = segmentFor(plan, hanReading, pcm);
+        const { segment, window } = segmentFor(plan, reading, pcm);
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- the worker aligns one line at a time, and cancel follows each line
         const result = await aligner.align(segment, signal);
         const intervals = sanitizeIntervals(result.intervals, window);

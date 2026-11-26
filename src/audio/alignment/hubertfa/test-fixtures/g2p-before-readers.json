@@ -1,0 +1,780 @@
+[
+  {
+    "hanReading": "zh",
+    "words": [["I"], ["love"], ["you"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        { "parts": [0], "phones": [{ "language": "en", "phone": "ay" }], "guessed": false },
+        {
+          "parts": [1],
+          "phones": [
+            { "language": "en", "phone": "l" },
+            { "language": "en", "phone": "ah" },
+            { "language": "en", "phone": "v" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "en", "phone": "y" }, { "language": "en", "phone": "uw" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["Don’t,"], ["you"], ["dance?"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "en", "phone": "d" },
+            { "language": "en", "phone": "aa" },
+            { "language": "en", "phone": "n" },
+            { "language": "en", "phone": "t" }
+          ],
+          "guessed": true
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "en", "phone": "y" }, { "language": "en", "phone": "uw" }],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [
+            { "language": "en", "phone": "d" },
+            { "language": "en", "phone": "ae" },
+            { "language": "en", "phone": "n" },
+            { "language": "en", "phone": "s" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": ["don't"]
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["lovin'"], ["oh-oh"], ["yeah!"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "en", "phone": "l" },
+            { "language": "en", "phone": "ah" },
+            { "language": "en", "phone": "v" },
+            { "language": "en", "phone": "ih" },
+            { "language": "en", "phone": "n" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [
+            { "language": "en", "phone": "aa" },
+            { "language": "en", "phone": "hh" },
+            { "language": "en", "phone": "aa" }
+          ],
+          "guessed": true
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "en", "phone": "y" }, { "language": "en", "phone": "ae" }],
+          "guessed": false
+        }
+      ],
+      "guessed": ["oh-oh"]
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["po", "ser"], ["mash"], ["ka", "rat"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0, 1],
+          "phones": [
+            { "language": "en", "phone": "p" },
+            { "language": "en", "phone": "ow" },
+            { "language": "en", "phone": "z" },
+            { "language": "en", "phone": "er" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [
+            { "language": "en", "phone": "m" },
+            { "language": "en", "phone": "ae" },
+            { "language": "en", "phone": "sh" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [3, 4],
+          "phones": [
+            { "language": "en", "phone": "k" },
+            { "language": "en", "phone": "eh" },
+            { "language": "en", "phone": "r" },
+            { "language": "en", "phone": "ax" },
+            { "language": "en", "phone": "t" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["Que"], ["hijo"], ["llevar"], ["corazón"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "en", "phone": "k" }, { "language": "en", "phone": "w" }],
+          "guessed": true
+        },
+        {
+          "parts": [1],
+          "phones": [
+            { "language": "en", "phone": "hh" },
+            { "language": "en", "phone": "ih" },
+            { "language": "en", "phone": "jh" },
+            { "language": "en", "phone": "aa" }
+          ],
+          "guessed": true
+        },
+        {
+          "parts": [2],
+          "phones": [
+            { "language": "en", "phone": "l" },
+            { "language": "en", "phone": "eh" },
+            { "language": "en", "phone": "v" },
+            { "language": "en", "phone": "aa" },
+            { "language": "en", "phone": "r" }
+          ],
+          "guessed": true
+        },
+        {
+          "parts": [3],
+          "phones": [
+            { "language": "en", "phone": "k" },
+            { "language": "en", "phone": "ao" },
+            { "language": "en", "phone": "r" },
+            { "language": "en", "phone": "ae" },
+            { "language": "en", "phone": "z" },
+            { "language": "en", "phone": "aa" },
+            { "language": "en", "phone": "n" }
+          ],
+          "guessed": true
+        }
+      ],
+      "guessed": ["que", "hijo", "llevar", "corazon"]
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["tryna"], ["imma"], ["woah"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "en", "phone": "t" },
+            { "language": "en", "phone": "r" },
+            { "language": "en", "phone": "ay" },
+            { "language": "en", "phone": "n" },
+            { "language": "en", "phone": "ax" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [
+            { "language": "en", "phone": "ay" },
+            { "language": "en", "phone": "m" },
+            { "language": "en", "phone": "ax" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "en", "phone": "w" }, { "language": "en", "phone": "ow" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["shimmering"], ["midnight"], ["highway"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "en", "phone": "sh" },
+            { "language": "en", "phone": "ih" },
+            { "language": "en", "phone": "m" },
+            { "language": "en", "phone": "er" },
+            { "language": "en", "phone": "ih" },
+            { "language": "en", "phone": "ng" }
+          ],
+          "guessed": true
+        },
+        {
+          "parts": [1],
+          "phones": [
+            { "language": "en", "phone": "m" },
+            { "language": "en", "phone": "ih" },
+            { "language": "en", "phone": "d" },
+            { "language": "en", "phone": "n" },
+            { "language": "en", "phone": "ay" },
+            { "language": "en", "phone": "t" }
+          ],
+          "guessed": true
+        },
+        {
+          "parts": [2],
+          "phones": [
+            { "language": "en", "phone": "hh" },
+            { "language": "en", "phone": "ay" },
+            { "language": "en", "phone": "w" },
+            { "language": "en", "phone": "ey" }
+          ],
+          "guessed": true
+        }
+      ],
+      "guessed": ["shimmering", "midnight", "highway"]
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["2"], ["times"], ["1999"]],
+    "expected": { "kind": "unknown", "words": ["2", "1999"] }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["really"], ["(oh)"], ["-"], ["..."]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "en", "phone": "r" },
+            { "language": "en", "phone": "iy" },
+            { "language": "en", "phone": "l" },
+            { "language": "en", "phone": "iy" }
+          ],
+          "guessed": true
+        },
+        { "parts": [1], "phones": [{ "language": "en", "phone": "aa" }], "guessed": true },
+        { "parts": [2], "phones": [], "guessed": false },
+        { "parts": [3], "phones": [], "guessed": false }
+      ],
+      "guessed": ["really", "oh"]
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["我", "爱", "你"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "zh", "phone": "w" }, { "language": "zh", "phone": "uo" }],
+          "guessed": false
+        },
+        { "parts": [1], "phones": [{ "language": "zh", "phone": "ai" }], "guessed": false },
+        {
+          "parts": [2],
+          "phones": [{ "language": "zh", "phone": "n" }, { "language": "zh", "phone": "i" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["我", "们", "的"], ["love"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "zh", "phone": "w" }, { "language": "zh", "phone": "uo" }],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "zh", "phone": "m" }, { "language": "zh", "phone": "en" }],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "zh", "phone": "d" }, { "language": "zh", "phone": "e" }],
+          "guessed": false
+        },
+        {
+          "parts": [3],
+          "phones": [
+            { "language": "en", "phone": "l" },
+            { "language": "en", "phone": "ah" },
+            { "language": "en", "phone": "v" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["嗯", "呣"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        { "parts": [0], "phones": [{ "language": "zh", "phone": "en" }], "guessed": false },
+        {
+          "parts": [1],
+          "phones": [{ "language": "zh", "phone": "m" }, { "language": "zh", "phone": "u" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["月", "亮", "代", "表"], ["我", "的", "心"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "zh", "phone": "y0" }, { "language": "zh", "phone": "ve" }],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "zh", "phone": "l" }, { "language": "zh", "phone": "iang" }],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "zh", "phone": "d" }, { "language": "zh", "phone": "ai" }],
+          "guessed": false
+        },
+        {
+          "parts": [3],
+          "phones": [{ "language": "zh", "phone": "b" }, { "language": "zh", "phone": "iao" }],
+          "guessed": false
+        },
+        {
+          "parts": [4],
+          "phones": [{ "language": "zh", "phone": "w" }, { "language": "zh", "phone": "uo" }],
+          "guessed": false
+        },
+        {
+          "parts": [5],
+          "phones": [{ "language": "zh", "phone": "d" }, { "language": "zh", "phone": "e" }],
+          "guessed": false
+        },
+        {
+          "parts": [6],
+          "phones": [{ "language": "zh", "phone": "x" }, { "language": "zh", "phone": "in" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["你", "好"]],
+    "transliteration": "ni hao",
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "zh", "phone": "n" }, { "language": "zh", "phone": "i" }],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "zh", "phone": "h" }, { "language": "zh", "phone": "ao" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "zh",
+    "words": [["长", "城"]],
+    "transliteration": "chang cheng",
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "zh", "phone": "ch" }, { "language": "zh", "phone": "ang" }],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "zh", "phone": "ch" }, { "language": "zh", "phone": "eng" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["き", "み", "と"], ["dance"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "ja", "phone": "k" }, { "language": "ja", "phone": "i" }],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "ja", "phone": "m" }, { "language": "ja", "phone": "i" }],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "ja", "phone": "t" }, { "language": "ja", "phone": "o" }],
+          "guessed": false
+        },
+        {
+          "parts": [3],
+          "phones": [
+            { "language": "en", "phone": "d" },
+            { "language": "en", "phone": "ae" },
+            { "language": "en", "phone": "n" },
+            { "language": "en", "phone": "s" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["夜", "空"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0, 1],
+          "phones": [
+            { "language": "ja", "phone": "y" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "z" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "r" },
+            { "language": "ja", "phone": "a" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["きょ", "う", "は", "コー", "ヒー"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "ja", "phone": "ky" }, { "language": "ja", "phone": "o" }],
+          "guessed": false
+        },
+        { "parts": [1], "phones": [{ "language": "ja", "phone": "u" }], "guessed": false },
+        {
+          "parts": [2],
+          "phones": [{ "language": "ja", "phone": "w" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        {
+          "parts": [3],
+          "phones": [
+            { "language": "ja", "phone": "k" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "o" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [4],
+          "phones": [
+            { "language": "ja", "phone": "h" },
+            { "language": "ja", "phone": "i" },
+            { "language": "ja", "phone": "i" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["運", "命"]],
+    "transliteration": "sadame",
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0, 1],
+          "phones": [
+            { "language": "ja", "phone": "s" },
+            { "language": "ja", "phone": "a" },
+            { "language": "ja", "phone": "d" },
+            { "language": "ja", "phone": "a" },
+            { "language": "ja", "phone": "m" },
+            { "language": "ja", "phone": "e" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["私", "は"], ["あ", "な", "た", "が"], ["好", "き"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "ja", "phone": "w" },
+            { "language": "ja", "phone": "a" },
+            { "language": "ja", "phone": "t" },
+            { "language": "ja", "phone": "a" },
+            { "language": "ja", "phone": "sh" },
+            { "language": "ja", "phone": "i" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "ja", "phone": "w" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        { "parts": [2], "phones": [{ "language": "ja", "phone": "a" }], "guessed": false },
+        {
+          "parts": [3],
+          "phones": [{ "language": "ja", "phone": "n" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        {
+          "parts": [4],
+          "phones": [{ "language": "ja", "phone": "t" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        {
+          "parts": [5],
+          "phones": [{ "language": "ja", "phone": "g" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        {
+          "parts": [6, 7],
+          "phones": [
+            { "language": "ja", "phone": "s" },
+            { "language": "ja", "phone": "u" },
+            { "language": "ja", "phone": "k" },
+            { "language": "ja", "phone": "i" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["きっ", "と"], ["大", "丈", "夫"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "ja", "phone": "k" },
+            { "language": "ja", "phone": "i" },
+            { "language": "ja", "phone": "cl" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "ja", "phone": "t" }, { "language": "ja", "phone": "o" }],
+          "guessed": false
+        },
+        {
+          "parts": [2, 3, 4],
+          "phones": [
+            { "language": "ja", "phone": "d" },
+            { "language": "ja", "phone": "a" },
+            { "language": "ja", "phone": "i" },
+            { "language": "ja", "phone": "j" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "b" },
+            { "language": "ja", "phone": "u" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["君", "と"], ["I"], ["love"], ["you"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [
+            { "language": "ja", "phone": "k" },
+            { "language": "ja", "phone": "i" },
+            { "language": "ja", "phone": "m" },
+            { "language": "ja", "phone": "i" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "ja", "phone": "t" }, { "language": "ja", "phone": "o" }],
+          "guessed": false
+        },
+        { "parts": [2], "phones": [{ "language": "en", "phone": "ay" }], "guessed": false },
+        {
+          "parts": [3],
+          "phones": [
+            { "language": "en", "phone": "l" },
+            { "language": "en", "phone": "ah" },
+            { "language": "en", "phone": "v" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [4],
+          "phones": [{ "language": "en", "phone": "y" }, { "language": "en", "phone": "uw" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["さ", "よ", "な", "ら"]],
+    "transliteration": "sayonara",
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0],
+          "phones": [{ "language": "ja", "phone": "s" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        {
+          "parts": [1],
+          "phones": [{ "language": "ja", "phone": "y" }, { "language": "ja", "phone": "o" }],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "ja", "phone": "n" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        {
+          "parts": [3],
+          "phones": [{ "language": "ja", "phone": "r" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["東", "京"], ["タ", "ワー"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        {
+          "parts": [0, 1],
+          "phones": [
+            { "language": "ja", "phone": "t" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "ky" },
+            { "language": "ja", "phone": "o" },
+            { "language": "ja", "phone": "o" }
+          ],
+          "guessed": false
+        },
+        {
+          "parts": [2],
+          "phones": [{ "language": "ja", "phone": "t" }, { "language": "ja", "phone": "a" }],
+          "guessed": false
+        },
+        {
+          "parts": [3],
+          "phones": [
+            { "language": "ja", "phone": "w" },
+            { "language": "ja", "phone": "a" },
+            { "language": "ja", "phone": "a" }
+          ],
+          "guessed": false
+        }
+      ],
+      "guessed": []
+    }
+  },
+  {
+    "hanReading": "ja",
+    "words": [["ん"], ["っ"]],
+    "expected": {
+      "kind": "units",
+      "units": [
+        { "parts": [0], "phones": [{ "language": "ja", "phone": "N" }], "guessed": false },
+        { "parts": [1], "phones": [{ "language": "ja", "phone": "cl" }], "guessed": false }
+      ],
+      "guessed": []
+    }
+  }
+]

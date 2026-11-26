@@ -12,13 +12,7 @@ import type {
   LineRequest,
   OutboundMessage,
 } from "@/audio/alignment/hubertfa/worker-protocol";
-import {
-  alignPhones,
-  ctcSpan,
-  isLineFinder,
-  lineFeeds,
-  linesAround,
-} from "@/audio/alignment/hubertfa/line-search";
+import { alignPhones, ctcSpan, isLineFinder, lineFeeds, linesAround } from "@/audio/alignment/hubertfa/line-search";
 import {
   type PhoneSequence,
   buildPhoneSequence,
@@ -47,6 +41,7 @@ let session: OrtSession | null = null;
 let activeBackend: Backend = "wasm";
 let dictionary: Pronunciations | null = null;
 let modelAsset: CachedModel | null = null;
+let modelLanguages: readonly string[] = [];
 let readJapanese: G2pContext["readJapanese"] = null;
 let pinyinOf: G2pContext["pinyinOf"] = null;
 const mandarinDictionary = parseDictionary(mandarinDictionaryText);
@@ -86,6 +81,7 @@ async function loadPinyin(): Promise<NonNullable<G2pContext["pinyinOf"]>> {
 
 async function handleInit(assets: AlignmentAssets, forceWasm?: boolean, japanese?: boolean) {
   modelAsset = assets.model;
+  modelLanguages = assets.languages;
   downloadAbort = new AbortController();
   const { signal } = downloadAbort;
   const japaneseFiles = japanese && !readJapanese ? assets.japaneseDictionary : {};
@@ -200,7 +196,8 @@ type PreparedLine =
   | { kind: "done"; outcome: AlignOutcome };
 
 // The line's phones, or the outcome when it has none to align. Null after posting an error.
-async function prepareLine({ sampleRate, words, hanReading, transliteration }: Omit<LineRequest, "samples">) {
+async function prepareLine(request: Omit<LineRequest, "samples">) {
+  const { sampleRate, words, hanReading, latinReader, transliteration } = request;
   if (!session || !ort || !dictionary) {
     post({ type: "error", code: "ort-failed", message: "Alignment model is not loaded." });
     return null;
@@ -220,6 +217,8 @@ async function prepareLine({ sampleRate, words, hanReading, transliteration }: O
     pinyinOf: hanReading === "zh" && hasHan(lineText) ? await loadPinyin() : null,
     readJapanese,
     transliteration,
+    latinReader,
+    modelLanguages,
   });
   if (g2p.kind === "unknown") return { kind: "done", outcome: { kind: "unknown", words: g2p.words } } as const;
   const built = buildPhoneSequence(g2p.units);
