@@ -3,6 +3,7 @@ import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "@/domain/agent/model";
 import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
 import type { Outcome } from "@/domain/commands/outcome";
+import type { LyricDoc } from "@/domain/group/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { SnapPoint } from "@/domain/snap-point/model";
@@ -14,6 +15,7 @@ import type { BeatGrid } from "@/domain/tempo/beat-grid";
 type CommitMode = "step" | "pending" | "amend";
 
 interface HistoryEntry {
+  doc: LyricDoc;
   lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[];

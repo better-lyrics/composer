@@ -1,8 +1,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "@/domain/instance/key";
-import { type LinkedLine, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
-import { hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
+import { isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
@@ -14,21 +13,9 @@ import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
 // -- Types --------------------------------------------------------------------
 
-interface SharedTimingFanOut {
-  lines: LyricLine[];
-  rejected: boolean;
-  touchedGroupIds: string[];
-}
-
 interface TimeRange {
   min: number;
   max: number;
-}
-
-interface FanOutSource {
-  line: LinkedLine;
-  group: LinkGroup;
-  instanceOrder: number[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -111,7 +98,7 @@ function instanceOffset(lines: readonly LyricLine[], groupId: string, from: numb
   return fromStart === undefined || toStart === undefined ? null : toStart - fromStart;
 }
 
-// -- Fan out ------------------------------------------------------------------
+// -- Timing -------------------------------------------------------------------
 
 function timingChanged(before: LyricLine | undefined, after: LyricLine): boolean {
   if (!before) return false;
@@ -121,81 +108,6 @@ function timingChanged(before: LyricLine | undefined, after: LyricLine): boolean
     !isStructurallyEqual(withoutWordIds(roleWords(before, "main")), withoutWordIds(roleWords(after, "main"))) ||
     !isStructurallyEqual(withoutWordIds(roleWords(before, "bg")), withoutWordIds(roleWords(after, "bg")))
   );
-}
-
-function fanOutSources(
-  before: readonly LyricLine[],
-  after: readonly LyricLine[],
-  groups: readonly LinkGroup[],
-  changedIds: readonly string[],
-): FanOutSource[] {
-  const groupsById = new Map(groups.map((group) => [group.id, group]));
-  const beforeById = new Map(before.map((line) => [line.id, line]));
-  const afterById = new Map(after.map((line) => [line.id, line]));
-  const instanceOrderByGroup = new Map<string, number[]>();
-  const sources: FanOutSource[] = [];
-  for (const id of new Set(changedIds)) {
-    const line = afterById.get(id);
-    if (!line || !isLinked(line) || line.detached || !timingChanged(beforeById.get(id), line)) continue;
-    const group = groupsById.get(line.groupId);
-    if (!group || !sharesTiming(group, line.instanceIdx)) continue;
-    let instanceOrder = instanceOrderByGroup.get(group.id);
-    if (!instanceOrder) {
-      instanceOrder = sharedInstancesInLineOrder(before, group);
-      instanceOrderByGroup.set(group.id, instanceOrder);
-    }
-    sources.push({ line, group, instanceOrder });
-  }
-  return sources.toSorted(
-    (a, b) => a.instanceOrder.indexOf(a.line.instanceIdx) - b.instanceOrder.indexOf(b.line.instanceIdx),
-  );
-}
-
-function sharedTimingFanOut(
-  before: readonly LyricLine[],
-  after: LyricLine[],
-  groups: readonly LinkGroup[],
-  changedIds: readonly string[],
-): SharedTimingFanOut {
-  const unchanged: SharedTimingFanOut = { lines: after, rejected: false, touchedGroupIds: [] };
-  if (!groups.some((group) => group.sharesTiming)) return unchanged;
-  const sources = fanOutSources(before, after, groups, changedIds);
-  if (sources.length === 0) return unchanged;
-
-  const indexById = new Map(after.map((line, index) => [line.id, index]));
-  const claimedTemplateLines = new Set<string>();
-  const touchedGroupIds = new Set<string>();
-  const offsets = new Map<string, number | null>();
-  const offsetBefore = (groupId: string, from: number, to: number) => {
-    const key = `${groupId}:${from}:${to}`;
-    if (!offsets.has(key)) offsets.set(key, instanceOffset(before, groupId, from, to));
-    return offsets.get(key) ?? null;
-  };
-  let lines = after;
-
-  for (const { line: source, group, instanceOrder } of sources) {
-    const claimKey = `${group.id}:${source.templateLineIdx}`;
-    if (claimedTemplateLines.has(claimKey)) continue;
-    claimedTemplateLines.add(claimKey);
-    for (const targetIdx of instanceOrder) {
-      const offset = targetIdx === source.instanceIdx ? null : offsetBefore(group.id, source.instanceIdx, targetIdx);
-      if (offset === null) continue;
-      const target = attachedLinesOfInstance(after, group.id, targetIdx).find(
-        (line) => line.templateLineIdx === source.templateLineIdx,
-      );
-      if (!target) continue;
-      const updates = offsetTimingFields(source, offset, target);
-      if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
-      const copied = { ...target, ...updates };
-      if (!timingChanged(target, copied) && copied.languages === target.languages) continue;
-      const targetIndex = indexById.get(target.id);
-      if (targetIndex === undefined) continue;
-      if (lines === after) lines = [...after];
-      lines[targetIndex] = copied;
-      touchedGroupIds.add(group.id);
-    }
-  }
-  return lines === after ? unchanged : { lines, rejected: false, touchedGroupIds: [...touchedGroupIds] };
 }
 
 // -- Time range ---------------------------------------------------------------
@@ -253,9 +165,9 @@ export {
   isSharedLine,
   keepsOwnTiming,
   sharedInstancesInLineOrder,
-  sharedTimingFanOut,
   sharesTiming,
   timeRangeResolver,
+  timingChanged,
   UNBOUNDED_TIME_RANGE,
   wholeSongRange,
 };

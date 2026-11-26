@@ -1,4 +1,5 @@
 import { useProjectStore } from "@/stores/project";
+import { emptyBody } from "@/stores/project/with-body";
 import { createLine, snapPoints } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -320,7 +321,7 @@ describe("project snap points: drag = one undo step", () => {
       customSnapPoints: snapPoints([5]),
       history: [
         {
-          lines: [],
+          ...emptyBody(),
           groups: [],
           agents: [],
           parts: [],

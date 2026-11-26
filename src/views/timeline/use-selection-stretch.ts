@@ -1,10 +1,12 @@
 import { stretchSelection } from "@/domain/commands/word-timing";
-import { sharedTimingFanOut, timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { copyThroughTemplate, instanceAnchors } from "@/domain/group/template-copy";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { docOfLines } from "@/stores/project/with-body";
 import { useSettingsStore } from "@/stores/settings";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { selfKey } from "@/views/timeline/snap";
@@ -62,14 +64,16 @@ function applyStretchUpdates(
   snapshotLines: LyricLine[],
   updates: ReadonlyArray<{ id: string; updates: Partial<LyricLine> }>,
 ): LyricLine[] {
-  const applied = applyLineUpdates(snapshotLines, updates);
-  const shared = sharedTimingFanOut(
-    snapshotLines,
-    applied,
-    useProjectStore.getState().groups,
-    updates.map((update) => update.id),
-  );
-  return shared.rejected ? snapshotLines.slice() : shared.lines;
+  const doc = docOfLines(snapshotLines);
+  const copy = copyThroughTemplate({
+    doc,
+    before: snapshotLines,
+    after: applyLineUpdates(snapshotLines, updates),
+    groups: useProjectStore.getState().groups,
+    touched: updates.map((update) => update.id),
+    anchors: instanceAnchors(doc),
+  });
+  return copy.rejected ? snapshotLines.slice() : copy.lines;
 }
 
 // -- Hook ----------------------------------------------------------------------

@@ -17,6 +17,8 @@ interface HistoryNote {
 interface LyricCommand {
   note: HistoryNote;
   copiesSharedTiming: boolean;
+  // False when the copy belongs to a step that already announced it.
+  announcesSharedCopy?: false;
   run: (root: LyricRoot, ctx: CommandContext) => Outcome;
   afterSharedCopy?: (root: LyricRoot, ctx: CommandContext) => Outcome;
 }
