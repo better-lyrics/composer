@@ -1,3 +1,4 @@
+import { mainBounds } from "@/domain/line/bounds";
 import { savedLines } from "@/lib/saved-project";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { usePersistence } from "@/hooks/usePersistence";
@@ -14,7 +15,7 @@ import { createAudioFile, createMp3File, createUnplayableAudioFile } from "@/tes
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { deleteDatabase, openAndCloseAtVersion } from "@/test/idb";
-import { seedStoredProject, songTitled } from "@/test/projects";
+import { linesOfRecord, seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -292,7 +293,7 @@ describe("useLoadAudioFile priming flags", () => {
     await saveOpenProjectNow();
     const reloaded = (await loadProjectForRestore("old")).project;
 
-    expect(reloaded?.lines[0]?.begin).toBeCloseTo(1, 9);
+    expect(mainBounds(linesOfRecord(reloaded)[0])?.begin).toBeCloseTo(1, 9);
     expect(reloaded).toMatchObject({ primingStripped: true, primingCorrected: true });
   });
 });

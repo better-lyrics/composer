@@ -8,7 +8,7 @@ import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { flushPendingSave } from "@/lib/persistence-debounce";
 import { previousVersionsById } from "@/lib/pre-v4-records";
-import type { ProjectFile } from "@/lib/project-file";
+import type { ProjectFile, StoredProjectFile } from "@/lib/project-file";
 import { type ProjectFileContents, parseProjectFileContents, savedProjectFromFile } from "@/lib/project-file-read";
 import {
   createProjectId,
@@ -19,7 +19,7 @@ import {
   updateProjectRecord,
 } from "@/lib/project-repository";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
-import type { SavedProject } from "@/lib/saved-project";
+import type { StoredProject } from "@/lib/saved-project";
 import { reportStorageWriteError } from "@/lib/storage-signals";
 import { askImportConflict } from "@/ui/projects/import-conflict-choice";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
@@ -108,7 +108,7 @@ async function liveEntries(): Promise<ProjectIndexEntry[]> {
 async function restoreBundledProject(
   file: ProjectFile,
   pendingIds: ReadonlySet<string>,
-  previousVersion: SavedProject | undefined,
+  previousVersion: StoredProject | undefined,
 ): Promise<void> {
   const record = savedProjectFromFile(file, Number.isFinite(file.savedAt) ? file.savedAt : Date.now());
   if (file.projectId && !pendingIds.has(file.projectId)) {
@@ -142,7 +142,7 @@ function dedupeBundleProjects(projects: readonly ProjectFile[]): { unique: Proje
 async function restoreProjectBundle(
   projects: readonly ProjectFile[],
   unreadable: number,
-  previousVersions: readonly ProjectFile[],
+  previousVersions: readonly StoredProjectFile[],
 ): Promise<BundleRestore> {
   const { unique, duplicates } = dedupeBundleProjects(projects);
   const hidden = hiddenProjectIdsSnapshot();
@@ -225,7 +225,7 @@ async function importProjectFile(file: File): Promise<string | null> {
 async function restoreBundleContents(
   projects: readonly ProjectFile[],
   unreadable: number,
-  previousVersions: readonly ProjectFile[],
+  previousVersions: readonly StoredProjectFile[],
 ): Promise<boolean> {
   try {
     const result = await restoreProjectBundle(projects, unreadable, previousVersions);

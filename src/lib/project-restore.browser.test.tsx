@@ -31,7 +31,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
-import { seedStoredProject } from "@/test/projects";
+import { seedStoredProject, v3StoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -177,7 +177,7 @@ describe("project-restore", () => {
     });
 
     it("upgrades an old record without moving its edit time", async () => {
-      await seedStoredProject("p1", { project: { version: 1, lines: savedLines([createLine({ text: "hello" })]) } });
+      await saveProjectRecord("p1", v3StoredProject({ version: 1 }));
       await loadProjectForRestore("p1");
       expect((await loadProjectRecord("p1"))?.version).toBe(SAVED_PROJECT_VERSION);
       expect((await loadProjectRecord("p1"))?.savedAt).toBe(1_758_900_000_000);

@@ -17,7 +17,6 @@ describe("project file export/import: LAME priming", () => {
 
     const original = storedProject();
     expect(original.primingStripped).toBe(true);
-    const line = original.lines[0] as { begin: number; end: number };
 
     const file = projectFileFrom(undefined, original);
     const reimported = await readProjectFile(
@@ -30,9 +29,7 @@ describe("project file export/import: LAME priming", () => {
     await saveProjectRecord(id, saved);
 
     const restored = await loadProjectForRestore(id);
-    const restoredLine = restored.project?.lines[0] as { begin: number; end: number };
-    expect(restoredLine.begin).toBe(line.begin);
-    expect(restoredLine.end).toBe(line.end);
+    expect(restored.project?.lines[0]).toEqual(original.lines[0]);
     expect(restored.project?.primingStripped).toBe(true);
   });
 });

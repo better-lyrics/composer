@@ -1,6 +1,6 @@
 import { downloadJson, localDateStamp } from "@/lib/download-file";
-import { type ProjectFile, projectFileFrom } from "@/lib/project-file";
-import type { SavedProject } from "@/lib/saved-project";
+import { type StoredProjectFile, projectFileFrom } from "@/lib/project-file";
+import type { StoredProject } from "@/lib/saved-project";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -14,18 +14,18 @@ interface ProjectBundle {
   format: typeof PROJECT_BUNDLE_FORMAT;
   version: typeof PROJECT_BUNDLE_VERSION;
   exportedAt: number;
-  projects: ProjectFile[];
-  previousVersions?: ProjectFile[];
+  projects: StoredProjectFile[];
+  previousVersions?: StoredProjectFile[];
 }
 
 interface BundleSource {
   id: string | undefined;
-  project: SavedProject;
+  project: StoredProject;
 }
 
 // -- Building -----------------------------------------------------------------
 
-function toProjectFiles(sources: readonly BundleSource[]): ProjectFile[] {
+function toProjectFiles(sources: readonly BundleSource[]): StoredProjectFile[] {
   return sources.map((source) => projectFileFrom(source.id, source.project));
 }
 

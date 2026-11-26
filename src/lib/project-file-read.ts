@@ -1,13 +1,13 @@
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { PROJECT_BUNDLE_FORMAT } from "@/lib/project-bundle";
-import type { ProjectFile } from "@/lib/project-file";
-import { SAVED_PROJECT_VERSION, type SavedProject, upgradeSavedProject } from "@/lib/saved-project";
+import type { ProjectFile, StoredProjectFile } from "@/lib/project-file";
+import { SAVED_PROJECT_VERSION, type SavedProject, type StoredProject, upgradeSavedProject } from "@/lib/saved-project";
 
 // -- Types --------------------------------------------------------------------
 
 type ProjectFileContents =
   | { kind: "project"; project: ProjectFile }
-  | { kind: "bundle"; projects: ProjectFile[]; unreadable: number; previousVersions: ProjectFile[] };
+  | { kind: "bundle"; projects: ProjectFile[]; unreadable: number; previousVersions: StoredProjectFile[] };
 
 // -- Constants ----------------------------------------------------------------
 
@@ -26,7 +26,7 @@ function isProjectFileName(name: string): boolean {
   return PROJECT_FILE_EXTENSIONS.some((extension) => lowered.endsWith(extension));
 }
 
-function isProjectFilePayload(value: unknown): value is SavedProject & { projectId?: unknown } {
+function isProjectFilePayload(value: unknown): value is StoredProject & { projectId?: unknown } {
   return (
     typeof value === "object" && value !== null && !Array.isArray(value) && "lines" in value && "metadata" in value
   );
@@ -38,7 +38,7 @@ function isProjectBundlePayload(value: unknown): value is { projects: unknown[];
   return candidate.format === PROJECT_BUNDLE_FORMAT && Array.isArray(candidate.projects);
 }
 
-function readStoredProjectFile(parsed: unknown): ProjectFile {
+function readStoredProjectFile(parsed: unknown): StoredProjectFile {
   if (!isProjectFilePayload(parsed)) throw new Error("Not a Composer project file");
   const { projectId, ...project } = parsed;
   if (!SUPPORTED_VERSIONS.includes(project.version)) {
@@ -48,10 +48,10 @@ function readStoredProjectFile(parsed: unknown): ProjectFile {
 }
 
 function parseProjectFile(parsed: unknown): ProjectFile {
-  const project = readStoredProjectFile(parsed);
-  if (!project.syllableSplitDefaults) project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
-  upgradeSavedProject(project);
-  return project;
+  const { projectId, ...stored } = readStoredProjectFile(parsed);
+  if (!stored.syllableSplitDefaults) stored.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
+  const project = upgradeSavedProject(stored);
+  return projectId === undefined ? project : { ...project, projectId };
 }
 
 function hasProjectContent(value: unknown): boolean {
@@ -60,12 +60,12 @@ function hasProjectContent(value: unknown): boolean {
   return typeof metadata === "object" && metadata !== null && Array.isArray(lines);
 }
 
-function readPreviousVersion(item: unknown): ProjectFile {
+function readPreviousVersion(item: unknown): StoredProjectFile {
   if (!hasProjectContent(item)) throw new Error("Not a Composer project file");
   return readStoredProjectFile(item);
 }
 
-function parsePreviousVersions(previousVersions: unknown): ProjectFile[] {
+function parsePreviousVersions(previousVersions: unknown): StoredProjectFile[] {
   if (!Array.isArray(previousVersions)) return [];
   return previousVersions.flatMap((item: unknown) => {
     try {
