@@ -1,3 +1,4 @@
+import { mainTrack, roleWords } from "@/domain/line/track";
 import type { LyricLine } from "@/domain/line/model";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { useAudioStore } from "@/stores/audio";
@@ -67,9 +68,9 @@ function load(
 const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
 const firstBegin = (id: string) => {
   const line = lineById(id);
-  return line?.words?.[0]?.begin ?? line?.begin;
+  return (line && roleWords(line, "main"))?.[0]?.begin ?? (line && mainTrack(line).begin);
 };
-const wordBegins = (id: string) => lineById(id)?.words?.map((word) => word.begin);
+const wordBegins = (id: string) => roleWords(lineById(id), "main")?.map((word) => word.begin);
 
 async function tapAt(time: number, changed: () => unknown): Promise<void> {
   const before = changed();
@@ -91,7 +92,7 @@ describe("SyncPanel · re-recording a placed shared instance", () => {
 
     expect(firstBegin("c1-2")).toBe(44.5);
     expect(firstBegin("c0-2")).toBe(14.5);
-    expect(lineById("v2")?.begin).toBeUndefined();
+    expect(mainTrack(lineById("v2")!).begin).toBeUndefined();
   });
 
   it("regression: re-records Chorus 2 word by word from a jump, and the copy follows in Chorus 1", async () => {
@@ -106,7 +107,7 @@ describe("SyncPanel · re-recording a placed shared instance", () => {
     expect(wordBegins("c1-1")).toEqual([42.2, 42.8]);
     expect(wordBegins("c1-2")?.[0]).toBe(44.3);
     expect(wordBegins("c0-2")?.[0]).toBeCloseTo(14.3, 6);
-    expect(lineById("v2")?.words).toBeUndefined();
+    expect(roleWords(lineById("v2"), "main")).toBeUndefined();
   });
 
   it("regression: skips Chorus 2 after the user jumps into it unshared, syncs part of it, and groups it", async () => {

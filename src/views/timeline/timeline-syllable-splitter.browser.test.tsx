@@ -3,7 +3,7 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -194,14 +194,14 @@ describe("TimelineSyllableSplitter", () => {
       await screen.getByRole("button", { name: "Split Word" }).click();
 
       await vi.waitFor(() => {
-        expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
+        expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
       });
       const after = useProjectStore.getState().lines[0];
       expect(timedSyllables(mainTrack(after)).map((w) => w.text.trim())).toEqual(["It", "hurts"]);
       expect(timedSyllables(mainTrack(after))[0].begin).toBe(10);
       expect(timedSyllables(mainTrack(after))[1].end).toBe(12);
-      expect(after.begin).toBeUndefined();
-      expect(after.end).toBeUndefined();
+      expect(mainTrack(after).begin).toBeUndefined();
+      expect(mainTrack(after).end).toBeUndefined();
     });
 
     it("regression: opens the split-syllable dialog for a line-synced line with no words array", async () => {
@@ -287,7 +287,7 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Transliteration split point 1" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(3);
     const saved = useProjectStore.getState().lines[0];
     expect(saved.languages?.transliteration?.main.text).toBe("ildan eun");
     expect(
@@ -324,7 +324,7 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Original split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
     expect(lineText(saved)).toBe("хор ошо");
     expect(saved.languages?.transliteration?.main.text).toBe("khorosho");
@@ -356,7 +356,7 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Original dash 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
     expect(saved.languages?.transliteration?.main.text).toBe("to-do");
     expect(getLanguageReviewTracks(saved)).toEqual([]);
@@ -387,7 +387,7 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Original dash 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     const result = useProjectStore.getState().lines[0];
     expect(
       (legacyWords(timedSyllables(mainTrack(result)), result.languages) ?? []).map((word) => word.transliteration),

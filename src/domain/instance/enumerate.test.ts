@@ -1,3 +1,4 @@
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import {
   instanceCount,
   instanceIndicesOf,
@@ -7,13 +8,13 @@ import {
   nextInstanceIdx,
 } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LooseLine> = {}): LyricLine {
-  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
+function line(extras: Partial<LineFields> = {}): LyricLine {
+  return lineFromFields({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- linesOfInstance ----------------------------------------------------------

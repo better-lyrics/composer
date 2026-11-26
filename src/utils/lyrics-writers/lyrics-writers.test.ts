@@ -65,7 +65,7 @@ describe("writeLrc", () => {
   it("round-trips line timing through the LRC parser", () => {
     const parsed = parseLrc(writeLrc(doc([lineSynced("Hello", 1, 2), lineSynced("World", 5, 7.5)])));
 
-    expect(parsed.lines.map((line) => [lineText(line), line.begin, line.end])).toEqual([
+    expect(parsed.lines.map((line) => [lineText(line), mainTrack(line).begin, mainTrack(line).end])).toEqual([
       ["Hello", 1, 2],
       ["World", 5, 7.5],
     ]);
@@ -150,6 +150,12 @@ describe("writeLrc", () => {
       for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
     });
 
+    it("regression: a tab between untimed background words is written without a split mark", () => {
+      const line = createLine({ text: "Main", begin: 1, end: 2, backgroundText: "ooh\tyeah" });
+
+      expect(writeLrc(doc([line]))).toContain("[00:01.00]Main (ooh\tyeah)");
+    });
+
     it("keeps parentheses the background text already carries", () => {
       const line = createLine({ text: "Main", begin: 1, end: 2, backgroundText: "(oh)" });
 
@@ -174,7 +180,7 @@ describe("writeSrt", () => {
   it("round-trips through the SRT parser", () => {
     const parsed = parseSrt(writeSrt(doc([lineSynced("Hello", 1, 2.5), wordLine("a")])));
 
-    expect(parsed.lines.map((line) => [lineText(line), line.begin, line.end])).toEqual([
+    expect(parsed.lines.map((line) => [lineText(line), mainTrack(line).begin, mainTrack(line).end])).toEqual([
       ["Hello", 1, 2.5],
       ["Is it so", 34.059, 34.413],
     ]);
@@ -237,7 +243,7 @@ describe("writeQrc", () => {
       expect(qrc).toContain("[1000,0]Lead：\n[1000,1000]A\n[2000,1000]B\n[3000,0]Duet：\n[3000,1000]C");
       const parsed = parseQrc(qrc);
       expect(parsed.agents?.map((agent) => agent.name)).toEqual(["Lead", "Duet"]);
-      expect(parsed.lines.map((line) => line.agentId)).toEqual(["v1", "v1", "v2"]);
+      expect(parsed.lines.map((line) => mainTrack(line).agentId)).toEqual(["v1", "v1", "v2"]);
     });
 
     it("writes a combined voice with the slash QQ uses", () => {

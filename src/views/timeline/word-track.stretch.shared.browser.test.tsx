@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWords } from "@/test/factories";
 import {
@@ -36,7 +37,10 @@ async function renderSharedStretch() {
 }
 
 const siblingWordEnd = (index: number) =>
-  useProjectStore.getState().lines.find((line) => line.id === "sibling")?.words?.[index]?.end;
+  roleWords(
+    useProjectStore.getState().lines.find((line) => line.id === "sibling"),
+    "main",
+  )?.[index]?.end;
 
 describe("WordTrack selection stretch on a shared line", () => {
   it("regression: the preview moves the shared copy the way the release will", async () => {

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { type LegacyWord, legacyLine, legacyWords } from "@/test/legacy-languages";
@@ -79,7 +79,7 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Transliteration split point 2" }).click();
       await screen.getByRole("button", { name: "Split Word" }).click();
 
-      await expect.poll(() => savedLine().words?.length).toBe(4);
+      await expect.poll(() => roleWords(savedLine(), "main")?.length).toBe(4);
       expect(readings(savedLine()).map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
       expect(savedLine().languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
       expect(readings(getEffectiveLines([savedLine()])[0]).map((word) => word.transliteration)).toEqual([
@@ -98,7 +98,7 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Transliteration split point 2" }).click();
       await screen.getByRole("button", { name: "Split Word" }).click();
 
-      await expect.poll(() => savedLine().backgroundWords?.length).toBe(3);
+      await expect.poll(() => roleWords(savedLine(), "bg")?.length).toBe(3);
       expect(readings(savedLine(), "bg").map((word) => word.transliteration)).toEqual(["ge", "urae", "yeah"]);
       expect(savedLine().languages?.transliteration?.bg?.text).toBe("geurae  yeah");
       expect(savedLine().languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
@@ -112,7 +112,7 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await screen.getByRole("button", { name: "Transliteration split point 3" }).click();
       await screen.getByRole("button", { name: "Split Word" }).click();
 
-      await expect.poll(() => savedLine().words?.length).toBe(4);
+      await expect.poll(() => roleWords(savedLine(), "main")?.length).toBe(4);
       const stored = readings(savedLine());
       expect(stored.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단 ", "은 ", "나"]);
       expect(stored.map((word) => word.transliteration)).toEqual(["Uh", "ild", "an eun", "na"]);

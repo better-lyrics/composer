@@ -1,5 +1,7 @@
+import { mainTrack } from "@/domain/line/track";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "@/domain/agent/model";
+import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -9,7 +11,7 @@ const BOB: Agent = { id: "v2", type: "person", name: "Bob" };
 const CARA: Agent = { id: "v3", type: "person", name: "Cara" };
 
 function line(agentId: string, text = "Hello") {
-  return { text, agentId };
+  return createLine({ id: `line-${text}`, text, agentId });
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -78,7 +80,7 @@ describe("agentsAfterImport", () => {
     it("every imported line references a singer in the result when the project had singers", () => {
       const result = agentsAfterImport([BOB], [CARA], [line("v3"), line("v2")]);
       const ids = new Set(result.agents.map((agent) => agent.id));
-      for (const imported of result.lines) expect(ids.has(imported.agentId)).toBe(true);
+      for (const imported of result.lines) expect(ids.has(mainTrack(imported).agentId)).toBe(true);
     });
 
     it("does not mutate its inputs", () => {

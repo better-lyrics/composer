@@ -5,7 +5,7 @@ import { pasteLyrics } from "@/domain/commands/edit-text";
 import { duplicateWords, moveWordsAcrossLines } from "@/domain/commands/word-moves";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import type { LineLanguages } from "@/domain/language/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import { roleWords, type WordTrack } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -88,7 +88,7 @@ describe("word move commands", () => {
       .getState()
       .commit(duplicateWords({ addresses: [addressOf({ id: "a" }, "word", drift)], timeDelta: 2, duration: 60 }));
     const [line] = useProjectStore.getState().lines;
-    expect(line.words?.map((word) => pieceOf(trackPieces(line, "main"), word))).toEqual([
+    expect(roleWords(line, "main")?.map((word) => pieceOf(trackPieces(line, "main"), word))).toEqual([
       { text: "dorifuto" },
       { text: "dorifuto" },
     ]);

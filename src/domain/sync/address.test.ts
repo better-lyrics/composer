@@ -1,6 +1,10 @@
+import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { convertLineToWord } from "@/domain/line/span-to-words";
+import type { LyricLine } from "@/domain/line/model";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
 import { createLine } from "@/test/factories";
-import { convertLineToWord } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
 
 const SLOW = { id: "y1", text: "Slow ", begin: 1, end: 2 };
@@ -12,13 +16,23 @@ const tideLine = (
   text = "Slow tide pulls the harbour lights",
 ) => createLine({ id: "tide", text, words });
 
+const editTo = (line: LyricLine, text: string): LyricLine[] => {
+  const action = decideEditTextAction({ text, defaultAgentId: "v1", lines: [line], groups: [], modalPending: false });
+  if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
+  return action.finalLines;
+};
+
 describe("syncAddressPosition", () => {
   it("stays on the next untimed word when a timed word before it is split", () => {
-    const stored = syncAddressAt([tideLine([SLOW, TIDE, PULLS])], { lineIndex: 0, wordIndex: 3 });
-    const split = tideLine(
-      [SLOW, TIDE, { ...PULLS, text: "pu", sep: "", end: 3.5 }, { ...PULLS, id: "y9", begin: 3.5, text: "lls " }],
-      "Slow tide pu|lls the harbour lights",
-    );
+    const line = tideLine([SLOW, TIDE, PULLS]);
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 3 });
+    const [slow, tide, pulls] = timedSyllables(mainTrack(line));
+    const split = withRoleWords(line, "main", [
+      slow,
+      tide,
+      { ...pulls, text: "pu", sep: "", joinsNext: true, end: 3.5 },
+      { ...pulls, id: "y9", begin: 3.5, text: "lls" },
+    ]);
     expect(syncAddressPosition([split], stored)).toEqual({ lineIndex: 0, wordIndex: 4 });
   });
 
@@ -35,37 +49,34 @@ describe("syncAddressPosition", () => {
   });
 
   it("regression: stays on its untimed word when a word is inserted before it", () => {
-    const stored = syncAddressAt([tideLine([SLOW, TIDE])], { lineIndex: 0, wordIndex: 2 });
-    const prepended = tideLine(
-      [{ id: "y0", text: "Still ", begin: 0.5, end: 1 }, SLOW, TIDE],
-      "Still slow tide pulls the harbour lights",
-    );
-    expect(syncAddressPosition([prepended], stored)).toEqual({ lineIndex: 0, wordIndex: 3 });
+    const line = tideLine([SLOW, TIDE]);
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 2 });
+    const prepended = editTo(line, "Still slow tide pulls the harbour lights");
+    expect(syncAddressPosition(prepended, stored)).toEqual({ lineIndex: 0, wordIndex: 3 });
   });
 
-  it("regression: stays on its untimed word when Edit replaces the timed word before it", () => {
-    const stored = syncAddressAt([tideLine([SLOW, TIDE])], { lineIndex: 0, wordIndex: 2 });
-    const replaced = tideLine(
-      [SLOW, { id: "y7", text: "ti", sep: "", begin: 2, end: 2.5 }, { id: "y8", text: "de ", begin: 2.5, end: 3 }],
-      "Slow ti|de pulls the harbour lights",
-    );
+  it("regression: stays on its untimed word when the timed word before it is replaced", () => {
+    const line = tideLine([SLOW, TIDE]);
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 2 });
+    const [slow] = timedSyllables(mainTrack(line));
+    const replaced = withRoleWords(line, "main", [
+      slow,
+      { id: "y7", text: "ti", sep: "", joinsNext: true, begin: 2, end: 2.5 },
+      { id: "y8", text: "de", sep: " ", joinsNext: false, begin: 2.5, end: 3 },
+    ]);
     expect(syncAddressPosition([replaced], stored)).toEqual({ lineIndex: 0, wordIndex: 3 });
   });
 
   it("stays on an untimed syllable inside its word when an earlier word is split", () => {
-    const text = "Slow tide pulls the har|bour lights";
-    const stored = syncAddressAt([tideLine([SLOW, TIDE], text)], { lineIndex: 0, wordIndex: 5 });
-    const split = tideLine([SLOW, TIDE], "Slow ti|de pulls the har|bour lights");
+    const line = tideLine([SLOW, TIDE], "Slow tide pulls the har|bour lights");
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 5 });
+    const [slow, tide] = timedSyllables(mainTrack(line));
+    const split = withRoleWords(line, "main", [
+      slow,
+      { ...tide, text: "ti", sep: "", joinsNext: true, end: 2.5 },
+      { ...tide, id: "y8", begin: 2.5, text: "de" },
+    ]);
     expect(syncAddressPosition([split], stored)).toEqual({ lineIndex: 0, wordIndex: 6 });
-  });
-
-  it("stays on the next untimed word when the timed word before it is split", () => {
-    const stored = syncAddressAt([tideLine([SLOW, TIDE])], { lineIndex: 0, wordIndex: 2 });
-    const split = tideLine(
-      [SLOW, { ...TIDE, text: "ti", sep: "", end: 2.5 }, { ...TIDE, id: "y8", begin: 2.5, text: "de " }],
-      "Slow ti|de pulls the harbour lights",
-    );
-    expect(syncAddressPosition([split], stored)).toEqual({ lineIndex: 0, wordIndex: 3 });
   });
 
   it("stays on its untimed syllable when a later syllable of its word is split", () => {
@@ -89,5 +100,19 @@ describe("syncAddressPosition", () => {
   it("falls back to where the cursor stood when its word is gone", () => {
     const stored = syncAddressAt([tideLine([SLOW, TIDE, PULLS])], { lineIndex: 0, wordIndex: 2 });
     expect(syncAddressPosition([tideLine([SLOW, TIDE])], stored)).toEqual({ lineIndex: 0, wordIndex: 2 });
+  });
+
+  it("stays on its untimed syllable when Edit inserts a word before it", () => {
+    const line = tideLine([SLOW, TIDE, PULLS]);
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 4 });
+    const action = decideEditTextAction({
+      text: "Slow tide pulls the old harbour lights",
+      defaultAgentId: "v1",
+      lines: [line],
+      groups: [],
+      modalPending: false,
+    });
+    if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
+    expect(syncAddressPosition(action.finalLines, stored)).toEqual({ lineIndex: 0, wordIndex: 5 });
   });
 });

@@ -1,9 +1,9 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
 import { agentIdAt, createPerformerAgents } from "@/domain/agent/performer-agents";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { hasAnyTiming } from "@/domain/line/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { syllablesText } from "@/domain/line/text";
 import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { type SpacedWord, spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
@@ -45,7 +45,7 @@ interface QrcLineBody {
 }
 
 interface QrcPartition {
-  lines: LooseLine[];
+  lines: LineFields[];
   metadata: Partial<ProjectMetadata>;
   agents?: Agent[];
 }
@@ -99,7 +99,7 @@ function tokenizeLines(lyricContent: string): QrcLine[] {
       begin,
       end,
       words,
-      text: reconstructLineText(words, splitChar),
+      text: syllablesText(words, splitChar),
       plainText: spacedText(words),
     };
   });
@@ -138,7 +138,7 @@ function shiftQrcLine(line: QrcLine, offsetSeconds: number): QrcLine {
 // Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
 // credits block, the title line and the singer markers.
 function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcPartition {
-  const lines: LooseLine[] = [];
+  const lines: LineFields[] = [];
   const creditsByKey = new Map<string, string>();
   const performerAgents = createPerformerAgents();
   const agents = performerAgents.agents;
@@ -203,7 +203,7 @@ function parseQrc(content: string, fallbackDuration?: number): ParseResult {
   const parsed = backfillZeroDurations(shifted, fallbackDuration);
   const { lines, metadata, agents } = partitionQrcLines(parsed, header.metadata);
 
-  const reconciledLines = lines.map(reconcileLine);
+  const reconciledLines = lines.map((line) => lineFromFields(line));
   return {
     lines: reconciledLines,
     metadata,

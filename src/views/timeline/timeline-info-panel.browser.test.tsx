@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { lineFromFields } from "@/domain/line/line-from-fields";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -101,7 +102,7 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].begin).toBeCloseTo(1.3);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.[0].begin).toBeCloseTo(1.3);
     expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
@@ -113,7 +114,7 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
 
     await screen.getByRole("button", { name: /Set End/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].end).toBeCloseTo(1.7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "bg")?.[0].end).toBeCloseTo(1.7);
     expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
@@ -125,7 +126,7 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].begin).toBeCloseTo(0.4);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[0], "main")?.[0].begin).toBeCloseTo(0.4);
     expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });
@@ -252,7 +253,7 @@ describe("TimelineInfoPanel selection copy", () => {
             { text: "b", begin: 1, end: 2 },
           ]),
         }),
-        { id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 },
+        lineFromFields({ id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 }),
       ],
     });
     useTimelineStore.setState({
@@ -290,7 +291,7 @@ describe("TimelineInfoPanel cursor buttons · shared time range", () => {
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.[0].begin).toBe(7);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.[0].begin).toBe(7);
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].begin).toBe(0);
   });
 });

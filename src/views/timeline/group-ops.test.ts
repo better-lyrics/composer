@@ -1,8 +1,9 @@
 /**
  * @vitest-environment node
  */
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import {
   createGroupFromSelection,
@@ -11,8 +12,8 @@ import {
   selectionTouchesAnyGroup,
 } from "./group-ops";
 
-const lines = (overrides: Partial<LooseLine>[]): LyricLine[] =>
-  overrides.map((o, i) => reconcileLine({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }));
+const lines = (overrides: Partial<LineFields>[]): LyricLine[] =>
+  overrides.map((o, i) => lineFromFields({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }));
 
 describe("lineIdsAreContiguous", () => {
   it("true when selection is consecutive", () => {
@@ -70,7 +71,7 @@ describe("createGroupFromSelection", () => {
 describe("instanceToTemplate", () => {
   it("converts an instance's lines into relative-offset templates", () => {
     const ls: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "I love you",
         agentId: "v1",
@@ -82,8 +83,8 @@ describe("instanceToTemplate", () => {
           { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.9, joinsNext: false },
           { id: "w3", text: "you", sep: "", begin: 30.9, end: 32, joinsNext: false },
         ],
-      },
-      {
+      }),
+      lineFromFields({
         id: "b",
         text: "yeah",
         agentId: "v1",
@@ -91,7 +92,7 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 1,
         words: [{ id: "w4", text: "yeah", sep: "", begin: 32, end: 33, joinsNext: false }],
-      },
+      }),
     ];
 
     const tpl = instanceToTemplate(ls, "g1", 0);
@@ -105,7 +106,7 @@ describe("instanceToTemplate", () => {
 
   it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {
     const ls: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "hi",
         agentId: "v1",
@@ -114,7 +115,7 @@ describe("instanceToTemplate", () => {
         templateLineIdx: 0,
         backgroundWords: [{ id: "w5", text: "yeah", sep: "", begin: 28, end: 29, joinsNext: false }],
         words: [{ id: "w6", text: "hi", sep: "", begin: 30, end: 31, joinsNext: false }],
-      },
+      }),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].words?.[0].relativeBegin).toBeCloseTo(2);
@@ -123,7 +124,7 @@ describe("instanceToTemplate", () => {
 
   it("carries backgroundTextSource from a real line into the template", () => {
     const ls: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "main",
         agentId: "v1",
@@ -134,7 +135,7 @@ describe("instanceToTemplate", () => {
         backgroundText: "ooh",
         backgroundWords: [{ id: "w8", text: "ooh", sep: "", begin: 30, end: 30.5, joinsNext: false }],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBe("extraction");
@@ -142,7 +143,7 @@ describe("instanceToTemplate", () => {
 
   it("carries a manual-sourced background flag into the template", () => {
     const ls: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "main",
         agentId: "v1",
@@ -152,7 +153,7 @@ describe("instanceToTemplate", () => {
         words: [{ id: "w9", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
         backgroundText: "ooh",
         backgroundTextSource: "manual",
-      },
+      }),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBe("manual");
@@ -160,7 +161,7 @@ describe("instanceToTemplate", () => {
 
   it("leaves backgroundTextSource undefined for a line with no background", () => {
     const ls: LyricLine[] = [
-      {
+      lineFromFields({
         id: "a",
         text: "main",
         agentId: "v1",
@@ -168,7 +169,7 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ id: "w10", text: "main", sep: "", begin: 30, end: 31, joinsNext: false }],
-      },
+      }),
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBeUndefined();
@@ -176,7 +177,7 @@ describe("instanceToTemplate", () => {
 
   it("uses word-derived start anchor even when line.begin/end is stale (regression)", () => {
     const ls: LyricLine[] = [
-      {
+      lineFromFields({
         id: "L1",
         text: "x",
         agentId: "v1",
@@ -187,7 +188,7 @@ describe("instanceToTemplate", () => {
           { id: "w11", text: "hello", sep: " ", begin: 5, end: 6, joinsNext: false },
           { id: "w12", text: "world", sep: "", begin: 6, end: 7, joinsNext: false },
         ],
-      },
+      }),
     ];
     const template = instanceToTemplate(ls, "g1", 0);
     expect(template).toHaveLength(1);

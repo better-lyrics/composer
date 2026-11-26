@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { readGeniusLyrics, readsAsGeniusLyrics } from "@/domain/lyrics-file/genius-text";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
@@ -16,11 +17,13 @@ function plainTextLines(content: string): { text: string; agentId: string }[] {
 function parseTxt(content: string, _fallbackDuration?: number): ParseResult {
   const splitChar = getSplitCharacter();
   const genius = readsAsGeniusLyrics(content) ? readGeniusLyrics(content) : null;
-  const lines = (genius?.lines ?? plainTextLines(content)).map(({ text, agentId }) => ({
-    id: generateLineId(),
-    text: text.includes(splitChar) ? cleanSplitCharacters(text) : text,
-    agentId,
-  }));
+  const lines = (genius?.lines ?? plainTextLines(content)).map(({ text, agentId }) =>
+    lineFromFields({
+      id: generateLineId(),
+      text: text.includes(splitChar) ? cleanSplitCharacters(text) : text,
+      agentId,
+    }),
+  );
 
   return {
     lines,

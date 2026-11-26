@@ -5,11 +5,12 @@ import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action
 import { detachInstancesFromLines } from "@/domain/edit-text/diff-edit-text";
 import type { LinkGroup } from "@/domain/group/template";
 import { isLinked } from "@/domain/instance/predicates";
-import { backgroundFields, withSeededBackground } from "@/domain/line/background";
+import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
 import type { RawLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import type { WordTiming } from "@/domain/word/timing";
 import {
   type ExtractOptions,
   extractBackgroundVocals,
@@ -32,12 +33,10 @@ function sameLines(before: readonly RawLine[], after: readonly RawLine[]): boole
 // Edit rewrites the whole lyrics; lines that come back unchanged write nothing.
 function wholeLinesEdit(
   note: HistoryNote,
-  derivesText: boolean,
   next: (root: LyricRoot) => WholeLines | { refused: Refusal } | null,
 ): LyricCommand {
   return {
     note,
-    derivesText,
     copiesSharedTiming: false,
     run: (root) => {
       const edited = next(root);
@@ -58,24 +57,25 @@ function planOn(baseLines: readonly RawLine[], lines: RawLine[]) {
 
 // -- Commands -----------------------------------------------------------------
 
-// One keystroke of a typing burst: the textarea is the text, so nothing is derived from words.
+// One keystroke of a typing burst.
 function typeLyrics(baseLines: readonly RawLine[], lines: RawLine[]): LyricCommand {
-  return wholeLinesEdit({ command: "type lyrics", args: [lines.length] }, false, planOn(baseLines, lines));
+  return wholeLinesEdit({ command: "type lyrics", args: [lines.length] }, planOn(baseLines, lines));
 }
 
 function pasteLyrics(baseLines: readonly RawLine[], lines: RawLine[]): LyricCommand {
-  return wholeLinesEdit({ command: "paste lyrics", args: [lines.length] }, true, planOn(baseLines, lines));
+  return wholeLinesEdit({ command: "paste lyrics", args: [lines.length] }, planOn(baseLines, lines));
 }
 
 // Decided again after the detach prompt, so lyrics that changed while it was open are not overwritten.
-function applyEditTextDetaching(text: string, defaultAgentId: string): LyricCommand {
-  return wholeLinesEdit({ command: "detach and apply text", args: [] }, true, (root) => {
+function applyEditTextDetaching(text: string, defaultAgentId: string, splitCharacter?: string): LyricCommand {
+  return wholeLinesEdit({ command: "detach and apply text", args: [] }, (root) => {
     const action = decideEditTextAction({
       text,
       defaultAgentId,
       lines: root.lines,
       groups: root.groups,
       modalPending: false,
+      splitCharacter,
     });
     if (action.kind === "apply") return { lines: action.finalLines };
     if (action.kind !== "needs-confirm") return null;
@@ -86,14 +86,14 @@ function applyEditTextDetaching(text: string, defaultAgentId: string): LyricComm
 }
 
 function extractBackground(options: ExtractOptions): LyricCommand {
-  return wholeLinesEdit({ command: "extract background", args: [] }, true, (root) => ({
+  return wholeLinesEdit({ command: "extract background", args: [] }, (root) => ({
     lines: extractBackgroundVocals(root.lines, options),
   }));
 }
 
 function removeSectionTagLines(lineIds: ReadonlySet<string>): LyricCommand {
-  return wholeLinesEdit({ command: "remove section tags", args: [...lineIds] }, true, (root) => ({
-    lines: root.lines.filter((line) => !(lineIds.has(line.id) && isSectionTagLine(line.text) && !isLinked(line))),
+  return wholeLinesEdit({ command: "remove section tags", args: [...lineIds] }, (root) => ({
+    lines: root.lines.filter((line) => !(lineIds.has(line.id) && isSectionTagLine(lineText(line)) && !isLinked(line))),
   }));
 }
 
@@ -110,14 +110,13 @@ function editBackgroundText(lineId: string, text: string): LyricCommand {
   return lineEditCommand({ command: "edit background text", args: [lineId, text] }, (root) => {
     const target = root.lines.find((line) => line.id === lineId);
     if (!target) return refused({ reason: "line-gone", lineId });
-    const backgroundText = text || undefined;
-    let words: WordTiming[] | undefined;
-    if (backgroundText && target.backgroundWords?.length) {
-      words = remapWordTextsPreservingTiming(target.backgroundWords, backgroundText);
-    } else if (backgroundText) {
-      words = withSeededBackground({ ...target, backgroundText }).backgroundWords;
-    }
-    return [{ id: lineId, updates: backgroundFields({ text: backgroundText, words, source: "manual" }) }];
+    const timed = timedSyllables(backgroundTrack(target));
+    const edited = !text
+      ? withoutBackground(target)
+      : timed.length > 0
+        ? withBackground(target, { text, words: remapWordTextsPreservingTiming(timed, text), source: "manual" })
+        : withSeededBackground(withBackground(target, { text, source: "manual" }));
+    return [{ id: lineId, updates: { tracks: edited.tracks } }];
   });
 }
 

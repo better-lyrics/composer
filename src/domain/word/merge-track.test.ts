@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { syllablesText } from "@/domain/line/text";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
@@ -98,7 +98,7 @@ describe("mergeWordsIntoTrack", () => {
     const result = mergeWordsIntoTrack(existing, incoming);
 
     expect(result.map((w) => w.text + w.sep)).toEqual(["ti", "tle ", "po", "em"]);
-    expect(reconstructLineText(result, "|")).toBe("ti|tle po|em");
+    expect(syllablesText(result, "|")).toBe("ti|tle po|em");
   });
 
   it("inserts boundaries on both sides when incoming words land in a gap between existing words", () => {
@@ -114,7 +114,7 @@ describe("mergeWordsIntoTrack", () => {
     const result = mergeWordsIntoTrack(existing, incoming);
 
     expect(result.map((w) => w.text + w.sep)).toEqual(["Hello ", "very ", "big ", "world"]);
-    expect(reconstructLineText(result, "|")).toBe("Hello very big world");
+    expect(syllablesText(result, "|")).toBe("Hello very big world");
   });
 
   it("keeps the incoming batch's own syllable structure intact, spacing only the seam", () => {
@@ -130,7 +130,7 @@ describe("mergeWordsIntoTrack", () => {
     const result = mergeWordsIntoTrack(existing, incoming);
 
     expect(result.map((w) => w.text + w.sep)).toEqual(["Hello ", "world ", "sun", "shine"]);
-    expect(reconstructLineText(result, "|")).toBe("Hello world sun|shine");
+    expect(syllablesText(result, "|")).toBe("Hello world sun|shine");
     expect(computeSyllableGroups(result)).toEqual([{ startIndex: 2, endIndex: 3, originalWord: "sunshine" }]);
   });
 
@@ -297,7 +297,7 @@ describe("mergeWordsIntoTrack edge cases and invariants", () => {
     const result = mergeWordsIntoTrack(existing, incoming);
 
     expect(result.map((w) => w.text + w.sep)).toEqual(["ti", "tle ", "po", "em"]);
-    expect(reconstructLineText(result, "|")).toBe("ti|tle po|em");
+    expect(syllablesText(result, "|")).toBe("ti|tle po|em");
     expect(computeSyllableGroups(result)).toEqual([
       { startIndex: 0, endIndex: 1, originalWord: "title" },
       { startIndex: 2, endIndex: 3, originalWord: "poem" },

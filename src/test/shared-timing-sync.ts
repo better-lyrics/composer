@@ -1,8 +1,9 @@
+import { mainTrack, roleWords } from "@/domain/line/track";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { createGroup, createLine } from "@/test/factories";
+import { type FactoryLineOptions, createGroup, createLine } from "@/test/factories";
 import type { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { expect } from "vitest";
@@ -11,7 +12,7 @@ import { expect } from "vitest";
 
 type Timing = "word" | "line" | "none";
 
-function timedLine(id: string, text: string, begin: number, timing: Timing, fields: Partial<LyricLine> = {}) {
+function timedLine(id: string, text: string, begin: number, timing: Timing, fields: FactoryLineOptions = {}) {
   const [first, second] = text.split(" ");
   if (timing === "none") return createLine({ id, text, ...fields });
   if (timing === "line") return createLine({ id, text, ...fields, begin, end: begin + 1 });
@@ -80,7 +81,7 @@ function lineById(id: string): LyricLine | undefined {
 
 const firstBegin = (id: string) => {
   const line = lineById(id);
-  return line?.words?.[0]?.begin ?? line?.begin;
+  return (line && roleWords(line, "main"))?.[0]?.begin ?? (line && mainTrack(line).begin);
 };
 
 async function tapAt(time: number, expectChange: () => unknown): Promise<void> {

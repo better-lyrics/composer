@@ -105,8 +105,8 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
 
     await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
-    expect(lineById("two-b")?.begin).toBe(43);
-    expect(lineById("two-c")?.begin).toBe(46);
+    expect(mainTrack(lineById("two-b")!).begin).toBe(43);
+    expect(mainTrack(lineById("two-c")!).begin).toBe(46);
     expect(skippedSharedInstances(store().lines, store().groups).map((skipped) => skipped.lineIds)).toEqual([
       ["two-a", "two-b", "two-c"],
     ]);
@@ -130,7 +130,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     await screen.getByRole("button", { name: "Group them" }).click();
 
     await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
-    expect(lineById("two-b")?.begin).toBe(43);
+    expect(mainTrack(lineById("two-b")!).begin).toBe(43);
   });
 
   it("undoes the grouping and the realignment in one step", async () => {
@@ -183,8 +183,8 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         .element(screen.getByText("1 instance kept its own timing: the shared timing would start before the song"))
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
-      expect(lineById("two-b")?.begin).toBe(1);
-      expect(lineById("two-a")?.begin).toBeUndefined();
+      expect(mainTrack(lineById("two-b")!).begin).toBe(1);
+      expect(mainTrack(lineById("two-a")!).begin).toBeUndefined();
       await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
     });
 
@@ -234,7 +234,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         )
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
-      expect(lineById("two-b")?.begin).toBeUndefined();
+      expect(mainTrack(lineById("two-b")!).begin).toBeUndefined();
     });
 
     it("says where to look when instances kept their own timing for different reasons", async () => {

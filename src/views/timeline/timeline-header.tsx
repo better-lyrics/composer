@@ -16,13 +16,14 @@ import { convertToWordTiming } from "@/domain/commands/line-timing";
 import { instanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
-import type { LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { convertLineToWord } from "@/domain/line/span-to-words";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { addressOf } from "@/domain/selection/resolve";
-import { wordsFromSpaced } from "@/domain/word/spaced-words";
-import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -30,7 +31,6 @@ import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { TooltipGroup } from "@/ui/tooltip";
 import { memoByIdentity } from "@/utils/memo-by-identity";
-import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { HeaderAction } from "@/views/timeline/header-action";
 import { SnapLatch } from "@/views/timeline/snap-latch";
 import { SpectrumLatch } from "@/views/timeline/spectrum/spectrum-latch";
@@ -94,37 +94,32 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
     const { lines, commit } = useProjectStore.getState();
 
-    const updates: Array<{ id: string; updates: { words?: WordTiming[]; begin?: undefined; end?: undefined } }> = [];
+    const updates: LineUpdate[] = [];
+    const newSelections: SyllableAddress[] = [];
 
     for (const line of lines) {
-      if (timedSyllables(mainTrack(line)).length) continue;
+      const main = mainTrack(line);
+      if (timedSyllables(main).length) continue;
       if (!lineText(line).trim()) continue;
-
-      if (isLineSynced(line)) {
-        const converted = convertLineToWord(line);
-        if (converted.words) {
-          updates.push({ id: line.id, updates: { words: converted.words, begin: undefined, end: undefined } });
-        }
-      } else {
-        const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
-        if (parts.length === 0) continue;
-        const words = wordsFromSpaced(
-          parts.map((part, i) => ({
-            text: trailingSpace[i] ? `${part} ` : part,
-            begin: currentTime + i * wordDuration,
-            end: currentTime + (i + 1) * wordDuration,
-          })),
-        );
-        updates.push({ id: line.id, updates: { words } });
-      }
+      const written = isLineSynced(line)
+        ? convertLineToWord(line)
+        : withRoleWords(
+            line,
+            "main",
+            main.syllables.map((syllable, i) => ({
+              ...syllable,
+              begin: currentTime + i * wordDuration,
+              end: currentTime + (i + 1) * wordDuration,
+            })),
+          );
+      if (written === line) continue;
+      updates.push({ id: line.id, updates: { tracks: written.tracks } });
+      for (const word of timedSyllables(mainTrack(written))) newSelections.push(addressOf(line, "word", word));
     }
 
     if (updates.length > 0) {
       commit(convertToWordTiming(updates));
 
-      const newSelections = updates.flatMap((u) =>
-        (u.updates.words ?? []).map((word) => addressOf({ id: u.id }, "word", word)),
-      );
       if (newSelections.length > 0) {
         useTimelineStore.getState().setSelectedWords(newSelections);
       }

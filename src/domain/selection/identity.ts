@@ -1,4 +1,4 @@
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 
 // -- Identity -----------------------------------------------------------------

@@ -1,3 +1,4 @@
+import { backgroundText, lineText } from "@/domain/line/text";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
 import type { LanguageSide, LineLanguage } from "@/domain/language/model";
@@ -16,7 +17,7 @@ function isTransliterationSourceStale(line: LyricLine, field: "words" | "backgro
   const track = lineTransliteration(line);
   const side = track?.[fieldSide(field)];
   if (!track || !side?.text) return false;
-  const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
   return track.sourceFingerprint !== fingerprint && side.reviewedSourceFingerprint !== fingerprint;
 }
 
@@ -26,7 +27,7 @@ function confirmTransliterationAlignment(
 ): LineLanguage | undefined {
   const current = lineTransliteration(line);
   if (!current) return undefined;
-  const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
   const side = fieldSide(field);
   const track: LineLanguage = {
     ...current,
@@ -61,7 +62,7 @@ function alignmentNeedsReview(track: LineLanguage | undefined, part: "main" | "b
 }
 
 function getLanguageReviewTracks(line: LyricLine): LanguageReviewTrack[] {
-  const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+  const fingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
   const tracks: LanguageReviewTrack[] = [];
 
   const transliteration = lineTransliteration(line);
@@ -87,7 +88,7 @@ function getLanguageReviewTracks(line: LyricLine): LanguageReviewTrack[] {
 function getLanguageReviewItems(lines: LyricLine[]): LanguageReviewItem[] {
   return lines.flatMap((line, lineIndex) => {
     const tracks = getLanguageReviewTracks(line);
-    return tracks.length > 0 ? [{ lineId: line.id, lineIndex, text: line.text, tracks }] : [];
+    return tracks.length > 0 ? [{ lineId: line.id, lineIndex, text: lineText(line), tracks }] : [];
   });
 }
 

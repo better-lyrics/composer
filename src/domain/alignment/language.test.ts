@@ -1,3 +1,4 @@
+import { createLine } from "@/test/factories";
 import {
   canAlignLanguage,
   coverageColumns,
@@ -7,7 +8,7 @@ import {
 } from "@/domain/alignment/language";
 import { describe, expect, it } from "vitest";
 
-const lines = (...texts: string[]) => texts.map((text) => ({ text }));
+const lines = (...texts: string[]) => texts.map((text) => createLine({ text }));
 
 describe("songLanguage", () => {
   it("uses the project language first, by base tag", () => {

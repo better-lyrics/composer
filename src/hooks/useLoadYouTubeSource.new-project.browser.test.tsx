@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { usePersistence } from "@/hooks/usePersistence";
 import { deleteProject, restoreOpenProject } from "@/lib/open-project";
@@ -214,7 +215,9 @@ describe("useLoadYouTubeSource · projects", () => {
       const load = await loader();
       const loading = load(VIDEO_ID);
       const id = openProjectIdSnapshot();
-      useProjectStore.getState().restoreLyrics({ lines: [{ id: "n1", text: "New words", agentId: "v1" }] });
+      useProjectStore
+        .getState()
+        .restoreLyrics({ lines: [lineFromFields({ id: "n1", text: "New words", agentId: "v1" })] });
       failLoad();
       await expect(loading).rejects.toThrow();
       expect(openProjectIdSnapshot()).toBe(id);

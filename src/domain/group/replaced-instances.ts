@@ -4,6 +4,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { mainTrack, roleWords } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -23,10 +24,10 @@ function keepsTimedWords(before: readonly WordTiming[] = [], after: readonly Wor
 }
 
 function keepsTimedMain(before: LyricLine, after: LyricLine): boolean {
-  if (isWordSynced(before)) return keepsTimedWords(before.words, after.words);
+  if (isWordSynced(before)) return keepsTimedWords(roleWords(before, "main"), roleWords(after, "main"));
   if (!isLineSynced(before)) return true;
   const bounds = mainBounds(after);
-  return !!bounds && sameTime(before.begin, bounds.begin) && sameTime(before.end, bounds.end);
+  return !!bounds && sameTime(mainTrack(before).begin, bounds.begin) && sameTime(mainTrack(before).end, bounds.end);
 }
 
 // An instance is replaced only when timing it already had changes; filling its untimed slots is sync progress.
@@ -36,7 +37,7 @@ function replacedInstances(before: readonly LyricLine[], after: readonly LyricLi
   for (const line of before) {
     const next = afterById.get(line.id);
     if (!next || next === line || !isLinked(next)) continue;
-    if (keepsTimedMain(line, next) && keepsTimedWords(line.backgroundWords, next.backgroundWords)) continue;
+    if (keepsTimedMain(line, next) && keepsTimedWords(roleWords(line, "bg"), roleWords(next, "bg"))) continue;
     replaced.set(instanceKey(next.groupId, next.instanceIdx), { groupId: next.groupId, instanceIdx: next.instanceIdx });
   }
   return [...replaced.values()];

@@ -1,13 +1,14 @@
 /**
  * @vitest-environment node
  */
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { findExplicitWords } from "@/utils/explicit-detection";
 import { describe, expect, it } from "vitest";
 
-function lineWithText(id: string, text: string, words?: LooseLine["words"]): LyricLine {
-  return reconcileLine({
+function lineWithText(id: string, text: string, words?: LineFields["words"]): LyricLine {
+  return lineFromFields({
     id,
     text,
     agentId: "v1",
@@ -55,12 +56,12 @@ describe("findExplicitWords", () => {
   });
 
   it("detects a profanity in backgroundText with field='backgroundWords'", () => {
-    const line: LyricLine = {
+    const line: LyricLine = lineFromFields({
       id: "L1",
       text: "clean main",
       agentId: "v1",
       backgroundText: "oh shit",
-    };
+    });
     const result = findExplicitWords([line]);
     expect(result).toHaveLength(1);
     expect(result[0].field).toBe("backgroundWords");
@@ -178,7 +179,7 @@ describe("findExplicitWords · syllable-split words", () => {
 describe("findExplicitWords · linked instances", () => {
   function linkedChorusLines(): LyricLine[] {
     return [
-      {
+      lineFromFields({
         id: "C1",
         text: "I fuck you",
         agentId: "v1",
@@ -190,8 +191,8 @@ describe("findExplicitWords · linked instances", () => {
           { id: "w15", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
           { id: "w16", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ],
-      },
-      {
+      }),
+      lineFromFields({
         id: "C2",
         text: "I fuck you",
         agentId: "v1",
@@ -203,8 +204,8 @@ describe("findExplicitWords · linked instances", () => {
           { id: "w18", text: "fuck", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
           { id: "w19", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
         ],
-      },
-      {
+      }),
+      lineFromFields({
         id: "C3",
         text: "I fuck you",
         agentId: "v1",
@@ -216,7 +217,7 @@ describe("findExplicitWords · linked instances", () => {
           { id: "w21", text: "fuck", sep: " ", begin: 60.4, end: 60.7, joinsNext: false },
           { id: "w22", text: "you", sep: "", begin: 60.7, end: 61.2, joinsNext: false },
         ],
-      },
+      }),
     ];
   }
 

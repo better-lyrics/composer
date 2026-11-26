@@ -4,7 +4,7 @@ import { effectiveWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { backgroundText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { Bounds } from "@/domain/word/bounds";
 import { spacedText } from "@/domain/word/spaced-words";
@@ -58,7 +58,7 @@ function writableLines(lines: readonly LyricLine[]): WritableLine[] {
     if (words.length === 0) return [];
     return [
       {
-        agentId: line.agentId,
+        agentId: mainTrack(line).agentId,
         bounds,
         words,
         text: spacedText(words).trim(),

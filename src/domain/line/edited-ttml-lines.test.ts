@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { holdsEveryLine, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
@@ -87,14 +88,16 @@ describe("holdsEveryLine", () => {
       createLine({ id: "a", text: "Hel|lo world", begin: 1, end: 2, backgroundText: "ooh" }),
       createLine({ id: "blank", text: "" }),
       legacyLine({
-        ...createLine({
-          id: "b",
-          text: "wo|rld",
-          words: [
-            { text: "wo", begin: 3, end: 3.5, syllableGroupId: "g1" },
-            { text: "rld", begin: 3.5, end: 4, syllableGroupId: "g1" },
-          ],
-        }),
+        ...fieldsOfLine(
+          createLine({
+            id: "b",
+            text: "wo|rld",
+            words: [
+              { text: "wo", begin: 3, end: 3.5, syllableGroupId: "g1" },
+              { text: "rld", begin: 3.5, end: 4, syllableGroupId: "g1" },
+            ],
+          }),
+        ),
         translations: {
           es: SPANISH,
           fr: { language: "fr", text: "", origin: "manual" as const, sourceFingerprint: "x" },

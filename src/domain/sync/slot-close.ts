@@ -1,14 +1,11 @@
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
+import { isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
 import { type SyncSlot, slotBounds } from "@/domain/sync/cursor";
+import type { Bounds } from "@/domain/word/bounds";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
-
-interface Bounds {
-  begin: number;
-  end: number;
-}
 
 interface SlotWriteIntent {
   lineIndex: number;
@@ -62,9 +59,13 @@ function closeSlotWords(words: readonly WordTiming[], index: number, end: number
 }
 
 function closeSlot(line: LyricLine, slot: SyncSlot, end: number): Partial<LyricLine> | null {
-  if (line.words?.length && slot.wordIndex !== null) return { words: closeSlotWords(line.words, slot.wordIndex, end) };
-  if (isLineSynced(line)) return { end: Math.max(end, line.begin) };
-  return null;
+  const main = mainTrack(line);
+  const words = timedSyllables(main);
+  if (words.length && slot.wordIndex !== null) {
+    return { tracks: withRoleWords(line, "main", closeSlotWords(words, slot.wordIndex, end)).tracks };
+  }
+  if (!isSpanTimed(main)) return null;
+  return { tracks: withMainTrack(line, withTrackSpan(main, main.begin, Math.max(end, main.begin))).tracks };
 }
 
 function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: number | null): LineUpdate | null {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { INITIAL_STATE as IMPORT_MODAL_INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -230,7 +230,7 @@ describe("manual background vocal editing", () => {
     await userEvent.keyboard("{Enter}");
 
     await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBeUndefined();
-    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+    expect(roleWords(useProjectStore.getState().lines[0], "bg")).toBeUndefined();
     expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBeUndefined();
   });
 });
@@ -251,7 +251,7 @@ describe("agent assignment", () => {
     await screen.getByRole("button", { name: "Line agent", exact: true }).click();
     await screen.getByRole("option", { name: "Harmony" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
   });
 
   it("bulk-assigns an agent to the selected lines via the Assign agent select", async () => {
@@ -265,7 +265,7 @@ describe("agent assignment", () => {
     await screen.getByRole("button", { name: "Assign agent" }).click();
     await screen.getByRole("option", { name: "Harmony" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    await expect.poll(() => mainTrack(useProjectStore.getState().lines[0]).agentId).toBe("v2");
   });
 });
 
@@ -310,8 +310,8 @@ describe("regressions: hand edits keep sync", () => {
 
     await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("It hurts for me to wait");
     const line = useProjectStore.getState().lines[0];
-    expect(line.begin).toBe(107.9);
-    expect(line.end).toBe(110.425);
+    expect(mainTrack(line).begin).toBe(107.9);
+    expect(mainTrack(line).end).toBe(110.425);
   });
 
   it("regression: typing an extra word into a word-synced line keeps the other words' timing", async () => {
@@ -405,7 +405,7 @@ describe("regressions: typing does not reshuffle duplicate lines", () => {
     expect(chorus1.id).toBe("chorus-1");
     expect(timedSyllables(mainTrack(chorus1)).map((w) => w.begin)).toEqual([49, 50, 51]);
     expect(chorus2.id).toBe("chorus-2");
-    expect(chorus2.begin).toBe(116);
+    expect(mainTrack(chorus2).begin).toBe(116);
   });
 });
 

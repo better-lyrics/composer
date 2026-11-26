@@ -1,3 +1,4 @@
+import { backgroundTrack, mainTrack, roleWords } from "@/domain/line/track";
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import { type LineTemplate, type LinkGroup, languagesToTemplate, wordsToTemplate } from "@/domain/group/template";
 import { trackPieces } from "@/domain/language/pieces";
@@ -6,7 +7,6 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack } from "@/domain/line/track";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
@@ -122,14 +122,15 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
   const templates: LineTemplate[] = [];
 
   for (const line of matched) {
-    const tplWords = line.words && wordsToTemplate(line.words, startTime, trackPieces(line, "main"));
-    const tplBgWords =
-      line.backgroundWords && wordsToTemplate(line.backgroundWords, startTime, trackPieces(line, "bg"));
+    const mainWords = roleWords(line, "main");
+    const bgWords = roleWords(line, "bg");
+    const tplWords = mainWords && wordsToTemplate(mainWords, startTime, trackPieces(line, "main"));
+    const tplBgWords = bgWords && wordsToTemplate(bgWords, startTime, trackPieces(line, "bg"));
 
     const lineBounds = mainBounds(line);
     templates.push({
       text: lineText(line),
-      agentId: line.agentId,
+      agentId: mainTrack(line).agentId,
       relativeBegin: lineBounds ? lineBounds.begin - startTime : undefined,
       relativeEnd: lineBounds ? lineBounds.end - startTime : undefined,
       words: tplWords,

@@ -1,9 +1,9 @@
-import { extractLinkedFields, unlinkLines } from "@/domain/group/linking";
-import { propagateWordChanges } from "@/domain/group/smart-sync";
+import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
+import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { instanceKey, parseInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
-import { withOwnPieces } from "@/domain/language/pieces";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 
@@ -16,11 +16,6 @@ interface DiffResult {
   contentUpdates: ContentUpdate[];
   hasStructuralChange: boolean;
 }
-
-// -- Constants ----------------------------------------------------------------
-
-const TIMING_CLEAR_FIELDS = ["words", "begin", "end", "backgroundWords"] as const;
-const CONTENT_FIELDS = ["text", "agentId", "backgroundText", "backgroundTextSource"] as const;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -37,24 +32,9 @@ function diffEditTextChange(oldLines: LyricLine[], newLines: LyricLine[]): DiffR
 
   const contentUpdates: ContentUpdate[] = [];
   for (let i = 0; i < oldLines.length; i++) {
-    const oldLine = oldLines[i];
-    const newLine = newLines[i];
-    const updates: Partial<LyricLine> = {};
-
-    for (const field of CONTENT_FIELDS) {
-      if (oldLine[field] !== newLine[field]) {
-        (updates as Record<string, unknown>)[field] = newLine[field];
-      }
-    }
-
-    for (const field of TIMING_CLEAR_FIELDS) {
-      if (oldLine[field] !== undefined && newLine[field] === undefined) {
-        (updates as Record<string, unknown>)[field] = undefined;
-      }
-    }
-
-    if (Object.keys(updates).length > 0) {
-      contentUpdates.push({ id: oldLine.id, updates });
+    const { tracks } = newLines[i];
+    if (tracks !== oldLines[i].tracks && !isStructurallyEqual(tracks, oldLines[i].tracks)) {
+      contentUpdates.push({ id: oldLines[i].id, updates: { tracks } });
     }
   }
 
@@ -136,78 +116,28 @@ function detachInstancesFromLines(lines: LyricLine[], instances: ImpactedInstanc
   return unlinkLines(lines, (line) => isLinked(line) && impactedKeys.has(instanceKey(line.groupId, line.instanceIdx)));
 }
 
-interface LinkedScope {
-  groupId: string;
-  templateLineIdx: number;
-  linkedUpdate: Partial<LyricLine>;
-  sourceWordsBefore: LyricLine["words"];
-  sourceWordsAfter: LyricLine["words"];
-  sourceBgWordsBefore: LyricLine["backgroundWords"];
-  sourceBgWordsAfter: LyricLine["backgroundWords"];
-}
-
 function propagateContentUpdates(
   oldLines: LyricLine[],
   newLines: LyricLine[],
   contentUpdates: ContentUpdate[],
 ): LyricLine[] {
   if (contentUpdates.length === 0) return newLines;
-
-  const oldById = new Map<string, LyricLine>();
-  for (const line of oldLines) oldById.set(line.id, line);
-
-  const newById = new Map<string, LyricLine>();
-  for (const line of newLines) newById.set(line.id, line);
-
-  const updatesById = new Map<string, ContentUpdate>();
-  for (const update of contentUpdates) {
-    updatesById.set(update.id, update);
-  }
-
-  const linkedScopes: LinkedScope[] = [];
-  for (const update of contentUpdates) {
-    const sourceNew = newById.get(update.id);
-    const sourceOld = oldById.get(update.id);
-    if (!sourceNew || !sourceOld) continue;
-    if (sourceNew.groupId === undefined || sourceNew.templateLineIdx === undefined || sourceNew.detached) continue;
-    const linkedUpdate = extractLinkedFields(update.updates);
-    const wordsChanged = "words" in update.updates;
-    const bgWordsChanged = "backgroundWords" in update.updates;
-    if (Object.keys(linkedUpdate).length === 0 && !wordsChanged && !bgWordsChanged) continue;
-    linkedScopes.push({
-      groupId: sourceNew.groupId,
-      templateLineIdx: sourceNew.templateLineIdx,
-      linkedUpdate,
-      sourceWordsBefore: sourceOld.words,
-      sourceWordsAfter: sourceNew.words,
-      sourceBgWordsBefore: sourceOld.backgroundWords,
-      sourceBgWordsAfter: sourceNew.backgroundWords,
-    });
-  }
-
-  if (linkedScopes.length === 0) return newLines;
+  const oldById = new Map(oldLines.map((line) => [line.id, line]));
+  const updatedIds = new Set(contentUpdates.map((update) => update.id));
+  const sources = contentUpdates.flatMap((update) => {
+    const source = oldById.get(update.id);
+    const scope = source && getLinkScope(source);
+    return source && scope ? [{ source, scope, updates: update.updates }] : [];
+  });
+  if (sources.length === 0) return newLines;
 
   return newLines.map((line) => {
-    if (updatesById.has(line.id)) return line;
-    if (line.groupId === undefined || line.templateLineIdx === undefined || line.detached) return line;
-
-    const merged: Partial<LooseLine> = {};
-    for (const scope of linkedScopes) {
-      if (line.groupId !== scope.groupId) continue;
-      if (line.templateLineIdx !== scope.templateLineIdx) continue;
-      Object.assign(merged, scope.linkedUpdate);
-      const propagatedWords = propagateWordChanges(scope.sourceWordsAfter, scope.sourceWordsBefore, line.words);
-      if (propagatedWords) merged.words = propagatedWords;
-      const propagatedBg = propagateWordChanges(
-        scope.sourceBgWordsAfter,
-        scope.sourceBgWordsBefore,
-        line.backgroundWords,
-      );
-      if (propagatedBg) merged.backgroundWords = propagatedBg;
+    if (updatedIds.has(line.id)) return line;
+    let next = line;
+    for (const { source, scope, updates } of sources) {
+      if (isLinkedSibling(next, scope)) next = updatedLinkedSibling(next, source, updates);
     }
-    if (Object.keys(merged).length === 0) return line;
-    if ("languages" in merged) merged.languages = withOwnPieces(merged.languages, line);
-    return reconcileLine({ ...line, ...merged });
+    return next;
   });
 }
 

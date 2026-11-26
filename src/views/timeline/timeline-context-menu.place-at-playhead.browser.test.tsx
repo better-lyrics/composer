@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
@@ -51,9 +52,10 @@ const trackOf = (lineId: string, lineIndex: number): ContextMenuTarget => ({
 
 const store = () => useProjectStore.getState();
 const wordBegins = (id: string) =>
-  store()
-    .lines.find((line) => line.id === id)
-    ?.words?.map((word) => word.begin);
+  roleWords(
+    store().lines.find((line) => line.id === id),
+    "main",
+  )?.map((word) => word.begin);
 
 async function expectNoPlaceItem() {
   const screen = await render(<TimelineContextMenu />);

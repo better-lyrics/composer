@@ -1,3 +1,4 @@
+import { fieldUpdates } from "@/test/field-updates";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createWords } from "@/test/factories";
@@ -30,7 +31,7 @@ describe("WordTrack selection stretch regressions", () => {
     useProjectStore
       .getState()
       .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: lineId, updates: { words: sB } }], {
+        lineEditCommand({ command: "edit lines", args: [] }, () => fieldUpdates([{ id: lineId, updates: { words: sB } }]), {
           propagateToSiblings: false,
         }),
       );

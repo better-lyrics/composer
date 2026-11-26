@@ -1,6 +1,6 @@
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import { hasAnyTiming } from "@/domain/line/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { syllablesText } from "@/domain/line/text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -67,7 +67,7 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
   if (words.length === 0) return null;
 
   const timed = wordsFromSpaced(words);
-  return { cleanText: reconstructLineText(timed, getSplitCharacter()), words: timed };
+  return { cleanText: syllablesText(timed, getSplitCharacter()), words: timed };
 }
 
 function applyMetadataTag(metadata: Partial<ProjectMetadata>, tag: string, rawValue: string): void {
@@ -91,7 +91,7 @@ function firstAfter(times: readonly number[], after: number): number | undefined
   return times.find((time) => time > after);
 }
 
-function fillLineEnds(lines: LooseLine[], gapMarkers: number[], songEnd: number | undefined): void {
+function fillLineEnds(lines: LineFields[], gapMarkers: number[], songEnd: number | undefined): void {
   lines.sort((a, b) => (a.begin ?? 0) - (b.begin ?? 0));
   gapMarkers.sort((a, b) => a - b);
   for (let i = 0; i < lines.length; i++) {
@@ -104,7 +104,7 @@ function fillLineEnds(lines: LooseLine[], gapMarkers: number[], songEnd: number 
 
   // The last line has no following line to source its end from. Prefer an
   // explicit [length:] tag, then the caller-supplied audio duration; if neither
-  // is available it stays begin-only and reconcileLine renders it untimed.
+  // is available it stays begin-only and the line builds untimed.
   const lastLine = lines[lines.length - 1];
   if (
     lastLine &&
@@ -140,7 +140,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
   if (unsupported) return { lines: [], metadata: {}, hasTimingData: false, issues: [unsupported] };
 
   const metadata: Partial<ProjectMetadata> = {};
-  const lines: LooseLine[] = [];
+  const lines: LineFields[] = [];
   const gapMarkers: number[] = [];
   const issues: ParseIssue[] = [];
 
@@ -204,7 +204,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
 
   fillLineEnds(lines, gapMarkers, metadata.duration ?? fallbackDuration);
 
-  const reconciledLines = lines.map(reconcileLine);
+  const reconciledLines = lines.map((line) => lineFromFields(line));
   return {
     lines: reconciledLines,
     metadata,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -72,7 +72,11 @@ function doubleClickAt(track: HTMLElement, time: number) {
   );
 }
 
-const wordsOf = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id)?.words ?? [];
+const wordsOf = (id: string) =>
+  roleWords(
+    useProjectStore.getState().lines.find((line) => line.id === id),
+    "main",
+  ) ?? [];
 
 // -- Tests --------------------------------------------------------------------
 

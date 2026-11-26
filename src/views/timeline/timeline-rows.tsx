@@ -1,6 +1,6 @@
 import { instanceKey, lineInstanceKey } from "@/domain/instance/key";
 import { retimeWord } from "@/domain/commands/word-timing";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import { addressAt } from "@/domain/selection/resolve";
 import type { WordTiming } from "@/domain/word/timing";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";

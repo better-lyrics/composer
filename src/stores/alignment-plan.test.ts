@@ -1,4 +1,5 @@
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { mainTrack } from "@/domain/line/track";
+import type { LyricLine } from "@/domain/line/model";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { planLines, plainWindow } from "@/stores/alignment-plan";
 import { createLine } from "@/test/factories";
@@ -151,7 +152,7 @@ function tapLines(scenario: Scenario) {
     clamped.push(commit.clampedTo);
     lines = lines.map((line) => {
       const update = commit.lineUpdates.find((u) => u.id === line.id);
-      return update ? reconcileLine({ ...line, ...update.updates }) : line;
+      return update ? { ...line, ...update.updates } : line;
     });
   }
   return { lines, clamped };
@@ -162,9 +163,13 @@ function tapLines(scenario: Scenario) {
 describe("planLines in Line mode", () => {
   it.each(SCENARIOS)("$name: plans every tapped line, ended or not, in step-1 windows", (scenario) => {
     const { lines, clamped } = tapLines(scenario);
-    expect(lines.map((l) => (l.begin === undefined || l.end === undefined ? null : [l.begin, l.end]))).toEqual(
-      scenario.bounds,
-    );
+    expect(
+      lines.map((l) =>
+        mainTrack(l).begin === undefined || mainTrack(l).end === undefined
+          ? null
+          : [mainTrack(l).begin, mainTrack(l).end],
+      ),
+    ).toEqual(scenario.bounds);
     expect(clamped).toEqual(scenario.clamped);
 
     const windows = Object.fromEntries(

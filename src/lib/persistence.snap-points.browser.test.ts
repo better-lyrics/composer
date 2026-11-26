@@ -1,3 +1,4 @@
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { saveCurrentProject } from "@/lib/persistence";
@@ -13,7 +14,7 @@ function saveWithSnapPoints(customSnapPoints: SnapPoint[]): Promise<void> {
   return saveCurrentProject(
     createProjectSaveInput({
       metadata: { title: "snap", artists: [], album: "", duration: 0 },
-      lines: [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
+      lines: [lineFromFields({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id })],
       customSnapPoints,
     }),
   );

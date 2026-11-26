@@ -1,6 +1,10 @@
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { mainBounds } from "@/domain/line/bounds";
+import { changedFields, updatedLine } from "@/test/field-updates";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { lineText } from "@/domain/line/text";
 import { describe, expect, it } from "vitest";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import type { LyricLine } from "@/domain/line/model";
 import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { linesFromSaved } from "@/lib/saved-project";
@@ -22,12 +26,15 @@ function apply(lines: LyricLine[], commit: GestureCommit | null): LyricLine[] {
   if (!commit) return lines;
   return lines.map((line) => {
     const update = commit.lineUpdates.find((u) => u.id === line.id);
-    return update ? reconcileLine({ ...line, ...update.updates }) : line;
+    return update ? { ...line, ...update.updates } : line;
   });
 }
 
 function flatTimings(lines: LyricLine[]) {
-  return lines.flatMap((l) => l.words ?? (l.begin !== undefined ? [{ text: l.text, begin: l.begin, end: l.end }] : []));
+  return lines.flatMap((l) => {
+    const span = mainBounds(l);
+    return roleWords(l, "main") ?? (span ? [{ text: lineText(l), begin: span.begin, end: span.end }] : []);
+  });
 }
 
 function expectMonotonic(lines: LyricLine[]) {
@@ -42,7 +49,9 @@ describe("tap-word", () => {
   it("writes the first word of an untimed line with a provisional end", () => {
     const lines = [createLine({ id: "l0", text: "one two" })];
     const commit = run(lines, "tap-word", [0, 0], 1);
-    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("one ", 1, 1 + DUR)] } }]);
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([
+      { id: "l0", updates: { words: [word("one ", 1, 1 + DUR)] } },
+    ]);
     expect(commit?.nextCursor).toEqual({ lineIndex: 0, wordIndex: 1 });
     expect(commit?.nextJumped).toBe(false);
     expect(commit?.clampedTo).toBeNull();
@@ -52,7 +61,7 @@ describe("tap-word", () => {
     const lines = linesFromSaved([
       { id: "l0", text: "hel|lo you", agentId: "v1", words: [{ text: "hel", begin: 1, end: 1.3 }] },
     ]);
-    const words = apply(lines, run(lines, "tap-word", [0, 1], 2))[0].words;
+    const words = roleWords(apply(lines, run(lines, "tap-word", [0, 1], 2))[0], "main");
     expect(words?.map((w) => [w.text, w.joinsNext])).toEqual([
       ["hel", true],
       ["lo", false],
@@ -62,7 +71,9 @@ describe("tap-word", () => {
   it("closes the previous word in the same line with one update", () => {
     const lines = [createLine({ id: "l0", text: "one two", words: [word("one ", 1, 1.3)] })];
     const commit = run(lines, "tap-word", [0, 1], 2);
-    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("one ", 1, 2), word("two", 2, 2.3)] } }]);
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([
+      { id: "l0", updates: { words: [word("one ", 1, 2), word("two", 2, 2.3)] } },
+    ]);
   });
 
   it("closes the previous line's last word across a blank line", () => {
@@ -72,8 +83,14 @@ describe("tap-word", () => {
       createLine({ id: "l2", text: "b" }),
     ];
     const commit = run(lines, "tap-word", [2, 0], 2);
-    expect(commit?.lineUpdates).toContainEqual({ id: "l0", updates: { words: [word("a", 1, 2)] } });
-    expect(commit?.lineUpdates).toContainEqual({ id: "l2", updates: { words: [word("b", 2, 2.3)] } });
+    expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({
+      id: "l0",
+      updates: { words: [word("a", 1, 2)] },
+    });
+    expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({
+      id: "l2",
+      updates: { words: [word("b", 2, 2.3)] },
+    });
     expect(commit?.lineUpdates).toHaveLength(2);
   });
 
@@ -91,7 +108,9 @@ describe("tap-word", () => {
     ];
     const commit = run(lines, "tap-word", [1, 0], 2);
     expect(commit?.clampedTo).toBeNull();
-    expect(commit?.lineUpdates).toEqual([{ id: "l1", updates: { words: [word("c ", 2, 2 + DUR)] } }]);
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([
+      { id: "l1", updates: { words: [word("c ", 2, 2 + DUR)] } },
+    ]);
   });
 
   it("gives a held last word the default length when the next line starts before it", () => {
@@ -100,7 +119,7 @@ describe("tap-word", () => {
       createLine({ id: "l1", text: "c d" }),
     ];
     const commit = run(lines, "tap-word", [1, 0], 2);
-    expect(commit?.lineUpdates).toContainEqual({
+    expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({
       id: "l0",
       updates: { words: [word("a ", 5, 6), word("b", 6, 6 + DUR)] },
     });
@@ -119,7 +138,7 @@ describe("tap-word", () => {
     const commit = run(lines, "tap-word", [0, 3], 2.6, true);
     const after = apply(lines, commit);
     expect(commit?.clampedTo).toBe(4);
-    for (const w of after[0].words?.slice(0, 3) ?? []) expect(w.end - w.begin).toBeGreaterThan(0);
+    for (const w of roleWords(after[0], "main")?.slice(0, 3) ?? []) expect(w.end - w.begin).toBeGreaterThan(0);
     expect(timedSyllables(mainTrack(after[0])).map((w) => w.text + w.sep)).toEqual(texts);
   });
 
@@ -168,13 +187,20 @@ describe("tap-word", () => {
   it("seeds background words when a line gets its first timing", () => {
     const lines = [createLine({ id: "l0", text: "a", backgroundText: "oh" })];
     const updates = run(lines, "tap-word", [0, 0], 1)?.lineUpdates[0].updates;
-    expect(updates?.backgroundWords?.[0].begin).toBe(1);
+    expect(roleWords(updatedLine(updates), "bg")?.[0].begin).toBe(1);
   });
 
   it("regression: re-writing slot 0 of a timed line seeds background words it never stored", () => {
     const lines = [createLine({ id: "l0", text: "a", words: [word("a", 20, 21)], backgroundText: "oh" })];
     const updates = run(lines, "tap-word", [0, 0], 5)?.lineUpdates[0].updates;
-    expect(updates?.backgroundWords?.[0].begin).toBe(5);
+    expect(roleWords(updatedLine(updates), "bg")?.[0].begin).toBe(5);
+  });
+
+  it("regression: the first tap times the untimed background syllables in place, keeping their ids", () => {
+    const lines = [createLine({ id: "l0", text: "hello world", backgroundText: "oh yeah" })];
+    const before = backgroundTrack(lines[0])!.syllables.map((syllable) => syllable.id);
+    const after = apply(lines, run(lines, "tap-word", [0, 0], 1));
+    expect(timedSyllables(backgroundTrack(after[0])).map((syllable) => syllable.id)).toEqual(before);
   });
 
   it("P3: re-writing slot 0 of a timed line shifts background words by the main delta", () => {
@@ -190,7 +216,7 @@ describe("tap-word", () => {
     ];
     const after = apply(lines, run(lines, "tap-word", [0, 0], 5));
     expect(timedSyllables(backgroundTrack(after[0]))).toEqual([word("oh ", 5.5, 6.25), word("oh", 6.25, 7)]);
-    expect(after[0].begin).toBeUndefined();
+    expect(mainTrack(after[0]).begin).toBeUndefined();
   });
 
   it("returns null when the cursor was not resolved and points past the timed words", () => {
@@ -210,8 +236,8 @@ describe("tap-line", () => {
   it("opens an untimed line at the tap and closes the previous line", () => {
     const lines = [createLine({ id: "l0", text: "first", begin: 5, end: 5 }), createLine({ id: "l1", text: "second" })];
     const commit = run(lines, "tap-line", [1, 0], 7);
-    expect(commit?.lineUpdates).toContainEqual({ id: "l0", updates: { end: 7 } });
-    expect(commit?.lineUpdates).toContainEqual({ id: "l1", updates: { begin: 7, end: 7 } });
+    expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "l0", updates: { end: 7 } });
+    expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({ id: "l1", updates: { begin: 7, end: 7 } });
     expect(commit?.nextCursor).toEqual({ lineIndex: 2, wordIndex: 0 });
   });
 
@@ -240,13 +266,13 @@ describe("tap-line", () => {
       }),
     ];
     const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
-    expect(after[0]).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
+    expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
   });
 
   it("regression: moving a line-synced line seeds background words it never stored", () => {
     const lines = [createLine({ id: "l0", text: "a", begin: 10, end: 12, backgroundText: "oh" })];
     const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
-    expect(after[0]).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
+    expect(fieldsOfLine(after[0])).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
   });
 
   it("closes a word-synced previous line's last word in line mode", () => {
@@ -255,7 +281,10 @@ describe("tap-line", () => {
       createLine({ id: "l1", text: "c" }),
     ];
     const commit = run(lines, "tap-line", [1, 0], 4);
-    expect(commit?.lineUpdates).toContainEqual({ id: "l0", updates: { words: [word("a ", 1, 2), word("b", 2, 4)] } });
+    expect(changedFields(commit!.lineUpdates, lines)).toContainEqual({
+      id: "l0",
+      updates: { words: [word("a ", 1, 2), word("b", 2, 4)] },
+    });
   });
 
   it("regression I1: after a word-synced line, the floor is its last word's begin, never its first", () => {
@@ -272,14 +301,14 @@ describe("tap-line", () => {
     const lines = [createLine({ id: "l0", text: "first", begin: 2, end: 4 }), createLine({ id: "l1", text: "second" })];
     const commit = run(lines, "tap-line", [1, 0], 1, true);
     expect(commit?.clampedTo).toBe(4);
-    expect(commit?.lineUpdates).toEqual([{ id: "l1", updates: { begin: 4, end: 4 } }]);
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([{ id: "l1", updates: { begin: 4, end: 4 } }]);
   });
 
   it("after a jump, a tap inside the previous line trims that line's end", () => {
     const lines = [createLine({ id: "l0", text: "first", begin: 1, end: 4 }), createLine({ id: "l1", text: "second" })];
     const commit = run(lines, "tap-line", [1, 0], 3, true);
     expect(commit?.clampedTo).toBeNull();
-    expect(apply(lines, commit).map((l) => [l.begin, l.end])).toEqual([
+    expect(apply(lines, commit).map((l) => [mainTrack(l).begin, mainTrack(l).end])).toEqual([
       [1, 3],
       [3, 3],
     ]);
@@ -296,7 +325,7 @@ describe("hold gestures", () => {
   it("hold-start opens the word with end = begin and keeps the cursor", () => {
     const lines = [createLine({ id: "l0", text: "a b" })];
     const commit = run(lines, "hold-start", [0, 0], 1);
-    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("a ", 1, 1)] } }]);
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([{ id: "l0", updates: { words: [word("a ", 1, 1)] } }]);
     expect(commit?.nextCursor).toEqual({ lineIndex: 0, wordIndex: 0 });
   });
 
@@ -312,7 +341,9 @@ describe("hold gestures", () => {
   it("a forward hold-start mid-line trims an overlapping previous word in the same line", () => {
     const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 1.3)] })];
     const commit = run(lines, "hold-start", [0, 1], 1.2);
-    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("a ", 1, 1.2), word("b", 1.2, 1.2)] } }]);
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([
+      { id: "l0", updates: { words: [word("a ", 1, 1.2), word("b", 1.2, 1.2)] } },
+    ]);
   });
 
   it("a forward hold-start closes a previous word that is still open", () => {
@@ -324,7 +355,7 @@ describe("hold gestures", () => {
   it("a forward hold-start closes an open line-synced previous line", () => {
     const lines = [createLine({ id: "l0", text: "a", begin: 1, end: 1 }), createLine({ id: "l1", text: "b" })];
     const after = apply(lines, run(lines, "hold-start", [1, 0], 2));
-    expect(after[0].end).toBe(2);
+    expect(mainTrack(after[0]).end).toBe(2);
   });
 
   it("hold-start keeps the jumped flag until the hold ends", () => {
@@ -349,7 +380,9 @@ describe("hold gestures", () => {
   it("hold-tap closes the held word and opens the next one in the same line with one update", () => {
     const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 1)] })];
     const commit = run(lines, "hold-tap", [0, 0], 2);
-    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("a ", 1, 2), word("b", 2, 2)] } }]);
+    expect(changedFields(commit!.lineUpdates, lines)).toEqual([
+      { id: "l0", updates: { words: [word("a ", 1, 2), word("b", 2, 2)] } },
+    ]);
     expect(commit?.nextCursor).toEqual({ lineIndex: 0, wordIndex: 1 });
   });
 
@@ -480,8 +513,8 @@ describe("ported behaviour", () => {
         words: [word("one ", 0, 1), { ...word("two ", 1, 2), explicit: true, joinsNext: true }],
       }),
     ];
-    const held = apply(lines, run(lines, "hold-start", [0, 1], 5, true))[0].words?.[1];
-    const tapped = apply(lines, run(lines, "tap-word", [0, 1], 5, true))[0].words?.[1];
+    const held = roleWords(apply(lines, run(lines, "hold-start", [0, 1], 5, true))[0], "main")?.[1];
+    const tapped = roleWords(apply(lines, run(lines, "tap-word", [0, 1], 5, true))[0], "main")?.[1];
     expect(held?.explicit).toBe(tapped?.explicit);
     expect(held?.joinsNext).toBe(tapped?.joinsNext);
   });
@@ -638,7 +671,7 @@ describe("how a gesture ends the previous slot", () => {
       createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 6)] }),
       createLine({ id: "l1", text: "c d", words: [word("c ", 6, 6.5), word("d", 6.5, 7)] }),
     ];
-    expect(run(lines, "tap-word", [1, 0], 5.5)?.lineUpdates).toContainEqual({
+    expect(changedFields(run(lines, "tap-word", [1, 0], 5.5)!.lineUpdates, lines)).toContainEqual({
       id: "l0",
       updates: { words: [word("a ", 1, 2), word("b", 2, 5.5)] },
     });
@@ -653,12 +686,16 @@ describe("how a gesture ends the previous slot", () => {
 
     const insideLine = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 2.8)] })];
     const commit = run(insideLine, "tap-word", [0, 2], 3.5);
-    expect(commit?.lineUpdates[0].updates.words?.slice(0, 2)).toEqual([word("a ", 1, 2), word("b ", 2, 2.8)]);
+    expect(roleWords(updatedLine(commit?.lineUpdates[0].updates), "main")?.slice(0, 2)).toEqual([
+      word("a ", 1, 2),
+      word("b ", 2, 2.8),
+    ]);
   });
 
   it("still cuts a set word inside the same line at the tap, so words never overlap", () => {
     const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 5)] })];
-    expect(run(lines, "tap-word", [0, 2], 3)?.lineUpdates[0].updates.words?.[1]).toEqual(word("b ", 2, 3));
+    const commit = run(lines, "tap-word", [0, 2], 3);
+    expect(roleWords(updatedLine(commit?.lineUpdates[0].updates), "main")?.[1]).toEqual(word("b ", 2, 3));
   });
 
   it("regression: a Line mode pass over timed lines ends each line at the next tap", () => {
@@ -667,6 +704,9 @@ describe("how a gesture ends the previous slot", () => {
       createLine({ id: "l1", text: "second", begin: 12, end: 15 }),
     ];
     const shifted = apply(lines, run(lines, "tap-line", [0, 0], 11));
-    expect(run(shifted, "tap-line", [1, 0], 12.5)?.lineUpdates).toContainEqual({ id: "l0", updates: { end: 12.5 } });
+    expect(changedFields(run(shifted, "tap-line", [1, 0], 12.5)!.lineUpdates, shifted)).toContainEqual({
+      id: "l0",
+      updates: { end: 12.5 },
+    });
   });
 });

@@ -1,4 +1,6 @@
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { fieldUpdates } from "@/test/field-updates";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
@@ -17,55 +19,66 @@ describe("project store · line-sync nudge granularity", () => {
 
   it("preserves line-sync when only begin/end change", () => {
     const store = useProjectStore.getState();
-    store.restoreLyrics({ lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }] });
-    store.commit(pasteLines([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }]));
+    store.restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })] });
+    store.commit(pasteLines(fieldUpdates([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }])));
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBeCloseTo(5.05);
-    expect(after.end).toBeCloseTo(7.05);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBeCloseTo(5.05);
+    expect(mainTrack(after).end).toBeCloseTo(7.05);
   });
 
   it("preserves line-sync across multiple consecutive nudges (no drift to word-sync)", () => {
     const store = useProjectStore.getState();
-    store.restoreLyrics({ lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }] });
+    store.restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })] });
     for (let i = 0; i < 5; i++) {
       const cur = useProjectStore.getState().lines[0];
       store.commit(
-        pasteLines([{ id: "L1", updates: { begin: (cur.begin as number) + 0.1, end: (cur.end as number) + 0.1 } }]),
+        pasteLines(
+          fieldUpdates([
+            {
+              id: "L1",
+              updates: { begin: (mainTrack(cur).begin as number) + 0.1, end: (mainTrack(cur).end as number) + 0.1 },
+            },
+          ]),
+        ),
       );
     }
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBeCloseTo(5.5);
-    expect(after.end).toBeCloseTo(7.5);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBeCloseTo(5.5);
+    expect(mainTrack(after).end).toBeCloseTo(7.5);
   });
 
   it("undo restores prior line-sync state with no synthetic words appearing", () => {
     const store = useProjectStore.getState();
     store.commit(
-      pasteLyrics(useProjectStore.getState().lines, [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }]),
+      pasteLyrics(useProjectStore.getState().lines, [
+        lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }),
+      ]),
     );
-    store.commit(pasteLines([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }]));
+    store.commit(pasteLines(fieldUpdates([{ id: "L1", updates: { begin: 5.05, end: 7.05 } }])));
     store.undo();
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBe(5);
-    expect(after.end).toBe(7);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBe(5);
+    expect(mainTrack(after).end).toBe(7);
   });
 
   it("flips to word-sync only when an explicit words array is written", () => {
     const store = useProjectStore.getState();
-    store.restoreLyrics({ lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }] });
+    store.restoreLyrics({ lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })] });
     store.commit(
-      pasteLines([
-        { id: "L1", updates: { words: [{ id: "w1", text: "verse", sep: "", begin: 5, end: 7, joinsNext: false }] } },
-      ]),
+      pasteLines(
+        fieldUpdates([
+          { id: "L1", updates: { words: [{ id: "w1", text: "verse", sep: "", begin: 5, end: 7, joinsNext: false }] } },
+        ]),
+      ),
     );
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.length).toBe(1);
+    expect(roleWords(after, "main")?.length).toBe(1);
     // store auto-clears begin/end when words appear on a previously line-synced row
-    expect(after.begin).toBeUndefined();
-    expect(after.end).toBeUndefined();
+    expect(mainTrack(after).begin).toBeUndefined();
+    expect(mainTrack(after).end).toBeUndefined();
   });
 });
 
@@ -85,7 +98,7 @@ describe("instance shift = nudging every selected word at once", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        {
+        lineFromFields({
           id: "A",
           text: "I love",
           agentId: "v1",
@@ -96,8 +109,8 @@ describe("instance shift = nudging every selected word at once", () => {
             { id: "w2", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
             { id: "w3", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
           ],
-        },
-        {
+        }),
+        lineFromFields({
           id: "B",
           text: "all night",
           agentId: "v1",
@@ -108,31 +121,33 @@ describe("instance shift = nudging every selected word at once", () => {
             { id: "w4", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
             { id: "w5", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
           ],
-        },
+        }),
       ]),
     );
     // Simulating what nudgeSelectedWords would output with all-instance selected:
     store.commit(
-      pasteLines([
-        {
-          id: "A",
-          updates: {
-            words: [
-              { id: "w6", text: "I", sep: " ", begin: 10.5, end: 10.8, joinsNext: false },
-              { id: "w7", text: "love", sep: "", begin: 10.8, end: 11.3, joinsNext: false },
-            ],
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A",
+            updates: {
+              words: [
+                { id: "w6", text: "I", sep: " ", begin: 10.5, end: 10.8, joinsNext: false },
+                { id: "w7", text: "love", sep: "", begin: 10.8, end: 11.3, joinsNext: false },
+              ],
+            },
           },
-        },
-        {
-          id: "B",
-          updates: {
-            words: [
-              { id: "w8", text: "all", sep: " ", begin: 11.5, end: 11.9, joinsNext: false },
-              { id: "w9", text: "night", sep: "", begin: 11.9, end: 12.5, joinsNext: false },
-            ],
+          {
+            id: "B",
+            updates: {
+              words: [
+                { id: "w8", text: "all", sep: " ", begin: 11.5, end: 11.9, joinsNext: false },
+                { id: "w9", text: "night", sep: "", begin: 11.9, end: 12.5, joinsNext: false },
+              ],
+            },
           },
-        },
-      ]),
+        ]),
+      ),
     );
     const after = useProjectStore.getState().lines;
     expect(timedSyllables(mainTrack(after.find((l) => l.id === "A")!))[0].begin).toBeCloseTo(10.5);
@@ -146,7 +161,7 @@ describe("instance shift = nudging every selected word at once", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        {
+        lineFromFields({
           id: "A1",
           text: "x",
           agentId: "v1",
@@ -154,8 +169,8 @@ describe("instance shift = nudging every selected word at once", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [{ id: "w10", text: "x", sep: "", begin: 10, end: 11, joinsNext: false }],
-        },
-        {
+        }),
+        lineFromFields({
           id: "A2",
           text: "x",
           agentId: "v1",
@@ -163,14 +178,19 @@ describe("instance shift = nudging every selected word at once", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [{ id: "w11", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
-        },
+        }),
       ]),
     );
     // Only nudge instance 0
     store.commit(
-      pasteLines([
-        { id: "A1", updates: { words: [{ id: "w12", text: "x", sep: "", begin: 10.5, end: 11.5, joinsNext: false }] } },
-      ]),
+      pasteLines(
+        fieldUpdates([
+          {
+            id: "A1",
+            updates: { words: [{ id: "w12", text: "x", sep: "", begin: 10.5, end: 11.5, joinsNext: false }] },
+          },
+        ]),
+      ),
     );
     const after = useProjectStore.getState().lines;
     expect(timedSyllables(mainTrack(after.find((l) => l.id === "A1")!))[0].begin).toBeCloseTo(10.5);

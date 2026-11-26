@@ -1,7 +1,8 @@
 import { withKeptSyllablePieces } from "@/domain/language/pieces";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
+import { withManualBackgroundWords } from "@/domain/line/background";
+import type { LyricLine } from "@/domain/line/model";
+import { withRoleWords } from "@/domain/line/track-writes";
+import { roleWords, trackWords } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { type IdenticalMatchSource, findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
@@ -22,8 +23,10 @@ function replaceWordsAt(track: WordTiming[], wordIndex: number, replacement: Wor
 }
 
 function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints: number[]): LyricLine {
-  let mainTrack = line.words;
-  let bgTrack = line.backgroundWords;
+  const originalMain = roleWords(line, "main");
+  const originalBg = roleWords(line, "bg");
+  let mainWords = originalMain;
+  let bgWords = originalBg;
 
   // Single descending sort across all targets is safe: projecting onto each
   // track preserves descending order, so per-track splice indices don't drift.
@@ -33,27 +36,24 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
       word: target.word,
       splitPoints,
     });
-    if (target.type === "word" && mainTrack) {
-      mainTrack = replaceWordsAt(mainTrack, target.wordIndex, replacement);
-    } else if (target.type === "bg" && bgTrack) {
-      bgTrack = replaceWordsAt(bgTrack, target.wordIndex, replacement);
+    if (target.type === "word" && mainWords) {
+      mainWords = replaceWordsAt(mainWords, target.wordIndex, replacement);
+    } else if (target.type === "bg" && bgWords) {
+      bgWords = replaceWordsAt(bgWords, target.wordIndex, replacement);
     }
   }
 
   const mainLanguages =
-    mainTrack && line.words && mainTrack !== line.words
-      ? { ...line, languages: withKeptSyllablePieces(line, "main", line.words, mainTrack) }
+    mainWords && originalMain && mainWords !== originalMain
+      ? { ...line, languages: withKeptSyllablePieces(line, "main", originalMain, mainWords) }
       : line;
   const languages =
-    bgTrack && line.backgroundWords && bgTrack !== line.backgroundWords
-      ? withKeptSyllablePieces(mainLanguages, "bg", line.backgroundWords, bgTrack)
+    bgWords && originalBg && bgWords !== originalBg
+      ? withKeptSyllablePieces(mainLanguages, "bg", originalBg, bgWords)
       : mainLanguages.languages;
-  return reconcileLine({
-    ...line,
-    ...(mainTrack !== line.words ? { words: mainTrack } : {}),
-    ...(bgTrack && bgTrack !== line.backgroundWords ? manualBackgroundWordEdit(bgTrack) : {}),
-    ...(languages !== line.languages && { languages }),
-  });
+  const withMain = mainWords && mainWords !== originalMain ? withRoleWords(line, "main", mainWords) : line;
+  const withBackground = bgWords && bgWords !== originalBg ? withManualBackgroundWords(withMain, bgWords) : withMain;
+  return languages !== line.languages ? { ...withBackground, languages } : withBackground;
 }
 
 function findSourceTarget(lines: LyricLine[], source: IdenticalMatchSource): SplitTarget | null {

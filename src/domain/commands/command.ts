@@ -16,7 +16,6 @@ interface HistoryNote {
 
 interface LyricCommand {
   note: HistoryNote;
-  derivesText: boolean;
   copiesSharedTiming: boolean;
   run: (root: LyricRoot, ctx: CommandContext) => Outcome;
   afterSharedCopy?: (root: LyricRoot, ctx: CommandContext) => Outcome;

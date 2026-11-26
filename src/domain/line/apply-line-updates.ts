@@ -1,4 +1,4 @@
-import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -6,7 +6,7 @@ function applyLineUpdates(lines: readonly LyricLine[], updates: readonly LineUpd
   const byId = new Map(updates.map((u) => [u.id, u.updates]));
   return lines.map((line) => {
     const update = byId.get(line.id);
-    return update ? reconcileLine({ ...line, ...update }) : line;
+    return update ? { ...line, ...update } : line;
   });
 }
 

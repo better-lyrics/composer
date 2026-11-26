@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroupWithLines, removeGroup } from "@/domain/commands/group-edits";
@@ -8,13 +9,15 @@ import { pasteLines } from "@/domain/commands/instance-rows";
 import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { lineText } from "@/domain/line/text";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectState } from "@/stores/project/types";
 import { createGroup, createLine } from "@/test/factories";
+import { fieldUpdates } from "@/test/field-updates";
 
 // Pins the contract that history entries round-trip exactly and are never
 // changed by later edits. Entries share the store's immutable objects, so a
@@ -56,24 +59,26 @@ describe("history snapshot integrity", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        {
+        lineFromFields({
           id: "L1",
           text: "hello",
           agentId: "v1",
           words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
-        },
+        }),
       ]),
     );
     store.commit(
-      pasteLines([
-        { id: "L1", updates: { words: [{ id: "w2", text: "hello!", sep: "", begin: 0, end: 1, joinsNext: false }] } },
-      ]),
+      pasteLines(
+        fieldUpdates([
+          { id: "L1", updates: { words: [{ id: "w2", text: "hello!", sep: "", begin: 0, end: 1, joinsNext: false }] } },
+        ]),
+      ),
     );
-    const beforeUndo = useProjectStore.getState().lines[0].words?.[0].text;
+    const beforeUndo = roleWords(useProjectStore.getState().lines[0], "main")?.[0].text;
     expect(beforeUndo).toBe("hello!");
     store.undo();
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("hello");
-    const restored = useProjectStore.getState().lines[0].words;
+    const restored = roleWords(useProjectStore.getState().lines[0], "main");
     expect(() => {
       if (restored) restored[0].text = "MUTATED";
     }).toThrow(TypeError);
@@ -87,14 +92,14 @@ describe("history snapshot integrity", () => {
     const store = useProjectStore.getState();
     store.commit(
       addGroupWithLines({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }, [
-        {
+        lineFromFields({
           id: "L1",
           text: "x",
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-        },
+        }),
       ]),
     );
     expect(useProjectStore.getState().groups).toHaveLength(1);
@@ -109,7 +114,7 @@ describe("history snapshot integrity", () => {
     const store = useProjectStore.getState();
     store.commit(
       pasteLyrics(useProjectStore.getState().lines, [
-        {
+        lineFromFields({
           id: "A",
           text: "a",
           agentId: "v1",
@@ -117,23 +122,27 @@ describe("history snapshot integrity", () => {
             { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5, joinsNext: false },
             { id: "w4", text: "b", sep: "", begin: 0.5, end: 1, joinsNext: false },
           ],
-        },
+        }),
       ]),
     );
     store.commit(
-      pasteLines([
-        { id: "A", updates: { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1, joinsNext: false }] } },
-      ]),
+      pasteLines(
+        fieldUpdates([
+          { id: "A", updates: { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1, joinsNext: false }] } },
+        ]),
+      ),
     );
     store.commit(
-      pasteLines([
-        { id: "A", updates: { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1, joinsNext: false }] } },
-      ]),
+      pasteLines(
+        fieldUpdates([
+          { id: "A", updates: { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1, joinsNext: false }] } },
+        ]),
+      ),
     );
     store.undo();
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("ab");
     store.undo();
-    expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
+    expect(roleWords(useProjectStore.getState().lines[0], "main")?.length).toBe(2);
     store.redo();
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("ab");
     store.redo();
@@ -149,7 +158,7 @@ describe("history snapshot integrity", () => {
     store().commit(replaceLyrics(store().lines, [createGroup({ id: "g1" })], useProjectStore.getState().agents));
     const start = recorded(store());
 
-    store().commit(pasteLines([{ id: "a", updates: { text: "first edited" } }]));
+    store().commit(pasteLines(fieldUpdates([{ id: "a", updates: { text: "first edited" } }])));
     store().applyBeatGridWithHistory(withOffset(grid, 20));
     const afterA = recorded(store());
 
@@ -178,7 +187,7 @@ describe("history snapshot integrity", () => {
     );
     const before = store().lines;
 
-    store().commit(pasteLines([{ id: "a", updates: { text: "one edited" } }]));
+    store().commit(pasteLines(fieldUpdates([{ id: "a", updates: { text: "one edited" } }])));
     expect(store().lines[1]).toBe(before[1]);
     store().undo();
 
@@ -195,19 +204,22 @@ describe("history snapshot integrity", () => {
       isDirtySinceHistory: true,
     });
     store().setBeatGrid(grid);
-    store().commit(pasteLines([{ id: "c0", updates: { text: "I want it" } }]));
+    store().commit(pasteLines(fieldUpdates([{ id: "c0", updates: { text: "I want it" } }])));
     const committedIndex = store().historyIndex;
     const committed = structuredClone(store().history[committedIndex]);
 
     const nudged = timedSyllables(mainTrack(store().lines[0])).map((word) => ({ ...word, begin: word.begin + 0.2 }));
     store().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "c0", updates: { words: nudged } }], {
-        derivesText: false,
-        propagateToSiblings: false,
-      }),
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () => fieldUpdates([{ id: "c0", updates: { words: nudged } }]),
+        {
+          propagateToSiblings: false,
+        },
+      ),
     );
     expect(timedSyllables(mainTrack(store().lines[1]))[0].begin).toBeCloseTo(40.2, 6);
-    store().commit(refreshGeneratedLanguages([{ id: "c1", updates: { agentId: "v2" } }]), "amend");
+    store().commit(refreshGeneratedLanguages(fieldUpdates([{ id: "c1", updates: { agentId: "v2" } }])), "amend");
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 20));
 
@@ -220,7 +232,7 @@ describe("history snapshot integrity", () => {
     const line = store().history[store().historyIndex].lines[0];
 
     expect(() => {
-      line.text = "changed in place";
+      line.groupId = "changed in place";
     }).toThrow(TypeError);
     expect(() => store().lines.push(createLine({ id: "b" }))).toThrow(TypeError);
     expect(store().lines.map((entry) => lineText(entry))).toEqual(["kept"]);
@@ -229,11 +241,11 @@ describe("history snapshot integrity", () => {
   it("an in-place write to a committed store line throws, and undo then redo give back the same objects", () => {
     const store = useProjectStore.getState;
     store().commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", text: "first" })]));
-    store().commit(pasteLines([{ id: "a", updates: { text: "second" } }]));
+    store().commit(pasteLines(fieldUpdates([{ id: "a", updates: { text: "second" } }])));
     const committedLines = store().lines;
 
     expect(() => {
-      store().lines[0].text = "changed in place";
+      store().lines[0].groupId = "changed in place";
     }).toThrow(TypeError);
     store().undo();
     store().redo();

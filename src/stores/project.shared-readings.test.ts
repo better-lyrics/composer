@@ -1,12 +1,14 @@
 /**
  * @vitest-environment node
  */
+
 import { describe, expect, it } from "vitest";
 import { splitSyncWord } from "@/domain/commands/sync";
 import { realignSharedInstance } from "@/domain/group/shared-placement";
 import type { LineLanguages } from "@/domain/language/model";
 import { trackPieces } from "@/domain/language/pieces";
 import type { RawLine } from "@/domain/line/model";
+import { roleWords } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
@@ -51,7 +53,7 @@ describe("readings of instances sharing timing", () => {
 
     const [, b] = useProjectStore.getState().lines;
     const pieces = trackPieces(b, "main");
-    expect(b.words?.map((word) => pieces?.[word.id]?.text)).toEqual(["ha", "neul"]);
+    expect(roleWords(b, "main")?.map((word) => pieces?.[word.id]?.text)).toEqual(["ha", "neul"]);
     const ttml = generateTTML({
       metadata: { title: "", artists: [], album: "", duration: 20, language: "ko" },
       agents: useProjectStore.getState().agents,
@@ -89,7 +91,7 @@ describe("readings when an instance takes the shared timing again", () => {
     const update = "updates" in realigned ? realigned.updates[0] : undefined;
     const b = { ...own, ...update?.updates };
     const pieces = trackPieces(b, "main");
-    expect(b.words?.map((word) => pieces?.[word.id]?.text)).toEqual(["h", "aneul"]);
+    expect(roleWords(b, "main")?.map((word) => pieces?.[word.id]?.text)).toEqual(["h", "aneul"]);
   });
 });
 
@@ -125,7 +127,7 @@ describe("readings of linked lines", () => {
       .commit(splitSyncWord("a", 0, split, [{ text: "ha", joinerAfter: "" }, { text: "neul" }]));
 
     const [, b] = useProjectStore.getState().lines;
-    const sea = b.words?.at(-1);
+    const sea = roleWords(b, "main")?.at(-1);
     expect(sea && trackPieces(b, "main")?.[sea.id]).toEqual({ text: "bada b" });
   });
 });

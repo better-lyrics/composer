@@ -1,3 +1,4 @@
+import { mainTrack } from "@/domain/line/track";
 import { getAgentColor } from "@/domain/agent/colors";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
@@ -124,7 +125,7 @@ function drawLoupe(
       main: withLiveEdge(effectiveTrackWords(effective, "word") ?? [], target, "word"),
       background: withLiveEdge(effectiveTrackWords(effective, "bg") ?? [], target, "bg"),
       edited: { track: target.type, syllableId: target.syllableId },
-      agentColour: getAgentColor(line.agentId),
+      agentColour: getAgentColor(mainTrack(line).agentId),
       playheadSeconds: inputs.playhead,
     });
   }

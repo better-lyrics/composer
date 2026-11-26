@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { lineText } from "@/domain/line/text";
+import { mainTrack, roleWords } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -75,8 +76,8 @@ describe("WordEditOverlay", () => {
 
     await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("New words");
     const after = useProjectStore.getState().lines[0];
-    expect(after.words).toBeUndefined();
-    expect(after.begin).toBe(0);
-    expect(after.end).toBe(3);
+    expect(roleWords(after, "main")).toBeUndefined();
+    expect(mainTrack(after).begin).toBe(0);
+    expect(mainTrack(after).end).toBe(3);
   });
 });

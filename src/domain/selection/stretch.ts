@@ -1,6 +1,7 @@
-import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
+import { mainTrack, trackWords } from "@/domain/line/track";
+import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
 import {
   STRETCH_EPS,
   type StretchClampOptions,
@@ -43,17 +44,15 @@ function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: numbe
     const updatedWords = words.map((word, i) =>
       track.indices.has(i) ? { ...word, begin: mapTime(word.begin), end: mapTime(word.end) } : word,
     );
-    if (track.type === "word") {
-      Object.assign(entryFor(track.line.id).updates, { words: updatedWords });
-    } else {
-      Object.assign(entryFor(track.line.id).updates, manualBackgroundWordEdit(updatedWords));
-    }
+    const entry = entryFor(track.line.id);
+    const write = track.type === "word" ? mainWordsEdit : manualBackgroundWordEdit;
+    entry.updates = write(track.line, updatedWords, entry.updates);
   }
-  for (const line of targets.lineSynced) {
-    Object.assign(entryFor(line.id).updates, {
-      begin: mapTime(line.begin),
-      end: mapTime(line.end),
-    });
+  for (const target of targets.lineSynced) {
+    const entry = entryFor(target.id);
+    const line = { ...target.line, ...entry.updates };
+    const span = withTrackSpan(mainTrack(line), mapTime(target.begin), mapTime(target.end));
+    entry.updates = { ...entry.updates, tracks: withMainTrack(line, span).tracks };
   }
 
   return [...updatesByLine.values()];

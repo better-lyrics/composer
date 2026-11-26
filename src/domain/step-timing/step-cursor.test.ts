@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { createLine } from "@/test/factories";

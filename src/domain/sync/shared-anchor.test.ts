@@ -1,3 +1,4 @@
+import { withFields } from "@/test/field-updates";
 import { placeSharedInstance } from "@/domain/group/shared-placement";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 import { createGroup, createLine } from "@/test/factories";
@@ -96,7 +97,7 @@ describe("sharedAnchorAt", () => {
     });
 
     it("skips blank lines inside the instance when finding its first line", () => {
-      const lines = [chorus(0, 0, 10), { ...chorus(1, 0), text: "" }, chorus(1, 1)];
+      const lines = [chorus(0, 0, 10), withFields(chorus(1, 0), { text: "" }), chorus(1, 1)];
       expect(sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 })?.instanceIdx).toBe(1);
     });
   });

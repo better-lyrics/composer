@@ -166,7 +166,7 @@ function generateTTML({
     const lineTiming = effectiveBounds(line);
     if (!lineTiming || !isExportedLine(line)) continue;
 
-    const agentAttr = line.agentId ? ` ttm:agent="${escapeXmlAttribute(line.agentId)}"` : "";
+    const agentAttr = mainTrack(line).agentId ? ` ttm:agent="${escapeXmlAttribute(mainTrack(line).agentId)}"` : "";
     const lineKey = keyById.get(line.id);
     const keyAttr = lineKey ? ` itunes:key="${lineKey}"` : "";
     const groupAttr = line.groupId

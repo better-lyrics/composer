@@ -1,5 +1,5 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { WordTrack } from "@/domain/line/tracks";
+import type { WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { MenuItem } from "@/ui/menu";

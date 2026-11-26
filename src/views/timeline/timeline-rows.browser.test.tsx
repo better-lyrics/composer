@@ -1,3 +1,4 @@
+import { withFields } from "@/test/field-updates";
 import { describe, expect, it } from "vitest";
 import { useRef } from "react";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
@@ -91,7 +92,9 @@ describe("TimelineRows", () => {
       useProjectStore.setState({ lines: plain.slice(0, 1) });
       const screen = await render(<Harness />);
       const ooh = [createWord({ text: "ooh", begin: 0, end: 1 })];
-      useProjectStore.setState({ lines: plain.map((line, i) => (i < 30 ? { ...line, backgroundWords: ooh } : line)) });
+      useProjectStore.setState({
+        lines: plain.map((line, i) => (i < 30 ? withFields(line, { backgroundWords: ooh }) : line)),
+      });
       await expect.poll(() => sizerHeight(screen.container)).toBe(`${30 * 89 + 10 * 69}px`);
 
       const scroller = screen.container.firstElementChild as HTMLElement;

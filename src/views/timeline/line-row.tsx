@@ -43,7 +43,7 @@ function dragShiftPxFor(line: LyricLine, shift: DraggedGroupShift): number {
 // -- Component -----------------------------------------------------------------
 
 const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
-  const color = getAgentColor(line.agentId);
+  const color = getAgentColor(mainTrack(line).agentId);
   const groupColor = useProjectStore((s) => s.groups.find((g) => g.id === line.groupId)?.color);
   const rowHeight = useTimelineStore((s) => s.rowHeights[line.id] ?? s.defaultRowHeight);
   const dragShiftPx = useTimelineStore((s) => dragShiftPxFor(line, s.draggedGroupShift));
@@ -79,7 +79,12 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       style={{ "--agent": color, "--group": groupColor }}
     >
       <div className="line-cell shrink-0 w-12 sticky left-0 z-60">
-        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} numberHeight={rowHeight} />
+        <GutterAgentPicker
+          lineId={line.id}
+          lineIndex={lineIndex}
+          agentId={mainTrack(line).agentId}
+          numberHeight={rowHeight}
+        />
       </div>
 
       <div className={cn("flex-1 border-b border-(--divider) relative", mainWords && "overflow-hidden")}>

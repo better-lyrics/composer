@@ -1,3 +1,5 @@
+import { mainBounds } from "@/domain/line/bounds";
+import { savedLines } from "@/lib/saved-project";
 import { usePersistence } from "@/hooks/usePersistence";
 import { openProject as switchToProject } from "@/lib/open-project";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
@@ -203,18 +205,18 @@ describe("relinking LAME mp3 audio", () => {
       audioSource: { kind: "file", name: "silence.mp3" },
       primingStripped: true,
       primingCorrected: false,
-      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+      lines: savedLines([createLine({ text: "Waiting in a car", begin: 1, end: 2 })]),
     });
 
     expect(await relinkProjectAudioFile(createMp3File())).toBe(true);
 
     const P = 1104 / 44_100;
-    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + P, 9);
+    expect(mainBounds(useProjectStore.getState().lines[0])!.begin).toBeCloseTo(1 + P, 9);
     expect(useProjectStore.getState().primingCorrected).toBe(true);
     expect(useProjectStore.getState().history).toEqual([]);
     const saved = await loadProjectRecord("p");
     expect(saved?.primingCorrected).toBe(true);
-    expect((saved?.lines[0] as { begin: number }).begin).toBeCloseTo(1 + P, 9);
+    expect(saved?.lines[0]?.begin).toBeCloseTo(1 + P, 9);
   });
 
   it("regression: keeps edits made while the relinked audio decodes", async () => {
@@ -222,7 +224,7 @@ describe("relinking LAME mp3 audio", () => {
       audioSource: { kind: "file", name: "silence.mp3" },
       primingStripped: true,
       primingCorrected: false,
-      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+      lines: savedLines([createLine({ text: "Waiting in a car", begin: 1, end: 2 })]),
     });
 
     const correcting = correctPrimingForProjectAudio("p", createMp3File());
@@ -230,7 +232,7 @@ describe("relinking LAME mp3 audio", () => {
     await correcting;
 
     expect(useProjectStore.getState().metadata.title).toBe("Edited while decoding");
-    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + 1104 / 44_100, 9);
+    expect(mainBounds(useProjectStore.getState().lines[0])!.begin).toBeCloseTo(1 + 1104 / 44_100, 9);
   });
 
   it("regression: keeps undo history when the relinked audio needs no shift", async () => {
@@ -253,7 +255,7 @@ describe("relinking LAME mp3 audio", () => {
       audioSource: { kind: "file", name: "silence.mp3" },
       primingStripped: true,
       primingCorrected: false,
-      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+      lines: savedLines([createLine({ text: "Waiting in a car", begin: 1, end: 2 })]),
     });
 
     await Promise.all([
@@ -261,6 +263,6 @@ describe("relinking LAME mp3 audio", () => {
       correctPrimingForProjectAudio("p", createMp3File()),
     ]);
 
-    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + 1104 / 44_100, 9);
+    expect(mainBounds(useProjectStore.getState().lines[0])!.begin).toBeCloseTo(1 + 1104 / 44_100, 9);
   });
 });

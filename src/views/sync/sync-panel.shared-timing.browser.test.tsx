@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
+import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { fieldUpdates } from "@/test/field-updates";
 import { render } from "@/test/render";
 import { firstBegin, jumpToRow, key, lineById, load, song, tapAt, undo } from "@/test/shared-timing-sync";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
@@ -19,10 +21,10 @@ describe("SyncPanel · shared instance anchor", () => {
   it("syncs the first pass over Chorus 1 word by word", async () => {
     load(song());
     await render(<SyncPanel />);
-    await tapAt(10, () => lineById("c0-0")?.words?.length);
-    await tapAt(10.5, () => lineById("c0-0")?.words?.length);
+    await tapAt(10, () => roleWords(lineById("c0-0"), "main")?.length);
+    await tapAt(10.5, () => roleWords(lineById("c0-0"), "main")?.length);
     expect(timedSyllables(mainTrack(lineById("c0-0")!)).map((word) => word.begin)).toEqual([10, 10.5]);
-    expect(lineById("c1-0")?.words).toBeUndefined();
+    expect(roleWords(lineById("c1-0"), "main")).toBeUndefined();
   });
 
   it("fills Chorus 2 with one tap and jumps the cursor past it", async () => {
@@ -42,11 +44,11 @@ describe("SyncPanel · shared instance anchor", () => {
     await jumpToRow(screen, 3);
     await tapAt(40, () => firstBegin("c1-0"));
     await undo(() => firstBegin("c1-0"));
-    expect(lineById("c1-1")?.words).toBeUndefined();
+    expect(roleWords(lineById("c1-1"), "main")).toBeUndefined();
     await tapAt(42, () => firstBegin("c1-0"));
     expect(firstBegin("c1-0")).toBe(42);
     expect(firstBegin("c1-1")).toBe(43);
-    expect(lineById("v2")?.words).toBeUndefined();
+    expect(roleWords(lineById("v2"), "main")).toBeUndefined();
   });
 
   it("regression: undoes a placing tap after pausing", async () => {
@@ -57,7 +59,7 @@ describe("SyncPanel · shared instance anchor", () => {
     setIsPlaying(false);
     await expect.element(screen.getByText("2 skipped")).toBeInTheDocument();
     await undo(() => firstBegin("c1-0"));
-    expect(lineById("c1-1")?.words).toBeUndefined();
+    expect(roleWords(lineById("c1-1"), "main")).toBeUndefined();
   });
 
   it("moves a placed Chorus 2, and undo returns both the timing and the cursor", async () => {
@@ -71,7 +73,7 @@ describe("SyncPanel · shared instance anchor", () => {
     expect(firstBegin("c1-1")).toBe(61);
     await tapAt(45, () => firstBegin("c1-0"));
     expect(firstBegin("c1-1")).toBe(46);
-    expect(lineById("v2")?.words).toBeUndefined();
+    expect(roleWords(lineById("v2"), "main")).toBeUndefined();
   });
 
   it("regression: keeps the cursor on the anchor slot when an edit follows the undo", async () => {
@@ -81,15 +83,21 @@ describe("SyncPanel · shared instance anchor", () => {
     await tapAt(40, () => firstBegin("c1-0"));
     await undo(() => firstBegin("c1-0"));
     const verse = lineById("v1");
-    useProjectStore
-      .getState()
-      .commit(
-        lineEditCommand(
-          { command: "edit lines", args: [] },
-          () => [{ id: "v1", updates: { words: verse?.words?.map((word) => ({ ...word, end: word.end + 0.05 })) } }],
-          { derivesText: false, propagateToSiblings: false },
-        ),
-      );
+    useProjectStore.getState().commit(
+      lineEditCommand(
+        { command: "edit lines", args: [] },
+        () =>
+          fieldUpdates([
+            {
+              id: "v1",
+              updates: {
+                words: (verse && roleWords(verse, "main"))?.map((word) => ({ ...word, end: word.end + 0.05 })),
+              },
+            },
+          ]),
+        { propagateToSiblings: false },
+      ),
+    );
     await tapAt(45, () => firstBegin("c1-0"));
     expect(firstBegin("c1-1")).toBe(46);
   });
@@ -113,8 +121,8 @@ describe("SyncPanel · shared instance anchor", () => {
     const screen = await render(<SyncPanel />);
     await jumpToRow(screen, 3);
     await tapAt(40, () => firstBegin("c1-0"));
-    expect(lineById("c1-0")).toMatchObject({ begin: 40, end: 41 });
-    expect(lineById("c1-1")).toMatchObject({ begin: 41, end: 42 });
+    expect(fieldsOfLine(lineById("c1-0")!)).toMatchObject({ begin: 40, end: 41 });
+    expect(fieldsOfLine(lineById("c1-1")!)).toMatchObject({ begin: 41, end: 42 });
     await tapAt(50, () => firstBegin("v2"));
     expect(firstBegin("v2")).toBe(50);
   });
@@ -157,7 +165,7 @@ describe("SyncPanel · shared instance anchor", () => {
       await jumpToRow(screen, 3);
       await tapAt(40, () => firstBegin("c1-0"));
       await tapAt(50, () => firstBegin("v2"));
-      await tapAt(50.5, () => lineById("v2")?.words?.length);
+      await tapAt(50.5, () => roleWords(lineById("v2"), "main")?.length);
       setIsPlaying(false);
       await expect.element(screen.getByText("Shared", { exact: true }).first()).toBeInTheDocument();
       expect(screen.container.textContent).not.toContain("2 skipped");

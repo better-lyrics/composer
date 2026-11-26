@@ -1,12 +1,13 @@
 /**
  * @vitest-environment node
  */
+
 import { beforeEach, describe, expect, it } from "vitest";
 import { addGroup } from "@/domain/commands/group-edits";
 import { mergeSyllableGroup } from "@/domain/commands/word-edits";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import { type LegacyLine, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
@@ -104,7 +105,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [2]));
 
       const merged = lineById("line-1");
-      const mergedWord = legacyWords(merged?.words, merged?.languages)?.[1];
+      const mergedWord = legacyWords(merged && roleWords(merged, "main"), merged?.languages)?.[1];
       expect(mergedWord?.transliteration).toBe("ildan eun");
       expect(mergedWord?.transliterationJoinerAfter).toBe("  ");
     });

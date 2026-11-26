@@ -1,3 +1,4 @@
+import { savedLines } from "@/lib/saved-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
@@ -17,9 +18,15 @@ import { userEvent } from "vitest/browser";
 async function seedLibrary(): Promise<void> {
   const now = Date.now();
   const timed = createLine({ text: "timed", begin: 1, end: 2 });
-  await seedStoredProject("alpha", { project: { ...songTitled("Alpha"), savedAt: now - 3 * 60_000, lines: [timed] } });
+  await seedStoredProject("alpha", {
+    project: { ...songTitled("Alpha"), savedAt: now - 3 * 60_000, lines: savedLines([timed]) },
+  });
   await seedStoredProject("bravo", {
-    project: { ...songTitled("Bravo"), savedAt: now - 60_000, lines: [timed, createLine({ text: "open" })] },
+    project: {
+      ...songTitled("Bravo"),
+      savedAt: now - 60_000,
+      lines: savedLines([timed, createLine({ text: "open" })]),
+    },
   });
   await seedStoredProject("charlie", { project: { ...songTitled("Charlie"), savedAt: now - 2 * 60_000, lines: [] } });
 }

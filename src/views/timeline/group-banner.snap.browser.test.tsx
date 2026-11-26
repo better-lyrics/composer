@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { roleWords } from "@/domain/line/track";
 import { createSnapPoint } from "@/domain/snap-point/model";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -62,7 +63,7 @@ async function dragBanner(dxPx: number, modifiers: PointerEventInit = {}): Promi
   release(dxPx, modifiers);
 }
 
-const firstWordBegin = () => useProjectStore.getState().lines[0].words?.[0].begin;
+const firstWordBegin = () => roleWords(useProjectStore.getState().lines[0], "main")?.[0].begin;
 
 // -- Tests --------------------------------------------------------------------
 

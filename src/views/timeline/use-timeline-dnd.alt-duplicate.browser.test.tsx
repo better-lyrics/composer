@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
@@ -14,7 +15,7 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
     useTimelineStore.setState({ zoom: 100 });
     useProjectStore.setState({
       lines: [
-        {
+        lineFromFields({
           id: "l1",
           text: "Hello world",
           agentId: "v1",
@@ -22,7 +23,7 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
             { id: "w1", text: "Hello", sep: " ", begin: 0, end: 0.5, joinsNext: false },
             { id: "w2", text: "world", sep: "", begin: 2, end: 2.5, joinsNext: false },
           ],
-        },
+        }),
       ],
     });
   });

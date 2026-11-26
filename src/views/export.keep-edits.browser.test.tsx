@@ -1,5 +1,6 @@
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
+import { fieldsOfLine } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { useAudioStore } from "@/stores/audio";
@@ -18,7 +19,7 @@ function namedLines(untimed: string[] = []): LyricLine[] {
     const id = name[0]?.toLowerCase() ?? String(index);
     const timing = untimed.includes(name) ? {} : { begin: index, end: index + 1 };
     return legacyLine({
-      ...createLine({ id, text: name, ...timing }),
+      ...fieldsOfLine(createLine({ id, text: name, ...timing })),
       translations: {
         es: {
           language: "es",
@@ -106,7 +107,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await doneShowsLyricsChanged(screen);
 
       expect(useProjectStore.getState().lines).toBe(synced);
-      expect(byId("b")).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
+      expect(fieldsOfLine(byId("b")!)).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
     });
 
     it("regression: a clean change after Keep my edits still leaves the synced line in place on Done", async () => {
@@ -125,7 +126,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await editText(screen, "Echo", "Echo!");
       await doneShowsLyricsChanged(screen);
 
-      expect(byId("b")).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
+      expect(fieldsOfLine(byId("b")!)).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
       expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "b", "c", "d", "e"]);
     });
 

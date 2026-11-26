@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { gridPoints } from "@/domain/tempo/grid-points";
@@ -26,7 +27,7 @@ const ALL_SOURCES = {
 // -- Fixtures ------------------------------------------------------------------
 
 function wordTimedLine(): LyricLine {
-  return {
+  return lineFromFields({
     id: "l1",
     text: "I love you",
     agentId: "v1",
@@ -40,17 +41,17 @@ function wordTimedLine(): LyricLine {
       { id: "w4", text: "oh", sep: " ", begin: 0.4, end: 0.55, joinsNext: false },
       { id: "w5", text: "yeah", sep: "", begin: 0.55, end: 0.8, joinsNext: false },
     ],
-  };
+  });
 }
 
 function lineSyncedLine(): LyricLine {
-  return {
+  return lineFromFields({
     id: "l2",
     text: "another line",
     agentId: "v1",
     begin: 2,
     end: 3,
-  };
+  });
 }
 
 // -- collectSnapAnchors --------------------------------------------------------
@@ -207,7 +208,7 @@ describe("collectSnapAnchors", () => {
   });
 
   it("contributes nothing for a line with neither words nor begin/end", () => {
-    const empty: LyricLine = { id: "lx", text: "no timing", agentId: "v1" };
+    const empty: LyricLine = lineFromFields({ id: "lx", text: "no timing", agentId: "v1" });
     const anchors = collectSnapAnchors([empty], new Set(), null);
     expect(anchors).toEqual([]);
   });

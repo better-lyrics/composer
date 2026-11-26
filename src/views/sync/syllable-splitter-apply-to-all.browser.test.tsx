@@ -1,3 +1,4 @@
+import { roleWords } from "@/domain/line/track";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
@@ -213,7 +214,7 @@ describe("SyllableSplitter wiring", () => {
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
     await screen.getByRole("button", { name: "Split" }).click();
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
   });
 
   it("leaves the project unchanged when the confirm modal is cancelled", async () => {
@@ -240,7 +241,7 @@ describe("SyllableSplitter wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(2);
   });
 
   it("routes through onSplit (not the store action) when apply-to-all is off", async () => {
@@ -265,7 +266,7 @@ describe("SyllableSplitter wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
     expect(onSplit).toHaveBeenCalledTimes(1);
-    expect(useProjectStore.getState().lines[1].words?.length).toBe(1);
+    expect(roleWords(useProjectStore.getState().lines[1], "main")?.length).toBe(1);
   });
 
   it("persists checkbox state to syllableSplitDefaults after a successful split", async () => {
