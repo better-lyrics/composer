@@ -66,6 +66,26 @@ const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     annotations: { readOnlyHint: true },
   },
   {
+    name: "set_project_language",
+    title: "Set project language",
+    description: [
+      "Set the language the lyrics are sung in, like the language field in Composer's Song details.",
+      "Auto-align reads it, and new transliterations default to it plus -Latn. Translations are not regenerated.",
+      "Unlike the other writes this is not an undo step in Composer; the result includes the previous language so you can set it back.",
+    ].join(" "),
+    inputSchema: {
+      type: "object",
+      required: ["language"],
+      properties: {
+        projectId: PROJECT_ID,
+        language: {
+          type: "string",
+          description: "BCP 47 tag such as ja, ko, zh-Hans or pt-BR. An empty string means auto-detect.",
+        },
+      },
+    },
+  },
+  {
     name: "edit_lines",
     title: "Edit lyrics",
     description: [
