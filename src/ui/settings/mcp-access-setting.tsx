@@ -62,13 +62,20 @@ const McpAccessSetting: React.FC = () => {
           <StatusLine status={status} />
           <p className="text-xs text-composer-text-muted">Add Composer to Claude Code:</p>
           <CopyableCommand
-            command={`claude mcp add --transport http composer ${endpoint}`}
+            command={`claude mcp add --scope user --transport http composer ${endpoint}`}
             copyLabel="Copy the Claude Code command"
           />
           <p className="text-xs text-composer-text-muted">Or to Codex, in ~/.codex/config.toml:</p>
           <CopyableCommand
             command={`[mcp_servers.composer]\nurl = "${endpoint}"`}
             copyLabel="Copy the Codex configuration"
+          />
+          <p className="text-xs text-composer-text-muted">
+            Optionally, teach your agent the workflow with the composer-lyrics skill:
+          </p>
+          <CopyableCommand
+            command="npx skills add better-lyrics/composer-bridge@composer-lyrics -g"
+            copyLabel="Copy the skill install command"
           />
         </div>
       )}
