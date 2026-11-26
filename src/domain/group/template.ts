@@ -1,3 +1,4 @@
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -37,7 +38,7 @@ interface LineTemplate {
 // Keep exact alternate fragments and separators when moving between absolute
 // timings and templates; an empty string is meaningful for both fields.
 function wordsToTemplate(words: WordTiming[], instanceStart: number): WordTemplate[] {
-  return words.map(({ begin, end, syllableGroupId: _groupId, ...word }) => ({
+  return words.map(({ id: _id, begin, end, syllableGroupId: _groupId, ...word }) => ({
     ...word,
     relativeBegin: begin - instanceStart,
     relativeEnd: end - instanceStart,
@@ -47,6 +48,7 @@ function wordsToTemplate(words: WordTiming[], instanceStart: number): WordTempla
 function offsetTemplateWords(words: WordTemplate[], instanceStart: number): WordTiming[] {
   return words.map(({ relativeBegin, relativeEnd, ...word }) => ({
     ...word,
+    id: newWordId(),
     begin: relativeBegin + instanceStart,
     end: relativeEnd + instanceStart,
   }));

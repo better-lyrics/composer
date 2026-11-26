@@ -1,4 +1,5 @@
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import { applyMoveFromBg, applyMoveToBg } from "@/stores/project/lines-slice-helpers";
 /**
  * @vitest-environment node
@@ -15,9 +16,9 @@ function mainLine(overrides: Partial<LooseLine> = {}): LyricLine {
     text: "hello world goodbye",
     agentId: "v1",
     words: [
-      { text: "hello", sep: " ", begin: 0, end: 1 },
-      { text: "world", sep: " ", begin: 1, end: 2 },
-      { text: "goodbye", sep: "", begin: 2, end: 3 },
+      { id: newWordId(), text: "hello", sep: " ", begin: 0, end: 1 },
+      { id: newWordId(), text: "world", sep: " ", begin: 1, end: 2 },
+      { id: newWordId(), text: "goodbye", sep: "", begin: 2, end: 3 },
     ],
     ...overrides,
   });
@@ -35,7 +36,7 @@ describe("applyMoveToBg", () => {
 
   it("flips an extraction-sourced background to manual when merging words in", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "yeah", sep: "", begin: 5, end: 6 }],
+      backgroundWords: [{ id: "w1", text: "yeah", sep: "", begin: 5, end: 6 }],
       backgroundText: "yeah",
       backgroundTextSource: "extraction",
     });
@@ -45,7 +46,7 @@ describe("applyMoveToBg", () => {
 
   it("moves words into an existing background, keeping main timing intact", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ah", sep: "", begin: 8, end: 9 }],
+      backgroundWords: [{ id: "w2", text: "ah", sep: "", begin: 8, end: 9 }],
       backgroundText: "ah",
       backgroundTextSource: "manual",
     });
@@ -67,7 +68,7 @@ describe("applyMoveToBg", () => {
 
   it("does not mutate the input line's existing background array", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ah", sep: "", begin: 8, end: 9 }],
+      backgroundWords: [{ id: "w3", text: "ah", sep: "", begin: 8, end: 9 }],
       backgroundText: "ah",
       backgroundTextSource: "manual",
     });
@@ -82,7 +83,7 @@ describe("applyMoveToBg", () => {
 describe("applyMoveFromBg", () => {
   it("clears all three background fields when no background words remain", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
+      backgroundWords: [{ id: "w4", text: "ooh", sep: "", begin: 10, end: 11 }],
       backgroundText: "ooh",
       backgroundTextSource: "extraction",
     });
@@ -95,8 +96,8 @@ describe("applyMoveFromBg", () => {
   it("stamps a manual provenance on the surviving background", () => {
     const line = mainLine({
       backgroundWords: [
-        { text: "ah", sep: " ", begin: 5, end: 6 },
-        { text: "ooh", sep: "", begin: 6, end: 7 },
+        { id: "w5", text: "ah", sep: " ", begin: 5, end: 6 },
+        { id: "w6", text: "ooh", sep: "", begin: 6, end: 7 },
       ],
       backgroundText: "ahooh",
       backgroundTextSource: "extraction",
@@ -109,7 +110,7 @@ describe("applyMoveFromBg", () => {
 
   it("returns null when no indices match", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
+      backgroundWords: [{ id: "w7", text: "ooh", sep: "", begin: 10, end: 11 }],
       backgroundText: "ooh",
     });
     expect(applyMoveFromBg(line, [], 0, DURATION)).toBeNull();
@@ -122,8 +123,8 @@ describe("applyMoveFromBg", () => {
   it("does not mutate the input line", () => {
     const line = mainLine({
       backgroundWords: [
-        { text: "ah", sep: " ", begin: 5, end: 6 },
-        { text: "ooh", sep: "", begin: 6, end: 7 },
+        { id: "w8", text: "ah", sep: " ", begin: 5, end: 6 },
+        { id: "w9", text: "ooh", sep: "", begin: 6, end: 7 },
       ],
       backgroundText: "ahooh",
       backgroundTextSource: "extraction",
@@ -138,7 +139,7 @@ describe("applyMoveFromBg", () => {
       begin: 5,
       end: 10,
       words: [],
-      backgroundWords: [{ text: "ooh", sep: "", begin: 6, end: 7 }],
+      backgroundWords: [{ id: "w10", text: "ooh", sep: "", begin: 6, end: 7 }],
       backgroundText: "ooh",
     });
     const result = applyMoveFromBg(line, [0], 0, DURATION);

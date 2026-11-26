@@ -25,10 +25,12 @@ interface LanguageDisplayLine {
   backgroundWordTexts?: string[];
 }
 
+// Scratch slots for labels only; they never reach the store, so they need no fresh ids.
 function sourceSlots(text: string): WordTiming[] {
   const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
   return wordsFromSpaced(
     parts.map((part, index) => ({
+      id: `slot-${index}`,
       text: trailingSpace[index] ? `${part} ` : part,
       begin: index,
       end: index + 1,

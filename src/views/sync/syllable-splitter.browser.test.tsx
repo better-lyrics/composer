@@ -3,8 +3,8 @@ import { render } from "@/test/render";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { describe, expect, it } from "vitest";
 
-const SINGLE_CHAR: WordTiming = { text: "a", sep: "", begin: 0, end: 1 };
-const MULTI_CHAR: WordTiming = { text: "hello", sep: "", begin: 0, end: 1 };
+const SINGLE_CHAR: WordTiming = { id: "w1", text: "a", sep: "", begin: 0, end: 1 };
+const MULTI_CHAR: WordTiming = { id: "w2", text: "hello", sep: "", begin: 0, end: 1 };
 
 describe("SyllableSplitter", () => {
   it("renders nothing for single-character words", async () => {
@@ -36,7 +36,7 @@ describe("SyllableSplitter", () => {
       <SyllableSplitter
         lineId="test-line"
         type="word"
-        word={{ text: "붙어있던", sep: "", transliteration: "but eoissdeon", begin: 0, end: 1 }}
+        word={{ id: "w3", text: "붙어있던", sep: "", transliteration: "but eoissdeon", begin: 0, end: 1 }}
         wordIndex={0}
         onSplit={() => {}}
       />,
@@ -59,7 +59,7 @@ describe("SyllableSplitter", () => {
       <SyllableSplitter
         lineId="test-line"
         type="word"
-        word={{ text: "abcd", sep: "", begin: 0, end: 1 }}
+        word={{ id: "w4", text: "abcd", sep: "", begin: 0, end: 1 }}
         wordIndex={0}
         onSplit={(_, words) => {
           splits = words;
@@ -79,7 +79,7 @@ describe("SyllableSplitter", () => {
       <SyllableSplitter
         lineId="test-line"
         type="word"
-        word={{ text: "every", sep: "", begin: 0, end: 1 }}
+        word={{ id: "w5", text: "every", sep: "", begin: 0, end: 1 }}
         wordIndex={0}
         onSplit={(_, words) => {
           splits = words;
@@ -103,7 +103,7 @@ describe("SyllableSplitter", () => {
       <SyllableSplitter
         lineId="test-line"
         type="word"
-        word={{ text: "ev", sep: "", begin: 0, end: 1, syllableGroupId: "g_source" }}
+        word={{ id: "w6", text: "ev", sep: "", begin: 0, end: 1, syllableGroupId: "g_source" }}
         wordIndex={0}
         onSplit={(_, words) => {
           splits = words;

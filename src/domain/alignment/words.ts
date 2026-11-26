@@ -1,4 +1,5 @@
 import { splitCjkPart } from "@/domain/alignment/cjk";
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitTrailingWhitespace } from "insync/from-words";
 import { nanoid } from "nanoid";
@@ -112,6 +113,7 @@ function timingsFromParts(
     pieces.forEach((piece, k) => {
       const text = k === pieces.length - 1 && trailingSpace ? `${piece.text} ` : piece.text;
       timings.push({
+        id: newWordId(),
         ...splitTrailingWhitespace(text),
         begin: piece.begin,
         end: piece.end,

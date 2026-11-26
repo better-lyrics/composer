@@ -6,6 +6,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { planStretchDrag } from "./stretch-drag";
 import { stretchSelections } from "./stretch-selection";
+import { newWordId } from "@/domain/word/id";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -26,9 +27,9 @@ const word = (lineId: string, wordIndex: number) => ({ lineId, type: "word" as c
 describe("planStretchDrag", () => {
   const lines = [
     makeLine("L", [
-      { text: "a", sep: " ", begin: 0, end: 1 },
-      { text: "b", sep: " ", begin: 1, end: 2 },
-      { text: "c", sep: "", begin: 2, end: 3 },
+      { id: "w1", text: "a", sep: " ", begin: 0, end: 1 },
+      { id: "w2", text: "b", sep: " ", begin: 1, end: 2 },
+      { id: "w3", text: "c", sep: "", begin: 2, end: 3 },
     ]),
   ];
 
@@ -93,7 +94,7 @@ describe("planStretchDrag", () => {
 
   it("counts word blocks only — line-synced rows never add a grip", () => {
     const mixed: LyricLine[] = [
-      makeLine("A", [{ text: "a", sep: "", begin: 1, end: 2 }]),
+      makeLine("A", [{ id: "w4", text: "a", sep: "", begin: 1, end: 2 }]),
       { id: "B", text: "y", agentId: "v1", begin: 2, end: 6 },
     ];
     const plan = planStretchDrag(
@@ -111,8 +112,8 @@ describe("planStretchDrag", () => {
         id: "A",
         text: "main",
         agentId: "v1",
-        words: [{ text: "main", sep: "", begin: 2, end: 4 }],
-        backgroundWords: [{ text: "ooh", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w5", text: "main", sep: "", begin: 2, end: 4 }],
+        backgroundWords: [{ id: "w6", text: "ooh", sep: "", begin: 0, end: 1 }],
       },
     ];
     const plan = planStretchDrag(
@@ -130,9 +131,9 @@ describe("planStretchDrag", () => {
   it("caps maxFactor at the right neighbour", () => {
     const neighbour = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 1, end: 2 },
-        { text: "b", sep: "", begin: 2, end: 3 },
-        { text: "c", sep: "", begin: 5, end: 6 },
+        { id: "w7", text: "a", sep: " ", begin: 1, end: 2 },
+        { id: "w8", text: "b", sep: "", begin: 2, end: 3 },
+        { id: "w9", text: "c", sep: "", begin: 5, end: 6 },
       ]),
     ];
     const plan = planStretchDrag(
@@ -148,8 +149,8 @@ describe("planStretchDrag", () => {
   it("raises minFactor when a word is shorter than minWordDuration", () => {
     const short = [
       makeLine("L", [
-        { text: "tiny", sep: " ", begin: 0, end: 0.05 },
-        { text: "b", sep: "", begin: 0.05, end: 2 },
+        { id: "w10", text: "tiny", sep: " ", begin: 0, end: 0.05 },
+        { id: "w11", text: "b", sep: "", begin: 0.05, end: 2 },
       ]),
     ];
     const plan = planStretchDrag(
@@ -170,8 +171,8 @@ describe("planStretchDrag", () => {
     // Zero span: two stacked words at the same instant.
     const stacked = [
       makeLine("L", [
-        { text: "a", sep: "", begin: 1, end: 1 },
-        { text: "b", sep: "", begin: 1, end: 1 },
+        { id: "w12", text: "a", sep: "", begin: 1, end: 1 },
+        { id: "w13", text: "b", sep: "", begin: 1, end: 1 },
       ]),
     ];
     expect(
@@ -197,9 +198,9 @@ describe("planStretchDrag", () => {
     // growing to the minimum would overlap it.
     const tight = [
       makeLine("L", [
-        { text: "tiny", sep: " ", begin: 1, end: 1.05 },
-        { text: "mid", sep: "", begin: 1.05, end: 1.2 },
-        { text: "next", sep: "", begin: 1.2, end: 4 },
+        { id: "w14", text: "tiny", sep: " ", begin: 1, end: 1.05 },
+        { id: "w15", text: "mid", sep: "", begin: 1.05, end: 1.2 },
+        { id: "w16", text: "next", sep: "", begin: 1.2, end: 4 },
       ]),
     ];
     const plan = planStretchDrag(
@@ -218,9 +219,9 @@ describe("stretchSelections · normal scaling", () => {
   it("scales a word run 2x around the anchor, preserving order, text and untouched words", () => {
     const lines = [
       makeLine("L", [
-        { text: "keep", sep: " ", begin: 0, end: 0.5 },
-        { text: "a", sep: " ", begin: 1, end: 2 },
-        { text: "b", sep: "", begin: 3, end: 4 },
+        { id: "w17", text: "keep", sep: " ", begin: 0, end: 0.5 },
+        { id: "w18", text: "a", sep: " ", begin: 1, end: 2 },
+        { id: "w19", text: "b", sep: "", begin: 3, end: 4 },
       ]),
     ];
     const result = stretchSelections(lines, [word("L", 1), word("L", 2)], 2, OPTS);
@@ -241,8 +242,8 @@ describe("stretchSelections · normal scaling", () => {
   it("shrinks toward the anchor with k < 1", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 2, end: 4 },
-        { text: "b", sep: "", begin: 4, end: 6 },
+        { id: "w20", text: "a", sep: " ", begin: 2, end: 4 },
+        { id: "w21", text: "b", sep: "", begin: 4, end: 6 },
       ]),
     ];
     const result = stretchSelections(lines, [word("L", 0), word("L", 1)], 0.5, OPTS);
@@ -255,8 +256,8 @@ describe("stretchSelections · normal scaling", () => {
 
   it("scales a cross-line selection around the global anchor", () => {
     const lines: LyricLine[] = [
-      makeLine("A", [{ text: "a", sep: "", begin: 1, end: 2 }]),
-      makeLine("B", [{ text: "b", sep: "", begin: 3, end: 5 }]),
+      makeLine("A", [{ id: "w22", text: "a", sep: "", begin: 1, end: 2 }]),
+      makeLine("B", [{ id: "w23", text: "b", sep: "", begin: 3, end: 5 }]),
     ];
     const result = stretchSelections(lines, [word("A", 0), word("B", 0)], 2, OPTS);
     expect(result.updates).toHaveLength(2);
@@ -274,9 +275,9 @@ describe("stretchSelections · normal scaling", () => {
     // the pair flush onto "world" without touching anything else.
     const lines = [
       makeLine("L", [
-        { text: "hel", sep: "", begin: 1, end: 2 },
-        { text: "lo", sep: " ", begin: 2, end: 3 },
-        { text: "world", sep: "", begin: 5, end: 7 },
+        { id: "w24", text: "hel", sep: "", begin: 1, end: 2 },
+        { id: "w25", text: "lo", sep: " ", begin: 2, end: 3 },
+        { id: "w26", text: "world", sep: "", begin: 5, end: 7 },
       ]),
     ];
     const result = stretchSelections(lines, [word("L", 0), word("L", 1)], 2, OPTS);
@@ -295,8 +296,8 @@ describe("stretchSelections · normal scaling", () => {
     // 2x request is clamped back to 1 (no-op).
     const lines = [
       makeLine("L", [
-        { text: "hel", sep: "", begin: 1, end: 2 },
-        { text: "lo", sep: " ", begin: 2, end: 3 },
+        { id: "w27", text: "hel", sep: "", begin: 1, end: 2 },
+        { id: "w28", text: "lo", sep: " ", begin: 2, end: 3 },
       ]),
     ];
     const result = stretchSelections(lines, [word("L", 0)], 2, OPTS);
@@ -312,9 +313,9 @@ describe("stretchSelections · anchor end", () => {
   // with anchor 10 has room up to kHi = (10 - 1) / (10 - 6) = 2.25.
   const lines = [
     makeLine("L", [
-      { text: "block", sep: " ", begin: 0, end: 1 },
-      { text: "a", sep: " ", begin: 6, end: 8 },
-      { text: "b", sep: "", begin: 8, end: 10 },
+      { id: "w29", text: "block", sep: " ", begin: 0, end: 1 },
+      { id: "w30", text: "a", sep: " ", begin: 6, end: 8 },
+      { id: "w31", text: "b", sep: "", begin: 8, end: 10 },
     ]),
   ];
   const sel = [word("L", 1), word("L", 2)];
@@ -343,9 +344,9 @@ describe("stretchSelections · anchor end", () => {
   it("clamps leftward growth flush at the left neighbour", () => {
     const tight = [
       makeLine("L", [
-        { text: "block", sep: " ", begin: 0, end: 4 },
-        { text: "a", sep: " ", begin: 6, end: 8 },
-        { text: "b", sep: "", begin: 8, end: 10 },
+        { id: "w32", text: "block", sep: " ", begin: 0, end: 4 },
+        { id: "w33", text: "a", sep: " ", begin: 6, end: 8 },
+        { id: "w34", text: "b", sep: "", begin: 8, end: 10 },
       ]),
     ];
     // kHi = (10 - 4) / (10 - 6) = 1.5.
@@ -360,8 +361,8 @@ describe("stretchSelections · anchor end", () => {
   it("clamps leftward growth at time 0 when there is no left neighbour", () => {
     const open = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 4, end: 6 },
-        { text: "b", sep: "", begin: 6, end: 10 },
+        { id: "w35", text: "a", sep: " ", begin: 4, end: 6 },
+        { id: "w36", text: "b", sep: "", begin: 6, end: 10 },
       ]),
     ];
     // kHi = 10 / (10 - 4) = 5/3.
@@ -382,7 +383,7 @@ describe("stretchSelections · anchor end", () => {
 
   it("maps a mixed line-synced row around the right anchor", () => {
     const mixed: LyricLine[] = [
-      makeLine("A", [{ text: "a", sep: "", begin: 2, end: 4 }]),
+      makeLine("A", [{ id: "w37", text: "a", sep: "", begin: 2, end: 4 }]),
       { id: "B", text: "y", agentId: "v1", begin: 0, end: 1 },
     ];
     const result = stretchSelections(mixed, [word("A", 0), word("B", 0)], 0.5, { ...OPTS, anchor: "end" });
@@ -402,8 +403,8 @@ describe("stretchSelections · clamping", () => {
   it("clamps growth at a right-side unselected neighbour and lands flush", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 1, end: 2 },
-        { text: "block", sep: "", begin: 3, end: 4 },
+        { id: "w38", text: "a", sep: " ", begin: 1, end: 2 },
+        { id: "w39", text: "block", sep: "", begin: 3, end: 4 },
       ]),
     ];
     // Selection = word 0 only; grow beyond the neighbour start is impossible.
@@ -419,10 +420,10 @@ describe("stretchSelections · clamping", () => {
     // Row A anchors T0 at 0; row B's selected word has a non-selected left
     // neighbour ending at 4.8 → shrink pulls its begin toward 4.8: k >= 4.8/5.
     const lines: LyricLine[] = [
-      makeLine("A", [{ text: "anchor", sep: "", begin: 0, end: 1 }]),
+      makeLine("A", [{ id: "w40", text: "anchor", sep: "", begin: 0, end: 1 }]),
       makeLine("B", [
-        { text: "block", sep: " ", begin: 4.2, end: 4.8 },
-        { text: "far", sep: "", begin: 5, end: 6 },
+        { id: "w41", text: "block", sep: " ", begin: 4.2, end: 4.8 },
+        { id: "w42", text: "far", sep: "", begin: 5, end: 6 },
       ]),
     ];
     const result = stretchSelections(lines, [word("A", 0), word("B", 1)], 0.5, OPTS);
@@ -436,8 +437,8 @@ describe("stretchSelections · clamping", () => {
   it("clamps shrink at minWordDuration so the shortest word lands exactly on the minimum", () => {
     const lines = [
       makeLine("L", [
-        { text: "short", sep: " ", begin: 1, end: 1.5 },
-        { text: "long", sep: "", begin: 1.5, end: 3.5 },
+        { id: "w43", text: "short", sep: " ", begin: 1, end: 1.5 },
+        { id: "w44", text: "long", sep: "", begin: 1.5, end: 3.5 },
       ]),
     ];
     // minFactor = 0.1 / 0.5 = 0.2.
@@ -449,7 +450,7 @@ describe("stretchSelections · clamping", () => {
   });
 
   it("clamps growth at audio duration", () => {
-    const lines = [makeLine("L", [{ text: "a", sep: "", begin: 50, end: 55 }])];
+    const lines = [makeLine("L", [{ id: "w45", text: "a", sep: "", begin: 50, end: 55 }])];
     // Right bound from duration: k <= (60 - 50) / 5 = 2.
     const result = stretchSelections(lines, [word("L", 0)], 10, { rangeOf: wholeSong(60), minWordDuration: 0.1 });
     expect(result.appliedFactor).toBeCloseTo(2);
@@ -459,8 +460,8 @@ describe("stretchSelections · clamping", () => {
   it("grows to the minimum when a word already violates minWordDuration", () => {
     const lines = [
       makeLine("L", [
-        { text: "tiny", sep: " ", begin: 1, end: 1.05 },
-        { text: "b", sep: "", begin: 1.05, end: 3 },
+        { id: "w46", text: "tiny", sep: " ", begin: 1, end: 1.05 },
+        { id: "w47", text: "b", sep: "", begin: 1.05, end: 3 },
       ]),
     ];
     // minFactor = 0.1 / 0.05 = 2 → even a shrink request grows to exactly 2.
@@ -480,11 +481,11 @@ describe("stretchSelections · tracks and line types", () => {
         id: "A",
         text: "main",
         agentId: "v1",
-        words: [{ text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w48", text: "main", sep: "", begin: 0, end: 1 }],
         backgroundText: "ooh ahh",
         backgroundWords: [
-          { text: "ooh", sep: " ", begin: 2, end: 3 },
-          { text: "ahh", sep: "", begin: 3, end: 5 },
+          { id: "w49", text: "ooh", sep: " ", begin: 2, end: 3 },
+          { id: "w50", text: "ahh", sep: "", begin: 3, end: 5 },
         ],
         backgroundTextSource: "extraction",
       },
@@ -517,10 +518,10 @@ describe("stretchSelections · tracks and line types", () => {
         text: "main",
         agentId: "v1",
         words: [
-          { text: "main", sep: " ", begin: 1, end: 2 },
-          { text: "x", sep: "", begin: 2, end: 4 },
+          { id: "w51", text: "main", sep: " ", begin: 1, end: 2 },
+          { id: "w52", text: "x", sep: "", begin: 2, end: 4 },
         ],
-        backgroundWords: [{ text: "ooh", sep: "", begin: 1, end: 4 }],
+        backgroundWords: [{ id: "w53", text: "ooh", sep: "", begin: 1, end: 4 }],
       },
     ];
     const result = stretchSelections(lines, [word("A", 1), { lineId: "A", type: "bg", wordIndex: 0 }], 2, OPTS);
@@ -532,7 +533,7 @@ describe("stretchSelections · tracks and line types", () => {
 
   it("scales line-synced begin/end with the same factor as word-synced rows", () => {
     const lines: LyricLine[] = [
-      makeLine("A", [{ text: "a", sep: "", begin: 1, end: 2 }]),
+      makeLine("A", [{ id: "w54", text: "a", sep: "", begin: 1, end: 2 }]),
       { id: "B", text: "y", agentId: "v1", begin: 2, end: 6 },
     ];
     const result = stretchSelections(lines, [word("A", 0), word("B", 0)], 2, OPTS);
@@ -559,8 +560,8 @@ describe("stretchSelections · tracks and line types", () => {
 describe("stretchSelections · degenerate cases", () => {
   const lines = [
     makeLine("L", [
-      { text: "a", sep: " ", begin: 1, end: 2 },
-      { text: "b", sep: "", begin: 2, end: 4 },
+      { id: "w55", text: "a", sep: " ", begin: 1, end: 2 },
+      { id: "w56", text: "b", sep: "", begin: 2, end: 4 },
     ]),
   ];
   const selections = [word("L", 0), word("L", 1)];
@@ -590,7 +591,12 @@ describe("stretchSelections · degenerate cases", () => {
     expect(nanDuration.updates).toHaveLength(0);
 
     const nanWords: LyricLine[] = [
-      { id: "L", text: "a b", agentId: "v1", words: [{ text: "a", sep: "", begin: Number.NaN, end: 2 }] },
+      {
+        id: "L",
+        text: "a b",
+        agentId: "v1",
+        words: [{ id: newWordId(), text: "a", sep: "", begin: Number.NaN, end: 2 }],
+      },
     ];
     const nanTiming = stretchSelections(nanWords, [word("L", 0)], 2, OPTS);
     expect(nanTiming.updates).toHaveLength(0);
@@ -601,8 +607,8 @@ describe("stretchSelections · degenerate cases", () => {
     // neighbour: growing to the minimum would overlap it.
     const tight = [
       makeLine("L", [
-        { text: "tiny", sep: " ", begin: 1, end: 1.05 },
-        { text: "next", sep: "", begin: 1.05, end: 4 },
+        { id: "w57", text: "tiny", sep: " ", begin: 1, end: 1.05 },
+        { id: "w58", text: "next", sep: "", begin: 1.05, end: 4 },
       ]),
     ];
     const result = stretchSelections(tight, [word("L", 0)], 1.5, OPTS);

@@ -8,6 +8,7 @@ import { cloneWord, splitSourceWord, synthesizeBracketedWord } from "./word-timi
 describe("cloneWord", () => {
   it("carries every input field through, overrides apply", () => {
     const source: WordTiming = {
+      id: "w1",
       text: "ev",
       sep: "",
       begin: 0,
@@ -27,7 +28,7 @@ describe("cloneWord", () => {
   });
 
   it("returns a fresh object (no aliasing)", () => {
-    const source: WordTiming = { text: "ev", sep: "", begin: 0, end: 1 };
+    const source: WordTiming = { id: "w2", text: "ev", sep: "", begin: 0, end: 1 };
     const result = cloneWord(source, {});
     expect(result).not.toBe(source);
     expect(result).toEqual(source);
@@ -41,8 +42,8 @@ describe("synthesizeBracketedWord", () => {
       sep: "",
       begin: 0,
       end: 0.1,
-      leftBracket: { text: "x", sep: "", begin: -0.1, end: 0, syllableGroupId: "g1" },
-      rightBracket: { text: "y", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
+      leftBracket: { id: "w3", text: "x", sep: "", begin: -0.1, end: 0, syllableGroupId: "g1" },
+      rightBracket: { id: "w4", text: "y", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
     });
     expect(result.syllableGroupId).toBe("g1");
   });
@@ -53,7 +54,7 @@ describe("synthesizeBracketedWord", () => {
       sep: "",
       begin: 0,
       end: 0.1,
-      leftBracket: { text: "x", sep: "", begin: -0.1, end: 0, syllableGroupId: "g1" },
+      leftBracket: { id: "w5", text: "x", sep: "", begin: -0.1, end: 0, syllableGroupId: "g1" },
     });
     expect(result.syllableGroupId).toBe("g1");
   });
@@ -64,7 +65,7 @@ describe("synthesizeBracketedWord", () => {
       sep: "",
       begin: 0,
       end: 0.1,
-      rightBracket: { text: "y", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
+      rightBracket: { id: "w6", text: "y", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
     });
     expect(result.syllableGroupId).toBe("g1");
   });
@@ -75,8 +76,8 @@ describe("synthesizeBracketedWord", () => {
       sep: "",
       begin: 0,
       end: 0.1,
-      leftBracket: { text: "x", sep: "", begin: -0.1, end: 0, syllableGroupId: "g1" },
-      rightBracket: { text: "y", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g2" },
+      leftBracket: { id: "w7", text: "x", sep: "", begin: -0.1, end: 0, syllableGroupId: "g1" },
+      rightBracket: { id: "w8", text: "y", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g2" },
     });
     expect(result.syllableGroupId).toBeUndefined();
   });
@@ -87,8 +88,8 @@ describe("synthesizeBracketedWord", () => {
       sep: "",
       begin: 0,
       end: 0.1,
-      leftBracket: { text: "x", sep: "", begin: -0.1, end: 0 },
-      rightBracket: { text: "y", sep: "", begin: 0.1, end: 0.2 },
+      leftBracket: { id: "w9", text: "x", sep: "", begin: -0.1, end: 0 },
+      rightBracket: { id: "w10", text: "y", sep: "", begin: 0.1, end: 0.2 },
     });
     expect(result.syllableGroupId).toBeUndefined();
   });
@@ -104,7 +105,13 @@ describe("synthesizeBracketedWord", () => {
   });
 
   it("omits explicit when explicit=false or absent", () => {
-    const result = synthesizeBracketedWord({ text: "e", sep: "", begin: 0, end: 0.1, explicit: false });
+    const result = synthesizeBracketedWord({
+      text: "e",
+      sep: "",
+      begin: 0,
+      end: 0.1,
+      explicit: false,
+    });
     expect(result.explicit).toBeUndefined();
   });
 });
@@ -112,6 +119,7 @@ describe("synthesizeBracketedWord", () => {
 describe("splitSourceWord", () => {
   it("returns N words, each inheriting source fields except text/begin/end", () => {
     const source: WordTiming = {
+      id: "w13",
       text: "every",
       sep: "",
       begin: 0,
@@ -135,12 +143,22 @@ describe("splitSourceWord", () => {
   });
 
   it("works for a standalone source word (no syllableGroupId)", () => {
-    const source: WordTiming = { text: "hello", sep: "", begin: 0, end: 1 };
+    const source: WordTiming = { id: "w17", text: "hello", sep: "", begin: 0, end: 1 };
     const result = splitSourceWord(source, [
       { text: "hel", begin: 0, end: 0.5 },
       { text: "lo", begin: 0.5, end: 1 },
     ]);
     expect(result[0].syllableGroupId).toBeUndefined();
     expect(result[1].syllableGroupId).toBeUndefined();
+  });
+
+  it("keeps the id on the first piece of a split and gives the others new ones", () => {
+    const source: WordTiming = { id: "y5", text: "drifting", sep: "", begin: 4, end: 5 };
+    const pieces = splitSourceWord(source, [
+      { text: "drif", begin: 4, end: 4.5 },
+      { text: "ting", begin: 4.5, end: 5 },
+    ]);
+    expect(pieces[0].id).toBe("y5");
+    expect(new Set(pieces.map((piece) => piece.id)).size).toBe(2);
   });
 });

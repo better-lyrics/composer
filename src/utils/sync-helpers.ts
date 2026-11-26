@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { lineTimingWordId } from "@/domain/word/id";
 import { trackWords } from "@/domain/line/tracks";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { SyncCursor } from "@/domain/sync/cursor";
@@ -75,6 +76,7 @@ function parseTimeMs(str: string): number | null {
 // -- Conversion Functions -----------------------------------------------------
 
 interface ConvertibleLine {
+  id?: string;
   text: string;
   begin?: number;
   end?: number;
@@ -98,6 +100,7 @@ function convertLineToWord<T extends ConvertibleLine>(line: T): T {
       text: trailingSpace[i] ? `${text} ` : text,
       begin: lineBegin + i * wordDuration,
       end: lineBegin + (i + 1) * wordDuration,
+      ...(i === 0 && line.id !== undefined && { id: lineTimingWordId(line.id) }),
     })),
   );
 

@@ -43,11 +43,11 @@ describe("drag timing kind on effective lines", () => {
           text: "alpha beta",
           agentId: "v1",
           words: [
-            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
-            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
+            { id: "w1", text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { id: "w2", text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
-        { id: "lB", text: "delta", agentId: "v1", words: [{ text: "delta", sep: "", begin: 5.0, end: 5.4 }] },
+        { id: "lB", text: "delta", agentId: "v1", words: [{ id: "w3", text: "delta", sep: "", begin: 5.0, end: 5.4 }] },
         { id: "lC", text: "Line synced only", agentId: "v1", begin: 17, end: 20 },
       ],
     });
@@ -85,8 +85,8 @@ describe("drag timing kind on effective lines", () => {
           text: "alpha beta",
           agentId: "v1",
           words: [
-            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
-            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
+            { id: "w5", text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { id: "w6", text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
         { id: "lB", text: "delta", agentId: "v1", begin: 5.0, end: 5.4 },

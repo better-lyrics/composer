@@ -18,7 +18,7 @@ const wordSynced: LyricLine = {
   id: "L2",
   text: "already words",
   agentId: "v1",
-  words: [{ text: "already words", sep: "", begin: 5, end: 6 }],
+  words: [{ id: "w1", text: "already words", sep: "", begin: 5, end: 6 }],
 };
 const anotherSynced: LyricLine = { id: "L3", text: "four five", agentId: "v1", begin: 7, end: 9 };
 const sentenceBg: LyricLine = {
@@ -26,11 +26,11 @@ const sentenceBg: LyricLine = {
   text: "main line",
   agentId: "v1",
   words: [
-    { text: "main", sep: " ", begin: 0, end: 2 },
-    { text: "line", sep: "", begin: 2, end: 4 },
+    { id: "w2", text: "main", sep: " ", begin: 0, end: 2 },
+    { id: "w3", text: "line", sep: "", begin: 2, end: 4 },
   ],
   backgroundText: "ooh yeah baby",
-  backgroundWords: [{ text: "ooh yeah baby", sep: "", begin: 1, end: 4 }],
+  backgroundWords: [{ id: "w4", text: "ooh yeah baby", sep: "", begin: 1, end: 4 }],
   backgroundTextSource: "manual",
 };
 
@@ -144,6 +144,7 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
       ...sentenceBg,
       backgroundWords: [
         {
+          id: "w5",
           text: "ooh yeah baby",
           sep: "",
           begin: 1,
@@ -165,8 +166,8 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
       ...sentenceBg,
       backgroundText: "ah ooh yeah",
       backgroundWords: [
-        { text: "ah", sep: " ", begin: 0, end: 1 },
-        { text: "ooh yeah", sep: "", begin: 1, end: 3 },
+        { id: "w6", text: "ah", sep: " ", begin: 0, end: 1 },
+        { id: "w7", text: "ooh yeah", sep: "", begin: 1, end: 3 },
       ],
     };
     const updates = computeSplitIntoWordsUpdates(bg("L4"), [line]);
@@ -189,7 +190,7 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
       begin: 0,
       end: 2,
       backgroundText: "ooh ah",
-      backgroundWords: [{ text: "ooh ah", sep: "", begin: 0, end: 2 }],
+      backgroundWords: [{ id: "w8", text: "ooh ah", sep: "", begin: 0, end: 2 }],
     };
     const updates = computeSplitIntoWordsUpdates([...main("L5"), ...bg("L5")], [line]);
     expect(updates).toHaveLength(1);
@@ -205,7 +206,7 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
       begin: 0,
       end: 2,
       backgroundText: "ooh ah",
-      backgroundWords: [{ text: "ooh ah", sep: "", begin: 0, end: 2 }],
+      backgroundWords: [{ id: "w9", text: "ooh ah", sep: "", begin: 0, end: 2 }],
     };
     const updates = computeSplitIntoWordsUpdates(bg("L5"), [line]);
     expect(updates).toHaveLength(1);
@@ -218,8 +219,8 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
       const line: LyricLine = {
         ...sentenceBg,
         backgroundWords: [
-          { text: "ooh", sep: " ", begin: 1, end: 2 },
-          { text: "yeah", sep: "", begin: 2, end: 3 },
+          { id: "w10", text: "ooh", sep: " ", begin: 1, end: 2 },
+          { id: "w11", text: "yeah", sep: "", begin: 2, end: 3 },
         ],
       };
       expect(computeSplitIntoWordsUpdates(bg("L4"), [line])).toHaveLength(0);
@@ -229,7 +230,7 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
       const line: LyricLine = {
         ...sentenceBg,
         backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", sep: "", begin: 1, end: 2 }],
+        backgroundWords: [{ id: "w12", text: "ooh", sep: "", begin: 1, end: 2 }],
       };
       expect(computeSplitIntoWordsUpdates(bg("L4"), [line])).toHaveLength(0);
     });
@@ -243,8 +244,8 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
       const line: LyricLine = {
         ...sentenceBg,
         backgroundWords: [
-          { text: "ooh yeah", sep: " ", begin: 1, end: 3 },
-          { text: "baby", sep: "", begin: 3, end: 4 },
+          { id: "w13", text: "ooh yeah", sep: " ", begin: 1, end: 3 },
+          { id: "w14", text: "baby", sep: "", begin: 3, end: 4 },
         ],
       };
       const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
@@ -260,7 +261,7 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
     it("regression: split parts keep the source word's explicit flag", () => {
       const line: LyricLine = {
         ...sentenceBg,
-        backgroundWords: [{ text: "ooh yeah", sep: "", begin: 1, end: 3, explicit: true }],
+        backgroundWords: [{ id: "w15", text: "ooh yeah", sep: "", begin: 1, end: 3, explicit: true }],
       };
       const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
       expect(words?.map((w) => w.explicit)).toEqual([true, true]);
@@ -269,7 +270,7 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
     it("regression: split parts drop the source word's syllable group", () => {
       const line: LyricLine = {
         ...sentenceBg,
-        backgroundWords: [{ text: "ooh yeah", sep: "", begin: 1, end: 3, syllableGroupId: "g1" }],
+        backgroundWords: [{ id: "w16", text: "ooh yeah", sep: "", begin: 1, end: 3, syllableGroupId: "g1" }],
       };
       const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
       expect(words?.every((w) => !("syllableGroupId" in w))).toBe(true);
@@ -324,7 +325,7 @@ describe("splitTargetsForMenu", () => {
         begin: 0,
         end: 2,
         backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", sep: "", begin: 0, end: 2 }],
+        backgroundWords: [{ id: "w17", text: "ooh", sep: "", begin: 0, end: 2 }],
       };
       const targets = splitTargetsForMenu({ lineId: "L5", type: "word" }, [selection("L5", "bg")]);
       const updates = computeSplitIntoWordsUpdates(targets, [line]);

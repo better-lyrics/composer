@@ -5,6 +5,7 @@ import { type LinkedLine, isAttachedToInstance, isLinked } from "@/domain/instan
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
+import { withIdsOf, withoutWordIds } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
@@ -110,14 +111,17 @@ function instanceOffset(lines: readonly LyricLine[], groupId: string, from: numb
 
 // -- Timing fields ------------------------------------------------------------
 
-function offsetWords(words: readonly WordTiming[] | undefined, offset: number): WordTiming[] | undefined {
-  return words?.map((word) => ({ ...word, begin: word.begin + offset, end: word.end + offset }));
+function offsetWords(words: readonly WordTiming[] | undefined, offset: number, target?: readonly WordTiming[]) {
+  return withIdsOf(
+    words?.map((word) => ({ ...word, begin: word.begin + offset, end: word.end + offset })),
+    target,
+  );
 }
 
-function offsetTimingFields(source: LyricLine, offset: number): LineUpdate["updates"] {
-  const backgroundWords = offsetWords(source.backgroundWords, offset);
-  if (source.words)
-    return { words: offsetWords(source.words, offset), backgroundWords, begin: undefined, end: undefined };
+function offsetTimingFields(source: LyricLine, offset: number, target: LyricLine): LineUpdate["updates"] {
+  const backgroundWords = offsetWords(source.backgroundWords, offset, target.backgroundWords);
+  const words = offsetWords(source.words, offset, target.words);
+  if (words) return { words, backgroundWords, begin: undefined, end: undefined };
   if (source.begin !== undefined) {
     return { begin: source.begin + offset, end: source.end + offset, backgroundWords, words: undefined };
   }
@@ -131,8 +135,8 @@ function timingChanged(before: LyricLine | undefined, after: LyricLine): boolean
   return (
     before.begin !== after.begin ||
     before.end !== after.end ||
-    !isStructurallyEqual(before.words, after.words) ||
-    !isStructurallyEqual(before.backgroundWords, after.backgroundWords)
+    !isStructurallyEqual(withoutWordIds(before.words), withoutWordIds(after.words)) ||
+    !isStructurallyEqual(withoutWordIds(before.backgroundWords), withoutWordIds(after.backgroundWords))
   );
 }
 
@@ -207,7 +211,7 @@ function sharedTimingFanOut(
         (line) => line.templateLineIdx === source.templateLineIdx,
       );
       if (!target) continue;
-      const updates = offsetTimingFields(source, offset);
+      const updates = offsetTimingFields(source, offset, target);
       if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
       const copied = reconcileLine({ ...target, ...updates });
       if (!timingChanged(target, copied)) continue;

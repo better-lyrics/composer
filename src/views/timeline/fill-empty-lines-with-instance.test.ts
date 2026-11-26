@@ -34,7 +34,12 @@ describe("isEmptyFillable", () => {
 
   it("returns false for a line that has words", () => {
     expect(
-      isEmptyFillable({ id: "1", text: "x", agentId: "v1", words: [{ text: "x", sep: "", begin: 0, end: 1 }] }),
+      isEmptyFillable({
+        id: "1",
+        text: "x",
+        agentId: "v1",
+        words: [{ id: "w1", text: "x", sep: "", begin: 0, end: 1 }],
+      }),
     ).toBe(false);
   });
 
@@ -55,10 +60,10 @@ describe("isEmptyFillable", () => {
 describe("fillEmptyLinesWithInstance · happy path", () => {
   it("fills exactly N consecutive empty lines and assigns group attrs", () => {
     const lines: LyricLine[] = [
-      { id: "intro", text: "intro", agentId: "v1", words: [{ text: "intro", sep: "", begin: 0, end: 5 }] },
+      { id: "intro", text: "intro", agentId: "v1", words: [{ id: "w2", text: "intro", sep: "", begin: 0, end: 5 }] },
       { id: "empty1", text: "Chorus line 1", agentId: "v1" },
       { id: "empty2", text: "Chorus line 2", agentId: "v1" },
-      { id: "outro", text: "outro", agentId: "v1", words: [{ text: "outro", sep: "", begin: 30, end: 35 }] },
+      { id: "outro", text: "outro", agentId: "v1", words: [{ id: "w3", text: "outro", sep: "", begin: 30, end: 35 }] },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -206,7 +211,7 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
         id: "synced",
         text: "Chorus line 2",
         agentId: "v1",
-        words: [{ text: "Chorus line 2", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w4", text: "Chorus line 2", sep: "", begin: 0, end: 1 }],
       },
     ];
     const result = fillEmptyLinesWithInstance({
