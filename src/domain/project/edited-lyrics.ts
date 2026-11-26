@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import { type DocPassthrough, isEmptyDocPassthrough } from "insync/passthrough";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "@/domain/agent/model";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
@@ -9,11 +11,17 @@ import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 
+interface KeptRoot {
+  parts: readonly Part[];
+  passthrough: DocPassthrough;
+}
+
 interface EditedLyrics {
   lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[] | undefined;
   metadata: Partial<ProjectMetadata>;
+  kept?: KeptRoot;
 }
 
 interface ProjectLyrics {
@@ -21,6 +29,8 @@ interface ProjectLyrics {
   groups: readonly LinkGroup[];
   agents: readonly Agent[];
   metadata: ProjectMetadata;
+  parts?: readonly Part[];
+  passthrough?: DocPassthrough;
 }
 
 type ProjectPart = "lines" | "metadata" | "agents" | "groups";
@@ -30,6 +40,7 @@ interface EditedLyricsWrite {
   groups: LinkGroup[];
   agents: Agent[];
   metadata: Partial<ProjectMetadata>;
+  kept?: KeptRoot;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -44,6 +55,22 @@ function withUnnamedAgentsKept(current: readonly Agent[], incoming: Agent[] | un
   });
 }
 
+// A file read again makes new part ids, so parts compare by what they hold.
+function samePart(a: Part, b: Part): boolean {
+  return isStructurallyEqual({ ...a, id: "" }, { ...b, id: "" });
+}
+
+function sameKeptRoot(current: ProjectLyrics, kept: KeptRoot): boolean {
+  const parts = current.parts ?? [];
+  const sameParts =
+    parts.length === kept.parts.length && parts.every((part, index) => samePart(part, kept.parts[index]));
+  const samePassthrough =
+    isEmptyDocPassthrough(current.passthrough) && isEmptyDocPassthrough(kept.passthrough)
+      ? true
+      : isStructurallyEqual(current.passthrough, kept.passthrough);
+  return sameParts && samePassthrough;
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function editedLyricsWrite(current: ProjectLyrics, edited: EditedLyrics): EditedLyricsWrite {
@@ -54,6 +81,7 @@ function editedLyricsWrite(current: ProjectLyrics, edited: EditedLyrics): Edited
     groups: edited.groups,
     agents: assignment.agents,
     metadata: changedMetadata(current.metadata, edited.metadata),
+    ...(edited.kept && !sameKeptRoot(current, edited.kept) && { kept: edited.kept }),
   };
 }
 
@@ -70,7 +98,7 @@ function changedParts(current: ProjectLyrics, write: EditedLyricsWrite, timeTole
 }
 
 function changesProject(current: ProjectLyrics, write: EditedLyricsWrite): boolean {
-  return changedParts(current, write).length > 0;
+  return write.kept !== undefined || changedParts(current, write).length > 0;
 }
 
 // -- Exports ------------------------------------------------------------------

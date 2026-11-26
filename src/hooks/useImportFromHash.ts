@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "@/domain/agent/model";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -18,6 +20,8 @@ interface ImportPayload {
   agents: Agent[];
   version?: unknown;
   lines: unknown[];
+  parts?: Part[];
+  passthrough?: DocPassthrough;
   granularity: "line" | "word";
 }
 
@@ -43,7 +47,11 @@ function applyImport(payload: ImportPayload, metadata: ProjectMetadata): void {
   useProjectStore.getState().reset();
   const state = useProjectStore.getState();
   state.setMetadata(metadata);
-  state.restoreLyrics({ lines: linesFromLink(payload) });
+  state.restoreLyrics({
+    lines: linesFromLink(payload),
+    parts: payload.parts ?? [],
+    passthrough: payload.passthrough ?? {},
+  });
   state.setGranularity(payload.granularity);
   for (const agent of payload.agents) {
     if (!useProjectStore.getState().agents.some((existing) => existing.id === agent.id)) {

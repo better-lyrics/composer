@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
@@ -120,5 +120,93 @@ describe("mergeEditedTtmlLines · word timing", () => {
     const ids = mainTrack(merged).syllables.map((syllable) => syllable.id);
     expect(lineText(merged)).toBe("a b c d");
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("regression: a partly synced line keeps its untimed rest when another part of the line changes", () => {
+    const loaded = createLine({ id: "a", text: "a b c d", backgroundText: "ooh ah" });
+    const [first] = mainTrack(loaded).syllables;
+    const tapped = withRoleWords(loaded, "main", [{ ...first, begin: 1, end: 2 }]);
+    const [bgFirst] = backgroundTrack(tapped)?.syllables ?? [];
+    const partly = withRoleWords(tapped, "bg", [{ ...bgFirst!, begin: 1, end: 1.5 }]);
+
+    const merged = mergeEditedExport([partly], (ttml) => ttml.replace('ttm:agent="v1"', 'ttm:agent="v2"'))[0]!;
+
+    expect(mainTrack(merged).agentId).toBe("v2");
+    expect(lineText(merged)).toBe("a b c d");
+    expect(backgroundText(merged)).toBe("ooh ah");
+  });
+
+  it("takes a span's kept data from the edited file and keeps every word as stored", () => {
+    const stored = [syllableLine()];
+    const merged = mergeEditedExport(stored, (ttml) =>
+      ttml.replace('<span begin="0:01.500"', '<span begin="0:01.500" x-cue="b"'),
+    );
+    const words = timedSyllables(mainTrack(merged[0]!));
+    const { passthrough, ...word } = words[1]!;
+    expect(passthrough).toEqual({ attrs: [["x-cue", "b"]] });
+    expect(word).toEqual(timedSyllables(mainTrack(stored[0]))[1]);
+    expect(words[0]).toBe(timedSyllables(mainTrack(stored[0]))[0]);
+  });
+
+  describe("regressions: untimed rest", () => {
+    function partlySynced(): LyricLine {
+      const loaded = createLine({ id: "a", text: "a b c d", backgroundText: "ooh ah" });
+      const [first] = mainTrack(loaded).syllables;
+      const tapped = withRoleWords(loaded, "main", [{ ...first, begin: 1, end: 2 }]);
+      const [bgFirst] = backgroundTrack(tapped)?.syllables ?? [];
+      return withRoleWords(tapped, "bg", [{ ...bgFirst!, begin: 1, end: 1.5 }]);
+    }
+
+    it("regression: an edited file that times the rest does not repeat it", () => {
+      const merged = mergeEditedExport([partlySynced()], (ttml) =>
+        ttml
+          .replace(
+            '<span begin="0:01.000" end="0:02.000">a</span>',
+            '<span begin="0:01.000" end="0:02.000">a </span><span begin="0:02.000" end="0:02.500">b </span><span begin="0:02.500" end="0:03.000">c </span><span begin="0:03.000" end="0:03.500">d</span>',
+          )
+          .replace(
+            '<span begin="0:01.000" end="0:01.500">ooh</span>',
+            '<span begin="0:01.000" end="0:01.500">ooh </span><span begin="0:01.500" end="0:02.000">ah</span>',
+          ),
+      )[0]!;
+
+      expect(lineText(merged)).toBe("a b c d");
+      expect(backgroundText(merged)).toBe("ooh ah");
+    });
+
+    it("an edited file that holds the rest as untimed text does not repeat it", () => {
+      const merged = mergeEditedExport([partlySynced()], (ttml) =>
+        ttml
+          .replace(
+            '<span begin="0:01.000" end="0:02.000">a</span>',
+            '<span begin="0:01.000" end="0:02.000">a</span> b c d',
+          )
+          .replace(
+            '<span begin="0:01.000" end="0:01.500">ooh</span>',
+            '<span begin="0:01.000" end="0:01.500">ooh</span> ah',
+          ),
+      )[0]!;
+
+      expect(lineText(merged)).toBe("a b c d");
+      expect(backgroundText(merged)).toBe("ooh ah");
+    });
+
+    it("a timed word deleted in the edited file stays deleted", () => {
+      const merged = mergeEditedExport([syllableLine()], (ttml) =>
+        ttml.replace(/<span begin="0:02.000"[^>]*>world<\/span>/, ""),
+      )[0]!;
+
+      expect(lineText(merged).trim()).toBe("Hel|lo");
+    });
+
+    it("regression: an edited file that times part of a line-synced line keeps the rest", () => {
+      const stored = [createLine({ id: "a", text: "a b c", begin: 1, end: 3 })];
+      const merged = mergeEditedExport(stored, (ttml) =>
+        ttml.replace(">a b c</p>", '><span begin="0:01.000" end="0:02.000">a</span></p>'),
+      )[0]!;
+
+      expect(lineText(merged)).toBe("a b c");
+      expect(timedSyllables(mainTrack(merged)).map((word) => word.text)).toEqual(["a"]);
+    });
   });
 });
