@@ -8,7 +8,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-async function waitForElement(container: Element, tag: string): Promise<Element> {
+async function waitForElement(container: Element, tag: "braccato-lyrics" | "am-lyrics"): Promise<Element> {
   await expect.poll(() => container.querySelector(tag)).not.toBeNull();
   const el = container.querySelector(tag);
   if (!el) throw new Error(`${tag} element not rendered`);
@@ -64,7 +64,7 @@ describe("LyricsRenderer", () => {
     it.each(["braccato", "am-lyrics"] as const)("centres a page-width column by default with %s", async (engine) => {
       useSettingsStore.setState({ previewRenderer: engine });
       const screen = await render(<LyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={35} />);
-      const el = await waitForElement(screen.container, engine === "braccato" ? ".braccato-scroller" : "am-lyrics");
+      const el = await waitForElement(screen.container, engine === "braccato" ? "braccato-lyrics" : "am-lyrics");
 
       expect(el.classList).toContain("max-w-3xl");
       expect(el.classList).toContain("px-6");
@@ -75,7 +75,7 @@ describe("LyricsRenderer", () => {
       const screen = await render(
         <LyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={35} layout="sidebar" />,
       );
-      const el = await waitForElement(screen.container, engine === "braccato" ? ".braccato-scroller" : "am-lyrics");
+      const el = await waitForElement(screen.container, engine === "braccato" ? "braccato-lyrics" : "am-lyrics");
 
       expect(el.classList).not.toContain("max-w-3xl");
       expect(el.classList).not.toContain("px-6");

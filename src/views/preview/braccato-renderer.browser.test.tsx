@@ -33,7 +33,7 @@ const AFFORDANCE_POSITION_CSS = [
   ".z-10{z-index:10}",
 ].join("\n");
 
-// The app loads braccato's variables, whose lead offsets the preview trims while paused.
+// The app loads braccato's variables, which carry the highlight leads the preview trims while paused.
 // Braccato's own `.blyrics-container` rule carries the z-index: 1 the affordance has to clear, and
 // the scroller rule comes from src/index.css. PreviewPanel bounds the scroller; without that the
 // lyrics run past the viewport, nothing scrolls, and the affordance lands where elementFromPoint
@@ -43,8 +43,7 @@ const RESUME_AFFORDANCE_LAYOUT_CSS = [
   braccatoLyricsCss,
   AFFORDANCE_POSITION_CSS,
   "[data-lyrics-layout]{height:600px}",
-  ".block{display:block}",
-  ".braccato-scroller{overflow-y:auto}",
+  "braccato-lyrics{display:block;overflow-y:auto}",
   ".flex{display:flex}",
   ".flex-col{flex-direction:column}",
   ".flex-1{flex:1 1 0%}",
@@ -75,14 +74,12 @@ function lineTexts(el: BraccatoLyricsElement): string[] {
 // Braccato tells a reader's scroll from its own by the position, and takes none for a reader's
 // while it settles a fresh layout, so the reader keeps scrolling until it notices.
 async function scrollAway(el: BraccatoLyricsElement): Promise<void> {
-  const scroller = el.parentElement;
-  if (!scroller) throw new Error("braccato-lyrics has no scroller");
-  await expect.poll(() => scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+  await expect.poll(() => el.scrollHeight).toBeGreaterThan(el.clientHeight);
   await expect
     .poll(
       () => {
         if (el.querySelector(".blyrics-user-scrolling")) return true;
-        scroller.scrollTop = scroller.scrollTop > 0 ? 0 : scroller.scrollHeight;
+        el.scrollTop = el.scrollTop > 0 ? 0 : el.scrollHeight;
         return false;
       },
       { timeout: 5_000 },

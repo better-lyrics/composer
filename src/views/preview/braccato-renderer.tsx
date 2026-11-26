@@ -16,8 +16,8 @@ import { AUDIO_STORE_PLAYBACK, type RendererPlayback } from "@/views/preview/ren
 import type { Lyric } from "@braccato/core";
 import type {
   BraccatoLyricsElement,
-  ErrorDetail,
   LineClickDetail,
+  LyricsErrorDetail,
   ScrollStateDetail,
 } from "@braccato/core/element";
 import braccatoWasmUrl from "@braccato/core/wasm?url";
@@ -112,18 +112,15 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
   }, [playback]);
 
   const handleLineClick = useCallback(
-    (e: Event) => {
-      const detail = (e as CustomEvent<LineClickDetail>).detail;
-      if (detail?.timeS == null) return;
-      // The renderer keeps times as 32-bit floats, which would land a seek just before the line starts.
-      playback.seekTo(Math.round(detail.timeS * 1000) / 1000);
+    (e: CustomEvent<LineClickDetail>) => {
+      playback.seekTo(e.detail.timeS);
       resumeAutoscroll();
     },
     [resumeAutoscroll, playback],
   );
 
-  const handleScrollState = useCallback((e: Event) => {
-    setIsAutoscrollPaused((e as CustomEvent<ScrollStateDetail>).detail.userScrolling);
+  const handleScrollState = useCallback((e: CustomEvent<ScrollStateDetail>) => {
+    setIsAutoscrollPaused(e.detail.userScrolling);
   }, []);
 
   const handleLyricsLoaded = useCallback((e: Event) => {
@@ -131,8 +128,8 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
   }, []);
 
   // A browser without WebGL2 cannot build the renderer, which leaves the element empty.
-  const handleError = useCallback((e: Event) => {
-    const { phase, error } = (e as CustomEvent<ErrorDetail>).detail;
+  const handleError = useCallback((e: CustomEvent<LyricsErrorDetail>) => {
+    const { phase, error } = e.detail;
     console.error(LOG_PREFIX, `<braccato-lyrics> failed (${phase})`, error);
     if (phase === "connect") setRegistration("failed");
   }, []);
@@ -166,7 +163,6 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
         appliedLyricsRef.current = null;
         appliedSongKeyRef.current = null;
         appliedTickRef.current = null;
-        el.host = { getScrollElement: () => el.parentElement };
         applyLyrics(el, latestLyricsRef.current, latestSongwritersRef.current, latestSongKeyRef.current);
         // A paused preview runs no frames, and the element needs one to get the clock.
         wake();
@@ -183,8 +179,8 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
   );
 
   useEffect(() => {
-    // The element renders only once it is defined: the 2.x element does not pick up properties
-    // written to it before it upgrades.
+    // The element renders only once its wasm has loaded, so a failed load shows the fallback
+    // rather than an empty element.
     void ensureRegistered().then((registered) => setRegistration(registered ? "ready" : "failed"));
   }, []);
 
@@ -216,9 +212,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
       {registration === "failed" ? (
         <PreviewLoadFailed />
       ) : registration === "ready" ? (
-        <div className={cn("braccato-scroller", LYRICS_ELEMENT_CLASS[layout])}>
-          <braccato-lyrics ref={setElement} theme={braccatoTheme} className="block" />
-        </div>
+        <braccato-lyrics ref={setElement} theme={braccatoTheme} className={LYRICS_ELEMENT_CLASS[layout]} />
       ) : null}
       <AnimatePresence>
         {isAutoscrollPaused ? (

@@ -165,28 +165,28 @@ braccato-lyrics .blyrics--romanized {
   --blyrics-romanized-bg-color: color-mix(in oklab, var(--color-composer-text) 5%, transparent);
 }
 
-/* Braccato autoscrolls the nearest scrolling ancestor, which is what centres the active line. Its
-   canvas only follows an ancestor's scroll, so the element must not be the scroller itself. */
-.braccato-scroller {
+/* The element is the scroller braccato autoscrolls, which is what centres the
+   active line. */
+braccato-lyrics {
   overflow-y: auto;
   scrollbar-width: none;
 }
 
-.braccato-scroller::-webkit-scrollbar {
+braccato-lyrics::-webkit-scrollbar {
   display: none;
 }
 
-.braccato-scroller:has(.blyrics-user-scrolling) {
+braccato-lyrics:has(.blyrics-user-scrolling) {
   scrollbar-color: color-mix(in srgb, var(--color-composer-text) 15%, transparent) transparent;
   scrollbar-width: thin;
 }
 
-.braccato-scroller:has(.blyrics-user-scrolling)::-webkit-scrollbar {
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar {
   display: block;
   width: 6px;
 }
 
-.braccato-scroller:has(.blyrics-user-scrolling)::-webkit-scrollbar-thumb {
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--color-composer-text) 15%, transparent);
   border-radius: 3px;
 }
