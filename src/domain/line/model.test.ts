@@ -2,7 +2,7 @@ import { reconcileLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 
 const base = { id: "line", text: "hold me close", agentId: "v1" };
-const word = { text: "hold ", begin: 1, end: 1.4 };
+const word = { text: "hold", sep: " ", begin: 1, end: 1.4 };
 
 describe("reconcileLine", () => {
   describe("happy paths", () => {

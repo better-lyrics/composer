@@ -72,7 +72,7 @@ function addWordAt(line: LyricLine, time: number): void {
     updateLineWithHistory(line.id, { words: timedText });
     return;
   }
-  updateLineWithHistory(line.id, { words: [{ text: "...", begin: slot.begin, end: slot.end }] });
+  updateLineWithHistory(line.id, { words: [{ text: "...", sep: "", begin: slot.begin, end: slot.end }] });
   useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "word" });
 }
 
@@ -86,7 +86,7 @@ function addBackgroundWordAt(line: LyricLine, time: number): void {
     updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
     return;
   }
-  const placeholder: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
+  const placeholder: WordTiming = { text: "...", sep: "", begin: slot.begin, end: slot.end };
   updateLineWithHistory(line.id, backgroundFields({ text: placeholder.text, words: [placeholder], source: "manual" }));
   useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "bg" });
 }

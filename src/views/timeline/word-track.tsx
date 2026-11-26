@@ -176,7 +176,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const slot = findInsertionSlot(words, time, defaultWordDuration, range, minWordDuration);
     if (!slot) return;
 
-    const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
+    const newWord: WordTiming = { text: "...", sep: " ", begin: slot.begin, end: slot.end };
     const newWords = mergeWordsIntoTrack(words, [newWord]);
     const newIndex = newWords.findIndex((w) => w.begin === newWord.begin);
 
@@ -240,10 +240,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
             text={
               textVariant === "transliteration"
                 ? timedTransliterationSlice({
-                    text: word.transliteration || word.text,
+                    text: word.transliteration || word.text + word.sep,
                     joinerAfter: wordIndex < words.length - 1 ? word.transliterationJoinerAfter : undefined,
                   }).text
-                : word.text
+                : word.text + word.sep
             }
             begin={display.begin}
             end={display.end}

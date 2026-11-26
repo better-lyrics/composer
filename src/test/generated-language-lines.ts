@@ -13,7 +13,8 @@ function timedLine(id: string, words: string[], romanized: string[], romanizedFr
     agentId: "v1",
     text: words.join(" "),
     words: words.map((text, index) => ({
-      text: index < words.length - 1 ? `${text} ` : text,
+      text,
+      sep: index < words.length - 1 ? " " : "",
       begin: index + 1,
       end: index + 2,
       transliteration: romanized[index],

@@ -12,16 +12,16 @@ describe("linesStructurallyEqual", () => {
     const a: LyricLine = {
       ...baseLine,
       words: [
-        { text: "I ", begin: 0, end: 1 },
-        { text: "love", begin: 1, end: 2 },
+        { text: "I", sep: " ", begin: 0, end: 1 },
+        { text: "love", sep: "", begin: 1, end: 2 },
       ],
     };
     const b: LyricLine = {
       ...baseLine,
       id: "y",
       words: [
-        { text: "I ", begin: 30, end: 31 },
-        { text: "love", begin: 31, end: 32 },
+        { text: "I", sep: " ", begin: 30, end: 31 },
+        { text: "love", sep: "", begin: 31, end: 32 },
       ],
     };
     expect(linesStructurallyEqual(a, b)).toBe(true);
@@ -39,8 +39,8 @@ describe("linesStructurallyEqual", () => {
     const a: LyricLine = {
       ...baseLine,
       words: [
-        { text: "I ", begin: 0, end: 1 },
-        { text: "love ", begin: 1, end: 2 },
+        { text: "I", sep: " ", begin: 0, end: 1 },
+        { text: "love", sep: " ", begin: 1, end: 2 },
       ],
     };
     expect(linesStructurallyEqual(a, { ...baseLine, id: "y" })).toBe(true);
@@ -50,13 +50,13 @@ describe("linesStructurallyEqual", () => {
     const a: LyricLine = {
       ...baseLine,
       words: [
-        { text: "I ", begin: 0, end: 1 },
-        { text: "love", begin: 1, end: 2 },
+        { text: "I", sep: " ", begin: 0, end: 1 },
+        { text: "love", sep: "", begin: 1, end: 2 },
       ],
     };
     const b: LyricLine = {
       ...baseLine,
-      words: [{ text: "I ", begin: 0, end: 1 }],
+      words: [{ text: "I", sep: " ", begin: 0, end: 1 }],
     };
     expect(linesStructurallyEqual(a, b)).toBe(true);
   });
@@ -75,12 +75,12 @@ describe("linesStructurallyEqual", () => {
 describe("structurallyEqualLineSequences", () => {
   it("matches sequences with same structure but different timings", () => {
     const a: LyricLine[] = [
-      { id: "1", text: "I love", agentId: "v1", words: [{ text: "I", begin: 0, end: 1 }] },
-      { id: "2", text: "you", agentId: "v1", words: [{ text: "you", begin: 1, end: 2 }] },
+      { id: "1", text: "I love", agentId: "v1", words: [{ text: "I", sep: "", begin: 0, end: 1 }] },
+      { id: "2", text: "you", agentId: "v1", words: [{ text: "you", sep: "", begin: 1, end: 2 }] },
     ];
     const b: LyricLine[] = [
-      { id: "x", text: "I love", agentId: "v1", words: [{ text: "I", begin: 30, end: 31 }] },
-      { id: "y", text: "you", agentId: "v1", words: [{ text: "you", begin: 31, end: 32 }] },
+      { id: "x", text: "I love", agentId: "v1", words: [{ text: "I", sep: "", begin: 30, end: 31 }] },
+      { id: "y", text: "you", agentId: "v1", words: [{ text: "you", sep: "", begin: 31, end: 32 }] },
     ];
     expect(structurallyEqualLineSequences(a, b)).toBe(true);
   });
@@ -105,7 +105,7 @@ describe("findMatchingTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "I love", begin: 0, end: 2 }],
+        words: [{ text: "I love", sep: "", begin: 0, end: 2 }],
       },
       {
         id: "b",
@@ -114,12 +114,12 @@ describe("findMatchingTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 1,
-        words: [{ text: "you", begin: 2, end: 3 }],
+        words: [{ text: "you", sep: "", begin: 2, end: 3 }],
       },
     ];
     const candidate: LyricLine[] = [
-      { id: "p", text: "I love", agentId: "v1", words: [{ text: "I love", begin: 30, end: 32 }] },
-      { id: "q", text: "you", agentId: "v1", words: [{ text: "you", begin: 32, end: 33 }] },
+      { id: "p", text: "I love", agentId: "v1", words: [{ text: "I love", sep: "", begin: 30, end: 32 }] },
+      { id: "q", text: "you", agentId: "v1", words: [{ text: "you", sep: "", begin: 32, end: 33 }] },
     ];
     const found = findMatchingTemplate(candidate, projectLines);
     expect(found).toEqual({ groupId: "g1", instanceIdx: 0 });
@@ -134,7 +134,7 @@ describe("findMatchingTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "I love", begin: 0, end: 2 }],
+        words: [{ text: "I love", sep: "", begin: 0, end: 2 }],
       },
     ];
     const candidate: LyricLine[] = [{ id: "p", text: "different text", agentId: "v1" }];

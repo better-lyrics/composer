@@ -15,7 +15,7 @@ const chorus = (instanceIdx: number, begin: number, secondWordOffset = 1.5) =>
     id: `c${instanceIdx}`,
     text: "go now",
     words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
+      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
       createWord({ text: "now", begin: begin + secondWordOffset, end: begin + 2 }),
     ],
     groupId: "g1",
@@ -74,7 +74,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
     const partlyWordSynced = createLine({
       id: "c1",
       text: "go now",
-      words: [createWord({ text: "go ", begin: 40, end: 41 })],
+      words: [createWord({ text: "go", sep: " ", begin: 40, end: 41 })],
       groupId: "g1",
       instanceIdx: 1,
       templateLineIdx: 0,
@@ -125,7 +125,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
       createLine({
         id: `c${instanceIdx}`,
         text: "go now",
-        words: [createWord({ text: "go ", begin, end })],
+        words: [createWord({ text: "go", sep: " ", begin, end })],
         groupId: "g1",
         instanceIdx,
         templateLineIdx: 0,
@@ -152,7 +152,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
     const partlyWordSynced = createLine({
       id: "c2",
       text: "go now",
-      words: [createWord({ text: "go ", begin: 70, end: 71 })],
+      words: [createWord({ text: "go", sep: " ", begin: 70, end: 71 })],
       groupId: "g1",
       instanceIdx: 2,
       templateLineIdx: 0,

@@ -27,8 +27,8 @@ describe("shiftAllTimings", () => {
     const out = shiftAllTimings(
       [
         wordSynced("L", [
-          { text: "hi", begin: 1.0, end: 1.5 },
-          { text: "you", begin: 1.5, end: 2.0 },
+          { text: "hi", sep: "", begin: 1.0, end: 1.5 },
+          { text: "you", sep: "", begin: 1.5, end: 2.0 },
         ]),
       ],
       -0.5,
@@ -46,9 +46,9 @@ describe("shiftAllTimings", () => {
         id: "L",
         text: "main",
         agentId: "a",
-        words: [{ text: "main", begin: 1.0, end: 2.0 }],
+        words: [{ text: "main", sep: "", begin: 1.0, end: 2.0 }],
         backgroundText: "bg",
-        backgroundWords: [{ text: "bg", begin: 1.2, end: 1.8 }],
+        backgroundWords: [{ text: "bg", sep: "", begin: 1.2, end: 1.8 }],
       },
     ];
     const out = shiftAllTimings(lines, -0.5);
@@ -75,7 +75,7 @@ describe("shiftAllTimings", () => {
         id: "L",
         text: "x",
         agentId: "a",
-        words: [{ text: "x", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g1" }],
+        words: [{ text: "x", sep: "", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g1" }],
       },
     ];
     const shifted = shiftAllTimings(lines, -0.5);
@@ -93,7 +93,7 @@ describe("shiftAllTimings", () => {
         text: "main",
         agentId: "a",
         backgroundText: "bg",
-        backgroundWords: [{ text: "bg", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g2" }],
+        backgroundWords: [{ text: "bg", sep: "", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g2" }],
       },
     ];
     const out = shiftAllTimings(lines, -0.5);
@@ -112,7 +112,7 @@ describe("shiftAllTimings", () => {
         groupId: "g1",
         instanceIdx: 2,
         templateLineIdx: 0,
-        words: [{ text: "hi", begin: 1.0, end: 1.5 }],
+        words: [{ text: "hi", sep: "", begin: 1.0, end: 1.5 }],
       },
       {
         id: "lsl",
@@ -148,8 +148,8 @@ describe("shiftAllTimings: edge cases", () => {
     const out = shiftAllTimings(
       [
         wordSynced("L", [
-          { text: "early", begin: 0.1, end: 0.2 },
-          { text: "later", begin: 0.6, end: 1.0 },
+          { text: "early", sep: "", begin: 0.1, end: 0.2 },
+          { text: "later", sep: "", begin: 0.6, end: 1.0 },
         ]),
       ],
       -0.5,
@@ -168,7 +168,7 @@ describe("shiftAllTimings: edge cases", () => {
         text: "main",
         agentId: "a",
         backgroundText: "bg",
-        backgroundWords: [{ text: "bg", begin: 0.1, end: 0.3 }],
+        backgroundWords: [{ text: "bg", sep: "", begin: 0.1, end: 0.3 }],
       },
     ];
     const out = shiftAllTimings(lines, -0.5);
@@ -193,13 +193,13 @@ describe("shiftAllTimings: invariants", () => {
   it("does not mutate the input array or its elements", () => {
     const lines: LyricLine[] = [
       lineSynced("L1", 1.0, 2.0),
-      wordSynced("L2", [{ text: "x", begin: 1.0, end: 1.5 }]),
+      wordSynced("L2", [{ text: "x", sep: "", begin: 1.0, end: 1.5 }]),
       {
         id: "L3",
         text: "main",
         agentId: "a",
         backgroundText: "bg",
-        backgroundWords: [{ text: "bg", begin: 1.0, end: 1.5 }],
+        backgroundWords: [{ text: "bg", sep: "", begin: 1.0, end: 1.5 }],
       },
     ];
     const snapshot = JSON.parse(JSON.stringify(lines));
@@ -211,7 +211,7 @@ describe("shiftAllTimings: invariants", () => {
     const lines: LyricLine[] = [
       lineSynced("L1", 1.0, 2.0),
       { id: "L2", text: "untimed", agentId: "a" },
-      wordSynced("L3", [{ text: "x", begin: 1.0, end: 1.5 }]),
+      wordSynced("L3", [{ text: "x", sep: "", begin: 1.0, end: 1.5 }]),
     ];
     const out = shiftAllTimings(lines, -0.5);
     expect(out.length).toBe(lines.length);
@@ -238,9 +238,9 @@ describe("shiftAllTimings: positive shifts", () => {
         id: "L2",
         text: "a",
         agentId: "a",
-        words: [{ text: "a", begin: 3, end: 4 }],
+        words: [{ text: "a", sep: "", begin: 3, end: 4 }],
         backgroundText: "b",
-        backgroundWords: [{ text: "b", begin: 3.5, end: 3.9 }],
+        backgroundWords: [{ text: "b", sep: "", begin: 3.5, end: 3.9 }],
       },
     ];
     const out = shiftAllTimings(lines, 0.025);

@@ -1,3 +1,4 @@
+import { splitTrailingWhitespace } from "insync/from-words";
 /**
  * @vitest-environment node
  */
@@ -6,7 +7,11 @@ import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { decideAddInstancePlacement, templateDuration } from "./decide-add-instance-placement";
 
-const wt = (text: string, relativeBegin: number, relativeEnd: number) => ({ text, relativeBegin, relativeEnd });
+const wt = (text: string, relativeBegin: number, relativeEnd: number) => ({
+  ...splitTrailingWhitespace(text),
+  relativeBegin,
+  relativeEnd,
+});
 
 const template: LineTemplate[] = [
   {
@@ -22,7 +27,7 @@ const wordSyncedLine = (id: string, begin: number, end: number): LyricLine => ({
   id,
   text: "x",
   agentId: "v1",
-  words: [{ text: "x", begin, end }],
+  words: [{ text: "x", sep: "", begin, end }],
 });
 
 // A grouped + word-timed line (a "real" group instance line): never fillable
@@ -33,7 +38,7 @@ const groupedTimedLine = (id: string, gid: string, instIdx: number, begin: numbe
   groupId: gid,
   instanceIdx: instIdx,
   templateLineIdx: 0,
-  words: [{ text: "x", begin, end }],
+  words: [{ text: "x", sep: "", begin, end }],
 });
 
 // A standalone untimed empty placeholder (no groupId, no words, no begin/end): fillable

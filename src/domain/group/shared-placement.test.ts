@@ -14,7 +14,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -93,7 +93,7 @@ describe("placeSharedInstance", () => {
       id: "c0-0",
       text: "I want",
       words: [
-        { text: "I ", begin: 10.4, end: 10.8 },
+        { text: "I", sep: " ", begin: 10.4, end: 10.8 },
         { text: "want", begin: 10.9, end: 11.4 },
       ],
       backgroundText: "oh",
@@ -120,7 +120,7 @@ describe("placeSharedInstance", () => {
       const partial = createLine({
         id: "c0-0",
         text: "I want",
-        words: [{ text: "I ", begin: 10, end: 10.4 }],
+        words: [{ text: "I", sep: " ", begin: 10, end: 10.4 }],
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
@@ -155,7 +155,7 @@ describe("placeSharedInstance", () => {
         id: "c3-0",
         text: "I want",
         words: [
-          { text: "I ", begin: 5, end: 5.2 },
+          { text: "I", sep: " ", begin: 5, end: 5.2 },
           { text: "want", begin: 5.3, end: 6 },
         ],
         groupId: "g1",
@@ -217,7 +217,7 @@ describe("realignSharedInstance", () => {
       id: "c1-0",
       text: "I want",
       words: [
-        { text: "I ", begin: 40, end: 40.4 },
+        { text: "I", sep: " ", begin: 40, end: 40.4 },
         { text: "want", begin: 40.8, end: 41.3 },
       ],
       groupId: "g1",
@@ -278,7 +278,7 @@ describe("realignSharedInstance", () => {
     it("realigns background vocals the reference has timing for", () => {
       const background = (begin: number) => ({
         backgroundText: "oh",
-        backgroundWords: [{ text: "oh", begin, end: begin + 0.4 }],
+        backgroundWords: [{ text: "oh", sep: "", begin, end: begin + 0.4 }],
       });
       const lines = [
         { ...chorus(0, 0, 10), ...background(10.2) },

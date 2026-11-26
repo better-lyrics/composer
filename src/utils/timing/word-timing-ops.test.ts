@@ -130,8 +130,8 @@ describe("createWordTimingOps: write contract", () => {
     const line = makeLine();
     wordsOps.setBegin([line], 0, 1, 1.5, updateLineWithHistory);
     const out = calls[0].updates.words ?? [];
-    expect(out[0]).toEqual({ text: "a ", begin: 0, end: 1 });
-    expect(out[2]).toEqual({ text: "c", begin: 2, end: 3 });
+    expect(out[0]).toEqual({ text: "a", sep: " ", begin: 0, end: 1 });
+    expect(out[2]).toEqual({ text: "c", sep: "", begin: 2, end: 3 });
   });
 });
 
@@ -162,9 +162,9 @@ describe("main-track ops on effective lines", () => {
 
   it("writes words and never text for a partially synced line", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
-    const lines = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a ", begin: 1, end: 2 }] })]);
+    const lines = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a", sep: " ", begin: 1, end: 2 }] })]);
     nudgeWordEnd(lines, 0, 0, 0.5, updateLineWithHistory);
-    expect(calls[0].updates).toEqual({ words: [{ text: "a ", begin: 1, end: 2.5 }] });
+    expect(calls[0].updates).toEqual({ words: [{ text: "a", sep: " ", begin: 1, end: 2.5 }] });
   });
 
   it("leaves a raw line-synced row alone because it has no words to edit", () => {

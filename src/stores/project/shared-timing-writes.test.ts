@@ -14,7 +14,7 @@ const chorus = (instanceIdx: number, begin: number) =>
     id: `c${instanceIdx}`,
     text: "I want",
     words: [
-      { text: "I ", begin, end: begin + 0.4 },
+      { text: "I", sep: " ", begin, end: begin + 0.4 },
       { text: "want", begin: begin + 0.5, end: begin + 1 },
     ],
     groupId: "g1",

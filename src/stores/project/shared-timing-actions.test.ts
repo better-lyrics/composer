@@ -17,7 +17,7 @@ const chorus = (instanceIdx: number, begin?: number, secondWordShift = 0) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5 + secondWordShift, end: begin + 1 + secondWordShift },
           ],
         }),
@@ -129,7 +129,7 @@ describe("groupRepeatingSections", () => {
         text: "fal|ling too",
         words: [
           { text: "fal", begin, end: begin + 0.3 },
-          { text: "ling ", begin: begin + 0.3, end: begin + 0.6 },
+          { text: "ling", sep: " ", begin: begin + 0.3, end: begin + 0.6 },
           { text: "too", begin: begin + 0.6, end: begin + 1 },
         ],
       });
@@ -138,7 +138,7 @@ describe("groupRepeatingSections", () => {
         id,
         text,
         words: [
-          { text: "falling ", begin, end: begin + 0.6 },
+          { text: "falling", sep: " ", begin, end: begin + 0.6 },
           { text: text.slice("falling ".length), begin: begin + 0.6, end: begin + 1 },
         ],
       });
@@ -150,7 +150,7 @@ describe("groupRepeatingSections", () => {
       store().groupRepeatingSections([0, 1], 1);
       const a = lineById("a");
       expect(a?.text).toBe("fal|ling too");
-      expect(a?.words?.map((word) => word.text)).toEqual(["fal", "ling ", "too"]);
+      expect(a?.words?.map((word) => word.text + word.sep)).toEqual(["fal", "ling ", "too"]);
       expect(a?.words?.[0]?.begin).toBe(10);
       expect(a?.words?.[1]?.end).toBe(10.6);
       expect(a?.words?.[2]).toMatchObject({ begin: 10.6, end: 11 });
@@ -162,15 +162,18 @@ describe("groupRepeatingSections", () => {
       store().groupRepeatingSections([0, 1], 1);
       store().undo();
       expect(lineById("a")?.text).toBe("falling too");
-      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["falling ", "too"]);
+      expect(lineById("a")?.words?.map((word) => word.text + word.sep)).toEqual(["falling ", "too"]);
     });
 
     it("regression: keeps the trailing space of a line's last word when re-splitting it", () => {
       const ending = (id: string, text: string, words: string[]) =>
         createLine({ id, text, words: words.map((wordText, i) => ({ text: wordText, begin: 10 + i, end: 11 + i })) });
-      seed([], [ending("a", "the outside ", ["the ", "outside "]), ending("b", "the out|side ", ["the ", "out", "side "])]);
+      seed(
+        [],
+        [ending("a", "the outside ", ["the ", "outside "]), ending("b", "the out|side ", ["the ", "out", "side "])],
+      );
       store().groupRepeatingSections([0, 1], 1);
-      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["the ", "out", "side "]);
+      expect(lineById("a")?.words?.map((word) => word.text + word.sep)).toEqual(["the ", "out", "side "]);
     });
 
     it("regression: refuses to group copies that differ beyond syllable splits", () => {
@@ -182,11 +185,15 @@ describe("groupRepeatingSections", () => {
     });
 
     it("regression: keeps the untimed words of a partly synced copy untimed", () => {
-      const partial = createLine({ id: "a", text: "falling too", words: [{ text: "falling ", begin: 10, end: 10.3 }] });
+      const partial = createLine({
+        id: "a",
+        text: "falling too",
+        words: [{ text: "falling", sep: " ", begin: 10, end: 10.3 }],
+      });
       seed([], [partial, createLine({ id: "b", text: "fal|ling t|oo" })]);
       store().groupRepeatingSections([0, 1], 1);
       expect(lineById("a")?.text).toBe("fal|ling t|oo");
-      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["fal", "ling "]);
+      expect(lineById("a")?.words?.map((word) => word.text + word.sep)).toEqual(["fal", "ling "]);
       expect(lineById("a")?.words?.[0]?.begin).toBe(10);
       expect(lineById("a")?.words?.[1]?.end).toBe(10.3);
     });
@@ -203,7 +210,11 @@ describe("groupRepeatingSections", () => {
 
   describe("invariants", () => {
     it("keeps the text of a partly synced line outside the group", () => {
-      const current = createLine({ id: "v", text: "walking home", words: [{ text: "walking ", begin: 50, end: 51 }] });
+      const current = createLine({
+        id: "v",
+        text: "walking home",
+        words: [{ text: "walking", sep: " ", begin: 50, end: 51 }],
+      });
       seed([], [plain("a", 10), plain("b", 40), current]);
       store().groupRepeatingSections([0, 1], 1);
       expect(lineById("v")?.text).toBe("walking home");
@@ -329,7 +340,7 @@ describe("shareGroupTiming", () => {
 
     it("reports why an instance kept its own timing", () => {
       const firstWordOnly = (instanceIdx: number, begin: number, end: number) =>
-        createLine({ ...chorus(instanceIdx), words: [{ text: "I ", begin, end }] });
+        createLine({ ...chorus(instanceIdx), words: [{ text: "I", sep: " ", begin, end }] });
       seed([createGroup({ id: "g1" })], [chorus(0), firstWordOnly(1, 40, 40.4), firstWordOnly(2, 70, 70.6)]);
       expect(store().shareGroupTiming("g1", SONG_LENGTH).keptOwnTiming).toEqual([
         { instanceIdx: 2, refusal: "no-fully-synced-instance" },
@@ -387,7 +398,7 @@ describe("placeInstance", () => {
   it("applies the preceding updates and the placement as one undo step", () => {
     const verse = createLine({ id: "v", text: "Walking", words: [{ text: "Walking", begin: 20, end: 21 }] });
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
-    const preceding = [{ id: "v", updates: { words: [{ text: "Walking", begin: 20, end: 39 }] } }];
+    const preceding = [{ id: "v", updates: { words: [{ text: "Walking", sep: "", begin: 20, end: 39 }] } }];
     expect(store().placeInstance("g1", 1, 40, SONG_LENGTH, preceding)).toBe(true);
     expect(lineById("v")?.words?.[0]?.end).toBe(39);
     expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(40, 6);
@@ -402,8 +413,8 @@ describe("placeInstance", () => {
       id: "c0",
       updates: {
         words: [
-          { text: "I ", begin: 10, end: 10.4 },
-          { text: "want", begin: 10.5, end: 12 },
+          { text: "I", sep: " ", begin: 10, end: 10.4 },
+          { text: "want", sep: "", begin: 10.5, end: 12 },
         ],
       },
     };
@@ -412,7 +423,11 @@ describe("placeInstance", () => {
   });
 
   it("keeps the line text, because placing only writes timing", () => {
-    const partial = createLine({ id: "p", text: "one two three", words: [{ text: "one ", begin: 1, end: 2 }] });
+    const partial = createLine({
+      id: "p",
+      text: "one two three",
+      words: [{ text: "one", sep: " ", begin: 1, end: 2 }],
+    });
     seed([createGroup({ id: "g1", sharesTiming: true })], [partial, chorus(0, 10), chorus(1)]);
     store().placeInstance("g1", 1, 40, SONG_LENGTH);
     expect(lineById("p")?.text).toBe("one two three");
@@ -441,8 +456,8 @@ describe("placeInstance", () => {
         id: "c0",
         updates: {
           words: [
-            { text: "I ", begin: 10, end: 10.4 },
-            { text: "want", begin: 10.5, end: 12 },
+            { text: "I", sep: " ", begin: 10, end: 10.4 },
+            { text: "want", sep: "", begin: 10.5, end: 12 },
           ],
         },
       };
@@ -462,7 +477,7 @@ describe("placeInstance", () => {
     it("writes nothing and reports false when there is no timed reference", () => {
       seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0), chorus(1)]);
       const before = store().lines;
-      const firstWordOnly = { id: "c0", updates: { words: [{ text: "I ", begin: 1, end: 2 }] } };
+      const firstWordOnly = { id: "c0", updates: { words: [{ text: "I", sep: " ", begin: 1, end: 2 }] } };
       expect(store().placeInstance("g1", 1, 40, SONG_LENGTH, [firstWordOnly])).toBe(false);
       expect(store().lines).toBe(before);
     });

@@ -4,8 +4,8 @@ import { distributeTiming } from "@/utils/syllable-utils";
 // -- Functions -----------------------------------------------------------------
 
 function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming[] {
-  const trimmed = word.text.trimEnd();
-  const hadTrailingSpace = word.text.endsWith(" ");
+  const trimmed = word.text;
+  const hadTrailingSpace = word.sep.endsWith(" ");
   const {
     syllableGroupId: _group,
     transliteration: _transliteration,
@@ -29,8 +29,8 @@ function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming
 
   return parts.map((part, index) => {
     const isLast = index === parts.length - 1;
-    const trailing = isLast ? (hadTrailingSpace ? " " : "") : " ";
-    return { ...base, text: `${part.text}${trailing}`, begin: part.begin, end: part.end };
+    const sep = isLast ? (hadTrailingSpace ? " " : "") : " ";
+    return { ...base, text: part.text, sep, begin: part.begin, end: part.end };
   });
 }
 

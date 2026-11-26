@@ -38,7 +38,7 @@ describe("placementSkipTarget", () => {
 
   it("measures the end across main and background vocals", () => {
     const bgLast = lines.map((line) =>
-      line.id === "c2b" ? { ...line, backgroundWords: [{ text: "ooh", begin: 110, end: 116 }] } : line,
+      line.id === "c2b" ? { ...line, backgroundWords: [{ text: "ooh", sep: "", begin: 110, end: 116 }] } : line,
     );
     expect(placementSkipTarget(bgLast, "g", 1, 94, 1.5)).toEqual({ seekTo: 114.5, end: 116 });
   });

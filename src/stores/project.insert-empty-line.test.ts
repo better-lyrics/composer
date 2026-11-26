@@ -5,7 +5,7 @@ import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const LINE_SYNCED = { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 };
-const WORD_SYNCED = { id: "w", text: "hi", agentId: "v1", words: [{ text: "hi", begin: 0, end: 1 }] };
+const WORD_SYNCED = { id: "w", text: "hi", agentId: "v1", words: [{ text: "hi", sep: "", begin: 0, end: 1 }] };
 
 describe("project store · insertEmptyLineWithHistory", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));

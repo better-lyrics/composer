@@ -10,7 +10,7 @@ const lines: LyricLine[] = [
     id: "a",
     text: "Paper boats",
     words: [
-      { text: "Paper ", begin: 14, end: 14.4 },
+      { text: "Paper", sep: " ", begin: 14, end: 14.4 },
       { text: "boats", begin: 14.4, end: 14.8 },
     ],
   }),
@@ -50,12 +50,12 @@ describe("nextCursorSlot with background vocals included", () => {
       id: "lead",
       text: "Hold on",
       words: [
-        { text: "Hold ", begin: 2, end: 2.4 },
+        { text: "Hold", sep: " ", begin: 2, end: 2.4 },
         { text: "on", begin: 2.4, end: 3 },
       ],
       backgroundText: "hold on",
       backgroundWords: [
-        { text: "hold ", begin: 2.6, end: 3 },
+        { text: "hold", sep: " ", begin: 2.6, end: 3 },
         { text: "on", begin: 3, end: 3.4 },
       ],
     }),

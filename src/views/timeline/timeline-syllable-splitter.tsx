@@ -41,7 +41,7 @@ const TimelineSyllableSplitter: React.FC = () => {
       if (!line) return;
 
       const word: WordTiming | undefined = effectiveTrackWords(line, sel.type)?.[sel.wordIndex];
-      if (!word || word.text.trimEnd().length < 2) return;
+      if (!word || word.text.length < 2) return;
 
       setTarget({ lineId: sel.lineId, wordIndex: sel.wordIndex, type: sel.type, word, mode });
       setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
@@ -88,7 +88,7 @@ const TimelineSyllableSplitter: React.FC = () => {
 
   if (!target) return null;
 
-  const trimmedText = target.word.text.trimEnd();
+  const trimmedText = target.word.text;
   const title = target.mode === "word" ? `Split "${trimmedText}" into words` : `Split "${trimmedText}"`;
 
   return (

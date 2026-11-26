@@ -18,7 +18,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),

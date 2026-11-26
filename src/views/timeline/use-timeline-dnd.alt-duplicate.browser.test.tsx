@@ -18,8 +18,8 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
           text: "Hello world",
           agentId: "v1",
           words: [
-            { text: "Hello ", begin: 0, end: 0.5 },
-            { text: "world", begin: 2, end: 2.5 },
+            { text: "Hello", sep: " ", begin: 0, end: 0.5 },
+            { text: "world", sep: "", begin: 2, end: 2.5 },
           ],
         },
       ],
@@ -33,7 +33,7 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
     result.current.handleDragEnd(makeAltDuplicateEvent(1, -100));
 
     const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words.map((w) => w.text)).toEqual(["Hello ", "world ", "world"]);
+    expect(words.map((w) => w.text + w.sep)).toEqual(["Hello ", "world ", "world"]);
     const groups = computeSyllableGroups(words);
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });

@@ -11,13 +11,13 @@ describe("createTrackWordsFromTextAt", () => {
 
   it("times untimed bg text from the given start", () => {
     const words = createTrackWordsFromTextAt(base, "bg", 5, 100);
-    expect(words?.map((w) => w.text)).toEqual(["ooh ", "yeah"]);
+    expect(words?.map((w) => w.text + w.sep)).toEqual(["ooh ", "yeah"]);
     expect(words?.[0].begin).toBe(5);
   });
 
   describe("edge cases", () => {
     it("returns null when the bg track already has words", () => {
-      const timed: LyricLine = { ...base, backgroundWords: [{ text: "ooh yeah", begin: 1, end: 2 }] };
+      const timed: LyricLine = { ...base, backgroundWords: [{ text: "ooh yeah", sep: "", begin: 1, end: 2 }] };
       expect(createTrackWordsFromTextAt(timed, "bg", 5, 100)).toBeNull();
     });
 
@@ -38,7 +38,7 @@ describe("createTrackWordsFromTextAt", () => {
   describe("invariants", () => {
     it("keeps the bg text unchanged word for word", () => {
       const words = createTrackWordsFromTextAt({ ...base, backgroundText: "la la la" }, "bg", 0, 100) ?? [];
-      expect(words.map((w) => w.text).join("")).toBe("la la la");
+      expect(words.map((w) => w.text + w.sep).join("")).toBe("la la la");
     });
   });
 
@@ -48,7 +48,7 @@ describe("createTrackWordsFromTextAt", () => {
 
     it("lays out one block per syllable from the given start", () => {
       const words = createTrackWordsFromTextAt(untimed, "word", 5, 100) ?? [];
-      expect(words.map((w) => w.text)).toEqual(["hel", "lo ", "world"]);
+      expect(words.map((w) => w.text + w.sep)).toEqual(["hel", "lo ", "world"]);
       expect(words[0].begin).toBe(5);
     });
 
@@ -65,7 +65,7 @@ describe("createTrackWordsFromTextAt", () => {
 
     describe("edge cases", () => {
       it("returns null when the line already has words", () => {
-        const timed: LyricLine = { ...untimed, words: [{ text: "hello world", begin: 1, end: 2 }] };
+        const timed: LyricLine = { ...untimed, words: [{ text: "hello world", sep: "", begin: 1, end: 2 }] };
         expect(createTrackWordsFromTextAt(timed, "word", 5, 100)).toBeNull();
       });
 

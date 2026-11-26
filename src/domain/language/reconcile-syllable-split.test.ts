@@ -20,8 +20,16 @@ const track: TransliterationTrack = {
 };
 
 const ILDAN_SPLIT = [
-  { text: "일", begin: 0.5, end: 0.8, transliteration: "il", transliterationJoinerAfter: "", syllableGroupId: "g" },
-  { text: "단은 ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
+  {
+    text: "일",
+    sep: "",
+    begin: 0.5,
+    end: 0.8,
+    transliteration: "il",
+    transliterationJoinerAfter: "",
+    syllableGroupId: "g",
+  },
+  { text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
 ];
 
 function koreanLine(pieces: [string?, string?, string?] = []): LyricLine {
@@ -31,9 +39,9 @@ function koreanLine(pieces: [string?, string?, string?] = []): LyricLine {
     agentId: "v1",
     text: "Uh 일단은 나",
     words: [
-      { text: "Uh ", begin: 0, end: 0.5, ...(first ? { transliteration: first } : {}) },
-      { text: "일단은 ", begin: 0.5, end: 1.5, ...(second ? { transliteration: second } : {}) },
-      { text: "나", begin: 1.5, end: 2, ...(third ? { transliteration: third } : {}) },
+      { text: "Uh", sep: " ", begin: 0, end: 0.5, ...(first ? { transliteration: first } : {}) },
+      { text: "일단은", sep: " ", begin: 0.5, end: 1.5, ...(second ? { transliteration: second } : {}) },
+      { text: "나", sep: "", begin: 1.5, end: 2, ...(third ? { transliteration: third } : {}) },
     ],
     transliteration: track,
   };
@@ -48,6 +56,7 @@ describe("splitWordsKeepingTransliteration", () => {
     const result = splitWordsKeepingTransliteration(line, "word", 1, [
       {
         text: "일",
+        sep: "",
         begin: 0.5,
         end: 0.8,
         transliteration: "i",
@@ -56,19 +65,20 @@ describe("splitWordsKeepingTransliteration", () => {
       },
       {
         text: "단",
+        sep: "",
         begin: 0.8,
         end: 1.1,
         transliteration: "ldan",
         transliterationJoinerAfter: " ",
         syllableGroupId: "group",
       },
-      { text: "은 ", begin: 1.1, end: 1.5, transliteration: "eun", syllableGroupId: "group" },
+      { text: "은", sep: " ", begin: 1.1, end: 1.5, transliteration: "eun", syllableGroupId: "group" },
     ]);
 
     expect(result?.transliteration?.text).toBe("Uh  ildan eun  na");
     expect(result?.transliteration?.segments).toEqual([{ original: line.text, transliteration: "Uh  ildan eun  na" }]);
     expect(result?.transliteration?.origin).toBe("manual");
-    expect(result?.words.map((word) => word.text)).toEqual(["Uh ", "일", "단", "은 ", "나"]);
+    expect(result?.words.map((word) => word.text + word.sep)).toEqual(["Uh ", "일", "단", "은 ", "나"]);
   });
 
   it("rebuilds the whole syllable group when an existing syllable is split again", () => {
@@ -77,8 +87,8 @@ describe("splitWordsKeepingTransliteration", () => {
       agentId: "v1",
       text: "일|단은",
       words: [
-        { text: "일", begin: 0, end: 0.5, transliteration: "il", syllableGroupId: "group" },
-        { text: "단은", begin: 0.5, end: 1, transliteration: "daneun", syllableGroupId: "group" },
+        { text: "일", sep: "", begin: 0, end: 0.5, transliteration: "il", syllableGroupId: "group" },
+        { text: "단은", sep: "", begin: 0.5, end: 1, transliteration: "daneun", syllableGroupId: "group" },
       ],
       transliteration: { ...track, text: "il daneun" },
     };
@@ -86,13 +96,14 @@ describe("splitWordsKeepingTransliteration", () => {
     const result = splitWordsKeepingTransliteration(line, "word", 0, [
       {
         text: "ㅇ",
+        sep: "",
         begin: 0,
         end: 0.25,
         transliteration: "i",
         transliterationJoinerAfter: "",
         syllableGroupId: "group",
       },
-      { text: "ㄹ", begin: 0.25, end: 0.5, transliteration: "l", syllableGroupId: "group" },
+      { text: "ㄹ", sep: "", begin: 0.25, end: 0.5, transliteration: "l", syllableGroupId: "group" },
     ]);
 
     expect(result?.transliteration?.text).toBe("il daneun");
@@ -101,8 +112,8 @@ describe("splitWordsKeepingTransliteration", () => {
   describe("regressions", () => {
     it("regression: an unpaired split never duplicates the piece into the track (#283)", () => {
       const result = splitWordsKeepingTransliteration(koreanLine(), "word", 1, [
-        { text: "일", begin: 0.5, end: 0.8, transliteration: "ildan eun", syllableGroupId: "g" },
-        { text: "단은 ", begin: 0.8, end: 1.5, transliteration: "ildan eun", syllableGroupId: "g" },
+        { text: "일", sep: "", begin: 0.5, end: 0.8, transliteration: "ildan eun", syllableGroupId: "g" },
+        { text: "단은", sep: " ", begin: 0.8, end: 1.5, transliteration: "ildan eun", syllableGroupId: "g" },
       ]);
 
       expect(result?.transliteration).toBeNull();
@@ -118,8 +129,16 @@ describe("splitWordsKeepingTransliteration", () => {
 
     it("regression: ignores stale stored pieces that no longer match the track (#283)", () => {
       const result = splitWordsKeepingTransliteration(koreanLine(["Oh", "ildaneun", "nah"]), "word", 0, [
-        { text: "U", begin: 0, end: 0.25, transliteration: "U", transliterationJoinerAfter: "", syllableGroupId: "g" },
-        { text: "h ", begin: 0.25, end: 0.5, transliteration: "h", syllableGroupId: "g" },
+        {
+          text: "U",
+          sep: "",
+          begin: 0,
+          end: 0.25,
+          transliteration: "U",
+          transliterationJoinerAfter: "",
+          syllableGroupId: "g",
+        },
+        { text: "h", sep: " ", begin: 0.25, end: 0.5, transliteration: "h", syllableGroupId: "g" },
       ]);
 
       expect(result?.words.map((word) => word.transliteration)).toEqual(["U", "h", "ildan eun", "na"]);
@@ -134,9 +153,9 @@ describe("splitWordsKeepingTransliteration", () => {
         agentId: "v1",
         text: "붙어있던",
         words: [
-          { text: "붙", begin: 0, end: 1, syllableGroupId: "g" },
-          { text: "어", begin: 1, end: 2, syllableGroupId: "g" },
-          { text: "있던", begin: 2, end: 3, syllableGroupId: "g" },
+          { text: "붙", sep: "", begin: 0, end: 1, syllableGroupId: "g" },
+          { text: "어", sep: "", begin: 1, end: 2, syllableGroupId: "g" },
+          { text: "있던", sep: "", begin: 2, end: 3, syllableGroupId: "g" },
         ],
         transliteration: { ...track, text: "but eoissdeon", alignmentStatus: "confirmed" },
       };
@@ -145,13 +164,14 @@ describe("splitWordsKeepingTransliteration", () => {
       const result = splitWordsKeepingTransliteration(line, "word", 2, [
         {
           text: "있",
+          sep: "",
           begin: 2,
           end: 2.5,
           transliteration: "ss",
           transliterationJoinerAfter: "",
           syllableGroupId: "g",
         },
-        { text: "던", begin: 2.5, end: 3, transliteration: "deon", syllableGroupId: "g" },
+        { text: "던", sep: "", begin: 2.5, end: 3, transliteration: "deon", syllableGroupId: "g" },
       ]);
 
       expect(result?.transliteration).not.toBeNull();
@@ -189,13 +209,13 @@ describe("splitWordsKeepingTransliteration", () => {
         id: "line",
         agentId: "v1",
         text: "일단은",
-        words: [{ text: "일단은", begin: 0, end: 1, transliteration: "ildan eun" }],
+        words: [{ text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun" }],
         transliteration: { ...track, text: "ildan eun" },
       };
 
       const result = splitWordsKeepingTransliteration(line, "word", 0, [
-        { text: "일", begin: 0, end: 0.5, transliteration: "il" },
-        { text: "단은", begin: 0.5, end: 1 },
+        { text: "일", sep: "", begin: 0, end: 0.5, transliteration: "il" },
+        { text: "단은", sep: "", begin: 0.5, end: 1 },
       ]);
 
       expect(result?.transliteration).toBeNull();
@@ -206,12 +226,12 @@ describe("splitWordsKeepingTransliteration", () => {
       const { transliteration: _track, ...line } = koreanLine();
 
       const result = splitWordsKeepingTransliteration(line, "word", 1, [
-        { text: "일", begin: 0.5, end: 0.8, syllableGroupId: "g" },
-        { text: "단은 ", begin: 0.8, end: 1.5, syllableGroupId: "g" },
+        { text: "일", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g" },
+        { text: "단은", sep: " ", begin: 0.8, end: 1.5, syllableGroupId: "g" },
       ]);
 
       expect(result?.transliteration).toBeNull();
-      expect(result?.words.map((word) => word.text)).toEqual(["Uh ", "일", "단은 ", "나"]);
+      expect(result?.words.map((word) => word.text + word.sep)).toEqual(["Uh ", "일", "단은 ", "나"]);
       expect(result?.words.every((word) => word.transliteration === undefined)).toBe(true);
     });
 
@@ -226,8 +246,16 @@ describe("splitWordsKeepingTransliteration", () => {
       };
 
       const result = splitWordsKeepingTransliteration(line, "word", 0, [
-        { text: "일", begin: 0, end: 0.4, transliteration: "il", transliterationJoinerAfter: "", syllableGroupId: "g" },
-        { text: "단은", begin: 0.4, end: 1, transliteration: "dan eun", syllableGroupId: "g" },
+        {
+          text: "일",
+          sep: "",
+          begin: 0,
+          end: 0.4,
+          transliteration: "il",
+          transliterationJoinerAfter: "",
+          syllableGroupId: "g",
+        },
+        { text: "단은", sep: "", begin: 0.4, end: 1, transliteration: "dan eun", syllableGroupId: "g" },
       ]);
 
       expect(result?.words.map((word) => word.text)).toEqual(["일", "단은"]);
@@ -247,8 +275,16 @@ describe("splitWordsKeepingTransliteration", () => {
       expect(getEffectiveLines([line])[0].words?.[0].transliteration).toBe("ildan eun  na");
 
       const result = splitWordsKeepingTransliteration(line, "word", 0, [
-        { text: "일", begin: 0, end: 0.4, transliteration: "il", transliterationJoinerAfter: "", syllableGroupId: "g" },
-        { text: "단은 나", begin: 0.4, end: 1, transliteration: "dan eun  na", syllableGroupId: "g" },
+        {
+          text: "일",
+          sep: "",
+          begin: 0,
+          end: 0.4,
+          transliteration: "il",
+          transliterationJoinerAfter: "",
+          syllableGroupId: "g",
+        },
+        { text: "단은 나", sep: "", begin: 0.4, end: 1, transliteration: "dan eun  na", syllableGroupId: "g" },
       ]);
 
       expect(result?.words.map((word) => word.transliteration)).toEqual(["il", "dan eun  na"]);
@@ -260,8 +296,8 @@ describe("splitWordsKeepingTransliteration", () => {
         ...koreanLine(),
         backgroundText: "그래 yeah",
         backgroundWords: [
-          { text: "그래 ", begin: 2, end: 2.5 },
-          { text: "yeah", begin: 2.5, end: 3 },
+          { text: "그래", sep: " ", begin: 2, end: 2.5 },
+          { text: "yeah", sep: "", begin: 2.5, end: 3 },
         ],
         transliteration: {
           ...track,
@@ -274,16 +310,17 @@ describe("splitWordsKeepingTransliteration", () => {
       const result = splitWordsKeepingTransliteration(line, "bg", 0, [
         {
           text: "그",
+          sep: "",
           begin: 2,
           end: 2.2,
           transliteration: "geu",
           transliterationJoinerAfter: "",
           syllableGroupId: "g",
         },
-        { text: "래 ", begin: 2.2, end: 2.5, transliteration: "rae", syllableGroupId: "g" },
+        { text: "래", sep: " ", begin: 2.2, end: 2.5, transliteration: "rae", syllableGroupId: "g" },
       ]);
 
-      expect(result?.words.map((word) => word.text)).toEqual(["그", "래 ", "yeah"]);
+      expect(result?.words.map((word) => word.text + word.sep)).toEqual(["그", "래 ", "yeah"]);
       expect(result?.words.map((word) => word.transliteration)).toEqual(["geu", "rae", "yeah"]);
       expect(result?.transliteration?.backgroundText).toBe("geurae  yeah");
       expect(result?.transliteration?.backgroundSegments).toEqual([
@@ -308,7 +345,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
       id: "line",
       agentId: "v1",
       text: "хорошо",
-      words: [{ text: "хорошо", begin: 0, end: 1, transliteration: "khorosho" }],
+      words: [{ text: "хорошо", sep: "", begin: 0, end: 1, transliteration: "khorosho" }],
       transliteration: {
         language: "ru-Latn",
         text: "khorosho",
@@ -320,8 +357,8 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
     };
   }
   const pieces = [
-    { text: "хор ", begin: 0, end: 0.5, transliteration: "khor", transliterationJoinerAfter: "" },
-    { text: "ошо", begin: 0.5, end: 1, transliteration: "osho" },
+    { text: "хор", sep: " ", begin: 0, end: 0.5, transliteration: "khor", transliterationJoinerAfter: "" },
+    { text: "ошо", sep: "", begin: 0.5, end: 1, transliteration: "osho" },
   ];
 
   it("re-stamps the track against the split text", () => {
@@ -358,8 +395,8 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
       agentId: "v1",
       text: "да хорошо",
       words: [
-        { text: "да ", begin: 0, end: 0.5 },
-        { text: "хорошо", begin: 0.5, end: 1 },
+        { text: "да", sep: " ", begin: 0, end: 0.5 },
+        { text: "хорошо", sep: "", begin: 0.5, end: 1 },
       ],
       transliteration: {
         language: "ru-Latn",
@@ -374,8 +411,8 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
       "word",
       1,
       [
-        { text: "хор ", begin: 0.5, end: 0.75, transliteration: "khor", transliterationJoinerAfter: "" },
-        { text: "ошо", begin: 0.75, end: 1, transliteration: "osho" },
+        { text: "хор", sep: " ", begin: 0.5, end: 0.75, transliteration: "khor", transliterationJoinerAfter: "" },
+        { text: "ошо", sep: "", begin: 0.75, end: 1, transliteration: "osho" },
       ],
       "|",
     )?.transliteration;
@@ -399,7 +436,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
       agentId: "v1",
       text: "everyday",
       backgroundText: "привет",
-      words: [{ text: "everyday", begin: 0, end: 1 }],
+      words: [{ text: "everyday", sep: "", begin: 0, end: 1 }],
       transliteration: {
         language: "ru-Latn",
         text: "",
@@ -414,8 +451,8 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
       "word",
       0,
       [
-        { text: "every ", begin: 0, end: 0.5 },
-        { text: "day", begin: 0.5, end: 1 },
+        { text: "every", sep: " ", begin: 0, end: 0.5 },
+        { text: "day", sep: "", begin: 0.5, end: 1 },
       ],
       "|",
     )?.transliteration;
@@ -430,7 +467,7 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
       agentId: "v1",
       text: "da",
       backgroundText: "хорошо",
-      backgroundWords: [{ text: "хорошо", begin: 0, end: 1, transliteration: "khorosho" }],
+      backgroundWords: [{ text: "хорошо", sep: "", begin: 0, end: 1, transliteration: "khorosho" }],
       transliteration: {
         language: "ru-Latn",
         text: "da",

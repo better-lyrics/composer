@@ -13,8 +13,8 @@ const wordLine = createLine({
   id: "a",
   text: "Hold me close",
   words: [
-    { text: "Hold ", begin: 1, end: 1.4 },
-    { text: "me ", begin: 1.4, end: 1.7 },
+    { text: "Hold", sep: " ", begin: 1, end: 1.4 },
+    { text: "me", sep: " ", begin: 1.4, end: 1.7 },
     { text: "close", begin: 1.7, end: 2.3 },
   ],
   backgroundText: "ooh",
@@ -25,7 +25,7 @@ const nextLine = createLine({
   id: "b",
   text: "Never let",
   words: [
-    { text: "Never ", begin: 4, end: 4.5 },
+    { text: "Never", sep: " ", begin: 4, end: 4.5 },
     { text: "let", begin: 4.5, end: 4.8 },
   ],
 });

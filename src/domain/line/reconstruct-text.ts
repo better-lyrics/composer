@@ -12,8 +12,8 @@ import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 function reconstructLineText(words: WordTiming[], splitChar: string): string {
   let result = "";
   for (let i = 0; i < words.length; i++) {
-    result += words[i].text;
-    if (i < words.length - 1 && !words[i].text.endsWith(" ")) {
+    result += words[i].text + words[i].sep;
+    if (i < words.length - 1 && !words[i].sep.endsWith(" ")) {
       result += splitChar;
     }
   }
@@ -34,7 +34,7 @@ function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSp
   const spans: WordContentSpan[] = [];
   let cursor = 0;
   for (let i = 0; i < words.length; i++) {
-    const text = words[i].text;
+    const text = words[i].text + words[i].sep;
     const leading = text.length - text.trimStart().length;
     const trailing = text.length - text.trimEnd().length;
     spans.push({ start: cursor + leading, end: cursor + text.length - trailing });

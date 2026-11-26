@@ -94,7 +94,7 @@ describe("findBoundaryTarget", () => {
       id: "gapped",
       text: "done gave",
       words: [
-        { text: "done ", begin: 1, end: 2 },
+        { text: "done", sep: " ", begin: 1, end: 2 },
         { text: "gave", begin: 3, end: 4 },
       ],
     });
@@ -224,7 +224,7 @@ describe("findBoundaryTarget", () => {
         id: "flush",
         text: "a b",
         words: [
-          { text: "a ", begin: 1, end: 2 },
+          { text: "a", sep: " ", begin: 1, end: 2 },
           { text: "b", begin: 2, end: 3 },
         ],
       });
@@ -250,8 +250,8 @@ describe("findBoundaryTarget", () => {
         id: "three",
         text: "a b c",
         words: [
-          { text: "a ", begin: 0, end: 1 },
-          { text: "b ", begin: 2, end: 3 },
+          { text: "a", sep: " ", begin: 0, end: 1 },
+          { text: "b", sep: " ", begin: 2, end: 3 },
           { text: "c", begin: 4, end: 5 },
         ],
       });

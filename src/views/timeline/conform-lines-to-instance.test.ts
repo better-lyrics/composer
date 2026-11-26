@@ -15,8 +15,8 @@ const chorusTemplate: LineTemplate[] = [
     relativeBegin: 0,
     relativeEnd: 2,
     words: [
-      { text: "We were ", relativeBegin: 0, relativeEnd: 0.8 },
-      { text: "dancing in the dark", relativeBegin: 0.8, relativeEnd: 2 },
+      { text: "We were", sep: " ", relativeBegin: 0, relativeEnd: 0.8 },
+      { text: "dancing in the dark", sep: "", relativeBegin: 0.8, relativeEnd: 2 },
     ],
   },
   {
@@ -24,26 +24,26 @@ const chorusTemplate: LineTemplate[] = [
     agentId: "v2",
     relativeBegin: 2.5,
     relativeEnd: 4,
-    words: [{ text: "Till the morning came", relativeBegin: 2.5, relativeEnd: 4 }],
+    words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4 }],
   },
 ];
 
 function songWithLooseChorus(): LyricLine[] {
   return [
-    { id: "verse", text: "I remember", agentId: "v1", words: [{ text: "I remember", begin: 0, end: 4 }] },
+    { id: "verse", text: "I remember", agentId: "v1", words: [{ text: "I remember", sep: "", begin: 0, end: 4 }] },
     {
       id: "loose1",
       text: "we were dancin in the dark",
       agentId: "v1",
-      words: [{ text: "we were dancin in the dark", begin: 20, end: 22 }],
+      words: [{ text: "we were dancin in the dark", sep: "", begin: 20, end: 22 }],
     },
     {
       id: "loose2",
       text: "till mornin came",
       agentId: "v1",
-      words: [{ text: "till mornin came", begin: 22.4, end: 24 }],
+      words: [{ text: "till mornin came", sep: "", begin: 22.4, end: 24 }],
     },
-    { id: "outro", text: "Goodnight", agentId: "v1", words: [{ text: "Goodnight", begin: 30, end: 32 }] },
+    { id: "outro", text: "Goodnight", agentId: "v1", words: [{ text: "Goodnight", sep: "", begin: 30, end: 32 }] },
   ];
 }
 

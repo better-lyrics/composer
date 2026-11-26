@@ -11,7 +11,7 @@ const line = (end: number) =>
     id: "a",
     text: "Paper boats",
     words: [
-      { text: "Paper ", begin: 1, end },
+      { text: "Paper", sep: " ", begin: 1, end },
       { text: "boats", begin: end, end: 2 },
     ],
   });

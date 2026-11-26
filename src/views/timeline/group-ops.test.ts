@@ -78,9 +78,9 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 30, end: 30.4 },
-          { text: "love ", begin: 30.4, end: 30.9 },
-          { text: "you", begin: 30.9, end: 32 },
+          { text: "I", sep: " ", begin: 30, end: 30.4 },
+          { text: "love", sep: " ", begin: 30.4, end: 30.9 },
+          { text: "you", sep: "", begin: 30.9, end: 32 },
         ],
       },
       {
@@ -90,7 +90,7 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 1,
-        words: [{ text: "yeah", begin: 32, end: 33 }],
+        words: [{ text: "yeah", sep: "", begin: 32, end: 33 }],
       },
     ];
 
@@ -112,8 +112,8 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        backgroundWords: [{ text: "yeah", begin: 28, end: 29 }],
-        words: [{ text: "hi", begin: 30, end: 31 }],
+        backgroundWords: [{ text: "yeah", sep: "", begin: 28, end: 29 }],
+        words: [{ text: "hi", sep: "", begin: 30, end: 31 }],
       },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
@@ -130,9 +130,9 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "main", begin: 30, end: 31 }],
+        words: [{ text: "main", sep: "", begin: 30, end: 31 }],
         backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", begin: 30, end: 30.5 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 30, end: 30.5 }],
         backgroundTextSource: "extraction",
       },
     ];
@@ -149,7 +149,7 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "main", begin: 30, end: 31 }],
+        words: [{ text: "main", sep: "", begin: 30, end: 31 }],
         backgroundText: "ooh",
         backgroundTextSource: "manual",
       },
@@ -167,7 +167,7 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "main", begin: 30, end: 31 }],
+        words: [{ text: "main", sep: "", begin: 30, end: 31 }],
       },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
@@ -184,8 +184,8 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "hello ", begin: 5, end: 6 },
-          { text: "world", begin: 6, end: 7 },
+          { text: "hello", sep: " ", begin: 5, end: 6 },
+          { text: "world", sep: "", begin: 6, end: 7 },
         ],
       },
     ];

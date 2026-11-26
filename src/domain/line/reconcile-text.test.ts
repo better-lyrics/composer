@@ -9,14 +9,14 @@ describe("reconcileMatchedTiming", () => {
       text: "Dengar|lah rindu yang menyik|sa i|ni",
       agentId: "v1",
       words: [
-        { text: "Dengar", begin: 1, end: 1.2 },
-        { text: "lah ", begin: 1.2, end: 1.4 },
-        { text: "rindu ", begin: 1.4, end: 1.6 },
-        { text: "yang ", begin: 1.6, end: 1.8 },
-        { text: "menyik", begin: 1.8, end: 2 },
-        { text: "sa ", begin: 2, end: 2.2 },
-        { text: "i", begin: 2.2, end: 2.4 },
-        { text: "ni", begin: 2.4, end: 2.6 },
+        { text: "Dengar", sep: "", begin: 1, end: 1.2 },
+        { text: "lah", sep: " ", begin: 1.2, end: 1.4 },
+        { text: "rindu", sep: " ", begin: 1.4, end: 1.6 },
+        { text: "yang", sep: " ", begin: 1.6, end: 1.8 },
+        { text: "menyik", sep: "", begin: 1.8, end: 2 },
+        { text: "sa", sep: " ", begin: 2, end: 2.2 },
+        { text: "i", sep: "", begin: 2.2, end: 2.4 },
+        { text: "ni", sep: "", begin: 2.4, end: 2.6 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rindu yang menyik|sa i|ni");
@@ -41,17 +41,17 @@ describe("reconcileMatchedTiming", () => {
       text: "Den|garlah rin|du",
       agentId: "v1",
       words: [
-        { text: "Den", begin: 0, end: 0.5 },
-        { text: "garlah ", begin: 0.5, end: 1 },
-        { text: "rin", begin: 1, end: 1.5 },
-        { text: "du", begin: 1.5, end: 2 },
+        { text: "Den", sep: "", begin: 0, end: 0.5 },
+        { text: "garlah", sep: " ", begin: 0.5, end: 1 },
+        { text: "rin", sep: "", begin: 1, end: 1.5 },
+        { text: "du", sep: "", begin: 1.5, end: 2 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
     expect(result.text).toBe("Dengar|lah rin|du");
     expect(result.words?.map((w) => w.begin)).toEqual([0, 0.5, 1, 1.5]);
     expect(result.words?.map((w) => w.end)).toEqual([0.5, 1, 1.5, 2]);
-    expect(result.words?.map((w) => w.text)).toEqual(["Dengar", "lah ", "rin", "du"]);
+    expect(result.words?.map((w) => w.text + w.sep)).toEqual(["Dengar", "lah ", "rin", "du"]);
   });
 
   it("keeps untouched syllable timing when the syllable count changes", () => {
@@ -60,14 +60,14 @@ describe("reconcileMatchedTiming", () => {
       text: "Dengar|lah",
       agentId: "v1",
       words: [
-        { text: "Dengar", begin: 0, end: 0.5 },
-        { text: "lah", begin: 0.5, end: 1 },
+        { text: "Dengar", sep: "", begin: 0, end: 0.5 },
+        { text: "lah", sep: "", begin: 0.5, end: 1 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
     expect(result.text).toBe("Dengar|lah|extra");
     expect(result.words?.map((w) => w.text)).toEqual(["Dengar", "lah", "extra"]);
-    expect(result.words?.[0]).toEqual({ text: "Dengar", begin: 0, end: 0.5 });
+    expect(result.words?.[0]).toEqual({ text: "Dengar", sep: "", begin: 0, end: 0.5 });
     expect(result.words?.[2].end).toBe(1);
   });
 
@@ -92,8 +92,8 @@ describe("reconcileMatchedTiming", () => {
       text: "Dengar|lah",
       agentId: "v1",
       words: [
-        { text: "Dengar", begin: 0, end: 0.5 },
-        { text: "lah", begin: 0.5, end: 1 },
+        { text: "Dengar", sep: "", begin: 0, end: 0.5 },
+        { text: "lah", sep: "", begin: 0.5, end: 1 },
       ],
     };
     const result = reconcileMatchedTiming(line, "");
@@ -141,10 +141,10 @@ describe("reconcileMatchedTiming · edge cases", () => {
 
   it("does not mutate the input line or its words array", () => {
     const originalWords = [
-      { text: "Den", begin: 0, end: 0.5 },
-      { text: "garlah ", begin: 0.5, end: 1 },
-      { text: "rin", begin: 1, end: 1.5 },
-      { text: "du", begin: 1.5, end: 2 },
+      { text: "Den", sep: "", begin: 0, end: 0.5 },
+      { text: "garlah", sep: " ", begin: 0.5, end: 1 },
+      { text: "rin", sep: "", begin: 1, end: 1.5 },
+      { text: "du", sep: "", begin: 1.5, end: 2 },
     ];
     const line: LyricLine = {
       id: "L0",
@@ -167,18 +167,18 @@ describe("reconcileMatchedTiming · edge cases", () => {
       text: "Den|garlah rin|du",
       agentId: "v1",
       words: [
-        { text: "Den", begin: 0, end: 0.5 },
-        { text: "garlah ", begin: 0.5, end: 1 },
-        { text: "rin", begin: 1, end: 1.5 },
-        { text: "du", begin: 1.5, end: 2 },
+        { text: "Den", sep: "", begin: 0, end: 0.5 },
+        { text: "garlah", sep: " ", begin: 0.5, end: 1 },
+        { text: "rin", sep: "", begin: 1, end: 1.5 },
+        { text: "du", sep: "", begin: 1.5, end: 2 },
       ],
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", begin: 0.2, end: 0.8 }],
+      backgroundWords: [{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }],
       backgroundTextSource: "manual",
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
     expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toEqual([{ text: "ooh", begin: 0.2, end: 0.8 }]);
+    expect(result.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }]);
     expect(result.backgroundTextSource).toBe("manual");
   });
 
@@ -188,16 +188,16 @@ describe("reconcileMatchedTiming · edge cases", () => {
       text: "Dengar|lah",
       agentId: "v1",
       words: [
-        { text: "Dengar", begin: 0, end: 0.5 },
-        { text: "lah", begin: 0.5, end: 1 },
+        { text: "Dengar", sep: "", begin: 0, end: 0.5 },
+        { text: "lah", sep: "", begin: 0.5, end: 1 },
       ],
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", begin: 0.2, end: 0.8 }],
+      backgroundWords: [{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }],
       backgroundTextSource: "extraction",
     };
     const result = reconcileMatchedTiming(line, "");
     expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toEqual([{ text: "ooh", begin: 0.2, end: 0.8 }]);
+    expect(result.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }]);
     expect(result.backgroundTextSource).toBe("extraction");
   });
 
@@ -207,10 +207,10 @@ describe("reconcileMatchedTiming · edge cases", () => {
       text: "Den|garlah rin|du",
       agentId: "v1",
       words: [
-        { text: "Den", begin: 0, end: 0.5 },
-        { text: "garlah ", begin: 0.5, end: 1 },
-        { text: "rin", begin: 1, end: 1.5 },
-        { text: "du", begin: 1.5, end: 2 },
+        { text: "Den", sep: "", begin: 0, end: 0.5 },
+        { text: "garlah", sep: " ", begin: 0.5, end: 1 },
+        { text: "rin", sep: "", begin: 1, end: 1.5 },
+        { text: "du", sep: "", begin: 1.5, end: 2 },
       ],
       groupId: "g1",
       instanceIdx: 0,
@@ -242,17 +242,17 @@ describe("reconcileMatchedTiming · regressions", () => {
       text: "Wish I could",
       agentId: "v1",
       words: [
-        { text: "Wish ", begin: 1, end: 2 },
-        { text: "I ", begin: 2, end: 3 },
-        { text: "could", begin: 3, end: 4 },
+        { text: "Wish", sep: " ", begin: 1, end: 2 },
+        { text: "I", sep: " ", begin: 2, end: 3 },
+        { text: "could", sep: "", begin: 3, end: 4 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Wish I could get it");
     expect(result.words?.slice(0, 2)).toEqual([
-      { text: "Wish ", begin: 1, end: 2 },
-      { text: "I ", begin: 2, end: 3 },
+      { text: "Wish", sep: " ", begin: 1, end: 2 },
+      { text: "I", sep: " ", begin: 2, end: 3 },
     ]);
-    expect(result.words?.map((w) => w.text)).toEqual(["Wish ", "I ", "could ", "get ", "it"]);
+    expect(result.words?.map((w) => w.text + w.sep)).toEqual(["Wish ", "I ", "could ", "get ", "it"]);
     expect(result.words?.[4].end).toBe(4);
   });
 
@@ -262,15 +262,15 @@ describe("reconcileMatchedTiming · regressions", () => {
       text: "Wish I could",
       agentId: "v1",
       words: [
-        { text: "Wish ", begin: 1, end: 2 },
-        { text: "I ", begin: 2, end: 3 },
-        { text: "could", begin: 3, end: 4 },
+        { text: "Wish", sep: " ", begin: 1, end: 2 },
+        { text: "I", sep: " ", begin: 2, end: 3 },
+        { text: "could", sep: "", begin: 3, end: 4 },
       ],
     };
     const result = reconcileMatchedTiming(line, "Wish could");
     expect(result.words).toEqual([
-      { text: "Wish ", begin: 1, end: 2 },
-      { text: "could", begin: 3, end: 4 },
+      { text: "Wish", sep: " ", begin: 1, end: 2 },
+      { text: "could", sep: "", begin: 3, end: 4 },
     ]);
   });
 });

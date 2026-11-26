@@ -11,8 +11,8 @@ function threeSyncedLines(): LyricLine[] {
       id: "line-a",
       text: "first line here",
       words: [
-        { text: "first ", begin: 2, end: 3 },
-        { text: "line ", begin: 3, end: 4 },
+        { text: "first", sep: " ", begin: 2, end: 3 },
+        { text: "line", sep: " ", begin: 3, end: 4 },
         { text: "here", begin: 4, end: 6 },
       ],
     }),
@@ -20,8 +20,8 @@ function threeSyncedLines(): LyricLine[] {
       id: "line-b",
       text: "second line now",
       words: [
-        { text: "second ", begin: 12, end: 14 },
-        { text: "line ", begin: 14, end: 16 },
+        { text: "second", sep: " ", begin: 12, end: 14 },
+        { text: "line", sep: " ", begin: 14, end: 16 },
         { text: "now", begin: 16, end: 18 },
       ],
     }),
@@ -29,8 +29,8 @@ function threeSyncedLines(): LyricLine[] {
       id: "line-c",
       text: "third line ends",
       words: [
-        { text: "third ", begin: 24, end: 26 },
-        { text: "line ", begin: 26, end: 28 },
+        { text: "third", sep: " ", begin: 24, end: 26 },
+        { text: "line", sep: " ", begin: 26, end: 28 },
         { text: "ends", begin: 28, end: 30 },
       ],
     }),
@@ -60,13 +60,13 @@ function buildBackgroundVocalTtml(): string {
       id: "line-bg",
       text: "first line here",
       words: [
-        { text: "first ", begin: 2, end: 3 },
-        { text: "line ", begin: 3, end: 4 },
+        { text: "first", sep: " ", begin: 2, end: 3 },
+        { text: "line", sep: " ", begin: 3, end: 4 },
         { text: "here", begin: 4, end: 6 },
       ],
       backgroundText: "ooh ahh",
       backgroundWords: [
-        { text: "ooh ", begin: 4, end: 5 },
+        { text: "ooh", sep: " ", begin: 4, end: 5 },
         { text: "ahh", begin: 5, end: 6 },
       ],
     }),
@@ -82,7 +82,7 @@ function buildAlternateLanguageTtml(): string {
       id: "line-language",
       text: "안녕 세상",
       words: [
-        { text: "안녕 ", begin: 2, end: 4 },
+        { text: "안녕", sep: " ", begin: 2, end: 4 },
         { text: "세상", begin: 4, end: 6 },
       ],
     }),
@@ -117,7 +117,7 @@ function buildAlternateBackgroundLanguageTtml(): string {
       id: "line-language-background",
       text: "안녕 세상",
       words: [
-        { text: "안녕 ", begin: 2, end: 3 },
+        { text: "안녕", sep: " ", begin: 2, end: 3 },
         { text: "세상", begin: 4, end: 6 },
       ],
       backgroundText: "오",
@@ -157,7 +157,7 @@ function buildMatchingAlternateLanguageTtml(): string {
       id: "line-matching-language",
       text: "same line",
       words: [
-        { text: "same ", begin: 2, end: 4 },
+        { text: "same", sep: " ", begin: 2, end: 4 },
         { text: "line", begin: 4, end: 6 },
       ],
     }),

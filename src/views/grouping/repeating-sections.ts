@@ -196,8 +196,8 @@ function fingerprintBlock(lines: LyricLine[], start: number, length: number): st
   const parts: string[] = [];
   for (let p = start; p < start + length; p++) {
     const l = lines[p];
-    const wordsKey = (l.words ?? []).map((w) => w.text).join(FS);
-    const bgKey = (l.backgroundWords ?? []).map((w) => w.text).join(FS);
+    const wordsKey = (l.words ?? []).map((w) => w.text + w.sep).join(FS);
+    const bgKey = (l.backgroundWords ?? []).map((w) => w.text + w.sep).join(FS);
     parts.push([l.text, l.agentId, l.backgroundText ?? "", wordsKey, bgKey].join(RS));
   }
   return parts.join("\n");
