@@ -1,12 +1,12 @@
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { mainBounds } from "@/domain/line/bounds";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import { withBackgroundSeededFrom, withSeededBackground } from "@/domain/line/background";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
+import { clampShiftDelta, shiftLineTiming, shiftTrack } from "@/domain/line/shift";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
-import { withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
+import { withBackgroundTrack, withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
@@ -88,9 +88,9 @@ function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureC
 // -- Background -----------------------------------------------------------------
 
 function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null): LyricLine {
-  const words = timedSyllables(backgroundTrack(line));
-  if (words.length) return oldMain ? withRoleWords(line, "bg", shiftWords(words, begin - oldMain.begin)) : line;
-  return withBackgroundSeededFrom(line, begin);
+  const background = backgroundTrack(line);
+  if (!background || !bgBounds(line)) return withBackgroundSeededFrom(line, begin);
+  return oldMain ? withBackgroundTrack(line, shiftTrack(background, begin - oldMain.begin)) : line;
 }
 
 // -- Word slot writing ----------------------------------------------------------

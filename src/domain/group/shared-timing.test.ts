@@ -11,7 +11,9 @@ import {
   wholeSongRange,
 } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { mainBounds } from "@/domain/line/bounds";
+import { withManualBackgroundWords, withSeededBackground } from "@/domain/line/background";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
@@ -224,6 +226,30 @@ describe("sharedTimingFanOut", () => {
       (copied && roleWords(copied, "bg"))?.map((word) => [word.begin, word.end]),
       [[42, 42.6]],
     );
+  });
+
+  it("copies a moved line-synced background span", () => {
+    const lineSynced = (instanceIdx: number, begin: number) =>
+      withSeededBackground(
+        createLine({
+          id: `o${instanceIdx}`,
+          text: "Oh",
+          begin,
+          end: begin + 2,
+          backgroundText: "ah",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 1,
+        }),
+      );
+    const before = [chorus(0, 0, 10), lineSynced(0, 11), chorus(1, 0, 40), lineSynced(1, 41)];
+    const moved = withManualBackgroundWords(before[1], [
+      { ...drawnSyllables(before[1], "bg")[0], begin: 11.5, end: 12.5 },
+    ]);
+    const after = before.with(1, moved);
+    const copied = byId(sharedTimingFanOut(before, after, sharing, ["o0"]).lines, "o1");
+    expect(copied && bgBounds(copied)?.begin).toBeCloseTo(41.5, 6);
+    expect(copied && bgBounds(copied)?.end).toBeCloseTo(42.5, 6);
   });
 
   it("copies only timing fields", () => {

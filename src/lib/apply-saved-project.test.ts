@@ -5,7 +5,6 @@ import { pasteLyrics } from "@/domain/commands/edit-text";
 import { addGroup } from "@/domain/commands/group-edits";
 import { bgBounds } from "@/domain/line/bounds";
 import { lineText } from "@/domain/line/text";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
@@ -81,7 +80,7 @@ describe("applySavedProject", () => {
         applySavedProject(projectFile({ lines: savedLines([legacy]) }), origin);
 
         const state = useProjectStore.getState();
-        expect(timedSyllables(backgroundTrack(state.lines[0]))[0]).toMatchObject({ begin: 12, end: 14 });
+        expect(bgBounds(state.lines[0])).toEqual({ begin: 12, end: 14 });
         expect(state.isDirty).toBe(false);
       }
     });

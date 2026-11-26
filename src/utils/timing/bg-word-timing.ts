@@ -1,12 +1,14 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { backgroundTimingWrite } from "@/domain/line/track-writes";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 
-const { retimeEdit, boundaryEdit, stepEdit } = createWordTimingOps({
-  getWords: (line) => timedSyllables(backgroundTrack(line)),
-  writeWords: (line, words) => ({ tracks: withRoleWords(line, "bg", words).tracks }),
+// Timeline and Sync edits read the background as the Timeline draws it: a line-synced one as one block.
+const drawnOps = createWordTimingOps({
+  getWords: (line) => drawnSyllables(line, "bg"),
+  writeWords: backgroundTimingWrite,
   buildBoundaryUpdate: (line, words) => manualBackgroundWordEdit(line, words),
 });
+const { boundaryEdit, stepEdit, retimeEdit } = drawnOps;
 
 export { boundaryEdit as bgWordBoundaryEdit, retimeEdit as bgWordRetimeEdit, stepEdit as stepBgWordEdit };

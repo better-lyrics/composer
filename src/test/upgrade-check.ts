@@ -1,15 +1,16 @@
 import { validateLine } from "insync/validate-line";
 import { readAlignedTimings, timingFingerprint, v3TimingFingerprint } from "@/domain/alignment/fingerprint";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
-import { withSeededBackground } from "@/domain/line/background";
+import { withSeededBackground, withSeededBackgroundWords } from "@/domain/line/background";
+import { bgBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { backgroundTrack, timedSyllables } from "@/domain/line/track";
-import { timingGranularityOf } from "@/domain/project/timing-granularity";
+import { backgroundTrack } from "@/domain/line/track";
 import { linesFromSaved, type SavedProjectV3, upgradeSavedProject } from "@/lib/saved-project";
 import { linesFromSavedV3 } from "@/lib/saved-project-v3";
 import { compareExports, type ExportDifference } from "@/test/export-equality";
 import { withPositionIds, withTimesInWholeMs } from "@/test/saved-format-equality";
+import { type InstanceDrift, sharedInstanceDrift } from "@/test/shared-instance-drift";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
@@ -25,7 +26,9 @@ interface UpgradeReport {
   lrcExtraTags: number;
   // Lines marked aligned before the upgrade that read as unaligned after it.
   unaligned: string[];
-  lineSyncedBackgroundsInWordProjects: number;
+  // Line-synced lines with an untimed background: 3.x seeded and exported background words, now one span.
+  excludedFromExports: number;
+  instanceDrift: InstanceDrift;
 }
 
 // -- Checks -------------------------------------------------------------------
@@ -36,19 +39,15 @@ function linesAsV3Opened(record: SavedProjectV3): LyricLine[] {
   return record.version < 3 ? loaded.map(migrateLegacyTransliterationLine) : loaded;
 }
 
-function lineSyncedBackgrounds(lines: readonly LyricLine[]): number {
-  if (timingGranularityOf(lines) !== "word") return 0;
-  return lines.filter((line) => {
-    const background = backgroundTrack(line);
-    return background !== undefined && isLineSynced(line) && timedSyllables(background).length === 0;
-  }).length;
+function seedsBackgroundSpan(line: LyricLine): boolean {
+  return backgroundTrack(line) !== undefined && isLineSynced(line) && !bgBounds(line);
 }
 
 function unalignedAfterUpgrade(record: SavedProjectV3, before: LyricLine[], after: LyricLine[], rekeyed: unknown) {
   const aligned = readAlignedTimings(record.alignedTimings);
   const now = readAlignedTimings(rekeyed);
   return before.flatMap((line, index) =>
-    aligned[line.id] === v3TimingFingerprint(withSeededBackground(line)) &&
+    aligned[line.id] === v3TimingFingerprint(withSeededBackgroundWords(line)) &&
     now[line.id] !== timingFingerprint(withSeededBackground(after[index]))
       ? [line.id]
       : [],
@@ -63,9 +62,11 @@ function checkUpgrade(name: string, record: SavedProjectV3): UpgradeReport {
   const expected = withPositionIds(withTimesInWholeMs(before));
   const actual = withPositionIds(after);
   const project = { name, groups: record.groups ?? [], agents: record.agents, metadata: record.metadata };
+  const excluded = new Set(before.flatMap((line, index) => (seedsBackgroundSpan(line) ? [index] : [])));
+  const compared = (lines: LyricLine[]) => lines.filter((_line, index) => !excluded.has(index));
   const exports = compareExports(
-    { ...project, lines: before.map(withSeededBackground) },
-    { ...project, lines: after.map(withSeededBackground) },
+    { ...project, lines: compared(before.map(withSeededBackgroundWords)) },
+    { ...project, lines: compared(after.map(withSeededBackground)) },
   );
   return {
     name,
@@ -78,7 +79,8 @@ function checkUpgrade(name: string, record: SavedProjectV3): UpgradeReport {
     lrcTolerated: exports.lrc.tolerated,
     lrcExtraTags: exports.lrc.extraTags,
     unaligned: unalignedAfterUpgrade(record, before, after, upgraded.alignedTimings),
-    lineSyncedBackgroundsInWordProjects: lineSyncedBackgrounds(before),
+    excludedFromExports: excluded.size,
+    instanceDrift: sharedInstanceDrift(before, record.groups ?? []),
   };
 }
 

@@ -1,8 +1,9 @@
 import { toast } from "sonner";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { pieceOf, trackPieces } from "@/domain/language/pieces";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -33,7 +34,7 @@ function copyInstanceToClipboardAndPreview(lines: LyricLine[], groupId: string, 
       const piece = pieceOf(trackPieces(line, "main"), word);
       entries.push({ word: { ...word }, lineOffset, trackType: "word", ...(piece && { piece }) });
     }
-    for (const word of timedSyllables(backgroundTrack(line))) {
+    for (const word of drawnSyllables(line, "bg")) {
       const piece = pieceOf(trackPieces(line, "bg"), word);
       entries.push({ word: { ...word }, lineOffset, trackType: "bg", ...(piece && { piece }) });
     }

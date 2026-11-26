@@ -5,14 +5,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { markWordsExplicit } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
+import { withSeededBackground } from "@/domain/line/background";
 import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { roleWords, trackRole } from "@/domain/line/track";
+import { backgroundTrack, roleWords, timedSyllables, trackRole } from "@/domain/line/track";
+import { withBackgroundTrack, withTrackExplicit } from "@/domain/line/track-writes";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
-import { createWords } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
+import { generateLineTtml } from "@/utils/ttml";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 
 function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
@@ -210,5 +213,86 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
     runToggle();
     const lines = useProjectStore.getState().lines;
     expect(lines.every((l) => roleWords(l, "main")?.[0].explicit === undefined)).toBe(true);
+  });
+});
+
+describe("explicit marks on a line-synced background", () => {
+  beforeEach(() => useProjectStore.getState().reset());
+
+  it("regression: marks the block of a line-synced background explicit and exports it marked", () => {
+    const line = withSeededBackground(
+      createLine({ id: "l1", text: "Low tide", begin: 2, end: 6, backgroundText: "damn it" }),
+    );
+    useProjectStore.setState({ lines: [line] });
+
+    const toggle = resolveExplicitSelectionToggle([line], [sel([line], "l1", 0, "bg")]);
+    expect(toggle).toEqual({ targets: [{ lineId: "l1", field: "backgroundWords", wordIndex: 0 }], value: true });
+    useProjectStore.getState().commit(markWordsExplicit(toggle.targets, toggle.value));
+
+    const [marked] = useProjectStore.getState().lines;
+    expect(backgroundTrack(marked)).toMatchObject({ begin: 4, end: 6 });
+    expect(drawnSyllables(marked, "bg")[0].explicit).toBe(true);
+    expect(generateLineTtml(marked)).toContain(
+      '<span begin="0:04.000" end="0:06.000" composer:explicit="true">damn it</span>',
+    );
+  });
+
+  it("regression: marking a line-synced background marks a linked copy's own background words, keeping their timing", () => {
+    const linked = { groupId: "g1", templateLineIdx: 0 };
+    const source = withSeededBackground(
+      createLine({ id: "a0", text: "Low tide", begin: 2, end: 6, backgroundText: "oh no", ...linked, instanceIdx: 0 }),
+    );
+    const copy = createLine({
+      id: "a1",
+      text: "Low tide",
+      begin: 12,
+      end: 16,
+      backgroundText: "oh no",
+      backgroundWords: [
+        { text: "oh", sep: " ", begin: 14, end: 14.5 },
+        { text: "no", begin: 15, end: 16 },
+      ],
+      ...linked,
+      instanceIdx: 1,
+    });
+    useProjectStore.setState({ lines: [source, copy] });
+
+    const toggle = resolveExplicitSelectionToggle([source, copy], [sel([source, copy], "a0", 0, "bg")]);
+    useProjectStore.getState().commit(markWordsExplicit(toggle.targets, toggle.value));
+
+    const words = timedSyllables(backgroundTrack(useProjectStore.getState().lines[1]));
+    expect(words.map((word) => [word.text, word.begin, word.end, word.explicit])).toEqual([
+      ["oh", 14, 14.5, true],
+      ["no", 15, 16, true],
+    ]);
+  });
+
+  it("regression: clearing a line-synced background clears a linked copy whose words are only partly marked", () => {
+    const linked = { groupId: "g1", templateLineIdx: 0 };
+    const seeded = withSeededBackground(
+      createLine({ id: "a0", text: "Low tide", begin: 2, end: 6, backgroundText: "oh no", ...linked, instanceIdx: 0 }),
+    );
+    const source = withBackgroundTrack(seeded, withTrackExplicit(backgroundTrack(seeded)!, true));
+    const copy = createLine({
+      id: "a1",
+      text: "Low tide",
+      begin: 12,
+      end: 16,
+      backgroundText: "oh no",
+      backgroundWords: [
+        { text: "oh", sep: " ", begin: 14, end: 14.5, explicit: true },
+        { text: "no", begin: 15, end: 16 },
+      ],
+      ...linked,
+      instanceIdx: 1,
+    });
+    useProjectStore.setState({ lines: [source, copy] });
+
+    const toggle = resolveExplicitSelectionToggle([source, copy], [sel([source, copy], "a0", 0, "bg")]);
+    expect(toggle.value).toBe(false);
+    useProjectStore.getState().commit(markWordsExplicit(toggle.targets, toggle.value));
+
+    const words = timedSyllables(backgroundTrack(useProjectStore.getState().lines[1]));
+    expect(words.map((word) => word.explicit)).toEqual([undefined, undefined]);
   });
 });

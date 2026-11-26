@@ -10,7 +10,8 @@ import type {
 import { groupFieldsOf } from "@/domain/line/group-fields";
 import { textSyllables } from "@/domain/line/syllables-from-text";
 import { trackText } from "@/domain/line/text";
-import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { backgroundTrack, isExplicitBlock, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
+import { withTrackExplicit } from "@/domain/line/track-writes";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -27,6 +28,11 @@ interface LineFields {
   backgroundText?: string;
   backgroundWords?: WordTiming[];
   backgroundTextSource?: BackgroundSource;
+  // The span of a line-synced background; never written by version 3, which seeded words instead.
+  backgroundBegin?: number;
+  backgroundEnd?: number;
+  // A line-synced background marked explicit as one block.
+  backgroundExplicit?: true;
   languages?: LineLanguages;
   groupId?: string;
   instanceIdx?: number;
@@ -128,8 +134,14 @@ function backgroundTrackFromFields(fields: LineFields, splitChar: string): Backg
   if (backgroundText === undefined && backgroundWords === undefined && backgroundTextSource === undefined) {
     return undefined;
   }
-  const timing = trackTiming(`${fields.id}:bg`, backgroundText ?? "", backgroundWords, {}, splitChar);
-  return { ...timing, role: "bg", ...(backgroundTextSource && { source: backgroundTextSource }) };
+  const span = { begin: fields.backgroundBegin, end: fields.backgroundEnd };
+  const timing = trackTiming(`${fields.id}:bg`, backgroundText ?? "", backgroundWords, span, splitChar);
+  const track: BackgroundTrack = {
+    ...timing,
+    role: "bg",
+    ...(backgroundTextSource && { source: backgroundTextSource }),
+  };
+  return fields.backgroundExplicit && isSpanTimed(track) ? withTrackExplicit(track, true) : track;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -162,6 +174,8 @@ function fieldsOfLine(line: LyricLine): LineFields {
       backgroundText: trackText(background),
       ...(backgroundWords.length > 0 && { backgroundWords }),
       ...(background.source && { backgroundTextSource: background.source }),
+      ...(isSpanTimed(background) && { backgroundBegin: background.begin, backgroundEnd: background.end }),
+      ...(isSpanTimed(background) && isExplicitBlock(background) && { backgroundExplicit: true as const }),
     }),
     ...(line.languages && { languages: line.languages }),
     ...groupFieldsOf(line),

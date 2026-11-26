@@ -3,9 +3,10 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "@/domain/instance/key";
 import { type LinkedLine, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 import { hasNegativeTime, offsetTimingFields } from "@/domain/group/offset-timing";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
-import { mainTrack, roleWords } from "@/domain/line/track";
+import { roleWords } from "@/domain/line/track";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import { withoutWordIds } from "@/domain/word/id";
 import { isStructurallyEqual } from "@/utils/structural-equal";
@@ -115,8 +116,8 @@ function instanceOffset(lines: readonly LyricLine[], groupId: string, from: numb
 function timingChanged(before: LyricLine | undefined, after: LyricLine): boolean {
   if (!before) return false;
   return (
-    mainTrack(before).begin !== mainTrack(after).begin ||
-    mainTrack(before).end !== mainTrack(after).end ||
+    !isStructurallyEqual(mainBounds(before), mainBounds(after)) ||
+    !isStructurallyEqual(bgBounds(before), bgBounds(after)) ||
     !isStructurallyEqual(withoutWordIds(roleWords(before, "main")), withoutWordIds(roleWords(after, "main"))) ||
     !isStructurallyEqual(withoutWordIds(roleWords(before, "bg")), withoutWordIds(roleWords(after, "bg")))
   );

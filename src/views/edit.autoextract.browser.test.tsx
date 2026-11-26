@@ -59,7 +59,7 @@ describe("auto-extract background vocals on blur", () => {
     setTextareaValue(textarea, "Take me home (country roads)");
     blurTextarea(textarea);
 
-    await expect.poll(() => textarea.value).toBe("Take me home");
+    await expect.poll(() => textarea.value).toBe("Take me home (country roads)");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Take me home"]);
     await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["(country roads)"]);
   });
@@ -91,7 +91,7 @@ describe("auto-extract background vocals on blur", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     expect(lineText(useProjectStore.getState().lines[0])).toBe("Real lyric line");
     expect(backgroundText(useProjectStore.getState().lines[0])).toBe("(ooh yeah)");
-    await expect.poll(() => textarea.value).toBe("Real lyric line");
+    await expect.poll(() => textarea.value).toBe("Real lyric line (ooh yeah)");
   });
 
   it("keeps a standalone all-parens line on blur when merge setting is off", async () => {
