@@ -6,6 +6,11 @@ import type { LyricLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { addGroupWithLines, removeGroup, updateGroup } from "@/domain/commands/group-edits";
+import { addInstance, detachLine, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { applyWordCountChange } from "@/domain/commands/word-edits";
 
 const SONG_LENGTH = 300;
 
@@ -53,11 +58,17 @@ describe("project store · history captures groups", () => {
     const initialGroups = [seedGroup("g1")];
     useProjectStore.setState({ groups: initialGroups, lines: [] });
 
-    useProjectStore.getState().setLinesWithHistory([{ id: "l1", text: "test", agentId: "v1", groupId: "g1" }]);
+    useProjectStore
+      .getState()
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [{ id: "l1", text: "test", agentId: "v1", groupId: "g1" }]),
+      );
 
     useProjectStore.setState({ groups: [] });
 
-    useProjectStore.getState().setLinesWithHistory([{ id: "l2", text: "test2", agentId: "v1" }]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [{ id: "l2", text: "test2", agentId: "v1" }]));
 
     useProjectStore.getState().undo();
 
@@ -67,11 +78,15 @@ describe("project store · history captures groups", () => {
   it("redo restores the post-edit groups", () => {
     useProjectStore.setState({ groups: [seedGroup("g1")], lines: [] });
 
-    useProjectStore.getState().setLinesWithHistory([{ id: "l1", text: "a", agentId: "v1" }]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [{ id: "l1", text: "a", agentId: "v1" }]));
 
     useProjectStore.setState({ groups: [seedGroup("g1"), seedGroup("g2", { label: "Verse" })] });
 
-    useProjectStore.getState().setLinesWithHistory([{ id: "l2", text: "b", agentId: "v1" }]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [{ id: "l2", text: "b", agentId: "v1" }]));
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().groups.map((g) => g.id)).toEqual(["g1"]);
@@ -127,10 +142,12 @@ describe("project store · group registry mutators", () => {
       ],
     });
 
-    useProjectStore.getState().addGroupWithLines(seedGroup("g1"), [
-      { id: "l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-    ]);
+    useProjectStore.getState().commit(
+      addGroupWithLines(seedGroup("g1"), [
+        { id: "l1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+        { id: "l2", text: "b", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
+      ]),
+    );
 
     expect(useProjectStore.getState().groups).toHaveLength(1);
     expect(useProjectStore.getState().lines[0].groupId).toBe("g1");
@@ -144,7 +161,7 @@ describe("project store · group registry mutators", () => {
 
   it("updateGroup merges fields", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
-    useProjectStore.getState().updateGroup("g1", { label: "Refrain", color: "#60a5fa" });
+    useProjectStore.getState().commit(updateGroup("g1", { label: "Refrain", color: "#60a5fa" }));
 
     const g = useProjectStore.getState().groups[0];
     expect(g.label).toBe("Refrain");
@@ -156,7 +173,7 @@ describe("project store · group registry mutators", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     useProjectStore.getState().addGroup(seedGroup("g2", { label: "Verse" }));
 
-    useProjectStore.getState().updateGroup("g1", { label: "Refrain" });
+    useProjectStore.getState().commit(updateGroup("g1", { label: "Refrain" }));
 
     const groups = useProjectStore.getState().groups;
     expect(groups.find((g) => g.id === "g1")?.label).toBe("Refrain");
@@ -183,7 +200,7 @@ describe("project store · group registry mutators", () => {
       ],
     });
 
-    useProjectStore.getState().removeGroup("g1");
+    useProjectStore.getState().commit(removeGroup("g1"));
 
     expect(useProjectStore.getState().groups).toHaveLength(0);
     expect(useProjectStore.getState().lines[0].groupId).toBeUndefined();
@@ -196,11 +213,13 @@ describe("project store · group registry mutators", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     useProjectStore
       .getState()
-      .setLinesWithHistory([
-        { id: "l1", text: "test", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      ]);
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [
+          { id: "l1", text: "test", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+        ]),
+      );
 
-    useProjectStore.getState().removeGroup("g1");
+    useProjectStore.getState().commit(removeGroup("g1"));
     expect(useProjectStore.getState().groups).toHaveLength(0);
     expect(useProjectStore.getState().lines[0].groupId).toBeUndefined();
 
@@ -232,7 +251,7 @@ describe("project store · instance mutators", () => {
       ]),
     ];
 
-    useProjectStore.getState().addInstance("g1", structure, 30);
+    useProjectStore.getState().commit(addInstance("g1", structure, 30));
 
     const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
     expect(created).toHaveLength(1);
@@ -257,7 +276,7 @@ describe("project store · instance mutators", () => {
       },
     ];
 
-    useProjectStore.getState().addInstance("g1", structure, 30);
+    useProjectStore.getState().commit(addInstance("g1", structure, 30));
 
     const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
     expect(created).toHaveLength(1);
@@ -278,7 +297,7 @@ describe("project store · instance mutators", () => {
       },
     ];
 
-    useProjectStore.getState().addInstance("g1", structure, 0);
+    useProjectStore.getState().commit(addInstance("g1", structure, 0));
 
     const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
     expect(created[0].backgroundTextSource).toBe("manual");
@@ -288,7 +307,7 @@ describe("project store · instance mutators", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];
 
-    useProjectStore.getState().addInstance("g1", structure, 0);
+    useProjectStore.getState().commit(addInstance("g1", structure, 0));
 
     const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
     expect(created[0].backgroundTextSource).toBeUndefined();
@@ -298,9 +317,9 @@ describe("project store · instance mutators", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];
 
-    useProjectStore.getState().addInstance("g1", structure, 10);
-    useProjectStore.getState().addInstance("g1", structure, 20);
-    useProjectStore.getState().addInstance("g1", structure, 30);
+    useProjectStore.getState().commit(addInstance("g1", structure, 10));
+    useProjectStore.getState().commit(addInstance("g1", structure, 20));
+    useProjectStore.getState().commit(addInstance("g1", structure, 30));
 
     const indices = useProjectStore
       .getState()
@@ -319,7 +338,7 @@ describe("project store · instance mutators", () => {
       ],
     });
 
-    useProjectStore.getState().removeInstance("g1", 0);
+    useProjectStore.getState().commit(removeInstance("g1", 0));
 
     const lines = useProjectStore.getState().lines;
     expect(lines.find((l) => l.id === "a0")?.groupId).toBeUndefined();
@@ -335,7 +354,7 @@ describe("project store · instance mutators", () => {
       lines: [{ id: "a", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }],
     });
 
-    useProjectStore.getState().removeInstance("g1", 0);
+    useProjectStore.getState().commit(removeInstance("g1", 0));
 
     expect(useProjectStore.getState().groups).toHaveLength(0);
     expect(useProjectStore.getState().lines[0].groupId).toBeUndefined();
@@ -361,7 +380,7 @@ describe("project store · instance mutators", () => {
       ],
     });
 
-    useProjectStore.getState().detachLine("a");
+    useProjectStore.getState().commit(detachLine("a"));
 
     const line = useProjectStore.getState().lines[0];
     expect(line.groupId).toBeUndefined();
@@ -374,7 +393,7 @@ describe("project store · instance mutators", () => {
   it("instance mutators are undoable", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];
-    useProjectStore.getState().addInstance("g1", structure, 5);
+    useProjectStore.getState().commit(addInstance("g1", structure, 5));
 
     expect(useProjectStore.getState().lines).toHaveLength(1);
 
@@ -415,7 +434,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 1, 5, SONG_LENGTH);
+    useProjectStore.getState().commit(shiftInstance("g1", 1, 5, SONG_LENGTH));
 
     const lines = useProjectStore.getState().lines;
     const i0 = lines.find((l) => l.id === "a0");
@@ -445,7 +464,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, 2, SONG_LENGTH);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, 2, SONG_LENGTH));
 
     const bg = useProjectStore.getState().lines[0].backgroundWords?.[0];
     expect(bg?.begin).toBeCloseTo(32);
@@ -471,7 +490,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, -10.5, SONG_LENGTH);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, -10.5, SONG_LENGTH));
 
     expect(useProjectStore.getState().lines[0]).toMatchObject({
       begin: 0,
@@ -490,7 +509,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, -2, SONG_LENGTH);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, -2, SONG_LENGTH));
 
     const [a, b] = useProjectStore.getState().lines;
     expect(a).toMatchObject({ begin: 0, end: 2 });
@@ -507,7 +526,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, 20, 110);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, 20, 110));
 
     const [a, b] = useProjectStore.getState().lines;
     expect(a).toMatchObject({ begin: 105, end: 107 });
@@ -531,7 +550,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, 20, 0);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, 20, 0));
 
     expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 120, end: 122 });
   });
@@ -555,7 +574,7 @@ describe("project store · shiftInstance", () => {
     useProjectStore.getState().clearHistory();
     const historyBefore = useProjectStore.getState().history;
 
-    useProjectStore.getState().shiftInstance("g1", 0, 5, 110);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, 5, 110));
 
     expect(useProjectStore.getState().history).toBe(historyBefore);
   });
@@ -578,7 +597,7 @@ describe("project store · shiftInstance", () => {
     });
     useProjectStore.getState().clearHistory();
 
-    useProjectStore.getState().shiftInstance("g1", 0, 5, SONG_LENGTH);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, 5, SONG_LENGTH));
     expect(useProjectStore.getState().lines[0].begin).toBeCloseTo(15);
 
     useProjectStore.getState().undo();
@@ -612,7 +631,7 @@ describe("project store · shiftInstance", () => {
     });
     useProjectStore.getState().clearHistory();
 
-    useProjectStore.getState().shiftInstance("g1", 0, 0.5, SONG_LENGTH);
+    useProjectStore.getState().commit(shiftInstance("g1", 0, 0.5, SONG_LENGTH));
     const after = useProjectStore.getState().lines;
     expect(after.find((l) => l.id === "live")?.words?.[0].begin).toBeCloseTo(10.5);
     expect(after.find((l) => l.id === "stale-detached")?.words?.[0].begin).toBeCloseTo(10);
@@ -650,7 +669,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
   it("propagates text edits to linked siblings", () => {
     seedTwoInstancesWithTimings();
-    useProjectStore.getState().updateLineWithHistory("a0", { text: "I really love you" });
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "I really love you" } }]));
 
     const lines = useProjectStore.getState().lines;
     expect(lines.find((l) => l.id === "a0")?.text).toBe("I really love you");
@@ -659,7 +678,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
   it("propagates agentId edits", () => {
     seedTwoInstancesWithTimings();
-    useProjectStore.getState().updateLineWithHistory("a0", { agentId: "v1000" });
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { agentId: "v1000" } }]));
 
     const lines = useProjectStore.getState().lines;
     expect(lines.find((l) => l.id === "a0")?.agentId).toBe("v1000");
@@ -668,7 +687,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
   it("does NOT propagate per-instance fields like begin/end", () => {
     seedTwoInstancesWithTimings();
-    useProjectStore.getState().updateLineWithHistory("a0", { begin: 25, end: 27 });
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { begin: 25, end: 27 } }]));
 
     const lines = useProjectStore.getState().lines;
     expect(lines.find((l) => l.id === "a0")?.begin).toBe(25);
@@ -683,7 +702,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       lines: state.lines.map((l) => (l.id === "a1" ? { ...l, detached: true } : l)),
     }));
 
-    useProjectStore.getState().updateLineWithHistory("a0", { text: "new text" });
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "new text" } }]));
 
     const lines = useProjectStore.getState().lines;
     expect(lines.find((l) => l.id === "a0")?.text).toBe("new text");
@@ -699,7 +718,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     }));
 
-    useProjectStore.getState().updateLineWithHistory("a0", { text: "changed" });
+    useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "changed" } }]));
 
     expect(useProjectStore.getState().lines.find((l) => l.id === "x")?.text).toBe("other group");
   });
@@ -709,7 +728,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       lines: [{ id: "s", text: "standalone", agentId: "v1" }],
     });
 
-    useProjectStore.getState().updateLineWithHistory("s", { text: "edited" });
+    useProjectStore.getState().commit(pasteLines([{ id: "s", updates: { text: "edited" } }]));
 
     expect(useProjectStore.getState().lines[0].text).toBe("edited");
   });
@@ -747,13 +766,20 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     });
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      words: [
-        { id: "w20", text: "I", sep: " ", begin: 30, end: 30.4 },
-        { id: "w21", text: "really", sep: " ", begin: 30.4, end: 30.8 },
-        { id: "w22", text: "you", sep: "", begin: 30.8, end: 31.2 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            words: [
+              { id: "w20", text: "I", sep: " ", begin: 30, end: 30.4 },
+              { id: "w21", text: "really", sep: " ", begin: 30.4, end: 30.8 },
+              { id: "w22", text: "you", sep: "", begin: 30.8, end: 31.2 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const lines = useProjectStore.getState().lines;
     const a1 = lines.find((l) => l.id === "a1");
@@ -797,12 +823,19 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     });
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      backgroundWords: [
-        { id: "w27", text: "ooh", sep: " ", begin: 30, end: 30.5 },
-        { id: "w28", text: "yeah", sep: "", begin: 30.5, end: 31 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            backgroundWords: [
+              { id: "w27", text: "ooh", sep: " ", begin: 30, end: 30.5 },
+              { id: "w28", text: "yeah", sep: "", begin: 30.5, end: 31 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.backgroundWords?.[0]).toMatchObject({ text: "ooh", sep: " " });
@@ -842,13 +875,20 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     });
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      words: [
-        { id: "w33", text: "lov", sep: "", begin: 0, end: 0.5 },
-        { id: "w34", text: "ing", sep: " ", begin: 0.5, end: 1 },
-        { id: "w35", text: "you", sep: "", begin: 1, end: 2 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            words: [
+              { id: "w33", text: "lov", sep: "", begin: 0, end: 0.5 },
+              { id: "w34", text: "ing", sep: " ", begin: 0.5, end: 1 },
+              { id: "w35", text: "you", sep: "", begin: 1, end: 2 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.words?.length).toBe(3);
@@ -894,12 +934,19 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     });
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      words: [
-        { id: "w42", text: "loving", sep: " ", begin: 0, end: 1 },
-        { id: "w43", text: "you", sep: "", begin: 1, end: 2 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            words: [
+              { id: "w42", text: "loving", sep: " ", begin: 0, end: 1 },
+              { id: "w43", text: "you", sep: "", begin: 1, end: 2 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.words?.length).toBe(2);
@@ -936,12 +983,19 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     });
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      words: [
-        { id: "w46", text: "h", sep: "", begin: 0, end: 0.5 },
-        { id: "w47", text: "i", sep: "", begin: 0.5, end: 1 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            words: [
+              { id: "w46", text: "h", sep: "", begin: 0, end: 0.5 },
+              { id: "w47", text: "i", sep: "", begin: 0.5, end: 1 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.words?.length).toBe(1);
@@ -981,12 +1035,19 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     });
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      text: "I luv you",
-      words: undefined,
-      begin: undefined,
-      end: undefined,
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            text: "I luv you",
+            words: undefined,
+            begin: undefined,
+            end: undefined,
+          },
+        },
+      ]),
+    );
 
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
@@ -1034,10 +1095,17 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
       ],
     });
 
-    useProjectStore.getState().updateLineWithHistory("a0", {
-      backgroundText: "yeah",
-      backgroundWords: undefined,
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: {
+            backgroundText: "yeah",
+            backgroundWords: undefined,
+          },
+        },
+      ]),
+    );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.backgroundText).toBe("yeah");
@@ -1092,14 +1160,21 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
-    useProjectStore.getState().updateLineWithHistory("A", {
-      words: [
-        { id: "w64", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w65", text: "lo", sep: "", begin: 0.3, end: 0.45 },
-        { id: "w66", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
-        { id: "w67", text: "you", sep: "", begin: 0.6, end: 1 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "A",
+          updates: {
+            words: [
+              { id: "w64", text: "I", sep: " ", begin: 0, end: 0.3 },
+              { id: "w65", text: "lo", sep: "", begin: 0.3, end: 0.45 },
+              { id: "w66", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
+              { id: "w67", text: "you", sep: "", begin: 0.6, end: 1 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     expect(b?.words).toHaveLength(4);
@@ -1149,12 +1224,19 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
-    useProjectStore.getState().updateLineWithHistory("A", {
-      words: [
-        { id: "w74", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w75", text: "loveyou", sep: "", begin: 0.3, end: 1 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "A",
+          updates: {
+            words: [
+              { id: "w74", text: "I", sep: " ", begin: 0, end: 0.3 },
+              { id: "w75", text: "loveyou", sep: "", begin: 0.3, end: 1 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     expect(b?.words).toHaveLength(2);
@@ -1195,14 +1277,21 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
-    useProjectStore.getState().updateLineWithHistory("A", {
-      words: [
-        { id: "w82", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w83", text: "lo", sep: "", begin: 0.3, end: 0.45 },
-        { id: "w84", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
-        { id: "w85", text: "you", sep: "", begin: 0.6, end: 1 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "A",
+          updates: {
+            words: [
+              { id: "w82", text: "I", sep: " ", begin: 0, end: 0.3 },
+              { id: "w83", text: "lo", sep: "", begin: 0.3, end: 0.45 },
+              { id: "w84", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
+              { id: "w85", text: "you", sep: "", begin: 0.6, end: 1 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     expect(b?.words).toHaveLength(4);
@@ -1243,13 +1332,20 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
-    useProjectStore.getState().updateLineWithHistory("A", {
-      backgroundWords: [
-        { id: "w90", text: "ah", sep: " ", begin: 0, end: 0.3 },
-        { id: "w91", text: "a", sep: "", begin: 0.3, end: 0.45 },
-        { id: "w92", text: "h", sep: "", begin: 0.45, end: 0.6 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "A",
+          updates: {
+            backgroundWords: [
+              { id: "w90", text: "ah", sep: " ", begin: 0, end: 0.3 },
+              { id: "w91", text: "a", sep: "", begin: 0.3, end: 0.45 },
+              { id: "w92", text: "h", sep: "", begin: 0.45, end: 0.6 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     expect(b?.backgroundWords).toHaveLength(3);
@@ -1298,14 +1394,21 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
 
-    useProjectStore.getState().updateLineWithHistory("A", {
-      words: [
-        { id: "w99", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w100", text: "lo", sep: "", begin: 0.3, end: 0.45 },
-        { id: "w101", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
-        { id: "w102", text: "you", sep: "", begin: 0.6, end: 1 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "A",
+          updates: {
+            words: [
+              { id: "w99", text: "I", sep: " ", begin: 0, end: 0.3 },
+              { id: "w100", text: "lo", sep: "", begin: 0.3, end: 0.45 },
+              { id: "w101", text: "ve", sep: " ", begin: 0.45, end: 0.6 },
+              { id: "w102", text: "you", sep: "", begin: 0.6, end: 1 },
+            ],
+          },
+        },
+      ]),
+    );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     // Detached sibling untouched: original 3-word array preserved
@@ -1366,7 +1469,7 @@ describe("applyWordCountChange · resolutions", () => {
 
   it("'apply' propagates the structural change with smart-sync to all linked siblings", () => {
     setupChorus();
-    useProjectStore.getState().applyWordCountChange("A", splitWords, "words", "apply");
+    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
     const after = useProjectStore.getState().lines;
     const a = after.find((l) => l.id === "A");
     const b = after.find((l) => l.id === "B");
@@ -1382,7 +1485,7 @@ describe("applyWordCountChange · resolutions", () => {
 
   it("'detach' fully unlinks source (clears groupId/instanceIdx/templateLineIdx) and leaves siblings untouched", () => {
     setupChorus();
-    useProjectStore.getState().applyWordCountChange("A", splitWords, "words", "detach");
+    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "detach"));
     const after = useProjectStore.getState().lines;
     const a = after.find((l) => l.id === "A");
     const b = after.find((l) => l.id === "B");
@@ -1422,7 +1525,7 @@ describe("applyWordCountChange · resolutions", () => {
       groups: [{ id: "g1", label: "Verse", color: "#aaa", templateVersion: 1 }],
     });
     const newWords = [{ id: "w113", text: "verse", sep: "", begin: 5, end: 7 }];
-    useProjectStore.getState().applyWordCountChange("L1", newWords, "words", "detach");
+    useProjectStore.getState().commit(applyWordCountChange("L1", newWords, "words", "detach"));
     const after = useProjectStore.getState().lines.find((l) => l.id === "L1");
     expect(after?.words).toEqual(newWords);
     expect(after?.begin).toBeUndefined();
@@ -1432,7 +1535,7 @@ describe("applyWordCountChange · resolutions", () => {
   it("'cancel' is a no-op", () => {
     setupChorus();
     const before = useProjectStore.getState().lines;
-    useProjectStore.getState().applyWordCountChange("A", splitWords, "words", "cancel");
+    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "cancel"));
     expect(useProjectStore.getState().lines).toEqual(before);
   });
 
@@ -1442,7 +1545,7 @@ describe("applyWordCountChange · resolutions", () => {
       { id: "w114", text: "I", sep: " ", begin: 0, end: 0.3 },
       { id: "w115", text: "loveyou", sep: "", begin: 0.3, end: 1 },
     ];
-    useProjectStore.getState().applyWordCountChange("A", mergedWords, "words", "apply", { text: "I loveyou" });
+    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "apply", { text: "I loveyou" }));
     const after = useProjectStore.getState().lines;
     expect(after.find((l) => l.id === "A")?.text).toBe("I loveyou");
     expect(after.find((l) => l.id === "B")?.text).toBe("I loveyou");
@@ -1454,7 +1557,7 @@ describe("applyWordCountChange · resolutions", () => {
       { id: "w116", text: "I", sep: " ", begin: 0, end: 0.3 },
       { id: "w117", text: "loveyou", sep: "", begin: 0.3, end: 1 },
     ];
-    useProjectStore.getState().applyWordCountChange("A", mergedWords, "words", "detach", { text: "I loveyou" });
+    useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "detach", { text: "I loveyou" }));
     const after = useProjectStore.getState().lines;
     expect(after.find((l) => l.id === "A")?.text).toBe("I loveyou");
     expect(after.find((l) => l.id === "B")?.text).toBe("I love you"); // unchanged
@@ -1466,7 +1569,7 @@ describe("applyWordCountChange · resolutions", () => {
     useProjectStore.setState((s) => ({
       lines: s.lines.map((l) => (l.id === "B" ? { ...l, detached: true } : l)),
     }));
-    useProjectStore.getState().applyWordCountChange("A", splitWords, "words", "apply");
+    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     expect(b?.words).toHaveLength(3); // untouched, still 3 words
     expect(b?.detached).toBe(true);
@@ -1487,15 +1590,17 @@ describe("applyWordCountChange · resolutions", () => {
       ],
       groups: [],
     });
-    useProjectStore.getState().applyWordCountChange(
-      "X",
-      [
-        { id: "w120", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w121", text: "lo", sep: "", begin: 0.3, end: 0.6 },
-        { id: "w122", text: "ve", sep: "", begin: 0.6, end: 1 },
-      ],
-      "words",
-      "apply",
+    useProjectStore.getState().commit(
+      applyWordCountChange(
+        "X",
+        [
+          { id: "w120", text: "I", sep: " ", begin: 0, end: 0.3 },
+          { id: "w121", text: "lo", sep: "", begin: 0.3, end: 0.6 },
+          { id: "w122", text: "ve", sep: "", begin: 0.6, end: 1 },
+        ],
+        "words",
+        "apply",
+      ),
     );
     const x = useProjectStore.getState().lines.find((l) => l.id === "X");
     expect(x?.words).toHaveLength(3);
@@ -1533,15 +1638,17 @@ describe("applyWordCountChange · resolutions", () => {
       ],
       groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     });
-    useProjectStore.getState().applyWordCountChange(
-      "A",
-      [
-        { id: "w127", text: "ah", sep: " ", begin: 0, end: 0.3 },
-        { id: "w128", text: "a", sep: "", begin: 0.3, end: 0.45 },
-        { id: "w129", text: "h", sep: "", begin: 0.45, end: 0.6 },
-      ],
-      "backgroundWords",
-      "apply",
+    useProjectStore.getState().commit(
+      applyWordCountChange(
+        "A",
+        [
+          { id: "w127", text: "ah", sep: " ", begin: 0, end: 0.3 },
+          { id: "w128", text: "a", sep: "", begin: 0.3, end: 0.45 },
+          { id: "w129", text: "h", sep: "", begin: 0.45, end: 0.6 },
+        ],
+        "backgroundWords",
+        "apply",
+      ),
     );
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     expect(b?.backgroundWords).toHaveLength(3);
@@ -1550,7 +1657,7 @@ describe("applyWordCountChange · resolutions", () => {
 
   it("apply produces a single history entry covering source + all siblings (single undo restores)", () => {
     setupChorus();
-    useProjectStore.getState().applyWordCountChange("A", splitWords, "words", "apply");
+    useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
     const before = useProjectStore.getState().lines;
     expect(before.find((l) => l.id === "A")?.words).toHaveLength(4);
     expect(before.find((l) => l.id === "B")?.words).toHaveLength(4);

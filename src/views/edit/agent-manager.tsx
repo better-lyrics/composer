@@ -1,3 +1,4 @@
+import { removeSinger } from "@/domain/commands/lyrics-replace";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
@@ -223,7 +224,6 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
 
 const AgentsPopoverBody: React.FC<{ close: () => void }> = ({ close }) => {
   const agents = useProjectStore((s) => s.agents);
-  const removeAgentWithHistory = useProjectStore((s) => s.removeAgentWithHistory);
   const [view, setView] = useState<AgentsView>({ kind: "list" });
   const showList = () => setView({ kind: "list" });
 
@@ -236,7 +236,7 @@ const AgentsPopoverBody: React.FC<{ close: () => void }> = ({ close }) => {
         <EditAgentForm
           agent={view.agent}
           removable={agents.length > 1}
-          onRemove={() => removeAgentWithHistory(view.agent.id)}
+          onRemove={() => useProjectStore.getState().commit(removeSinger(view.agent.id))}
           onDone={close}
           onBack={showList}
         />

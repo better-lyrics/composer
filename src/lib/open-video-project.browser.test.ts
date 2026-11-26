@@ -54,7 +54,7 @@ describe("openProjectForVideo", () => {
 
   describe("regressions", () => {
     it("regression: lyrics typed before the first save still move to a new project instead of being replaced", async () => {
-      useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
       useProjectStore.getState().setMetadata({ title: "Alpha" });
       const outcome = await openProjectForVideo(VIDEO_ID);
       if (outcome.kind !== "created") throw new Error(`expected a new project, got ${outcome.kind}`);

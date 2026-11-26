@@ -60,7 +60,7 @@ describe("a project saved by a newer Composer", () => {
 
     expect(useProjectStore.getState().metadata.title).not.toBe("From a newer build");
     expect(openProjectIdSnapshot()).not.toBe("future");
-    useProjectStore.getState().setLines([createLine({ text: "Typed after the reload" })]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Typed after the reload" })] });
     await flushPendingSave();
     expect(await storedRecord("future")).toEqual(newer);
     expect((await loadProjectIndexEntry("future"))?.resumePosition).toEqual(resumePosition);

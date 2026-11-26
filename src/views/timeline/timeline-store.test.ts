@@ -5,6 +5,7 @@ import { createLine } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
 
 describe("markerMode", () => {
   beforeEach(() => {
@@ -185,16 +186,18 @@ describe("selection after a lines change", () => {
   }
 
   function splitFirstWord(): void {
-    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-      source: { lineId: "a", wordIndex: 0, type: "word" },
-      splitPoints: [2],
-      caseInsensitive: false,
-    });
+    useProjectStore.getState().commit(
+      splitIdenticalSyllables({
+        source: { lineId: "a", wordIndex: 0, type: "word" },
+        splitPoints: [2],
+        caseInsensitive: false,
+      }),
+    );
   }
 
   beforeEach(async () => {
     await resetAllStores();
-    useProjectStore.getState().setLines([line]);
+    useProjectStore.getState().restoreLyrics({ lines: [line] });
     stopFollowing = followLyricLines();
   });
 
@@ -227,6 +230,14 @@ describe("selection after a lines change", () => {
     expect(useTimelineStore.getState().selectedWords).toBe(kept);
   });
 
+  it("a restore drops every address whose word the restored lyrics do not have", () => {
+    useTimelineStore.getState().setSelectedWords([address("w1"), address("w3")]);
+    useTimelineStore.getState().setEditingWord(address("w3"));
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "a", text: "Rise up" })] });
+    expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+  });
+
   it("regression: a Step cursor that undo removed moves to the first queued word left", () => {
     splitFirstWord();
     const piece = useProjectStore.getState().lines[0].words?.[1];
@@ -242,7 +253,7 @@ describe("selection after a lines change", () => {
     useTimelineStore.getState().setSelectedWords([address("w1"), address("w2"), address("w3")], true);
     const [fall, into, to, place] = line.words ?? [];
     const reordered = [fall, { ...to, begin: 1.5 }, into, place];
-    useProjectStore.getState().setLines([createLine({ id: "a", text: line.text, words: reordered })]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "a", text: line.text, words: reordered })] });
     expect(useTimelineStore.getState().stepQueue).toEqual([address("w1"), address("w3"), address("w2")]);
     expect(selectedTexts()).toEqual(["Fall"]);
   });

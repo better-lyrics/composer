@@ -11,7 +11,7 @@ beforeEach(() => {
 
 describe("useSyncHandlers cursor address", () => {
   it("regression: a split before the cursor never re-records the last timed word", async () => {
-    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Rivers carry lanterns home" })]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "l0", text: "Rivers carry lanterns home" })] });
     const { result, rerender, act, getSyncState } = await mountSyncHandlers();
     for (const time of [0, 0.5]) {
       await rerender({ syncState: getSyncState(), currentTime: time });

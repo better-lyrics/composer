@@ -1,3 +1,4 @@
+import { markWordsExplicit, mergeSyllableGroup } from "@/domain/commands/word-edits";
 import type { LyricLine } from "@/domain/line/model";
 import { type TrackField, trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun, type SelectionRun } from "@/domain/selection/contiguous";
@@ -71,11 +72,11 @@ function runSyllableMerge(target: SyllableMerge): void {
     void mergeSelectedWords(target.run.lineId, target.run.type, target.run.indices);
     return;
   }
-  useProjectStore.getState().mergeSyllableGroupIntoWord(target.lineId, target.field, target.indices);
+  useProjectStore.getState().commit(mergeSyllableGroup(target.lineId, target.field, target.indices));
 }
 
 function runExplicitToggle(target: ExplicitToggleResolution): void {
-  useProjectStore.getState().markWordsExplicit(target.targets, target.value);
+  useProjectStore.getState().commit(markWordsExplicit(target.targets, target.value));
   noteGuideSignal("timeline.explicit");
 }
 

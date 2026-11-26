@@ -259,7 +259,7 @@ describe("project-restore", () => {
       await getPersistenceSettled();
       const id = createProject();
       useTimelineStore.getState().setTextVariant("transliteration");
-      useProjectStore.getState().setLines([TRANSLITERATED_LINE]);
+      useProjectStore.getState().restoreLyrics({ lines: [TRANSLITERATED_LINE] });
       await expect.poll(async () => (await loadProjectIndexEntry(id))?.textVariant).toBe("transliteration");
     });
   });

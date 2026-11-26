@@ -1,3 +1,4 @@
+import { shiftInstance } from "@/domain/commands/instance-edits";
 import { useCallback, useRef, useState } from "react";
 import { wholeSongRange } from "@/domain/group/shared-timing";
 import { instanceKey } from "@/domain/instance/key";
@@ -116,7 +117,7 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd }: Use
           if (Math.abs(deltaSeconds) > 0.001) {
             useProjectStore
               .getState()
-              .shiftInstance(groupId, instanceIdx, deltaSeconds, useAudioStore.getState().duration);
+              .commit(shiftInstance(groupId, instanceIdx, deltaSeconds, useAudioStore.getState().duration));
           }
         } else {
           // treat as click: select all words in this instance (so nudge works on it)

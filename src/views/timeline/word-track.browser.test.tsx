@@ -11,6 +11,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 type UpdateWord = (
   index: number,
@@ -63,7 +64,13 @@ const commitToStore: UpdateWord = (index, updates, adjacentIndex, adjacentUpdate
     adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
   );
   if (!patched) return;
-  useProjectStore.getState().updateLineWithHistory(line.id, { words: patched }, { propagateToSiblings: false });
+  useProjectStore
+    .getState()
+    .commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: line.id, updates: { words: patched } }], {
+        propagateToSiblings: false,
+      }),
+    );
 };
 
 async function renderTrackWritingToStore(words: WordTiming[]) {

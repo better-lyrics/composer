@@ -4,6 +4,7 @@
 import { beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 type StoreState = ReturnType<typeof useProjectStore.getState>;
 
@@ -33,7 +34,7 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     const newLine = { id: "X", text: "", agentId: "v1" };
     const newLines = [...raw];
     newLines.splice(targetIdx, 0, newLine);
-    useProjectStore.getState().setLinesWithHistory(newLines);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
 
     const after = useProjectStore.getState().lines;
     expect(after).toHaveLength(2);
@@ -50,7 +51,7 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     const effective = getEffectiveLines(useProjectStore.getState().lines);
     // effective[0] now has a synthesised single-word array
     expect(effective[0].words).toHaveLength(1);
-    expectTypeOf([...effective]).not.toMatchTypeOf<Parameters<StoreState["setLinesWithHistory"]>[0]>();
+    expectTypeOf([...effective]).not.toMatchTypeOf<NonNullable<Parameters<StoreState["restoreLyrics"]>[0]["lines"]>>();
   });
 
   it("deleting a line by id (not effective index) does not perturb other rows", () => {
@@ -68,7 +69,12 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     });
     // Simulating the fixed delete: filter raw by id
     const raw = useProjectStore.getState().lines;
-    useProjectStore.getState().setLinesWithHistory(raw.filter((l) => l.id !== "B"));
+    useProjectStore.getState().commit(
+      pasteLyrics(
+        useProjectStore.getState().lines,
+        raw.filter((l) => l.id !== "B"),
+      ),
+    );
 
     const after = useProjectStore.getState().lines;
     expect(after).toHaveLength(2);
@@ -111,7 +117,7 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     const raw = useProjectStore.getState().lines;
     const newLines = [...raw];
     newLines.splice(1, 0, { id: "X", text: "", agentId: "v1" });
-    useProjectStore.getState().setLinesWithHistory(newLines);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, newLines));
 
     const after = useProjectStore.getState().lines;
     expect(after).toHaveLength(3);

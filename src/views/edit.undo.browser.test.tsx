@@ -7,6 +7,7 @@ import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 import { EditPanel } from "@/views/edit";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -223,7 +224,7 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "ooh" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { backgroundText: "ooh" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
     expect(document.activeElement).not.toBe(textarea);
 
@@ -239,7 +240,7 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
     dispatchWindowUndo(REMAPPED_UNDO);
@@ -252,7 +253,7 @@ describe("editor undo and redo without textarea focus", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
     textarea.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v3" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v3" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v3");
 
     dispatchWindowUndo();
@@ -266,7 +267,7 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
     dispatchWindowUndo();
@@ -283,7 +284,7 @@ describe("editor undo and redo without textarea focus", () => {
     blurTextarea(textarea);
     document.body.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
     dispatchWindowUndo();
@@ -299,7 +300,7 @@ describe("editor window undo handler gating", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "sync" });
     await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
     const event = dispatchWindowUndo();
@@ -311,7 +312,7 @@ describe("editor window undo handler gating", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
     await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
     const modalToken = useEscapeLayerStackStore.getState().push("modal");
@@ -348,7 +349,7 @@ describe("editor window undo handler gating", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
     await screen.unmount();
@@ -368,7 +369,7 @@ describe("editor undo handler input exemption", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
     const indexBefore = useProjectStore.getState().historyIndex;
 
@@ -391,7 +392,7 @@ describe("editor undo handler input exemption", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
     useProjectStore.getState().undo();
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
@@ -419,7 +420,7 @@ describe("editor undo handler input exemption", () => {
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
     textarea.focus();
 
-    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
     const event = new KeyboardEvent("keydown", {

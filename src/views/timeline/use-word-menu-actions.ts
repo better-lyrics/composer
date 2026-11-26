@@ -1,3 +1,4 @@
+import { snapSyllablesFlush } from "@/domain/commands/word-edits";
 import { useCallback } from "react";
 import { fillEmptyTrack, insertWord } from "@/domain/commands/word-structure";
 import { trackWords } from "@/domain/line/tracks";
@@ -99,7 +100,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleSnapSyllables = useCallback(() => {
     if (!groupedWordInfo) return;
-    useProjectStore.getState().snapSyllablesFlush(groupedWordInfo.lineId, groupedWordInfo.field);
+    useProjectStore.getState().commit(snapSyllablesFlush(groupedWordInfo.lineId, groupedWordInfo.field));
     clearContextMenu();
   }, [groupedWordInfo, clearContextMenu]);
 

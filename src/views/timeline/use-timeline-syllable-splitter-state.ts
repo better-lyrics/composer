@@ -1,3 +1,4 @@
+import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
@@ -178,11 +179,13 @@ function useTimelineSyllableSplitterState({
       if (!ok) return;
       const source = resolveAddress(useProjectStore.getState().lines, target);
       if (!source) return;
-      useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-        source: { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type },
-        splitPoints,
-        caseInsensitive,
-      });
+      useProjectStore.getState().commit(
+        splitIdenticalSyllables({
+          source: { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type },
+          splitPoints,
+          caseInsensitive,
+        }),
+      );
       noteGuideSignal("timeline.split");
       retime();
       resetSplitPoints();

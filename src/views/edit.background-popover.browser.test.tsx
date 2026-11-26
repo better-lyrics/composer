@@ -4,6 +4,8 @@ import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -29,7 +31,11 @@ describe("background vocals popover", () => {
   it("writes edited text on Enter as one undo step", async () => {
     useProjectStore
       .getState()
-      .setLinesWithHistory([createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })]);
+      .commit(
+        pasteLyrics(useProjectStore.getState().lines, [
+          createLine({ id: "l1", text: "Hello world", backgroundText: "yea" }),
+        ]),
+      );
     const input = await openBackgroundPopover();
 
     await input.fill("yeah");
@@ -64,7 +70,7 @@ describe("regressions", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "yeah" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { backgroundText: "yeah" } }]));
     await screen.getByRole("button", { name: "BG", exact: true }).click();
 
     await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toHaveValue("yeah");
@@ -74,7 +80,7 @@ describe("regressions", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
     const screen = await render(<EditPanel />);
 
-    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "yeah" });
+    useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { backgroundText: "yeah" } }]));
     await screen.getByRole("button", { name: "BG", exact: true }).click();
     await screen.getByRole("textbox", { name: "Background vocals text" }).click();
     await userEvent.keyboard("{Enter}");
@@ -83,7 +89,7 @@ describe("regressions", () => {
   });
 
   it("regression: blurring without an edit leaves the line and history untouched", async () => {
-    useProjectStore.getState().setLinesWithHistory([extractedLine()]);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [extractedLine()]));
     const linesBefore = useProjectStore.getState().lines;
     const input = await openBackgroundPopover();
 
@@ -95,7 +101,7 @@ describe("regressions", () => {
   });
 
   it("regression: pressing Enter without an edit keeps an extracted background", async () => {
-    useProjectStore.getState().setLinesWithHistory([extractedLine()]);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [extractedLine()]));
     const linesBefore = useProjectStore.getState().lines;
     const input = await openBackgroundPopover();
 
