@@ -5,7 +5,7 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { planStretchDrag } from "./stretch-drag";
-import { stretchSelections } from "./stretch-selection";
+import { stretchSelections } from "@/domain/selection/stretch";
 import { newWordId } from "@/domain/word/id";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";

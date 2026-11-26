@@ -19,13 +19,11 @@ interface StepKeyWriteInput {
   time: number;
   minDuration: number;
   rangeOf: (line: ReadableLine) => TimeRange;
-  updateLinesWithHistory: (
-    updates: LineUpdate[],
-    options?: { deriveText?: boolean; propagateToSiblings?: boolean },
-  ) => void;
 }
 
-type StepKeyOutcome = { kind: "refused"; refusal: StepRefusal } | { kind: "written"; endedPrevious?: string };
+type StepKeyPlan =
+  | { kind: "refused"; refusal: StepRefusal }
+  | { kind: "written"; updates: LineUpdate[]; endedPrevious?: string };
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -56,7 +54,7 @@ function crossesSharedInstance(input: StepKeyWriteInput, startNext: ResolvedAddr
 // -- Functions ----------------------------------------------------------------
 
 // A step that also starts a word on another line lands both lines in one undo step.
-function writeStepKey(input: StepKeyWriteInput): StepKeyOutcome | null {
+function planStepKey(input: StepKeyWriteInput): StepKeyPlan | null {
   const { cursor, key } = input;
   const startNext = input.startNext && !crossesSharedInstance(input, input.startNext) ? input.startNext : null;
   const inTrack = startNext?.lineId === cursor.lineId && startNext.type === cursor.type;
@@ -70,10 +68,10 @@ function writeStepKey(input: StepKeyWriteInput): StepKeyOutcome | null {
     if (started?.kind === "refused") return started;
     if (started) updates.push(started.update);
   }
-  input.updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
-  return { kind: "written", endedPrevious: own.endedPrevious };
+  return { kind: "written", updates, endedPrevious: own.endedPrevious };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { writeStepKey };
+export type { StepKeyPlan };
+export { planStepKey };

@@ -1,4 +1,4 @@
-import { backgroundFields, CLEARED_BACKGROUND, withSeededBackground } from "@/domain/line/background";
+import { clearBackground, setBackgroundText } from "@/domain/commands/word-structure";
 import { useProjectStore } from "@/stores/project";
 import { focusOnMount } from "@/utils/focus-on-mount";
 import { useCallback, useState } from "react";
@@ -17,21 +17,13 @@ interface BackgroundTextEditorProps {
 const BackgroundTextEditor: React.FC<BackgroundTextEditorProps> = ({ lineId, backgroundText }) => {
   const [value, setValue] = useState(() => backgroundText ?? "");
   const [isEditing, setIsEditing] = useState(false);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
 
   const handleCommit = useCallback(() => {
     const trimmed = value.trim() || undefined;
-    if (trimmed) {
-      const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
-      const bgWords = line
-        ? withSeededBackground({ ...line, backgroundText: trimmed, backgroundWords: undefined }).backgroundWords
-        : undefined;
-      updateLineWithHistory(lineId, backgroundFields({ text: trimmed, words: bgWords, source: "manual" }));
-    } else {
-      updateLineWithHistory(lineId, CLEARED_BACKGROUND);
-    }
+    const { commit } = useProjectStore.getState();
+    commit(trimmed ? setBackgroundText(lineId, trimmed) : clearBackground(lineId));
     setIsEditing(false);
-  }, [lineId, value, updateLineWithHistory]);
+  }, [lineId, value]);
 
   if (!isEditing) {
     return (

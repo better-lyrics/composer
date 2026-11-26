@@ -7,7 +7,7 @@ import {
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
-} from "@/views/timeline/utils";
+} from "@/domain/selection/nudge";
 
 // -- Fixtures -----------------------------------------------------------------
 
