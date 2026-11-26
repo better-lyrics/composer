@@ -1,6 +1,7 @@
 import { untimedTail } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { withoutSplitCharacter } from "@/utils/split-character";
 
 // -- Text reconstruction ------------------------------------------------------
 
@@ -8,7 +9,7 @@ import type { WordTiming } from "@/domain/word/timing";
 // space when a real space follows; two adjacent words with no space between
 // them are syllables of one token, so the split character is reinserted at that
 // joint. The result tokenizes 1:1 back to the same word count.
-function reconstructLineText(words: WordTiming[], splitChar: string): string {
+function reconstructLineText(words: readonly WordTiming[], splitChar: string): string {
   let result = "";
   for (let i = 0; i < words.length; i++) {
     result += words[i].text + words[i].sep;
@@ -87,6 +88,15 @@ function withDerivedText(line: LyricLine, splitChar: string, previous?: LyricLin
   return { ...line, text, backgroundText };
 }
 
+// -- Split mark repair ----------------------------------------------------------
+
+// Older versions split words without marking the split in the text. Only that difference is repaired.
+function withSplitMarksFromWords(text: string, words: readonly WordTiming[], splitChar: string): string {
+  const derived = reconstructLineText(words, splitChar);
+  if (derived === text) return text;
+  return withoutSplitCharacter(derived, splitChar) === withoutSplitCharacter(text, splitChar) ? derived : text;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { reconstructLineText, withDerivedText, wordContentSpans };
+export { reconstructLineText, withDerivedText, withSplitMarksFromWords, wordContentSpans };

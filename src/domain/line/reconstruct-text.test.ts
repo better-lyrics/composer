@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { reconstructLineText, withDerivedText, wordContentSpans } from "@/domain/line/reconstruct-text";
+import {
+  reconstructLineText,
+  withDerivedText,
+  withSplitMarksFromWords,
+  wordContentSpans,
+} from "@/domain/line/reconstruct-text";
 import { lineText } from "@/domain/line/text";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -160,5 +165,29 @@ describe("withDerivedText on a partly synced line", () => {
     );
     const placeholder = partly("every night in ... my dreams", ["every ", "night ", "in ", "... "]);
     expect(derivedText(placeholder, ["every ", "night ", "in ", "my "])).toBe("every night in my dreams");
+  });
+});
+
+// -- withSplitMarksFromWords --------------------------------------------------
+
+describe("withSplitMarksFromWords", () => {
+  const words = [w("Lanterns "), w("o"), w("ver "), w("water")];
+
+  it("puts back the marks of split words the text lost", () => {
+    expect(withSplitMarksFromWords("Lanterns over water", words, "|")).toBe("Lanterns o|ver water");
+  });
+
+  it("is idempotent", () => {
+    expect(withSplitMarksFromWords("Lanterns o|ver water", words, "|")).toBe("Lanterns o|ver water");
+  });
+
+  it("leaves any other difference alone", () => {
+    expect(withSplitMarksFromWords("Lanterns over water tonight", words, "|")).toBe("Lanterns over water tonight");
+    expect(withSplitMarksFromWords("Lanterns  over water", words, "|")).toBe("Lanterns  over water");
+    expect(withSplitMarksFromWords("Lanterns o/ver water", words, "|")).toBe("Lanterns o/ver water");
+  });
+
+  it("uses the split character it is given", () => {
+    expect(withSplitMarksFromWords("Lanterns over water", words, "/")).toBe("Lanterns o/ver water");
   });
 });
