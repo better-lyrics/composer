@@ -73,8 +73,9 @@ function articleAt(letters: readonly string[]): number {
 }
 
 function readArabic(word: string): WordReading {
-  // NFKC folds presentation forms (ﻻ, ﺍ) into the letters they draw.
-  const chars = [...word.normalize("NFKC")];
+  // NFKC folds presentation forms (ﻻ, ﺍ) into the letters they draw. Attached punctuation ("كتبوا،") is dropped,
+  // since the checks below read the letters around each one.
+  const chars = [...word.normalize("NFKC")].filter((char) => isLetter(char) || isMark(char));
   const letters = chars.filter((char) => !isMark(char));
   const article = articleAt(letters);
   const sounds: string[] = [];
