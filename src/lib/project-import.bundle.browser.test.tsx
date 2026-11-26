@@ -1,13 +1,14 @@
 import { deleteAllProjects } from "@/lib/delete-all-projects";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { schedulePendingDeletion } from "@/lib/pending-deletions";
+import { listPreV4Records, loadPreV4Record } from "@/lib/pre-v4-records";
 import { buildProjectBundle } from "@/lib/project-bundle";
 import { type BundleRestore, importProjectFile, showBundleRestoreToast } from "@/lib/project-import";
 import { listProjectIndex, removeProjectData, saveProjectRecord } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError, isProjectDeleted } from "@/lib/project-tombstones";
 import { allowConsole } from "@/test/console-guard";
-import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
+import { seedStoredProject, songTitled, storedProject, v4StoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -78,6 +79,21 @@ describe("importProjectFile · backups", () => {
     await importProjectFile(backupWithUnreadable(["a", "Alpha"]));
     await expect.element(screen.getByText("Restored 1 project")).toBeInTheDocument();
     await expect.element(screen.getByText("1 project couldn't be read.")).toBeInTheDocument();
+  });
+
+  it("brings back the copy kept before an update with its project, without counting it", async () => {
+    await saveProjectRecord("a", storedProject(songTitled("Alpha")));
+    await saveProjectRecord("a", v4StoredProject(songTitled("Alpha now")));
+    const bundle = buildProjectBundle(
+      [{ id: "a", project: storedProject(songTitled("Alpha now")) }],
+      1_759_000_000_000,
+      await listPreV4Records(),
+    );
+    await deleteAllProjects();
+    const screen = await render(<Toaster />);
+    await importProjectFile(new File([JSON.stringify(bundle)], "composer-backup-2026-11-14.composer"));
+    await expect.element(screen.getByText("Restored 1 project")).toBeInTheDocument();
+    expect(await loadPreV4Record("a")).toMatchObject({ version: 3, metadata: { title: "Alpha" } });
   });
 
   describe("regressions", () => {
