@@ -1,8 +1,8 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineInstanceKey } from "@/domain/instance/key";
-import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
-import { mainTrack } from "@/domain/line/track";
+import { mainTrack, trackRole } from "@/domain/line/track";
 import { withMainTrack, withTrackSyllables } from "@/domain/line/track-writes";
 import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
@@ -39,7 +39,7 @@ function getWordsInInstance(lines: readonly LyricLine[], groupId: string, instan
     const line = lines[lineIndex];
     if (line.groupId !== groupId || line.instanceIdx !== instanceIdx) continue;
     for (const type of ["word", "bg"] as const) {
-      (effectiveTrackWords(line, type) ?? []).forEach((word, wordIndex) => {
+      drawnSyllables(line, trackRole(type)).forEach((word, wordIndex) => {
         out.push({ lineId: line.id, type, syllableId: word.id, lineIndex, wordIndex });
       });
     }

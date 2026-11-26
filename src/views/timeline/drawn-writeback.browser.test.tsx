@@ -1,6 +1,5 @@
 import { mainTrack, roleWords } from "@/domain/line/track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -15,7 +14,7 @@ import { renderHook } from "vitest-browser-react";
 
 const LINE_SYNCED = lineFromFields({ id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 });
 
-describe("effective line write-back", () => {
+describe("drawn line write-back", () => {
   it("insert-line shortcut (N) leaves other line-synced lines line-synced", async () => {
     useAudioStore.setState({ duration: 30 });
     useProjectStore.setState({
@@ -31,7 +30,7 @@ describe("effective line write-back", () => {
       ],
     });
     useTimelineStore.setState({ selectedWords: [storedWordAddress("w", 0, "word")] });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     await renderHook(() => useTimelineKeyboard(createRef<HTMLDivElement | null>(), lines, 30));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "n", bubbles: true }));
     const after = useProjectStore.getState().lines;
@@ -44,7 +43,7 @@ describe("effective line write-back", () => {
     useTimelineStore.setState({ zoom: 100, selectedWords: [] });
     const host = installScrollHost();
     useProjectStore.setState({ lines: [{ ...LINE_SYNCED, id: "l1" }] });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     const { result } = await renderHook(() => useTimelineDnd(lines));
     result.current.handleDragEnd(makeAltDuplicateEvent(0, 500));
     const after = useProjectStore.getState().lines[0];
@@ -59,7 +58,7 @@ describe("effective line write-back", () => {
     useTimelineStore.setState({
       selectedWords: [storedWordAddress("ls", 0, "word")],
     });
-    const lines = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
     await renderHook(() => useTimelineKeyboard(createRef<HTMLDivElement | null>(), lines, 30));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
     const after = useProjectStore.getState().lines[0];

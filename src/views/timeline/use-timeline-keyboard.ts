@@ -11,9 +11,9 @@ import { instanceKey, parseInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { currentInstanceFromSelection } from "@/domain/instance/selection-instance";
 import { effectiveBounds } from "@/domain/line/bounds";
-import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import { resolveAddress, toAddress } from "@/domain/selection/resolve";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
@@ -77,7 +77,7 @@ import {
 
 function useTimelineKeyboard(
   scrollContainerRef: RefObject<HTMLDivElement | null>,
-  lines: ReadableLine[],
+  lines: LyricLine[],
   duration: number,
   onOpenLyricsModal?: () => void,
 ) {
@@ -99,7 +99,7 @@ function useTimelineKeyboard(
       const line = lines[targetWord.lineIndex];
       if (!line) return;
 
-      const wordsArray = trackWords(line, targetWord.type);
+      const wordsArray = drawnSyllables(line, trackRole(targetWord.type));
       if (!wordsArray) return;
 
       const wordIndex = targetWord.wordIndex;

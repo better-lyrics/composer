@@ -1,3 +1,4 @@
+import type { LyricLine } from "@/domain/line/model";
 import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
 import { type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
@@ -6,7 +7,6 @@ import { detachInstancesFromLines } from "@/domain/edit-text/diff-edit-text";
 import type { LinkGroup } from "@/domain/group/template";
 import { isLinked } from "@/domain/instance/predicates";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
-import type { RawLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { isSectionTagLine } from "@/domain/lyrics-file/genius-text";
@@ -20,13 +20,13 @@ import {
 // -- Types --------------------------------------------------------------------
 
 interface WholeLines {
-  lines: RawLine[];
+  lines: LyricLine[];
   groups?: LinkGroup[];
 }
 
 // -- Helpers ------------------------------------------------------------------
 
-function sameLines(before: readonly RawLine[], after: readonly RawLine[]): boolean {
+function sameLines(before: readonly LyricLine[], after: readonly LyricLine[]): boolean {
   return before.length === after.length && after.every((line, index) => line === before[index]);
 }
 
@@ -51,18 +51,18 @@ function wholeLinesEdit(
 }
 
 // A plan made on other lyrics never lands on these.
-function planOn(baseLines: readonly RawLine[], lines: RawLine[]) {
+function planOn(baseLines: readonly LyricLine[], lines: LyricLine[]) {
   return (root: LyricRoot) => (root.lines === baseLines ? { lines } : refused({ reason: "lyrics-changed" }));
 }
 
 // -- Commands -----------------------------------------------------------------
 
 // One keystroke of a typing burst.
-function typeLyrics(baseLines: readonly RawLine[], lines: RawLine[]): LyricCommand {
+function typeLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): LyricCommand {
   return wholeLinesEdit({ command: "type lyrics", args: [lines.length] }, planOn(baseLines, lines));
 }
 
-function pasteLyrics(baseLines: readonly RawLine[], lines: RawLine[]): LyricCommand {
+function pasteLyrics(baseLines: readonly LyricLine[], lines: LyricLine[]): LyricCommand {
   return wholeLinesEdit({ command: "paste lyrics", args: [lines.length] }, planOn(baseLines, lines));
 }
 

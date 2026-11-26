@@ -1,5 +1,4 @@
 import { type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { fieldWords, roleWords, trackField, trackWords } from "@/domain/line/track";
 import { describe, expect, it } from "vitest";
@@ -25,14 +24,6 @@ describe("trackWords", () => {
     expect(trackWords(withBg, "bg")).toBe(roleWords(withBg, "bg"));
   });
 
-  it("works on an effective line", () => {
-    const [effective] = getEffectiveLines([
-      line({ words: mainWords, backgroundText: "ooh", backgroundWords: bgWords }),
-    ]);
-    expect(trackWords(effective, "word")).toBe(roleWords(effective, "main"));
-    expect(trackWords(effective, "bg")).toBe(roleWords(effective, "bg"));
-  });
-
   describe("edge cases", () => {
     it("returns undefined for a missing main track", () => {
       expect(trackWords(line(), "word")).toBeUndefined();
@@ -44,13 +35,6 @@ describe("trackWords", () => {
 
     it("does not synthesize a word for a raw line-synced row", () => {
       expect(trackWords(line({ begin: 3, end: 7 }), "word")).toBeUndefined();
-    });
-
-    it("reads the synthesized word of an effective line-synced row", () => {
-      const [effective] = getEffectiveLines([line({ begin: 3, end: 7 })]);
-      expect(trackWords(effective, "word")).toEqual([
-        { text: "Hello world", sep: "", begin: 3, end: 7, joinsNext: false },
-      ]);
     });
   });
 

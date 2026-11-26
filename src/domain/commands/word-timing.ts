@@ -3,14 +3,9 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused } from "@/domain/commands/outcome";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
-import { isSpanTimed, mainTrack, trackWords } from "@/domain/line/track";
+import { isSpanTimed, mainTrack, trackRole, trackWords } from "@/domain/line/track";
 import { withMainTrack, withTrackSpan } from "@/domain/line/track-writes";
-import {
-  type EffectiveLine,
-  effectiveTrackWords,
-  getEffectiveLine,
-  getEffectiveLines,
-} from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { partitionNudgeSelections, shiftSelectionsTogether } from "@/domain/selection/nudge";
@@ -74,14 +69,14 @@ const OWN_LINE_ONLY = { propagateToSiblings: false } as const;
 // -- Helpers ------------------------------------------------------------------
 
 // Timeline edits read the line the way the Timeline draws it: line-synced lines as one word.
-function effectiveTarget(
+function drawnTarget(
   lines: readonly LyricLine[],
   address: SyllableAddress,
-): { line: EffectiveLine; wordIndex: number } | null {
+): { line: LyricLine; wordIndex: number } | null {
   const lineIndex = resolveLineIndex(lines, address.lineId);
   if (lineIndex === undefined) return null;
-  const line = getEffectiveLine(lines[lineIndex]);
-  const wordIndex = effectiveTrackWords(line, address.type)?.findIndex((word) => word.id === address.syllableId) ?? -1;
+  const line = lines[lineIndex];
+  const wordIndex = drawnSyllables(line, trackRole(address.type)).findIndex((word) => word.id === address.syllableId);
   return wordIndex === -1 ? null : { line, wordIndex };
 }
 
@@ -125,7 +120,7 @@ function setWordBoundary(args: BoundaryArgs): LyricCommand {
   return lineEditCommand(
     { command: "set word boundary", args: [address.lineId, address.type, address.syllableId, edge, time] },
     (root) => {
-      const target = effectiveTarget(root.lines, address);
+      const target = drawnTarget(root.lines, address);
       if (!target) return refused({ reason: "word-gone", address });
       const boundaryEdit = address.type === "word" ? wordBoundaryEdit : bgWordBoundaryEdit;
       const edit = boundaryEdit({
@@ -192,7 +187,7 @@ function pressStepKey(args: StepKeyArgs, report?: (plan: StepKeyPlan | null) => 
   return lineEditCommand(
     { command: "step key", args: [key, cursor.lineId, cursor.type, cursor.syllableId, args.time] },
     (root) => {
-      const lines = getEffectiveLines(root.lines);
+      const { lines } = root;
       const resolvedCursor = resolveAddress(lines, cursor);
       if (!resolvedCursor) return refused({ reason: "word-gone", address: cursor });
       const plan = planStepKey({

@@ -1,8 +1,8 @@
+import type { LyricLine } from "@/domain/line/model";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { withSeededBackground } from "@/domain/line/background";
-import type { RawLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
@@ -98,7 +98,7 @@ function searchResultMetadata(result: LyricsSearchResult | undefined): Partial<P
 
 function replaceLyrics(
   parsed: ParseResult,
-  lines: RawLine[] = parsed.lines,
+  lines: LyricLine[] = parsed.lines,
   fallbackMetadata: Partial<ProjectMetadata> = {},
 ): ParseResult {
   const metadata = importableMetadata(parsed.metadata);

@@ -3,16 +3,26 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 import { refused, withLines } from "@/domain/commands/outcome";
 import type { WordWriteExtras } from "@/domain/commands/word-edits";
 import { withBackground, withSeededBackground, withoutBackground } from "@/domain/line/background";
-import { effectiveWordTextEdit, getEffectiveLine } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords, type TrackField, type WordTrack, untimedSyllablesOf, trackRole } from "@/domain/line/track";
+import { syllablesText } from "@/domain/line/text";
+import {
+  isSpanTimed,
+  mainTrack,
+  type TrackField,
+  type WordTrack,
+  untimedSyllablesOf,
+  trackRole,
+} from "@/domain/line/track";
+import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
 import { withFieldWords } from "@/domain/line/word-track-edits";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 import { applyWordDeletion } from "@/domain/word/apply-word-deletion";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -24,6 +34,13 @@ type TrackFill =
 
 function trackWrite(line: LyricLine, type: WordTrack, words: WordTiming[]): Partial<LyricLine> {
   return type === "word" ? mainWordsEdit(line, words) : manualBackgroundWordEdit(line, words);
+}
+
+// A line-synced main track keeps its span and takes the drawn block's text.
+function mainWordTextEdit(line: LyricLine, words: WordTiming[]): Partial<LyricLine> {
+  const main = mainTrack(line);
+  if (!isSpanTimed(main)) return mainWordsEdit(line, words);
+  return { tracks: withMainTrack(line, withTrackText(main, syllablesText(words, getSplitCharacter()))).tracks };
 }
 
 function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefined {
@@ -45,16 +62,15 @@ function typeWordText(address: SyllableAddress, text: string): LyricCommand {
   return lineEditCommand(
     { command: "type word", args: [address.lineId, address.type, address.syllableId, text] },
     (root) => {
-      const raw = lineOf(root.lines, address.lineId);
-      const line = raw && getEffectiveLine(raw);
-      const words = line && trackWords(line, address.type);
+      const line = lineOf(root.lines, address.lineId);
+      const words = line && drawnSyllables(line, trackRole(address.type));
       const wordIndex = words?.findIndex((word) => word.id === address.syllableId) ?? -1;
       if (!line || !words || wordIndex === -1) return refused({ reason: "word-gone", address });
       const word = words[wordIndex];
       if (text === word.text) return [];
       const updated = words.with(wordIndex, { ...word, text, sep: word.sep.endsWith(" ") ? " " : "" });
       const updates =
-        address.type === "word" ? effectiveWordTextEdit(line, updated) : manualBackgroundWordEdit(line, updated);
+        address.type === "word" ? mainWordTextEdit(line, updated) : manualBackgroundWordEdit(line, updated);
       return [{ id: line.id, updates }];
     },
   );
@@ -65,7 +81,7 @@ function insertWord(lineId: string, type: WordTrack, word: WordTiming): LyricCom
   return lineEditCommand({ command: "insert word", args: [lineId, type, word.id, word.begin] }, (root) => {
     const raw = lineOf(root.lines, lineId);
     if (!raw) return refused({ reason: "line-gone", lineId });
-    const words = trackWords(getEffectiveLine(raw), type) ?? [];
+    const words = drawnSyllables(raw, trackRole(type));
     return [
       {
         id: lineId,

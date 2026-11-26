@@ -42,18 +42,12 @@ interface LyricLine {
   detached?: boolean;
 }
 
-const effectiveLineBrand: unique symbol = Symbol("effectiveLine");
-
-type RawLine = LyricLine & { readonly [effectiveLineBrand]?: never };
-
 interface LineUpdate {
   id: string;
   updates: Partial<LyricLine>;
 }
 
 // -- Exports ------------------------------------------------------------------
-
-export { effectiveLineBrand };
 
 export type {
   BackgroundSource,
@@ -62,7 +56,6 @@ export type {
   LineUpdate,
   LyricLine,
   MainTrack,
-  RawLine,
   SpanTimedTrack,
   Syllable,
   TrackRole,

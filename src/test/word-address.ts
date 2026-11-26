@@ -1,6 +1,6 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/track";
+import { trackRole, type WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
@@ -9,7 +9,7 @@ import { useProjectStore } from "@/stores/project";
 
 // A slot with no word yet gets an address that resolves to nothing, as a selection of a removed word would.
 function wordAddress(line: LyricLine, wordIndex: number, type: WordTrack = "word"): SyllableAddress {
-  const word = effectiveTrackWords(line, type)?.[wordIndex];
+  const word = drawnSyllables(line, trackRole(type))[wordIndex];
   return word
     ? addressOf(line, type, word)
     : { lineId: line.id, type, syllableId: `${line.id}-${type}-${wordIndex}-none` };

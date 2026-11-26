@@ -1,5 +1,6 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
+import { trackRole } from "@/domain/line/track";
 import type { PitchPoint } from "@/domain/pitch/track";
 import type { Bounds } from "@/domain/word/bounds";
 
@@ -32,7 +33,7 @@ function songWordCoverage(lines: readonly LyricLine[], edited?: EditedTrack): Bo
   const wordsOf = (line: LyricLine, track: "word" | "bg") =>
     edited && edited.lineId === line.id && edited.track === track
       ? edited.words
-      : (effectiveTrackWords(line, track) ?? []);
+      : drawnSyllables(line, trackRole(track));
   return wordCoverage(lines.flatMap((line) => [...wordsOf(line, "word"), ...wordsOf(line, "bg")]));
 }
 

@@ -1,5 +1,5 @@
+import { drawnLine, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
 
@@ -29,15 +29,15 @@ function buildCandidateLines(
   for (const [lineId, { mainIdxs, bgIdxs, lineIndex }] of byLine) {
     const line = linesById.get(lineId);
     if (!line) return undefined;
-    const totalMain = timedSyllables(mainTrack(line)).length;
-    const totalBg = timedSyllables(backgroundTrack(line)).length;
+    const totalMain = drawnSyllables(line, "main").length;
+    const totalBg = drawnSyllables(line, "bg").length;
     if (mainIdxs.size !== totalMain) return undefined;
     if (bgIdxs.size !== totalBg) return undefined;
     candidates.push({ line, lineIndex });
   }
 
   candidates.sort((a, b) => a.lineIndex - b.lineIndex);
-  return candidates.map((c) => c.line);
+  return candidates.map((c) => drawnLine(c.line));
 }
 
 export { buildCandidateLines };

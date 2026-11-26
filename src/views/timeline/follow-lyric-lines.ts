@@ -1,4 +1,4 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
@@ -24,8 +24,8 @@ type AddressedPatch = Partial<Pick<TimelineState, keyof AddressedState | "loopRe
 const lineIndexHints = new Map<string, number>();
 
 const trackWordIds: Record<WordTrack, (line: LyricLine) => ReadonlySet<string>> = {
-  word: memoByIdentity((line) => new Set(effectiveTrackWords(line, "word")?.map((word) => word.id))),
-  bg: memoByIdentity((line) => new Set(effectiveTrackWords(line, "bg")?.map((word) => word.id))),
+  word: memoByIdentity((line) => new Set(drawnSyllables(line, "main").map((word) => word.id))),
+  bg: memoByIdentity((line) => new Set(drawnSyllables(line, "bg").map((word) => word.id))),
 };
 
 // -- Functions ----------------------------------------------------------------

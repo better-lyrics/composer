@@ -1,6 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import { createLine, createWord, createWords } from "@/test/factories";
-import { getEffectiveRows } from "@/views/timeline/effective-rows";
+import { getDrawnRows } from "@/views/timeline/drawn-rows";
 import { type RowLayout, computeRowLayout } from "@/views/timeline/utils";
 import { describe, expect, it } from "vitest";
 
@@ -48,26 +48,26 @@ const layoutLineIds = (layout: RowLayout) => [...layout.lineTops.keys()];
 
 // -- Tests --------------------------------------------------------------------
 
-describe("getEffectiveRows · group focus", () => {
+describe("getDrawnRows · group focus", () => {
   it("keeps only the rows of the heard instance, without its header", () => {
-    const rows = getEffectiveRows(lines, focusOnSecond);
+    const rows = getDrawnRows(lines, focusOnSecond);
 
     expect(rows.map((row) => (row.kind === "line" ? row.line.id : row.kind))).toEqual(["b0", "b1"]);
   });
 
   it("keeps the line index into the whole song", () => {
-    const rows = getEffectiveRows(lines, focusOnSecond);
+    const rows = getDrawnRows(lines, focusOnSecond);
 
     expect(rows.map((row) => (row.kind === "line" ? row.lineIndex : -1))).toEqual([3, 4]);
   });
 
   it("shows every row with headers for a focus on a missing instance", () => {
-    expect(getEffectiveRows(lines, { groupId: "g1", hearInstanceIdx: 9 })).toEqual(getEffectiveRows(lines));
+    expect(getDrawnRows(lines, { groupId: "g1", hearInstanceIdx: 9 })).toEqual(getDrawnRows(lines));
   });
 
   it("shows every row with headers when nothing is focused", () => {
-    expect(getEffectiveRows(lines, null)).toHaveLength(getEffectiveRows(lines).length);
-    expect(getEffectiveRows(lines).filter((row) => row.kind === "group-header")).toHaveLength(2);
+    expect(getDrawnRows(lines, null)).toHaveLength(getDrawnRows(lines).length);
+    expect(getDrawnRows(lines).filter((row) => row.kind === "group-header")).toHaveLength(2);
   });
 });
 
@@ -92,14 +92,14 @@ describe("computeRowLayout · group focus", () => {
   });
 
   describe("invariants", () => {
-    it("agrees with getEffectiveRows on which lines are shown", () => {
+    it("agrees with getDrawnRows on which lines are shown", () => {
       for (const focus of [
         null,
         focusOnSecond,
         { groupId: "g1", hearInstanceIdx: 0 },
         { groupId: "g1", hearInstanceIdx: 9 },
       ]) {
-        const rowIds = getEffectiveRows(lines, focus).flatMap((row) => (row.kind === "line" ? [row.line.id] : []));
+        const rowIds = getDrawnRows(lines, focus).flatMap((row) => (row.kind === "line" ? [row.line.id] : []));
         expect(layoutLineIds(layoutFor(focus))).toEqual(rowIds);
       }
     });

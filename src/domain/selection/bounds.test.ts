@@ -1,4 +1,5 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { selectionBounds } from "@/domain/selection/bounds";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
@@ -8,7 +9,7 @@ import { describe, expect, it } from "vitest";
 
 function sel(lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
   const line = [wordLine, nextLine, lineSynced].find((candidate) => candidate.id === lineId);
-  const word = line ? effectiveTrackWords(line, type)?.[wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(type))[wordIndex] : undefined;
   return { lineId, type, syllableId: word?.id ?? `missing-${wordIndex}` };
 }
 
