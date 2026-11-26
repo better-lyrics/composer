@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import { type DocPassthrough, isEmptyDocPassthrough } from "insync/passthrough";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
@@ -26,6 +28,8 @@ interface ProjectSaveInput {
   agents: Agent[];
   lines: LyricLine[];
   groups: LinkGroup[];
+  parts?: readonly Part[];
+  passthrough?: DocPassthrough;
   granularity: GranularityMode;
   exportTiming: TimingGranularity;
   syllableSplitDefaults: SyllableSplitDefaults;
@@ -50,7 +54,7 @@ interface ProjectSaveInput {
 // -- Records ------------------------------------------------------------------
 
 function buildSavedProject(input: ProjectSaveInput): SavedProject {
-  const { unisonLyricId, ...fields } = input;
+  const { unisonLyricId, parts, passthrough, ...fields } = input;
   const audioFileName = input.audioSource?.kind === "file" ? input.audioSource.name : undefined;
   return {
     version: SAVED_PROJECT_VERSION,
@@ -58,6 +62,8 @@ function buildSavedProject(input: ProjectSaveInput): SavedProject {
     ...fields,
     lines: savedLines(input.lines),
     audioFileName,
+    ...(parts?.length && { parts }),
+    ...(!isEmptyDocPassthrough(passthrough) && { passthrough }),
     ...(unisonLyricId ? { unisonLyricId } : {}),
   };
 }

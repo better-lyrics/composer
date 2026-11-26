@@ -1,8 +1,12 @@
-import type { LineTrack, LyricLine } from "@/domain/line/model";
+import type { LineTrack, LyricLine, Syllable } from "@/domain/line/model";
 import { backgroundTrack, isTimedSyllable, mainTrack } from "@/domain/line/track";
 import { withBackgroundTrack, withMainTrack } from "@/domain/line/track-writes";
 
 // -- Functions ----------------------------------------------------------------
+
+function withKeptIdentity<S extends Syllable>(syllable: S, kept: Syllable): S {
+  return kept.passthrough ? { ...syllable, id: kept.id, passthrough: kept.passthrough } : { ...syllable, id: kept.id };
+}
 
 function sameUntimedText(next: LineTrack, kept: LineTrack): boolean {
   return (
@@ -18,7 +22,7 @@ function sameUntimedText(next: LineTrack, kept: LineTrack): boolean {
 function withUntimedIdsOfTrack<T extends LineTrack>(next: T, kept: LineTrack | undefined): T {
   if (!kept || !sameUntimedText(next, kept)) return next;
   const syllables = next.syllables.map((syllable, index) =>
-    isTimedSyllable(syllable) ? syllable : { ...syllable, id: kept.syllables[index].id },
+    isTimedSyllable(syllable) ? syllable : withKeptIdentity(syllable, kept.syllables[index]),
   );
   return { ...next, syllables };
 }

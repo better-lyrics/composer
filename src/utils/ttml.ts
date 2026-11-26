@@ -1,3 +1,4 @@
+import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
 import type { Agent } from "@/domain/agent/model";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
@@ -23,7 +24,7 @@ import {
   renderTransliterationContent,
 } from "@/utils/ttml-alternate-content";
 import { isExportedLine, keyedExportLines } from "@/utils/ttml-line-keys";
-import { emitWordSpan, escapeXml, escapeXmlAttribute } from "@/utils/ttml-markup";
+import { emitWordSpan } from "@/utils/ttml-markup";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -77,7 +78,7 @@ function generateTTML({
   parts.push(`${ind(1)}<head>`);
   parts.push(`${ind(2)}<metadata>`);
   if (metadata.title) {
-    parts.push(`${ind(3)}<ttm:title>${escapeXml(metadata.title)}</ttm:title>`);
+    parts.push(`${ind(3)}<ttm:title>${escapeXmlText(metadata.title)}</ttm:title>`);
   }
   for (const { key, value } of toComposerMeta(metadata)) {
     parts.push(`${ind(3)}<composer:meta key="${escapeXmlAttribute(key)}" value="${escapeXmlAttribute(value)}"/>`);
@@ -89,7 +90,7 @@ function generateTTML({
     // The importer names an unnamed singer for display only; exporting that name would edit the lyrics.
     if (agent.name && agent.name !== placeholderAgentName(position)) {
       parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}">`);
-      parts.push(`${ind(4)}<ttm:name>${escapeXml(agent.name)}</ttm:name>`);
+      parts.push(`${ind(4)}<ttm:name>${escapeXmlText(agent.name)}</ttm:name>`);
       parts.push(`${ind(3)}</ttm:agent>`);
     } else {
       parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}"/>`);
@@ -124,7 +125,7 @@ function generateTTML({
     if (translationLanguages.size > 0) {
       parts.push(`${ind(4)}<translations>`);
       for (const language of translationLanguages) {
-        parts.push(`${ind(5)}<translation xml:lang="${escapeXml(language)}" type="subtitle">`);
+        parts.push(`${ind(5)}<translation xml:lang="${escapeXmlText(language)}" type="subtitle">`);
         for (const { line, key } of keyedLines) {
           const track = lineTranslations(line)?.[language];
           if (track && hasAlternateText(track)) {
@@ -145,7 +146,7 @@ function generateTTML({
       }
       parts.push(`${ind(4)}<transliterations>`);
       for (const [language, languageLines] of byLanguage) {
-        parts.push(`${ind(5)}<transliteration xml:lang="${escapeXml(language)}">`);
+        parts.push(`${ind(5)}<transliteration xml:lang="${escapeXmlText(language)}">`);
         for (const { line, key } of languageLines) {
           parts.push(`${ind(6)}<text for="${key}">${renderTransliterationContent(line, writesWords)}</text>`);
         }
@@ -184,7 +185,7 @@ function generateTTML({
         content += `${emitWordSpan(word, word.text)}${needsSpace ? " " : ""}`;
       }
     } else {
-      content = escapeXml(stripSplitCharacter(lineText(line)));
+      content = escapeXmlText(stripSplitCharacter(lineText(line)));
     }
 
     const bgText = backgroundText(line);

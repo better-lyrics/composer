@@ -8,6 +8,8 @@ import type { StateCreator } from "zustand";
 function createLinesInitialState(): LinesState {
   return {
     lines: [],
+    parts: [],
+    passthrough: {},
   };
 }
 
@@ -22,6 +24,8 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         ...(root.lines && { lines: root.lines }),
         ...("groups" in root && { groups: Array.isArray(root.groups) ? root.groups : [] }),
         ...(root.agents && { agents: root.agents }),
+        ...(root.parts && { parts: root.parts }),
+        ...(root.passthrough && { passthrough: root.passthrough }),
         isDirty: true,
         isDirtySinceHistory: true,
       }),

@@ -1,3 +1,4 @@
+import { partsAfterLineChange } from "insync/part-membership";
 import type { LyricLine } from "@/domain/line/model";
 import { useMemo } from "react";
 import { toast } from "sonner";
@@ -102,10 +103,13 @@ function replaceLyrics(
   fallbackMetadata: Partial<ProjectMetadata> = {},
 ): ParseResult {
   const metadata = importableMetadata(parsed.metadata);
+  const lineId = (line: LyricLine) => line.id;
   useProjectStore.getState().replaceLyricsWithHistory({
     lines,
     groups: parsed.groups ?? [],
     agents: parsed.agents,
+    parts: parsed.parts && partsAfterLineChange(parsed.parts, parsed.lines.map(lineId), lines.map(lineId)),
+    passthrough: parsed.passthrough,
     metadata: { ...fallbackMetadata, ...metadata },
   });
   if (parsed.madeInAmllTool) noteGuideSignal("import.amllFile");
@@ -179,6 +183,8 @@ function importProjectLyrics(project: ProjectFile, filename: string, ctx: Import
     issues: [],
     agents: project.agents,
     groups: project.groups ?? [],
+    parts: project.parts,
+    passthrough: project.passthrough,
   });
   ctx.onResult?.(reported, { label: ctx.sourceLabel, filename });
   return true;

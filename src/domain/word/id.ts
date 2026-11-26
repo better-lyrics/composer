@@ -16,9 +16,13 @@ function withNewId(word: WordTiming): WordTiming {
   return { ...word, id: newWordId() };
 }
 
-// The first piece of a split keeps the word's id; the others are new words.
+// The first piece of a split keeps the word's id and its kept TTML data; the others are new words.
 function withSplitIds(pieces: readonly WordTiming[]): WordTiming[] {
-  return pieces.map((piece, index) => (index === 0 ? piece : withNewId(piece)));
+  return pieces.map((piece, index) => {
+    if (index === 0) return piece;
+    const { passthrough: _kept, ...newWord } = piece;
+    return withNewId(newWord);
+  });
 }
 
 // Words joining a track keep their ids; one the track already holds becomes a new word.

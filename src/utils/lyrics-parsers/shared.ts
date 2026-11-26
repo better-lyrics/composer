@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
@@ -21,6 +23,8 @@ interface ParseResult {
   groups?: LinkGroup[];
   lineKeys?: (string | undefined)[];
   madeInAmllTool?: boolean;
+  parts?: readonly Part[];
+  passthrough?: DocPassthrough;
 }
 
 type ParserFn = (content: string, fallbackDuration?: number) => ParseResult;

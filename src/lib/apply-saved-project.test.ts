@@ -240,3 +240,56 @@ describe("primingCorrected", () => {
     expect(useProjectStore.getState().primingCorrected).toBe(false);
   });
 });
+
+describe("unknown TTML data", () => {
+  beforeEach(resetAllStores);
+
+  it("a v4 save and load keeps passthrough and parts", () => {
+    const lines: SavedLine[] = [
+      {
+        id: "L1",
+        passthrough: { attrs: [["x-vendor:mood", "calm"]] },
+        tracks: [
+          {
+            id: "L1:main",
+            role: "main",
+            agent: "v1",
+            syllables: [
+              {
+                id: "w1",
+                text: "Harbour",
+                sep: " ",
+                span: [msFromSeconds(1), msFromSeconds(1.5)],
+                passthrough: { attrs: [["x-vendor:cue", "3"]] },
+              },
+              { id: "w2", text: "lights", sep: "", span: [msFromSeconds(1.5), msFromSeconds(2)] },
+            ],
+          },
+          {
+            id: "L1:bg",
+            role: "bg",
+            passthrough: { attrs: [["x-vendor:layer", "2"]] },
+            syllables: [{ id: "w3", text: "glow", sep: "", span: [msFromSeconds(2), msFromSeconds(2.4)] }],
+          },
+        ],
+      },
+    ];
+    const kept = {
+      agents: [{ ...FILE_AGENTS[0], passthrough: { attrs: [["x-vendor:voice", "alto"]] } }, FILE_AGENTS[1]],
+      lines,
+      parts: [{ id: "p1", kind: "Verse", lineIds: ["L1"] }],
+      passthrough: { tt: { attrs: [["xmlns:x-vendor", "urn:x"]] } },
+    } satisfies Partial<SavedProject>;
+
+    applySavedProject(structuredClone(projectFile(kept)), "storage");
+    const resaved = buildSavedProject(currentSaveInput());
+
+    expect(resaved).toMatchObject(kept);
+  });
+
+  it("a project without kept data saves no field for it", () => {
+    const saved = buildSavedProject(createProjectSaveInput());
+    expect(saved).not.toHaveProperty("parts");
+    expect(saved).not.toHaveProperty("passthrough");
+  });
+});

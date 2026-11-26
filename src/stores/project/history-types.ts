@@ -1,3 +1,5 @@
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
 import type { Agent } from "@/domain/agent/model";
 import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
 import type { Outcome } from "@/domain/commands/outcome";
@@ -15,6 +17,8 @@ interface HistoryEntry {
   lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[];
+  parts: readonly Part[];
+  passthrough: DocPassthrough;
   customSnapPoints: SnapPoint[];
   beatGrid: BeatGrid | null;
   timestamp: number;
@@ -36,6 +40,8 @@ interface HistoryState {
 // The lyrics a typing burst started from, and whether an earlier write was still pending then.
 interface LyricBurst {
   lines: LyricLine[];
+  parts: readonly Part[];
+  passthrough: DocPassthrough;
   wasPending: boolean;
 }
 

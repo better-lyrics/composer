@@ -15,6 +15,7 @@ import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predi
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { withLinePassthrough } from "@/domain/line/passthrough";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
@@ -35,7 +36,7 @@ function instanceLine(
   const words = template.words && offsetTemplateWords(template.words, instanceStart);
   const backgroundWords = template.backgroundWords && offsetTemplateWords(template.backgroundWords, instanceStart);
   const languages = templateLanguages(template, words, backgroundWords);
-  return lineFromFields({
+  const line = lineFromFields({
     id,
     text: template.text,
     agentId: template.agentId,
@@ -48,6 +49,7 @@ function instanceLine(
     ...templateBackgroundFields(template, backgroundWords),
     ...(languages ? { languages } : {}),
   });
+  return withLinePassthrough(line, template.passthrough);
 }
 
 // -- Commands -----------------------------------------------------------------
