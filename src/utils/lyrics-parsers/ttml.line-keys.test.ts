@@ -1,5 +1,6 @@
-import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
+import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -16,7 +17,7 @@ describe("parseTtml · line keys", () => {
         '<p begin="0:01.000" end="0:02.000" itunes:key="L2">Two</p><p begin="0:02.000" end="0:03.000">None</p><p begin="0:03.000" end="0:04.000" itunes:key="L1">One</p>',
       ),
     );
-    expect(parsed.lines.map((line) => line.text)).toEqual(["Two", "None", "One"]);
+    expect(parsed.lines.map((line) => lineText(line))).toEqual(["Two", "None", "One"]);
     expect(parsed.lineKeys).toEqual(["L2", undefined, "L1"]);
   });
 

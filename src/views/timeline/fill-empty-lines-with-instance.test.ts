@@ -1,9 +1,11 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { fillEmptyLinesWithInstance, isEmptyFillable } from "./fill-empty-lines-with-instance";
 
 const template: LineTemplate[] = [
@@ -77,9 +79,9 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
     expect(result.updatedLines?.[1].groupId).toBe("g1");
     expect(result.updatedLines?.[1].instanceIdx).toBe(0);
     expect(result.updatedLines?.[1].templateLineIdx).toBe(0);
-    expect(result.updatedLines?.[1].words?.[0].begin).toBe(10);
+    expect(timedSyllables(mainTrack(result.updatedLines![1]))[0].begin).toBe(10);
     expect(result.updatedLines?.[2].templateLineIdx).toBe(1);
-    expect(result.updatedLines?.[2].words?.[0].begin).toBe(11);
+    expect(timedSyllables(mainTrack(result.updatedLines![2]))[0].begin).toBe(11);
     expect(result.updatedLines?.[0].id).toBe("intro");
     expect(result.updatedLines?.[3].id).toBe("outro");
   });
@@ -114,8 +116,8 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
       instanceStart: 0,
     });
     expect(result.ok).toBe(true);
-    expect(result.updatedLines?.[0].text).toBe("Chorus line 1");
-    expect(result.updatedLines?.[1].text).toBe("Chorus line 2");
+    expect(lineText(result.updatedLines![0])).toBe("Chorus line 1");
+    expect(lineText(result.updatedLines![1])).toBe("Chorus line 2");
   });
 
   it("picks the next available instanceIdx for the group", () => {
@@ -162,9 +164,9 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
       instanceStart: 10,
     });
     expect(result.ok).toBe(true);
-    expect(result.updatedLines?.[0].backgroundText).toBe("ooh");
-    expect(result.updatedLines?.[0].backgroundWords?.[0].begin).toBe(10);
-    expect(result.updatedLines?.[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result.updatedLines![0])).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(result.updatedLines![0]))[0].begin).toBe(10);
+    expect(backgroundTrack(result.updatedLines![0])?.source).toBe("extraction");
   });
 
   it("carries a manual-sourced flag from the template", () => {
@@ -184,7 +186,7 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
       startIndex: 0,
       instanceStart: 0,
     });
-    expect(result.updatedLines?.[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(result.updatedLines![0])?.source).toBe("manual");
   });
 
   it("leaves backgroundTextSource undefined when the template has no background", () => {

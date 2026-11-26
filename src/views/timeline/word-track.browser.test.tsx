@@ -1,3 +1,7 @@
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { lineEditCommand } from "@/domain/commands/line-edits";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -9,9 +13,6 @@ import { wordAddress } from "@/test/word-address";
 import { applyWordPatch } from "@/utils/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
-import { lineEditCommand } from "@/domain/commands/line-edits";
 
 type UpdateWord = (
   index: number,
@@ -58,19 +59,17 @@ const commitToStore: UpdateWord = (index, updates, adjacentIndex, adjacentUpdate
   const line = useProjectStore.getState().lines[0];
   if (!line.words) return;
   const patched = applyWordPatch(
-    line.words,
+    timedSyllables(mainTrack(line)),
     index,
     updates,
     adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
   );
   if (!patched) return;
-  useProjectStore
-    .getState()
-    .commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: line.id, updates: { words: patched } }], {
-        propagateToSiblings: false,
-      }),
-    );
+  useProjectStore.getState().commit(
+    lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: line.id, updates: { words: patched } }], {
+      propagateToSiblings: false,
+    }),
+  );
 };
 
 async function renderTrackWritingToStore(words: WordTiming[]) {
@@ -557,7 +556,11 @@ describe("WordTrack", () => {
     );
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
-    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world ", "..."]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text + w.sep)).toEqual([
+      "hello ",
+      "world ",
+      "...",
+    ]);
   });
 
   describe("boundary click (issue #165)", () => {
@@ -592,7 +595,7 @@ describe("WordTrack", () => {
       await userEvent.click(edgeOf(blocks[1], "left"));
 
       expect(useProjectStore.getState().history).toHaveLength(historyBefore);
-      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].begin).toBe(1.2);
     });
 
     it("selects the word when the pointer jitters vertically without moving sideways", async () => {
@@ -604,7 +607,7 @@ describe("WordTrack", () => {
 
       await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
       expect(useTimelineStore.getState().selectedWords[0]).toEqual(wordAddress(line, 1));
-      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].begin).toBe(1.2);
       expect(useProjectStore.getState().history).toHaveLength(0);
     });
 
@@ -617,7 +620,7 @@ describe("WordTrack", () => {
 
       await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
       expect(useTimelineStore.getState().selectedWords[0]).toEqual(wordAddress(line, 1));
-      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].begin).toBe(1.2);
       expect(useProjectStore.getState().history).toHaveLength(0);
     });
 
@@ -643,8 +646,8 @@ describe("WordTrack", () => {
 
       pressEdgeMoveAndClick(blocks[1], "left", { dx: 30, dy: 0 }, { dx: 0, dy: 0 });
 
-      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
-      expect(useProjectStore.getState().lines[0].words?.[1].end).toBe(2);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].begin).toBe(1.2);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[1].end).toBe(2);
       expect(useProjectStore.getState().history).toHaveLength(0);
       expect(useProjectStore.getState().isDirty).toBe(false);
     });

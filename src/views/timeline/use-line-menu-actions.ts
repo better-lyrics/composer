@@ -1,12 +1,14 @@
+import { useCallback } from "react";
 import { detachLine, placeInstance } from "@/domain/commands/instance-edits";
-import { isRefused } from "@/domain/commands/outcome";
 import { deleteLine } from "@/domain/commands/instance-rows";
 import { placeLineAt } from "@/domain/commands/line-timing";
+import { isRefused } from "@/domain/commands/outcome";
 import { assignSinger } from "@/domain/commands/singer";
 import { isSharedLine } from "@/domain/group/shared-timing";
 import { instanceName } from "@/domain/instance/name";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { useAutoAlign } from "@/hooks/use-auto-align";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
@@ -18,7 +20,6 @@ import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
-import { useCallback } from "react";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -45,7 +46,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const wordCount = splitIntoWordsWithMeta(line.text).parts.length;
+    const wordCount = splitIntoWordsWithMeta(lineText(line)).parts.length;
     const lineDuration = Math.max(wordCount, 1) * wordDuration;
     useProjectStore.getState().commit(placeLineAt(lineId, time, time + lineDuration));
     clearContextMenu();

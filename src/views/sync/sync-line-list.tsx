@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { LinkGroup } from "@/domain/group/template";
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -5,14 +7,14 @@ import type { LanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SkippedInstance } from "@/domain/sync/skipped-instances";
 import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type SyncLineListHandlers, useRowCallbacks } from "@/views/sync/use-row-callbacks";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -148,16 +150,16 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           {...rowCallbacks(index)}
           lineId={line.id}
           lineNumber={index + 1}
-          text={line.text}
+          text={lineText(line)}
           displayText={displayLine.text}
           displayWordTexts={displayLine.wordTexts}
           isCurrent={index === currentLineIndex}
           agentId={line.agentId}
-          backgroundText={line.backgroundText}
+          backgroundText={backgroundText(line)}
           displayBackgroundText={displayLine.backgroundText}
           displayBackgroundWordTexts={displayLine.backgroundWordTexts}
-          backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
-          words={displayLine.words ?? line.words}
+          backgroundWords={displayLine.backgroundWords ?? timedSyllables(backgroundTrack(line))}
+          words={displayLine.words ?? timedSyllables(mainTrack(line))}
           lineBegin={timing?.begin}
           lineEnd={timing?.end}
           lineSynced={isLineSynced(line)}

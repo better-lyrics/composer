@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
+import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -141,9 +143,9 @@ describe("TimelineContextMenu conform to group", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g2");
     const [, , third, fourth] = useProjectStore.getState().lines;
-    expect(third.text).toBe("Hold on");
-    expect(third.words?.[0].begin).toBe(20);
-    expect(fourth.text).toBe("Just a while");
+    expect(lineText(third)).toBe("Hold on");
+    expect(timedSyllables(mainTrack(third))[0].begin).toBe(20);
+    expect(lineText(fourth)).toBe("Just a while");
     expect(fourth.instanceIdx).toBe(1);
   });
 
@@ -158,12 +160,12 @@ describe("TimelineContextMenu conform to group", () => {
     const [, , third, fourth] = useProjectStore.getState().lines;
     expect(third.instanceIdx).toBe(1);
     expect(third.templateLineIdx).toBe(0);
-    expect(third.text).toBe(DARK);
-    expect(third.words?.[0].begin).toBe(20);
+    expect(lineText(third)).toBe(DARK);
+    expect(timedSyllables(mainTrack(third))[0].begin).toBe(20);
     expect(fourth.instanceIdx).toBe(1);
     expect(fourth.templateLineIdx).toBe(1);
-    expect(fourth.text).toBe(MORNING);
-    expect(fourth.words?.[0].begin).toBe(22.5);
+    expect(lineText(fourth)).toBe(MORNING);
+    expect(timedSyllables(mainTrack(fourth))[0].begin).toBe(22.5);
   });
 
   it("restores the original lines on undo", async () => {
@@ -178,9 +180,9 @@ describe("TimelineContextMenu conform to group", () => {
 
     const [, , third, fourth] = useProjectStore.getState().lines;
     expect(third.groupId).toBeUndefined();
-    expect(third.text).toBe("we were dancin in the dark");
-    expect(third.words?.[0].begin).toBe(20);
-    expect(fourth.text).toBe("till mornin came");
+    expect(lineText(third)).toBe("we were dancin in the dark");
+    expect(timedSyllables(mainTrack(third))[0].begin).toBe(20);
+    expect(lineText(fourth)).toBe("till mornin came");
   });
 
   it("skips the confirmation when the setting is off", async () => {
@@ -262,7 +264,7 @@ describe("TimelineContextMenu conform to a group that shares timing", () => {
   it("copies the timing of a shared instance, not an own-timing one", async () => {
     await conformToChorus();
 
-    expect(useProjectStore.getState().lines[3].words?.[0].begin).toBe(23);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[3]))[0].begin).toBe(23);
   });
 
   describe("regressions", () => {

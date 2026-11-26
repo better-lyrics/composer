@@ -3,10 +3,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
-import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { pasteLines } from "@/domain/commands/instance-rows";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
+import { useProjectStore } from "@/stores/project";
 
 const SPLIT_CHAR = "|";
 
@@ -25,7 +27,7 @@ describe("applyWordDeletion", () => {
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 1 }], SPLIT_CHAR);
-    expect(result[0].text).toBe("every in my dreams");
+    expect(lineText(result[0])).toBe("every in my dreams");
   });
 
   it("removes selected words from a word-timed line, leaving the line in place", () => {
@@ -44,7 +46,7 @@ describe("applyWordDeletion", () => {
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 1 }];
     const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
-    expect(result[0].words?.map((w) => w.text + w.sep)).toEqual(["I ", "you"]);
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.text + w.sep)).toEqual(["I ", "you"]);
   });
 
   it("leaves a word-timed line in place with no words AND clears begin/end when ALL words are deleted", () => {
@@ -68,7 +70,7 @@ describe("applyWordDeletion", () => {
     expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
-    expect(result[0].text).toBe("I love");
+    expect(lineText(result[0])).toBe("I love");
   });
 
   it("clears begin/end on a word-timed line with no line-level timing too", () => {
@@ -92,7 +94,7 @@ describe("applyWordDeletion", () => {
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("I love you");
+    expect(lineText(result[0])).toBe("I love you");
     expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
@@ -139,11 +141,11 @@ describe("applyWordDeletion", () => {
     ];
     const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result.map((l) => l.id)).toEqual(["keep1", "edit", "drop", "keep2"]);
-    expect(result[1].words?.map((w) => w.text)).toEqual(["love"]);
+    expect(timedSyllables(mainTrack(result[1])).map((w) => w.text)).toEqual(["love"]);
     expect(result[2].begin).toBeUndefined();
     expect(result[2].end).toBeUndefined();
     expect(result[2].words).toBeUndefined();
-    expect(result[2].text).toBe("to clear");
+    expect(lineText(result[2])).toBe("to clear");
   });
 
   it("removes selected bg words and clears the bg fields when none remain", () => {
@@ -161,7 +163,7 @@ describe("applyWordDeletion", () => {
     const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
     expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundText).toBeUndefined();
+    expect(backgroundText(result[0])).toBeUndefined();
     expect(result[0].words?.length).toBe(1);
   });
 
@@ -182,8 +184,8 @@ describe("applyWordDeletion", () => {
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "bg", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel, SPLIT_CHAR);
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords?.map((w) => w.text)).toEqual(["oh"]);
-    expect(result[0].backgroundText).toBe("oh");
+    expect(timedSyllables(backgroundTrack(result[0])).map((w) => w.text)).toEqual(["oh"]);
+    expect(backgroundText(result[0])).toBe("oh");
   });
 
   it("clears backgroundTextSource when the deletion empties the background", () => {
@@ -200,8 +202,8 @@ describe("applyWordDeletion", () => {
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }], SPLIT_CHAR);
     expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundText(result[0])).toBeUndefined();
+    expect(backgroundTrack(result[0])?.source).toBeUndefined();
   });
 
   it("stamps backgroundTextSource manual when a partial bg deletion leaves words behind", () => {
@@ -220,8 +222,8 @@ describe("applyWordDeletion", () => {
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }], SPLIT_CHAR);
-    expect(result[0].backgroundWords?.map((w) => w.text)).toEqual(["oh"]);
-    expect(result[0].backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(result[0])).map((w) => w.text)).toEqual(["oh"]);
+    expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
 
   it("leaves backgroundTextSource untouched when only main words are deleted", () => {
@@ -243,9 +245,9 @@ describe("applyWordDeletion", () => {
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 0 }], SPLIT_CHAR);
-    expect(result[0].words?.map((w) => w.text)).toEqual(["love"]);
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.text)).toEqual(["love"]);
     expect(result[0].backgroundWords?.length).toBe(2);
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("leaves a word-timed line empty (not removed) when all main + bg words are deleted in one pass", () => {
@@ -298,8 +300,8 @@ describe("applyWordDeletion", () => {
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 3 }], SPLIT_CHAR);
-    expect(result[0].words?.[0].end).toBe(0.2);
-    expect(result[0].words?.[1].begin).toBe(0.3);
+    expect(timedSyllables(mainTrack(result[0]))[0].end).toBe(0.2);
+    expect(timedSyllables(mainTrack(result[0]))[1].begin).toBe(0.3);
   });
 });
 
@@ -330,7 +332,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     expect(result[0].templateLineIdx).toBeUndefined();
     // Row remains as an empty placeholder (text and id preserved)
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("x");
+    expect(lineText(result[0])).toBe("x");
     // Existing applyWordDeletion contract: words becomes [] after deleting all words
     expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
@@ -402,7 +404,9 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     expect(result.find((l) => l.id === "A1")?.groupId).toBe("cannon");
     expect(result.find((l) => l.id === "A2")?.groupId).toBe("cannon");
     expect(result.find((l) => l.id === "A1")?.words).toBeUndefined();
-    expect(result.find((l) => l.id === "A2")?.words).toEqual([{ text: "you", sep: "", begin: 6, end: 7 }]);
+    expect(timedSyllables(mainTrack(result.find((l) => l.id === "A2")!))).toEqual([
+      { text: "you", sep: "", begin: 6, end: 7 },
+    ]);
   });
 
   it("strips group attrs when a single-line instance has only BG words and they all get deleted", () => {
@@ -541,7 +545,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     expect(result[0].groupId).toBeUndefined();
     expect(result[0].words).toBeUndefined();
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("x");
+    expect(lineText(result[0])).toBe("x");
   });
 
   it("preserves the detached flag's semantics when stripping (detached lines also clear it)", () => {

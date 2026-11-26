@@ -3,6 +3,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -63,8 +64,7 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
       const converted = convertLineToWord(realLine);
       if (converted.words) Object.assign(lineUpdates, { words: converted.words, begin: undefined, end: undefined });
     }
-    const splitBg =
-      tracks.has("bg") && realLine.backgroundWords ? splitMultiWordBgWords(realLine.backgroundWords) : null;
+    const splitBg = tracks.has("bg") ? splitMultiWordBgWords(timedSyllables(backgroundTrack(realLine))) : null;
     if (splitBg) Object.assign(lineUpdates, manualBackgroundWordEdit(splitBg));
     if (Object.keys(lineUpdates).length > 0) updates.push({ id, updates: lineUpdates });
   }

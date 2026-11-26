@@ -1,3 +1,8 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { lineText } from "@/domain/line/text";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -9,10 +14,6 @@ import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { restoreProvidersForTests, snapshotProvidersForTests } from "@/utils/lyrics-search/registry";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Harness ------------------------------------------------------------------
 
@@ -130,7 +131,7 @@ describe("LyricsImportModal with project files", () => {
       const screen = await render(host());
       await pasteIntoModal(screen, '{"note": "not a project"}');
       await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(['{"note": "not a project"}']);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(['{"note": "not a project"}']);
       expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     });
   });

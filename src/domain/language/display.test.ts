@@ -1,6 +1,8 @@
+import { describe, expect, it } from "vitest";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import type { LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 
 const line: LyricLine = {
   id: "mixed",
@@ -65,15 +67,18 @@ describe("language display alignment", () => {
     const display = getLanguageDisplayLine(line, "transliteration");
     expect(display.text).toBe("geol eum eun  Like  a  dance");
     expect(display.wordTexts).toEqual(["geol eum eun  ", "Like  ", "a  ", "dance"]);
-    expect(display.words?.map((word) => word.text)).toEqual(line.words.map((word) => word.text));
+    expect(display.words?.map((word) => word.text)).toEqual(timedSyllables(mainTrack(line)).map((word) => word.text));
   });
 
   it("returns canonical content in original mode", () => {
-    expect(getLanguageDisplayLine(line, "original")).toMatchObject({ text: line.text, words: line.words });
+    expect(getLanguageDisplayLine(line, "original")).toMatchObject({
+      text: lineText(line),
+      words: timedSyllables(mainTrack(line)),
+    });
   });
 
   it("keeps all labels visible while only the timed prefix has timing", () => {
-    const partial = { ...line, words: line.words.slice(0, 1) } satisfies LyricLine;
+    const partial = { ...line, words: timedSyllables(mainTrack(line)).slice(0, 1) } satisfies LyricLine;
     const display = getLanguageDisplayLine(partial, "transliteration");
     expect(display.wordTexts).toEqual(["geol eum eun", "Like", "a", "dance"]);
     expect(display.words).toHaveLength(1);

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -42,20 +44,20 @@ describe("BackgroundTextEditor", () => {
     await screen.getByPlaceholder("Background vocals").fill("ooh");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => storedLine().backgroundText).toBe("ooh");
-    expect(storedLine().backgroundTextSource).toBe("manual");
+    await expect.poll(() => backgroundText(storedLine())).toBe("ooh");
+    expect(backgroundTrack(storedLine())?.source).toBe("manual");
   });
 
   it("flips an extraction-sourced background to manual when edited", async () => {
     const line = seedLine({ backgroundText: "ooh", backgroundTextSource: "extraction" });
-    const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />);
+    const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />);
 
     await screen.getByRole("button", { name: "BG: ooh" }).click();
     await screen.getByPlaceholder("Background vocals").fill("aah");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => storedLine().backgroundText).toBe("aah");
-    expect(storedLine().backgroundTextSource).toBe("manual");
+    await expect.poll(() => backgroundText(storedLine())).toBe("aah");
+    expect(backgroundTrack(storedLine())?.source).toBe("manual");
   });
 
   it("clears all three background fields when the editor is emptied", async () => {
@@ -64,41 +66,41 @@ describe("BackgroundTextEditor", () => {
       backgroundWords: [{ text: "ooh", sep: "", begin: 0, end: 1 }],
       backgroundTextSource: "extraction",
     });
-    const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />);
+    const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />);
 
     await screen.getByRole("button", { name: "BG: ooh" }).click();
     await screen.getByPlaceholder("Background vocals").fill("");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => storedLine().backgroundText).toBeUndefined();
+    await expect.poll(() => backgroundText(storedLine())).toBeUndefined();
     expect(storedLine().backgroundWords).toBeUndefined();
-    expect(storedLine().backgroundTextSource).toBeUndefined();
+    expect(backgroundTrack(storedLine())?.source).toBeUndefined();
   });
 
   it("abandons the edit and keeps the stored text when Escape is pressed", async () => {
     const line = seedLine({ backgroundText: "ooh", backgroundTextSource: "extraction" });
-    const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />);
+    const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />);
 
     await screen.getByRole("button", { name: "BG: ooh" }).click();
     await screen.getByPlaceholder("Background vocals").fill("aah");
     await userEvent.keyboard("{Escape}");
 
     await expect.element(screen.getByRole("button", { name: "BG: ooh" })).toBeInTheDocument();
-    expect(storedLine().backgroundText).toBe("ooh");
-    expect(storedLine().backgroundTextSource).toBe("extraction");
+    expect(backgroundText(storedLine())).toBe("ooh");
+    expect(backgroundTrack(storedLine())?.source).toBe("extraction");
   });
 
   describe("edge cases", () => {
     it("treats whitespace-only input as a clear", async () => {
       const line = seedLine({ backgroundText: "ooh", backgroundTextSource: "extraction" });
-      const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />);
+      const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />);
 
       await screen.getByRole("button", { name: "BG: ooh" }).click();
       await screen.getByPlaceholder("Background vocals").fill("   ");
       await userEvent.keyboard("{Enter}");
 
-      await expect.poll(() => storedLine().backgroundText).toBeUndefined();
-      expect(storedLine().backgroundTextSource).toBeUndefined();
+      await expect.poll(() => backgroundText(storedLine())).toBeUndefined();
+      expect(backgroundTrack(storedLine())?.source).toBeUndefined();
     });
 
     it("does not let a keystroke reach a parent keyboard handler", async () => {

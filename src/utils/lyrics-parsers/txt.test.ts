@@ -1,8 +1,9 @@
+import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
 import { GENIUS_PAGE_COPY } from "@/test/genius-fixtures";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
-import { describe, expect, it } from "vitest";
 
-const texts = (content: string) => parseTxt(content).lines.map((line) => line.text);
+const texts = (content: string) => parseTxt(content).lines.map((line) => lineText(line));
 
 describe("parseTxt", () => {
   it("keeps a blank line between stanzas as an empty line", () => {
@@ -35,7 +36,7 @@ describe("parseTxt", () => {
     it("drops section tags and page junk and declares credited singers", () => {
       const result = parseTxt(GENIUS_PAGE_COPY);
       expect(result.lines[0]).toMatchObject({ text: "Yeah, yeah", agentId: "v2" });
-      expect(result.lines.some((line) => line.text.startsWith("["))).toBe(false);
+      expect(result.lines.some((line) => lineText(line).startsWith("["))).toBe(false);
       expect(result.agents?.map((agent) => agent.name)).toEqual(["Lead", "Drake", "Drake, Rihanna", "Rihanna"]);
     });
 

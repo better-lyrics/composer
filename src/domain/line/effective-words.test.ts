@@ -1,3 +1,4 @@
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import {
   effectiveMainWordEdit,
@@ -7,9 +8,9 @@ import {
   getEffectiveLines,
 } from "@/domain/line/effective-words";
 import { type LooseLine, type LyricLine, type RawLine, reconcileLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
-import { describe, expect, expectTypeOf, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -61,13 +62,13 @@ describe("effectiveWords", () => {
 describe("getEffectiveLines", () => {
   it("injects synthetic single-word array for line-synced lines", () => {
     const lines: LyricLine[] = [line({ id: "a", text: "Hi", begin: 1, end: 2 })];
-    expect(getEffectiveLines(lines)[0].words).toEqual([{ text: "Hi", sep: "", begin: 1, end: 2 }]);
+    expect(timedSyllables(mainTrack(getEffectiveLines(lines)[0]))).toEqual([{ text: "Hi", sep: "", begin: 1, end: 2 }]);
   });
 
   it("leaves word-synced lines untouched", () => {
     const words = [{ id: "w3", text: "Hi", sep: " ", begin: 0, end: 1 }];
     const lines: LyricLine[] = [line({ words })];
-    expect(getEffectiveLines(lines)[0].words).toBe(words);
+    expect(timedSyllables(mainTrack(getEffectiveLines(lines)[0]))).toBe(words);
   });
 
   it("leaves untimed lines untouched (no synthetic words)", () => {
@@ -93,7 +94,7 @@ describe("getEffectiveLines timing source", () => {
       createLine({ id: "u", text: "untimed" }),
     ]);
     expect([w.timingSource, l.timingSource, u.timingSource]).toEqual(["words", "line", "none"]);
-    expect(l.words).toEqual([{ text: "Line synced", sep: "", begin: 3, end: 5 }]);
+    expect(timedSyllables(mainTrack(l))).toEqual([{ text: "Line synced", sep: "", begin: 3, end: 5 }]);
   });
 
   it("invariant: keeps the effective line of every unchanged raw line, and only of those", () => {
@@ -127,7 +128,7 @@ describe("getEffectiveLines timing source", () => {
     const resplit = getEffectiveLines(edited);
     useSettingsStore.getState().set("splitCharacter", "|");
     expect(resplit[1]).not.toBe(after[1]);
-    expect(resplit[1].words?.[0].text).toBe("Fa|ding");
+    expect(timedSyllables(mainTrack(resplit[1]))[0].text).toBe("Fa|ding");
   });
 
   it("invariant: an EffectiveLine is not assignable to RawLine", () => {

@@ -1,6 +1,9 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -8,7 +11,6 @@ import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("TimelineSyllableSplitter", () => {
   beforeEach(() => useAudioStore.getState().reset());
@@ -68,10 +70,10 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = useProjectStore.getState().lines[0].words ?? [];
+      const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
       expect(words.map((w) => w.text + w.sep)).toEqual(["ev", "er", "y"]);
     });
-    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
+    const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     const ids = wordsAfter.map((w) => w.syllableGroupId);
     expect(ids[0]).toBeDefined();
     expect(ids[0]).toBe(ids[1]);
@@ -105,10 +107,10 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = useProjectStore.getState().lines[0].words ?? [];
+      const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
       expect(words.length).toBe(4);
     });
-    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
+    const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(wordsAfter.every((w) => w.syllableGroupId === "g_source")).toBe(true);
   });
 
@@ -133,10 +135,10 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = useProjectStore.getState().lines[0].words ?? [];
+      const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
       expect(words.length).toBe(2);
     });
-    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
+    const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(wordsAfter.map((w) => w.text + w.sep)).toEqual(["hel ", "lo"]);
     expect(wordsAfter.every((w) => w.syllableGroupId === undefined)).toBe(true);
   });
@@ -196,9 +198,9 @@ describe("TimelineSyllableSplitter", () => {
         expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
       });
       const after = useProjectStore.getState().lines[0];
-      expect(after.words?.map((w) => w.text.trim())).toEqual(["It", "hurts"]);
-      expect(after.words?.[0].begin).toBe(10);
-      expect(after.words?.[1].end).toBe(12);
+      expect(timedSyllables(mainTrack(after)).map((w) => w.text.trim())).toEqual(["It", "hurts"]);
+      expect(timedSyllables(mainTrack(after))[0].begin).toBe(10);
+      expect(timedSyllables(mainTrack(after))[1].end).toBe(12);
       expect(after.begin).toBeUndefined();
       expect(after.end).toBeUndefined();
     });
@@ -250,13 +252,13 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = useProjectStore.getState().lines[0].words ?? [];
+      const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
       expect(words.length).toBe(3);
     });
     const lineAfter = useProjectStore.getState().lines[0];
     // text is reconciled via reconstructLineText: the split char marks the
     // syllable joints so line.text tokenizes 1:1 back to line.words.
-    expect(lineAfter.text).toBe("ev|er|y");
+    expect(lineText(lineAfter)).toBe("ev|er|y");
   });
 
   it("writes manually selected transliteration boundaries back to the language track", async () => {
@@ -289,8 +291,12 @@ describe("TimelineSyllableSplitter", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
     const saved = useProjectStore.getState().lines[0];
     expect(saved.transliteration?.text).toBe("ildan eun");
-    expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
-    expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
+    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
+    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliterationJoinerAfter)).toEqual([
+      "",
+      " ",
+      undefined,
+    ]);
   });
 
   it("re-stamps a manual transliteration after a word split", async () => {
@@ -319,7 +325,7 @@ describe("TimelineSyllableSplitter", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
-    expect(saved.text).toBe("хор ошо");
+    expect(lineText(saved)).toBe("хор ошо");
     expect(saved.transliteration?.text).toBe("khorosho");
     expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
     expect(getLanguageReviewTracks(saved)).toEqual([]);
@@ -382,7 +388,7 @@ describe("TimelineSyllableSplitter", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
     const result = useProjectStore.getState().lines[0];
-    expect(result.words?.map((word) => word.transliteration)).toEqual(["to", "do"]);
+    expect(timedSyllables(mainTrack(result)).map((word) => word.transliteration)).toEqual(["to", "do"]);
     expect(result.transliteration?.text).toBe("to-do");
   });
 });

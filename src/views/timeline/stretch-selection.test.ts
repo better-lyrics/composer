@@ -1,14 +1,15 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
-import { planStretchDrag } from "./stretch-drag";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { newWordId } from "@/domain/word/id";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
+import { planStretchDrag } from "./stretch-drag";
 
 // -- Helpers --------------------------------------------------------------------
 
@@ -236,7 +237,7 @@ describe("stretchSelections · normal scaling", () => {
     expect(words[1]).toMatchObject({ text: "a", sep: " " });
     expect(words[2].text).toBe("b");
     // Unselected word untouched by reference.
-    expect(words[0]).toBe(lines[0].words![0]);
+    expect(words[0]).toBe(timedSyllables(mainTrack(lines[0]))[0]);
   });
 
   it("shrinks toward the anchor with k < 1", () => {
@@ -329,7 +330,7 @@ describe("stretchSelections · anchor end", () => {
     expect(words[1].end).toBeCloseTo(6);
     expect(words[2].begin).toBeCloseTo(6);
     expect(words[2].end).toBeCloseTo(10);
-    expect(words[0]).toBe(lines[0].words![0]);
+    expect(words[0]).toBe(timedSyllables(mainTrack(lines[0]))[0]);
   });
 
   it("shrinks toward the right anchor with k < 1", () => {

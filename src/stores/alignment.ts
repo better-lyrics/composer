@@ -6,11 +6,13 @@ import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import type { AnchorChain } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
-import { applyAlignedTimings, retimeNewSyllables } from "@/domain/commands/alignment";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
+import { applyAlignedTimings, retimeNewSyllables } from "@/domain/commands/alignment";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
 import { isUnchanged, type PlannedLine, planLines, segmentFor } from "@/stores/alignment-plan";
 import { recordRealignedLines } from "@/stores/alignment-record";
@@ -129,7 +131,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         return fail(set, "unsupported-language", "The alignment model doesn't cover this song's language.");
       }
       const hanReading = hanReadingFor(project.metadata.language, project.lines);
-      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line)));
       const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
       if (!vocalsUrl) {
         return fail(
@@ -219,14 +221,16 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const beforeById = new Map(before.map((line) => [line.id, line]));
     const groupsOf = new Map(
       project.lines.flatMap((line) => {
-        const was = beforeById.get(line.id)?.words;
-        const groups = line.words && line.words !== was ? newSyllableGroups(was, line.words) : [];
+        const previous = beforeById.get(line.id);
+        const was = previous && timedSyllables(mainTrack(previous));
+        const words = timedSyllables(mainTrack(line));
+        const groups = words.length > 0 && words !== was ? newSyllableGroups(was, words) : [];
         return groups.length > 0 ? [[line.id, groups] as const] : [];
       }),
     );
     const planned = planLines(project.lines, [...groupsOf.keys()], true);
     const hanReading = hanReadingFor(project.metadata.language, project.lines);
-    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(lineText(p.line)));
     const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.

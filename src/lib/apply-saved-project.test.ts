@@ -1,4 +1,8 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
@@ -8,8 +12,6 @@ import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
-import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
 
 const FILE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "File Lead" },
@@ -75,7 +77,7 @@ describe("applySavedProject", () => {
         applySavedProject(projectFile({ lines: [legacy] }), origin);
 
         const state = useProjectStore.getState();
-        expect(state.lines[0].backgroundWords?.[0]).toMatchObject({ begin: 12, end: 14 });
+        expect(timedSyllables(backgroundTrack(state.lines[0]))[0]).toMatchObject({ begin: 12, end: 14 });
         expect(state.isDirty).toBe(false);
       }
     });
@@ -100,7 +102,7 @@ describe("applySavedProject", () => {
       useProjectStore.getState().undo();
       useProjectStore.getState().undo();
 
-      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["file line"]);
+      expect(useProjectStore.getState().lines.map((line) => lineText(line))).toEqual(["file line"]);
       expect(useProjectStore.getState().groups.map((group) => group.id)).toEqual(["gb"]);
     });
   });

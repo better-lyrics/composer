@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { planTransliterationAlignment } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
@@ -7,8 +8,9 @@ import {
 } from "@/domain/language/reconcile-syllable-split";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -87,7 +89,9 @@ describe("splitWordsKeepingTransliteration", () => {
     ]);
 
     expect(result?.transliteration?.text).toBe("Uh  ildan eun  na");
-    expect(result?.transliteration?.segments).toEqual([{ original: line.text, transliteration: "Uh  ildan eun  na" }]);
+    expect(result?.transliteration?.segments).toEqual([
+      { original: lineText(line), transliteration: "Uh  ildan eun  na" },
+    ]);
     expect(result?.transliteration?.origin).toBe("manual");
     expect(result?.words.map((word) => word.text + word.sep)).toEqual(["Uh ", "일", "단", "은 ", "나"]);
   });
@@ -172,7 +176,9 @@ describe("splitWordsKeepingTransliteration", () => {
         ],
         transliteration: { ...track, text: "but eoissdeon", alignmentStatus: "confirmed" },
       };
-      expect(planTransliterationAlignment(line.words ?? [], "but eoissdeon").status).toBe("needs-review");
+      expect(planTransliterationAlignment(timedSyllables(mainTrack(line)) ?? [], "but eoissdeon").status).toBe(
+        "needs-review",
+      );
 
       const result = splitWordsKeepingTransliteration(line, "word", 2, [
         {
@@ -287,7 +293,7 @@ describe("splitWordsKeepingTransliteration", () => {
         transliteration: { ...track, text: "ildan eun  na" },
       };
 
-      expect(getEffectiveLines([line])[0].words?.[0].transliteration).toBe("ildan eun  na");
+      expect(timedSyllables(mainTrack(getEffectiveLines([line])[0]))[0].transliteration).toBe("ildan eun  na");
 
       const result = splitWordsKeepingTransliteration(line, "word", 0, [
         {

@@ -1,11 +1,12 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
 import { lineEditCommand } from "@/domain/commands/line-edits";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
-import { beforeEach, describe, expect, it } from "vitest";
 
 const typed = (text: string) =>
   lineEditCommand({ command: "edit lines", args: ["l1"] }, () => [{ id: "l1", updates: { text } }], {
@@ -27,11 +28,11 @@ describe("commit", () => {
     commit(typed("Lanterns over the river"), "pending");
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("Lanterns");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Lanterns");
 
     useProjectStore.getState().redo();
     const { lines, history, historyIndex } = useProjectStore.getState();
-    expect(lines[0].text).toBe("Lanterns over the river");
+    expect(lineText(lines[0])).toBe("Lanterns over the river");
     expect(history[historyIndex].note).toEqual({ command: "edit lines", args: ["l1"] });
   });
 

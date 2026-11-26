@@ -1,4 +1,6 @@
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { addressOf } from "@/domain/selection/resolve";
 import { mergeAddresses } from "@/domain/selection/set-ops";
@@ -11,7 +13,6 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
-import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { readViewScroll, scrollViewBy } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
@@ -113,24 +114,24 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       if (!pos) continue;
 
       const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-      const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
+      const backgroundWords = timedSyllables(backgroundTrack(line));
       const mainTop = pos.top;
       const mainBottom = mainTop + mainHeight;
 
-      if (mainTop < rectBottom && mainBottom > rect.y && line.words) {
-        for (const word of line.words) {
+      if (mainTop < rectBottom && mainBottom > rect.y) {
+        for (const word of timedSyllables(mainTrack(line))) {
           const wordLeft = GUTTER_WIDTH + word.begin * zoom;
           const wordRight = GUTTER_WIDTH + word.end * zoom;
           if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "word", word));
         }
       }
 
-      if (hasBg && line.backgroundWords) {
+      if (backgroundWords.length > 0) {
         const bgHeight = mainHeight;
         const bgTop = mainBottom;
         const bgBottom = bgTop + bgHeight;
         if (bgTop < rectBottom && bgBottom > rect.y) {
-          for (const word of line.backgroundWords) {
+          for (const word of backgroundWords) {
             const wordLeft = GUTTER_WIDTH + word.begin * zoom;
             const wordRight = GUTTER_WIDTH + word.end * zoom;
             if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "bg", word));

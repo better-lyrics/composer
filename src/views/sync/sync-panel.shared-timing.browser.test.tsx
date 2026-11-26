@@ -1,11 +1,12 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { firstBegin, jumpToRow, key, lineById, load, song, tapAt, undo } from "@/test/shared-timing-sync";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { beforeEach, describe, expect, it } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -20,7 +21,7 @@ describe("SyncPanel · shared instance anchor", () => {
     await render(<SyncPanel />);
     await tapAt(10, () => lineById("c0-0")?.words?.length);
     await tapAt(10.5, () => lineById("c0-0")?.words?.length);
-    expect(lineById("c0-0")?.words?.map((word) => word.begin)).toEqual([10, 10.5]);
+    expect(timedSyllables(mainTrack(lineById("c0-0")!)).map((word) => word.begin)).toEqual([10, 10.5]);
     expect(lineById("c1-0")?.words).toBeUndefined();
   });
 
@@ -29,8 +30,8 @@ describe("SyncPanel · shared instance anchor", () => {
     const screen = await render(<SyncPanel />);
     await jumpToRow(screen, 3);
     await tapAt(40, () => firstBegin("c1-0"));
-    expect(lineById("c1-0")?.words?.map((word) => word.begin)).toEqual([40, 40.5]);
-    expect(lineById("c1-1")?.words?.map((word) => word.begin)).toEqual([41, 41.5]);
+    expect(timedSyllables(mainTrack(lineById("c1-0")!)).map((word) => word.begin)).toEqual([40, 40.5]);
+    expect(timedSyllables(mainTrack(lineById("c1-1")!)).map((word) => word.begin)).toEqual([41, 41.5]);
     await tapAt(50, () => firstBegin("v2"));
     expect(firstBegin("v2")).toBe(50);
   });
@@ -134,8 +135,8 @@ describe("SyncPanel · shared instance anchor", () => {
       await jumpToRow(screen, 3);
       await tapAt(40, () => firstBegin("c1-0"));
       await tapAt(70, () => firstBegin("v2"));
-      expect(lineById("c1-1")?.words?.[1]?.end).toBe(42);
-      expect(lineById("c0-1")?.words?.[1]?.end).toBe(12);
+      expect(timedSyllables(mainTrack(lineById("c1-1")!))[1]?.end).toBe(42);
+      expect(timedSyllables(mainTrack(lineById("c0-1")!))[1]?.end).toBe(12);
     });
   });
 

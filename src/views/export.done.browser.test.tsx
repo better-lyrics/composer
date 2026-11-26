@@ -1,10 +1,11 @@
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { generateProjectTtml } from "@/utils/ttml";
 import { ExportPanel } from "@/views/export";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -34,7 +35,7 @@ async function startEditing(screen: Awaited<ReturnType<typeof renderPanel>>) {
   return { textarea, generated: (textarea.element() as HTMLTextAreaElement).value };
 }
 
-const lineTexts = () => useProjectStore.getState().lines.map((line) => line.text);
+const lineTexts = () => useProjectStore.getState().lines.map((line) => lineText(line));
 
 // -- Tests --------------------------------------------------------------------
 

@@ -2,9 +2,10 @@
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, expectTypeOf, it } from "vitest";
-import { useProjectStore } from "@/stores/project";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { getEffectiveLines } from "@/domain/line/effective-words";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { useProjectStore } from "@/stores/project";
 
 type StoreState = ReturnType<typeof useProjectStore.getState>;
 
@@ -50,7 +51,7 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     });
     const effective = getEffectiveLines(useProjectStore.getState().lines);
     // effective[0] now has a synthesised single-word array
-    expect(effective[0].words).toHaveLength(1);
+    expect(timedSyllables(mainTrack(effective[0]))).toHaveLength(1);
     expectTypeOf([...effective]).not.toMatchTypeOf<NonNullable<Parameters<StoreState["restoreLyrics"]>[0]["lines"]>>();
   });
 

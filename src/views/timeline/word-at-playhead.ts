@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { SyllableAddress } from "@/domain/selection/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { sameAddress } from "@/domain/selection/identity";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
@@ -13,20 +14,18 @@ function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | n
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
-    if (line.words) {
-      for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
-        const word = line.words[wordIndex];
-        if (time >= word.begin && time < word.end) {
-          matches.push({ lineId: line.id, type: "word", syllableId: word.id, lineIndex, wordIndex });
-        }
+    const words = timedSyllables(mainTrack(line));
+    for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+      const word = words[wordIndex];
+      if (time >= word.begin && time < word.end) {
+        matches.push({ lineId: line.id, type: "word", syllableId: word.id, lineIndex, wordIndex });
       }
     }
-    if (line.backgroundWords) {
-      for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
-        const word = line.backgroundWords[wordIndex];
-        if (time >= word.begin && time < word.end) {
-          matches.push({ lineId: line.id, type: "bg", syllableId: word.id, lineIndex, wordIndex });
-        }
+    const backgroundWords = timedSyllables(backgroundTrack(line));
+    for (let wordIndex = 0; wordIndex < backgroundWords.length; wordIndex++) {
+      const word = backgroundWords[wordIndex];
+      if (time >= word.begin && time < word.end) {
+        matches.push({ lineId: line.id, type: "bg", syllableId: word.id, lineIndex, wordIndex });
       }
     }
   }
@@ -47,11 +46,10 @@ function pickNextWordAtPlayhead(
 }
 
 function nearestInTrack(
-  words: readonly WordTiming[] | undefined,
+  words: readonly WordTiming[],
   time: number,
   edge: BoundaryEdge,
 ): { wordIndex: number; distance: number } | null {
-  if (!words) return null;
   let nearestIndex = -1;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
@@ -78,12 +76,12 @@ function findWordAcrossGap(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
-    const main = nearestInTrack(line.words, time, edge);
+    const main = nearestInTrack(timedSyllables(mainTrack(line)), time, edge);
     if (main && main.distance < nearestDistance) {
       nearestDistance = main.distance;
       nearest = resolvedAt(lines, lineIndex, "word", main.wordIndex);
     }
-    const background = mainOnly ? null : nearestInTrack(line.backgroundWords, time, edge);
+    const background = mainOnly ? null : nearestInTrack(timedSyllables(backgroundTrack(line)), time, edge);
     if (background && background.distance < nearestDistance) {
       nearestDistance = background.distance;
       nearest = resolvedAt(lines, lineIndex, "bg", background.wordIndex);
@@ -110,10 +108,10 @@ function findContainingWord(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
-    const mainIndex = line.words?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
+    const mainIndex = timedSyllables(mainTrack(line)).findIndex((word) => containsForEdge(word, time, edge));
     if (mainIndex !== -1) return resolvedAt(lines, lineIndex, "word", mainIndex);
     if (mainOnly) continue;
-    const bgIndex = line.backgroundWords?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
+    const bgIndex = timedSyllables(backgroundTrack(line)).findIndex((word) => containsForEdge(word, time, edge));
     if (bgIndex !== -1) return resolvedAt(lines, lineIndex, "bg", bgIndex);
   }
   return null;

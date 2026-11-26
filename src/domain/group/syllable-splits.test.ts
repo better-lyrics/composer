@@ -1,11 +1,13 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import { withEvenSyllableSplits } from "@/domain/group/syllable-splits";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
-import { describe, expect, it } from "vitest";
 
 function line(id: string, text: string, words?: Partial<WordTiming>[], extra: Partial<LyricLine> = {}): LyricLine {
   return reconcileLine({
@@ -41,11 +43,11 @@ describe("withEvenSyllableSplits", () => {
       { id: "w2", text: "too", sep: "", begin: 10.7, end: 11 },
     ]);
     const result = even(timed, line("b", "fal|ling too"));
-    expect(result?.[0].text).toBe("fal|ling too");
+    expect(lineText(result![0])).toBe("fal|ling too");
     expect(texts(result?.[0].words)).toEqual(["fal", "ling ", "too"]);
-    expect(result?.[0].words?.[0]).toMatchObject({ begin: 10 });
-    expect(result?.[0].words?.[0]?.end).toBeCloseTo(10.3, 6);
-    expect(result?.[0].words?.[2]).toMatchObject({ begin: 10.7, end: 11 });
+    expect(timedSyllables(mainTrack(result![0]))[0]).toMatchObject({ begin: 10 });
+    expect(timedSyllables(mainTrack(result![0]))[0]?.end).toBeCloseTo(10.3, 6);
+    expect(timedSyllables(mainTrack(result![0]))[2]).toMatchObject({ begin: 10.7, end: 11 });
   });
 
   describe("regressions", () => {
@@ -75,13 +77,13 @@ describe("withEvenSyllableSplits", () => {
         [0, 0.2],
         [0.2, 1],
       ]);
-      expect(result?.[1].words?.[2]?.begin).toBe(1);
-      expect(result?.[1].words?.[3]?.end).toBe(2);
+      expect(timedSyllables(mainTrack(result![1]))[2]?.begin).toBe(1);
+      expect(timedSyllables(mainTrack(result![1]))[3]?.end).toBe(2);
     });
 
     it("regression: combines splits that sit in different words of the line", () => {
       const result = even(line("a", "un|der a thousand"), line("b", "under a thou|sand"));
-      expect(result?.map((copy) => copy.text)).toEqual(["un|der a thou|sand", "un|der a thou|sand"]);
+      expect(result?.map((copy) => lineText(copy))).toEqual(["un|der a thou|sand", "un|der a thou|sand"]);
     });
 
     it("regression: refuses copies that split the same word in different places", () => {
@@ -100,9 +102,9 @@ describe("withEvenSyllableSplits", () => {
         { id: "w13", text: "oo", sep: "", begin: 1.5, end: 2 },
       ]);
       const result = even(line("a", "fa|lling too"), timed);
-      expect(result?.[1].text).toBe("fa|lling t|oo");
+      expect(lineText(result![1])).toBe("fa|lling t|oo");
       expect(texts(result?.[1].words)).toEqual(["fa", "lling ", "t", "oo"]);
-      expect(result?.[1].words?.[1]?.end).toBe(1);
+      expect(timedSyllables(mainTrack(result![1]))[1]?.end).toBe(1);
       expect(spans(result?.[1].words)?.slice(2)).toEqual([
         [1, 1.5],
         [1.5, 2],
@@ -116,7 +118,7 @@ describe("withEvenSyllableSplits", () => {
         { id: "w16", text: "too", sep: "", begin: 1, end: 2 },
       ]);
       const result = even(line("a", "falling| too"), timed);
-      expect(result?.[0].text).toBe("fal|ling| too");
+      expect(lineText(result![0])).toBe("fal|ling| too");
       expect(result?.[1]).toBe(timed);
     });
 
@@ -149,7 +151,7 @@ describe("withEvenSyllableSplits", () => {
 
     it("regression: only adds split characters, never removes one", () => {
       const result = even(line("a", "|over and ov|er"), line("b", "over and over"));
-      expect(result?.map((copy) => copy.text)).toEqual(["|over and ov|er", "over and ov|er"]);
+      expect(result?.map((copy) => lineText(copy))).toEqual(["|over and ov|er", "over and ov|er"]);
     });
 
     it("regression: writes a split into the text when only the timed words had it", () => {
@@ -159,14 +161,14 @@ describe("withEvenSyllableSplits", () => {
         { id: "w21", text: "la", sep: "", begin: 10.6, end: 11 },
       ]);
       const result = even(timed, line("b", "la|la la"));
-      expect(result?.map((copy) => copy.text)).toEqual(["la|la la", "la|la la"]);
-      expect(result?.[0].words).toBe(timed.words);
+      expect(result?.map((copy) => lineText(copy))).toEqual(["la|la la", "la|la la"]);
+      expect(timedSyllables(mainTrack(result![0]))).toBe(timedSyllables(mainTrack(timed)));
     });
 
     it("regression: the last syllable ends exactly where the old word ended", () => {
       const timed = line("a", "falling", [{ id: "w22", text: "falling", sep: "", begin: 10, end: 10.6 }]);
       const result = even(timed, line("b", "fal|li|ng"));
-      expect(result?.[0].words?.at(-1)?.end).toBe(10.6);
+      expect(timedSyllables(mainTrack(result![0])).at(-1)?.end).toBe(10.6);
     });
   });
 
@@ -174,9 +176,9 @@ describe("withEvenSyllableSplits", () => {
     it("keeps untimed words untimed", () => {
       const partial = line("a", "falling too", [{ id: "w23", text: "falling", sep: " ", begin: 10, end: 10.7 }]);
       const result = even(partial, line("b", "fal|ling t|oo"));
-      expect(result?.[0].text).toBe("fal|ling t|oo");
+      expect(lineText(result![0])).toBe("fal|ling t|oo");
       expect(texts(result?.[0].words)).toEqual(["fal", "ling "]);
-      expect(result?.[0].words?.[1]?.end).toBe(10.7);
+      expect(timedSyllables(mainTrack(result![0]))[1]?.end).toBe(10.7);
     });
   });
 
@@ -200,8 +202,12 @@ describe("withEvenSyllableSplits", () => {
         { id: "w27", text: "too", sep: "", begin: 1, end: 2, transliteration: "TOO" },
       ]);
       const result = even(timed, line("b", "fal|ling too"));
-      expect(result?.[0].words?.slice(0, 2).every((word) => word.transliteration === undefined)).toBe(true);
-      expect(result?.[0].words?.[2]?.transliteration).toBe("TOO");
+      expect(
+        timedSyllables(mainTrack(result![0]))
+          .slice(0, 2)
+          .every((word) => word.transliteration === undefined),
+      ).toBe(true);
+      expect(timedSyllables(mainTrack(result![0]))[2]?.transliteration).toBe("TOO");
     });
 
     it("refuses timed words that do not line up with the text's words", () => {

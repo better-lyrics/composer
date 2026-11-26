@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
-import { LineRow } from "@/views/timeline/line-row";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { LineRow } from "@/views/timeline/line-row";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 describe("LineRow", () => {
   it("renders one word block per word on a synced line", async () => {
@@ -133,7 +135,7 @@ describe("LineRow", () => {
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
 
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("honours the minimum word duration setting when creating a word from the drop-zone", async () => {
@@ -183,9 +185,9 @@ describe("LineRow", () => {
       .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
       .toEqual(["ah ", "ah"]);
     const after = useProjectStore.getState().lines[0];
-    expect(after.backgroundText).toBe("ah ah");
-    expect(after.backgroundWords?.[0].begin).toBeLessThan(after.backgroundWords?.[1].begin ?? 0);
-    expect(after.backgroundWords?.[1].end).toBeLessThanOrEqual(30);
+    expect(backgroundText(after)).toBe("ah ah");
+    expect(timedSyllables(backgroundTrack(after))[0].begin).toBeLessThan(after.backgroundWords?.[1].begin ?? 0);
+    expect(timedSyllables(backgroundTrack(after))[1].end).toBeLessThanOrEqual(30);
     expect(useTimelineStore.getState().editingWord).toBeNull();
   });
   describe("regressions", () => {

@@ -1,9 +1,11 @@
+import { expect } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { keyedExportLines } from "@/utils/ttml-line-keys";
-import { expect } from "vitest";
 
 // -- Types --------------------------------------------------------------------
 
@@ -81,11 +83,11 @@ function editLineText(
   project: EditedTtmlProject,
   line: LyricLine,
 ): Pick<EditCase, "edited" | "expectTaken"> {
-  const words = line.words ?? [];
+  const words = timedSyllables(mainTrack(line));
   const expectStoredDataKept = (after: LyricLine) => {
     expect(after.translations).toEqual(line.translations);
     expect(after.transliteration?.origin).toBe(line.transliteration?.origin);
-    expect(after.backgroundTextSource).toBe(line.backgroundTextSource);
+    expect(backgroundTrack(after)?.source).toBe(backgroundTrack(line)?.source);
   };
   if (isWordSynced(line)) {
     const first = required(words[0], "word").text.trim();
@@ -93,13 +95,13 @@ function editLineText(
       edited: editParagraph(ttml, project, line, (p) => p.replace(`>${first}</span>`, `>${first}X</span>`)),
       expectTaken: (lines) => {
         const after = lineById(lines, line.id);
-        expect(after.words?.[0]?.text.trim()).toBe(`${first}X`);
-        expect(after.words?.slice(1)).toEqual(words.slice(1));
+        expect(timedSyllables(mainTrack(after))[0]?.text.trim()).toBe(`${first}X`);
+        expect(timedSyllables(mainTrack(after)).slice(1)).toEqual(words.slice(1));
         expectStoredDataKept(after);
       },
     };
   }
-  const text = stripSplitCharacter(line.text);
+  const text = stripSplitCharacter(lineText(line));
   return {
     edited: editParagraph(ttml, project, line, (p) => {
       const openTag = p.slice(0, p.indexOf(">") + 1);
@@ -107,7 +109,7 @@ function editLineText(
     }),
     expectTaken: (lines) => {
       const after = lineById(lines, line.id);
-      expect(after.text).toBe(`${text}!`);
+      expect(lineText(after)).toBe(`${text}!`);
       expectStoredDataKept(after);
     },
   };
