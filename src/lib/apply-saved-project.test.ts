@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { addGroup } from "@/domain/commands/group-edits";
 import { lineText } from "@/domain/line/text";
 import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
@@ -35,7 +36,7 @@ function projectFile(overrides: Partial<SavedProject> = {}): SavedProject {
 function editProjectA(): void {
   const store = useProjectStore.getState();
   store.commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "first" })]));
-  useProjectStore.getState().addGroup(createGroup({ id: "ga", label: "Old group" }));
+  useProjectStore.getState().commit(addGroup(createGroup({ id: "ga", label: "Old group" })));
   useProjectStore
     .getState()
     .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a1", text: "second" })]));

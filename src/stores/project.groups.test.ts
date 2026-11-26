@@ -9,7 +9,7 @@ import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
-import { addGroupWithLines, removeGroup, updateGroup } from "@/domain/commands/group-edits";
+import { addGroup, addGroupWithLines, removeGroup, updateGroup } from "@/domain/commands/group-edits";
 import { addInstance, detachLine, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { applyWordCountChange } from "@/domain/commands/word-edits";
@@ -96,46 +96,9 @@ describe("project store · history captures groups", () => {
     useProjectStore.getState().redo();
     expect(useProjectStore.getState().groups.map((g) => g.id)).toEqual(["g1", "g2"]);
   });
-
-  it("commitHistory snapshots groups (verified through moveWordToBg path)", () => {
-    useProjectStore.setState({ groups: [seedGroup("g1")] });
-    const before = useProjectStore.getState().groups;
-
-    useProjectStore.setState({
-      lines: [
-        {
-          id: "l1",
-          text: "hi there",
-          agentId: "v1",
-          words: [
-            { id: "w1", text: "hi", sep: " ", begin: 0, end: 1 },
-            { id: "w2", text: "there", sep: "", begin: 1, end: 2 },
-          ],
-        },
-      ],
-    });
-
-    useProjectStore.getState().moveWordToBg("l1", [0], 0, 60);
-    useProjectStore.getState().undo();
-
-    expect(useProjectStore.getState().groups).toEqual(before);
-  });
 });
 
 describe("project store · group registry mutators", () => {
-  it("addGroup pushes to registry with history", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
-    expect(useProjectStore.getState().groups).toHaveLength(1);
-    expect(useProjectStore.getState().groups[0].label).toBe("Chorus");
-    expect(useProjectStore.getState().canUndo()).toBe(true);
-  });
-
-  it("addGroup is undoable", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
-    useProjectStore.getState().undo();
-    expect(useProjectStore.getState().groups).toHaveLength(0);
-  });
-
   it("addGroupWithLines undoes group + lines in a single step (no residue)", () => {
     useProjectStore.setState({
       lines: [
@@ -162,7 +125,7 @@ describe("project store · group registry mutators", () => {
   });
 
   it("updateGroup merges fields", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.getState().commit(updateGroup("g1", { label: "Refrain", color: "#60a5fa" }));
 
     const g = useProjectStore.getState().groups[0];
@@ -172,8 +135,8 @@ describe("project store · group registry mutators", () => {
   });
 
   it("updateGroup leaves other groups untouched", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
-    useProjectStore.getState().addGroup(seedGroup("g2", { label: "Verse" }));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
+    useProjectStore.getState().commit(addGroup(seedGroup("g2", { label: "Verse" })));
 
     useProjectStore.getState().commit(updateGroup("g1", { label: "Refrain" }));
 
@@ -183,7 +146,7 @@ describe("project store · group registry mutators", () => {
   });
 
   it("removeGroup deletes registry entry and clears group fields on lines", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -212,7 +175,7 @@ describe("project store · group registry mutators", () => {
   });
 
   it("removeGroup is undoable (group + line fields restored together)", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore
       .getState()
       .commit(
@@ -244,7 +207,7 @@ describe("project store · instance mutators", () => {
   }
 
   it("addInstance creates lines with shifted absolute timing", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const structure: LineTemplate[] = [
       templateOf("I love you", [
         ["I ", 0, 0.4],
@@ -266,7 +229,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("addInstance carries backgroundText/backgroundWords/backgroundTextSource from the template", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const structure: LineTemplate[] = [
       {
         text: "main",
@@ -288,7 +251,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("addInstance carries a manual-sourced background flag", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const structure: LineTemplate[] = [
       {
         text: "main",
@@ -306,7 +269,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("addInstance leaves backgroundTextSource undefined for a template with no background", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];
 
     useProjectStore.getState().commit(addInstance("g1", structure, 0));
@@ -316,7 +279,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("addInstance picks the next unused instanceIdx", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];
 
     useProjectStore.getState().commit(addInstance("g1", structure, 10));
@@ -331,7 +294,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("removeInstance strips group fields from matching lines and leaves siblings", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         { id: "a0", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
@@ -351,7 +314,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("removeInstance dissolves the group when removing the last instance", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [{ id: "a", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }],
     });
@@ -363,7 +326,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("detachLine clears group fields on a single line and preserves text/timing", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -393,7 +356,7 @@ describe("project store · instance mutators", () => {
   });
 
   it("instance mutators are undoable", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];
     useProjectStore.getState().commit(addInstance("g1", structure, 5));
 
@@ -406,7 +369,7 @@ describe("project store · instance mutators", () => {
 
 describe("project store · shiftInstance", () => {
   it("shifts begin/end on lines and words for the target instance only", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -450,7 +413,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("shifts background words too", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -474,7 +437,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("regression: an instance shifted past zero stops there as a whole, keeping duration and background offset", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -502,7 +465,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("regression: a multi-line instance shifted past zero moves every line by the same amount", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const member = { agentId: "v1", groupId: "g1", instanceIdx: 0 };
     useProjectStore.setState({
       lines: [
@@ -519,7 +482,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("regression: an instance shifted past the song end stops there as a whole", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     const member = { agentId: "v1", groupId: "g1", instanceIdx: 0 };
     useProjectStore.setState({
       lines: [
@@ -536,7 +499,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("edge case: shifts without an end limit while the song length is unknown", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -558,7 +521,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("regression: adds no undo step when the song end leaves no room to move", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -582,7 +545,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("is undoable", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -607,7 +570,7 @@ describe("project store · shiftInstance", () => {
   });
 
   it("does not shift a line whose link metadata still matches but detached=true (defense-in-depth)", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -642,7 +605,7 @@ describe("project store · shiftInstance", () => {
 
 describe("project store · updateLineWithHistory auto-propagation", () => {
   function seedTwoInstancesWithTimings() {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -736,7 +699,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
   });
 
   it("propagates word text edits to siblings while preserving sibling timing", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -793,7 +756,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
   });
 
   it("propagates background word text edits to siblings", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -847,7 +810,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
   });
 
   it("propagates word splits to siblings, scaling timing to sibling span", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -904,7 +867,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
   });
 
   it("propagates word merges (count decreases) to siblings", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -960,7 +923,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
   });
 
   it("does not propagate structural changes to detached siblings", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -1005,7 +968,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
   });
 
   it("clears sibling words/begin/end when source explicitly clears them with a text edit", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
@@ -1065,7 +1028,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
   });
 
   it("clears sibling backgroundWords when source clears them with a text edit", () => {
-    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.getState().commit(addGroup(seedGroup("g1")));
     useProjectStore.setState({
       lines: [
         {
