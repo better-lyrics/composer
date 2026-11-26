@@ -5,6 +5,7 @@ import { lineText } from "@/domain/line/text";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
 
@@ -16,7 +17,7 @@ function namedLines(untimed: string[] = []): LyricLine[] {
   return NAMES.map((name, index) => {
     const id = name[0]?.toLowerCase() ?? String(index);
     const timing = untimed.includes(name) ? {} : { begin: index, end: index + 1 };
-    return {
+    return legacyLine({
       ...createLine({ id, text: name, ...timing }),
       translations: {
         es: {
@@ -26,7 +27,7 @@ function namedLines(untimed: string[] = []): LyricLine[] {
           sourceFingerprint: `fp-${id}`,
         },
       },
-    };
+    });
   });
 }
 
@@ -166,7 +167,7 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await doneShowsLyricsChanged(screen);
 
       expect(useProjectStore.getState().lines).toBe(afterDelete);
-      expect(byId("d")?.translations).toBeUndefined();
+      expect(byId("d")?.languages?.translations).toBeUndefined();
     });
   });
 

@@ -1,4 +1,5 @@
 import type { WordTiming } from "@/domain/word/timing";
+import type { SyllableSplitHandler } from "@/views/sync/use-syllable-splitter-state";
 import { Tooltip } from "@/ui/tooltip";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
@@ -11,7 +12,7 @@ interface WordHandlers {
   onSetTime?: (idx: number, newBegin: number) => void;
   onNudgeEnd?: (idx: number, delta: number) => void;
   onSetEndTime?: (idx: number, newEnd: number) => void;
-  onSplit?: (idx: number, newWords: WordTiming[]) => void;
+  onSplit?: SyllableSplitHandler;
   onClickWord?: (idx: number) => void;
 }
 

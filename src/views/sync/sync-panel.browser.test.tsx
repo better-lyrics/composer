@@ -8,6 +8,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { firstBegin, tapAt } from "@/test/shared-timing-sync";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
@@ -41,7 +42,7 @@ describe("SyncPanel", () => {
     useProjectStore.setState({
       activeTab: "sync",
       lines: [
-        {
+        legacyLine({
           id: "mixed",
           agentId: "v1",
           text: "걸음은 Like",
@@ -52,7 +53,7 @@ describe("SyncPanel", () => {
             origin: "google",
             sourceFingerprint: "test",
           },
-        },
+        }),
       ],
     });
     useTimelineStore.setState({ textVariant: "original" });
@@ -73,7 +74,7 @@ describe("SyncPanel", () => {
       activeTab: "sync",
       granularity: "word",
       lines: [
-        {
+        legacyLine({
           id: "canonical-words",
           agentId: "v1",
           text: "한국 노래",
@@ -88,7 +89,7 @@ describe("SyncPanel", () => {
             origin: "import",
             sourceFingerprint: "test",
           },
-        },
+        }),
       ],
     });
     useTimelineStore.setState({ textVariant: "transliteration" });

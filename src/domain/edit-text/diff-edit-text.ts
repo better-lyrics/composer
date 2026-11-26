@@ -2,6 +2,7 @@ import { extractLinkedFields, unlinkLines } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { instanceKey, parseInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
+import { withOwnPieces } from "@/domain/language/pieces";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
@@ -205,6 +206,7 @@ function propagateContentUpdates(
       if (propagatedBg) merged.backgroundWords = propagatedBg;
     }
     if (Object.keys(merged).length === 0) return line;
+    if ("languages" in merged) merged.languages = withOwnPieces(merged.languages, line);
     return reconcileLine({ ...line, ...merged });
   });
 }

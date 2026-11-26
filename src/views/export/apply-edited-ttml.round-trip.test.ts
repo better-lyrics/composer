@@ -54,7 +54,11 @@ describe("applyEditedTtml · whether the export holds the project", () => {
             groupId: "g1",
             instanceIdx: 0,
             templateLineIdx: 0,
-            translations: { es: { language: "es", text: "Hola", origin: "manual", sourceFingerprint: "fp" } },
+            languages: {
+              translations: {
+                es: { language: "es", main: { text: "Hola" }, origin: "manual", sourceFingerprint: "fp" },
+              },
+            },
           },
           createLine({ text: "World", begin: 2, end: 3, agentId: "v2" }),
         ],
@@ -111,7 +115,7 @@ describe("applyEditedTtml · whether the export holds the project", () => {
     it("regression: applies an edit to a project where a translation was removed", () => {
       useProjectStore.setState({
         lines: [
-          { ...createLine({ text: "Hello", begin: 1, end: 2 }), translations: {} },
+          { ...createLine({ text: "Hello", begin: 1, end: 2 }), languages: { translations: {} } },
           createLine({ text: "World", begin: 2, end: 3 }),
         ],
       });

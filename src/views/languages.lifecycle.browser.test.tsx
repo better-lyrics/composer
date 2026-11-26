@@ -16,8 +16,15 @@ function translatedLine(language: string, text: string, id = "line"): LyricLine 
     id,
     text: source,
     agentId: "v1",
-    translations: {
-      [language]: { language, text, origin: "manual", sourceFingerprint: languageSourceFingerprint(source) },
+    languages: {
+      translations: {
+        [language]: {
+          language,
+          main: { text },
+          origin: "manual",
+          sourceFingerprint: languageSourceFingerprint(source),
+        },
+      },
     },
   };
 }
@@ -104,7 +111,7 @@ describe("language generation lifecycle", () => {
 
     expect(transliterationRequests).toBe(0);
     expect(requestedTargets).toEqual([]);
-    expect(useProjectStore.getState().lines[0].translations).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].languages?.translations).toBeUndefined();
     expect(useProjectStore.getState().history).toBe(history);
     await expect.element(screen.getByRole("button", { name: "Generate all", exact: true })).toBeInTheDocument();
   });
@@ -134,7 +141,7 @@ describe("language generation lifecycle", () => {
     await screen.getByRole("button", { name: "Remove English", exact: true }).click();
     await releaseRequests();
     await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
-    expect(useProjectStore.getState().lines[0].translations?.en).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].languages?.translations?.en).toBeUndefined();
     await expect.element(screen.getByRole("button", { name: "Remove English", exact: true })).not.toBeInTheDocument();
   });
 
@@ -162,8 +169,8 @@ describe("language generation lifecycle", () => {
     await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
     await expect.element(english).toHaveValue("");
     await expect.element(roman).toHaveValue("");
-    expect(useProjectStore.getState().lines[0].translations?.en).toBeUndefined();
-    expect(useProjectStore.getState().lines[0].transliteration).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].languages?.translations?.en).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].languages?.transliteration).toBeUndefined();
   });
 
   it("discards generated results if the source was edited during the request", async () => {
@@ -182,8 +189,8 @@ describe("language generation lifecycle", () => {
     );
     await releaseRequests();
     await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
-    expect(useProjectStore.getState().lines[0].translations).toBeUndefined();
-    expect(useProjectStore.getState().lines[0].transliteration).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].languages?.translations).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].languages?.transliteration).toBeUndefined();
     expect(useProjectStore.getState().metadata.language).toBeUndefined();
   });
 
@@ -259,6 +266,6 @@ describe("language generation lifecycle", () => {
     await expect.element(screen.getByRole("textbox", { name: "Spanish", exact: true })).toHaveValue("");
     await expect.element(screen.getByRole("textbox", { name: "English", exact: true })).not.toBeInTheDocument();
     expect(requestedTargets).toEqual([]);
-    expect(useProjectStore.getState().lines[0].translations).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].languages?.translations).toBeUndefined();
   });
 });

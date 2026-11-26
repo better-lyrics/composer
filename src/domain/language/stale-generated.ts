@@ -1,5 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LanguageContentMeta } from "@/domain/language/model";
+import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -21,8 +22,8 @@ function staleGeneratedLanguages(lines: readonly LyricLine[]): StaleGeneratedLan
   const groups = new Map<string, StaleGeneratedLanguages>();
   for (const line of lines) {
     const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
-    const transliteration = isStaleGenerated(line.transliteration, fingerprint);
-    const translations = Object.entries(line.translations ?? {})
+    const transliteration = isStaleGenerated(lineTransliteration(line), fingerprint);
+    const translations = Object.entries(lineTranslations(line) ?? {})
       .flatMap(([language, track]) => (isStaleGenerated(track, fingerprint) ? [language] : []))
       .toSorted();
     if (!transliteration && translations.length === 0) continue;

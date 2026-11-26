@@ -4,6 +4,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { legacyLine } from "@/test/legacy-languages";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateProjectTtml, generateTTML } from "@/utils/ttml";
 
@@ -83,7 +84,7 @@ describe("generateTTML line timing", () => {
 
   describe("regressions", () => {
     it("regression: writes aligned transliterations without word spans", () => {
-      const romanized: LyricLine = {
+      const romanized: LyricLine = legacyLine({
         id: "r",
         text: "今日",
         agentId: "v1",
@@ -116,7 +117,7 @@ describe("generateTTML line timing", () => {
           origin: "manual",
           sourceFingerprint: "test",
         },
-      };
+      });
       const ttml = generateTTML({ metadata, agents, lines: [romanized], timing: "line" });
       const transliteration = ttml.match(/<transliteration [^>]*>.*?<\/transliteration>/s)?.[0] ?? "";
       expect(transliteration).toContain("kyou hi");

@@ -6,9 +6,9 @@ import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
-import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
+import { type LegacyWord, legacyLanguages, legacyLine, legacyWords } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
 
@@ -25,12 +25,12 @@ function setupLine({
   withTransliteration = true,
 }: {
   text?: string;
-  words?: WordTiming[];
+  words?: LegacyWord[];
   language?: string;
   transliterationText?: string;
   withTransliteration?: boolean;
 } = {}): LyricLine {
-  const line: LyricLine = {
+  const line: LyricLine = legacyLine({
     id: "l1",
     agentId: "v1",
     text,
@@ -46,9 +46,13 @@ function setupLine({
           },
         }
       : {}),
-  };
+  });
   useProjectStore.getState().restoreLyrics({ lines: [line] });
   return line;
+}
+
+function readingWords(line: LyricLine): LegacyWord[] {
+  return legacyWords(timedSyllables(mainTrack(line)), line.languages) ?? [];
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -69,9 +73,9 @@ describe("TransliterationAlignmentModal", () => {
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(timedSyllables(mainTrack(saved))[0].transliteration).toBe("ga");
-      expect(timedSyllables(mainTrack(saved))[1].transliteration).toBe("na");
-      expect(saved.transliteration?.alignmentStatus).toBe("confirmed");
+      expect(readingWords(saved)[0].transliteration).toBe("ga");
+      expect(readingWords(saved)[1].transliteration).toBe("na");
+      expect(saved.languages?.transliteration?.main.alignmentStatus).toBe("confirmed");
     });
 
     it("regression: saves as one undo step", async () => {
@@ -82,16 +86,16 @@ describe("TransliterationAlignmentModal", () => {
 
       expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
       useProjectStore.getState().undo();
-      expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBeUndefined();
+      expect(readingWords(useProjectStore.getState().lines[0])[0]?.transliteration).toBeUndefined();
     });
 
     it("regression: leaves the readings of another instance sharing timing alone", async () => {
       const line = { ...setupLine(), groupId: "g1", instanceIdx: 0, templateLineIdx: 0 };
-      const repeat: LyricLine = {
+      const repeat: LyricLine = legacyLine({
         id: "l2",
         agentId: "v1",
         text: lineText(line),
-        transliteration: line.transliteration,
+        transliteration: legacyLanguages(line.languages).transliteration,
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
@@ -99,15 +103,16 @@ describe("TransliterationAlignmentModal", () => {
           { id: "w1", text: "가", sep: "", begin: 10, end: 10.5, transliteration: "gan", joinsNext: true },
           { id: "w2", text: "나", sep: "", begin: 10.5, end: 11, transliteration: "a", joinsNext: false },
         ],
-      };
+      });
       useProjectStore.setState({ lines: [line, repeat], groups: [createGroup({ id: "g1", sharesTiming: true })] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
 
-      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].transliteration).toBe("ga");
-      expect(
-        timedSyllables(mainTrack(useProjectStore.getState().lines[1])).map((word) => word.transliteration),
-      ).toEqual(["gan", "a"]);
+      expect(readingWords(useProjectStore.getState().lines[0])[0].transliteration).toBe("ga");
+      expect(readingWords(useProjectStore.getState().lines[1]).map((word) => word.transliteration)).toEqual([
+        "gan",
+        "a",
+      ]);
     });
   });
 
@@ -196,18 +201,20 @@ describe("TransliterationAlignmentModal", () => {
   describe("regressions", () => {
     it("clears the source-change warning after saving alignment for the only populated side", async () => {
       const line = setupLine();
-      line.transliteration!.sourceFingerprint = "old-source";
-      line.transliteration!.stale = true;
+      const track = line.languages?.transliteration;
+      if (!track) throw new Error("expected a transliteration");
+      track.sourceFingerprint = "old-source";
+      track.stale = true;
       useProjectStore.getState().restoreLyrics({ lines: [line] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(lineText(line)));
+      expect(saved.languages?.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(lineText(line)));
       expect(getLanguageReviewTracks(saved)).toEqual([]);
     });
 
     it("regression: saves per-word transliteration and joiners for a pronunciation break inside one lexical group", async () => {
-      const words: WordTiming[] = [
+      const words: LegacyWord[] = [
         {
           id: "w8",
           text: "밤",
@@ -230,7 +237,7 @@ describe("TransliterationAlignmentModal", () => {
         },
         { id: "w10", text: "늘", sep: "", begin: 1, end: 1.5, transliteration: "neul", joinsNext: false },
       ];
-      const line: LyricLine = {
+      const line: LyricLine = legacyLine({
         id: "bam-ha-neul",
         agentId: "v1",
         text: "밤하늘",
@@ -242,7 +249,7 @@ describe("TransliterationAlignmentModal", () => {
           origin: "manual",
           sourceFingerprint: languageSourceFingerprint("밤하늘"),
         },
-      };
+      });
       useProjectStore.getState().restoreLyrics({ lines: [line] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
 
@@ -258,7 +265,7 @@ describe("TransliterationAlignmentModal", () => {
 
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(timedSyllables(mainTrack(saved))).toEqual(words);
+      expect(readingWords(saved)).toEqual(words);
     });
   });
 

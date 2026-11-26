@@ -1,9 +1,13 @@
+import { lineTransliteration } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 
 // -- Functions -----------------------------------------------------------------
 
 function hasTransliteration(lines: readonly LyricLine[]): boolean {
-  return lines.some((line) => !!(line.transliteration?.text || line.transliteration?.backgroundText));
+  return lines.some((line) => {
+    const track = lineTransliteration(line);
+    return !!(track?.main.text || track?.bg?.text);
+  });
 }
 
 // -- Exports -------------------------------------------------------------------

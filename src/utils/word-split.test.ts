@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
+import { splitWordIntoWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
+import { type LegacyWord, legacyLine, legacyWords } from "@/test/legacy-languages";
 import { splitWordIntoWords } from "@/utils/word-split";
+
+function splitKeepingReadings(word: WordTiming, reading: string, splitPoints: number[]): LegacyWord[] {
+  const line = legacyLine({
+    id: "line",
+    agentId: "v1",
+    text: word.text,
+    words: [{ ...word, transliteration: reading, transliterationJoinerAfter: "  " }],
+    transliteration: { language: "und-Latn", text: reading, segments: [], origin: "manual", sourceFingerprint: "x" },
+  });
+  const parts = splitWordIntoWords(word, splitPoints);
+  const split = splitWordIntoWordsKeepingTransliteration(line, "word", 0, parts, "|");
+  return legacyWords(split?.words, split?.languages) ?? [];
+}
 
 describe("splitWordIntoWords", () => {
   const source: WordTiming = { id: "w1", text: "everyday", sep: "", begin: 1, end: 2, joinsNext: false };
@@ -13,7 +28,8 @@ describe("splitWordIntoWords", () => {
   });
 
   it("does not copy the whole word's transliteration onto each piece", () => {
-    const out = splitWordIntoWords({ ...source, transliteration: "evuridei", transliterationJoinerAfter: "  " }, [5]);
+    const out = splitKeepingReadings(source, "evuridei", [5]);
+    expect(out).toHaveLength(2);
     expect(out.every((w) => w.transliteration === undefined && w.transliterationJoinerAfter === undefined)).toBe(true);
   });
 
@@ -95,13 +111,11 @@ describe("splitWordIntoWords · transliteration", () => {
     sep: " ",
     begin: 3,
     end: 4,
-    transliteration: "privet mir",
-    transliterationJoinerAfter: "  ",
     joinsNext: false,
   };
 
   it("regression: parts never copy the parent's transliteration (#283)", () => {
-    const out = splitWordIntoWords(word, [6]);
+    const out = splitKeepingReadings(word, "privet mir", [6]);
     expect(out.map((w) => w.text + w.sep)).toEqual(["привет ", "мир "]);
     for (const part of out) {
       expect(part).not.toHaveProperty("transliteration");

@@ -1,3 +1,4 @@
+import type { LanguagePiece } from "@/domain/language/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -7,6 +8,7 @@ interface ClipboardEntry {
   word: WordTiming;
   lineOffset: number;
   trackType: "word" | "bg";
+  piece?: LanguagePiece;
 }
 
 interface ClipboardData {

@@ -3,6 +3,7 @@
  */
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";
+import { trackPieces } from "@/domain/language/pieces";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -26,5 +27,22 @@ describe("word structure commands", () => {
     const outcome = useProjectStore.getState().commit(typeWordText(tideAddress, "moon"));
     expect(outcome).toEqual({ refused: { reason: "word-gone", address: tideAddress } });
     expect(useProjectStore.getState().history).toBe(before);
+  });
+
+  it("drops the reading of a deleted word with it", () => {
+    const [line] = useProjectStore.getState().lines;
+    const [, turns] = line.words ?? [];
+    const pieces = { [tide.id]: { text: "taido" }, [turns.id]: { text: "taanzu" } };
+    const main = { text: "taido taanzu", pieces };
+    useProjectStore.setState({
+      lines: [
+        {
+          ...line,
+          languages: { transliteration: { language: "ja-Latn", origin: "manual", sourceFingerprint: "", main } },
+        },
+      ],
+    });
+    useProjectStore.getState().commit(deleteWords([tideAddress]));
+    expect(Object.keys(trackPieces(useProjectStore.getState().lines[0], "main") ?? {})).toEqual([turns.id]);
   });
 });

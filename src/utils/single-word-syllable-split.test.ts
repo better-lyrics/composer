@@ -1,10 +1,31 @@
-import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import type { LanguagePiece } from "@/domain/language/model";
+import type { WordTiming } from "@/domain/word/timing";
+import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { describe, expect, it } from "vitest";
+
+interface SplitWithReading {
+  word: WordTiming;
+  reading: LanguagePiece;
+  splitPoints: number[];
+  transliterationSplitPoints: number[];
+}
+
+function splitWithReading({ word, reading, splitPoints, transliterationSplitPoints }: SplitWithReading) {
+  const words = splitWordIntoSyllables({ word, splitPoints });
+  const pieces = splitSyllablePieces(reading, transliterationSplitPoints, words.length);
+  return words.map((syllable, index) => ({
+    ...syllable,
+    piece: pieces?.[index],
+    transliteration: pieces?.[index]?.text,
+    transliterationJoinerAfter: pieces?.[index]?.joinerAfter,
+  }));
+}
 
 describe("splitWordIntoSyllables", () => {
   it("splits paired transliteration text into the same canonical timing slots", () => {
-    const result = splitWordIntoSyllables({
-      word: { id: "w1", text: "今日", sep: "", transliteration: "kyouhi", begin: 0, end: 1, joinsNext: true },
+    const result = splitWithReading({
+      word: { id: "w1", text: "今日", sep: "", begin: 0, end: 1, joinsNext: true },
+      reading: { text: "kyouhi" },
       splitPoints: [1],
       transliterationSplitPoints: [4],
     });
@@ -14,8 +35,9 @@ describe("splitWordIntoSyllables", () => {
     expect(result[0].end).toBe(result[1].begin);
   });
   it("removes untimed spaces at selected transliteration boundaries", () => {
-    const result = splitWordIntoSyllables({
-      word: { id: "w2", text: "걸음은", sep: "", transliteration: "geol eum eun", begin: 0, end: 1, joinsNext: true },
+    const result = splitWithReading({
+      word: { id: "w2", text: "걸음은", sep: "", begin: 0, end: 1, joinsNext: true },
+      reading: { text: "geol eum eun" },
       splitPoints: [1, 2],
       transliterationSplitPoints: [5, 9],
     });
@@ -24,8 +46,9 @@ describe("splitWordIntoSyllables", () => {
   });
 
   it("preserves dash separators for a later merge", () => {
-    const result = splitWordIntoSyllables({
-      word: { id: "w3", text: "to-do", sep: "", transliteration: "to-do", begin: 0, end: 1, joinsNext: true },
+    const result = splitWithReading({
+      word: { id: "w3", text: "to-do", sep: "", begin: 0, end: 1, joinsNext: true },
+      reading: { text: "to-do" },
       splitPoints: [3],
       transliterationSplitPoints: [3],
     });
@@ -35,19 +58,22 @@ describe("splitWordIntoSyllables", () => {
   });
 
   it("moves an outer transliteration separator to the last fragment of a nested split", () => {
-    const firstSplit = splitWordIntoSyllables({
-      word: { id: "w4", text: "abcd", sep: "", transliteration: "ab cd", begin: 0, end: 1, joinsNext: true },
+    const firstSplit = splitWithReading({
+      word: { id: "w4", text: "abcd", sep: "", begin: 0, end: 1, joinsNext: true },
+      reading: { text: "ab cd" },
       splitPoints: [2],
       transliterationSplitPoints: [3],
     });
-    const nested = splitWordIntoSyllables({
+    const nested = splitWithReading({
       word: firstSplit[0],
+      reading: firstSplit[0].piece ?? {},
       splitPoints: [1],
       transliterationSplitPoints: [1],
     });
 
     expect(nested.map((word) => word.transliterationJoinerAfter)).toEqual(["", " "]);
   });
+
   it("trims trailing space before computing per-character durations", () => {
     const result = splitWordIntoSyllables({
       word: { id: "w5", text: "running", sep: " ", begin: 0, end: 8, joinsNext: false },
