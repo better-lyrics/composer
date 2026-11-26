@@ -154,7 +154,7 @@ function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<n
   let current = line;
   for (let index = words.length - 1; index >= 0; index--) {
     if (points[index].length === 0) continue;
-    const syllables = splitWordIntoSyllables({ word: words[index], splitPoints: points[index], reuseGroupId: true });
+    const syllables = splitWordIntoSyllables({ word: words[index], splitPoints: points[index] });
     const split = splitWordsKeepingTransliteration(current, track.type, index, syllables);
     const currentWords = track.words(current) ?? words;
     current = track.write(current, text, split?.words ?? currentWords.toSpliced(index, 1, ...syllables));

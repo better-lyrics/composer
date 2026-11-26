@@ -41,7 +41,9 @@ function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
   const timed = timedSyllables(backgroundTrack(line));
   if (timed.length) return parenthesized(timed);
   const text = backgroundText(line)?.trim();
-  return text ? parenthesized([{ id: "background", text, sep: "", begin: bounds.begin, end: bounds.end }]) : [];
+  return text
+    ? parenthesized([{ id: "background", text, sep: "", begin: bounds.begin, end: bounds.end, joinsNext: false }])
+    : [];
 }
 
 // Background vocals follow the main words in parentheses: every target format

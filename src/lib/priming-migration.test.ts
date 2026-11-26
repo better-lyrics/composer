@@ -28,8 +28,8 @@ describe("shiftAllTimings", () => {
     const out = shiftAllTimings(
       [
         wordSynced("L", [
-          { id: "w1", text: "hi", sep: "", begin: 1.0, end: 1.5 },
-          { id: "w2", text: "you", sep: "", begin: 1.5, end: 2.0 },
+          { id: "w1", text: "hi", sep: "", begin: 1.0, end: 1.5, joinsNext: true },
+          { id: "w2", text: "you", sep: "", begin: 1.5, end: 2.0, joinsNext: false },
         ]),
       ],
       -0.5,
@@ -47,9 +47,9 @@ describe("shiftAllTimings", () => {
         id: "L",
         text: "main",
         agentId: "a",
-        words: [{ id: "w3", text: "main", sep: "", begin: 1.0, end: 2.0 }],
+        words: [{ id: "w3", text: "main", sep: "", begin: 1.0, end: 2.0, joinsNext: false }],
         backgroundText: "bg",
-        backgroundWords: [{ id: "w4", text: "bg", sep: "", begin: 1.2, end: 1.8 }],
+        backgroundWords: [{ id: "w4", text: "bg", sep: "", begin: 1.2, end: 1.8, joinsNext: false }],
       },
     ];
     const out = shiftAllTimings(lines, -0.5);
@@ -70,19 +70,19 @@ describe("shiftAllTimings", () => {
     expect(out).toEqual(lines);
   });
 
-  it("preserves WordTiming extras like explicit and syllableGroupId", () => {
+  it("preserves WordTiming extras like explicit and joinsNext", () => {
     const lines: LyricLine[] = [
       {
         id: "L",
         text: "x",
         agentId: "a",
-        words: [{ id: "w5", text: "x", sep: "", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g1" }],
+        words: [{ id: "w5", text: "x", sep: "", begin: 1.0, end: 1.5, explicit: true, joinsNext: true }],
       },
     ];
     const shifted = shiftAllTimings(lines, -0.5);
     const w = (shifted[0] as { words: WordTiming[] }).words[0];
     expect(w.explicit).toBe(true);
-    expect(w.syllableGroupId).toBe("g1");
+    expect(w.joinsNext).toBe(true);
     expect(w.begin).toBeCloseTo(0.5);
     expect(w.end).toBeCloseTo(1.0);
   });
@@ -94,15 +94,13 @@ describe("shiftAllTimings", () => {
         text: "main",
         agentId: "a",
         backgroundText: "bg",
-        backgroundWords: [
-          { id: "w6", text: "bg", sep: "", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g2" },
-        ],
+        backgroundWords: [{ id: "w6", text: "bg", sep: "", begin: 1.0, end: 1.5, explicit: true, joinsNext: true }],
       },
     ];
     const out = shiftAllTimings(lines, -0.5);
     const bg = (out[0] as { backgroundWords: WordTiming[] }).backgroundWords[0];
     expect(bg.explicit).toBe(true);
-    expect(bg.syllableGroupId).toBe("g2");
+    expect(bg.joinsNext).toBe(true);
     expect(bg.begin).toBeCloseTo(0.5);
   });
 
@@ -115,7 +113,7 @@ describe("shiftAllTimings", () => {
         groupId: "g1",
         instanceIdx: 2,
         templateLineIdx: 0,
-        words: [{ id: "w7", text: "hi", sep: "", begin: 1.0, end: 1.5 }],
+        words: [{ id: "w7", text: "hi", sep: "", begin: 1.0, end: 1.5, joinsNext: false }],
       },
       {
         id: "lsl",
@@ -151,8 +149,8 @@ describe("shiftAllTimings: edge cases", () => {
     const out = shiftAllTimings(
       [
         wordSynced("L", [
-          { id: "w8", text: "early", sep: "", begin: 0.1, end: 0.2 },
-          { id: "w9", text: "later", sep: "", begin: 0.6, end: 1.0 },
+          { id: "w8", text: "early", sep: "", begin: 0.1, end: 0.2, joinsNext: true },
+          { id: "w9", text: "later", sep: "", begin: 0.6, end: 1.0, joinsNext: false },
         ]),
       ],
       -0.5,
@@ -171,7 +169,7 @@ describe("shiftAllTimings: edge cases", () => {
         text: "main",
         agentId: "a",
         backgroundText: "bg",
-        backgroundWords: [{ id: "w10", text: "bg", sep: "", begin: 0.1, end: 0.3 }],
+        backgroundWords: [{ id: "w10", text: "bg", sep: "", begin: 0.1, end: 0.3, joinsNext: false }],
       },
     ];
     const out = shiftAllTimings(lines, -0.5);
@@ -196,13 +194,13 @@ describe("shiftAllTimings: invariants", () => {
   it("does not mutate the input array or its elements", () => {
     const lines: LyricLine[] = [
       lineSynced("L1", 1.0, 2.0),
-      wordSynced("L2", [{ id: "w11", text: "x", sep: "", begin: 1.0, end: 1.5 }]),
+      wordSynced("L2", [{ id: "w11", text: "x", sep: "", begin: 1.0, end: 1.5, joinsNext: false }]),
       {
         id: "L3",
         text: "main",
         agentId: "a",
         backgroundText: "bg",
-        backgroundWords: [{ id: "w12", text: "bg", sep: "", begin: 1.0, end: 1.5 }],
+        backgroundWords: [{ id: "w12", text: "bg", sep: "", begin: 1.0, end: 1.5, joinsNext: false }],
       },
     ];
     const snapshot = JSON.parse(JSON.stringify(lines));
@@ -214,7 +212,7 @@ describe("shiftAllTimings: invariants", () => {
     const lines: LyricLine[] = [
       lineSynced("L1", 1.0, 2.0),
       { id: "L2", text: "untimed", agentId: "a" },
-      wordSynced("L3", [{ id: "w13", text: "x", sep: "", begin: 1.0, end: 1.5 }]),
+      wordSynced("L3", [{ id: "w13", text: "x", sep: "", begin: 1.0, end: 1.5, joinsNext: false }]),
     ];
     const out = shiftAllTimings(lines, -0.5);
     expect(out.length).toBe(lines.length);
@@ -241,9 +239,9 @@ describe("shiftAllTimings: positive shifts", () => {
         id: "L2",
         text: "a",
         agentId: "a",
-        words: [{ id: "w14", text: "a", sep: "", begin: 3, end: 4 }],
+        words: [{ id: "w14", text: "a", sep: "", begin: 3, end: 4, joinsNext: false }],
         backgroundText: "b",
-        backgroundWords: [{ id: "w15", text: "b", sep: "", begin: 3.5, end: 3.9 }],
+        backgroundWords: [{ id: "w15", text: "b", sep: "", begin: 3.5, end: 3.9, joinsNext: false }],
       },
     ];
     const out = shiftAllTimings(lines, 0.025);

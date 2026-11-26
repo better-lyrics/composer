@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { SyllableAddress } from "@/domain/selection/model";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { wordAddress } from "@/test/word-address";
 import {
   multiSelectionSummary,
@@ -90,7 +90,10 @@ describe("multiSelectionSummary", () => {
   const wordLine = createLine({
     id: "w",
     text: "a b",
-    words: [createWord({ text: "a", sep: " ", begin: 1, end: 2 }), createWord({ text: "b", begin: 2, end: 3 })],
+    words: createWords([
+      { text: "a", sep: " ", begin: 1, end: 2 },
+      { text: "b", begin: 2, end: 3 },
+    ]),
   });
   const syncedRow = createLine({ id: "s", text: "row", begin: 5, end: 7 });
 

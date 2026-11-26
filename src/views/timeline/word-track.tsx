@@ -172,7 +172,14 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const slot = findInsertionSlot(words, time, defaultWordDuration, range, minWordDuration);
     if (!slot) return;
 
-    const newWord: WordTiming = { id: newWordId(), text: "...", sep: " ", begin: slot.begin, end: slot.end };
+    const newWord: WordTiming = {
+      id: newWordId(),
+      text: "...",
+      sep: " ",
+      begin: slot.begin,
+      end: slot.end,
+      joinsNext: false,
+    };
     useProjectStore.getState().commit(insertWord(lineId, trackType, newWord));
 
     const timeline = useTimelineStore.getState();

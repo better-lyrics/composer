@@ -1,7 +1,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { HeaderNotices } from "@/ui/notices/header-notices";
 import { useSharedTimingNotice } from "@/views/timeline/use-shared-timing-notice";
@@ -20,10 +20,10 @@ const member = (instanceIdx: number, begin?: number, groupId = "g1"): LyricLine 
     ...(begin === undefined
       ? {}
       : {
-          words: [
-            createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-            createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-          ],
+          words: createWords([
+            { text: "go", sep: " ", begin, end: begin + 1 },
+            { text: "now", begin: begin + 1, end: begin + 2 },
+          ]),
         }),
   });
 

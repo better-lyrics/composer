@@ -78,7 +78,7 @@ describe("findRepeatingStandaloneSections", () => {
 
   it("reuses the suggestions when an edit changes only timing", () => {
     const lines = [
-      line("w", "chorus a", { words: [{ id: "w1", text: "chorus a", sep: "", begin: 1, end: 2 }] }),
+      line("w", "chorus a", { words: [{ id: "w1", text: "chorus a", sep: "", begin: 1, end: 2, joinsNext: false }] }),
       ...block("1-", CHORUS.slice(1)),
       line("v", "verse"),
       ...block("2-", CHORUS),
@@ -125,6 +125,7 @@ describe("findRepeatingStandaloneSections", () => {
         id: newWordId(),
         text: part,
         sep: index < parts.length - 1 ? " " : "",
+        joinsNext: false,
         begin: begin + index,
         end: begin + index + 0.5,
       }));
@@ -230,13 +231,18 @@ describe("findRepeatingStandaloneSections", () => {
           text: "I love",
           agentId: "v1",
           words: [
-            { id: "w2", text: "I", sep: "", begin: 0, end: 1 },
-            { id: "w3", text: " love", sep: "", begin: 1, end: 2 },
+            { id: "w2", text: "I", sep: "", begin: 0, end: 1, joinsNext: true },
+            { id: "w3", text: " love", sep: "", begin: 1, end: 2, joinsNext: false },
           ],
         },
         { id: "2", text: "you", agentId: "v1" },
         { id: "3", text: "so", agentId: "v1" },
-        { id: "4", text: "I love", agentId: "v1", words: [{ id: "w4", text: "I love", sep: "", begin: 10, end: 11 }] },
+        {
+          id: "4",
+          text: "I love",
+          agentId: "v1",
+          words: [{ id: "w4", text: "I love", sep: "", begin: 10, end: 11, joinsNext: false }],
+        },
         { id: "5", text: "you", agentId: "v1" },
         { id: "6", text: "so", agentId: "v1" },
       ];
@@ -261,7 +267,7 @@ describe("findRepeatingStandaloneSections", () => {
 
     it("does not suggest a section whose partly synced copy cannot take the finest split", () => {
       const partial = line("1-0", "fal|ling too", {
-        words: [{ id: "w5", text: "fal", sep: "", begin: 10, end: 10.3 }],
+        words: [{ id: "w5", text: "fal", sep: "", begin: 10, end: 10.3, joinsNext: false }],
       });
       const lines = [partial, line("1-1", "x"), line("1-2", "y"), ...block("2-", ["fa|lli|ng too", "x", "y"])];
       expect(spans(lines)).toEqual([{ starts: [1, 4], length: 2 }]);

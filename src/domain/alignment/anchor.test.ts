@@ -67,11 +67,11 @@ describe("withoutAnchor", () => {
 describe("lastWord", () => {
   it("is the line's last word as stored, across its parts, when it has something to pronounce", () => {
     const words = [
-      { text: "hello", parts: ["hel", "lo"], trailingSpace: true },
-      { text: "again", parts: ["a", "gain"], trailingSpace: false },
+      { text: "hello", parts: ["hel", "lo"], seps: ["", " "] },
+      { text: "again", parts: ["a", "gain"], seps: ["", ""] },
     ];
     const intervals = [1, 1.2, 1.5, 1.7].map((begin) => ({ begin, end: begin + 0.2 }));
     expect(lastWord(words, intervals)).toEqual({ parts: ["a", "gain"], begin: 1.5, end: 1.9 });
-    expect(lastWord([{ text: "...", parts: ["..."], trailingSpace: false }], intervals.slice(0, 1))).toBeNull();
+    expect(lastWord([{ text: "...", parts: ["..."], seps: [""] }], intervals.slice(0, 1))).toBeNull();
   });
 });

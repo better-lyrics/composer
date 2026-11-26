@@ -7,7 +7,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -26,10 +26,10 @@ const chorusLine = (id: string, instanceIdx: number, begin: number, secondWordAt
   createLine({
     id,
     text: "go now",
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + secondWordAt, end: begin + secondWordAt + 1 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + secondWordAt, end: begin + secondWordAt + 1 },
+    ]),
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,

@@ -10,7 +10,7 @@ const WORD_SYNCED = {
   id: "w",
   text: "hi",
   agentId: "v1",
-  words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1 }],
+  words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
 };
 
 describe("project store · insertEmptyLineWithHistory", () => {

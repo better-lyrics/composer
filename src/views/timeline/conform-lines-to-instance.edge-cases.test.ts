@@ -18,14 +18,14 @@ const twoLineTemplate: LineTemplate[] = [
     agentId: "v1",
     relativeBegin: 0,
     relativeEnd: 2,
-    words: [{ text: "We were dancing in the dark", sep: "", relativeBegin: 0, relativeEnd: 2 }],
+    words: [{ text: "We were dancing in the dark", sep: "", relativeBegin: 0, relativeEnd: 2, joinsNext: false }],
   },
   {
     text: "Till the morning came",
     agentId: "v1",
     relativeBegin: 2.5,
     relativeEnd: 4,
-    words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4 }],
+    words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4, joinsNext: false }],
   },
 ];
 
@@ -35,13 +35,13 @@ function looseChorus(): LyricLine[] {
       id: "loose1",
       text: "we were dancin in the dark",
       agentId: "v1",
-      words: [{ id: "w1", text: "we were dancin in the dark", sep: "", begin: 20, end: 22 }],
+      words: [{ id: "w1", text: "we were dancin in the dark", sep: "", begin: 20, end: 22, joinsNext: false }],
     },
     {
       id: "loose2",
       text: "till mornin came",
       agentId: "v1",
-      words: [{ id: "w2", text: "till mornin came", sep: "", begin: 22.4, end: 24 }],
+      words: [{ id: "w2", text: "till mornin came", sep: "", begin: 22.4, end: 24, joinsNext: false }],
     },
   ];
 }
@@ -57,7 +57,7 @@ describe("conformLinesToInstance · edge cases", () => {
         id: "hook",
         text: "oh oh oh",
         agentId: "v1",
-        words: [{ id: "w3", text: "oh oh oh", sep: "", begin: 8, end: 9 }],
+        words: [{ id: "w3", text: "oh oh oh", sep: "", begin: 8, end: 9, joinsNext: false }],
       },
     ];
     const result = conformLinesToInstance({
@@ -69,7 +69,7 @@ describe("conformLinesToInstance · edge cases", () => {
           agentId: "v1",
           relativeBegin: 0,
           relativeEnd: 1.5,
-          words: [{ text: "Oh oh oh", sep: "", relativeBegin: 0, relativeEnd: 1.5 }],
+          words: [{ text: "Oh oh oh", sep: "", relativeBegin: 0, relativeEnd: 1.5, joinsNext: false }],
         },
       ],
       selectedLineIds: new Set(["hook"]),
@@ -109,11 +109,11 @@ describe("conformLinesToInstance · edge cases", () => {
         agentId: "v1",
         relativeBegin: 0,
         relativeEnd: 2,
-        words: [{ text: "We were dancing in the dark", sep: "", relativeBegin: 0, relativeEnd: 2 }],
+        words: [{ text: "We were dancing in the dark", sep: "", relativeBegin: 0, relativeEnd: 2, joinsNext: false }],
         backgroundText: "in the dark",
         backgroundWords: [
-          { text: "in", sep: " ", relativeBegin: 1.2, relativeEnd: 1.5 },
-          { text: "the dark", sep: "", relativeBegin: 1.5, relativeEnd: 2 },
+          { text: "in", sep: " ", relativeBegin: 1.2, relativeEnd: 1.5, joinsNext: false },
+          { text: "the dark", sep: "", relativeBegin: 1.5, relativeEnd: 2, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
       },
@@ -122,7 +122,7 @@ describe("conformLinesToInstance · edge cases", () => {
         agentId: "v1",
         relativeBegin: 2.5,
         relativeEnd: 4,
-        words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4 }],
+        words: [{ text: "Till the morning came", sep: "", relativeBegin: 2.5, relativeEnd: 4, joinsNext: false }],
       },
     ];
     const result = conformLinesToInstance({
@@ -150,7 +150,7 @@ describe("conformLinesToInstance · edge cases", () => {
         ? {
             ...line,
             backgroundText: "ooh",
-            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 21, end: 21.5 }],
+            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 21, end: 21.5, joinsNext: false }],
             backgroundTextSource: "manual" as const,
           }
         : line,
@@ -174,7 +174,7 @@ describe("conformLinesToInstance · edge cases", () => {
         ? {
             ...line,
             backgroundText: "ooh",
-            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 18, end: 19 }],
+            backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 18, end: 19, joinsNext: false }],
           }
         : line,
     );
@@ -196,7 +196,7 @@ describe("conformLinesToInstance · edge cases", () => {
         id: "outro",
         text: "Goodnight",
         agentId: "v1",
-        words: [{ id: "w4", text: "Goodnight", sep: "", begin: 30, end: 32 }],
+        words: [{ id: "w4", text: "Goodnight", sep: "", begin: 30, end: 32, joinsNext: false }],
       },
     ];
     const result = conformLinesToInstance({
@@ -218,7 +218,7 @@ describe("conformLinesToInstance · edge cases", () => {
         id: "verse",
         text: "I remember",
         agentId: "v1",
-        words: [{ id: "w5", text: "I remember", sep: "", begin: 0, end: 4 }],
+        words: [{ id: "w5", text: "I remember", sep: "", begin: 0, end: 4, joinsNext: false }],
       },
       ...looseChorus(),
     ];
@@ -259,14 +259,14 @@ describe("conformLinesToInstance · invariants", () => {
         id: "verse",
         text: "I remember",
         agentId: "v1",
-        words: [{ id: "w6", text: "I remember", sep: "", begin: 0, end: 4 }],
+        words: [{ id: "w6", text: "I remember", sep: "", begin: 0, end: 4, joinsNext: false }],
       },
       ...looseChorus(),
       {
         id: "outro",
         text: "Goodnight",
         agentId: "v1",
-        words: [{ id: "w7", text: "Goodnight", sep: "", begin: 30, end: 32 }],
+        words: [{ id: "w7", text: "Goodnight", sep: "", begin: 30, end: 32, joinsNext: false }],
       },
     ];
     const result = conformLinesToInstance({
@@ -288,7 +288,7 @@ describe("conformLinesToInstance · invariants", () => {
         id: "verse",
         text: "I remember",
         agentId: "v1",
-        words: [{ id: "w8", text: "I remember", sep: "", begin: 0, end: 4 }],
+        words: [{ id: "w8", text: "I remember", sep: "", begin: 0, end: 4, joinsNext: false }],
       },
       { id: "loose1", text: "", agentId: "v1" },
       { id: "loose2", text: "", agentId: "v1" },

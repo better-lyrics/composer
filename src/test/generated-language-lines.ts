@@ -17,6 +17,7 @@ function timedLine(id: string, words: string[], romanized: string[], romanizedFr
       id: newWordId(),
       text,
       sep: index < words.length - 1 ? " " : "",
+      joinsNext: false,
       begin: index + 1,
       end: index + 2,
       transliteration: romanized[index],

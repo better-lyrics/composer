@@ -23,17 +23,14 @@ describe("applySyllableSplitToLines", () => {
     expect(timedSyllables(mainTrack(result[1]))).toHaveLength(2);
   });
 
-  it("gives each split word its own syllableGroupId", () => {
+  it("joins the syllables of each split word on their own", () => {
     const lines = [
       createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] }),
       createLine({ id: "l2", words: [{ text: "running", begin: 2, end: 3 }] }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], false);
-    const g1 = result[0].words?.[0].syllableGroupId;
-    const g2 = result[1].words?.[0].syllableGroupId;
-    expect(g1).toBeTruthy();
-    expect(g2).toBeTruthy();
-    expect(g1).not.toBe(g2);
+    expect(result[0].words?.map((word) => word.joinsNext)).toEqual([true, false]);
+    expect(result[1].words?.map((word) => word.joinsNext)).toEqual([true, false]);
   });
 
   it("preserves trailing space on the last syllable when the source had one", () => {
@@ -64,8 +61,8 @@ describe("applySyllableSplitToLines", () => {
       createLine({
         id: "l1",
         words: [
-          { text: "go", begin: 0, end: 1 },
-          { text: "stop", begin: 1, end: 2 },
+          { text: "go ", begin: 0, end: 1 },
+          { text: "stop ", begin: 1, end: 2 },
           { text: "go", begin: 2, end: 3 },
         ],
       }),

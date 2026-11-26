@@ -53,8 +53,7 @@ function sameWordSpacing(stored: readonly WordTiming[], edited: readonly WordTim
 }
 
 function inSyllableGroupOf(word: WordTiming, stored: WordTiming): WordTiming {
-  const { syllableGroupId: _inferred, ...rest } = word;
-  return stored.syllableGroupId === undefined ? rest : { ...rest, syllableGroupId: stored.syllableGroupId };
+  return { ...word, joinsNext: stored.joinsNext };
 }
 
 function mergedWords(stored: WordTiming[] | undefined, edited: WordTiming[] | undefined): WordTiming[] | undefined {

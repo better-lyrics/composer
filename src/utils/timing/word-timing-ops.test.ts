@@ -124,8 +124,8 @@ describe("createWordTimingOps: write contract", () => {
     const line = makeLine();
     retimeInto(calls, wordsOps.retimeEdit, "begin", { to: 1.5 }, [line], 0, 1);
     const out = calls[0].updates.words ?? [];
-    expect(out[0]).toEqual({ text: "a", sep: " ", begin: 0, end: 1 });
-    expect(out[2]).toEqual({ text: "c", sep: "", begin: 2, end: 3 });
+    expect(out[0]).toEqual({ text: "a", sep: " ", begin: 0, end: 1, joinsNext: false });
+    expect(out[2]).toEqual({ text: "c", sep: "", begin: 2, end: 3, joinsNext: false });
   });
 });
 
@@ -155,7 +155,7 @@ describe("main-track ops on effective lines", () => {
     const calls: LineUpdate[] = [];
     const lines = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a", sep: " ", begin: 1, end: 2 }] })]);
     retimeInto(calls, wordRetimeEdit, "end", { by: 0.5 }, lines, 0, 0);
-    expect(calls[0].updates).toEqual({ words: [{ text: "a", sep: " ", begin: 1, end: 2.5 }] });
+    expect(calls[0].updates).toEqual({ words: [{ text: "a", sep: " ", begin: 1, end: 2.5, joinsNext: false }] });
   });
 
   it("leaves a raw line-synced row alone because it has no words to edit", () => {

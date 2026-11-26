@@ -18,7 +18,11 @@ describe("instancePasteClipboard", () => {
       ];
       const clipboard = {
         entries: [
-          { word: { id: "w1", text: "go", sep: "", begin: 12, end: 13 }, lineOffset: 1, trackType: "word" as const },
+          {
+            word: { id: "w1", text: "go", sep: "", begin: 12, end: 13, joinsNext: true },
+            lineOffset: 1,
+            trackType: "word" as const,
+          },
         ],
         sourceInstance: { groupId: "g", instanceIdx: 0 },
       };

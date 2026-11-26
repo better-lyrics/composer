@@ -5,7 +5,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { LineRow } from "@/views/timeline/line-row";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -13,10 +13,10 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 describe("LineRow", () => {
   it("renders one word block per word on a synced line", async () => {
     const line = createLine({
-      words: [
-        createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
-        createWord({ text: "world", begin: 1, end: 2 }),
-      ],
+      words: createWords([
+        { text: "hello", sep: " ", begin: 0, end: 1 },
+        { text: "world", begin: 1, end: 2 },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     const screen = await render(

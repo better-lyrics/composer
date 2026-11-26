@@ -72,7 +72,6 @@ function useSyllableSplitterState({
       word,
       splitPoints,
       transliterationSplitPoints,
-      reuseGroupId: true,
     });
     onSplit(wordIndex, newWords);
     noteGuideSignal("sync.split");
