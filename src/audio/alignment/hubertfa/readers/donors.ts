@@ -1,8 +1,11 @@
+import standIns from "@/audio/alignment/hubertfa/readers/ja-zh-to-en.json";
 import table from "@/audio/alignment/hubertfa/readers/phone-donors.json";
 
 // The readers emit sounds from one fixed inventory and know nothing about
 // models. This table turns each sound into the nearest phones a loaded model
 // has. Training real phones for a language changes this table, never a reader.
+// Mandarin and Japanese dictionary phones get the same treatment on a model
+// without them: each becomes its English stand-ins.
 
 // -- Types --------------------------------------------------------------------
 
@@ -19,6 +22,10 @@ type Candidate = readonly [string, readonly string[]];
 // -- Constants ----------------------------------------------------------------
 
 const PHONE_LANGUAGES = new Set<string>(["en", "zh", "ja"]);
+const STAND_INS: Readonly<Record<"zh" | "ja", ReadonlyMap<string, readonly string[]>>> = {
+  zh: new Map(Object.entries(standIns.zh).map(([phone, { en }]) => [phone, en])),
+  ja: new Map(Object.entries(standIns.ja).map(([phone, { en }]) => [phone, en])),
+};
 const DONORS: ReadonlyMap<string, readonly Candidate[]> = new Map(
   Object.entries(table.sounds).map(([sound, candidates]) => [sound, candidates.map(parseCandidate)]),
 );
@@ -59,7 +66,19 @@ function soundsToPhones(sounds: readonly string[], modelLanguages: readonly stri
   return sounds.flatMap((sound) => donorPhones(sound, listed));
 }
 
+/**
+ * A Mandarin or Japanese reading's phones on a model without that language:
+ * each phone's English stand-ins, in order. Phones the table leaves out, like
+ * the shared closure `cl`, stay as they are.
+ */
+function standInPhones(language: "zh" | "ja", phones: readonly string[]): ModelPhone[] {
+  return phones.flatMap((phone): ModelPhone[] => {
+    const english = STAND_INS[language].get(phone);
+    return english ? english.map((stand) => ({ language: "en", phone: stand })) : [{ language, phone }];
+  });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { isKnownSound, soundsToPhones };
+export { isKnownSound, soundsToPhones, standInPhones };
 export type { PhoneLanguage };

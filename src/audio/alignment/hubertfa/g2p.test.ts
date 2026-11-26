@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { type G2pContext, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
+import { type G2pContext, type PhoneUnit, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
 import { kanaToMorae } from "@/audio/alignment/hubertfa/japanese";
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { LETTER_PHONES, guessPhones } from "@/audio/alignment/hubertfa/letter-to-sound";
@@ -7,6 +7,7 @@ import vocab from "@/audio/alignment/hubertfa/vocab.json";
 import japaneseText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
+import standIns from "@/audio/alignment/hubertfa/readers/ja-zh-to-en.json";
 import beforeReaders from "@/audio/alignment/hubertfa/test-fixtures/g2p-before-readers.json";
 import { readFile } from "node:fs/promises";
 import { pinyin } from "pinyin-pro";
@@ -40,7 +41,13 @@ beforeAll(async () => {
 }, 60_000);
 
 function context(hanReading: "zh" | "ja"): G2pContext {
-  return { dictionaries: { en: english, zh: mandarin, ja: japanese }, hanReading, pinyinOf, readJapanese };
+  return {
+    dictionaries: { en: english, zh: mandarin, ja: japanese },
+    hanReading,
+    pinyinOf,
+    readJapanese,
+    modelLanguages: ["en", "zh", "ja"],
+  };
 }
 
 function phones(result: ReturnType<typeof lineToPhoneUnits>) {
@@ -143,18 +150,27 @@ describe("lineToPhoneUnits", () => {
     expect(result).toMatchObject({ guessed: ["yuh"] });
   });
 
-  it("reads English, Mandarin and Japanese exactly as before the language readers, for every model", () => {
-    // Captured from lineToPhoneUnits before the readers existed.
-    for (const modelLanguages of [["en", "zh", "ja"], ["en"]]) {
+  it("reads English, Mandarin and Japanese as before the language readers, through English stand-ins on a model without them", () => {
+    // Captured from lineToPhoneUnits before the readers existed, on the built-in model.
+    const standIn = (unit: PhoneUnit, modelLanguages: readonly string[]): PhoneUnit => {
+      const language = unit.phones.find((p) => p.language !== "en")?.language;
+      if (!language || language === "en" || modelLanguages.includes(language)) return unit;
+      const table: Record<string, { en: string[] }> = standIns[language];
+      const phones = unit.phones.flatMap((p) =>
+        table[p.phone] ? table[p.phone].en.map((phone) => ({ language: "en" as const, phone })) : [p],
+      );
+      return { ...unit, phones, reader: language };
+    };
+    for (const modelLanguages of [["en", "zh", "ja"], ["en", "ja"], ["en"]]) {
       for (const { words, hanReading, transliteration, expected } of beforeReaders) {
         const reading = hanReading === "ja" ? "ja" : "zh";
-        const ctx = {
-          ...context(reading),
-          transliteration: transliteration ?? null,
-          latinReader: null,
-          modelLanguages,
-        };
-        expect(lineToPhoneUnits(words, ctx)).toEqual(expected);
+        const ctx = { ...context(reading), transliteration: transliteration ?? null, latinReader: null, modelLanguages };
+        const units = (expected.units ?? []).map((unit) => standIn(unit as PhoneUnit, modelLanguages));
+        const result = lineToPhoneUnits(words, ctx);
+        expect(result).toEqual(expected.kind === "units" ? { ...expected, units } : expected);
+        const left = result.kind === "units" ? result.units.flatMap((unit) => unit.phones) : [];
+        const foreign = left.filter((p) => p.phone !== "cl" && !modelLanguages.includes(p.language));
+        expect(foreign).toEqual([]);
       }
     }
   });

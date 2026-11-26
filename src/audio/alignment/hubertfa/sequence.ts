@@ -117,7 +117,7 @@ function partIntervalsFromUnits(
   const out: WordInterval[] = new Array(parts.length);
   const splits: PartSplit[] = [];
   units.forEach((unit, u) => {
-    // A language reader's word may take English phones, but its spelling isn't English.
+    // A word another language read may take English phones, but its spelling isn't English.
     const english = !unit.reader && unit.phones[0]?.language === "en" && unitPhones[u].length > 0;
     const syllables =
       english && unit.parts.length > 1
