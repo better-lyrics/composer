@@ -61,11 +61,6 @@ interface StepKeyArgs {
   duration: number;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const TIMING_ONLY = { propagateToSiblings: false } as const;
-const OWN_LINE_ONLY = { propagateToSiblings: false } as const;
-
 // -- Helpers ------------------------------------------------------------------
 
 // Timeline edits read the line the way the Timeline draws it: line-synced lines as one word.
@@ -111,7 +106,6 @@ function retimeWord(patch: WordPatch, neighbour?: WordPatch): LyricCommand {
       }
       return patchedTrack(line, patch, neighbour);
     },
-    OWN_LINE_ONLY,
   );
 }
 
@@ -135,7 +129,6 @@ function setWordBoundary(args: BoundaryArgs): LyricCommand {
       });
       return edit ? [edit] : [];
     },
-    TIMING_ONLY,
   );
 }
 
@@ -161,7 +154,6 @@ function nudgeSelection(
       report?.({ appliedDelta, moved: result.updates.length > 0, sharedCopyLimited });
       return result.updates;
     },
-    OWN_LINE_ONLY,
   );
 }
 
@@ -177,7 +169,6 @@ function stretchSelection(args: StretchArgs): LyricCommand {
       };
       return stretchSelections(root.lines, resolveAddresses(root.lines, addresses), factor, options).updates;
     },
-    OWN_LINE_ONLY,
   );
 }
 
@@ -204,7 +195,6 @@ function pressStepKey(args: StepKeyArgs, report?: (plan: StepKeyPlan | null) => 
       if (!plan) return [];
       return plan.kind === "refused" ? refused({ reason: "step", refusal: plan.refusal }) : plan.updates;
     },
-    TIMING_ONLY,
   );
 }
 

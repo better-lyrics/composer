@@ -18,8 +18,9 @@ import { type FieldPatch, withFields } from "@/test/field-updates";
 // The copy as a commit runs it: the doc read from the lines before the edit, each instance at its anchor.
 function copiedThroughTemplate(before: LyricLine[], after: LyricLine[], groups: LinkGroup[], touched: string[]) {
   const doc = docFromFlatLines(before);
-  const copy = copyThroughTemplate({ doc, before, after, groups, touched, anchors: instanceAnchors(doc) });
-  return { lines: copy.lines, rejected: copy.rejected, touchedGroupIds: copy.copiedGroupIds };
+  const anchors = instanceAnchors(doc);
+  const copy = copyThroughTemplate({ doc, before, after, groups, touched, anchors, songEnd: Number.POSITIVE_INFINITY });
+  return { lines: copy.lines, touchedGroupIds: copy.copiedGroupIds };
 }
 
 describe("copyThroughTemplate", () => {
@@ -65,7 +66,6 @@ describe("copyThroughTemplate", () => {
     const before = [chorus(0, 0, 10), chorus(1, 0, 40)];
     const after = edit(before, "c0-0", nudgeWord(1, 0.15));
     const result = copiedThroughTemplate(before, after, sharing, ["c0-0"]);
-    expect(result.rejected).toBe(false);
     expect(result.touchedGroupIds).toEqual(["g1"]);
     expectTimes(times(byId(result.lines, "c1-0")), [
       [40, 40.4],
@@ -248,13 +248,14 @@ describe("copyThroughTemplate", () => {
   });
 
   describe("song start guard", () => {
-    it("rejects a batch that would move a copy below zero", () => {
+    it("keeps a batch that would move a copy below zero and moves that copy alone", () => {
       const before = [chorus(0, 0, 10), chorus(1, 0, 0.05)];
       const after = edit(before, "c0-0", nudgeWord(0, -0.2));
       const result = copiedThroughTemplate(before, after, sharing, ["c0-0"]);
-      expect(result.rejected).toBe(true);
-      expect(result.lines).toBe(after);
-      expect(result.touchedGroupIds).toEqual([]);
+      const firstBegins = result.lines.map((line) => roleWords(line, "main")?.[0].begin ?? Number.NaN);
+      expect(firstBegins[0]).toBeCloseTo(9.8, 9);
+      expect(firstBegins[1]).toBeCloseTo(0, 9);
+      expect(result.touchedGroupIds).toEqual(["g1"]);
     });
   });
 

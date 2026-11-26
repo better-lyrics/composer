@@ -1,15 +1,13 @@
-import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { withAlignedWords } from "@/domain/language/align";
 import { regroupedLanguages } from "@/domain/language/pieces";
 import { withManualBackgroundWords } from "@/domain/line/background";
 import { explicitFieldWords } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, fieldRole, fieldWords, isSpanTimed, type TrackField } from "@/domain/line/track";
-import { withBackgroundTrack, withRoleWords, withTrackExplicit } from "@/domain/line/track-writes";
+import { fieldRole, fieldWords, type TrackField } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { mergedWord } from "@/domain/word/merge-run";
 import { computeSyllableGroups, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { applySiblingWords } from "@/utils/word-diff";
 
 // -- Types --------------------------------------------------------------------
 
@@ -43,12 +41,6 @@ function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map
   return out;
 }
 
-function withBackgroundExplicit(line: LyricLine, explicit: boolean): LyricLine {
-  const background = backgroundTrack(line);
-  const marked = background && withTrackExplicit(background, explicit);
-  return marked === background ? line : withBackgroundTrack(line, marked && { ...marked, source: "manual" });
-}
-
 function applyExplicitTargetToLines(
   lines: LyricLine[],
   lineId: string,
@@ -57,26 +49,7 @@ function applyExplicitTargetToLines(
 ): LyricLine[] {
   const target = lines.find((l) => l.id === lineId);
   if (!target) return lines;
-  const sourceBefore = explicitFieldWords(target, field);
-  const linkScope = getLinkScope(target);
-  // A line-synced background is marked as one block; a linked copy takes only the mark on its own syllables.
-  const sourceBackground = backgroundTrack(target);
-  const spanMark =
-    field === "backgroundWords" && sourceBackground && isSpanTimed(sourceBackground)
-      ? newWords[0]?.explicit === true
-      : undefined;
-
-  return lines.map((line) => {
-    if (line.id === lineId) {
-      return withFieldWords(line, field, newWords);
-    }
-    if (isLinkedSibling(line, linkScope) && spanMark !== undefined) return withBackgroundExplicit(line, spanMark);
-    if (isLinkedSibling(line, linkScope)) {
-      const propagated = applySiblingWords(newWords, sourceBefore, explicitFieldWords(line, field));
-      if (propagated) return withFieldWords(line, field, propagated);
-    }
-    return line;
-  });
+  return lines.map((line) => (line.id === lineId ? withFieldWords(line, field, newWords) : line));
 }
 
 function applyMergeSyllableGroup(
@@ -93,12 +66,9 @@ function applyMergeSyllableGroup(
   const selected = new Set(wordIndices.filter((i) => i >= 0 && i < sourceCount));
   if (selected.size === 0) return null;
 
-  const linkScope = getLinkScope(target);
   let mutated = false;
   const newLines = lines.map((line) => {
-    const isSource = line.id === lineId;
-    const isSibling = !isSource && isLinkedSibling(line, linkScope) && fieldWords(line, field)?.length === sourceCount;
-    if (!isSource && !isSibling) return line;
+    if (line.id !== lineId) return line;
     const aligned = withAlignedWords(line);
     const lineWords = fieldWords(aligned, field);
     if (!lineWords) return line;

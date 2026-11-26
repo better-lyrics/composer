@@ -1,7 +1,5 @@
 import type { CommandContext, HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { type Applied, type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
-import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
-import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineUpdate } from "@/domain/line/model";
@@ -9,7 +7,6 @@ import type { LineUpdate } from "@/domain/line/model";
 // -- Types --------------------------------------------------------------------
 
 interface EditLinesOptions {
-  propagateToSiblings?: boolean;
   copiesSharedTiming?: boolean;
 }
 
@@ -17,8 +14,9 @@ type PlannedEdit = readonly LineUpdate[] | { refused: Refusal };
 
 // -- Functions ----------------------------------------------------------------
 
-// The one way a command writes line patches: each patch lands on its line and, when asked, on its linked copies.
-function withLineUpdates(root: LyricRoot, updates: readonly LineUpdate[], propagateToSiblings: boolean): Applied {
+// The one way a command writes line patches: each patch lands on its own line. Other instances of a group line get
+// the edit from its template when the commit folds it.
+function withLineUpdates(root: LyricRoot, updates: readonly LineUpdate[]): Applied {
   const lines = [...root.lines];
   const indexById = new Map<string, number>();
   for (let i = 0; i < lines.length; i++) indexById.set(lines[i].id, i);
@@ -28,14 +26,6 @@ function withLineUpdates(root: LyricRoot, updates: readonly LineUpdate[], propag
     const target = targetIdx !== undefined ? lines[targetIdx] : undefined;
     if (targetIdx === undefined || !target) continue;
     lines[targetIdx] = { ...target, ...lineUpdates };
-
-    const linkScope = propagateToSiblings ? getLinkScope(target) : null;
-    if (!linkScope) continue;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.id === id || !isLinkedSibling(line, linkScope)) continue;
-      lines[i] = updatedLinkedSibling(line, target, lineUpdates);
-    }
   }
   return applied(
     { ...root, lines },
@@ -49,21 +39,21 @@ function lineEditCommand(
   plan: (root: LyricRoot, ctx: CommandContext) => PlannedEdit,
   options: EditLinesOptions = {},
 ): LyricCommand {
-  const { propagateToSiblings = true, copiesSharedTiming = true } = options;
+  const { copiesSharedTiming = true } = options;
   return {
     note,
     copiesSharedTiming,
     run: (root, ctx) => {
       const planned = plan(root, ctx);
       if ("refused" in planned) return planned;
-      return planned.length === 0 ? applied(root, []) : withLineUpdates(root, planned, propagateToSiblings);
+      return planned.length === 0 ? applied(root, []) : withLineUpdates(root, planned);
     },
   };
 }
 
 // -- Commands -----------------------------------------------------------------
 
-// Data that follows the lyrics (language refresh, alignment retime): no siblings, no shared copy, no text.
+// Data that follows the lyrics (language refresh, alignment retime): no shared copy, no text.
 function patchLines(updates: readonly LineUpdate[]): LyricCommand {
   return {
     note: { command: "patch lines", args: updates.map((update) => update.id) },

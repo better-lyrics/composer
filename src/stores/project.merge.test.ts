@@ -770,7 +770,7 @@ describe("mergeSelectedWords", () => {
       { text: "three", sep: "", begin: 12.5, end: 13, joinsNext: false },
     ]);
   });
-  describe("a linked copy whose blocks cross the merged text", () => {
+  describe("a linked copy split differently across the merged text", () => {
     function seedCrossingCopies(): void {
       useProjectStore.getState().commit(addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }));
       const linked = (id: string, instanceIdx: number, words: WordTiming[]): LyricLine =>
@@ -800,25 +800,15 @@ describe("mergeSelectedWords", () => {
     }
     const line = (id: string) => useProjectStore.getState().lines.find((l) => l.id === id);
 
-    it("asks, and Apply merges every block of the copy that touches the text", async () => {
+    it("a copy split differently takes the merge on its own timing, without asking", () => {
       seedCrossingCopies();
-      const merging = mergeSelectedWords("a0", "word", [0, 1]);
-      await expect.poll(() => useChoiceStore.getState().request?.title).toBe("Word structure changed");
-      useChoiceStore.getState().answer("apply");
-      await merging;
+      mergeSelectedWords("a0", "word", [0, 1]);
+      expect(useChoiceStore.getState().request).toBeNull();
       expect(timedSyllables(mainTrack(line("a0")!)).map((w) => w.text)).toEqual(["beauti", "ful"]);
-      expect(timedSyllables(mainTrack(line("a1")!)).map((w) => w.text)).toEqual(["beautiful"]);
-    });
-
-    it("Detach merges only the selected line and unlinks it", async () => {
-      seedCrossingCopies();
-      const merging = mergeSelectedWords("a0", "word", [0, 1]);
-      await expect.poll(() => useChoiceStore.getState().request?.title).toBe("Word structure changed");
-      useChoiceStore.getState().answer("detach");
-      await merging;
-      expect(timedSyllables(mainTrack(line("a0")!)).map((w) => w.text)).toEqual(["beauti", "ful"]);
-      expect(line("a0")?.groupId).toBeUndefined();
-      expect(timedSyllables(mainTrack(line("a1")!)).map((w) => w.text)).toEqual(["be", "aut", "iful"]);
+      expect(timedSyllables(mainTrack(line("a1")!)).map((w) => [w.text, w.begin, w.end])).toEqual([
+        ["beauti", 10, 10.6],
+        ["ful", 10.6, 10.9],
+      ]);
     });
   });
 });

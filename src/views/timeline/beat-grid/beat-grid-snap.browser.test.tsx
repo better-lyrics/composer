@@ -31,9 +31,7 @@ function writeWordToStore(index: number, updates: Partial<WordTiming>): void {
     useProjectStore
       .getState()
       .commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => fieldUpdates([{ id: line.id, updates: { words } }]), {
-          propagateToSiblings: false,
-        }),
+        lineEditCommand({ command: "edit lines", args: [] }, () => fieldUpdates([{ id: line.id, updates: { words } }])),
       );
 }
 

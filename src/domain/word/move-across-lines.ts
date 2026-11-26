@@ -1,5 +1,6 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
+import { isLinked } from "@/domain/instance/predicates";
 import { withoutBackground } from "@/domain/line/background";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { drawnSyllables } from "@/domain/line/drawn-track";
@@ -25,9 +26,10 @@ interface WordMove {
   word: WordTiming;
 }
 
-type MoveRejectReason = "cross-instance" | "line-synced-target" | "line-synced-source" | "overlap";
+type MoveRejectReason = "line-synced-target" | "line-synced-source" | "overlap";
 
-type MoveResult = { ok: true; updates: LineUpdate[] } | { ok: false; reject: MoveRejectReason };
+// `detachedIds` are group lines a move to or from another instance made their instance's own.
+type MoveResult = { ok: true; updates: LineUpdate[]; detachedIds: string[] } | { ok: false; reject: MoveRejectReason };
 
 interface SourceRemovals {
   word: Set<number>;
@@ -46,9 +48,6 @@ function validateMoves(moves: WordMove[], linesById: Map<string, LyricLine>): Mo
     const source = linesById.get(move.sourceLineId);
     const target = linesById.get(move.targetLineId);
     if (!source || !target) return { ok: false, reject: "overlap" };
-    if (source.id !== target.id && wouldDropCrossInstance(source, target)) {
-      return { ok: false, reject: "cross-instance" };
-    }
     if (move.targetTrack === "word" && isLineSynced(target) && target.id !== source.id) {
       return { ok: false, reject: "line-synced-target" };
     }
@@ -152,6 +151,19 @@ function lineUpdateFor(
   return updates;
 }
 
+// Text moved between a group line and a line of any other instance, or of none, makes that group line its
+// instance's own; text moved inside one instance changes its template.
+function linesLeavingTheirTemplate(moves: WordMove[], linesById: Map<string, LyricLine>): Set<string> {
+  const leaving = new Set<string>();
+  for (const move of moves) {
+    const source = linesById.get(move.sourceLineId);
+    const target = linesById.get(move.targetLineId);
+    if (!source || !target || source.id === target.id || !wouldDropCrossInstance(source, target)) continue;
+    for (const line of [source, target]) if (isLinked(line) && !line.detached) leaving.add(line.id);
+  }
+  return leaving;
+}
+
 // -- Entry point --------------------------------------------------------------
 
 function applyWordMoveAcrossLines(
@@ -159,7 +171,7 @@ function applyWordMoveAcrossLines(
   moves: WordMove[],
   rangeOf: (line: LyricLine) => TimeRange,
 ): MoveResult {
-  if (moves.length === 0) return { ok: true, updates: [] };
+  if (moves.length === 0) return { ok: true, updates: [], detachedIds: [] };
 
   const linesById = new Map<string, LyricLine>();
   for (const line of lines) linesById.set(line.id, line);
@@ -169,6 +181,7 @@ function applyWordMoveAcrossLines(
   const selfOverlap = detectIncomingSelfOverlap(moves);
   if (selfOverlap) return selfOverlap;
 
+  const leaving = linesLeavingTheirTemplate(moves, linesById);
   const removeByLine = planRemovals(moves);
   const insertByLine = planInserts(moves);
 
@@ -179,13 +192,14 @@ function applyWordMoveAcrossLines(
     if (!removals && !inserts) continue;
     const lineUpdates = lineUpdateFor(line, removals, inserts, rangeOf(line).max);
     if (!lineUpdates) return { ok: false, reject: "line-synced-source" };
-    if (Object.keys(lineUpdates).length > 0) updates.push({ id: line.id, updates: lineUpdates });
+    if (Object.keys(lineUpdates).length === 0) continue;
+    updates.push({ id: line.id, updates: leaving.has(line.id) ? { ...lineUpdates, detached: true } : lineUpdates });
   }
 
-  return { ok: true, updates };
+  return { ok: true, updates, detachedIds: updates.flatMap((update) => (leaving.has(update.id) ? [update.id] : [])) };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { applyWordMoveAcrossLines };
 export type { MoveRejectReason, WordMove };
+export { applyWordMoveAcrossLines };

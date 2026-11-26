@@ -8,6 +8,7 @@ import {
   instanceAnchors,
   type TemplateCopy,
 } from "@/domain/group/template-copy";
+import { type CarriedSplit, carryTemplateEdits } from "@/domain/group/template-edit";
 import type { LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
@@ -18,13 +19,15 @@ interface FoldInput {
   touched: readonly string[];
   groups: readonly LinkGroup[];
   copiesSharedTiming: boolean;
+  carriesTemplateEdits: boolean;
+  songEnd: number;
 }
 
 interface Folded {
   lines: LyricLine[];
   doc: LyricDoc;
-  rejected: boolean;
   copiedGroupIds: readonly string[];
+  splits: readonly CarriedSplit[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -73,19 +76,25 @@ function hintsOf(
 
 // -- Functions ----------------------------------------------------------------
 
-// Command output back into the doc: shared timing edits write the template and reach every shared instance, and only
-// the groups whose lines changed are read again. Work grows with the lines and groups a command touched.
-function foldLines({ doc, after, touched, groups, copiesSharedTiming }: FoldInput): Folded {
+// Command output back into the doc: content edits write the template and reach every instance, shared timing edits
+// reach every shared instance, and only the groups whose lines changed are read again. Work grows with the lines and
+// groups a command touched.
+function foldLines(input: FoldInput): Folded {
+  const { doc, after, touched, groups, copiesSharedTiming, carriesTemplateEdits, songEnd } = input;
   const before = flattenBody(doc);
   const anchors = instanceAnchors(doc);
-  const copy = copiesSharedTiming ? copyThroughTemplate({ doc, before, after, groups, touched, anchors }) : null;
-  if (copy?.rejected) return { lines: before, doc, rejected: true, copiedGroupIds: [] };
-  const output = copy?.lines ?? after;
+  const edited = carriesTemplateEdits
+    ? carryTemplateEdits({ before, after, groups, anchors })
+    : { lines: after, splits: [] };
+  const copy = copiesSharedTiming
+    ? copyThroughTemplate({ doc, before, after: edited.lines, groups, touched, anchors, songEnd })
+    : null;
+  const output = copy?.lines ?? edited.lines;
   const lines = sameElements(output, before) ? before : output;
-  if (lines === before) return { lines, doc, rejected: false, copiedGroupIds: [] };
+  if (lines === before) return { lines, doc, copiedGroupIds: [], splits: [] };
   const changed = changedGroupIds(before, lines);
   const folded = docAfterLines(doc, lines, changed, hintsOf(doc, changed, copy, anchors));
-  return { lines, doc: folded, rejected: false, copiedGroupIds: copy?.copiedGroupIds ?? [] };
+  return { lines, doc: folded, copiedGroupIds: copy?.copiedGroupIds ?? [], splits: edited.splits };
 }
 
 // -- Exports ------------------------------------------------------------------

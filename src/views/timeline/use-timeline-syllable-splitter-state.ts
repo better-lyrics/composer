@@ -1,4 +1,5 @@
 import { splitIdenticalSyllables } from "@/domain/commands/word-edits";
+import { splitWord } from "@/domain/commands/word-structure";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,
@@ -18,10 +19,10 @@ import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-opti
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { getSplitCharacter } from "@/utils/split-character";
-import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
 import { splitSourceWord } from "@/utils/word-timing";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { isRefused } from "@/domain/commands/outcome";
 
 // -- Types --------------------------------------------------------------------
 
@@ -148,15 +149,12 @@ function useTimelineSyllableSplitterState({
     if (!split) return;
     const extraUpdates = { languages: split.languages };
 
-    const done = (
-      type === "word"
-        ? handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates)
-        : handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", extraUpdates)
-    ).then((written) => {
-      if (written) noteGuideSignal("timeline.split");
-    });
+    const field = type === "word" ? "words" : "backgroundWords";
+    const outcome = useProjectStore.getState().commit(splitWord(lineId, field, split.words, extraUpdates));
+    if (isRefused(outcome)) return false;
+    noteGuideSignal("timeline.split");
     // Only a split that wasn't placed by ear is timed from the audio afterwards.
-    return placedByEar ? undefined : done;
+    return !placedByEar;
   }, [target, splitPoints, transliterationSplitPoints]);
 
   const confirmSplit = useCallback(async () => {
@@ -186,7 +184,7 @@ function useTimelineSyllableSplitterState({
       return;
     }
 
-    void applySingleWordSplit()?.then(retime);
+    if (applySingleWordSplit()) retime();
     resetSplitPoints();
     closeModal();
   }, [

@@ -29,11 +29,7 @@ describe("sync incremental tap preserves line.text", () => {
       defaultWordDuration: 1,
     });
     if (!commit) throw new Error("expected a commit");
-    useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-        propagateToSiblings: false,
-      }),
-    );
+    useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world how are you");
   });
@@ -49,11 +45,7 @@ describe("sync incremental tap preserves line.text", () => {
         defaultWordDuration: 0.4,
       });
       if (!commit) throw new Error("expected a commit");
-      useProjectStore.getState().commit(
-        lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-          propagateToSiblings: false,
-        }),
-      );
+      useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
       expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world how are you");
     }
   });
@@ -70,11 +62,7 @@ describe("sync incremental tap preserves line.text", () => {
       defaultWordDuration: 1,
     });
     if (!commit) throw new Error("expected a commit");
-    useProjectStore.getState().commit(
-      lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates, {
-        propagateToSiblings: false,
-      }),
-    );
+    useProjectStore.getState().commit(lineEditCommand({ command: "edit lines", args: [] }, () => commit.lineUpdates));
 
     const partialPrev = [...timedSyllables(mainTrack(useProjectStore.getState().lines[0]))];
     partialPrev[partialPrev.length - 1] = { ...partialPrev[partialPrev.length - 1], end: 2 };
@@ -83,7 +71,6 @@ describe("sync incremental tap preserves line.text", () => {
         { command: "edit lines", args: [] },
         () => fieldUpdates([{ id: "l0", updates: { words: partialPrev } }]),
         {
-          propagateToSiblings: false,
           copiesSharedTiming: false,
         },
       ),

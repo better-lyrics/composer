@@ -17,7 +17,7 @@ const tideLine = (
 ) => createLine({ id: "tide", text, words });
 
 const editTo = (line: LyricLine, text: string): LyricLine[] => {
-  const action = decideEditTextAction({ text, defaultAgentId: "v1", lines: [line], groups: [], modalPending: false });
+  const action = decideEditTextAction({ text, defaultAgentId: "v1", lines: [line], groups: [] });
   if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
   return action.finalLines;
 };
@@ -105,14 +105,7 @@ describe("syncAddressPosition", () => {
   it("stays on its untimed syllable when Edit inserts a word before it", () => {
     const line = tideLine([SLOW, TIDE, PULLS]);
     const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 4 });
-    const action = decideEditTextAction({
-      text: "Slow tide pulls the old harbour lights",
-      defaultAgentId: "v1",
-      lines: [line],
-      groups: [],
-      modalPending: false,
-    });
-    if (action.kind !== "apply") throw new Error(`expected an applied edit, got ${action.kind}`);
-    expect(syncAddressPosition(action.finalLines, stored)).toEqual({ lineIndex: 0, wordIndex: 5 });
+    const edited = editTo(line, "Slow tide pulls the old harbour lights");
+    expect(syncAddressPosition(edited, stored)).toEqual({ lineIndex: 0, wordIndex: 5 });
   });
 });

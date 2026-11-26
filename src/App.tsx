@@ -15,6 +15,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import { usePitchTrack } from "@/hooks/usePitchTrack";
 import { useShortcutPresetIntro } from "@/hooks/useShortcutPresetIntro";
 import { useSpaceHabitHint } from "@/hooks/useSpaceHabitHint";
+import { useSplitInAllInstancesNotice } from "@/hooks/useSplitInAllInstancesNotice";
 import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
@@ -112,6 +113,7 @@ const AppShell: React.FC = () => {
   usePersistence();
   useStorageMaintenance();
   useLanguageAutoRefresh();
+  useSplitInAllInstancesNotice();
   useRangePlayback();
   useProjectChannel();
   useProjectShortcuts(isEditor);

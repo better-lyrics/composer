@@ -24,11 +24,6 @@ interface SyncWordTarget {
   wordIndex: number;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-// Timing-only writes never derive text: during a forward pass the words are a prefix of the text.
-const TIMING_ONLY = { propagateToSiblings: false } as const;
-
 // -- Helpers ------------------------------------------------------------------
 
 function lineOf(lines: readonly LyricLine[], lineId: string): LyricLine | undefined {
@@ -50,15 +45,12 @@ function syncGesture(
       report(commit);
       return commit?.lineUpdates ?? [];
     },
-    TIMING_ONLY,
   );
 }
 
 function resetSync(): LyricCommand {
-  return lineEditCommand(
-    { command: "reset sync", args: [] },
-    (root) => root.lines.map((line) => ({ id: line.id, updates: { tracks: withoutLineTiming(line).tracks } })),
-    { propagateToSiblings: false },
+  return lineEditCommand({ command: "reset sync", args: [] }, (root) =>
+    root.lines.map((line) => ({ id: line.id, updates: { tracks: withoutLineTiming(line).tracks } })),
   );
 }
 
@@ -69,34 +61,26 @@ function retimeSyncWord(
   duration: number,
 ): LyricCommand {
   const { lineId, track, wordIndex } = target;
-  return lineEditCommand(
-    { command: "retime sync word", args: [lineId, track, wordIndex, edge] },
-    (root) => {
-      const line = lineOf(root.lines, lineId);
-      if (!line) return refused({ reason: "line-gone", lineId });
-      const range = timeRangeResolver(root.lines, root.groups, duration)(line);
-      const retime = track === "word" ? wordRetimeEdit : bgWordRetimeEdit;
-      const update = retime({ line, wordIdx: wordIndex, edge, change, range });
-      return update ? [update] : [];
-    },
-    TIMING_ONLY,
-  );
+  return lineEditCommand({ command: "retime sync word", args: [lineId, track, wordIndex, edge] }, (root) => {
+    const line = lineOf(root.lines, lineId);
+    if (!line) return refused({ reason: "line-gone", lineId });
+    const range = timeRangeResolver(root.lines, root.groups, duration)(line);
+    const retime = track === "word" ? wordRetimeEdit : bgWordRetimeEdit;
+    const update = retime({ line, wordIdx: wordIndex, edge, change, range });
+    return update ? [update] : [];
+  });
 }
 
 function shiftSyncLine(lineId: string, change: RetimeChange, duration: number): LyricCommand {
-  return lineEditCommand(
-    { command: "shift sync line", args: [lineId] },
-    (root) => {
-      const line = lineOf(root.lines, lineId);
-      if (!line) return refused({ reason: "line-gone", lineId });
-      const bounds = effectiveBounds(line);
-      if (!bounds) return [];
-      const delta = "by" in change ? change.by : change.to - bounds.begin;
-      const range = timeRangeResolver(root.lines, root.groups, duration)(line);
-      return [{ id: line.id, updates: shiftLineTiming(line, delta, range) }];
-    },
-    TIMING_ONLY,
-  );
+  return lineEditCommand({ command: "shift sync line", args: [lineId] }, (root) => {
+    const line = lineOf(root.lines, lineId);
+    if (!line) return refused({ reason: "line-gone", lineId });
+    const bounds = effectiveBounds(line);
+    if (!bounds) return [];
+    const delta = "by" in change ? change.by : change.to - bounds.begin;
+    const range = timeRangeResolver(root.lines, root.groups, duration)(line);
+    return [{ id: line.id, updates: shiftLineTiming(line, delta, range) }];
+  });
 }
 
 function splitSyncWord(
