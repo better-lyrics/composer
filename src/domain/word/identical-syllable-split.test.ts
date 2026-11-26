@@ -1,4 +1,4 @@
-import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
+import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 

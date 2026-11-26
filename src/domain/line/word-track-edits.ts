@@ -210,4 +210,5 @@ function applyMarkWordsExplicit(lines: LyricLine[], targets: ExplicitTarget[], v
 
 // -- Exports ------------------------------------------------------------------
 
+export type { ExplicitTarget };
 export { applyMarkWordsExplicit, applyMergeSyllableGroup, applyMoveFromBg, applyMoveToBg };
