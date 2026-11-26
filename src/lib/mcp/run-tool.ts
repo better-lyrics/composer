@@ -1,5 +1,6 @@
 import { type ToolArgs, ToolInputError, toolArgs } from "@/domain/mcp/tool-args";
 import { alignTransliteration } from "@/lib/mcp/alignment-tool";
+import { editLines } from "@/lib/mcp/edit-tool";
 import { setTranslations, setTransliterations } from "@/lib/mcp/language-tools";
 import { getLines, getProject } from "@/lib/mcp/read-tools";
 
@@ -17,6 +18,7 @@ const LOG_PREFIX = "[McpBridge]";
 const TOOL_HANDLERS: Record<string, (args: ToolArgs) => unknown> = {
   get_project: getProject,
   get_lines: getLines,
+  edit_lines: editLines,
   set_transliterations: setTransliterations,
   set_translations: setTranslations,
   align_transliteration: alignTransliteration,

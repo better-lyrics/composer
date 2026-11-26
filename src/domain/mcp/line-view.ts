@@ -1,3 +1,4 @@
+import { mappedTransliteration } from "@/domain/language/align";
 import type { TransliterationAlignmentStatus } from "@/domain/language/model";
 import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
@@ -59,9 +60,15 @@ function lineIssues(line: LyricLine): string[] {
         ),
   );
   const track = line.transliteration;
-  if (track?.alignmentStatus === "unresolved" || track?.backgroundAlignmentStatus === "unresolved") {
-    issues.push("transliteration-does-not-fit-syllables");
-  }
+  const unresolved = track?.alignmentStatus === "unresolved" || track?.backgroundAlignmentStatus === "unresolved";
+  if (unresolved) issues.push("transliteration-does-not-fit-syllables");
+  // A lyric edit can add syllables the existing mapping never covered; the Languages tab shows no warning for that.
+  const unmapped =
+    (track?.text.trim() && line.words?.length && mappedTransliteration(line.words) === null) ||
+    (track?.backgroundText?.trim() &&
+      line.backgroundWords?.length &&
+      mappedTransliteration(line.backgroundWords) === null);
+  if (!unresolved && unmapped) issues.push("transliteration-syllables-unmapped");
   return issues;
 }
 

@@ -55,7 +55,7 @@ const SETTINGS_CATALOG = {
     section: "advanced",
     label: "Let AI agents edit through Composer Bridge",
     description:
-      "MCP clients such as Claude Code and Codex can read the open project and write its transliterations, translations and transliteration alignment. Every change is one undo step.",
+      "MCP clients such as Claude Code and Codex can read the open project, fix its lyric text, and write its transliterations, translations and transliteration alignment. They never set timing. Every change is one undo step.",
     keywords: ["mcp", "ai", "agent", "claude", "codex", "llm", "translation", "transliteration", "align"],
     settingKey: "mcpAccess",
   },

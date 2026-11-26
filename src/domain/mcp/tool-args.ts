@@ -96,6 +96,16 @@ function languageLines(args: ToolArgs): LanguageLineArg[] {
   });
 }
 
+function editedLines(args: ToolArgs): Array<{ lineId: string; text: string }> {
+  return records(args, "lines").map((line, index) => {
+    const text = line.text;
+    if (typeof text !== "string" || !text.trim())
+      throw new ToolInputError(`lines[${index}].text must be non-empty text.`);
+    if (text.includes("\n")) throw new ToolInputError(`lines[${index}].text must be a single line.`);
+    return { lineId: requiredString(line, "lineId"), text };
+  });
+}
+
 function alignmentLines(args: ToolArgs): AlignmentLineArg[] {
   return records(args, "lines").map((line, index) => {
     const part = line.part ?? "main";
@@ -111,6 +121,7 @@ function alignmentLines(args: ToolArgs): AlignmentLineArg[] {
 export {
   ToolInputError,
   alignmentLines,
+  editedLines,
   languageLines,
   optionalBoolean,
   optionalInteger,

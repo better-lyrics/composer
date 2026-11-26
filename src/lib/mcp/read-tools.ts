@@ -9,6 +9,7 @@ import {
 } from "@/domain/mcp/tool-args";
 import { linesById, requireOpenProject } from "@/lib/mcp/tool-project";
 import { useProjectStore } from "@/stores/project";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -40,6 +41,7 @@ function getProject(args: ToolArgs): unknown {
     album: metadata.album,
     language: metadata.language || null,
     lineCount: lines.length,
+    splitCharacter: getSplitCharacter(),
     wordSyncedLines: lines.filter(isWordSynced).length,
     transliteration: {
       language: lines.find((line) => line.transliteration)?.transliteration?.language ?? null,
