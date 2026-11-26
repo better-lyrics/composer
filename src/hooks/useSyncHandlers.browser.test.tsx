@@ -1,15 +1,13 @@
 import type { LyricLine } from "@/domain/line/model";
-import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import type { SyncState } from "@/utils/sync-helpers";
+import { at, mountSyncHandlers, positionOf } from "@/test/sync-handlers-harness";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -17,55 +15,6 @@ beforeEach(() => {
 });
 
 const ORIGINAL_TEXT = "Hello world how are you";
-
-interface HookProps {
-  syncState: SyncState;
-  currentTime: number;
-}
-
-function noopBool(_value: boolean): void {}
-
-interface MountOptions {
-  initialSyncState?: SyncState;
-  initialCurrentTime?: number;
-  granularity?: "word" | "line";
-  editMode?: boolean;
-}
-
-async function mountSyncHandlers(opts: MountOptions = {}) {
-  let syncState: SyncState = opts.initialSyncState ?? { position: { lineIndex: 0, wordIndex: 0 }, isActive: true };
-  const setSyncState = (next: SyncState | ((prev: SyncState) => SyncState)) => {
-    syncState = typeof next === "function" ? next(syncState) : next;
-  };
-  const getSyncState = () => syncState;
-  const startTime = opts.initialCurrentTime ?? 0;
-  const playingCalls: boolean[] = [];
-  if (opts.initialCurrentTime !== undefined) useAudioStore.setState({ currentTime: opts.initialCurrentTime });
-
-  const { result, rerender, act } = await renderHook(
-    (props?: HookProps) => {
-      const lines = useProjectStore.getState().lines;
-      const state = props?.syncState ?? syncState;
-      return useSyncHandlers({
-        lines,
-        syncState: state,
-        setSyncState,
-        editMode: opts.editMode ?? false,
-        granularity: opts.granularity ?? "word",
-        setShowPulse: noopBool,
-        setIsPlaying: (value) => playingCalls.push(value),
-      });
-    },
-    { initialProps: { syncState, currentTime: startTime } },
-  );
-
-  const rerenderAt = async (props: HookProps) => {
-    useAudioStore.setState({ currentTime: props.currentTime });
-    await rerender(props);
-  };
-
-  return { result, rerender: rerenderAt, act, getSyncState, playingCalls };
-}
 
 describe("useSyncHandlers.handleTap (word granularity)", () => {
   it("preserves line.text across a full word-by-word tap sequence", async () => {
@@ -125,7 +74,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     ]);
 
     const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: 5.0,
     });
 
@@ -163,7 +112,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     ]);
 
     const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: true },
+      initialSyncState: { position: at(0, 0), isActive: true },
       initialCurrentTime: 5.0,
     });
 
@@ -191,7 +140,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     await rerender({ syncState: getSyncState(), currentTime: 0.5 });
     await act(() => result.current.handleTap());
 
-    expect(getSyncState().position.lineIndex).toBe(2);
+    expect(positionOf(getSyncState()).lineIndex).toBe(2);
 
     await rerender({ syncState: getSyncState(), currentTime: 1.25 });
     await act(() => result.current.handleTap());
@@ -367,7 +316,7 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
 
     const TAP_TIME = 1.25;
     const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: true },
+      initialSyncState: { position: at(1, 0), isActive: true },
       initialCurrentTime: TAP_TIME,
       granularity: "line",
     });
@@ -463,7 +412,7 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     ]);
 
     const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: 1.0,
     });
 
@@ -491,7 +440,7 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
 
     const END_TIME = 2.0;
     const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: END_TIME,
     });
 
@@ -528,14 +477,14 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     seedFullyTimedLine();
 
     const { result, rerender, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: 5,
     });
 
     await act(() => {
       result.current.handleHoldStart();
     });
-    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await rerender({ syncState: { position: at(0, 1), isActive: true }, currentTime: 6 });
     await act(() => {
       result.current.handleHoldEnd();
     });
@@ -560,14 +509,14 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     ]);
 
     const { result, rerender, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: 5,
     });
 
     await act(() => {
       result.current.handleHoldStart();
     });
-    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await rerender({ syncState: { position: at(0, 1), isActive: true }, currentTime: 6 });
     await act(() => {
       result.current.handleHoldEnd();
     });
@@ -581,14 +530,14 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     seedFullyTimedLine();
 
     const { result, rerender, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: 5,
     });
 
     await act(() => {
       result.current.handleHoldStart();
     });
-    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await rerender({ syncState: { position: at(0, 1), isActive: true }, currentTime: 6 });
     await act(() => {
       result.current.handleHoldTap();
     });
@@ -603,14 +552,14 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     seedFullyTimedLine();
 
     const { result, rerender, act, getSyncState } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: 5,
     });
 
     await act(() => {
       result.current.handleHoldStart();
     });
-    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await rerender({ syncState: { position: at(0, 1), isActive: true }, currentTime: 6 });
     await act(() => {
       result.current.handleHoldTap();
     });
@@ -618,7 +567,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words[1]).toMatchObject({ begin: 5, end: 6 });
     expect(words[2]).toMatchObject({ text: "three", sep: "", begin: 6, end: 6 });
-    expect(getSyncState().position.wordIndex).toBe(2);
+    expect(positionOf(getSyncState()).wordIndex).toBe(2);
   });
 
   it("preserves explicit and syllableGroupId when re-holding a mid-line word", async () => {
@@ -635,7 +584,7 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
     ]);
 
     const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialSyncState: { position: at(0, 1), isActive: true },
       initialCurrentTime: 5,
     });
 
@@ -677,7 +626,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
 
     await act(() => result.current.handleJumpToLine(1));
 
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 0 });
     expect(useAudioStore.getState().currentTime).toBe(3 - DEFAULTS.redoPreroll);
     expect(playingCalls).not.toContain(true);
   });
@@ -714,7 +663,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
       }),
     ]);
     const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 5, wordIndex: 2 }, isActive: true },
+      initialSyncState: { position: at(5, 2), isActive: true },
     });
 
     await act(() => result.current.handleJumpToLine(0));
@@ -734,7 +683,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
 
     await act(() => result.current.handleJumpToLine(1));
 
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 0 });
     expect(useAudioStore.getState().currentTime).toBe(2.5);
     expect(playingCalls).toHaveLength(0);
   });
@@ -746,7 +695,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
     await act(() => result.current.handleJumpToLine(1));
 
     expect(useAudioStore.getState().currentTime).toBe(3);
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 0 });
     expect(playingCalls).not.toContain(true);
   });
 
@@ -792,7 +741,7 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
 
     await act(() => result.current.handleJumpToWord(1, 1));
 
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 1 });
     expect(useAudioStore.getState().currentTime).toBe(3.5 - DEFAULTS.redoPreroll);
     expect(playingCalls).not.toContain(true);
   });
@@ -839,9 +788,9 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     const { result, act, rerender, getSyncState } = await mountSyncHandlers({ initialCurrentTime: 4 });
 
     await act(() => result.current.handleJumpToWord(0, 2));
-    expect(getSyncState().position).toEqual({ lineIndex: 0, wordIndex: 2 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 0, wordIndex: 2 });
 
-    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 2 }, isActive: true }, currentTime: 4 });
+    await rerender({ syncState: { position: at(0, 2), isActive: true }, currentTime: 4 });
     await act(() => result.current.handleTap());
 
     const words = useProjectStore.getState().lines[0].words ?? [];
@@ -857,7 +806,7 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     await act(() => result.current.handleJumpToWord(1, 1));
 
     expect(useAudioStore.getState().currentTime).toBe(3.5);
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 1 });
   });
 
   it("pauses playback so a jump never leaves the transport running", async () => {
@@ -1067,12 +1016,12 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
   it("regression: starts at the navigated line instead of resetting to the top", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
     const { result, act, getSyncState } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: false },
+      initialSyncState: { position: at(1, 0), isActive: false },
     });
 
     await act(() => result.current.handleStartSync());
 
-    expect(getSyncState().position.lineIndex).toBe(1);
+    expect(positionOf(getSyncState()).lineIndex).toBe(1);
     expect(getSyncState().isActive).toBe(true);
     expect(useAudioStore.getState().isPlaying).toBe(true);
   });
@@ -1080,12 +1029,12 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
   it("preserves the navigated word index when starting", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
     const { result, act, getSyncState } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 1, wordIndex: 1 }, isActive: false },
+      initialSyncState: { position: at(1, 1), isActive: false },
     });
 
     await act(() => result.current.handleStartSync());
 
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 1 });
   });
 
   it("falls back to the first syncable line when the cursor sits on a non-syncable line", async () => {
@@ -1098,12 +1047,12 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
       }),
     ]);
     const { result, act, getSyncState } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: false },
+      initialSyncState: { position: at(0, 0), isActive: false },
     });
 
     await act(() => result.current.handleStartSync());
 
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+    expect(positionOf(getSyncState())).toEqual({ lineIndex: 1, wordIndex: 0 });
   });
 });
 
@@ -1150,7 +1099,7 @@ describe("useSyncHandlers with shared timing", () => {
     seedSharedChorus(true);
     const { result, act } = await mountSyncHandlers({
       granularity: "line",
-      initialSyncState: { position: { lineIndex: 3, wordIndex: 0 }, isActive: true },
+      initialSyncState: { position: at(3, 0), isActive: true },
     });
 
     await act(() => {
@@ -1230,7 +1179,7 @@ describe("useSyncHandlers with shared timing", () => {
     seedSharedChorus(false);
     const { result, act } = await mountSyncHandlers({
       granularity: "line",
-      initialSyncState: { position: { lineIndex: 3, wordIndex: 0 }, isActive: true },
+      initialSyncState: { position: at(3, 0), isActive: true },
     });
 
     await act(() => {

@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { SyncGranularity } from "@/domain/line/sync-progress";
+import { syncAddressPosition } from "@/domain/sync/address";
 import { storedSyncPosition } from "@/domain/sync/anchor-gesture";
 import { resolveSyncCursor } from "@/domain/sync/cursor";
 import type { SyncCursor } from "@/domain/sync/cursor";
@@ -43,7 +44,7 @@ function useSyncCursor(lines: readonly LyricLine[], syncState: SyncState, granul
   const historyIndex = useProjectStore((s) => s.historyIndex);
   const groups = useProjectStore((s) => s.groups);
   const skippedInstances = useMemo(() => skippedSharedInstances(lines, groups), [lines, groups]);
-  const stored = storedSyncPosition(syncState, { history, historyIndex });
+  const stored = storedSyncPosition(syncState, lines, { history, historyIndex });
   const openProjectId = useOpenProjectId();
   const reRecording = syncState.reRecording?.projectId === openProjectId ? syncState.reRecording : undefined;
   const { cursor, jumped } = useMemo(
@@ -51,7 +52,7 @@ function useSyncCursor(lines: readonly LyricLine[], syncState: SyncState, granul
       syncPositionPastSkipped(
         lines,
         skippedInstances,
-        resolveSyncCursor(lines, stored.position, stored.jumped, granularity),
+        resolveSyncCursor(lines, syncAddressPosition(lines, stored.position), stored.jumped, granularity),
         stored.jumped,
         reRecording,
       ),
