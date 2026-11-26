@@ -2,10 +2,9 @@ import { describe, expect, it } from "vitest";
 import { setWordBoundary } from "@/domain/commands/word-timing";
 import { addressAt } from "@/domain/selection/resolve";
 import type { LyricLine } from "@/domain/line/model";
+import { retimeSyncWord } from "@/domain/commands/sync";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { nudgeBgWordBegin, nudgeBgWordEnd } from "@/utils/timing/bg-word-timing";
-import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -41,7 +40,16 @@ describe("word timing ops with a shared time range", () => {
   it("stops a first word nudge where the earliest instance reaches zero", () => {
     seed(true);
 
-    nudgeWordBegin(store().lines, 1, 0, -5, store().updateLineWithHistory, store().groups);
+    useProjectStore
+      .getState()
+      .commit(
+        retimeSyncWord(
+          { lineId: store().lines[1].id, track: "word", wordIndex: 0 },
+          "begin",
+          { by: -5 },
+          Number.POSITIVE_INFINITY,
+        ),
+      );
 
     expect(lineById("c1")?.words?.[0].begin).toBe(7);
     expect(lineById("c0")?.words?.[0].begin).toBe(0);
@@ -50,7 +58,16 @@ describe("word timing ops with a shared time range", () => {
   it("stops a first word set before the range", () => {
     seed(true);
 
-    setWordBegin(store().lines, 1, 0, 2, store().updateLineWithHistory, store().groups);
+    useProjectStore
+      .getState()
+      .commit(
+        retimeSyncWord(
+          { lineId: store().lines[1].id, track: "word", wordIndex: 0 },
+          "begin",
+          { to: 2 },
+          Number.POSITIVE_INFINITY,
+        ),
+      );
 
     expect(lineById("c1")?.words?.[0].begin).toBe(7);
     expect(lineById("c0")?.words?.[0].begin).toBe(0);
@@ -59,7 +76,16 @@ describe("word timing ops with a shared time range", () => {
   it("stops a first background word at the start of the range", () => {
     seed(true);
 
-    nudgeBgWordBegin(store().lines, 1, 0, -5, store().updateLineWithHistory, store().groups);
+    useProjectStore
+      .getState()
+      .commit(
+        retimeSyncWord(
+          { lineId: store().lines[1].id, track: "bg", wordIndex: 0 },
+          "begin",
+          { by: -5 },
+          Number.POSITIVE_INFINITY,
+        ),
+      );
 
     expect(lineById("c1")?.backgroundWords?.[0].begin).toBe(7);
     expect(lineById("c0")?.backgroundWords?.[0].begin).toBe(0);
@@ -69,7 +95,16 @@ describe("word timing ops with a shared time range", () => {
     it("moves a first word of an old group to zero, as before", () => {
       seed(false);
 
-      nudgeWordBegin(store().lines, 1, 0, -15, store().updateLineWithHistory, store().groups);
+      useProjectStore
+        .getState()
+        .commit(
+          retimeSyncWord(
+            { lineId: store().lines[1].id, track: "word", wordIndex: 0 },
+            "begin",
+            { by: -15 },
+            Number.POSITIVE_INFINITY,
+          ),
+        );
 
       expect(lineById("c1")?.words?.[0].begin).toBe(0);
       expect(lineById("c0")?.words?.[0].begin).toBe(3);
@@ -78,20 +113,19 @@ describe("word timing ops with a shared time range", () => {
     it("keeps no end limit for a last word", () => {
       seed(true);
 
-      nudgeWordEnd(store().lines, 1, 1, 100, store().updateLineWithHistory, store().groups);
+      useProjectStore
+        .getState()
+        .commit(
+          retimeSyncWord(
+            { lineId: store().lines[1].id, track: "word", wordIndex: 1 },
+            "end",
+            { by: 100 },
+            Number.POSITIVE_INFINITY,
+          ),
+        );
 
       expect(lineById("c1")?.words?.[1].end).toBe(111);
       expect(lineById("c0")?.words?.[1].end).toBe(104);
-    });
-  });
-
-  describe("edge cases", () => {
-    it("is rejected by the store when no groups are given and a copy would go below zero", () => {
-      seed(true);
-
-      nudgeWordBegin(store().lines, 1, 0, -15, store().updateLineWithHistory);
-
-      expect(lineById("c1")?.words?.[0].begin).toBe(10);
     });
   });
 });
@@ -102,7 +136,11 @@ describe("word timing ops with a song end", () => {
   it("stops a last word end where the latest instance reaches the song end", () => {
     seed(true);
 
-    nudgeWordEnd(store().lines, 0, 1, 100, store().updateLineWithHistory, store().groups, SONG_END);
+    useProjectStore
+      .getState()
+      .commit(
+        retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { by: 100 }, SONG_END),
+      );
 
     expect(lineById("c0")?.words?.[1].end).toBe(5);
     expect(lineById("c1")?.words?.[1].end).toBe(12);
@@ -111,7 +149,11 @@ describe("word timing ops with a song end", () => {
   it("stops a last word set past the range", () => {
     seed(true);
 
-    setWordEnd(store().lines, 0, 1, 100, store().updateLineWithHistory, store().groups, SONG_END);
+    useProjectStore
+      .getState()
+      .commit(
+        retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { to: 100 }, SONG_END),
+      );
 
     expect(lineById("c0")?.words?.[1].end).toBe(5);
     expect(lineById("c1")?.words?.[1].end).toBe(12);
@@ -120,7 +162,9 @@ describe("word timing ops with a song end", () => {
   it("stops a last background word end where the latest instance reaches the song end", () => {
     seed(true);
 
-    nudgeBgWordEnd(store().lines, 0, 0, 100, store().updateLineWithHistory, store().groups, SONG_END);
+    useProjectStore
+      .getState()
+      .commit(retimeSyncWord({ lineId: store().lines[0].id, track: "bg", wordIndex: 0 }, "end", { by: 100 }, SONG_END));
 
     expect(lineById("c0")?.backgroundWords?.[0].end).toBe(5);
     expect(lineById("c1")?.backgroundWords?.[0].end).toBe(12);
@@ -130,7 +174,11 @@ describe("word timing ops with a song end", () => {
     it.each([0, Number.NaN])("treats a song length of %s as no song end", (duration) => {
       seed(true);
 
-      nudgeWordEnd(store().lines, 0, 1, 100, store().updateLineWithHistory, store().groups, duration);
+      useProjectStore
+        .getState()
+        .commit(
+          retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { by: 100 }, duration),
+        );
 
       expect(lineById("c0")?.words?.[1].end).toBe(104);
       expect(lineById("c1")?.words?.[1].end).toBe(111);
@@ -141,7 +189,11 @@ describe("word timing ops with a song end", () => {
     it("moves a last word of an old group without touching its sibling", () => {
       seed(false);
 
-      nudgeWordEnd(store().lines, 0, 1, 3, store().updateLineWithHistory, store().groups, SONG_END);
+      useProjectStore
+        .getState()
+        .commit(
+          retimeSyncWord({ lineId: store().lines[0].id, track: "word", wordIndex: 1 }, "end", { by: 3 }, SONG_END),
+        );
 
       expect(lineById("c0")?.words?.[1].end).toBe(7);
       expect(lineById("c1")?.words?.[1].end).toBe(11);

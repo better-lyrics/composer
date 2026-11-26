@@ -90,7 +90,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
       const { lineId } = contextMenu.target;
       if (rawLines.find((line) => line.id === lineId)?.agentId !== agentId) {
-        useProjectStore.getState().commit(assignSinger(lineId, agentId));
+        useProjectStore.getState().commit(assignSinger([lineId], agentId));
         noteGuideSignal("edit.singer");
       }
       clearContextMenu();

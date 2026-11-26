@@ -1,3 +1,4 @@
+import { applyGeneratedLanguages, removeTranslation } from "@/domain/commands/languages";
 import { pastedRows } from "@/domain/language/paste-import";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
@@ -41,7 +42,6 @@ const LanguagesPanel: React.FC = () => {
   const metadata = useProjectStore((state) => state.metadata);
   const projectSession = useProjectStore((state) => state.projectSession);
   const activeTab = useProjectStore((state) => state.activeTab);
-  const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const setMetadata = useProjectStore((state) => state.setMetadata);
   const { targets, targetsRef, setTargets, project } = useLanguageTargets(lines, metadata, projectSession);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -92,7 +92,7 @@ const LanguagesPanel: React.FC = () => {
           edits,
         );
         if (updates.length > 0) {
-          updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+          useProjectStore.getState().commit(applyGeneratedLanguages(updates));
           if (requestedTargets.length > 0) noteGuideSignal("languages.generate");
           if (generation.transliteration) noteGuideSignal("languages.romanize");
         }
@@ -112,7 +112,7 @@ const LanguagesPanel: React.FC = () => {
         }
       }
     },
-    [setMetadata, sourceLanguage, targetsRef, updateLinesWithHistory],
+    [setMetadata, sourceLanguage, targetsRef],
   );
   // Activity tears down effects on hide, even without a render of the new tab.
   // biome-ignore lint/correctness/useExhaustiveDependencies: Tab and project changes must cancel the previous generation lifecycle.
@@ -127,13 +127,7 @@ const LanguagesPanel: React.FC = () => {
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
   const removeTarget = (language: string) => {
-    const updates = lines.flatMap((line) => {
-      if (!line.translations?.[language]) return [];
-      const translations = { ...line.translations };
-      delete translations[language];
-      return [{ id: line.id, updates: { translations } }];
-    });
-    if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+    useProjectStore.getState().commit(removeTranslation(language));
     setTargets((all) => all.filter((item) => item !== language));
   };
   const addTarget = (language: string) => {

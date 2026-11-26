@@ -1,3 +1,4 @@
+import { setLanguageFields } from "@/domain/commands/languages";
 import { getAgentColor } from "@/domain/agent/colors";
 import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
@@ -39,7 +40,6 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   languageNames,
   sourceLanguage,
 }) => {
-  const updateLine = useProjectStore((state) => state.updateLine);
   const [alignmentField, setAlignmentField] = useState<AlignmentField | null>(null);
   const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
   const needsReview = getLanguageReviewTracks(line).length > 0;
@@ -53,7 +53,8 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
     ? isTransliterationSourceStale(line, "words") || alignmentNeedsReview(line.transliteration, "main")
     : false;
   const canAlignMain = Boolean(line.words?.length && line.transliteration?.text && !transliterationError);
-  const update = (updates: Partial<LyricLine>) => updateLine(line.id, updates, { deriveText: false });
+  const update = (updates: Partial<LyricLine>) =>
+    useProjectStore.getState().commit(setLanguageFields(line.id, updates), "pending");
   const clearTransliteration = () =>
     update({
       ...(line.transliteration
