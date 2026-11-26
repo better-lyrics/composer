@@ -2,7 +2,7 @@ import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
 import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { linePassthroughOf, withLinePassthrough } from "@/domain/line/passthrough";
+import { linePassthroughOf, withLinePassthrough, withoutKeptData } from "@/domain/line/passthrough";
 import { backgroundTrack } from "@/domain/line/track";
 import { trackText } from "@/domain/line/text";
 import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
@@ -156,8 +156,11 @@ function fieldMergedLine(storedLine: LyricLine, editedLine: LyricLine): LyricLin
   return withUntimedIdsOf(withLinePassthrough(merged, linePassthroughOf(storedLine)), storedLine);
 }
 
+// Kept TTML data never decides whether a line merges.
 function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
-  return generateLineTtml(stored) === generateLineTtml(edited) ? stored : fieldMergedLine(stored, edited);
+  return generateLineTtml(withoutKeptData(stored)) === generateLineTtml(withoutKeptData(edited))
+    ? stored
+    : fieldMergedLine(stored, edited);
 }
 
 // -- Merge --------------------------------------------------------------------

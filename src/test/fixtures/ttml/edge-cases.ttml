@@ -1,0 +1,19 @@
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:x-vendor="https://vendor.example/ttml" itunes:timing="Word">
+  <x-vendor:preamble version="2"/>
+  <head>
+    <metadata x-vendor:pass="first"><ttm:agent type="person" xml:id="v1" x-vendor:voice="alto"><x-vendor:alias><ttm:name>Shade Wren</ttm:name></x-vendor:alias><ttm:name>Ilse Marr</ttm:name></ttm:agent><ttm:agent type="person" xml:id="v2"><ttm:name>Juno <x-vendor:nick>JP</x-vendor:nick></ttm:name></ttm:agent></metadata>
+    <metadata x-vendor:pass="second" x-vendor:origin="desk"><x-vendor:tag>second block</x-vendor:tag></metadata>
+  </head>
+  <body>
+    <div itunes:songPart="Intro" x-vendor:mood="hush"/>
+    <div itunes:songPart="Verse" x-vendor:section="outer">
+      <div itunes:songPart="Hook" begin="0:00.900" x-vendor:sub="a" z-tool:depth="2"><x-vendor:cue at="start"/><p begin="0:01.000" end="0:03.000" itunes:key="L1" ttm:agent="v1"><span begin="0:01.000" end="0:02.000" y-tool:mark="a b:c= d">Set </span><span begin="0:02.000" end="0:03.000">turn mode:loud=up</span></p></div>
+      <div end="0:06.500"><p begin="0:04.000" end="0:06.000" itunes:key="L2" ttm:agent="v1"><span begin="0:04.000" end="0:05.000"><ruby>灯<rt>ひ</rt></ruby> </span><span begin="0:05.000" end="0:06.000" amll:empty-beat="1">glow</span></p></div>
+    </div>
+    <div>
+      <p begin="0:07.000" end="0:09.000" itunes:key="L3" ttm:agent="v1">Quiet <x-vendor:note>aside</x-vendor:note>harbour <span tts:color="red">bright</span></p>
+      <p begin="0:10.000" end="0:12.000" itunes:key="L4" ttm:agent="v2">Far shore<span ttm:role="x-bg"><span x-vendor:echo="2">(far)</span></span></p>
+    </div>
+  </body>
+  <x-vendor:trailer/>
+</tt>

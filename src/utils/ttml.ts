@@ -1,36 +1,22 @@
-import { escapeXmlAttribute, escapeXmlText } from "insync/xml-node";
+import type { Part } from "insync/part";
+import type { DocPassthrough } from "insync/passthrough";
+import { escapeXmlAttribute } from "insync/xml-node";
 import type { Agent } from "@/domain/agent/model";
-import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
-import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
-import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
-import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
-import { isWordSynced } from "@/domain/line/predicates";
 import { syncProgress } from "@/domain/line/sync-progress";
-import { backgroundText, lineText } from "@/domain/line/text";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { YOUTUBE_VIDEO_ID_KEY, toComposerMeta } from "@/domain/project/metadata-ttml";
+import { YOUTUBE_VIDEO_ID_KEY } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { type TimingGranularity, timingGranularityOf } from "@/domain/project/timing-granularity";
-import { formatTime } from "@/utils/format-time";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
-import { stripSplitCharacter } from "@/utils/split-character";
-import {
-  hasAlternateText,
-  renderTranslationContent,
-  renderTransliterationContent,
-} from "@/utils/ttml-alternate-content";
-import { isExportedLine, keyedExportLines } from "@/utils/ttml-line-keys";
-import { emitWordSpan } from "@/utils/ttml-markup";
-
-// -- Constants ----------------------------------------------------------------
-
-const APPLE_LYRIC_NS = "http://music.apple.com/lyric-ttml-internal";
-
-// -- Helpers ------------------------------------------------------------------
+import { ITUNES_NS } from "@/utils/lyrics-parsers/ttml-modelled";
+import { bodyLines } from "@/utils/ttml-body";
+import { headLines } from "@/utils/ttml-head";
+import { keptPrefixDeclarations } from "@/utils/ttml-kept-prefixes";
+import { keyedExportLines } from "@/utils/ttml-line-keys";
+import { keptAttributes, keptElementLines } from "@/utils/ttml-passthrough-write";
 
 // -- Generator ----------------------------------------------------------------
 
@@ -39,6 +25,8 @@ interface TTMLOptions {
   agents: Agent[];
   lines: LyricLine[];
   groups?: LinkGroup[];
+  parts?: readonly Part[];
+  passthrough?: DocPassthrough;
   minify?: boolean;
   duration?: number;
   timing?: TimingGranularity;
@@ -50,6 +38,8 @@ function generateTTML({
   agents,
   lines,
   groups,
+  parts: songParts = [],
+  passthrough,
   minify = false,
   duration,
   timing,
@@ -71,171 +61,37 @@ function generateTTML({
   // Apple Music lyric dialect, not strict W3C TTML1. Absolute span times and the
   // Apple timestamp shape are intentional; don't "fix" them to generic TTML.
   parts.push(
-    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${APPLE_LYRIC_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media"${langAttr} itunes:timing="${timingValue}" composer:timing="${timingValue}">`,
+    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${ITUNES_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media"${langAttr} itunes:timing="${timingValue}" composer:timing="${timingValue}"${keptAttributes(passthrough?.tt)}${keptPrefixDeclarations({ passthrough, parts: songParts, agents, lines })}>`,
   );
 
-  // Head section
-  parts.push(`${ind(1)}<head>`);
-  parts.push(`${ind(2)}<metadata>`);
-  if (metadata.title) {
-    parts.push(`${ind(3)}<ttm:title>${escapeXmlText(metadata.title)}</ttm:title>`);
-  }
-  for (const { key, value } of toComposerMeta(metadata)) {
-    parts.push(`${ind(3)}<composer:meta key="${escapeXmlAttribute(key)}" value="${escapeXmlAttribute(value)}"/>`);
-  }
-  if (youtubeVideoId) {
-    parts.push(`${ind(3)}<composer:meta key="${YOUTUBE_VIDEO_ID_KEY}" value="${escapeXmlAttribute(youtubeVideoId)}"/>`);
-  }
-  agents.forEach((agent, position) => {
-    // The importer names an unnamed singer for display only; exporting that name would edit the lyrics.
-    if (agent.name && agent.name !== placeholderAgentName(position)) {
-      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}">`);
-      parts.push(`${ind(4)}<ttm:name>${escapeXmlText(agent.name)}</ttm:name>`);
-      parts.push(`${ind(3)}</ttm:agent>`);
-    } else {
-      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}"/>`);
-    }
-  });
-  if (groups && groups.length > 0) {
-    parts.push(`${ind(3)}<composer:groups>`);
-    for (const g of groups) {
-      const sharing = g.sharesTiming ? ` sharesTiming="true"` : "";
-      const ownTiming = g.ownTimingInstances?.length ? ` ownTimingInstances="${g.ownTimingInstances.join(",")}"` : "";
-      parts.push(
-        `${ind(4)}<composer:group id="${escapeXmlAttribute(g.id)}" label="${escapeXmlAttribute(g.label)}" color="${escapeXmlAttribute(g.color)}" templateVersion="${g.templateVersion}"${sharing}${ownTiming}/>`,
-      );
-    }
-    parts.push(`${ind(3)}</composer:groups>`);
-  }
-
-  const translationLanguages = new Set<string>();
-  for (const { line } of keyedLines) {
-    for (const [language, track] of Object.entries(lineTranslations(line) ?? {})) {
-      if (hasAlternateText(track)) {
-        translationLanguages.add(language);
-      }
-    }
-  }
-  const transliterationLines = keyedLines.flatMap(({ line, key }) => {
-    const transliteration = lineTransliteration(line);
-    return transliteration && hasAlternateText(transliteration) ? [{ line, key, transliteration }] : [];
-  });
-  if (translationLanguages.size > 0 || transliterationLines.length > 0) {
-    parts.push(`${ind(3)}<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">`);
-    if (translationLanguages.size > 0) {
-      parts.push(`${ind(4)}<translations>`);
-      for (const language of translationLanguages) {
-        parts.push(`${ind(5)}<translation xml:lang="${escapeXmlText(language)}" type="subtitle">`);
-        for (const { line, key } of keyedLines) {
-          const track = lineTranslations(line)?.[language];
-          if (track && hasAlternateText(track)) {
-            parts.push(
-              `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.main.text, track.bg?.text)}</text>`,
-            );
-          }
-        }
-        parts.push(`${ind(5)}</translation>`);
-      }
-      parts.push(`${ind(4)}</translations>`);
-    }
-    if (transliterationLines.length > 0) {
-      const byLanguage = new Map<string, typeof transliterationLines>();
-      for (const item of transliterationLines) {
-        const language = item.transliteration.language;
-        byLanguage.set(language, [...(byLanguage.get(language) ?? []), item]);
-      }
-      parts.push(`${ind(4)}<transliterations>`);
-      for (const [language, languageLines] of byLanguage) {
-        parts.push(`${ind(5)}<transliteration xml:lang="${escapeXmlText(language)}">`);
-        for (const { line, key } of languageLines) {
-          parts.push(`${ind(6)}<text for="${key}">${renderTransliterationContent(line, writesWords)}</text>`);
-        }
-        parts.push(`${ind(5)}</transliteration>`);
-      }
-      parts.push(`${ind(4)}</transliterations>`);
-    }
-    parts.push(`${ind(3)}</iTunesMetadata>`);
-  }
-  parts.push(`${ind(2)}</metadata>`);
-  parts.push(`${ind(1)}</head>`);
-
-  // Body section
-  const durAttr = duration ? ` dur="${formatTime(duration)}"` : "";
-  parts.push(`${ind(1)}<body${durAttr}>`);
-  parts.push(`${ind(2)}<div>`);
-
-  for (const line of lines) {
-    const lineTiming = effectiveBounds(line);
-    if (!lineTiming || !isExportedLine(line)) continue;
-
-    const agentAttr = mainTrack(line).agentId ? ` ttm:agent="${escapeXmlAttribute(mainTrack(line).agentId)}"` : "";
-    const lineKey = keyById.get(line.id);
-    const keyAttr = lineKey ? ` itunes:key="${lineKey}"` : "";
-    const groupAttr = line.groupId
-      ? ` composer:groupId="${escapeXmlAttribute(line.groupId)}" composer:instanceIdx="${line.instanceIdx ?? 0}" composer:templateLineIdx="${line.templateLineIdx ?? 0}"${line.detached ? ' composer:detached="true"' : ""}`
-      : "";
-    let content = "";
-
-    if (writesWords && isWordSynced(line)) {
-      const words = timedSyllables(mainTrack(line));
-      const wordCount = words.length;
-      for (let i = 0; i < wordCount; i++) {
-        const word = words[i];
-        const needsSpace = i < wordCount - 1 && word.sep.endsWith(" ");
-        content += `${emitWordSpan(word, word.text)}${needsSpace ? " " : ""}`;
-      }
-    } else {
-      content = escapeXmlText(stripSplitCharacter(lineText(line)));
-    }
-
-    const bgText = backgroundText(line);
-    const bgWords = timedSyllables(backgroundTrack(line));
-    if (writesWords && bgText && bgWords.length) {
-      const bgCount = bgWords.length;
-      let bgContent = "";
-      for (let i = 0; i < bgCount; i++) {
-        const bgWord = bgWords[i];
-        const needsSpace = i < bgCount - 1 && bgWord.sep.endsWith(" ");
-        bgContent += `${emitWordSpan(bgWord, bgWord.text)}${needsSpace ? " " : ""}`;
-      }
-      content += `<span ttm:role="x-bg">${bgContent}</span>`;
-    } else if (bgText) {
-      const bgTiming = bgBounds(line) ?? lineTiming;
-      const explicit = drawnSyllables(line, "bg")[0]?.explicit;
-      content += `<span ttm:role="x-bg">${emitWordSpan({ ...bgTiming, explicit }, stripSplitCharacter(bgText))}</span>`;
-    }
-
-    parts.push(
-      `${ind(3)}<p begin="${formatTime(lineTiming.begin)}" end="${formatTime(lineTiming.end)}"${keyAttr}${agentAttr}${groupAttr}>${content}</p>`,
-    );
-  }
-
-  parts.push(`${ind(2)}</div>`);
-  parts.push(`${ind(1)}</body>`);
-  parts.push("</tt>");
+  parts.push(
+    ...headLines({ metadata, agents, groups, keyedLines, writesWords, youtubeVideoId, passthrough }, ind),
+    ...bodyLines({ lines, keyById, writesWords, duration, parts: songParts, passthrough }, ind),
+  );
+  parts.push(...keptElementLines(passthrough?.tt, ind(1)), "</tt>");
 
   return parts.join(nl);
 }
 
-type ProjectTtmlSource = Pick<TTMLOptions, "metadata" | "agents" | "lines" | "groups">;
+type ProjectTtmlSource = Pick<TTMLOptions, "metadata" | "agents" | "lines" | "groups" | "parts" | "passthrough">;
 
 function generateProjectTtml(
-  { metadata, agents, lines, groups }: ProjectTtmlSource,
+  { metadata, agents, lines, groups, parts, passthrough }: ProjectTtmlSource,
   duration: number,
   timing?: TimingGranularity,
   youtubeVideoId?: string,
 ): string {
   return syncProgress(lines, "line").done > 0
-    ? generateTTML({ metadata, agents, lines, groups, duration, timing, youtubeVideoId })
+    ? generateTTML({ metadata, agents, lines, groups, parts, passthrough, duration, timing, youtubeVideoId })
     : "";
 }
 
-const BODY_DURATION = /<body dur="[^"]*">/;
+const BODY_DURATION = /<body dur="[^"]*"/;
 const YOUTUBE_VIDEO_ID_META = new RegExp(`\\s*<composer:meta key="${YOUTUBE_VIDEO_ID_KEY}" value="[^"]*"/>`);
 
 // Duration and video ID describe the loaded audio, so swapping audio never reads as an edit.
 function withoutAudioIdentity(ttml: string): string {
-  return ttml.replace(BODY_DURATION, "<body>").replace(YOUTUBE_VIDEO_ID_META, "");
+  return ttml.replace(BODY_DURATION, "<body").replace(YOUTUBE_VIDEO_ID_META, "");
 }
 
 function generateLineTtml(line: LyricLine): string {
