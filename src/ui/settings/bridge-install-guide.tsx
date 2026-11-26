@@ -1,14 +1,12 @@
 import { Button } from "@/ui/button";
-import { Scroll } from "@/ui/scroll";
+import { CopyableCommand } from "@/ui/settings/copyable-command";
 import { BRIDGE_REPO_URL } from "@/utils/composer-bridge-api";
-import { IconCheck, IconCopy, IconExternalLink, IconRefresh } from "@tabler/icons-react";
-import { useState } from "react";
+import { IconExternalLink, IconRefresh } from "@tabler/icons-react";
 
 // -- Constants ----------------------------------------------------------------
 
 const RELEASES_URL = `${BRIDGE_REPO_URL}/releases/latest`;
 const INSTALL_CMD = `curl -fsSL ${RELEASES_URL}/download/install.sh | sh`;
-const COPIED_RESET_MS = 1800;
 
 // -- Sub-components -----------------------------------------------------------
 
@@ -18,34 +16,6 @@ const StepHeader: React.FC<{ index: number; title: string }> = ({ index, title }
     <h3 className="text-sm font-medium text-composer-text">{title}</h3>
   </div>
 );
-
-const InstallCommand: React.FC = () => {
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(INSTALL_CMD);
-      setCopied(true);
-      setTimeout(() => setCopied(false), COPIED_RESET_MS);
-    } catch (err: unknown) {
-      console.error("clipboard write failed", err);
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-composer-bg-dark border border-(--edge)">
-      <Scroll className="flex-1 min-w-0" autoHide="leave">
-        <code className="block font-mono text-[11px] text-composer-text-secondary select-text whitespace-nowrap">
-          {INSTALL_CMD}
-        </code>
-      </Scroll>
-      <Button variant="secondary" size="sm" hasIcon onClick={copy} aria-label="Copy install command">
-        {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
-        {copied ? "Copied" : "Copy"}
-      </Button>
-    </div>
-  );
-};
 
 // -- Component ----------------------------------------------------------------
 
@@ -71,7 +41,7 @@ const BridgeInstallGuide: React.FC<BridgeInstallGuideProps> = ({ onCheckNow }) =
         <code className="font-mono text-[11px] px-1 bg-composer-bg rounded">/Applications</code> on Mac or{" "}
         <code className="font-mono text-[11px] px-1 bg-composer-bg rounded">~/.local/bin</code> on Linux.
       </p>
-      <InstallCommand />
+      <CopyableCommand command={INSTALL_CMD} copyLabel="Copy install command" />
       <a
         href={RELEASES_URL}
         target="_blank"

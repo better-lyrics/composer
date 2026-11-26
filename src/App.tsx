@@ -9,6 +9,7 @@ import { useImportFromUnisonLyric } from "@/hooks/useImportFromUnisonLyric";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
 import { useLaunchQueue } from "@/hooks/useLaunchQueue";
+import { useMcpBridge } from "@/hooks/useMcpBridge";
 import { useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
@@ -112,6 +113,7 @@ const AppShell: React.FC = () => {
   usePersistence();
   useStorageMaintenance();
   useLanguageAutoRefresh();
+  useMcpBridge();
   useRangePlayback();
   useProjectChannel();
   useProjectShortcuts(isEditor);
