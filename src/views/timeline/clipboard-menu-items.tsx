@@ -1,6 +1,6 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordTrack } from "@/domain/line/tracks";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { MenuItem } from "@/ui/menu";
 import { commitPasteAt } from "@/views/timeline/commit-paste";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 interface CopyCutMenuItemsProps {
   lines: readonly ReadableLine[];
-  word: WordSelection;
+  word: SyllableAddress;
   noun: string;
 }
 

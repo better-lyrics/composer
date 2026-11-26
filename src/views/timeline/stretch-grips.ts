@@ -13,6 +13,7 @@ interface GripRef {
   lineId: string;
   type: "word" | "bg";
   wordIndex: number;
+  syllableId: string;
   edge: "left" | "right";
 }
 
@@ -40,10 +41,10 @@ function selectionGripEdges(rawLines: LyricLine[], selections: ReadonlyArray<Str
   let right: GripRef | null = null;
   for (const { track, idx, word } of selectedFiniteWords(targets)) {
     if (!left && Math.abs(word.begin - t0) <= STRETCH_EPS) {
-      left = { lineId: track.line.id, type: track.type, wordIndex: idx, edge: "left" };
+      left = { lineId: track.line.id, type: track.type, wordIndex: idx, syllableId: word.id, edge: "left" };
     }
     if (!right && Math.abs(word.end - t1) <= STRETCH_EPS) {
-      right = { lineId: track.line.id, type: track.type, wordIndex: idx, edge: "right" };
+      right = { lineId: track.line.id, type: track.type, wordIndex: idx, syllableId: word.id, edge: "right" };
     }
   }
   return { left, right };
@@ -51,5 +52,5 @@ function selectionGripEdges(rawLines: LyricLine[], selections: ReadonlyArray<Str
 
 // -- Exports -------------------------------------------------------------------
 
-export { selectionGripEdges };
 export type { SelectionGrips };
+export { selectionGripEdges };

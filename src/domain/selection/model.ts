@@ -1,12 +1,14 @@
+import type { WordTrack } from "@/domain/line/tracks";
+
 // -- Types --------------------------------------------------------------------
 
-interface WordSelection {
+// Names one word for as long as it exists: indexes go stale when words split, merge or move.
+interface SyllableAddress {
   lineId: string;
-  lineIndex: number;
-  wordIndex: number;
-  type: "word" | "bg";
+  type: WordTrack;
+  syllableId: string;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export type { WordSelection };
+export type { SyllableAddress };

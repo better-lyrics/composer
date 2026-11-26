@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 
@@ -30,12 +31,7 @@ async function renderStretchTrack(
   useProjectStore.setState({ lines: [line] });
   useTimelineStore.setState({
     zoom: ZOOM,
-    selectedWords: selected.map((wordIndex) => ({
-      lineId: line.id,
-      lineIndex: 0,
-      wordIndex,
-      type: "word" as const,
-    })),
+    selectedWords: selected.map((wordIndex) => wordAddress(line, wordIndex)),
   });
   useAudioStore.setState({ duration: 60 });
   useSettingsStore.setState({

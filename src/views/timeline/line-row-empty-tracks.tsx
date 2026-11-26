@@ -3,6 +3,7 @@ import { IconPlus } from "@tabler/icons-react";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { backgroundFields, manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
+import { addressOf } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
@@ -73,10 +74,9 @@ function addWordAt(line: LyricLine, time: number): void {
     updateLineWithHistory(line.id, { words: timedText });
     return;
   }
-  updateLineWithHistory(line.id, {
-    words: [{ id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end }],
-  });
-  useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "word" });
+  const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
+  updateLineWithHistory(line.id, { words: [placeholder] });
+  useTimelineStore.getState().setEditingWord(addressOf(line, "word", placeholder));
 }
 
 function addBackgroundWordAt(line: LyricLine, time: number): void {
@@ -91,7 +91,7 @@ function addBackgroundWordAt(line: LyricLine, time: number): void {
   }
   const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
   updateLineWithHistory(line.id, backgroundFields({ text: placeholder.text, words: [placeholder], source: "manual" }));
-  useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "bg" });
+  useTimelineStore.getState().setEditingWord(addressOf(line, "bg", placeholder));
 }
 
 function truncateLabel(text: string, maxChars: number): string {

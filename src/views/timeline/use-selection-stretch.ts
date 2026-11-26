@@ -1,6 +1,7 @@
 import { sharedTimingFanOut, timeRangeResolver } from "@/domain/group/shared-timing";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
+import { resolveAddresses } from "@/domain/selection/resolve";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -114,7 +115,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       cleanupRef.current = null;
 
       const { lines: snapshotLines, groups } = useProjectStore.getState();
-      const selection = useTimelineStore.getState().selectedWords;
+      const selection = resolveAddresses(snapshotLines, useTimelineStore.getState().selectedWords);
       const options = {
         rangeOf: timeRangeResolver(snapshotLines, groups, useAudioStore.getState().duration),
         minWordDuration: useSettingsStore.getState().minWordDuration,

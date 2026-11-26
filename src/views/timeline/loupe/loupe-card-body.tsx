@@ -1,5 +1,6 @@
-import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
+import { getEffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { wordAt } from "@/domain/selection/resolve";
 import type { LoupeSize } from "@/domain/spectrum/loupe-size";
 import { useProjectStore } from "@/stores/project";
 import { loupeDeltaPopVariants } from "@/utils/animationVariants";
@@ -31,8 +32,7 @@ const LOUPE_CARD_SURFACE =
 function editedWordText(lines: readonly LyricLine[], target: LoupeTarget): string {
   const line = lines.find((candidate) => candidate.id === target.lineId);
   if (!line) return "";
-  const effective = getEffectiveLine(line);
-  return effectiveTrackWords(effective, target.track)?.[target.wordIndex]?.text.trim() ?? "";
+  return wordAt([getEffectiveLine(line)], target)?.text.trim() ?? "";
 }
 
 function deltaLabel(deltaMs: number): string {

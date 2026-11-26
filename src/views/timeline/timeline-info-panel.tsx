@@ -1,7 +1,7 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
+import { type ResolvedAddress, resolveAddress } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -69,7 +69,7 @@ const MultiSelectionInfo: React.FC<{ summary: MultiSelectionSummary; highlight: 
 );
 
 interface SingleWordInfoProps {
-  selection: WordSelection;
+  selection: ResolvedAddress;
   line: ReadableLine;
   item: Pick<WordTiming, "text" | "begin" | "end">;
   highlight: GroupHighlight | null;
@@ -119,9 +119,11 @@ const TimelineInfoPanel: React.FC = () => {
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
-  const selectedWord = selectedWords[0] ?? null;
-
   const lines = useTimelineEffectiveLines(rawLines);
+  const selectedWord = useMemo(
+    () => (selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null),
+    [selectedWords, lines],
+  );
   const highlight = useMemo(
     () => selectionGroupHighlight(selectedWords, rawLines, groups),
     [selectedWords, rawLines, groups],

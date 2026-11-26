@@ -4,6 +4,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -44,7 +45,7 @@ async function openSplitter(
   wordIndex: number,
   event: "timeline:split-syllable" | "timeline:split-word",
 ) {
-  useTimelineStore.setState({ selectedWords: [{ lineId: "line-ko", lineIndex: 0, wordIndex, type }] });
+  useTimelineStore.setState({ selectedWords: [storedWordAddress("line-ko", wordIndex, type)] });
   const screen = await render(<TimelineSyllableSplitter />);
   window.dispatchEvent(new Event(event));
   return screen;

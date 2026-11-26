@@ -1,11 +1,14 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { resolveAddresses } from "@/domain/selection/resolve";
 
 function buildCandidateLines(
   lines: readonly LyricLine[],
-  selectedWords: ReadonlyArray<WordSelection>,
+  addresses: ReadonlyArray<SyllableAddress>,
 ): LyricLine[] | undefined {
-  if (selectedWords.length === 0) return undefined;
+  if (addresses.length === 0) return undefined;
+  const selectedWords = resolveAddresses(lines, addresses);
+  if (selectedWords.length !== addresses.length) return undefined;
 
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number>; lineIndex: number }>();
   for (const sel of selectedWords) {

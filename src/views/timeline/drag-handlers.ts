@@ -3,8 +3,9 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
-import { isWordSelected } from "@/domain/selection/identity";
-import type { WordSelection } from "@/domain/selection/model";
+import { sameAddress } from "@/domain/selection/identity";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { addressAt, type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -25,6 +26,9 @@ interface DragData {
   initialShiftKey?: boolean;
 }
 
+// A word by its place in the lines a drag started from; valid only for that one gesture.
+type DragWord = Pick<ResolvedAddress, "lineId" | "lineIndex" | "wordIndex" | "type">;
+
 // -- Constants -----------------------------------------------------------------
 
 const DRAG_X_MIN_THRESHOLD = 5;
@@ -33,29 +37,30 @@ const OVERLAP_REJECT_MESSAGE = "That spot is taken. Drop into a gap";
 
 // -- Selection helpers --------------------------------------------------------
 
-function resolveWordsToOperate(activeData: DragData, selectedWords: WordSelection[]): WordSelection[] {
-  const isDraggedWordSelected = isWordSelected(
-    selectedWords,
-    activeData.lineId,
-    activeData.wordIndex,
-    activeData.trackType,
-  );
-  if (isDraggedWordSelected && selectedWords.length > 0) return selectedWords;
-  return [
-    {
-      lineId: activeData.lineId,
-      lineIndex: activeData.lineIndex,
-      wordIndex: activeData.wordIndex,
-      type: activeData.trackType,
-    },
-  ];
+function draggedWord(activeData: DragData): DragWord {
+  return {
+    lineId: activeData.lineId,
+    lineIndex: activeData.lineIndex,
+    wordIndex: activeData.wordIndex,
+    type: activeData.trackType,
+  };
 }
 
-function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections: WordSelection[]): WordSelection[] {
+function resolveWordsToOperate(
+  lines: readonly ReadableLine[],
+  activeData: DragData,
+  selectedWords: readonly SyllableAddress[],
+): DragWord[] {
+  const dragged = addressAt(lines, activeData.lineId, activeData.trackType, activeData.wordIndex);
+  const isDraggedWordSelected = dragged !== null && selectedWords.some((selected) => sameAddress(selected, dragged));
+  return isDraggedWordSelected ? resolveAddresses(lines, selectedWords) : [draggedWord(activeData)];
+}
+
+function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections: DragWord[]): DragWord[] {
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
   const seen = new Set<string>();
-  const result: WordSelection[] = [];
+  const result: DragWord[] = [];
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
@@ -72,8 +77,8 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
   return result;
 }
 
-function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSelection[]> {
-  const grouped = new Map<string, WordSelection[]>();
+function groupSelectionsByLine(selections: DragWord[]): Map<string, DragWord[]> {
+  const grouped = new Map<string, DragWord[]>();
   for (const sel of selections) {
     const arr = grouped.get(sel.lineId) ?? [];
     arr.push(sel);
@@ -86,7 +91,7 @@ function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSel
 
 function applySameLineReorder(
   activeData: DragData,
-  wordsToMove: WordSelection[],
+  wordsToMove: DragWord[],
   lines: readonly ReadableLine[],
   timeDelta: number,
   rangeOf: (line: LyricLine) => TimeRange,
@@ -148,7 +153,7 @@ interface CrossLineMoveArgs {
   activeData: DragData;
   targetLine: LyricLine;
   targetTrack: "word" | "bg";
-  wordsToMove: WordSelection[];
+  wordsToMove: DragWord[];
   lines: readonly ReadableLine[];
   timeDelta: number;
   rangeOf: (line: LyricLine) => TimeRange;
@@ -221,13 +226,14 @@ function applyCrossLineMove(args: CrossLineMoveArgs) {
 
 // -- Exports -------------------------------------------------------------------
 
+export type { DragData, DragWord };
 export {
-  DRAG_X_MIN_THRESHOLD,
-  LINE_SYNCED_REJECT_MESSAGE,
   applyCrossLineMove,
   applySameLineReorder,
+  DRAG_X_MIN_THRESHOLD,
+  draggedWord,
   expandSelectionsAcrossLines,
   groupSelectionsByLine,
+  LINE_SYNCED_REJECT_MESSAGE,
   resolveWordsToOperate,
 };
-export type { DragData };

@@ -69,8 +69,8 @@ function sameInputs(previous: DrawInputs | null, next: DrawInputs): boolean {
 
 // The store has not seen a drag yet, so the edited edge takes the live time.
 function withLiveEdge(words: readonly WordTiming[], target: LoupeTarget, track: "word" | "bg"): readonly WordTiming[] {
-  if (target.track !== track || !words[target.wordIndex]) return words;
-  return words.map((word, index) => (index === target.wordIndex ? { ...word, [target.edge]: target.time } : word));
+  if (target.type !== track) return words;
+  return words.map((word) => (word.id === target.syllableId ? { ...word, [target.edge]: target.time } : word));
 }
 
 function drawLoupe(
@@ -123,7 +123,7 @@ function drawLoupe(
     drawLoupeLanes(frame, {
       main: withLiveEdge(effectiveTrackWords(effective, "word") ?? [], target, "word"),
       background: withLiveEdge(effectiveTrackWords(effective, "bg") ?? [], target, "bg"),
-      edited: { track: target.track, wordIndex: target.wordIndex },
+      edited: { track: target.type, syllableId: target.syllableId },
       agentColour: getAgentColor(line.agentId),
       playheadSeconds: inputs.playhead,
     });

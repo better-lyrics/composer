@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -20,12 +21,9 @@ describe("TimelineContextMenu selection scope", () => {
       contextMenu: {
         x: 100,
         y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
+        target: { kind: "word", ...storedWordAddress(line.id, 0, "word") },
       },
-      selectedWords: [
-        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
-      ],
+      selectedWords: [storedWordAddress(line.id, 0, "word"), storedWordAddress(line.id, 1, "word")],
     });
     await render(<TimelineContextMenu />);
 

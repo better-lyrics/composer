@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import {
   nudgeSelectedWords,
@@ -34,11 +33,11 @@ function lineChorus(id: string, instanceIdx: number, begin: number): LyricLine {
   return createLine({ id, text: "go now", groupId: "g1", instanceIdx, templateLineIdx: 0, begin, end: begin + 2 });
 }
 
-const wholeLine = (lineId: string): WordSelection[] => [
-  { lineId, lineIndex: 0, wordIndex: 0, type: "word" },
-  { lineId, lineIndex: 0, wordIndex: 1, type: "word" },
+const wholeLine = (lineId: string) => [
+  { lineId, wordIndex: 0, type: "word" as const },
+  { lineId, wordIndex: 1, type: "word" as const },
 ];
-const lineRow = (lineId: string): WordSelection[] => [{ lineId, lineIndex: 0, wordIndex: 0, type: "word" }];
+const lineRow = (lineId: string) => [{ lineId, wordIndex: 0, type: "word" as const }];
 
 // -- Tests --------------------------------------------------------------------
 
@@ -64,7 +63,7 @@ describe("nudgeSelectedWords with a shared time range", () => {
 
   describe("edge cases", () => {
     it("keeps an unselected neighbour word as the limit inside the range", () => {
-      const firstOnly = [{ lineId: "c1", lineIndex: 0, wordIndex: 0, type: "word" as const }];
+      const firstOnly = [{ lineId: "c1", wordIndex: 0, type: "word" as const }];
       expect(nudgeSelectedWords(lines, firstOnly, 5, rangeOf).appliedDelta).toBe(0);
     });
   });

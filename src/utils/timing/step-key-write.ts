@@ -2,7 +2,7 @@ import { isSharedLine, type TimeRange } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LineUpdate } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import type { ResolvedAddress } from "@/domain/selection/resolve";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { stepBgWordEdit } from "@/utils/timing/bg-word-timing";
 import { stepWordEdit } from "@/utils/timing/word-timing";
@@ -13,8 +13,8 @@ import type { StepEdit } from "@/utils/timing/word-timing-ops";
 interface StepKeyWriteInput {
   lines: readonly ReadableLine[];
   groups: readonly LinkGroup[];
-  cursor: WordSelection;
-  startNext: WordSelection | null;
+  cursor: ResolvedAddress;
+  startNext: ResolvedAddress | null;
   key: StepKey;
   time: number;
   minDuration: number;
@@ -29,7 +29,7 @@ type StepKeyOutcome = { kind: "refused"; refusal: StepRefusal } | { kind: "writt
 
 // -- Helpers ------------------------------------------------------------------
 
-function editAt(input: StepKeyWriteInput, slot: WordSelection, key: StepKey): StepEdit {
+function editAt(input: StepKeyWriteInput, slot: ResolvedAddress, key: StepKey): StepEdit {
   const line = input.lines[slot.lineIndex];
   if (!line) return null;
   const edit = slot.type === "word" ? stepWordEdit : stepBgWordEdit;
@@ -45,7 +45,7 @@ function editAt(input: StepKeyWriteInput, slot: WordSelection, key: StepKey): St
 }
 
 // A start written in another instance of the same shared group would copy back over the cursor's own instance.
-function crossesSharedInstance(input: StepKeyWriteInput, startNext: WordSelection): boolean {
+function crossesSharedInstance(input: StepKeyWriteInput, startNext: ResolvedAddress): boolean {
   const from = input.lines[input.cursor.lineIndex];
   const to = input.lines[startNext.lineIndex];
   if (!from || !to || from.groupId !== to.groupId || from.instanceIdx === to.instanceIdx) return false;

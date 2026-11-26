@@ -1,5 +1,6 @@
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { createLine, createWord } from "@/test/factories";
+import { wordAddress } from "@/test/word-address";
 import { selectedBannerInstance } from "@/views/timeline/selected-banner";
 import { getWordsInInstance } from "@/views/timeline/utils";
 import { describe, expect, it } from "vitest";
@@ -46,22 +47,22 @@ describe("selectedBannerInstance", () => {
     });
 
     it("returns null for a selection on a line outside any group", () => {
-      const selection: WordSelection[] = [{ lineId: "v", lineIndex: 1, wordIndex: 0, type: "word" }];
+      const selection: SyllableAddress[] = [wordAddress(verse, 0)];
 
       expect(selectedBannerInstance(lines, selection)).toBeNull();
     });
 
     it("returns null when the selection also holds a word outside the instance", () => {
-      const selection: WordSelection[] = [
-        ...getWordsInInstance(lines, "g1", 0),
-        { lineId: "v", lineIndex: 1, wordIndex: 0, type: "word" },
-      ];
+      const selection: SyllableAddress[] = [...getWordsInInstance(lines, "g1", 0), wordAddress(verse, 0)];
 
       expect(selectedBannerInstance(lines, selection)).toBeNull();
     });
 
     it("returns null for a selection of the same size that spans two instances", () => {
-      const selection: WordSelection[] = [getWordsInInstance(lines, "g1", 0)[0], getWordsInInstance(lines, "g1", 1)[0]];
+      const selection: SyllableAddress[] = [
+        getWordsInInstance(lines, "g1", 0)[0],
+        getWordsInInstance(lines, "g1", 1)[0],
+      ];
 
       expect(selectedBannerInstance(lines, selection)).toBeNull();
     });
@@ -72,7 +73,7 @@ describe("selectedBannerInstance", () => {
       const syncedLines = [lineSyncedChorus("s0", 0, 10), verse, lineSyncedChorus("s1", 1, 40)];
       const selection = getWordsInInstance(syncedLines, "g2", 1);
 
-      expect(selection).toEqual([{ lineId: "s1", lineIndex: 2, wordIndex: 0, type: "word" }]);
+      expect(selection).toEqual([{ lineId: "s1", lineIndex: 2, wordIndex: 0, type: "word", syllableId: "s1:line" }]);
       expect(selectedBannerInstance(syncedLines, selection)).toEqual({ groupId: "g2", instanceIdx: 1 });
     });
 

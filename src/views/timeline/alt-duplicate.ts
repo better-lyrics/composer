@@ -34,7 +34,7 @@ function handleAltDuplicate(
   if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
 
   const { selectedWords } = useTimelineStore.getState();
-  const wordsToDuplicate = expandSelectionsAcrossLines(lines, resolveWordsToOperate(activeData, selectedWords));
+  const wordsToDuplicate = expandSelectionsAcrossLines(lines, resolveWordsToOperate(lines, activeData, selectedWords));
 
   const timeDelta = delta.x / zoom;
   const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];

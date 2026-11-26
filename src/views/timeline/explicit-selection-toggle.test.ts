@@ -1,16 +1,20 @@
 /**
  * @vitest-environment node
  */
+
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import type { LinkGroup } from "@/domain/group/template";
+import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { beforeEach, describe, expect, it } from "vitest";
 
-function sel(lineId: string, wordIndex: number, type: "word" | "bg" = "word"): WordSelection {
-  return { lineId, lineIndex: 0, wordIndex, type };
+function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
+  const line = lines.find((candidate) => candidate.id === lineId);
+  const word = line ? effectiveTrackWords(line, type)?.[wordIndex] : undefined;
+  return { lineId, type, syllableId: word?.id ?? `missing-${wordIndex}` };
 }
 
 describe("resolveExplicitSelectionToggle", () => {
@@ -27,7 +31,7 @@ describe("resolveExplicitSelectionToggle", () => {
         ],
       },
     ];
-    const result = resolveExplicitSelectionToggle(lines, [sel("L1", 0)]);
+    const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 0)]);
     expect(result.value).toBe(true);
     expect(result.targets.map((t) => t.wordIndex).sort((a, b) => a - b)).toEqual([0, 1]);
   });
@@ -45,7 +49,7 @@ describe("resolveExplicitSelectionToggle", () => {
         ],
       },
     ];
-    const result = resolveExplicitSelectionToggle(lines, [sel("L1", 1)]);
+    const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 1)]);
     expect(result.value).toBe(false);
     expect(result.targets.map((t) => t.wordIndex).sort((a, b) => a - b)).toEqual([0, 1]);
   });
@@ -62,7 +66,7 @@ describe("resolveExplicitSelectionToggle", () => {
         ],
       },
     ];
-    const result = resolveExplicitSelectionToggle(lines, [sel("L1", 0)]);
+    const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 0)]);
     expect(result.value).toBe(true);
     expect(result.targets).toEqual([{ lineId: "L1", field: "words", wordIndex: 0 }]);
   });
@@ -88,7 +92,7 @@ describe("resolveExplicitSelectionToggle", () => {
         ],
       },
     ];
-    const result = resolveExplicitSelectionToggle(lines, [sel("A", 0), sel("B", 0)]);
+    const result = resolveExplicitSelectionToggle(lines, [sel(lines, "A", 0), sel(lines, "B", 0)]);
     expect(result.value).toBe(true);
     expect(result.targets).toEqual([
       { lineId: "A", field: "words", wordIndex: 0 },
@@ -110,7 +114,7 @@ describe("resolveExplicitSelectionToggle", () => {
         ],
       },
     ];
-    const result = resolveExplicitSelectionToggle(lines, [sel("L1", 1, "bg")]);
+    const result = resolveExplicitSelectionToggle(lines, [sel(lines, "L1", 1, "bg")]);
     expect(result.value).toBe(true);
     expect(result.targets).toEqual([{ lineId: "L1", field: "backgroundWords", wordIndex: 1 }]);
   });
@@ -127,7 +131,11 @@ describe("resolveExplicitSelectionToggle", () => {
         ],
       },
     ];
-    const result = resolveExplicitSelectionToggle(lines, [sel("L1", 9), sel("ghost", 0), sel("L1", 0)]);
+    const result = resolveExplicitSelectionToggle(lines, [
+      sel(lines, "L1", 9),
+      sel(lines, "ghost", 0),
+      sel(lines, "L1", 0),
+    ]);
     expect(result.targets).toEqual([{ lineId: "L1", field: "words", wordIndex: 0 }]);
   });
 
@@ -170,8 +178,9 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
   }
 
   function runToggle(): void {
-    const selection: WordSelection[] = [sel("inst-0", 0), sel("inst-1", 0), sel("inst-2", 0)];
-    const { targets, value } = resolveExplicitSelectionToggle(useProjectStore.getState().lines, selection);
+    const { lines } = useProjectStore.getState();
+    const selection = [sel(lines, "inst-0", 0), sel(lines, "inst-1", 0), sel(lines, "inst-2", 0)];
+    const { targets, value } = resolveExplicitSelectionToggle(lines, selection);
     useProjectStore.getState().markWordsExplicit(targets, value);
   }
 
