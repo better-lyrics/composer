@@ -6,7 +6,7 @@ import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import type { AnchorChain } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
-import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
+import { hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -21,7 +21,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 type AlignmentStatus = "idle" | "downloading" | "running" | "error";
 
-type AlignmentErrorCode = "unavailable" | "unsupported-language" | "needs-vocals" | "needs-model" | "failed";
+type AlignmentErrorCode = "unavailable" | "needs-vocals" | "needs-model" | "failed";
 
 interface AlignmentError {
   code: AlignmentErrorCode;
@@ -124,9 +124,6 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     try {
       const assets = await resolveAlignmentAssets(modelId);
       if (!assets) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-      if (!canAlignLanguage(project.metadata.language, assets.languages)) {
-        return fail(set, "unsupported-language", "The alignment model doesn't cover this song's language.");
-      }
       const hanReading = hanReadingFor(project.metadata.language, project.lines);
       const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
       const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
@@ -235,8 +232,6 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     controller = new AbortController();
     const { signal } = controller;
     try {
-      const assets = await resolveAlignmentAssets(modelId);
-      if (!assets || !canAlignLanguage(project.metadata.language, assets.languages)) return;
       const pcm = await loadVocalsPcm(vocalsUrl);
       const updates: LineUpdate[] = [];
       for (const plan of planned) {
