@@ -18,12 +18,6 @@ interface LineTimeIndex {
   reachedBy: number[];
 }
 
-// -- Constants ----------------------------------------------------------------
-
-// Wall-clock seconds, matching the preview's scroll timing offset: the follow ease lands the row
-// about as the line starts.
-const FOLLOW_LEAD_SECONDS = 0.5;
-
 // -- Helpers ------------------------------------------------------------------
 
 function buildIndex(lines: readonly LyricLine[], lineIds: ReadonlySet<string> | null): LineTimeIndex {
@@ -87,4 +81,4 @@ function followedLineAt(
 
 // -- Exports ------------------------------------------------------------------
 
-export { FOLLOW_LEAD_SECONDS, followedLineAt };
+export { followedLineAt };

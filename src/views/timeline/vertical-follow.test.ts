@@ -3,7 +3,8 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
-import { FOLLOW_LEAD_SECONDS, followedLineAt } from "@/views/timeline/followed-line";
+import { FOLLOW_LEAD_SECONDS } from "@/views/timeline/follow-ease";
+import { followedLineAt } from "@/views/timeline/followed-line";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { createFollowMemory, type FollowInput, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
 

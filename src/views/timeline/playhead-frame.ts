@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
+import { FRAME_60HZ_MS, followEaseShare } from "@/views/timeline/follow-ease";
 import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
@@ -35,6 +36,7 @@ interface PlayheadFrame {
   lights: ReturnType<typeof createTimelineLights>;
   pinnedLabels: Set<HTMLElement>;
   verticalTarget: number | null;
+  lastFollowAt: number | null;
   lastMask: string;
   playheadCenterXLocal: number;
   containerLeft: number;
@@ -68,6 +70,7 @@ function createPlayheadFrame(): PlayheadFrame {
     lights: createTimelineLights(),
     pinnedLabels: new Set(),
     verticalTarget: null,
+    lastFollowAt: null,
     lastMask: "",
     playheadCenterXLocal: 0,
     containerLeft: 0,
@@ -85,7 +88,13 @@ function createPlayheadFrame(): PlayheadFrame {
   };
 }
 
-function followPlayback(frame: PlayheadFrame, container: HTMLDivElement, currentTime: number, zoom: number): void {
+function followPlayback(
+  frame: PlayheadFrame,
+  container: HTMLDivElement,
+  currentTime: number,
+  zoom: number,
+  now: number,
+): void {
   const viewportWidth = container.clientWidth;
   const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
   const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);
@@ -96,10 +105,12 @@ function followPlayback(frame: PlayheadFrame, container: HTMLDivElement, current
   const rows = followStep(frame.followMemory, frame.followInput);
   if (rows) frame.verticalTarget = followScrollTop(rows, frame.followInput, container.scrollHeight);
 
+  const elapsed = frame.lastFollowAt === null ? FRAME_60HZ_MS : now - frame.lastFollowAt;
+  frame.lastFollowAt = now;
   if (frame.verticalTarget === null) return;
   const diff = frame.verticalTarget - viewScrollTop();
   if (Math.abs(diff) > 0.5) {
-    scrollView(container, null, viewScrollTop() + diff * 0.15);
+    scrollView(container, null, viewScrollTop() + diff * followEaseShare(elapsed));
   } else {
     scrollView(container, null, frame.verticalTarget);
     frame.verticalTarget = null;
@@ -107,7 +118,7 @@ function followPlayback(frame: PlayheadFrame, container: HTMLDivElement, current
 }
 
 // Follow scrolling happens here: a scroll write leaves layout clean, and every later read in the frame sees it.
-function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): void {
+function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements, now: number): void {
   frame.ready = false;
   if (!elements.playhead.current) return;
 
@@ -119,10 +130,11 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
 
   // Follow would scroll the lanes under a region drag and stretch the region.
   if (followPlayhead && isPlaying && container && !isDraggingPlayhead && !loopRegionDrag) {
-    followPlayback(frame, container, currentTime, zoom);
+    followPlayback(frame, container, currentTime, zoom, now);
   } else {
     resetFollowMemory(frame.followMemory);
     frame.verticalTarget = null;
+    frame.lastFollowAt = null;
   }
 
   frame.hideScrollbars = isPlaying && followPlayhead;

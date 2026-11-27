@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { FOLLOW_LEAD_SECONDS } from "@/views/timeline/followed-line";
+import { FOLLOW_LEAD_SECONDS } from "@/views/timeline/follow-ease";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import type { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
