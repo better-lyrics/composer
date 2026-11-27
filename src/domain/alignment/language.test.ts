@@ -65,8 +65,8 @@ describe("coverageColumns", () => {
 });
 
 describe("isAlignableLanguage", () => {
-  it("accepts English, Mandarin and Japanese tags and nothing else", () => {
-    expect(["en-US", "cmn", "zh-Hant", "ja"].every(isAlignableLanguage)).toBe(true);
-    expect(["ko", "fr", ""].some(isAlignableLanguage)).toBe(false);
+  it("accepts the dictionary languages and the ones a reader reads, and nothing else", () => {
+    expect(["en-US", "cmn", "zh-Hant", "ja", "ko", "fr-CA", "ms", "ar"].every(isAlignableLanguage)).toBe(true);
+    expect(["th", "hi", ""].some(isAlignableLanguage)).toBe(false);
   });
 });

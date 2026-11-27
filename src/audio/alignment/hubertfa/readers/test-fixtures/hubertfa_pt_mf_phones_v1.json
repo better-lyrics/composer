@@ -1,0 +1,709 @@
+{
+ "about": "The multilingual model's phones (scripts/ml_phones.py): reader sounds and Japanese/Chinese phones as vocabulary keys. English phones where English has the sound; a shared phone (en/_NAME) where it doesn't. Each uses the output row of the unused phone `row` and starts as a copy of `init`.",
+ "version": 1,
+ "phones": {
+  "en/_o": {
+   "row": "ja/o",
+   "init": "en/ow",
+   "sound": "pure o, as in Spanish 'no' (English 'ow' glides)"
+  },
+  "en/_u": {
+   "row": "ja/u",
+   "init": "en/uw",
+   "sound": "pure u, as in Spanish 'tu'"
+  },
+  "en/_y": {
+   "row": "zh/v",
+   "init": "en/uw",
+   "sound": "front rounded high vowel: French 'u', German and Turkish 'ü', Chinese 'ü'"
+  },
+  "en/_oe": {
+   "row": "zh/ve",
+   "init": "en/er",
+   "sound": "front rounded mid vowel: French 'eu', German and Turkish 'ö'"
+  },
+  "en/_eo": {
+   "row": "zh/e",
+   "init": "en/ah",
+   "sound": "Chinese 'e' (back unrounded mid vowel)"
+  },
+  "en/_an": {
+   "row": "zh/an",
+   "init": "en/aa",
+   "sound": "nasal a: French 'an', Portuguese 'ã'"
+  },
+  "en/_en": {
+   "row": "zh/en",
+   "init": "en/ae",
+   "sound": "nasal e: French 'in' and 'un', Portuguese 'em'"
+  },
+  "en/_on": {
+   "row": "zh/ong",
+   "init": "en/ow",
+   "sound": "nasal o: French 'on', Portuguese 'õ'"
+  },
+  "en/_nn": {
+   "row": "ja/N",
+   "init": "en/n",
+   "sound": "Japanese moraic nasal"
+  },
+  "en/_ru": {
+   "row": "ja/ry",
+   "init": "en/r",
+   "sound": "uvular r: French and German 'r', Arabic 'gh'"
+  },
+  "en/_rr": {
+   "row": "ja/r",
+   "init": "en/r",
+   "sound": "trilled r: Spanish, Italian, Indonesian, Malay, Arabic, Portuguese"
+  },
+  "en/_x": {
+   "row": "zh/h",
+   "init": "en/hh",
+   "sound": "velar fricative: Spanish 'j', German 'ach', Arabic 'kh', Chinese 'h'"
+  },
+  "en/_3": {
+   "row": "ja/hy",
+   "init": "en/ah",
+   "sound": "Arabic 'ayn (had no phone at all)"
+  },
+  "en/_zhr": {
+   "row": "zh/zh",
+   "init": "en/jh",
+   "sound": "Chinese retroflex 'zh'"
+  },
+  "en/_chr": {
+   "row": "zh/ch",
+   "init": "en/ch",
+   "sound": "Chinese retroflex 'ch'"
+  },
+  "en/_shr": {
+   "row": "zh/sh",
+   "init": "en/sh",
+   "sound": "Chinese retroflex 'sh'"
+  },
+  "en/_rz": {
+   "row": "zh/r",
+   "init": "en/r",
+   "sound": "Chinese 'r'"
+  }
+ },
+ "sounds": {
+  "i": [
+   "en/iy"
+  ],
+  "ɪ": [
+   "en/ih"
+  ],
+  "y": [
+   "en/_y"
+  ],
+  "ʏ": [
+   "en/_y"
+  ],
+  "ɯ": [
+   "en/uh"
+  ],
+  "u": [
+   "en/_u"
+  ],
+  "ʊ": [
+   "en/uh"
+  ],
+  "e": [
+   "en/eh"
+  ],
+  "ɛ": [
+   "en/eh"
+  ],
+  "ø": [
+   "en/_oe"
+  ],
+  "œ": [
+   "en/_oe"
+  ],
+  "o": [
+   "en/_o"
+  ],
+  "ɔ": [
+   "en/ao"
+  ],
+  "ə": [
+   "en/ax"
+  ],
+  "ɐ": [
+   "en/ah"
+  ],
+  "a": [
+   "en/aa"
+  ],
+  "ɑ": [
+   "en/aa"
+  ],
+  "ʌ": [
+   "en/ah"
+  ],
+  "æ": [
+   "en/ae"
+  ],
+  "ɑ~": [
+   "en/_an"
+  ],
+  "ɔ~": [
+   "en/_on"
+  ],
+  "ɛ~": [
+   "en/_en"
+  ],
+  "œ~": [
+   "en/_en"
+  ],
+  "ɐ~": [
+   "en/_an"
+  ],
+  "e~": [
+   "en/_en"
+  ],
+  "i~": [
+   "en/iy",
+   "en/n"
+  ],
+  "o~": [
+   "en/_on"
+  ],
+  "u~": [
+   "en/_u",
+   "en/n"
+  ],
+  "aj": [
+   "en/ay"
+  ],
+  "aw": [
+   "en/aw"
+  ],
+  "oj": [
+   "en/oy"
+  ],
+  "ej": [
+   "en/ey"
+  ],
+  "ow": [
+   "en/ow"
+  ],
+  "ɐ~w": [
+   "en/_an",
+   "en/w"
+  ],
+  "ɐ~j": [
+   "en/_an",
+   "en/y"
+  ],
+  "o~j": [
+   "en/_on",
+   "en/y"
+  ],
+  "e~j": [
+   "en/_en",
+   "en/y"
+  ],
+  "p": [
+   "en/p"
+  ],
+  "b": [
+   "en/b"
+  ],
+  "t": [
+   "en/t"
+  ],
+  "d": [
+   "en/d"
+  ],
+  "k": [
+   "en/k"
+  ],
+  "g": [
+   "en/g"
+  ],
+  "q": [
+   "en/k"
+  ],
+  "pʰ": [
+   "en/p"
+  ],
+  "tʰ": [
+   "en/t"
+  ],
+  "kʰ": [
+   "en/k"
+  ],
+  "p*": [
+   "en/b"
+  ],
+  "t*": [
+   "en/d"
+  ],
+  "k*": [
+   "en/g"
+  ],
+  "m": [
+   "en/m"
+  ],
+  "n": [
+   "en/n"
+  ],
+  "ŋ": [
+   "en/ng"
+  ],
+  "ɲ": [
+   "en/n",
+   "en/y"
+  ],
+  "f": [
+   "en/f"
+  ],
+  "v": [
+   "en/v"
+  ],
+  "s": [
+   "en/s"
+  ],
+  "z": [
+   "en/z"
+  ],
+  "s*": [
+   "en/s"
+  ],
+  "ʃ": [
+   "en/sh"
+  ],
+  "ʒ": [
+   "en/zh"
+  ],
+  "ɕ": [
+   "en/sh"
+  ],
+  "x": [
+   "en/_x"
+  ],
+  "ç": [
+   "en/sh"
+  ],
+  "h": [
+   "en/hh"
+  ],
+  "ħ": [
+   "en/hh"
+  ],
+  "ɣ": [
+   "en/_ru"
+  ],
+  "θ": [
+   "en/th"
+  ],
+  "ð": [
+   "en/dh"
+  ],
+  "ts": [
+   "en/t",
+   "en/s"
+  ],
+  "dz": [
+   "en/d",
+   "en/z"
+  ],
+  "tʃ": [
+   "en/ch"
+  ],
+  "dʒ": [
+   "en/jh"
+  ],
+  "tʃ*": [
+   "en/jh"
+  ],
+  "l": [
+   "en/l"
+  ],
+  "ʎ": [
+   "en/l",
+   "en/y"
+  ],
+  "ɾ": [
+   "en/dx"
+  ],
+  "r": [
+   "en/_rr"
+  ],
+  "ʁ": [
+   "en/_ru"
+  ],
+  "j": [
+   "en/y"
+  ],
+  "w": [
+   "en/w"
+  ],
+  "ɥ": [
+   "en/w"
+  ],
+  "ʔ": [],
+  "ʕ": [
+   "en/_3"
+  ]
+ },
+ "ja": {
+  "N": [
+   "en/_nn"
+  ],
+  "a": [
+   "en/aa"
+  ],
+  "b": [
+   "en/b"
+  ],
+  "by": [
+   "en/b",
+   "en/y"
+  ],
+  "ch": [
+   "en/ch"
+  ],
+  "d": [
+   "en/d"
+  ],
+  "dy": [
+   "en/d",
+   "en/y"
+  ],
+  "e": [
+   "en/eh"
+  ],
+  "f": [
+   "en/f"
+  ],
+  "g": [
+   "en/g"
+  ],
+  "gw": [
+   "en/g",
+   "en/w"
+  ],
+  "gy": [
+   "en/g",
+   "en/y"
+  ],
+  "h": [
+   "en/hh"
+  ],
+  "hy": [
+   "en/hh",
+   "en/y"
+  ],
+  "i": [
+   "en/iy"
+  ],
+  "j": [
+   "en/jh"
+  ],
+  "k": [
+   "en/k"
+  ],
+  "kw": [
+   "en/k",
+   "en/w"
+  ],
+  "ky": [
+   "en/k",
+   "en/y"
+  ],
+  "m": [
+   "en/m"
+  ],
+  "my": [
+   "en/m",
+   "en/y"
+  ],
+  "n": [
+   "en/n"
+  ],
+  "ny": [
+   "en/n",
+   "en/y"
+  ],
+  "o": [
+   "en/_o"
+  ],
+  "p": [
+   "en/p"
+  ],
+  "py": [
+   "en/p",
+   "en/y"
+  ],
+  "r": [
+   "en/dx"
+  ],
+  "ry": [
+   "en/dx",
+   "en/y"
+  ],
+  "s": [
+   "en/s"
+  ],
+  "sh": [
+   "en/sh"
+  ],
+  "t": [
+   "en/t"
+  ],
+  "ts": [
+   "en/t",
+   "en/s"
+  ],
+  "ty": [
+   "en/t",
+   "en/y"
+  ],
+  "u": [
+   "en/_u"
+  ],
+  "v": [
+   "en/v"
+  ],
+  "w": [
+   "en/w"
+  ],
+  "y": [
+   "en/y"
+  ],
+  "z": [
+   "en/z"
+  ]
+ },
+ "zh": {
+  "a": [
+   "en/aa"
+  ],
+  "ai": [
+   "en/ay"
+  ],
+  "an": [
+   "en/aa",
+   "en/n"
+  ],
+  "ang": [
+   "en/aa",
+   "en/ng"
+  ],
+  "ao": [
+   "en/aw"
+  ],
+  "b": [
+   "en/b"
+  ],
+  "c": [
+   "en/t",
+   "en/s"
+  ],
+  "ch": [
+   "en/_chr"
+  ],
+  "d": [
+   "en/d"
+  ],
+  "e": [
+   "en/_eo"
+  ],
+  "ei": [
+   "en/ey"
+  ],
+  "en": [
+   "en/ah",
+   "en/n"
+  ],
+  "eng": [
+   "en/ah",
+   "en/ng"
+  ],
+  "er": [
+   "en/er"
+  ],
+  "f": [
+   "en/f"
+  ],
+  "g": [
+   "en/g"
+  ],
+  "h": [
+   "en/_x"
+  ],
+  "i": [
+   "en/iy"
+  ],
+  "i0": [
+   "en/ih"
+  ],
+  "ia": [
+   "en/y",
+   "en/aa"
+  ],
+  "ian": [
+   "en/y",
+   "en/eh",
+   "en/n"
+  ],
+  "iang": [
+   "en/y",
+   "en/aa",
+   "en/ng"
+  ],
+  "iao": [
+   "en/y",
+   "en/aw"
+  ],
+  "ie": [
+   "en/y",
+   "en/eh"
+  ],
+  "in": [
+   "en/iy",
+   "en/n"
+  ],
+  "ing": [
+   "en/iy",
+   "en/ng"
+  ],
+  "io": [
+   "en/y",
+   "en/ow"
+  ],
+  "iong": [
+   "en/y",
+   "en/uh",
+   "en/ng"
+  ],
+  "ir": [
+   "en/er"
+  ],
+  "iu": [
+   "en/y",
+   "en/ow"
+  ],
+  "j": [
+   "en/jh"
+  ],
+  "k": [
+   "en/k"
+  ],
+  "l": [
+   "en/l"
+  ],
+  "m": [
+   "en/m"
+  ],
+  "n": [
+   "en/n"
+  ],
+  "o": [
+   "en/ao"
+  ],
+  "ong": [
+   "en/uh",
+   "en/ng"
+  ],
+  "ou": [
+   "en/ow"
+  ],
+  "p": [
+   "en/p"
+  ],
+  "q": [
+   "en/ch"
+  ],
+  "r": [
+   "en/_rz"
+  ],
+  "s": [
+   "en/s"
+  ],
+  "sh": [
+   "en/_shr"
+  ],
+  "t": [
+   "en/t"
+  ],
+  "u": [
+   "en/_u"
+  ],
+  "ua": [
+   "en/w",
+   "en/aa"
+  ],
+  "uai": [
+   "en/w",
+   "en/ay"
+  ],
+  "uan": [
+   "en/w",
+   "en/aa",
+   "en/n"
+  ],
+  "uang": [
+   "en/w",
+   "en/aa",
+   "en/ng"
+  ],
+  "ueng": [
+   "en/w",
+   "en/ah",
+   "en/ng"
+  ],
+  "ui": [
+   "en/w",
+   "en/ey"
+  ],
+  "un": [
+   "en/w",
+   "en/ah",
+   "en/n"
+  ],
+  "uo": [
+   "en/w",
+   "en/ao"
+  ],
+  "v": [
+   "en/_y"
+  ],
+  "van": [
+   "en/_y",
+   "en/eh",
+   "en/n"
+  ],
+  "ve": [
+   "en/_y",
+   "en/eh"
+  ],
+  "vn": [
+   "en/_y",
+   "en/n"
+  ],
+  "w": [
+   "en/w"
+  ],
+  "x": [
+   "en/sh"
+  ],
+  "y": [
+   "en/y"
+  ],
+  "y0": [
+   "en/y"
+  ],
+  "z": [
+   "en/d",
+   "en/z"
+  ],
+  "zh": [
+   "en/_zhr"
+  ]
+ }
+}

@@ -1,6 +1,11 @@
 import { type ReadingToken, isKana, kanaToMorae } from "@/audio/alignment/hubertfa/japanese";
 import { type Pronunciations, lookupWord } from "@/audio/alignment/hubertfa/lexicon";
 import { type PhoneLanguage, soundsToPhones, standInPhones } from "@/audio/alignment/hubertfa/readers/donors";
+import {
+  type PhoneTable,
+  tableDictionaryPhones,
+  tableSoundPhones,
+} from "@/audio/alignment/hubertfa/readers/phone-table";
 import { type ReaderLanguage, type ReaderUnit, segmentWord } from "@/audio/alignment/hubertfa/readers/reader-units";
 import { applyLineTransliteration } from "@/audio/alignment/hubertfa/transliteration-readings";
 import { hasCjk, hasHan, hasLetterOrDigit } from "@/domain/alignment/cjk";
@@ -20,8 +25,8 @@ interface PhoneUnit {
   guessed?: boolean;
   /**
    * The language that read the unit when its phones don't say: a language
-   * reader, or Mandarin or Japanese read with English stand-ins on a model
-   * without them. Absent for English, and for Mandarin and Japanese phones.
+   * reader, or Mandarin or Japanese read with English stand-ins or a model's
+   * phone table. Absent for English, and for Mandarin and Japanese phones.
    */
   reader?: ReaderLanguage | "zh" | "ja";
   /** A language reader's sounds. */
@@ -43,6 +48,8 @@ interface G2pContext {
    * sounds become, and whether Mandarin and Japanese keep their own phones.
    */
   modelLanguages: readonly string[];
+  /** The loaded model's own phones for every language but English, when its manifest names a table. */
+  phoneTable?: PhoneTable | null;
 }
 
 /** `guessed` lists words read from their spelling, whose timing is worth a check. */
@@ -228,7 +235,8 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
       if (!unit.read) continue;
       const { reader, sounds, guessed: wasGuessed } = unit.read;
       if (wasGuessed) guessed.add(unit.text.trim());
-      const phones = soundsToPhones(sounds, context.modelLanguages);
+      const table = context.phoneTable;
+      const phones = table ? tableSoundPhones(table, sounds) : soundsToPhones(sounds, context.modelLanguages);
       phoneUnits.push({ parts: unit.parts, phones, guessed: wasGuessed, reader, sounds });
       continue;
     }
@@ -247,8 +255,11 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
     }
     const { language } = unit;
     const wasGuessed = language === "en" && lookupWord(unit.text, context.dictionaries.en).kind === "guessed";
-    if (language !== "en" && !listed.has(language)) {
-      phoneUnits.push({ parts: unit.parts, phones: standInPhones(language, phones), guessed: false, reader: language });
+    if (language !== "en" && (context.phoneTable || !listed.has(language))) {
+      const borrowed = context.phoneTable
+        ? tableDictionaryPhones(context.phoneTable, language, phones)
+        : standInPhones(language, phones);
+      phoneUnits.push({ parts: unit.parts, phones: borrowed, guessed: false, reader: language });
       continue;
     }
     phoneUnits.push({ parts: unit.parts, phones: phones.map((phone) => ({ language, phone })), guessed: wasGuessed });

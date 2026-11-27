@@ -19,10 +19,6 @@ interface LineReading {
 
 // -- Constants ----------------------------------------------------------------
 
-// The model covers English, Mandarin and Japanese, mixed freely within a line.
-// Every line is tried whatever the song language; lines in other scripts fall
-// back to the character split.
-const SUPPORTED_LANGUAGES = new Set(["en", "zh", "ja"]);
 const LATIN_READERS: Readonly<Record<string, LatinReader>> = {
   es: "es",
   pt: "pt",
@@ -33,6 +29,11 @@ const LATIN_READERS: Readonly<Record<string, LatinReader>> = {
   id: "id",
   ms: "id",
 };
+// English, Mandarin and Japanese read from dictionaries, mixed freely within a
+// line; the rest through a language reader. A model's manifest can claim only
+// these. Every line is tried whatever the song language; lines in other scripts
+// fall back to the character split.
+const SUPPORTED_LANGUAGES = new Set(["en", "zh", "ja", "ko", "ar", ...Object.keys(LATIN_READERS)]);
 
 // -- Functions ----------------------------------------------------------------
 

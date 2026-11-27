@@ -8,6 +8,8 @@ import japaneseText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
 import standIns from "@/audio/alignment/hubertfa/readers/ja-zh-to-en.json";
+import { parsePhoneTable } from "@/audio/alignment/hubertfa/readers/phone-table";
+import mfPhones from "@/audio/alignment/hubertfa/readers/test-fixtures/hubertfa_pt_mf_phones_v1.json";
 import beforeReaders from "@/audio/alignment/hubertfa/test-fixtures/g2p-before-readers.json";
 import { readFile } from "node:fs/promises";
 import { pinyin } from "pinyin-pro";
@@ -184,6 +186,16 @@ describe("lineToPhoneUnits", () => {
       modelLanguages: ["en"],
     });
     expect(phones(spanish)).toEqual(["0:k eh", "1:iy hh ow"]);
+  });
+
+  it("reads every language but English through a model's phone table, leaving the closure out", () => {
+    const phoneTable = parsePhoneTable(mfPhones);
+    const keys = (result: ReturnType<typeof lineToPhoneUnits>) =>
+      result.kind === "units" ? result.units.map((u) => u.phones.map((p) => `${p.language}/${p.phone}`).join(" ")) : [];
+    const japanese = lineToPhoneUnits([["きっ", "と"], ["love"]], { ...context("ja"), phoneTable });
+    expect(keys(japanese)).toEqual(["en/k en/iy", "en/t en/_o", "en/l en/ah en/v"]);
+    const spanish = lineToPhoneUnits([["no"]], { ...context("zh"), latinReader: "es", phoneTable });
+    expect(keys(spanish)).toEqual(["en/n en/_o"]);
   });
 
   it("reports words in scripts no reader covers", () => {

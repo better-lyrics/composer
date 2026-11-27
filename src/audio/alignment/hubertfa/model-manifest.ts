@@ -16,6 +16,8 @@ interface AlignmentModel {
   label: string;
   modelUrl: string;
   dictionaryUrl: string;
+  /** The model's own phones for every language but English (`readers/phone-table.ts`); null for the bundled ones. */
+  phonesUrl: string | null;
   approxBytes: number;
   /** Base language codes the checkpoint was trained for, such as "en". */
   languages: string[];
@@ -44,8 +46,10 @@ const RECOMMENDED_ALIGNMENT_MODEL = "recommended";
 const DICTIONARY_FILENAME = "hubertfa_v007_cmudict.txt";
 const DICTIONARY_APPROX_BYTES = 3.3 * MIB;
 // A checkpoint that finds lines takes inputs older builds don't send, so those are listed in a second manifest
-// that older builds never read. A deployment with only the first one keeps working.
-const MANIFEST_FILENAMES = ["hubertfa-models-2.json", "hubertfa-models.json"];
+// that older builds never read; one with its own phone table means other sounds on some rows, so builds that can't
+// read the table never see it, in a third. The first manifest that loads is the whole list, and a deployment with
+// only an older one keeps working.
+const MANIFEST_FILENAMES = ["hubertfa-models-3.json", "hubertfa-models-2.json", "hubertfa-models.json"];
 const LOG_PREFIX = "[alignment-models]";
 
 // -- State --------------------------------------------------------------------
@@ -60,6 +64,7 @@ function builtinModel(baseUrl: string): AlignmentModel {
     label: BUILTIN_ALIGNMENT_MODEL.label,
     modelUrl: `${baseUrl}/${BUILTIN_ALIGNMENT_MODEL.filename}`,
     dictionaryUrl: `${baseUrl}/${DICTIONARY_FILENAME}`,
+    phonesUrl: null,
     approxBytes: BUILTIN_ALIGNMENT_MODEL.approxBytes,
     languages: BUILTIN_ALIGNMENT_MODEL.languages,
     recommended: false,
@@ -102,7 +107,7 @@ function parseLanguages(raw: unknown, fallback: string[]): string[] {
 
 function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel): AlignmentModel | null {
   if (!raw || typeof raw !== "object") return null;
-  const { id, label, model, dictionary, sizeMb, languages, recommended, terms } = raw as Record<string, unknown>;
+  const { id, label, model, dictionary, phones, sizeMb, languages, recommended, terms } = raw as Record<string, unknown>;
   if (typeof id !== "string" || !id || typeof model !== "string" || !model) return null;
   if (id === RECOMMENDED_ALIGNMENT_MODEL) {
     console.warn(`${LOG_PREFIX} skipping manifest entry ${id}: that id is reserved for following the recommendation`);
@@ -114,6 +119,7 @@ function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel)
       label: typeof label === "string" && label ? label : id,
       modelUrl: new URL(model, manifestUrl).href,
       dictionaryUrl: typeof dictionary === "string" ? new URL(dictionary, manifestUrl).href : fallback.dictionaryUrl,
+      phonesUrl: typeof phones === "string" && phones ? new URL(phones, manifestUrl).href : null,
       approxBytes: typeof sizeMb === "number" && sizeMb > 0 ? sizeMb * MIB : fallback.approxBytes,
       languages: parseLanguages(languages, fallback.languages),
       recommended: recommended === true,

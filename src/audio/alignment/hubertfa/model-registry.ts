@@ -11,6 +11,8 @@ import { getModelBaseUrl } from "@/audio/separation/model-registry";
 interface AlignmentAssets {
   model: CachedModel;
   dictionary: CachedModel;
+  /** The model's phone table, when it has phones of its own. */
+  phones: CachedModel | null;
   /** kuromoji's IPADIC files (gzipped), needed only to read kanji. */
   japaneseDictionary: Record<string, CachedModel>;
   approxBytes: number;
@@ -19,6 +21,7 @@ interface AlignmentAssets {
 
 // -- Constants ----------------------------------------------------------------
 
+const PHONE_TABLE_APPROX_BYTES = 16 * 1024;
 const JAPANESE_DICTIONARY_DIR = "kuromoji-ipadic";
 const JAPANESE_DICTIONARY_FILES: Record<string, number> = {
   "base.dat.gz": 3956825,
@@ -45,13 +48,14 @@ function getAlignmentAssets(model: AlignmentModel): AlignmentAssets | null {
   return {
     model: { url: model.modelUrl, approxBytes: model.approxBytes },
     dictionary: { url: model.dictionaryUrl, approxBytes: DICTIONARY_APPROX_BYTES },
+    phones: model.phonesUrl ? { url: model.phonesUrl, approxBytes: PHONE_TABLE_APPROX_BYTES } : null,
     japaneseDictionary: Object.fromEntries(
       Object.entries(JAPANESE_DICTIONARY_FILES).map(([name, approxBytes]) => [
         name,
         { url: `${base}/${JAPANESE_DICTIONARY_DIR}/${name}`, approxBytes },
       ]),
     ),
-    approxBytes: model.approxBytes + DICTIONARY_APPROX_BYTES,
+    approxBytes: model.approxBytes + DICTIONARY_APPROX_BYTES + (model.phonesUrl ? PHONE_TABLE_APPROX_BYTES : 0),
     languages: model.languages,
   };
 }
@@ -64,8 +68,8 @@ async function resolveAlignmentAssets(modelId: string): Promise<AlignmentAssets 
 // The kanji dictionary is left out: it's fetched only for Japanese lyrics.
 async function areAlignmentAssetsCached(assets: AlignmentAssets | null): Promise<boolean> {
   if (!assets) return false;
-  const [model, dictionary] = await Promise.all([hasCachedModel(assets.model), hasCachedModel(assets.dictionary)]);
-  return model && dictionary;
+  const files = [assets.model, assets.dictionary, ...(assets.phones ? [assets.phones] : [])];
+  return (await Promise.all(files.map(hasCachedModel))).every(Boolean);
 }
 
 // -- Exports ------------------------------------------------------------------
