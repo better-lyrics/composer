@@ -10,8 +10,8 @@ type HanReading = "zh" | "ja";
 // -- Constants ----------------------------------------------------------------
 
 // The model covers English, Mandarin and Japanese, mixed freely within a line.
-// With no project language set, each line is tried; lines in other scripts
-// fall back to the character split.
+// Every line is tried whatever the song language; lines in other scripts fall
+// back to the character split.
 const SUPPORTED_LANGUAGES = new Set(["en", "zh", "ja"]);
 
 // -- Functions ----------------------------------------------------------------
@@ -26,12 +26,6 @@ function baseLanguage(tag: string | undefined): string | null {
 function isAlignableLanguage(code: string): boolean {
   const base = baseLanguage(code);
   return base !== null && SUPPORTED_LANGUAGES.has(base);
-}
-
-// A song with no language set is never blocked: each line is tried.
-function canAlignLanguage(language: string | undefined, modelLanguages: readonly string[]): boolean {
-  const base = baseLanguage(language);
-  return !base || (SUPPORTED_LANGUAGES.has(base) && coversLanguage(modelLanguages, base));
 }
 
 // Han characters are kanji in a Japanese project, or when any line has kana
@@ -70,7 +64,6 @@ function coverageColumns(languageLists: readonly (readonly string[])[], song: st
 
 export {
   baseLanguage,
-  canAlignLanguage,
   coverageColumns,
   coversLanguage,
   hanReadingFor,
