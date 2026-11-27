@@ -60,10 +60,14 @@ function koreanNumber(n: number): string[] {
   return [head + koreanBelowTenThousand(n % 10000)];
 }
 
+/** Whether `after`, the text that follows a number, starts with a counter that takes the native numbers. */
+function startsWithKoreanCounter(after: string): boolean {
+  return !after.startsWith(KO_MONTHS) && KO_NATIVE_COUNTERS.some((counter) => after.startsWith(counter));
+}
+
 /** The native reading of 1 to 99 when `after`, the text that follows the digits, starts with a counter that takes it. */
 function koreanNative(n: number, after: string): string[] | null {
-  if (n < 1 || n > 99 || after.startsWith(KO_MONTHS)) return null;
-  if (!KO_NATIVE_COUNTERS.some((counter) => after.startsWith(counter))) return null;
+  if (n < 1 || n > 99 || !startsWithKoreanCounter(after)) return null;
   if (n === 20) return ["스무"];
   return [KO_NATIVE_TENS[Math.floor(n / 10)] + KO_NATIVE_ONES[n % 10]];
 }
@@ -122,4 +126,13 @@ function mandarinNumber(n: number): string[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { JA_DIGITS, KO_DIGITS, ZH_DIGITS, japaneseNumber, koreanNative, koreanNumber, mandarinNumber };
+export {
+  JA_DIGITS,
+  KO_DIGITS,
+  ZH_DIGITS,
+  japaneseNumber,
+  koreanNative,
+  koreanNumber,
+  mandarinNumber,
+  startsWithKoreanCounter,
+};

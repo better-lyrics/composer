@@ -222,8 +222,8 @@ describe("numbers", () => {
 
   it("reads a number in the language of the words around it", () => {
     const korean = context("zh");
-    expect(sounds(lineToPhoneUnits([["나", "는"], ["17"]], korean), 2)).toEqual(readWord("ko", "십칠").sounds);
     expect(sounds(lineToPhoneUnits([["17", "살"]], korean), 0)).toEqual(readWord("ko", "열일곱").sounds);
+    expect(sounds(lineToPhoneUnits([["제", "17"]], korean), 1)).toEqual(readWord("ko", "십칠").sounds);
     // The same song's English line.
     expect(phones(lineToPhoneUnits([["i"], ["love"], ["17"]], korean))[2]).toBe("2:s eh v ax n t iy n");
 
@@ -240,6 +240,13 @@ describe("numbers", () => {
     expect(sounds(lineToPhoneUnits([["17"], ["살"]], korean), 0)).toEqual(readWord("ko", "열일곱").sounds);
     // Months are counted with the other numbers: "삼 개월", though "세 개".
     expect(sounds(lineToPhoneUnits([["3", "개", "월"]], korean), 0)).toEqual(readWord("ko", "삼").sounds);
+  });
+
+  it("reads a number on its own beside Korean words in English, unless a counter follows or it is a decimal", () => {
+    const korean = context("zh");
+    expect(phones(lineToPhoneUnits([["나", "는"], ["17"]], korean))[2]).toBe("2:s eh v ax n t iy n");
+    expect(sounds(lineToPhoneUnits([["17"], ["살"]], korean), 0)).toEqual(readWord("ko", "열일곱").sounds);
+    expect(sounds(lineToPhoneUnits([["딱"], ["99.9"]], korean), 1)).toEqual(readWord("ko", "구십구구").sounds);
   });
 
   it("regression: reads Arabic-Indic digits as the number they write", () => {
