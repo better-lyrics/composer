@@ -53,6 +53,10 @@ const DIGRAPHS = new Set(["ch", "sh", "th", "ph", "wh", "ck", "ng", "gh", "qu"])
 const CODA_SOUNDS = new Set(["ck", "ng", "x"]);
 /** How far a syllable boundary must move from an even split by letters before it's worth splitting the word. */
 const NOTICEABLE_SECONDS = 0.1;
+// A first or last syllable shorter than this is the phones squeezing a sound against the word's edge: against
+// tapped syllables such a split is right less than half as often as the word left whole (hubertfa-posttrain
+// results/trainv3/syl_split).
+const MIN_EDGE_SYLLABLE_SECONDS = 0.06;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -154,7 +158,7 @@ function spellingSyllables(word: string, vowels: number): number[] | null {
 /**
  * A split for an unsplit word, when timing its syllables from the audio moves a
  * boundary noticeably from an even split by letters, which is how the word
- * would play otherwise.
+ * would play otherwise. None when its first or last syllable would be only a few frames long.
  */
 function noticeableSplit(word: string, phones: readonly TimedPhone[]): SyllableSplit | null {
   const at = spellingSyllables(word, vowelPhoneIndices(phones).length);
@@ -162,6 +166,9 @@ function noticeableSplit(word: string, phones: readonly TimedPhone[]): SyllableS
   const parts = [0, ...at].map((start, k) => word.slice(start, at[k] ?? word.length));
   const intervals = syllableIntervals(parts, phones);
   if (!intervals) return null;
+  const first = intervals[0];
+  const last = intervals[intervals.length - 1];
+  if (Math.min(first.end - first.begin, last.end - last.begin) < MIN_EDGE_SYLLABLE_SECONDS) return null;
   const begin = phones[0].begin;
   const span = phones[phones.length - 1].end - begin;
   const moved = at.some(
