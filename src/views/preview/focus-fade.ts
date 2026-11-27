@@ -19,10 +19,16 @@ function isOutsideFocus(time: number, range: Bounds): boolean {
   return time < range.begin - FOCUS_EDGE_TOLERANCE_SECONDS || time > range.end + FOCUS_EDGE_TOLERANCE_SECONDS;
 }
 
-function markLinesOutsideFocus(lines: Iterable<TimedLineElement>, range: Bounds | null): void {
+// Returns whether any line's mark changed.
+function markLinesOutsideFocus(lines: Iterable<TimedLineElement>, range: Bounds | null): boolean {
+  let changed = false;
   for (const { element, startSeconds } of lines) {
-    element.toggleAttribute(OUTSIDE_FOCUS_ATTRIBUTE, range !== null && isOutsideFocus(startSeconds, range));
+    const outside = range !== null && isOutsideFocus(startSeconds, range);
+    if (element.hasAttribute(OUTSIDE_FOCUS_ATTRIBUTE) === outside) continue;
+    element.toggleAttribute(OUTSIDE_FOCUS_ATTRIBUTE, outside);
+    changed = true;
   }
+  return changed;
 }
 
 // -- Hooks ---------------------------------------------------------------------
