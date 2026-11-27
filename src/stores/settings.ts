@@ -110,6 +110,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
 
   experiments: ExperimentFlags;
   composerBridgeUrl: string;
+  mcpAccess: boolean;
 }
 
 interface SettingsActions {
@@ -205,6 +206,7 @@ const DEFAULTS: SettingsState = {
 
   experiments: { youtubeBridge: RUNS_LOCALLY },
   composerBridgeUrl: DEFAULT_BRIDGE_URL,
+  mcpAccess: false,
 };
 
 const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
