@@ -6,19 +6,14 @@ import { type G2pContext, type PhoneUnit, lineToPhoneUnits } from "@/audio/align
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { type Pronunciations, parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
+import { type PhoneTable, parsePhoneTable } from "@/audio/alignment/hubertfa/readers/phone-table";
 import type {
   AlignOutcome,
   InboundMessage,
   LineRequest,
   OutboundMessage,
 } from "@/audio/alignment/hubertfa/worker-protocol";
-import {
-  alignPhones,
-  ctcSpan,
-  isLineFinder,
-  lineFeeds,
-  linesAround,
-} from "@/audio/alignment/hubertfa/line-search";
+import { alignPhones, ctcSpan, isLineFinder, lineFeeds, linesAround } from "@/audio/alignment/hubertfa/line-search";
 import {
   type PhoneSequence,
   buildPhoneSequence,
@@ -47,6 +42,8 @@ let session: OrtSession | null = null;
 let activeBackend: Backend = "wasm";
 let dictionary: Pronunciations | null = null;
 let modelAsset: CachedModel | null = null;
+let modelLanguages: readonly string[] = [];
+let phoneTable: PhoneTable | null = null;
 let readJapanese: G2pContext["readJapanese"] = null;
 let pinyinOf: G2pContext["pinyinOf"] = null;
 const mandarinDictionary = parseDictionary(mandarinDictionaryText);
@@ -86,10 +83,12 @@ async function loadPinyin(): Promise<NonNullable<G2pContext["pinyinOf"]>> {
 
 async function handleInit(assets: AlignmentAssets, forceWasm?: boolean, japanese?: boolean) {
   modelAsset = assets.model;
+  modelLanguages = assets.languages;
+  phoneTable = null;
   downloadAbort = new AbortController();
   const { signal } = downloadAbort;
   const japaneseFiles = japanese && !readJapanese ? assets.japaneseDictionary : {};
-  const files = [assets.dictionary, assets.model, ...Object.values(japaneseFiles)];
+  const files = [assets.dictionary, ...(assets.phones ? [assets.phones] : []), assets.model, ...Object.values(japaneseFiles)];
   const progress = new Map(files.map((file) => [file.url, [0, file.approxBytes]]));
   const report = () => {
     let loaded = 0;
@@ -109,6 +108,7 @@ async function handleInit(assets: AlignmentAssets, forceWasm?: boolean, japanese
   let modelBytes: ArrayBuffer;
   try {
     dictionary = parseDictionary(new TextDecoder().decode(await load(assets.dictionary)));
+    if (assets.phones) phoneTable = parsePhoneTable(JSON.parse(new TextDecoder().decode(await load(assets.phones))));
     if (Object.keys(japaneseFiles).length > 0) {
       readJapanese = await createJapaneseReader((name) => {
         const file = japaneseFiles[name];
@@ -179,7 +179,8 @@ async function fallBackToWasm(reason: unknown): Promise<void> {
 // The lines around the request's and what a model that finds lines is given beside the audio; null for any other.
 async function lineInputs(request: LineRequest, own: PhoneSequence) {
   if (!session || !ort || !isLineFinder(session)) return null;
-  const context = await linesAround(request, (words) => prepareLine({ ...request, words, transliteration: null }));
+  const prepare = (words: string[][]) => prepareLine({ ...request, words, transliteration: null });
+  const context = await linesAround(request, prepare, phoneTable?.rows ?? null);
   return { context, feeds: lineFeeds(ort, own, context, request.tap) };
 }
 
@@ -200,7 +201,8 @@ type PreparedLine =
   | { kind: "done"; outcome: AlignOutcome };
 
 // The line's phones, or the outcome when it has none to align. Null after posting an error.
-async function prepareLine({ sampleRate, words, hanReading, transliteration }: Omit<LineRequest, "samples">) {
+async function prepareLine(request: Omit<LineRequest, "samples">) {
+  const { sampleRate, words, hanReading, latinReader, transliteration } = request;
   if (!session || !ort || !dictionary) {
     post({ type: "error", code: "ort-failed", message: "Alignment model is not loaded." });
     return null;
@@ -220,9 +222,12 @@ async function prepareLine({ sampleRate, words, hanReading, transliteration }: O
     pinyinOf: hanReading === "zh" && hasHan(lineText) ? await loadPinyin() : null,
     readJapanese,
     transliteration,
+    latinReader,
+    modelLanguages,
+    phoneTable,
   });
   if (g2p.kind === "unknown") return { kind: "done", outcome: { kind: "unknown", words: g2p.words } } as const;
-  const built = buildPhoneSequence(g2p.units);
+  const built = buildPhoneSequence(g2p.units, phoneTable?.rows ?? null);
   if (built.kind === "unknown") return { kind: "done", outcome: { kind: "unknown", words: built.words } } as const;
   if (built.kind === "nothing-to-align") return { kind: "done", outcome: { kind: "no-path" } } as const;
   return { kind: "ready", units: g2p.units, guessed: g2p.guessed, sequence: built.sequence } satisfies PreparedLine;

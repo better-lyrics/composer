@@ -19,6 +19,7 @@
     "knip": "knip",
     "knip:production": "knip --production",
     "jscpd": "jscpd",
+    "phonemize": "node --import ./scripts/lib/alias-hooks.mjs scripts/phonemize-lyrics.ts",
     "doctor": "npx --yes react-doctor@latest ."
   },
   "dependencies": {

@@ -13,12 +13,6 @@ function alignmentErrorCopy(code: AlignmentErrorCode): AlignmentErrorCopy {
   if (code === "unavailable") {
     return { title: "Auto-align isn't available here", next: "Time the words by hand in Word mode." };
   }
-  if (code === "unsupported-language") {
-    return {
-      title: "The model doesn't cover this song's language",
-      next: "Pick a model that covers it, check the song language, or time the words by hand.",
-    };
-  }
   if (code === "needs-vocals") {
     return {
       title: "Separate the vocals first",

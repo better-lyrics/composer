@@ -15,6 +15,12 @@ describe("splitCjkPart", () => {
     expect(splitCjkPart("きって")).toEqual(["きっ", "て"]);
   });
 
+  it("splits Hangul into syllable blocks, which Korean is timed by, while hasCjk stays Chinese and Japanese only", () => {
+    expect(splitCjkPart("사랑해요,")).toEqual(["사", "랑", "해", "요,"]);
+    expect(splitCjkPart("baby사랑")).toEqual(["baby", "사", "랑"]);
+    expect(hasCjk("사랑")).toBe(false);
+  });
+
   it("keeps runs of other letters together", () => {
     expect(splitCjkPart("君とdance")).toEqual(["君", "と", "dance"]);
   });

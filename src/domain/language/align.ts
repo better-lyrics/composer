@@ -273,8 +273,10 @@ function withAlignedWords(line: LyricLine): LyricLine {
 
 export {
   alignTrackToLine,
+  applySlices,
   mappedTransliteration,
   planTransliterationAlignment,
+  timedPrefixText,
   validateTransliterationAlignment,
   withAlignedTransliteration,
   withAlignedWords,

@@ -26,14 +26,17 @@ const SILENCE_ID = VOCAB.SP;
 
 // Silence-class phones (the Japanese closure "cl", "SP", "AP") are shared
 // across languages and have no prefix; everything else is "<language>/<phone>".
-function phoneId(language: string, phone: string): number | undefined {
-  return VOCAB[phone] ?? VOCAB[vocab.language_prefix ? `${language}/${phone}` : phone];
+// A model's phone table may add keys of its own, each on the row of a bundled key.
+function phoneId(language: string, phone: string, rows: ReadonlyMap<string, string> | null): number | undefined {
+  const key = vocab.language_prefix ? `${language}/${phone}` : phone;
+  return VOCAB[phone] ?? VOCAB[rows?.get(key) ?? key];
 }
 
 // The forced sequence: SP, unit 1's phones, SP, unit 2's phones, ... SP. The
 // decoder may skip any SP. Two silences are never adjacent: a unit that starts
 // or ends in a closure absorbs the SP beside it.
-function buildPhoneSequence(units: readonly PhoneUnit[]): SequenceResult {
+// `rows` is the loaded model's phone table's, or null: every caller has to say which model the phones are for.
+function buildPhoneSequence(units: readonly PhoneUnit[], rows: ReadonlyMap<string, string> | null): SequenceResult {
   const ids = [SILENCE_ID];
   const unitOf = [-1];
   const unknown: string[] = [];
@@ -49,7 +52,7 @@ function buildPhoneSequence(units: readonly PhoneUnit[]): SequenceResult {
   units.forEach((unit, u) => {
     if (unit.phones.length === 0) return;
     for (const { language, phone } of unit.phones) {
-      const id = phoneId(language, phone);
+      const id = phoneId(language, phone, rows);
       if (id === undefined) unknown.push(`${language}/${phone}`);
       else push(id, u);
     }
@@ -117,7 +120,8 @@ function partIntervalsFromUnits(
   const out: WordInterval[] = new Array(parts.length);
   const splits: PartSplit[] = [];
   units.forEach((unit, u) => {
-    const english = unit.phones[0]?.language === "en" && unitPhones[u].length > 0;
+    // A word another language read may take English phones, but its spelling isn't English.
+    const english = !unit.reader && unit.phones[0]?.language === "en" && unitPhones[u].length > 0;
     const syllables =
       english && unit.parts.length > 1
         ? syllableIntervals(

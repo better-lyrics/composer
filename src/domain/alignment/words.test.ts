@@ -1,4 +1,5 @@
 import {
+  closeShortGaps,
   groupAlignmentWords,
   groupTimedWords,
   retimeWords,
@@ -124,5 +125,49 @@ describe("retimeWords", () => {
       ["you", 6, 6.3],
     ]);
     expect(retimed[0].transliteration).toBe("x");
+  });
+});
+
+// -- closeShortGaps -----------------------------------------------------------
+
+describe("closeShortGaps", () => {
+  // Two lines of a real song as the model timed them, and their ends as hubertfa-posttrain's benchmark of this rule
+  // (results/trainv3/smoothing, scripts/smooth_gaps.py) left them. The gaps are 10, 200, 20, 0 and 40 ms, then 60,
+  // 10, 130, 10, 10, 0 and 20 ms.
+  const LINES = [
+    {
+      model: [
+        [0.407481, 1.057681],
+        [1.067409, 1.727408],
+        [1.927578, 2.137389],
+        [2.157524, 2.287586],
+        [2.287586, 2.707463],
+        [2.74751, 3.7877],
+      ],
+      ends: [1.067409, 1.727408, 2.157524, 2.287586, 2.74751, 3.7877],
+    },
+    {
+      model: [
+        [0.592626, 0.632501],
+        [0.692311, 0.792526],
+        [0.802567, 0.832611],
+        [0.962518, 1.24245],
+        [1.252503, 1.892637],
+        [1.902336, 2.072443],
+        [2.072443, 2.112513],
+        [2.132692, 2.572221],
+      ],
+      ends: [0.692311, 0.802567, 0.832611, 1.252503, 1.902336, 2.072443, 2.132692, 2.572221],
+    },
+  ];
+
+  it("ends a word where the next begins when the gap is short, keeps a pause, and never moves a begin", () => {
+    for (const { model, ends } of LINES) {
+      const words = model.map(([begin, end]) => ({ text: "la ", begin, end }));
+      const out = closeShortGaps(words);
+      expect(out.map((word) => word.end)).toEqual(ends);
+      expect(out.map((word) => word.begin)).toEqual(words.map((word) => word.begin));
+      expect(out.map((word) => word.text)).toEqual(words.map((word) => word.text));
+    }
   });
 });

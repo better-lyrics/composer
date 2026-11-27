@@ -9,6 +9,7 @@ import { BridgeSection } from "@/ui/settings/bridge-section";
 import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
 import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-setting";
 import { LibraryViewSetting } from "@/ui/settings/library-view-setting";
+import { McpAccessSetting } from "@/ui/settings/mcp-access-setting";
 import { LoupeSizeSetting } from "@/ui/settings/loupe-size/loupe-size-setting";
 import {
   AlignmentModelFilesSetting,
@@ -110,6 +111,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   alignmentModelFiles: { kind: "custom", Component: AlignmentModelFilesSetting },
   alignmentModelId: { kind: "custom", Component: AlignmentModelSetting },
   keepAlignmentModelLoaded: TOGGLE,
+  smoothAlignedWords: TOGGLE,
   beatModelFiles: { kind: "custom", Component: BeatModelFilesSetting },
   defaultZoom: {
     kind: "slider",
@@ -219,6 +221,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
     ],
   },
   youtubeBridge: { kind: "custom", Component: BridgeSection },
+  mcpAccess: { kind: "custom", Component: McpAccessSetting },
   cobaltInstances: { kind: "custom", Component: CobaltInstancesSetting },
 };
 

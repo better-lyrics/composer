@@ -22,7 +22,7 @@ describe("parseAlignmentManifest", () => {
             languages: ["EN-us", "en", 3],
             recommended: true,
           },
-          { id: "ft-2", model: "https://cdn.example.com/ft2.onnx", dictionary: "../dict.txt" },
+          { id: "ft-2", model: "https://cdn.example.com/ft2.onnx", dictionary: "../dict.txt", phones: "mf/phones.json" },
           { id: "broken", label: "No model file" },
           { id: BUILTIN_ALIGNMENT_MODEL.id, label: "Duplicate of the built-in", model: "dup.onnx" },
           // The setting's own value for "follow the recommendation"; a checkpoint can't take it.
@@ -43,6 +43,7 @@ describe("parseAlignmentManifest", () => {
         label: "Posttrain 1",
         modelUrl: "https://models.example.com/hubertfa/ft1.onnx",
         dictionaryUrl: `${BASE_URL}/hubertfa_v007_cmudict.txt`,
+        phonesUrl: null,
         approxBytes: 400 * 1024 * 1024,
         languages: ["en"],
         recommended: true,
@@ -53,6 +54,7 @@ describe("parseAlignmentManifest", () => {
         label: "ft-2",
         modelUrl: "https://cdn.example.com/ft2.onnx",
         dictionaryUrl: "https://models.example.com/dict.txt",
+        phonesUrl: "https://models.example.com/hubertfa/mf/phones.json",
         languages: BUILTIN_ALIGNMENT_MODEL.languages,
         recommended: false,
       }),
@@ -72,14 +74,14 @@ describe("parseAlignmentManifest", () => {
     const [, mixed, foreign] = parseAlignmentManifest(
       {
         models: [
-          { id: "mixed", model: "mixed.onnx", languages: ["ko", "ja", "cmn"] },
-          { id: "foreign", model: "foreign.onnx", languages: ["ko"] },
+          { id: "mixed", model: "mixed.onnx", languages: ["th", "ko", "ja", "cmn"] },
+          { id: "foreign", model: "foreign.onnx", languages: ["th"] },
         ],
       },
       MANIFEST_URL,
       BASE_URL,
     );
-    expect(mixed.languages).toEqual(["ja", "zh"]);
+    expect(mixed.languages).toEqual(["ko", "ja", "zh"]);
     expect(foreign.languages).toEqual([]);
   });
 

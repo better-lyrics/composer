@@ -1,5 +1,5 @@
 import type { AlignmentModel } from "@/audio/alignment/hubertfa/model-manifest";
-import { coversLanguage } from "@/domain/alignment/language";
+import { coversLanguage, isLongCoverage } from "@/domain/alignment/language";
 import { languageName } from "@/domain/project/language";
 import { LanguageCoverage } from "@/ui/language-coverage";
 import { ModelTermsHint } from "@/ui/model-terms-info";
@@ -19,6 +19,10 @@ interface AlignmentModelOptionProps {
 
 const AlignmentModelOption: React.FC<AlignmentModelOptionProps> = ({ model, detail, columns, song }) => {
   const missed = song && !coversLanguage(model.languages, song) ? song : null;
+  const stacked = isLongCoverage(columns);
+  const coverage = (
+    <LanguageCoverage columns={columns} covered={model.languages} song={song} dimmed={missed !== null} />
+  );
   return (
     <span className="flex flex-1 items-center gap-3 min-w-0">
       <span className="flex flex-col gap-0.5 min-w-0">
@@ -35,9 +39,10 @@ const AlignmentModelOption: React.FC<AlignmentModelOptionProps> = ({ model, deta
         ) : (
           <span className="text-xs tabular-nums text-(--muted)">{detail}</span>
         )}
+        {stacked && <span className="mt-1">{coverage}</span>}
       </span>
       {model.terms && <ModelTermsHint terms={model.terms} />}
-      <LanguageCoverage columns={columns} covered={model.languages} song={song} dimmed={missed !== null} />
+      {!stacked && coverage}
     </span>
   );
 };

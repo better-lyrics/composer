@@ -442,11 +442,11 @@ describe("alignment store", () => {
     expect(seen.segments[1].parts).toEqual([["き", "み", "と"], ["dance"]]);
   });
 
-  it("refuses lyrics in other languages", async () => {
+  it("still aligns a song in a language the model doesn't cover", async () => {
     useProjectStore.setState({ metadata: { ...INITIAL_STATE.metadata, language: "ko" } });
     useProjectStore.getState().setLines([{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }]);
 
-    expect(await useAlignmentStore.getState().alignLines()).toBeNull();
-    expect(useAlignmentStore.getState().error?.code).toBe("unsupported-language");
+    expect((await useAlignmentStore.getState().alignLines())?.aligned).toBe(1);
+    expect(useAlignmentStore.getState().error).toBeNull();
   });
 });

@@ -1,18 +1,45 @@
 import { hasKana } from "@/domain/alignment/cjk";
 import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
 import type { LyricLine } from "@/domain/line/model";
+import { languageName } from "@/domain/project/language";
 
 // -- Types --------------------------------------------------------------------
 
 /** Whether Han characters are read as Mandarin or as Japanese kanji. */
 type HanReading = "zh" | "ja";
 
+/** A language whose own spelling rules read the Latin-script words of a song set to it. Malay reads as Indonesian. */
+type LatinReader = "es" | "pt" | "fr" | "de" | "it" | "tr" | "id";
+
+/** How a song's scripts are read for alignment. */
+interface LineReading {
+  hanReading: HanReading;
+  /** Null when Latin-script words are read as English. */
+  latinReader: LatinReader | null;
+}
+
 // -- Constants ----------------------------------------------------------------
 
-// The model covers English, Mandarin and Japanese, mixed freely within a line.
-// With no project language set, each line is tried; lines in other scripts
+const LATIN_READERS: Readonly<Record<string, LatinReader>> = {
+  es: "es",
+  pt: "pt",
+  fr: "fr",
+  de: "de",
+  it: "it",
+  tr: "tr",
+  id: "id",
+  ms: "id",
+};
+// English, Mandarin and Japanese read from dictionaries, mixed freely within a
+// line; the rest through a language reader. A model's manifest can claim only
+// these. Every line is tried whatever the song language; lines in other scripts
 // fall back to the character split.
-const SUPPORTED_LANGUAGES = new Set(["en", "zh", "ja"]);
+const SUPPORTED_LANGUAGES = new Set(["en", "zh", "ja", "ko", "ar", ...Object.keys(LATIN_READERS)]);
+const LANGUAGE_LIST = new Intl.ListFormat("en", { style: "long", type: "conjunction" });
+// A longer list reads as its first language and a count.
+const MAX_NAMED_LANGUAGES = 3;
+// A picker row has room for this many cells beside its label, and its trigger for this many codes.
+const MAX_ALIGNED_LANGUAGES = 4;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -28,18 +55,19 @@ function isAlignableLanguage(code: string): boolean {
   return base !== null && SUPPORTED_LANGUAGES.has(base);
 }
 
-// A song with no language set is never blocked: each line is tried.
-function canAlignLanguage(language: string | undefined, modelLanguages: readonly string[]): boolean {
-  const base = baseLanguage(language);
-  return !base || (SUPPORTED_LANGUAGES.has(base) && coversLanguage(modelLanguages, base));
-}
-
 // Han characters are kanji in a Japanese project, or when any line has kana
 // (an all-kanji line in a Japanese song would otherwise read as Mandarin).
-function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]): HanReading {
+function hanReadingFor(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): HanReading {
   const base = baseLanguage(language);
   if (base === "ja" || base === "zh") return base;
   return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
+}
+
+// Only the project language picks a Latin reader: a song with none set, or set to a
+// language in another script, reads its Latin-script words as English.
+function lineReadingFor(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): LineReading {
+  const base = baseLanguage(language);
+  return { hanReading: hanReadingFor(language, lines), latinReader: base ? (LATIN_READERS[base] ?? null) : null };
 }
 
 // The project language when set, else a guess from the lyrics' script. Kana
@@ -66,15 +94,28 @@ function coverageColumns(languageLists: readonly (readonly string[])[], song: st
   return [song, ...[...columns].filter((code) => code !== song)];
 }
 
+/** Whether there are too many languages to give each a cell beside a picker label. */
+function isLongCoverage(languages: readonly string[]): boolean {
+  return languages.length > MAX_ALIGNED_LANGUAGES;
+}
+
+/** The languages as prose, the song's first: "English, Chinese, and Japanese", or "Korean and 12 other languages". */
+function coverageSummary(languages: readonly string[], song: string | null): string {
+  const names = coverageColumns([languages], song).map(languageName);
+  if (names.length <= MAX_NAMED_LANGUAGES) return LANGUAGE_LIST.format(names);
+  return `${names[0]} and ${names.length - 1} other languages`;
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
   baseLanguage,
-  canAlignLanguage,
   coverageColumns,
+  coverageSummary,
   coversLanguage,
-  hanReadingFor,
   isAlignableLanguage,
+  isLongCoverage,
+  lineReadingFor,
   songLanguage,
 };
-export type { HanReading };
+export type { HanReading, LatinReader, LineReading };

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { type G2pContext, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
+import { type G2pContext, type PhoneUnit, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
 import { kanaToMorae } from "@/audio/alignment/hubertfa/japanese";
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { LETTER_PHONES, guessPhones } from "@/audio/alignment/hubertfa/letter-to-sound";
@@ -7,6 +7,10 @@ import vocab from "@/audio/alignment/hubertfa/vocab.json";
 import japaneseText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
+import standIns from "@/audio/alignment/hubertfa/readers/ja-zh-to-en.json";
+import { parsePhoneTable } from "@/audio/alignment/hubertfa/readers/phone-table";
+import mfPhones from "@/audio/alignment/hubertfa/readers/test-fixtures/hubertfa_pt_mf_phones_v1.json";
+import beforeReaders from "@/audio/alignment/hubertfa/test-fixtures/g2p-before-readers.json";
 import { readFile } from "node:fs/promises";
 import { pinyin } from "pinyin-pro";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -39,7 +43,13 @@ beforeAll(async () => {
 }, 60_000);
 
 function context(hanReading: "zh" | "ja"): G2pContext {
-  return { dictionaries: { en: english, zh: mandarin, ja: japanese }, hanReading, pinyinOf, readJapanese };
+  return {
+    dictionaries: { en: english, zh: mandarin, ja: japanese },
+    hanReading,
+    pinyinOf,
+    readJapanese,
+    modelLanguages: ["en", "zh", "ja"],
+  };
 }
 
 function phones(result: ReturnType<typeof lineToPhoneUnits>) {
@@ -142,7 +152,53 @@ describe("lineToPhoneUnits", () => {
     expect(result).toMatchObject({ guessed: ["yuh"] });
   });
 
-  it("reports words in scripts the model doesn't cover", () => {
-    expect(lineToPhoneUnits([["사랑해"]], context("zh"))).toEqual({ kind: "unknown", words: ["사랑해"] });
+  it("reads English, Mandarin and Japanese as before the language readers, through English stand-ins on a model without them", () => {
+    // Captured from lineToPhoneUnits before the readers existed, on the built-in model.
+    const standIn = (unit: PhoneUnit, modelLanguages: readonly string[]): PhoneUnit => {
+      const language = unit.phones.find((p) => p.language !== "en")?.language;
+      if (!language || language === "en" || modelLanguages.includes(language)) return unit;
+      const table: Record<string, { en: string[] }> = standIns[language];
+      const phones = unit.phones.flatMap((p) =>
+        table[p.phone] ? table[p.phone].en.map((phone) => ({ language: "en" as const, phone })) : [p],
+      );
+      return { ...unit, phones, reader: language };
+    };
+    for (const modelLanguages of [["en", "zh", "ja"], ["en", "ja"], ["en"]]) {
+      for (const { words, hanReading, transliteration, expected } of beforeReaders) {
+        const reading = hanReading === "ja" ? "ja" : "zh";
+        const ctx = { ...context(reading), transliteration: transliteration ?? null, latinReader: null, modelLanguages };
+        const units = (expected.units ?? []).map((unit) => standIn(unit as PhoneUnit, modelLanguages));
+        const result = lineToPhoneUnits(words, ctx);
+        expect(result).toEqual(expected.kind === "units" ? { ...expected, units } : expected);
+        const left = result.kind === "units" ? result.units.flatMap((unit) => unit.phones) : [];
+        const foreign = left.filter((p) => p.phone !== "cl" && !modelLanguages.includes(p.language));
+        expect(foreign).toEqual([]);
+      }
+    }
+  });
+
+  it("reads Hangul blocks and the project's Latin language with their readers, and Latin words in a Korean song as English", () => {
+    const korean = lineToPhoneUnits([["사", "랑", "해"], ["love"]], { ...context("zh"), modelLanguages: ["en"] });
+    expect(phones(korean)).toEqual(["0:s aa", "1:dx aa ng", "2:eh", "3:l ah v"]);
+    const spanish = lineToPhoneUnits([["que"], ["hijo"]], {
+      ...context("zh"),
+      latinReader: "es",
+      modelLanguages: ["en"],
+    });
+    expect(phones(spanish)).toEqual(["0:k eh", "1:iy hh ow"]);
+  });
+
+  it("reads every language but English through a model's phone table, leaving the closure out", () => {
+    const phoneTable = parsePhoneTable(mfPhones);
+    const keys = (result: ReturnType<typeof lineToPhoneUnits>) =>
+      result.kind === "units" ? result.units.map((u) => u.phones.map((p) => `${p.language}/${p.phone}`).join(" ")) : [];
+    const japanese = lineToPhoneUnits([["きっ", "と"], ["love"]], { ...context("ja"), phoneTable });
+    expect(keys(japanese)).toEqual(["en/k en/iy", "en/t en/_o", "en/l en/ah en/v"]);
+    const spanish = lineToPhoneUnits([["no"]], { ...context("zh"), latinReader: "es", phoneTable });
+    expect(keys(spanish)).toEqual(["en/n en/_o"]);
+  });
+
+  it("reports words in scripts no reader covers", () => {
+    expect(lineToPhoneUnits([["รัก"]], context("zh"))).toEqual({ kind: "unknown", words: ["รัก"] });
   });
 });

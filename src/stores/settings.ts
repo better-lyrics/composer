@@ -1,4 +1,3 @@
-import { RECOMMENDED_ALIGNMENT_MODEL } from "@/audio/alignment/hubertfa/model-manifest";
 import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
 import { DEFAULT_PITCH_LINE_MODE, type PitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import type { LibrarySort } from "@/domain/project/library-order";
@@ -6,6 +5,7 @@ import type { LaunchScreen, LibraryView } from "@/domain/project/library-prefere
 import { SPECTRUM_SETTING_DEFAULTS, type SpectrumSettings } from "@/domain/spectrum/settings";
 import type { KeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { StorageLimit } from "@/domain/storage/storage-limit";
+import { ALIGNMENT_SETTING_DEFAULTS, type AlignmentSettings } from "@/stores/settings-alignment";
 import type { CobaltInstance, CobaltInstanceStatus } from "@/stores/settings-cobalt";
 import { RUNS_LOCALLY, mergeLocalBridge } from "@/stores/settings-local-bridge";
 import { SETTINGS_PERSIST_VERSION, migrateSettings } from "@/stores/settings-migration";
@@ -33,7 +33,7 @@ interface ExperimentFlags {
 
 const DEFAULT_COBALT_INSTANCE_ID = "default";
 
-interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
+interface SettingsState extends AlignmentSettings, SnapSettings, SpectrumSettings, UnisonSettings {
   pitchLine: PitchLineMode;
   defaultPlaybackRate: number;
   rememberPlaybackRate: boolean;
@@ -101,8 +101,6 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
 
   autoSeparateOnImport: boolean;
   vocalModelVariant: VocalModelVariant;
-  alignmentModelId: string;
-  keepAlignmentModelLoaded: boolean;
 
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
@@ -110,6 +108,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
 
   experiments: ExperimentFlags;
   composerBridgeUrl: string;
+  mcpAccess: boolean;
 }
 
 interface SettingsActions {
@@ -196,8 +195,7 @@ const DEFAULTS: SettingsState = {
 
   autoSeparateOnImport: false,
   vocalModelVariant: "fp16",
-  alignmentModelId: RECOMMENDED_ALIGNMENT_MODEL,
-  keepAlignmentModelLoaded: false,
+  ...ALIGNMENT_SETTING_DEFAULTS,
 
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
@@ -205,6 +203,7 @@ const DEFAULTS: SettingsState = {
 
   experiments: { youtubeBridge: RUNS_LOCALLY },
   composerBridgeUrl: DEFAULT_BRIDGE_URL,
+  mcpAccess: false,
 };
 
 const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
