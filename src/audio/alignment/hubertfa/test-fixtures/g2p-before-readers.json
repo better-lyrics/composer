@@ -264,11 +264,6 @@
   },
   {
     "hanReading": "zh",
-    "words": [["2"], ["times"], ["1999"]],
-    "expected": { "kind": "unknown", "words": ["2", "1999"] }
-  },
-  {
-    "hanReading": "zh",
     "words": [["really"], ["(oh)"], ["-"], ["..."]],
     "expected": {
       "kind": "units",

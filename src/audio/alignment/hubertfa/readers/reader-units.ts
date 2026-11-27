@@ -48,7 +48,7 @@ const DIGIT = /\p{N}/u;
 
 // -- Functions ----------------------------------------------------------------
 
-// Numbers stay with the English reader, which spells them out.
+// Numbers are left to the number reader (numbers/number-unit.ts), which picks their language from the line.
 function readerFor(text: string, latinReader: LatinReader | null): ReaderLanguage | null {
   const script = detectNonLatinLanguage(text);
   if (script === "ko" || script === "ar") return script;

@@ -9,6 +9,7 @@ import mandarinText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
 import standIns from "@/audio/alignment/hubertfa/readers/ja-zh-to-en.json";
 import { parsePhoneTable } from "@/audio/alignment/hubertfa/readers/phone-table";
+import { readWord } from "@/audio/alignment/hubertfa/readers/reader-units";
 import mfPhones from "@/audio/alignment/hubertfa/readers/test-fixtures/hubertfa_pt_mf_phones_v1.json";
 import beforeReaders from "@/audio/alignment/hubertfa/test-fixtures/g2p-before-readers.json";
 import { readFile } from "node:fs/promises";
@@ -26,6 +27,7 @@ const english = parseDictionary(
     "poser\tp ow z er",
     "mash\tm ae sh",
     "karat\tk eh r ax t",
+    "seventeen\ts eh v ax n t iy n",
   ].join("\n"),
 );
 const mandarin = parseDictionary(mandarinText);
@@ -166,7 +168,12 @@ describe("lineToPhoneUnits", () => {
     for (const modelLanguages of [["en", "zh", "ja"], ["en", "ja"], ["en"]]) {
       for (const { words, hanReading, transliteration, expected } of beforeReaders) {
         const reading = hanReading === "ja" ? "ja" : "zh";
-        const ctx = { ...context(reading), transliteration: transliteration ?? null, latinReader: null, modelLanguages };
+        const ctx = {
+          ...context(reading),
+          transliteration: transliteration ?? null,
+          latinReader: null,
+          modelLanguages,
+        };
         const units = (expected.units ?? []).map((unit) => standIn(unit as PhoneUnit, modelLanguages));
         const result = lineToPhoneUnits(words, ctx);
         expect(result).toEqual(expected.kind === "units" ? { ...expected, units } : expected);
@@ -200,5 +207,30 @@ describe("lineToPhoneUnits", () => {
 
   it("reports words in scripts no reader covers", () => {
     expect(lineToPhoneUnits([["รัก"]], context("zh"))).toEqual({ kind: "unknown", words: ["รัก"] });
+  });
+});
+
+describe("numbers", () => {
+  const sounds = (result: ReturnType<typeof lineToPhoneUnits>, unit: number) =>
+    result.kind === "units" ? result.units[unit].sounds : null;
+
+  it("regression: reads a number instead of leaving its line unknown, and reports it as a guess", () => {
+    const result = lineToPhoneUnits([["i"], ["love"], ["17"]], context("zh"));
+    expect(phones(result)[2]).toBe("2:s eh v ax n t iy n");
+    expect(result).toMatchObject({ guessed: ["17"] });
+  });
+
+  it("reads a number in the language of the words around it", () => {
+    const korean = context("zh");
+    expect(sounds(lineToPhoneUnits([["나", "는"], ["17"]], korean), 2)).toEqual(readWord("ko", "십칠").sounds);
+    expect(sounds(lineToPhoneUnits([["17", "살"]], korean), 0)).toEqual(readWord("ko", "열일곱").sounds);
+    // The same song's English line.
+    expect(phones(lineToPhoneUnits([["i"], ["love"], ["17"]], korean))[2]).toBe("2:s eh v ax n t iy n");
+
+    const spanish = { ...context("zh"), latinReader: "es" as const };
+    expect(sounds(lineToPhoneUnits([["tengo"], ["17"]], spanish), 1)).toEqual(readWord("es", "diecisiete").sounds);
+
+    expect(phones(lineToPhoneUnits([["我"], ["17"]], context("zh")))[1]).toBe("1:sh ir q i");
+    expect(phones(lineToPhoneUnits([["あ"], ["17"]], context("ja")))[1]).toBe("1:j u u n a n a");
   });
 });
