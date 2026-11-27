@@ -33,6 +33,9 @@ interface LineView {
     backgroundText?: string;
     alignment?: TransliterationAlignmentStatus;
     backgroundAlignment?: TransliterationAlignmentStatus;
+    /** "estimated": Composer computes this split on the fly; nothing is saved on the syllables yet. */
+    split?: "saved" | "estimated";
+    backgroundSplit?: "saved" | "estimated";
   };
   translations?: Record<string, { text: string; backgroundText?: string }>;
   issues: string[];
@@ -97,6 +100,10 @@ function lineIssues(line: LyricLine): string[] {
 function lineView(line: LyricLine, index: number): LineView {
   const track = line.transliteration;
   const aligned = withAlignedTransliteration(line);
+  const mainEstimate = estimatedStatus(line.words, line.text, track?.text);
+  const backgroundEstimate = estimatedStatus(line.backgroundWords, line.backgroundText ?? "", track?.backgroundText);
+  const mainAlignment = mainEstimate ?? track?.alignmentStatus;
+  const backgroundAlignment = backgroundEstimate ?? track?.backgroundAlignmentStatus;
   const translations = Object.entries(line.translations ?? {});
   return {
     lineId: line.id,
@@ -112,8 +119,12 @@ function lineView(line: LyricLine, index: number): LineView {
             language: track.language,
             text: track.text,
             ...(track.backgroundText ? { backgroundText: track.backgroundText } : {}),
-            ...(track.alignmentStatus ? { alignment: track.alignmentStatus } : {}),
-            ...(track.backgroundAlignmentStatus ? { backgroundAlignment: track.backgroundAlignmentStatus } : {}),
+            ...(mainAlignment ? { alignment: mainAlignment } : {}),
+            ...(backgroundAlignment ? { backgroundAlignment } : {}),
+            ...(track.text.trim() && line.words?.length ? { split: mainEstimate ? "estimated" : "saved" } : {}),
+            ...(track.backgroundText?.trim() && line.backgroundWords?.length
+              ? { backgroundSplit: backgroundEstimate ? "estimated" : "saved" }
+              : {}),
           },
         }
       : {}),

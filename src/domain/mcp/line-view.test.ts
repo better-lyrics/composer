@@ -26,9 +26,11 @@ describe("lineView", () => {
     const exact = lineView(autoAlignedLine("바|람|이", ["바", "람", "이"], "ba ram i"), 0);
     expect(exact.syllables?.map((syllable) => syllable.transliteration)).toEqual(["ba", "ram", "i"]);
     expect(exact.issues).toEqual([]);
+    expect(exact.transliteration).toMatchObject({ split: "estimated", alignment: "inferred" });
 
     const estimated = lineView(autoAlignedLine("바|람|이", ["바", "람", "이"], "barami"), 0);
     expect(estimated.syllables?.every((syllable) => syllable.transliteration)).toBe(true);
     expect(estimated.issues).toEqual(["transliteration-alignment-needs-review"]);
+    expect(estimated.transliteration).toMatchObject({ split: "estimated", alignment: "needs-review" });
   });
 });
