@@ -29,6 +29,10 @@ interface PartSplit {
 // -- Constants ----------------------------------------------------------------
 
 const MIN_PART_DURATION = 0.01;
+// The model leaves a frame or two of silence between most words: a flicker in the highlight, not a pause. Under
+// this, a gap in its output is one the reference lyrics don't have at least 3 times in 4 (hubertfa-posttrain
+// results/trainv3/smoothing).
+const MAX_CLOSED_GAP = 0.1;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -87,6 +91,15 @@ function sanitizeIntervals(intervals: WordInterval[], bounds: WordInterval): Wor
   return out;
 }
 
+/** Ends each piece where the next begins when the gap between them is short. Begins and longer pauses stay. */
+function closeShortGaps<T extends WordInterval>(pieces: readonly T[]): T[] {
+  return pieces.map((piece, i) => {
+    const next = pieces[i + 1];
+    const gap = next ? next.begin - piece.end : 0;
+    return gap > 0 && gap < MAX_CLOSED_GAP ? { ...piece, end: next.begin } : piece;
+  });
+}
+
 // One part's timed pieces: itself, or its syllables when the audio split it.
 function partPieces(part: string, interval: WordInterval, split: PartSplit | undefined) {
   if (!split) return [{ text: part, ...interval }];
@@ -125,5 +138,5 @@ function retimeWords(existing: readonly WordTiming[], partIntervals: WordInterva
 
 // -- Exports ------------------------------------------------------------------
 
-export { groupAlignmentWords, groupTimedWords, retimeWords, sanitizeIntervals, timingsFromParts };
+export { closeShortGaps, groupAlignmentWords, groupTimedWords, retimeWords, sanitizeIntervals, timingsFromParts };
 export type { AlignmentWord, PartSplit, WordInterval };

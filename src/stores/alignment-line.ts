@@ -4,7 +4,13 @@ import { hasCjk } from "@/domain/alignment/cjk";
 import type { LineReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { type AlignmentWindow, lineSearchWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
-import { type WordInterval, retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
+import {
+  type WordInterval,
+  closeShortGaps,
+  retimeWords,
+  sanitizeIntervals,
+  timingsFromParts,
+} from "@/domain/alignment/words";
 import type { WordTiming } from "@/domain/word/timing";
 import { type PlannedLine, guideTaps, hasTappedEnd, plainWindow, segmentIn } from "@/stores/alignment-plan";
 
@@ -24,6 +30,8 @@ interface LineContext {
   signal: AbortSignal;
   /** Whether lines may be anchored. The anchor was only validated on English. */
   anchors: boolean;
+  /** Whether short gaps between a line's words are closed (the smoothing setting). */
+  smooth: boolean;
 }
 
 interface AlignedLine {
@@ -51,12 +59,19 @@ function canAnchor(plan: PlannedLine, word: AnchorWord | null | undefined): word
   return !!word && !hasCjk(plan.line.text) && !hasCjk(word.parts.join("")) && sungTransliteration(plan.line) === null;
 }
 
-function finish(plan: PlannedLine, result: SegmentAlignment, window: AlignmentWindow, cooling: boolean): AlignedLine {
+function finish(
+  plan: PlannedLine,
+  result: SegmentAlignment,
+  window: AlignmentWindow,
+  cooling: boolean,
+  smooth: boolean,
+): AlignedLine {
   const intervals = sanitizeIntervals(result.intervals, window);
   // A line no tap ended was aligned without one; nothing anchors on it.
   const continues = !result.fellBack && hasTappedEnd(plan);
   const { words, existing } = plan;
-  const timings = existing ? retimeWords(existing, intervals) : timingsFromParts(words, intervals, result.splits);
+  const timed = existing ? retimeWords(existing, intervals) : timingsFromParts(words, intervals, result.splits);
+  const timings = smooth ? closeShortGaps(timed) : timed;
   return {
     result,
     timings: !result.fellBack || hasTappedEnd(plan) ? timings : null,
@@ -103,16 +118,16 @@ async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain
     const search = lineSearchWindow(taps, duration, plan.endsAtNextTap);
     const found = await ctx.aligner.align({ ...segmentIn(plan, reading, pcm, search), wide: true }, ctx.signal);
     // A line it can't place there is aligned alone in its plain window, as with any other model.
-    if (!found.fellBack) return finish(plan, found, search, false);
+    if (!found.fellBack) return finish(plan, found, search, false, ctx.smooth);
     const result = await ctx.aligner.align(segmentIn(plan, reading, pcm, plain), ctx.signal);
-    return finish(plan, result, plain, false);
+    return finish(plan, result, plain, false, ctx.smooth);
   }
   let cooling = false;
   const anchor = chain?.word;
   if (ctx.anchors && canAnchor(plan, anchor)) {
     const window = anchorWindow(chain, plan.previousId, taps, plain);
     const result = window && (await alignAnchored(segmentIn(plan, reading, pcm, window, anchor.parts), anchor, ctx));
-    if (window && result) return finish(plan, result, window, false);
+    if (window && result) return finish(plan, result, window, false, ctx.smooth);
     // A rejected anchor skips the next line's, then the chain starts again.
     cooling = window !== null;
   }
@@ -120,7 +135,7 @@ async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain
   const found = await locate(segmentIn(plan, reading, pcm, search), ctx);
   const window = refinedWindow(taps, plain, search, found);
   const result = await ctx.aligner.align(segmentIn(plan, reading, pcm, window), ctx.signal);
-  return finish(plan, result, window, cooling);
+  return finish(plan, result, window, cooling, ctx.smooth);
 }
 
 // -- Exports ------------------------------------------------------------------

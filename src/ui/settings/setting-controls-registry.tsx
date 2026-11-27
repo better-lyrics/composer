@@ -111,6 +111,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   alignmentModelFiles: { kind: "custom", Component: AlignmentModelFilesSetting },
   alignmentModelId: { kind: "custom", Component: AlignmentModelSetting },
   keepAlignmentModelLoaded: TOGGLE,
+  smoothAlignedWords: TOGGLE,
   beatModelFiles: { kind: "custom", Component: BeatModelFilesSetting },
   defaultZoom: {
     kind: "slider",

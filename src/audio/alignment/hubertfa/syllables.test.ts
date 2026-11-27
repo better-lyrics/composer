@@ -54,4 +54,11 @@ describe("noticeableSplit", () => {
     });
     expect(noticeableSplit("hello", timed("hh:0:0.15 eh:0.15:0.5 l:0.5:0.6 ow:0.6:1"))).toBeNull();
   });
+
+  it("regression: leaves a word whole when its first or last syllable would last a few frames", () => {
+    // "a|gain" with 40 ms for the "a", and "bet|ter" with 40 ms for the "ter": against tapped syllables, the phones
+    // place such a boundary right far less often than an even split does (hubertfa-posttrain results/trainv3/syl_split).
+    expect(noticeableSplit("again", timed("ax:0:0.04 g:0.04:0.1 eh:0.1:0.6 n:0.6:0.77"))).toBeNull();
+    expect(noticeableSplit("better", timed("b:0:0.1 eh:0.1:0.5 t:0.5:0.56 er:0.56:0.6"))).toBeNull();
+  });
 });
