@@ -48,12 +48,13 @@ const DIGIT = /\p{N}/u;
 
 // -- Functions ----------------------------------------------------------------
 
-// Numbers are left to the number reader (numbers/number-unit.ts), which picks their language from the line.
+// Numbers are left to the number reader (numbers/number-unit.ts), which picks their language from the line. That
+// goes for Arabic-Indic digits too, which the Arabic reader has no sounds for.
 function readerFor(text: string, latinReader: LatinReader | null): ReaderLanguage | null {
+  if (DIGIT.test(text)) return null;
   const script = detectNonLatinLanguage(text);
   if (script === "ko" || script === "ar") return script;
-  if (script === null && latinReader && hasLatinLetter(text) && !DIGIT.test(text)) return latinReader;
-  return null;
+  return script === null && latinReader && hasLatinLetter(text) ? latinReader : null;
 }
 
 /** The sounds of a word read by one reader. Korean words read as one run of blocks. */

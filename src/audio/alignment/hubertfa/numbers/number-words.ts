@@ -120,7 +120,7 @@ function englishWords(found: readonly Piece[]): string[] {
 /**
  * The words sung for a written number in `language`, or null when the text holds no digits: orthographic words
  * for English and the reader languages, one kana string for Japanese, pinyin syllables for Mandarin. `after` is
- * the text that follows the number in its word, which picks Korean's native numbers before a counter.
+ * the text that follows the number, which picks Korean's native numbers before a counter.
  */
 function numberWords(text: string, language: NumberLanguage, after = ""): string[] | null {
   const found = pieces(text);

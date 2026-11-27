@@ -233,4 +233,18 @@ describe("numbers", () => {
     expect(phones(lineToPhoneUnits([["我"], ["17"]], context("zh")))[1]).toBe("1:sh ir q i");
     expect(phones(lineToPhoneUnits([["あ"], ["17"]], context("ja")))[1]).toBe("1:j u u n a n a");
   });
+
+  it("regression: finds a Korean counter of several blocks, or one written as its own word", () => {
+    const korean = context("zh");
+    expect(sounds(lineToPhoneUnits([["3", "마", "리"]], korean), 0)).toEqual(readWord("ko", "세").sounds);
+    expect(sounds(lineToPhoneUnits([["17"], ["살"]], korean), 0)).toEqual(readWord("ko", "열일곱").sounds);
+    // Months are counted with the other numbers: "삼 개월", though "세 개".
+    expect(sounds(lineToPhoneUnits([["3", "개", "월"]], korean), 0)).toEqual(readWord("ko", "삼").sounds);
+  });
+
+  it("regression: reads Arabic-Indic digits as the number they write", () => {
+    const eastern = sounds(lineToPhoneUnits([["عمري"], ["١٧"]], context("zh")), 1);
+    expect(eastern?.length).toBeGreaterThan(0);
+    expect(eastern).toEqual(sounds(lineToPhoneUnits([["عمري"], ["17"]], context("zh")), 1));
+  });
 });

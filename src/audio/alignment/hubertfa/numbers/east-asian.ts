@@ -15,6 +15,8 @@ const KO_NATIVE_ONES = ["", "한", "두", "세", "네", "다섯", "여섯", "일
 const KO_NATIVE_TENS = ["", "열", "스물", "서른", "마흔", "쉰", "예순", "일흔", "여든", "아흔"];
 // Counters that take native numbers: age, hours, things, people, times, animals, drinks, books, months, kinds, songs.
 const KO_NATIVE_COUNTERS = ["살", "시", "개", "명", "번", "마리", "잔", "병", "권", "달", "가지", "사람", "장", "곡"];
+// Months start like the counter for things but take the other numbers: "삼 개월", though "세 개".
+const KO_MONTHS = "개월";
 
 const JA_DIGITS = ["ゼロ", "いち", "に", "さん", "よん", "ご", "ろく", "なな", "はち", "きゅう"];
 // The readings a digit and its unit fuse into: 300 is "sanbyaku", 8,000 "hassen".
@@ -60,7 +62,8 @@ function koreanNumber(n: number): string[] {
 
 /** The native reading of 1 to 99 when `after`, the text that follows the digits, starts with a counter that takes it. */
 function koreanNative(n: number, after: string): string[] | null {
-  if (n < 1 || n > 99 || !KO_NATIVE_COUNTERS.some((counter) => after.startsWith(counter))) return null;
+  if (n < 1 || n > 99 || after.startsWith(KO_MONTHS)) return null;
+  if (!KO_NATIVE_COUNTERS.some((counter) => after.startsWith(counter))) return null;
   if (n === 20) return ["스무"];
   return [KO_NATIVE_TENS[Math.floor(n / 10)] + KO_NATIVE_ONES[n % 10]];
 }

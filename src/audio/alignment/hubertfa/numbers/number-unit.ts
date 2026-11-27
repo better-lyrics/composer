@@ -66,8 +66,11 @@ function numberUnit(unit: ReadingUnit, parts: readonly LinePart[], context: Numb
   const first = unit.parts[0];
   const last = unit.parts[unit.parts.length - 1];
   const language = numberLanguage(parts, first, last, context);
-  const next = parts[last + 1];
-  const words = numberWords(unit.text, language, next?.word === parts[first].word ? next.text : "");
+  // What follows the number, where Korean writes its counter: the rest of its word ("3마리"), or the next word
+  // when the number ends its own ("17 살").
+  const rest = parts.slice(last + 1);
+  const after = rest.filter((part) => part.word === rest[0].word).map((part) => part.text);
+  const words = numberWords(unit.text, language, after.join(""));
   if (!words) return null;
   const spoken = words.join(" ");
   if (language === "en") return { ...unit, spoken };
