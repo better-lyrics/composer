@@ -1,4 +1,9 @@
-import { mappedTransliteration } from "@/domain/language/align";
+import {
+  mappedTransliteration,
+  planTransliterationAlignment,
+  timedPrefixText,
+  withAlignedTransliteration,
+} from "@/domain/language/align";
 import type { TransliterationAlignmentStatus } from "@/domain/language/model";
 import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
@@ -50,6 +55,20 @@ function syllables(words: WordTiming[] | undefined): SyllableView[] | undefined 
 
 // -- Functions ----------------------------------------------------------------
 
+/**
+ * Auto-align and lyric edits can leave syllables with no stored reading. Composer
+ * then estimates the split wherever it shows or exports the line, so report that
+ * estimate's status rather than treating the syllables as empty.
+ */
+function estimatedStatus(
+  words: WordTiming[] | undefined,
+  text: string,
+  reading: string | undefined,
+): TransliterationAlignmentStatus | null {
+  if (!reading?.trim() || !words?.length || mappedTransliteration(words) !== null) return null;
+  return planTransliterationAlignment(words, timedPrefixText(text, words, reading)).status;
+}
+
 /** The same warnings the Languages tab shows, as stable codes an agent can act on. */
 function lineIssues(line: LyricLine): string[] {
   const issues = getLanguageReviewTracks(line).flatMap((track) =>
@@ -60,20 +79,24 @@ function lineIssues(line: LyricLine): string[] {
         ),
   );
   const track = line.transliteration;
-  const unresolved = track?.alignmentStatus === "unresolved" || track?.backgroundAlignmentStatus === "unresolved";
+  const estimates = [
+    estimatedStatus(line.words, line.text, track?.text),
+    estimatedStatus(line.backgroundWords, line.backgroundText ?? "", track?.backgroundText),
+  ];
+  const unresolved =
+    track?.alignmentStatus === "unresolved" ||
+    track?.backgroundAlignmentStatus === "unresolved" ||
+    estimates.includes("unresolved");
   if (unresolved) issues.push("transliteration-does-not-fit-syllables");
-  // A lyric edit can add syllables the existing mapping never covered; the Languages tab shows no warning for that.
-  const unmapped =
-    (track?.text.trim() && line.words?.length && mappedTransliteration(line.words) === null) ||
-    (track?.backgroundText?.trim() &&
-      line.backgroundWords?.length &&
-      mappedTransliteration(line.backgroundWords) === null);
-  if (!unresolved && unmapped) issues.push("transliteration-syllables-unmapped");
+  if (estimates.includes("needs-review") && !issues.includes("transliteration-alignment-needs-review")) {
+    issues.push("transliteration-alignment-needs-review");
+  }
   return issues;
 }
 
 function lineView(line: LyricLine, index: number): LineView {
   const track = line.transliteration;
+  const aligned = withAlignedTransliteration(line);
   const translations = Object.entries(line.translations ?? {});
   return {
     lineId: line.id,
@@ -81,8 +104,8 @@ function lineView(line: LyricLine, index: number): LineView {
     text: line.text,
     ...(line.backgroundText ? { backgroundText: line.backgroundText } : {}),
     timing: isWordSynced(line) ? "word" : isLineSynced(line) ? "line" : "none",
-    ...(line.words?.length ? { syllables: syllables(line.words) } : {}),
-    ...(line.backgroundWords?.length ? { backgroundSyllables: syllables(line.backgroundWords) } : {}),
+    ...(aligned.words?.length ? { syllables: syllables(aligned.words) } : {}),
+    ...(aligned.backgroundWords?.length ? { backgroundSyllables: syllables(aligned.backgroundWords) } : {}),
     ...(track
       ? {
           transliteration: {
