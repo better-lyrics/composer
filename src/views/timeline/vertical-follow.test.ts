@@ -1,16 +1,11 @@
+import { describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
+import { FOLLOW_LEAD_SECONDS, followedLineAt } from "@/views/timeline/followed-line";
 import { computeRowLayout } from "@/views/timeline/utils";
-import {
-  type FollowInput,
-  createFollowMemory,
-  followScrollTop,
-  followStep,
-  lineAtTime,
-} from "@/views/timeline/vertical-follow";
-import { describe, expect, it } from "vitest";
+import { createFollowMemory, type FollowInput, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -62,6 +57,7 @@ interface PlaybackOptions {
   selection?: WordSelection[] | null;
   viewportHeight?: number;
   collapsedInstances?: Record<string, boolean>;
+  lead?: number;
 }
 
 // Plays the given times frame by frame and returns every row span the view was moved to.
@@ -75,6 +71,7 @@ function playFrames(times: number[], options: PlaybackOptions = {}) {
     const rows = followStep(memory, {
       lines,
       time,
+      lead: options.lead ?? 0,
       selection: options.selection ?? null,
       layout,
       collapsedInstances,
@@ -178,6 +175,7 @@ describe("followStep", () => {
         followStep(memory, {
           lines: verse,
           time: 21.15,
+          lead: 0,
           selection,
           layout,
           collapsedInstances: {},
@@ -209,6 +207,7 @@ describe("followStep", () => {
         followStep(memory, {
           lines,
           time: 5,
+          lead: 0,
           selection: null,
           layout: layoutOf(lines, collapsedInstances),
           collapsedInstances,
@@ -224,6 +223,7 @@ describe("followStep", () => {
     const input: FollowInput = {
       lines: verse,
       time: 0,
+      lead: 0,
       selection: null,
       layout: layoutOf(verse),
       collapsedInstances: {},
@@ -242,12 +242,22 @@ describe("followStep", () => {
   });
 
   describe("edge cases", () => {
-    it("holds the view in a gap between lines", () => {
-      expect(playFrames([22.5, 23.2, 23.3])).toEqual([rowOf("too-hot")]);
+    it("follows the nearest line in a gap between lines", () => {
+      const lines = [createLine({ id: "verse", begin: 10, end: 12 }), createLine({ id: "chorus", begin: 30, end: 32 })];
+      expect(playFrames([12.5, 20.9, 21.1, 25], { lines })).toEqual([rowOf("verse", lines), rowOf("chorus", lines)]);
     });
 
-    it("does not move before any line starts", () => {
-      expect(playFrames([0, 5, 10])).toEqual([]);
+    it("follows the first line before any line starts", () => {
+      expect(playFrames([0, 5, 10])).toEqual([rowOf("yeah")]);
+    });
+
+    it("moves to a line the lead ahead of its start, even while the line before it still plays", () => {
+      const lead = FOLLOW_LEAD_SECONDS;
+      expect(playFrames([20.4, 20.95 - lead + 0.01, 22.0, 23.4 - lead + 0.01], { lead })).toEqual([
+        rowOf("yeah"),
+        rowOf("too-hot"),
+        rowOf("ceo"),
+      ]);
     });
 
     it("follows a collapsed instance by its header", () => {
@@ -273,6 +283,7 @@ describe("followStep", () => {
       const input = {
         lines,
         time: 21.3,
+        lead: 0,
         layout: layoutOf(lines),
         collapsedInstances: {},
         viewportHeight: TALL_VIEWPORT,
@@ -284,27 +295,37 @@ describe("followStep", () => {
   });
 });
 
-describe("lineAtTime", () => {
+describe("followedLineAt", () => {
   const lines = [
     ...verse,
     createLine({ id: "untimed", text: "Hold on to the radio" }),
     createLine({ id: "ad-lib", text: "Hey hey", begin: 24.5, end: 26.2 }),
+    createLine({ id: "outro", text: "Goodnight", begin: 40, end: 42 }),
   ];
 
-  function firstLineAt(time: number, lineIds: ReadonlySet<string> | null): LyricLine | null {
-    for (const line of lines) {
-      if (lineIds && !lineIds.has(line.id)) continue;
+  // The line whose span, opened the lead early, holds the time and started last; else the line nearest in time.
+  function scanFollowedLine(time: number, lead: number, lineIds: ReadonlySet<string> | null): string | undefined {
+    const timed = lines.flatMap((line) => {
       const bounds = effectiveBounds(line);
-      if (bounds !== null && time >= bounds.begin && time < bounds.end) return line;
-    }
-    return null;
+      return bounds && (!lineIds || lineIds.has(line.id)) ? [{ id: line.id, ...bounds }] : [];
+    });
+    const holding = timed.filter((line) => line.begin - lead <= time && time < line.end);
+    if (holding.length > 0) return holding.reduce((best, line) => (line.begin > best.begin ? line : best)).id;
+    const distance = (line: (typeof timed)[number]) => (line.end <= time ? time - line.end : line.begin - lead - time);
+    return timed.reduce((best, line) => (distance(line) < distance(best) ? line : best)).id;
   }
 
-  it("finds the same line as a scan in line order, before, inside, on edges, in gaps and after every line", () => {
-    const times = [5, 19.0, 19.3, 20.97, 21.1, 22.0, 23.0, 23.2, 23.4, 25.0, 25.8, 26.1, 28.4, 40];
-    for (const lineIds of [null, new Set(["too-hot", "ad-lib"])]) {
-      for (const time of times) {
-        expect(lineAtTime(lines, time, lineIds)?.id, `${time}`).toBe(firstLineAt(time, lineIds)?.id);
+  it("finds the same line as a scan, before, inside, on edges, in gaps and after every line", () => {
+    const times = [
+      5, 18.6, 19.0, 19.3, 20.5, 20.97, 21.1, 22.0, 23.0, 23.2, 23.4, 25.0, 25.8, 26.1, 28.4, 33, 35, 41, 50,
+    ];
+    for (const lineIds of [null, new Set(["too-hot", "ad-lib", "outro"])]) {
+      for (const lead of [0, FOLLOW_LEAD_SECONDS]) {
+        for (const time of times) {
+          expect(followedLineAt(lines, time, lead, lineIds)?.id, `${time} ${lead}`).toBe(
+            scanFollowedLine(time, lead, lineIds),
+          );
+        }
       }
     }
   });

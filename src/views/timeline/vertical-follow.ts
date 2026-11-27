@@ -1,9 +1,8 @@
 import { instanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
-import { memoByIdentity } from "@/utils/memo-by-identity";
+import { followedLineAt } from "@/views/timeline/followed-line";
 import type { RowLayout } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
@@ -27,6 +26,8 @@ interface FollowMemory {
 interface FollowInput {
   lines: readonly LyricLine[];
   time: number;
+  // Song seconds a line is followed before it starts.
+  lead: number;
   selection: readonly WordSelection[] | null;
   layout: RowLayout;
   collapsedInstances: Record<string, boolean>;
@@ -78,50 +79,6 @@ function spanOfRows(
   return bottom > top ? { top, height: bottom - top } : null;
 }
 
-interface TimedLine {
-  line: LyricLine;
-  order: number;
-  begin: number;
-  end: number;
-}
-
-// Timed lines sorted by begin, with the latest end reached so far, so a lookup stops once no earlier line can reach the time.
-interface LineTimeIndex {
-  timed: TimedLine[];
-  reach: number[];
-}
-
-const lineTimeIndex = memoByIdentity((lines: readonly LyricLine[]): LineTimeIndex => {
-  const timed = lines
-    .flatMap((line, order) => {
-      const bounds = effectiveBounds(line);
-      return bounds && bounds.end > bounds.begin ? [{ line, order, begin: bounds.begin, end: bounds.end }] : [];
-    })
-    .toSorted((a, b) => a.begin - b.begin);
-  const reach: number[] = [];
-  for (const entry of timed) reach.push(Math.max(reach[reach.length - 1] ?? Number.NEGATIVE_INFINITY, entry.end));
-  return { timed, reach };
-});
-
-// The first line in line order whose span holds the time, as a scan would find it.
-function lineAtTime(lines: readonly LyricLine[], time: number, lineIds: ReadonlySet<string> | null): LyricLine | null {
-  const { timed, reach } = lineTimeIndex(lines);
-  let low = 0;
-  let high = timed.length;
-  while (low < high) {
-    const middle = (low + high) >> 1;
-    if (timed[middle].begin <= time) low = middle + 1;
-    else high = middle;
-  }
-  let found: TimedLine | null = null;
-  for (let index = low - 1; index >= 0 && reach[index] > time; index--) {
-    const entry = timed[index];
-    if (entry.end <= time || (lineIds && !lineIds.has(entry.line.id))) continue;
-    if (!found || entry.order < found.order) found = entry;
-  }
-  return found ? found.line : null;
-}
-
 function sameSpan(a: RowSpan | null, b: RowSpan | null): boolean {
   return a !== null && b !== null && a.top === b.top && a.height === b.height;
 }
@@ -167,7 +124,7 @@ function followStep(memory: FollowMemory, input: FollowInput): RowSpan | null {
   }
   if (memory.heldRows) return null;
 
-  const line = lineAtTime(input.lines, input.time, selectedLineIds);
+  const line = followedLineAt(input.lines, input.time, input.lead, selectedLineIds);
   if (!line || (line.id === memory.lineId && input.layout === memory.lineLayout)) return null;
   memory.lineId = line.id;
   memory.lineLayout = input.layout;
@@ -185,5 +142,5 @@ function followScrollTop(rows: RowSpan, input: FollowInput, scrollHeight: number
 
 // -- Exports ------------------------------------------------------------------
 
-export { createFollowMemory, followScrollTop, followStep, lineAtTime, resetFollowMemory };
 export type { FollowInput, FollowMemory };
+export { createFollowMemory, followScrollTop, followStep, resetFollowMemory };
