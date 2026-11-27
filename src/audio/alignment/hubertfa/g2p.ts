@@ -1,6 +1,6 @@
 import { type ReadingToken, isKana, kanaToMorae } from "@/audio/alignment/hubertfa/japanese";
 import { type Pronunciations, lookupWord } from "@/audio/alignment/hubertfa/lexicon";
-import { type PhoneLanguage, soundsToPhones } from "@/audio/alignment/hubertfa/readers/donors";
+import { type PhoneLanguage, soundsToPhones, standInPhones } from "@/audio/alignment/hubertfa/readers/donors";
 import { type ReaderLanguage, type ReaderUnit, segmentWord } from "@/audio/alignment/hubertfa/readers/reader-units";
 import { applyLineTransliteration } from "@/audio/alignment/hubertfa/transliteration-readings";
 import { hasCjk, hasHan, hasLetterOrDigit } from "@/domain/alignment/cjk";
@@ -18,8 +18,13 @@ interface PhoneUnit {
   phones: { language: Language; phone: string }[];
   /** True when the pronunciation was guessed from spelling. */
   guessed?: boolean;
-  /** The language reader that read the unit, and its sounds; absent for English, Mandarin and Japanese. */
-  reader?: ReaderLanguage;
+  /**
+   * The language that read the unit when its phones don't say: a language
+   * reader, or Mandarin or Japanese read with English stand-ins on a model
+   * without them. Absent for English, and for Mandarin and Japanese phones.
+   */
+  reader?: ReaderLanguage | "zh" | "ja";
+  /** A language reader's sounds. */
   sounds?: string[];
 }
 
@@ -33,8 +38,11 @@ interface G2pContext {
   transliteration?: string | null;
   /** The reader for Latin-script words; none reads them as English. */
   latinReader?: LatinReader | null;
-  /** The loaded model's manifest languages, which pick the phones a reader's sounds become. */
-  modelLanguages?: readonly string[];
+  /**
+   * The loaded model's manifest languages, which pick the phones a reader's
+   * sounds become, and whether Mandarin and Japanese keep their own phones.
+   */
+  modelLanguages: readonly string[];
 }
 
 /** `guessed` lists words read from their spelling, whose timing is worth a check. */
@@ -59,8 +67,6 @@ interface ReadingUnit {
 
 const LATIN_OR_DIGIT = /[\p{Script=Latin}\p{N}]/u;
 // Interjection readings the Mandarin dictionary has no syllable for (嗯, 呣).
-// Without a manifest, a reader's sounds take the English phones every model has.
-const ENGLISH_ONLY = ["en"];
 const PINYIN_FALLBACKS: Record<string, string> = { ng: "en", n: "en", m: "mu", hm: "hen", hng: "heng" };
 
 // -- Functions ----------------------------------------------------------------
@@ -216,12 +222,13 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
   const unknown = new Set<string>();
   const guessed = new Set<string>();
   const phoneUnits: PhoneUnit[] = [];
+  const listed = new Set(context.modelLanguages);
   for (const unit of units) {
     if (unit.language === "reader") {
       if (!unit.read) continue;
       const { reader, sounds, guessed: wasGuessed } = unit.read;
       if (wasGuessed) guessed.add(unit.text.trim());
-      const phones = soundsToPhones(sounds, context.modelLanguages ?? ENGLISH_ONLY);
+      const phones = soundsToPhones(sounds, context.modelLanguages);
       phoneUnits.push({ parts: unit.parts, phones, guessed: wasGuessed, reader, sounds });
       continue;
     }
@@ -239,9 +246,12 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
       continue;
     }
     const { language } = unit;
-    const timed = phones.map((phone) => ({ language, phone }));
-    const wasGuessed = unit.language === "en" && lookupWord(unit.text, context.dictionaries.en).kind === "guessed";
-    phoneUnits.push({ parts: unit.parts, phones: timed, guessed: wasGuessed });
+    const wasGuessed = language === "en" && lookupWord(unit.text, context.dictionaries.en).kind === "guessed";
+    if (language !== "en" && !listed.has(language)) {
+      phoneUnits.push({ parts: unit.parts, phones: standInPhones(language, phones), guessed: false, reader: language });
+      continue;
+    }
+    phoneUnits.push({ parts: unit.parts, phones: phones.map((phone) => ({ language, phone })), guessed: wasGuessed });
   }
   if (unknown.size > 0) return { kind: "unknown", words: [...unknown] };
   return { kind: "units", units: phoneUnits, guessed: [...guessed] };

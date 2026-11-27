@@ -1,0 +1,663 @@
+{
+ "about": "results/trainv3/ml_bench amendment 3: each Japanese and Chinese phone of the HubertFA vocabulary as English phones, for a model that knows only English ones. \"same\": English already has the sound (or the sequence), so a multilingual model would share one phone; \"near\": the nearest English sounds, where a multilingual model would keep a phone of its own. Silence-class keys (cl) are left as they are.",
+ "version": 1,
+ "ja": {
+  "N": {
+   "en": [
+    "n"
+   ],
+   "kind": "near"
+  },
+  "a": {
+   "en": [
+    "aa"
+   ],
+   "kind": "same"
+  },
+  "b": {
+   "en": [
+    "b"
+   ],
+   "kind": "same"
+  },
+  "by": {
+   "en": [
+    "b",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "ch": {
+   "en": [
+    "ch"
+   ],
+   "kind": "same"
+  },
+  "d": {
+   "en": [
+    "d"
+   ],
+   "kind": "same"
+  },
+  "dy": {
+   "en": [
+    "d",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "e": {
+   "en": [
+    "eh"
+   ],
+   "kind": "same"
+  },
+  "f": {
+   "en": [
+    "f"
+   ],
+   "kind": "near"
+  },
+  "g": {
+   "en": [
+    "g"
+   ],
+   "kind": "same"
+  },
+  "gw": {
+   "en": [
+    "g",
+    "w"
+   ],
+   "kind": "same"
+  },
+  "gy": {
+   "en": [
+    "g",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "h": {
+   "en": [
+    "hh"
+   ],
+   "kind": "same"
+  },
+  "hy": {
+   "en": [
+    "hh",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "i": {
+   "en": [
+    "iy"
+   ],
+   "kind": "same"
+  },
+  "j": {
+   "en": [
+    "jh"
+   ],
+   "kind": "same"
+  },
+  "k": {
+   "en": [
+    "k"
+   ],
+   "kind": "same"
+  },
+  "kw": {
+   "en": [
+    "k",
+    "w"
+   ],
+   "kind": "same"
+  },
+  "ky": {
+   "en": [
+    "k",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "m": {
+   "en": [
+    "m"
+   ],
+   "kind": "same"
+  },
+  "my": {
+   "en": [
+    "m",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "n": {
+   "en": [
+    "n"
+   ],
+   "kind": "same"
+  },
+  "ny": {
+   "en": [
+    "n",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "o": {
+   "en": [
+    "ow"
+   ],
+   "kind": "near"
+  },
+  "p": {
+   "en": [
+    "p"
+   ],
+   "kind": "same"
+  },
+  "py": {
+   "en": [
+    "p",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "r": {
+   "en": [
+    "dx"
+   ],
+   "kind": "same"
+  },
+  "ry": {
+   "en": [
+    "dx",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "s": {
+   "en": [
+    "s"
+   ],
+   "kind": "same"
+  },
+  "sh": {
+   "en": [
+    "sh"
+   ],
+   "kind": "same"
+  },
+  "t": {
+   "en": [
+    "t"
+   ],
+   "kind": "same"
+  },
+  "ts": {
+   "en": [
+    "t",
+    "s"
+   ],
+   "kind": "same"
+  },
+  "ty": {
+   "en": [
+    "t",
+    "y"
+   ],
+   "kind": "same"
+  },
+  "u": {
+   "en": [
+    "uw"
+   ],
+   "kind": "near"
+  },
+  "v": {
+   "en": [
+    "v"
+   ],
+   "kind": "same"
+  },
+  "w": {
+   "en": [
+    "w"
+   ],
+   "kind": "same"
+  },
+  "y": {
+   "en": [
+    "y"
+   ],
+   "kind": "same"
+  },
+  "z": {
+   "en": [
+    "z"
+   ],
+   "kind": "same"
+  }
+ },
+ "zh": {
+  "a": {
+   "en": [
+    "aa"
+   ],
+   "kind": "same"
+  },
+  "ai": {
+   "en": [
+    "ay"
+   ],
+   "kind": "same"
+  },
+  "an": {
+   "en": [
+    "aa",
+    "n"
+   ],
+   "kind": "same"
+  },
+  "ang": {
+   "en": [
+    "aa",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "ao": {
+   "en": [
+    "aw"
+   ],
+   "kind": "same"
+  },
+  "b": {
+   "en": [
+    "b"
+   ],
+   "kind": "same"
+  },
+  "c": {
+   "en": [
+    "t",
+    "s"
+   ],
+   "kind": "same"
+  },
+  "ch": {
+   "en": [
+    "ch"
+   ],
+   "kind": "near"
+  },
+  "d": {
+   "en": [
+    "d"
+   ],
+   "kind": "same"
+  },
+  "e": {
+   "en": [
+    "ah"
+   ],
+   "kind": "near"
+  },
+  "ei": {
+   "en": [
+    "ey"
+   ],
+   "kind": "same"
+  },
+  "en": {
+   "en": [
+    "ah",
+    "n"
+   ],
+   "kind": "same"
+  },
+  "eng": {
+   "en": [
+    "ah",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "er": {
+   "en": [
+    "er"
+   ],
+   "kind": "same"
+  },
+  "f": {
+   "en": [
+    "f"
+   ],
+   "kind": "same"
+  },
+  "g": {
+   "en": [
+    "g"
+   ],
+   "kind": "same"
+  },
+  "h": {
+   "en": [
+    "hh"
+   ],
+   "kind": "near"
+  },
+  "i": {
+   "en": [
+    "iy"
+   ],
+   "kind": "same"
+  },
+  "i0": {
+   "en": [
+    "ih"
+   ],
+   "kind": "near"
+  },
+  "ia": {
+   "en": [
+    "y",
+    "aa"
+   ],
+   "kind": "same"
+  },
+  "ian": {
+   "en": [
+    "y",
+    "eh",
+    "n"
+   ],
+   "kind": "same"
+  },
+  "iang": {
+   "en": [
+    "y",
+    "aa",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "iao": {
+   "en": [
+    "y",
+    "aw"
+   ],
+   "kind": "same"
+  },
+  "ie": {
+   "en": [
+    "y",
+    "eh"
+   ],
+   "kind": "same"
+  },
+  "in": {
+   "en": [
+    "iy",
+    "n"
+   ],
+   "kind": "same"
+  },
+  "ing": {
+   "en": [
+    "iy",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "io": {
+   "en": [
+    "y",
+    "ow"
+   ],
+   "kind": "same"
+  },
+  "iong": {
+   "en": [
+    "y",
+    "uh",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "ir": {
+   "en": [
+    "er"
+   ],
+   "kind": "near"
+  },
+  "iu": {
+   "en": [
+    "y",
+    "ow"
+   ],
+   "kind": "same"
+  },
+  "j": {
+   "en": [
+    "jh"
+   ],
+   "kind": "near"
+  },
+  "k": {
+   "en": [
+    "k"
+   ],
+   "kind": "same"
+  },
+  "l": {
+   "en": [
+    "l"
+   ],
+   "kind": "same"
+  },
+  "m": {
+   "en": [
+    "m"
+   ],
+   "kind": "same"
+  },
+  "n": {
+   "en": [
+    "n"
+   ],
+   "kind": "same"
+  },
+  "o": {
+   "en": [
+    "ao"
+   ],
+   "kind": "same"
+  },
+  "ong": {
+   "en": [
+    "uh",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "ou": {
+   "en": [
+    "ow"
+   ],
+   "kind": "same"
+  },
+  "p": {
+   "en": [
+    "p"
+   ],
+   "kind": "same"
+  },
+  "q": {
+   "en": [
+    "ch"
+   ],
+   "kind": "near"
+  },
+  "r": {
+   "en": [
+    "r"
+   ],
+   "kind": "near"
+  },
+  "s": {
+   "en": [
+    "s"
+   ],
+   "kind": "same"
+  },
+  "sh": {
+   "en": [
+    "sh"
+   ],
+   "kind": "near"
+  },
+  "t": {
+   "en": [
+    "t"
+   ],
+   "kind": "same"
+  },
+  "u": {
+   "en": [
+    "uw"
+   ],
+   "kind": "same"
+  },
+  "ua": {
+   "en": [
+    "w",
+    "aa"
+   ],
+   "kind": "same"
+  },
+  "uai": {
+   "en": [
+    "w",
+    "ay"
+   ],
+   "kind": "same"
+  },
+  "uan": {
+   "en": [
+    "w",
+    "aa",
+    "n"
+   ],
+   "kind": "same"
+  },
+  "uang": {
+   "en": [
+    "w",
+    "aa",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "ueng": {
+   "en": [
+    "w",
+    "ah",
+    "ng"
+   ],
+   "kind": "same"
+  },
+  "ui": {
+   "en": [
+    "w",
+    "ey"
+   ],
+   "kind": "same"
+  },
+  "un": {
+   "en": [
+    "w",
+    "ah",
+    "n"
+   ],
+   "kind": "same"
+  },
+  "uo": {
+   "en": [
+    "w",
+    "ao"
+   ],
+   "kind": "same"
+  },
+  "v": {
+   "en": [
+    "uw"
+   ],
+   "kind": "near"
+  },
+  "van": {
+   "en": [
+    "w",
+    "eh",
+    "n"
+   ],
+   "kind": "near"
+  },
+  "ve": {
+   "en": [
+    "w",
+    "eh"
+   ],
+   "kind": "near"
+  },
+  "vn": {
+   "en": [
+    "uw",
+    "n"
+   ],
+   "kind": "near"
+  },
+  "w": {
+   "en": [
+    "w"
+   ],
+   "kind": "same"
+  },
+  "x": {
+   "en": [
+    "sh"
+   ],
+   "kind": "near"
+  },
+  "y": {
+   "en": [
+    "y"
+   ],
+   "kind": "same"
+  },
+  "y0": {
+   "en": [
+    "y"
+   ],
+   "kind": "near"
+  },
+  "z": {
+   "en": [
+    "d",
+    "z"
+   ],
+   "kind": "same"
+  },
+  "zh": {
+   "en": [
+    "jh"
+   ],
+   "kind": "near"
+  }
+ }
+}

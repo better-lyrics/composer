@@ -10,7 +10,8 @@
 // `phones` are vocabulary keys ("en/k", "ja/N"); `sounds` are the reader's
 // sounds, null for words read by the English, Mandarin or Japanese dictionaries.
 //
-// --languages   the model manifest's languages, which pick the donor phones (default: en)
+// --languages   the model manifest's languages, which pick the donor phones (default: en).
+//               Mandarin and Japanese words take English stand-in phones unless zh / ja is listed.
 // --dictionary  the model's English dictionary; without it English words are guessed from spelling
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
