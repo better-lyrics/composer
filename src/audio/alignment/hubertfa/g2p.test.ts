@@ -250,9 +250,14 @@ describe("numbers", () => {
   });
 
   it("regression: keeps a countdown in English before a word that starts like a Korean counter", () => {
+    const korean = context("zh");
     // 시작 ("start") begins with 시, the counter for hours.
-    const result = lineToPhoneUnits([["1,"], ["2,"], ["17"], ["시", "작"]], context("zh"));
-    expect(phones(result)[2]).toBe("2:s eh v ax n t iy n");
+    expect(phones(lineToPhoneUnits([["1,"], ["2,"], ["17"], ["시", "작"]], korean))[2]).toBe("2:s eh v ax n t iy n");
+    expect(phones(lineToPhoneUnits([["17,17,17"], ["시", "작"]], korean))[0]).toBe(
+      "0:s eh v ax n t iy n s eh v ax n t iy n s eh v ax n t iy n",
+    );
+    // Two numbers before a counter are a range, "two or three times", and keep the native reading.
+    expect(sounds(lineToPhoneUnits([["2,"], ["3"], ["번"]], korean), 1)).toEqual(readWord("ko", "세").sounds);
   });
 
   it("regression: reads Arabic-Indic digits as the number they write", () => {

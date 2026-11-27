@@ -29,6 +29,14 @@ interface NumberContext {
 const ANY_DIGIT = /\p{Nd}/u;
 // One point between digits: "99.9", "0.1".
 const DECIMAL = /^\D*\d+\.\d+\D*$/;
+// Three or more small numbers written as one word: "1,2,3". Groups of three digits are thousands ("1,000,000").
+const COUNT_LIST = /^\d{1,2}(?:,\d{1,2}){2,},?$/;
+// Where the two other words of a count of three can be, from a number's own word.
+const COUNT_NEIGHBOURS = [
+  [-2, -1],
+  [-1, 1],
+  [1, 2],
+];
 
 // -- Functions ----------------------------------------------------------------
 
@@ -40,7 +48,7 @@ function partLanguage(text: string, context: NumberContext): NumberLanguage | nu
   return hasLatinLetter(text) ? (context.latinReader ?? "en") : null;
 }
 
-// Whether word `word` of the line is a number and nothing else ("2,"), which makes its neighbour part of a count.
+// Whether word `word` of the line is a number and nothing else ("2,").
 function isNumberWord(parts: readonly LinePart[], word: number): boolean {
   const own = parts.filter((part) => part.word === word);
   return own.length > 0 && own.every((part) => ANY_DIGIT.test(part.text) && ![...part.text].some(isLetter));
@@ -81,8 +89,11 @@ function numberLanguage(
   // "1, 2, 3", "24/7"): measured against the audio of 288 lines, English unless a counter follows or it is a decimal
   // fits 92% of them, the nearest word's language 78% (hubertfa-posttrain results/trainv3/number_lang). Japanese,
   // Chinese and Arabic showed nothing better than the nearest word.
-  // A count ("1, 2, 3 시작") stays English whatever follows: 시작 only starts like the counter for hours.
-  const counted = isNumberWord(parts, word - 1) || isNumberWord(parts, word + 1);
+  // A count of three or more ("1, 2, 3 시작", "1,2,3 시작") stays English whatever follows: 시작 only starts like
+  // the counter for hours. Two numbers before a counter are a range ("2, 3 번", two or three times) and are not.
+  const counted =
+    COUNT_LIST.test(own.join("")) ||
+    COUNT_NEIGHBOURS.some(([a, b]) => isNumberWord(parts, word + a) && isNumberWord(parts, word + b));
   const counter = !counted && startsWithKoreanCounter(after);
   const korean = nearest === "ko" && (counter || DECIMAL.test(own.join("")));
   return nearest === "ko" && !korean ? fallback : nearest;
