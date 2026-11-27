@@ -1,5 +1,5 @@
 import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
-import { coversLanguage } from "@/domain/alignment/language";
+import { coverageSummary, coversLanguage } from "@/domain/alignment/language";
 import { hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { languageName } from "@/domain/project/language";
 import { useSelectedAlignmentModel } from "@/hooks/useAlignmentModels";
@@ -111,10 +111,15 @@ const ModelLanguageRow: React.FC = () => {
 const SetupIntro: React.FC = () => {
   const modelCached = useAlignmentStore((s) => s.modelCached);
   const sizeBytes = useAlignmentStore((s) => s.modelSizeBytes);
+  const song = useSongLanguage();
+  const model = useSelectedAlignmentModel();
+  const languages = model ? coverageSummary(model.languages, song) : "";
+  const coverage = languages ? ` Works for ${languages}.` : "";
   const download = !modelCached && sizeBytes ? ` Downloads ${formatWholeMegabytes(sizeBytes)} on the first run.` : "";
   return (
     <PopText className="mt-1.5">
-      Times each word from the separated vocals, guided by your line timing. Works for English, Mandarin and Japanese.
+      Times each word from the separated vocals, guided by your line timing.
+      {coverage}
       {download}
     </PopText>
   );

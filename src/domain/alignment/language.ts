@@ -1,6 +1,7 @@
 import { hasKana } from "@/domain/alignment/cjk";
 import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
 import type { LyricLine } from "@/domain/line/model";
+import { languageName } from "@/domain/project/language";
 
 // -- Types --------------------------------------------------------------------
 
@@ -34,6 +35,11 @@ const LATIN_READERS: Readonly<Record<string, LatinReader>> = {
 // these. Every line is tried whatever the song language; lines in other scripts
 // fall back to the character split.
 const SUPPORTED_LANGUAGES = new Set(["en", "zh", "ja", "ko", "ar", ...Object.keys(LATIN_READERS)]);
+const LANGUAGE_LIST = new Intl.ListFormat("en", { style: "long", type: "conjunction" });
+// A longer list reads as its first language and a count.
+const MAX_NAMED_LANGUAGES = 3;
+// A picker row has room for this many cells beside its label, and its trigger for this many codes.
+const MAX_ALIGNED_LANGUAGES = 4;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -88,13 +94,27 @@ function coverageColumns(languageLists: readonly (readonly string[])[], song: st
   return [song, ...[...columns].filter((code) => code !== song)];
 }
 
+/** Whether there are too many languages to give each a cell beside a picker label. */
+function isLongCoverage(languages: readonly string[]): boolean {
+  return languages.length > MAX_ALIGNED_LANGUAGES;
+}
+
+/** The languages as prose, the song's first: "English, Chinese, and Japanese", or "Korean and 12 other languages". */
+function coverageSummary(languages: readonly string[], song: string | null): string {
+  const names = coverageColumns([languages], song).map(languageName);
+  if (names.length <= MAX_NAMED_LANGUAGES) return LANGUAGE_LIST.format(names);
+  return `${names[0]} and ${names.length - 1} other languages`;
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
   baseLanguage,
   coverageColumns,
+  coverageSummary,
   coversLanguage,
   isAlignableLanguage,
+  isLongCoverage,
   lineReadingFor,
   songLanguage,
 };
