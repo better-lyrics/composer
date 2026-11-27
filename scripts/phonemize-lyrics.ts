@@ -12,6 +12,7 @@
 //
 // --languages   the model manifest's languages, which pick the donor phones (default: en).
 //               Mandarin and Japanese words take English stand-in phones unless zh / ja is listed.
+// --phones      a model's phone table (the manifest's `phones`): every language but English through its keys
 // --dictionary  the model's English dictionary; without it English words are guessed from spelling
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
@@ -19,6 +20,7 @@ import { parseArgs } from "node:util";
 import { type G2pContext, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
+import { parsePhoneTable } from "@/audio/alignment/hubertfa/readers/phone-table";
 import { hasHan, splitCjkPart } from "@/domain/alignment/cjk";
 import { lineReadingFor } from "@/domain/alignment/language";
 import { pinyin } from "pinyin-pro";
@@ -33,11 +35,12 @@ const HUBERTFA = new URL("../src/audio/alignment/hubertfa/", import.meta.url);
 const KUROMOJI_DICT = new URL("../node_modules/@sglkc/kuromoji/dict/", import.meta.url);
 
 const { values } = parseArgs({
-  options: { languages: { type: "string", default: "en" }, dictionary: { type: "string" } },
+  options: { languages: { type: "string", default: "en" }, dictionary: { type: "string" }, phones: { type: "string" } },
 });
 const modelLanguages = (values.languages ?? "en").split(",").map((language) => language.trim());
 if (!values.dictionary) console.error("phonemize: no --dictionary, so English words are guessed from spelling");
 
+const phoneTable = values.phones ? parsePhoneTable(JSON.parse(await readFile(values.phones, "utf8"))) : null;
 const english = parseDictionary(values.dictionary ? await readFile(values.dictionary, "utf8") : "");
 const mandarin = parseDictionary(await readFile(new URL("dictionary-zh.txt", HUBERTFA), "utf8"));
 const japanese = parseDictionary(await readFile(new URL("dictionary-ja.txt", HUBERTFA), "utf8"));
@@ -68,6 +71,7 @@ async function phonemize({ id, language, text }: InputLine) {
     readJapanese: hanReading === "ja" ? await japaneseReader() : null,
     latinReader,
     modelLanguages,
+    phoneTable,
   });
   if (result.kind === "unknown") return { id, language, unknown: result.words };
   const units = result.units.map((unit) => ({

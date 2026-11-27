@@ -81,4 +81,4 @@ function standInPhones(language: "zh" | "ja", phones: readonly string[]): ModelP
 // -- Exports ------------------------------------------------------------------
 
 export { isKnownSound, soundsToPhones, standInPhones };
-export type { PhoneLanguage };
+export type { ModelPhone, PhoneLanguage };
