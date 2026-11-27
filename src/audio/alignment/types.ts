@@ -1,4 +1,4 @@
-import type { HanReading } from "@/domain/alignment/language";
+import type { HanReading, LatinReader } from "@/domain/alignment/language";
 import type { AlignmentWord, PartSplit, WordInterval } from "@/domain/alignment/words";
 
 // -- Types --------------------------------------------------------------------
@@ -9,6 +9,8 @@ interface AlignmentSegment {
   words: AlignmentWord[];
   /** Whether Han characters are read as Mandarin or as Japanese kanji. */
   hanReading: HanReading;
+  /** The reader for Latin-script words, or null for English. */
+  latinReader: LatinReader | null;
   /** The line's romanization when it differs from the line; its syllables are what's sung. */
   transliteration: string | null;
   /** The user's tapped line timing, in song seconds. */

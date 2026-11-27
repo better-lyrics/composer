@@ -20,6 +20,7 @@ function lineRequest(segment: AlignmentSegment): LineRequest {
     sampleRate: segment.sampleRate,
     words: segment.words.map((word) => word.parts),
     hanReading: segment.hanReading,
+    latinReader: segment.latinReader,
     transliteration: segment.transliteration,
     ...(segment.context ? { context: segment.context } : {}),
     ...(segment.wide ? { wide: true } : {}),

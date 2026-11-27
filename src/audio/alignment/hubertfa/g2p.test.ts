@@ -7,6 +7,7 @@ import vocab from "@/audio/alignment/hubertfa/vocab.json";
 import japaneseText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
+import beforeReaders from "@/audio/alignment/hubertfa/test-fixtures/g2p-before-readers.json";
 import { readFile } from "node:fs/promises";
 import { pinyin } from "pinyin-pro";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -142,7 +143,34 @@ describe("lineToPhoneUnits", () => {
     expect(result).toMatchObject({ guessed: ["yuh"] });
   });
 
-  it("reports words in scripts the model doesn't cover", () => {
-    expect(lineToPhoneUnits([["사랑해"]], context("zh"))).toEqual({ kind: "unknown", words: ["사랑해"] });
+  it("reads English, Mandarin and Japanese exactly as before the language readers, for every model", () => {
+    // Captured from lineToPhoneUnits before the readers existed.
+    for (const modelLanguages of [["en", "zh", "ja"], ["en"]]) {
+      for (const { words, hanReading, transliteration, expected } of beforeReaders) {
+        const reading = hanReading === "ja" ? "ja" : "zh";
+        const ctx = {
+          ...context(reading),
+          transliteration: transliteration ?? null,
+          latinReader: null,
+          modelLanguages,
+        };
+        expect(lineToPhoneUnits(words, ctx)).toEqual(expected);
+      }
+    }
+  });
+
+  it("reads Hangul blocks and the project's Latin language with their readers, and Latin words in a Korean song as English", () => {
+    const korean = lineToPhoneUnits([["사", "랑", "해"], ["love"]], { ...context("zh"), modelLanguages: ["en"] });
+    expect(phones(korean)).toEqual(["0:s aa", "1:dx aa ng", "2:eh", "3:l ah v"]);
+    const spanish = lineToPhoneUnits([["que"], ["hijo"]], {
+      ...context("zh"),
+      latinReader: "es",
+      modelLanguages: ["en"],
+    });
+    expect(phones(spanish)).toEqual(["0:k eh", "1:iy hh ow"]);
+  });
+
+  it("reports words in scripts no reader covers", () => {
+    expect(lineToPhoneUnits([["รัก"]], context("zh"))).toEqual({ kind: "unknown", words: ["รัก"] });
   });
 });

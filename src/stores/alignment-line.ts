@@ -1,7 +1,7 @@
 import type { AlignmentSegment, Aligner, SegmentAlignment } from "@/audio/alignment/types";
 import { type AnchorChain, type AnchorWord, anchorWindow, keepsAnchored, lastWord } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
-import type { HanReading } from "@/domain/alignment/language";
+import type { LineReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { type AlignmentWindow, lineSearchWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
 import { type WordInterval, retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
@@ -20,7 +20,7 @@ import { type PlannedLine, guideTaps, hasTappedEnd, plainWindow, segmentIn } fro
 interface LineContext {
   aligner: Aligner;
   pcm: { samples: Float32Array; sampleRate: number };
-  hanReading: HanReading;
+  reading: LineReading;
   signal: AbortSignal;
   /** Whether lines may be anchored. The anchor was only validated on English. */
   anchors: boolean;
@@ -95,31 +95,31 @@ async function locate(segment: AlignmentSegment, ctx: LineContext): Promise<Word
 
 /** Aligns one planned line. `chain` is what the line before it left, when this run aligned it. */
 async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain | null): Promise<AlignedLine> {
-  const { pcm, hanReading } = ctx;
+  const { pcm, reading } = ctx;
   const duration = pcm.samples.length / pcm.sampleRate;
   const taps = guideTaps(plan, duration);
   const plain = plainWindow(plan, duration);
   if (ctx.aligner.findsLines()) {
     const search = lineSearchWindow(taps, duration, plan.endsAtNextTap);
-    const found = await ctx.aligner.align({ ...segmentIn(plan, hanReading, pcm, search), wide: true }, ctx.signal);
+    const found = await ctx.aligner.align({ ...segmentIn(plan, reading, pcm, search), wide: true }, ctx.signal);
     // A line it can't place there is aligned alone in its plain window, as with any other model.
     if (!found.fellBack) return finish(plan, found, search, false);
-    const result = await ctx.aligner.align(segmentIn(plan, hanReading, pcm, plain), ctx.signal);
+    const result = await ctx.aligner.align(segmentIn(plan, reading, pcm, plain), ctx.signal);
     return finish(plan, result, plain, false);
   }
   let cooling = false;
   const anchor = chain?.word;
   if (ctx.anchors && canAnchor(plan, anchor)) {
     const window = anchorWindow(chain, plan.previousId, taps, plain);
-    const result = window && (await alignAnchored(segmentIn(plan, hanReading, pcm, window, anchor.parts), anchor, ctx));
+    const result = window && (await alignAnchored(segmentIn(plan, reading, pcm, window, anchor.parts), anchor, ctx));
     if (window && result) return finish(plan, result, window, false);
     // A rejected anchor skips the next line's, then the chain starts again.
     cooling = window !== null;
   }
   const search = searchWindow(taps, duration);
-  const found = await locate(segmentIn(plan, hanReading, pcm, search), ctx);
+  const found = await locate(segmentIn(plan, reading, pcm, search), ctx);
   const window = refinedWindow(taps, plain, search, found);
-  const result = await ctx.aligner.align(segmentIn(plan, hanReading, pcm, window), ctx.signal);
+  const result = await ctx.aligner.align(segmentIn(plan, reading, pcm, window), ctx.signal);
   return finish(plan, result, window, cooling);
 }
 

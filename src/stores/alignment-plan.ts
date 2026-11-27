@@ -1,5 +1,5 @@
 import type { AlignmentSegment } from "@/audio/alignment/types";
-import type { HanReading } from "@/domain/alignment/language";
+import type { LineReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import { alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
@@ -129,14 +129,14 @@ function guideTaps(plan: PlannedLine, duration: number): WordInterval {
 /** The aligner's input for one planned line: the song's vocals in `window`. */
 function segmentIn(
   plan: PlannedLine,
-  hanReading: HanReading,
+  reading: LineReading,
   pcm: { samples: Float32Array; sampleRate: number },
   window: WordInterval,
   anchor?: string[],
 ): AlignmentSegment {
   return {
     words: plan.words,
-    hanReading,
+    ...reading,
     transliteration: sungTransliteration(plan.line),
     taps: guideTaps(plan, pcm.samples.length / pcm.sampleRate),
     windowBegin: window.begin,
@@ -155,11 +155,11 @@ function plainWindow(plan: PlannedLine, duration: number): WordInterval {
 /** The aligner's input for one planned line in its plain window, and that window. */
 function segmentFor(
   plan: PlannedLine,
-  hanReading: HanReading,
+  reading: LineReading,
   pcm: { samples: Float32Array; sampleRate: number },
 ): { segment: AlignmentSegment; window: WordInterval } {
   const window = plainWindow(plan, pcm.samples.length / pcm.sampleRate);
-  return { segment: segmentIn(plan, hanReading, pcm, window), window };
+  return { segment: segmentIn(plan, reading, pcm, window), window };
 }
 
 /** False for a line Line mode never ended, which is aligned up to the next line instead. */

@@ -7,12 +7,32 @@ import type { LyricLine } from "@/domain/line/model";
 /** Whether Han characters are read as Mandarin or as Japanese kanji. */
 type HanReading = "zh" | "ja";
 
+/** A language whose own spelling rules read the Latin-script words of a song set to it. Malay reads as Indonesian. */
+type LatinReader = "es" | "pt" | "fr" | "de" | "it" | "tr" | "id";
+
+/** How a song's scripts are read for alignment. */
+interface LineReading {
+  hanReading: HanReading;
+  /** Null when Latin-script words are read as English. */
+  latinReader: LatinReader | null;
+}
+
 // -- Constants ----------------------------------------------------------------
 
 // The model covers English, Mandarin and Japanese, mixed freely within a line.
 // Every line is tried whatever the song language; lines in other scripts fall
 // back to the character split.
 const SUPPORTED_LANGUAGES = new Set(["en", "zh", "ja"]);
+const LATIN_READERS: Readonly<Record<string, LatinReader>> = {
+  es: "es",
+  pt: "pt",
+  fr: "fr",
+  de: "de",
+  it: "it",
+  tr: "tr",
+  id: "id",
+  ms: "id",
+};
 
 // -- Functions ----------------------------------------------------------------
 
@@ -30,10 +50,17 @@ function isAlignableLanguage(code: string): boolean {
 
 // Han characters are kanji in a Japanese project, or when any line has kana
 // (an all-kanji line in a Japanese song would otherwise read as Mandarin).
-function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]): HanReading {
+function hanReadingFor(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): HanReading {
   const base = baseLanguage(language);
   if (base === "ja" || base === "zh") return base;
   return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
+}
+
+// Only the project language picks a Latin reader: a song with none set, or set to a
+// language in another script, reads its Latin-script words as English.
+function lineReadingFor(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): LineReading {
+  const base = baseLanguage(language);
+  return { hanReading: hanReadingFor(language, lines), latinReader: base ? (LATIN_READERS[base] ?? null) : null };
 }
 
 // The project language when set, else a guess from the lyrics' script. Kana
@@ -66,8 +93,8 @@ export {
   baseLanguage,
   coverageColumns,
   coversLanguage,
-  hanReadingFor,
   isAlignableLanguage,
+  lineReadingFor,
   songLanguage,
 };
-export type { HanReading };
+export type { HanReading, LatinReader, LineReading };

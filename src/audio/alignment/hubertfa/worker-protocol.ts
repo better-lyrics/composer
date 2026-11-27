@@ -1,6 +1,6 @@
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { Backend } from "@/audio/ort-runtime";
-import type { HanReading } from "@/domain/alignment/language";
+import type { HanReading, LatinReader } from "@/domain/alignment/language";
 import type { PartSplit, WordInterval } from "@/domain/alignment/words";
 
 // The messages between the alignment worker and its host.
@@ -24,6 +24,7 @@ interface LineRequest {
   sampleRate: number;
   words: string[][];
   hanReading: HanReading;
+  latinReader: LatinReader | null;
   transliteration: string | null;
   /** The previous and next lyric lines' words, for a model that finds lines. */
   context?: { previous: string[][]; next: string[][] };
