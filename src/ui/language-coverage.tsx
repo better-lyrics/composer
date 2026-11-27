@@ -11,6 +11,11 @@ interface LanguageCoverageProps {
   dimmed?: boolean;
 }
 
+// -- Constants -----------------------------------------------------------------
+
+// A picker row has room for this many cells beside its label, and its trigger for this many codes.
+const MAX_ALIGNED_LANGUAGES = 4;
+
 // -- Helpers -------------------------------------------------------------------
 
 function cellClass(isCovered: boolean, isSong: boolean): string {
@@ -21,39 +26,49 @@ function cellClass(isCovered: boolean, isSong: boolean): string {
   return "bg-(--layer-2) text-(--label)";
 }
 
+/** Whether there are too many languages for one cell each beside a label. */
+function stacksCoverage(languages: readonly string[]): boolean {
+  return languages.length > MAX_ALIGNED_LANGUAGES;
+}
+
 // -- Components ----------------------------------------------------------------
 
-// One fixed column per language, so the cells line up from row to row.
-const LanguageCoverage: React.FC<LanguageCoverageProps> = ({ columns, covered, song, dimmed }) => (
-  <span
-    role="img"
-    aria-label={`Covers ${covered.map(languageName).join(", ")}`}
-    className={cn("ms-auto grid shrink-0 grid-flow-col auto-cols-[26px] gap-[3px]", dimmed && "opacity-60")}
-  >
-    {columns.map((code) => {
-      const isCovered = coversLanguage(covered, code);
-      return (
-        <span
-          key={code}
-          aria-hidden="true"
-          className={cn(
-            "inline-flex h-[18px] items-center justify-center rounded-[5px] font-mono text-[10px] font-semibold",
-            cellClass(isCovered, code === song),
-          )}
-        >
-          {isCovered ? code.toUpperCase() : "·"}
-        </span>
-      );
-    })}
-  </span>
-);
+// One fixed column per language, so the cells line up from row to row. Past what fits beside a label, the row
+// lists only the languages it covers and wraps them.
+const LanguageCoverage: React.FC<LanguageCoverageProps> = ({ columns, covered, song, dimmed }) => {
+  const stacked = stacksCoverage(columns);
+  const cells = stacked ? columns.filter((code) => coversLanguage(covered, code)) : columns;
+  return (
+    <span
+      role="img"
+      aria-label={`Covers ${covered.map(languageName).join(", ")}`}
+      className={cn("flex gap-[3px]", stacked ? "flex-wrap" : "ms-auto shrink-0", dimmed && "opacity-60")}
+    >
+      {cells.map((code) => {
+        const isCovered = coversLanguage(covered, code);
+        return (
+          <span
+            key={code}
+            aria-hidden="true"
+            className={cn(
+              "inline-flex h-[18px] w-[26px] items-center justify-center rounded-[5px] font-mono text-[10px] font-semibold",
+              cellClass(isCovered, code === song),
+            )}
+          >
+            {isCovered ? code.toUpperCase() : "·"}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
 
 const CoverageCodes: React.FC<{ covered: readonly string[] }> = ({ covered }) => (
   <span className="shrink-0 font-mono text-[10px] font-semibold tracking-[0.04em] text-(--muted)">
-    {covered.map((code) => code.toUpperCase()).join(" ")}
+    {stacksCoverage(covered) ? `${covered.length} LANGUAGES` : covered.map((code) => code.toUpperCase()).join(" ")}
   </span>
 );
 
 // -- Exports -------------------------------------------------------------------
 
-export { CoverageCodes, LanguageCoverage };
+export { CoverageCodes, LanguageCoverage, stacksCoverage };
