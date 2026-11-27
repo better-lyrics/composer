@@ -151,11 +151,16 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       let fellBack = 0;
 
       const anchors = songLanguage(project.metadata.language, project.lines) === "en";
+      const smooth = useSettingsStore.getState().smoothAlignedWords;
       let chain: AnchorChain | null = null;
       for (const [index, plan] of planned.entries()) {
         signal.throwIfAborted();
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lines align in order: each may anchor on the one before
-        const { result, timings, ...next } = await alignLine(plan, { aligner, pcm, reading, signal, anchors }, chain);
+        const { result, timings, ...next } = await alignLine(
+          plan,
+          { aligner, pcm, reading, signal, anchors, smooth },
+          chain,
+        );
         chain = next.chain;
         for (const word of result.unknownWords) unknownWords.add(word);
         for (const word of result.guessedWords) guessedWords.add(word);
