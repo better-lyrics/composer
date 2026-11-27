@@ -15,10 +15,11 @@ import type { WordInterval } from "@/domain/alignment/words";
 
 // -- Types --------------------------------------------------------------------
 
-/** The lyric lines around a line, as units with phones. */
+/** The lyric lines around a line, as units with phones, and the model's phone table rows those phones resolve with. */
 interface LineContext {
   previous: PhoneUnit[];
   next: PhoneUnit[];
+  rows: ReadonlyMap<string, string> | null;
 }
 
 /** The worker's reading of a line: its units when it can be pronounced. */
@@ -54,23 +55,24 @@ function isLineFinder(session: { inputNames: readonly string[]; outputNames: rea
 async function linesAround(
   request: LineRequest,
   prepare: (words: string[][]) => Promise<Prepared>,
+  rows: ReadonlyMap<string, string> | null,
 ): Promise<LineContext> {
   const units = async (words: string[][] = []) => {
     const line = words.length > 0 ? await prepare(words) : null;
     return line?.kind === "ready" ? (line.units ?? []).filter((unit) => unit.phones.length > 0) : [];
   };
-  return { previous: await units(request.context?.previous), next: await units(request.context?.next) };
+  return { previous: await units(request.context?.previous), next: await units(request.context?.next), rows };
 }
 
-function phonesOf(units: readonly PhoneUnit[]): number[] {
-  const built = buildPhoneSequence(units);
+function phonesOf(units: readonly PhoneUnit[], rows: LineContext["rows"]): number[] {
+  const built = buildPhoneSequence(units, rows);
   return built.kind === "sequence" ? Array.from(built.sequence.phoneIds).filter((id) => id !== 0) : [];
 }
 
 /** What a model that finds lines is given beside the audio: the lyrics around the line, and the begin tap. */
 function lineFeeds(ort: Ort, own: PhoneSequence, context: LineContext, tap?: number): Record<string, OrtTensor> {
-  const prev = phonesOf(context.previous).slice(-CONTEXT_MAX);
-  const next = phonesOf(context.next).slice(0, CONTEXT_MAX);
+  const prev = phonesOf(context.previous, context.rows).slice(-CONTEXT_MAX);
+  const next = phonesOf(context.next, context.rows).slice(0, CONTEXT_MAX);
   const mine = Array.from(own.phoneIds)
     .filter((id) => id !== 0)
     .slice(0, TEXT_MAX);
@@ -112,7 +114,7 @@ function alignAmongNeighbours(
   outputs: ModelOutputs,
 ): PhoneInterval[] | null {
   const previous = nearestUnits(context.previous, true);
-  const built = buildPhoneSequence([...previous, ...units, ...nearestUnits(context.next, false)]);
+  const built = buildPhoneSequence([...previous, ...units, ...nearestUnits(context.next, false)], context.rows);
   if (built.kind !== "sequence") return null;
   const { phoneIds, unitOf } = built.sequence;
   const isOwn = (index: number) => unitOf[index] >= previous.length && unitOf[index] < previous.length + units.length;

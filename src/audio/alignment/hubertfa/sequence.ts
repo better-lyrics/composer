@@ -27,7 +27,7 @@ const SILENCE_ID = VOCAB.SP;
 // Silence-class phones (the Japanese closure "cl", "SP", "AP") are shared
 // across languages and have no prefix; everything else is "<language>/<phone>".
 // A model's phone table may add keys of its own, each on the row of a bundled key.
-function phoneId(language: string, phone: string, rows?: ReadonlyMap<string, string>): number | undefined {
+function phoneId(language: string, phone: string, rows: ReadonlyMap<string, string> | null): number | undefined {
   const key = vocab.language_prefix ? `${language}/${phone}` : phone;
   return VOCAB[phone] ?? VOCAB[rows?.get(key) ?? key];
 }
@@ -35,7 +35,8 @@ function phoneId(language: string, phone: string, rows?: ReadonlyMap<string, str
 // The forced sequence: SP, unit 1's phones, SP, unit 2's phones, ... SP. The
 // decoder may skip any SP. Two silences are never adjacent: a unit that starts
 // or ends in a closure absorbs the SP beside it.
-function buildPhoneSequence(units: readonly PhoneUnit[], rows?: ReadonlyMap<string, string>): SequenceResult {
+// `rows` is the loaded model's phone table's, or null: every caller has to say which model the phones are for.
+function buildPhoneSequence(units: readonly PhoneUnit[], rows: ReadonlyMap<string, string> | null): SequenceResult {
   const ids = [SILENCE_ID];
   const unitOf = [-1];
   const unknown: string[] = [];

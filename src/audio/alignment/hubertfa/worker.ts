@@ -179,7 +179,8 @@ async function fallBackToWasm(reason: unknown): Promise<void> {
 // The lines around the request's and what a model that finds lines is given beside the audio; null for any other.
 async function lineInputs(request: LineRequest, own: PhoneSequence) {
   if (!session || !ort || !isLineFinder(session)) return null;
-  const context = await linesAround(request, (words) => prepareLine({ ...request, words, transliteration: null }));
+  const prepare = (words: string[][]) => prepareLine({ ...request, words, transliteration: null });
+  const context = await linesAround(request, prepare, phoneTable?.rows ?? null);
   return { context, feeds: lineFeeds(ort, own, context, request.tap) };
 }
 
@@ -226,7 +227,7 @@ async function prepareLine(request: Omit<LineRequest, "samples">) {
     phoneTable,
   });
   if (g2p.kind === "unknown") return { kind: "done", outcome: { kind: "unknown", words: g2p.words } } as const;
-  const built = buildPhoneSequence(g2p.units, phoneTable?.rows);
+  const built = buildPhoneSequence(g2p.units, phoneTable?.rows ?? null);
   if (built.kind === "unknown") return { kind: "done", outcome: { kind: "unknown", words: built.words } } as const;
   if (built.kind === "nothing-to-align") return { kind: "done", outcome: { kind: "no-path" } } as const;
   return { kind: "ready", units: g2p.units, guessed: g2p.guessed, sequence: built.sequence } satisfies PreparedLine;
