@@ -249,6 +249,12 @@ describe("numbers", () => {
     expect(sounds(lineToPhoneUnits([["딱"], ["99.9"]], korean), 1)).toEqual(readWord("ko", "구십구구").sounds);
   });
 
+  it("regression: keeps a countdown in English before a word that starts like a Korean counter", () => {
+    // 시작 ("start") begins with 시, the counter for hours.
+    const result = lineToPhoneUnits([["1,"], ["2,"], ["17"], ["시", "작"]], context("zh"));
+    expect(phones(result)[2]).toBe("2:s eh v ax n t iy n");
+  });
+
   it("regression: reads Arabic-Indic digits as the number they write", () => {
     const eastern = sounds(lineToPhoneUnits([["عمري"], ["١٧"]], context("zh")), 1);
     expect(eastern?.length).toBeGreaterThan(0);

@@ -5,7 +5,7 @@ import { type NumberLanguage, numberWords } from "@/audio/alignment/hubertfa/num
 import { readWord } from "@/audio/alignment/hubertfa/readers/reader-units";
 import { hasCjk } from "@/domain/alignment/cjk";
 import type { HanReading, LatinReader } from "@/domain/alignment/language";
-import { detectNonLatinLanguage, hasLatinLetter } from "@/domain/language/script-detection";
+import { detectNonLatinLanguage, hasLatinLetter, isLetter } from "@/domain/language/script-detection";
 
 // A number is sung in the language of the words around it, which a song in
 // two languages changes from line to line: "17살" is Korean, "I'm 17" in the
@@ -38,6 +38,12 @@ function partLanguage(text: string, context: NumberContext): NumberLanguage | nu
   if (script === "ko" || script === "ar") return script;
   if (hasCjk(text)) return context.hanReading;
   return hasLatinLetter(text) ? (context.latinReader ?? "en") : null;
+}
+
+// Whether word `word` of the line is a number and nothing else ("2,"), which makes its neighbour part of a count.
+function isNumberWord(parts: readonly LinePart[], word: number): boolean {
+  const own = parts.filter((part) => part.word === word);
+  return own.length > 0 && own.every((part) => ANY_DIGIT.test(part.text) && ![...part.text].some(isLetter));
 }
 
 /**
@@ -75,7 +81,10 @@ function numberLanguage(
   // "1, 2, 3", "24/7"): measured against the audio of 288 lines, English unless a counter follows or it is a decimal
   // fits 92% of them, the nearest word's language 78% (hubertfa-posttrain results/trainv3/number_lang). Japanese,
   // Chinese and Arabic showed nothing better than the nearest word.
-  const korean = nearest === "ko" && (startsWithKoreanCounter(after) || DECIMAL.test(own.join("")));
+  // A count ("1, 2, 3 시작") stays English whatever follows: 시작 only starts like the counter for hours.
+  const counted = isNumberWord(parts, word - 1) || isNumberWord(parts, word + 1);
+  const counter = !counted && startsWithKoreanCounter(after);
+  const korean = nearest === "ko" && (counter || DECIMAL.test(own.join("")));
   return nearest === "ko" && !korean ? fallback : nearest;
 }
 
