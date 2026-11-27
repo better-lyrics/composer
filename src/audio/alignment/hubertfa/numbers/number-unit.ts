@@ -43,7 +43,8 @@ function partLanguage(text: string, context: NumberContext): NumberLanguage | nu
 /**
  * The language of the number on parts `first` to `last`: its own letters ("4ever"), then the rest of its word
  * ("17살"), then the nearest part with letters on either side, the one before winning a tie. A line of numbers
- * alone is read by the song's reader for Latin script, or as English. `after` is the text that follows it.
+ * alone is read by the song's reader for Latin script, or as English. Beside Korean words a number on its own is
+ * English too, unless a counter starts `after`, the text that follows it, or it is a decimal.
  */
 function numberLanguage(
   parts: readonly LinePart[],
