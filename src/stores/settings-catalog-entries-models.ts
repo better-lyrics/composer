@@ -51,6 +51,15 @@ const MODELS_CATALOG_ENTRIES = {
     keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
     settingKey: "keepAlignmentModelLoaded",
   },
+  smoothAlignedWords: {
+    section: "models",
+    group: "Auto-align",
+    label: "Smooth auto-aligned words",
+    description:
+      "Auto-align ends a word where the next begins when the gap between them is under 0.1 seconds. Longer pauses are kept.",
+    keywords: ["smoothing", "gaps", "auto-align", "syllables", "flicker", "pause"],
+    settingKey: "smoothAlignedWords",
+  },
   beatModelFiles: {
     section: "models",
     group: "Beat detection",
