@@ -72,6 +72,22 @@ function estimatedStatus(
   return planTransliterationAlignment(words, timedPrefixText(text, words, reading)).status;
 }
 
+interface PartSplit {
+  /** The estimate's status for an estimated split; the saved status, which auto-align leaves stale, otherwise. */
+  status?: TransliterationAlignmentStatus;
+  estimated: boolean;
+}
+
+function partSplits(line: LyricLine): { main: PartSplit; background: PartSplit } {
+  const track = line.transliteration;
+  const main = estimatedStatus(line.words, line.text, track?.text);
+  const background = estimatedStatus(line.backgroundWords, line.backgroundText ?? "", track?.backgroundText);
+  return {
+    main: { status: main ?? track?.alignmentStatus, estimated: main !== null },
+    background: { status: background ?? track?.backgroundAlignmentStatus, estimated: background !== null },
+  };
+}
+
 /** The same warnings the Languages tab shows, as stable codes an agent can act on. */
 function lineIssues(line: LyricLine): string[] {
   const issues = getLanguageReviewTracks(line).flatMap((track) =>
@@ -81,17 +97,10 @@ function lineIssues(line: LyricLine): string[] {
           reason === "alignment" ? "transliteration-alignment-needs-review" : "transliteration-source-changed",
         ),
   );
-  const track = line.transliteration;
-  const estimates = [
-    estimatedStatus(line.words, line.text, track?.text),
-    estimatedStatus(line.backgroundWords, line.backgroundText ?? "", track?.backgroundText),
-  ];
-  const unresolved =
-    track?.alignmentStatus === "unresolved" ||
-    track?.backgroundAlignmentStatus === "unresolved" ||
-    estimates.includes("unresolved");
-  if (unresolved) issues.push("transliteration-does-not-fit-syllables");
-  if (estimates.includes("needs-review") && !issues.includes("transliteration-alignment-needs-review")) {
+  const parts = Object.values(partSplits(line));
+  if (parts.some((part) => part.status === "unresolved")) issues.push("transliteration-does-not-fit-syllables");
+  const guessed = parts.some((part) => part.estimated && part.status === "needs-review");
+  if (guessed && !issues.includes("transliteration-alignment-needs-review")) {
     issues.push("transliteration-alignment-needs-review");
   }
   return issues;
@@ -100,10 +109,7 @@ function lineIssues(line: LyricLine): string[] {
 function lineView(line: LyricLine, index: number): LineView {
   const track = line.transliteration;
   const aligned = withAlignedTransliteration(line);
-  const mainEstimate = estimatedStatus(line.words, line.text, track?.text);
-  const backgroundEstimate = estimatedStatus(line.backgroundWords, line.backgroundText ?? "", track?.backgroundText);
-  const mainAlignment = mainEstimate ?? track?.alignmentStatus;
-  const backgroundAlignment = backgroundEstimate ?? track?.backgroundAlignmentStatus;
+  const { main, background } = partSplits(line);
   const translations = Object.entries(line.translations ?? {});
   return {
     lineId: line.id,
@@ -119,11 +125,11 @@ function lineView(line: LyricLine, index: number): LineView {
             language: track.language,
             text: track.text,
             ...(track.backgroundText ? { backgroundText: track.backgroundText } : {}),
-            ...(mainAlignment ? { alignment: mainAlignment } : {}),
-            ...(backgroundAlignment ? { backgroundAlignment } : {}),
-            ...(track.text.trim() && line.words?.length ? { split: mainEstimate ? "estimated" : "saved" } : {}),
+            ...(main.status ? { alignment: main.status } : {}),
+            ...(background.status ? { backgroundAlignment: background.status } : {}),
+            ...(track.text.trim() && line.words?.length ? { split: main.estimated ? "estimated" : "saved" } : {}),
             ...(track.backgroundText?.trim() && line.backgroundWords?.length
-              ? { backgroundSplit: backgroundEstimate ? "estimated" : "saved" }
+              ? { backgroundSplit: background.estimated ? "estimated" : "saved" }
               : {}),
           },
         }

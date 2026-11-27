@@ -3,7 +3,12 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { lineView } from "@/domain/mcp/line-view";
 import { createLine } from "@/test/factories";
 
-function autoAlignedLine(text: string, syllables: string[], reading: string) {
+function autoAlignedLine(
+  text: string,
+  syllables: string[],
+  reading: string,
+  alignmentStatus: "inferred" | "unresolved" = "inferred",
+) {
   const line = createLine({
     text,
     words: syllables.map((syllable, index) => ({ text: syllable, begin: index, end: index + 1 })),
@@ -16,7 +21,7 @@ function autoAlignedLine(text: string, syllables: string[], reading: string) {
       segments: [{ original: text, transliteration: reading }],
       origin: "import" as const,
       sourceFingerprint: languageSourceFingerprint(line.text),
-      alignmentStatus: "inferred" as const,
+      alignmentStatus,
     },
   };
 }
@@ -32,5 +37,8 @@ describe("lineView", () => {
     expect(estimated.syllables?.every((syllable) => syllable.transliteration)).toBe(true);
     expect(estimated.issues).toEqual(["transliteration-alignment-needs-review"]);
     expect(estimated.transliteration).toMatchObject({ split: "estimated", alignment: "needs-review" });
+
+    const staleUnresolved = lineView(autoAlignedLine("바|람|이", ["바", "람", "이"], "ba ram i", "unresolved"), 0);
+    expect(staleUnresolved.issues).toEqual([]);
   });
 });
