@@ -1,7 +1,7 @@
 import type { AlignmentModel } from "@/audio/alignment/hubertfa/model-manifest";
-import { coversLanguage } from "@/domain/alignment/language";
+import { coversLanguage, isLongCoverage } from "@/domain/alignment/language";
 import { languageName } from "@/domain/project/language";
-import { LanguageCoverage, stacksCoverage } from "@/ui/language-coverage";
+import { LanguageCoverage } from "@/ui/language-coverage";
 import { ModelTermsHint } from "@/ui/model-terms-info";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
@@ -19,7 +19,7 @@ interface AlignmentModelOptionProps {
 
 const AlignmentModelOption: React.FC<AlignmentModelOptionProps> = ({ model, detail, columns, song }) => {
   const missed = song && !coversLanguage(model.languages, song) ? song : null;
-  const stacked = stacksCoverage(columns);
+  const stacked = isLongCoverage(columns);
   const coverage = (
     <LanguageCoverage columns={columns} covered={model.languages} song={song} dimmed={missed !== null} />
   );
