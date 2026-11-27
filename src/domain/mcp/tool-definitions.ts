@@ -49,9 +49,10 @@ const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     title: "Get lines",
     description: [
       "Read lyric lines with their timed syllables, transliteration, translations and warnings.",
-      "Each syllable is one timing slot: `text` is the original lyrics in that slot, `transliteration` is the part of the reading currently mapped to it.",
+      "Each syllable is one timing slot: `text` is the original lyrics in that slot, `transliteration` is the part of the reading Composer shows on it.",
+      "The line's transliteration.split says whether that mapping is saved or estimated: an estimated split is Composer's guess, computed on the fly, and an exact one (two-space word breaks matched) carries no warning, so check it anyway when it matters.",
       "Issue codes: transliteration-alignment-needs-review (the reading was split across syllables by estimate; check it and fix it with align_transliteration),",
-      "transliteration-does-not-fit-syllables (no split could be estimated), transliteration-syllables-unmapped (a lyric edit added syllables with no reading yet; align the line again), transliteration-source-changed and translation-source-changed:<lang> (the lyrics changed after that text was written; rewrite it).",
+      "transliteration-does-not-fit-syllables (no split could be estimated), transliteration-source-changed and translation-source-changed:<lang> (the lyrics changed after that text was written; rewrite it).",
     ].join(" "),
     inputSchema: {
       type: "object",

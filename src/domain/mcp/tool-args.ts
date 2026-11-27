@@ -118,8 +118,8 @@ function alignmentLines(args: ToolArgs): AlignmentLineArg[] {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { LanguageLineArg, ToolArgs };
 export {
-  ToolInputError,
   alignmentLines,
   editedLines,
   languageLines,
@@ -128,6 +128,6 @@ export {
   optionalString,
   optionalStringList,
   requiredString,
+  ToolInputError,
   toolArgs,
 };
-export type { LanguageLineArg, ToolArgs };
