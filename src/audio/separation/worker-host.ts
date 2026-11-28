@@ -1,3 +1,4 @@
+import { endWorkerCleanly } from "@/audio/end-worker";
 import type { HtdemucsVariant } from "@/audio/separation/model-registry";
 import type { ProcessOptions, ProcessResult } from "@/audio/separation/vocal-separator";
 import type { InboundMessage, OutboundMessage } from "@/audio/separation/worker";
@@ -37,21 +38,29 @@ class SeparationWorker {
 
   private ensureWorker(): Worker {
     if (!this.worker) {
-      this.worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
-      this.worker.addEventListener("error", (ev) => {
+      const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+      // A worker that was let go can still be shutting down; nothing it sends concerns the current one.
+      const current = () => this.worker === worker;
+      worker.addEventListener("error", (ev) => {
         console.error(LOG_PREFIX, "worker error event", ev.message, ev.filename, ev.lineno, ev);
-        this.failCurrent(workerError(`Separation worker crashed: ${ev.message || "unknown error"}`, "worker-error"));
+        if (current()) {
+          this.failCurrent(workerError(`Separation worker crashed: ${ev.message || "unknown error"}`, "worker-error"));
+        }
       });
-      this.worker.addEventListener("messageerror", (ev) => {
+      worker.addEventListener("messageerror", (ev) => {
         console.error(LOG_PREFIX, "worker messageerror", ev);
-        this.failCurrent(workerError("Separation worker sent an unreadable message.", "worker-messageerror"));
+        if (current()) {
+          this.failCurrent(workerError("Separation worker sent an unreadable message.", "worker-messageerror"));
+        }
       });
-      this.worker.addEventListener("message", (ev: MessageEvent<OutboundMessage>) => this.onMessage(ev.data));
+      worker.addEventListener("message", (ev: MessageEvent<OutboundMessage>) => current() && this.onMessage(ev.data));
+      this.worker = worker;
     }
     return this.worker;
   }
 
   private onMessage(msg: OutboundMessage) {
+    if (msg.type === "shut-down") return;
     if (msg.type === "init-progress" || msg.type === "process-progress") {
       const loaded = msg.type === "init-progress" ? msg.loaded : msg.processed;
       const total = msg.type === "init-progress" ? msg.total : msg.total;
@@ -149,11 +158,11 @@ class SeparationWorker {
     } finally {
       // Tear the worker down after every process(), regardless of outcome.
       // ORT's WebGPU backend keeps a GPU buffer pool tied to the worker's
-      // WebGPU device — `session.release()` alone doesn't free it. Terminating
-      // the worker destroys the device and reclaims VRAM. The next separate()
+      // WebGPU device; `session.release()` alone doesn't free it. Destroying
+      // the device and ending the worker reclaims VRAM. The next separate()
       // call pays a small re-init cost (model bytes come from Cache API, only
       // the decode + GPU upload re-runs).
-      this.dispose();
+      await this.end();
     }
   }
 
@@ -163,11 +172,15 @@ class SeparationWorker {
   }
 
   dispose(): void {
-    if (this.worker) {
-      this.worker.terminate();
-      this.worker = null;
-    }
+    void this.end();
+  }
+
+  // The worker frees its GPU before it's terminated (see `endWorkerCleanly`); the next call starts a fresh one.
+  private async end(): Promise<void> {
+    const worker = this.worker;
+    this.worker = null;
     this.clearCurrent();
+    if (worker) await endWorkerCleanly(worker);
   }
 }
 

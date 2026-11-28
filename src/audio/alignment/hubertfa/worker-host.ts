@@ -6,6 +6,7 @@ import type {
   LineRequest,
   OutboundMessage,
 } from "@/audio/alignment/hubertfa/worker-protocol";
+import { endWorkerCleanly } from "@/audio/end-worker";
 import type { Backend } from "@/audio/ort-runtime";
 
 // -- Types --------------------------------------------------------------------
@@ -38,21 +39,25 @@ class AlignmentWorker {
 
   private ensureWorker(): Worker {
     if (!this.worker) {
-      this.worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
-      this.worker.addEventListener("error", (ev) =>
-        this.fail(workerError(`Alignment worker crashed: ${ev.message || "unknown error"}`, "worker-error")),
-      );
-      this.worker.addEventListener("messageerror", () =>
-        this.fail(workerError("Alignment worker sent an unreadable message.", "worker-messageerror")),
-      );
-      this.worker.addEventListener("message", (ev: MessageEvent<OutboundMessage>) => this.onMessage(ev.data));
+      const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+      // A worker that was let go can still be shutting down; nothing it sends concerns the current one.
+      const current = () => this.worker === worker;
+      worker.addEventListener("error", (ev) => {
+        if (current())
+          this.fail(workerError(`Alignment worker crashed: ${ev.message || "unknown error"}`, "worker-error"));
+      });
+      worker.addEventListener("messageerror", () => {
+        if (current()) this.fail(workerError("Alignment worker sent an unreadable message.", "worker-messageerror"));
+      });
+      worker.addEventListener("message", (ev: MessageEvent<OutboundMessage>) => current() && this.onMessage(ev.data));
+      this.worker = worker;
     }
     return this.worker;
   }
 
   private onMessage(msg: OutboundMessage) {
     const pending = this.pending;
-    if (!pending) return;
+    if (!pending || msg.type === "shut-down") return;
     if (msg.type === "init-progress") {
       this.armInitTimeout();
       pending.onProgress?.(msg.loaded, msg.total);
@@ -128,11 +133,16 @@ class AlignmentWorker {
     this.worker?.postMessage({ type: "cancel" } satisfies InboundMessage);
   }
 
-  // Terminating the worker is what frees the WebGPU device's memory.
   dispose(): void {
-    this.worker?.terminate();
+    void this.shutDown();
+  }
+
+  /** Ends the worker once it has freed its GPU (see `endWorkerCleanly`). A request in flight gets no answer. */
+  shutDown(): Promise<void> {
+    const worker = this.worker;
     this.worker = null;
     this.settle();
+    return worker ? endWorkerCleanly(worker) : Promise.resolve();
   }
 }
 

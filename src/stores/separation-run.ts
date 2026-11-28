@@ -1,4 +1,4 @@
-import { hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
+import { alignmentWorkerEnded, hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
 import { probeRoformerSupport } from "@/audio/separation/roformer/availability";
 import { getVocalSeparator, releaseIdleRoformer } from "@/audio/separation/shared-separation-worker";
 import { isProjectStemJobKey } from "@/audio/separation/stem-job-liveness";
@@ -54,6 +54,7 @@ async function releaseKeptAligner(): Promise<void> {
   const { status } = useAlignmentStore.getState();
   if (status === "running" || status === "downloading") return;
   hubertfaAligner.release();
+  await alignmentWorkerEnded();
   await new Promise((resolve) => setTimeout(resolve, ALIGNER_SETTLE_MS));
 }
 

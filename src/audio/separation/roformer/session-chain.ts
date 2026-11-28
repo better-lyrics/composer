@@ -105,5 +105,5 @@ async function runSessionChain(
 
 // -- Exports ------------------------------------------------------------------
 
-export { loadSessionChain, releaseSessionChain, runSessionChain };
+export { loadSessionChain, runSessionChain };
 export type { SessionChain };

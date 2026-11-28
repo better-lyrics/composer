@@ -1,4 +1,5 @@
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
+import type { ShutdownReply, ShutdownRequest } from "@/audio/end-worker";
 import type { Backend } from "@/audio/ort-runtime";
 import type { HanReading, LatinReader } from "@/domain/alignment/language";
 import type { PartSplit, WordInterval } from "@/domain/alignment/words";
@@ -38,7 +39,8 @@ type InboundMessage =
   | { type: "init"; assets: AlignmentAssets; forceWasm?: boolean; japanese?: boolean }
   | ({ type: "align"; anchor: string[] | null } & LineRequest)
   | ({ type: "locate" } & LineRequest)
-  | { type: "cancel" };
+  | { type: "cancel" }
+  | ShutdownRequest;
 
 type OutboundMessage =
   | { type: "init-progress"; loaded: number; total: number }
@@ -46,7 +48,8 @@ type OutboundMessage =
   | { type: "align-done"; outcome: AlignOutcome }
   | { type: "locate-done"; bounds: WordInterval | null }
   | { type: "cancelled" }
-  | { type: "error"; code: string; message: string };
+  | { type: "error"; code: string; message: string }
+  | ShutdownReply;
 
 // -- Exports ------------------------------------------------------------------
 
