@@ -80,7 +80,10 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
     [scrollContainerRef, rulerTrackRef],
   );
   const phases = useMemo(
-    () => ({ read: () => readPlayheadFrame(frame, elements), write: () => writePlayheadFrame(frame, elements) }),
+    () => ({
+      read: (now: number) => readPlayheadFrame(frame, elements, now),
+      write: () => writePlayheadFrame(frame, elements),
+    }),
     [frame, elements],
   );
 
