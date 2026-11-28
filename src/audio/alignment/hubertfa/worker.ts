@@ -21,6 +21,7 @@ import {
   phonesByUnit,
   unitIntervalsFromPhones,
 } from "@/audio/alignment/hubertfa/sequence";
+import { answerShutdown } from "@/audio/end-worker";
 import { type Backend, type Ort, type OrtSession, type OrtTensor, createSession, loadOrt } from "@/audio/ort-runtime";
 import { chooseBackend } from "@/audio/separation/backend-selection";
 import { type CachedModel, fetchAndCacheModel, readCachedModel } from "@/audio/separation/model-cache";
@@ -292,4 +293,5 @@ self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   else if (msg.type === "align") void answer(handleAlign(msg, msg.anchor));
   else if (msg.type === "locate") void answer(handleLocate(msg));
   else if (msg.type === "cancel") downloadAbort?.abort();
+  else if (msg.type === "shutdown") void answerShutdown(ort, [session], post);
 });

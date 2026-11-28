@@ -1,16 +1,12 @@
 /// <reference lib="webworker" />
+import { type ShutdownReply, type ShutdownRequest, answerShutdown } from "@/audio/end-worker";
 import { type Ort, loadOrt } from "@/audio/ort-runtime";
 import { getModelBaseUrl } from "@/audio/separation/model-registry";
 import { demixPlan } from "@/audio/separation/roformer/demix";
 import { DspLane } from "@/audio/separation/roformer/dsp-lane";
 import type { PreparedChunk } from "@/audio/separation/roformer/dsp-worker";
 import { roformerParts } from "@/audio/separation/roformer/model-parts";
-import {
-  type SessionChain,
-  loadSessionChain,
-  releaseSessionChain,
-  runSessionChain,
-} from "@/audio/separation/roformer/session-chain";
+import { type SessionChain, loadSessionChain, runSessionChain } from "@/audio/separation/roformer/session-chain";
 import { describeError, log } from "@/audio/separation/worker-log";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -20,16 +16,17 @@ declare const self: DedicatedWorkerGlobalScope;
 type InboundMessage =
   | { type: "init"; seq: number }
   | { type: "process"; seq: number; channels: Float32Array[]; totalFrames: number }
-  | { type: "release"; seq: number }
+  | ShutdownRequest
   | { type: "cancel" };
 
 type OutboundMessage =
   | { type: "progress"; seq: number; loaded: number; total: number }
   | { type: "done"; seq: number; vocals?: Float32Array[] }
   | { type: "cancelled"; seq: number }
-  | { type: "error"; seq: number; code: string; message: string };
+  | { type: "error"; seq: number; code: string; message: string }
+  | ShutdownReply;
 
-type Request = Exclude<InboundMessage, { type: "cancel" }>;
+type Request = Exclude<InboundMessage, { type: "cancel" } | ShutdownRequest>;
 
 /** Where a song's time went, in ms. `chain` is the time the 14 graphs were running, upload and readback included. */
 interface SeparationStats {
@@ -194,11 +191,7 @@ async function handle(request: Request, isCancelled: () => boolean): Promise<voi
   const { seq } = request;
   try {
     if (request.type === "init") await init(seq, isCancelled);
-    else if (request.type === "release") {
-      if (chain) await releaseSessionChain(chain.sessions);
-      chain = null;
-      post({ type: "done", seq });
-    } else {
+    else {
       const vocals = await separate(seq, request.channels, request.totalFrames, isCancelled);
       if (!vocals) post({ type: "cancelled", seq });
       else
@@ -222,6 +215,11 @@ self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   const msg = ev.data;
   if (msg.type === "cancel") {
     cancelEpoch += 1;
+    return;
+  }
+  // After whatever was sent before it; the host sends nothing after it.
+  if (msg.type === "shutdown") {
+    queue = queue.then(() => answerShutdown(runtime, chain?.sessions ?? [], post));
     return;
   }
   const epoch = cancelEpoch;

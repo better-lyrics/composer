@@ -50,6 +50,8 @@ interface AlignOptions {
 interface AlignmentState {
   status: AlignmentStatus;
   progress: { done: number; total: number };
+  /** While downloading: the vocal model is freeing GPU memory before this one loads. */
+  unloadingVocalModel: boolean;
   error: AlignmentError | null;
   modelCached: boolean;
   /** Download size of the selected model and its dictionary, once resolved. */
@@ -94,6 +96,7 @@ function fail(set: (partial: Partial<AlignmentState>) => void, code: AlignmentEr
 const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) => ({
   status: "idle",
   progress: { done: 0, total: 0 },
+  unloadingVocalModel: false,
   error: null,
   modelCached: false,
   modelSizeBytes: null,
@@ -115,7 +118,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const planned = planLines(project.lines, lineIds, options.realign ?? false);
     if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [], guessedWords: [] };
     // Claims the run and makes it cancellable before the first await.
-    set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
+    set({ status: "downloading", error: null, progress: { done: 0, total: 0 }, unloadingVocalModel: false });
     controller = new AbortController();
     const { signal } = controller;
     // One model for the whole run, even if the setting changes while it starts.
@@ -141,6 +144,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, {
         japanese,
         modelId,
+        onUnloadingVocalModel: (unloadingVocalModel) => set({ unloadingVocalModel }),
       });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
       const pcm = await loadVocalsPcm(vocalsUrl);

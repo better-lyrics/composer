@@ -1,5 +1,5 @@
 import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
-import type { SeparationError } from "@/audio/separation/types";
+import type { SeparationError, UnloadingModel } from "@/audio/separation/types";
 import { STEM_SLOTS } from "@/domain/stems/stem-slot";
 import { useRoformerSupport } from "@/hooks/useRoformerSupport";
 import { useSeparationStore } from "@/stores/separation";
@@ -11,6 +11,13 @@ import { STEM_LABELS } from "@/ui/stem-labels";
 import { separationErrorCopy } from "@/ui/stem-sources/separation-error-copy";
 import { formatMegabytesOf, formatWholeMegabytes } from "@/utils/format-file-size";
 import { percent } from "@/utils/percent";
+
+// -- Constants ----------------------------------------------------------------
+
+const UNLOADING_COPY: Record<UnloadingModel, { title: string; next: string }> = {
+  alignment: { title: "Unloading the alignment model…", next: "high quality vocals" },
+  roformer: { title: "Unloading high quality vocals…", next: "the standard vocal model" },
+};
 
 // -- Components ---------------------------------------------------------------
 
@@ -36,8 +43,24 @@ const StemProgress: React.FC<{ downloading: boolean; fills: string; approxBytes:
   approxBytes,
 }) => {
   const progress = useSeparationStore((s) => s.progress);
+  const unloadingModel = useSeparationStore((s) => s.unloadingModel);
   const keepsImported = useSeparationStore((s) => STEM_SLOTS.some((slot) => s.stemOrigins[slot] === "imported"));
   const pct = percent(progress.loaded, progress.total);
+  const onCancel = () => useSeparationStore.getState().cancel();
+  if (downloading && unloadingModel) {
+    const { title, next } = UNLOADING_COPY[unloadingModel];
+    return (
+      <div className="-mx-2">
+        <ModelProgress
+          title={title}
+          meta=""
+          pct={0}
+          note={`It frees GPU memory for ${next}, which loads next.`}
+          onCancel={onCancel}
+        />
+      </div>
+    );
+  }
   return (
     <div className="-mx-2">
       <ModelProgress
@@ -45,7 +68,7 @@ const StemProgress: React.FC<{ downloading: boolean; fills: string; approxBytes:
         meta={downloading ? formatMegabytesOf(progress.loaded, progress.total || approxBytes) : `${pct}%`}
         pct={pct}
         note={keepsImported && "Your imported stems stay as they are."}
-        onCancel={() => useSeparationStore.getState().cancel()}
+        onCancel={onCancel}
       />
     </div>
   );

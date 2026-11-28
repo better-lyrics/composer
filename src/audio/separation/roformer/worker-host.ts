@@ -1,3 +1,4 @@
+import { endWorkerCleanly } from "@/audio/end-worker";
 import type { InboundMessage, OutboundMessage } from "@/audio/separation/roformer/worker";
 import type { ProcessOptions, ProcessResult, VocalSeparator } from "@/audio/separation/vocal-separator";
 
@@ -9,7 +10,7 @@ interface Pending {
   onProgress?: (loaded: number, total: number) => void;
 }
 
-type Request = Exclude<InboundMessage, { type: "cancel" }>;
+type Request = Exclude<InboundMessage, { type: "cancel" | "shutdown" }>;
 type RequestBody = Request extends infer R ? (R extends Request ? Omit<R, "seq"> : never) : never;
 
 // -- Constants ----------------------------------------------------------------
@@ -20,7 +21,6 @@ const LOG_PREFIX = "[roformer-host]";
 const MEMORY_SETTLE_MS = 8_000;
 // The model downloads in parts, so a quiet worker during init is a hung session create.
 const INIT_INACTIVITY_TIMEOUT_MS = 120_000;
-const RELEASE_TIMEOUT_MS = 5_000;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -41,14 +41,22 @@ class RoformerWorker implements VocalSeparator {
   private seq = 0;
   private readonly pending = new Map<number, Pending>();
   private endedAt = Number.NEGATIVE_INFINITY;
+  private ending: Promise<void> | null = null;
   private initTimer: ReturnType<typeof setTimeout> | null = null;
 
   get busy(): boolean {
     return this.pending.size > 0;
   }
 
-  /** Resolves once memory from an ended worker has had time to be freed. */
+  /** Whether `releaseIfIdle` and `settled` will wait: an idle model to free, or a worker's memory still being freed. */
+  get hasMemoryToFree(): boolean {
+    if (this.worker && !this.busy) return true;
+    return this.ending !== null || performance.now() < this.endedAt + MEMORY_SETTLE_MS;
+  }
+
+  /** Resolves once the last worker has ended and its memory has had time to be freed. */
   async settled(): Promise<void> {
+    await this.ending;
     const wait = this.endedAt + MEMORY_SETTLE_MS - performance.now();
     if (wait > 0) await sleep(wait);
   }
@@ -85,41 +93,45 @@ class RoformerWorker implements VocalSeparator {
   /** Frees the model's memory unless it's separating. */
   async releaseIfIdle(): Promise<void> {
     if (!this.worker || this.busy) return;
-    let settled = false;
-    const released = this.request({ type: "release" })
-      .catch((err: unknown) => console.warn(LOG_PREFIX, "releasing the sessions failed; ending the worker anyway", err))
-      .finally(() => {
-        settled = true;
-      });
-    await Promise.race([released, sleep(RELEASE_TIMEOUT_MS)]);
-    // A release that hasn't answered is ended with the worker, unless a song was sent in the meantime.
-    if (this.pending.size === (settled ? 0 : 1)) this.dispose();
+    await this.end();
   }
 
   /** Ends the worker; anything in flight fails. */
   dispose(): void {
+    void this.end();
+  }
+
+  // The worker frees its GPU before it's terminated (see `endWorkerCleanly`); a new one starts after `settled`.
+  private end(): Promise<void> {
     const pending = [...this.pending.values()];
     this.pending.clear();
     this.clearInitTimeout();
-    if (this.worker) {
-      this.worker.terminate();
-      this.worker = null;
-      this.endedAt = performance.now();
-    }
+    const worker = this.worker;
+    this.worker = null;
     for (const p of pending) p.reject(workerError("The vocal model stopped.", "worker-ended"));
+    if (!worker) return this.ending ?? Promise.resolve();
+    const ending = endWorkerCleanly(worker).finally(() => {
+      this.endedAt = performance.now();
+      if (this.ending === ending) this.ending = null;
+    });
+    this.ending = ending;
+    return ending;
   }
 
   private ensureWorker(): Worker {
     if (this.worker) return this.worker;
     const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+    // A worker that was let go can still be shutting down; nothing it sends concerns the current one.
+    const current = () => this.worker === worker;
     worker.addEventListener("error", (ev) => {
       console.error(LOG_PREFIX, "worker error event", ev.message, ev);
-      this.failAll(workerError(`The vocal model crashed: ${ev.message || "unknown error"}`, "worker-error"));
+      if (current())
+        this.failAll(workerError(`The vocal model crashed: ${ev.message || "unknown error"}`, "worker-error"));
     });
-    worker.addEventListener("messageerror", () =>
-      this.failAll(workerError("The vocal model sent an unreadable message.", "worker-messageerror")),
-    );
-    worker.addEventListener("message", (ev: MessageEvent<OutboundMessage>) => this.onMessage(ev.data));
+    worker.addEventListener("messageerror", () => {
+      if (current()) this.failAll(workerError("The vocal model sent an unreadable message.", "worker-messageerror"));
+    });
+    worker.addEventListener("message", (ev: MessageEvent<OutboundMessage>) => current() && this.onMessage(ev.data));
     this.worker = worker;
     return worker;
   }
@@ -137,6 +149,7 @@ class RoformerWorker implements VocalSeparator {
   }
 
   private onMessage(msg: OutboundMessage) {
+    if (msg.type === "shut-down") return;
     const pending = this.pending.get(msg.seq);
     if (!pending) return;
     if (msg.type === "progress") {
@@ -149,14 +162,14 @@ class RoformerWorker implements VocalSeparator {
     else {
       pending.reject(workerError(msg.message, msg.code));
       // After a failure the GPU state is unknown, so the next run starts from a fresh worker.
-      this.dispose();
+      void this.end();
     }
   }
 
   private failAll(err: Error) {
     const pending = [...this.pending.values()];
     this.pending.clear();
-    this.dispose();
+    void this.end();
     for (const p of pending) p.reject(err);
   }
 

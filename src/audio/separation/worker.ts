@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import { type ShutdownReply, type ShutdownRequest, answerShutdown } from "@/audio/end-worker";
 import { type Backend, type Ort, type OrtSession, createSession, loadOrt } from "@/audio/ort-runtime";
 import { chooseBackend, runnableVariant } from "@/audio/separation/backend-selection";
 import { runChunkPipeline } from "@/audio/separation/chunk-pipeline";
@@ -13,7 +14,8 @@ declare const self: DedicatedWorkerGlobalScope;
 type InboundMessage =
   | { type: "init"; variant: HtdemucsVariant; forceWasm?: boolean; profile?: boolean }
   | { type: "process"; channels: Float32Array[]; totalFrames: number }
-  | { type: "cancel" };
+  | { type: "cancel" }
+  | ShutdownRequest;
 
 type OutboundMessage =
   | { type: "init-progress"; loaded: number; total: number }
@@ -21,7 +23,8 @@ type OutboundMessage =
   | { type: "process-progress"; processed: number; total: number }
   | { type: "process-done"; vocals: Float32Array[]; numChannels: number; totalFrames: number }
   | { type: "cancelled" }
-  | { type: "error"; code: string; message: string };
+  | { type: "error"; code: string; message: string }
+  | ShutdownReply;
 
 let ort: Ort | null = null;
 let session: OrtSession | null = null;
@@ -211,9 +214,9 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
   const stitched = denormalizeDemucsOutput(stitchChunks(vocalChunks, totalFrames, channels.length), normalized);
 
   // Drop GPU/CPU resources tied to the model session before we hand the result
-  // back. The host terminates the worker immediately after process-done, but
-  // releasing the session explicitly also covers the keep-worker-alive case
-  // and helps WebGPU EP flush its buffer pool.
+  // back. The host ends the worker right after process-done, but releasing the
+  // session explicitly also covers the keep-worker-alive case and helps the
+  // WebGPU EP flush its buffer pool.
   try {
     await session?.release?.();
   } catch {}
@@ -240,6 +243,8 @@ self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   } else if (msg.type === "cancel") {
     cancelled = true;
     for (const h of cancelHandlers) h();
+  } else if (msg.type === "shutdown") {
+    void answerShutdown(ort, [session], post);
   }
 });
 

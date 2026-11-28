@@ -11,6 +11,8 @@ import type { WordInterval } from "@/domain/alignment/words";
 let worker: AlignmentWorker | null = null;
 // What the loaded worker was set up with, so a kept model is only reused when it fits the run.
 let loaded: { modelId: string; japanese: boolean; findsLines: boolean } | null = null;
+// The last released worker, which frees its GPU before it ends; another model loads only after it has.
+let ending: Promise<void> = Promise.resolve();
 
 // -- Functions ----------------------------------------------------------------
 
@@ -57,8 +59,11 @@ const hubertfaAligner: Aligner = {
     if (hubertfaAligner.isLoaded(options)) return;
     const { japanese, modelId } = options;
     hubertfaAligner.release();
+    await ending;
     // An idle RoFormer holds GPU memory the aligner needs; it reloads for the next song that's separated.
-    await releaseIdleRoformer();
+    await releaseIdleRoformer(() => options.onUnloadingVocalModel?.(true));
+    options.onUnloadingVocalModel?.(false);
+    signal.throwIfAborted();
     const assets = await resolveAlignmentAssets(modelId);
     if (!assets) throw new Error("Auto-align isn't available on this deployment.");
     const next = new AlignmentWorker();
@@ -69,7 +74,7 @@ const hubertfaAligner: Aligner = {
       worker = next;
       loaded = { modelId, japanese, findsLines };
     } catch (err) {
-      next.dispose();
+      ending = next.shutDown();
       throw err;
     } finally {
       signal.removeEventListener("abort", onAbort);
@@ -106,12 +111,22 @@ const hubertfaAligner: Aligner = {
   findsLines: () => loaded?.findsLines ?? false,
 
   release: () => {
-    worker?.dispose();
+    if (worker) ending = worker.shutDown();
     worker = null;
     loaded = null;
   },
 };
 
+/** Resolves once the last released alignment worker has ended. */
+function alignmentWorkerEnded(): Promise<void> {
+  return ending;
+}
+
+/** Whether an alignment model is loaded, holding GPU memory. */
+function holdsAlignmentModel(): boolean {
+  return worker !== null;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { hubertfaAligner };
+export { alignmentWorkerEnded, holdsAlignmentModel, hubertfaAligner };

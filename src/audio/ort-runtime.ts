@@ -20,6 +20,7 @@ interface SessionOptions {
 interface GpuDeviceLike {
   queue: { onSubmittedWorkDone(): Promise<void> };
   lost: Promise<{ reason: string; message: string }>;
+  destroy(): void;
 }
 
 interface OrtSession {
@@ -54,6 +55,8 @@ interface Ort {
 const WEBGPU_POWER_PREFERENCE = "high-performance";
 
 const loaded: Partial<Record<Backend, Ort>> = {};
+// Reading ORT's device before its first WebGPU session would create one, so the device is only read once a session was tried.
+let webGpuSessionTried = false;
 
 // The CDN WASM/JSEP loader files must match the bundled JS version exactly.
 function getOrtVersion(): string {
@@ -78,6 +81,7 @@ async function loadOrt(backend: Backend, profile: boolean): Promise<Ort> {
 }
 
 function createSession(runtime: Ort, modelBytes: ArrayBuffer, backend: Backend): Promise<OrtSession> {
+  if (backend === "webgpu") webGpuSessionTried = true;
   return runtime.InferenceSession.create(modelBytes, {
     executionProviders: backend === "webgpu" ? ["webgpu", "wasm"] : ["wasm"],
     graphOptimizationLevel: "all",
@@ -91,6 +95,7 @@ function createChainedWebGpuSession(
   modelBytes: Uint8Array,
   keepOutputOnGpu: boolean,
 ): Promise<OrtSession> {
+  webGpuSessionTried = true;
   return runtime.InferenceSession.create(modelBytes, {
     executionProviders: [{ name: "webgpu", storageBufferCacheMode: "bucket" }],
     graphOptimizationLevel: "all",
@@ -98,5 +103,25 @@ function createChainedWebGpuSession(
   });
 }
 
-export { WEBGPU_POWER_PREFERENCE, createChainedWebGpuSession, createSession, loadOrt };
+// Chrome 152 to 158 deadlock the whole tab when a GPU reply arrives while a worker waits on the GPU
+// (crbug.com/574515421). Releasing a model and ending a worker both wait on it, so before a worker ends, the GPU
+// finishes its work, the sessions are released one at a time, and the device is destroyed: nothing is left to reply.
+async function releaseWebGpu(runtime: Ort | null, sessions: readonly (OrtSession | null)[]): Promise<void> {
+  try {
+    const device = webGpuSessionTried && runtime?.env.webgpu?.device ? await runtime.env.webgpu.device : null;
+    await device?.queue.onSubmittedWorkDone();
+    for (const session of sessions) {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- releasing them together floods the GPU
+      await session?.release?.();
+    }
+    if (!device) return;
+    await device.queue.onSubmittedWorkDone();
+    device.destroy();
+    await device.lost;
+  } catch (err) {
+    console.warn("[ort-runtime] couldn't release WebGPU cleanly before the worker ends", err);
+  }
+}
+
+export { WEBGPU_POWER_PREFERENCE, createChainedWebGpuSession, createSession, loadOrt, releaseWebGpu };
 export type { Backend, GpuDeviceLike, Ort, OrtSession, OrtTensor };
