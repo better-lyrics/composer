@@ -26,7 +26,19 @@ const AutoAlignProgress: React.FC<{ onCancel: () => void }> = ({ onCancel }) => 
   const status = useAlignmentStore((s) => s.status);
   const progress = useAlignmentStore((s) => s.progress);
   const modelCached = useAlignmentStore((s) => s.modelCached);
+  const unloadingVocalModel = useAlignmentStore((s) => s.unloadingVocalModel);
   const pct = percent(progress.done, progress.total);
+  if (status === "downloading" && unloadingVocalModel) {
+    return (
+      <ModelProgress
+        title="Unloading the vocal model…"
+        meta=""
+        pct={0}
+        note="It frees GPU memory for the alignment model, which loads next."
+        onCancel={onCancel}
+      />
+    );
+  }
   if (status === "downloading") {
     return (
       <ModelProgress

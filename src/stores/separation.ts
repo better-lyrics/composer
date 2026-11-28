@@ -10,7 +10,7 @@ import {
   stemCacheHash,
   stemJobKey,
 } from "@/audio/separation/stem-store";
-import type { SeparationError, SeparationStatus, Stem } from "@/audio/separation/types";
+import type { SeparationError, SeparationStatus, Stem, UnloadingModel } from "@/audio/separation/types";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { playableFile, useAudioStore } from "@/stores/audio";
@@ -24,6 +24,7 @@ import { create } from "zustand";
 interface SeparationState extends StemImportState {
   status: SeparationStatus;
   progress: { loaded: number; total: number };
+  unloadingModel: UnloadingModel | null;
   error: SeparationError | null;
   currentStem: Stem;
   otherStem: Exclude<Stem, "original">;
@@ -95,6 +96,7 @@ const NO_STEMS = {
 const useSeparationStore = create<SeparationState & SeparationActions>((set, get) => ({
   status: "idle",
   progress: { loaded: 0, total: 0 },
+  unloadingModel: null,
   error: null,
   currentStem: "original",
   otherStem: "vocals",

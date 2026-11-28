@@ -48,6 +48,12 @@ class RoformerWorker implements VocalSeparator {
     return this.pending.size > 0;
   }
 
+  /** Whether `releaseIfIdle` and `settled` will wait: an idle model to free, or a worker's memory still being freed. */
+  get hasMemoryToFree(): boolean {
+    if (this.worker && !this.busy) return true;
+    return this.ending !== null || performance.now() < this.endedAt + MEMORY_SETTLE_MS;
+  }
+
   /** Resolves once the last worker has ended and its memory has had time to be freed. */
   async settled(): Promise<void> {
     await this.ending;

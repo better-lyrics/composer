@@ -61,7 +61,9 @@ const hubertfaAligner: Aligner = {
     hubertfaAligner.release();
     await ending;
     // An idle RoFormer holds GPU memory the aligner needs; it reloads for the next song that's separated.
-    await releaseIdleRoformer();
+    await releaseIdleRoformer(() => options.onUnloadingVocalModel?.(true));
+    options.onUnloadingVocalModel?.(false);
+    signal.throwIfAborted();
     const assets = await resolveAlignmentAssets(modelId);
     if (!assets) throw new Error("Auto-align isn't available on this deployment.");
     const next = new AlignmentWorker();
@@ -120,6 +122,11 @@ function alignmentWorkerEnded(): Promise<void> {
   return ending;
 }
 
+/** Whether an alignment model is loaded, holding GPU memory. */
+function holdsAlignmentModel(): boolean {
+  return worker !== null;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { alignmentWorkerEnded, hubertfaAligner };
+export { alignmentWorkerEnded, holdsAlignmentModel, hubertfaAligner };

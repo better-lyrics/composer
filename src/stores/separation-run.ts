@@ -1,9 +1,13 @@
-import { alignmentWorkerEnded, hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
+import {
+  alignmentWorkerEnded,
+  holdsAlignmentModel,
+  hubertfaAligner,
+} from "@/audio/alignment/hubertfa/hubertfa-aligner";
 import { probeRoformerSupport } from "@/audio/separation/roformer/availability";
 import { getVocalSeparator, releaseIdleRoformer } from "@/audio/separation/shared-separation-worker";
 import { isProjectStemJobKey } from "@/audio/separation/stem-job-liveness";
 import { stemJobKey } from "@/audio/separation/stem-store";
-import type { SeparationError, SeparationStatus, Stem } from "@/audio/separation/types";
+import type { SeparationError, SeparationStatus, Stem, UnloadingModel } from "@/audio/separation/types";
 import { STEM_SLOTS } from "@/domain/stems/stem-slot";
 import type { AudioSource } from "@/stores/audio";
 import { storeSeparatedStems } from "@/stores/separated-stem-write";
@@ -19,6 +23,7 @@ interface RunState {
   status: SeparationStatus;
   error: SeparationError | null;
   progress: { loaded: number; total: number };
+  unloadingModel: UnloadingModel | null;
   modelCached: boolean;
   jobKey: string | null;
   stemUrls: Partial<Record<Stem, string>>;
@@ -48,21 +53,24 @@ const ALIGNER_SETTLE_MS = 5_000;
 
 // A kept alignment model holds the GPU buffers of its last run, which beside the RoFormer pass the memory a browser
 // gets. It reloads on the next align. The store is loaded lazily: it imports the separation store.
-async function releaseKeptAligner(): Promise<void> {
-  if (!useSettingsStore.getState().keepAlignmentModelLoaded) return;
+async function releaseKeptAligner(run: SeparationRun): Promise<void> {
+  if (!useSettingsStore.getState().keepAlignmentModelLoaded || !holdsAlignmentModel()) return;
   const { useAlignmentStore } = await import("@/stores/alignment");
   const { status } = useAlignmentStore.getState();
   if (status === "running" || status === "downloading") return;
+  run.set({ status: "downloading", error: null, progress: { loaded: 0, total: 0 }, unloadingModel: "alignment" });
   hubertfaAligner.release();
   await alignmentWorkerEnded();
   await new Promise((resolve) => setTimeout(resolve, ALIGNER_SETTLE_MS));
+  run.set({ unloadingModel: null });
 }
 
 // Resolves true once stems were written (or writing them failed and said so), false if the run stopped or failed.
 async function separateWith(variant: VocalModelVariant, run: SeparationRun): Promise<boolean> {
   const { set, get, isCurrentRun } = run;
   const separator = getVocalSeparator(variant);
-  if (variant === "roformer") await releaseKeptAligner();
+  if (variant === "roformer") await releaseKeptAligner(run);
+  if (!isCurrentRun() || run.isCancelling()) return false;
   if (!(await runModelDownload(set, separator, run.isCancelling))) return false;
   if (!isCurrentRun()) return false;
   if (variant === run.selected) set({ modelCached: true });
@@ -116,6 +124,7 @@ function fallbackModel(
 }
 
 async function runSeparation(run: SeparationRun): Promise<boolean> {
+  run.set({ unloadingModel: null });
   // An upgrade of stems the song already has: if the RoFormer fails, they stay, and so does its error.
   const hadStems = STEM_SLOTS.every((slot) => run.get().stemUrls[slot]);
   const variant = await runnableModel(run.selected);
@@ -128,7 +137,8 @@ async function runSeparation(run: SeparationRun): Promise<boolean> {
     description: error?.message,
   });
   run.set({ error: null, status: "downloading", progress: { loaded: 0, total: 0 } });
-  await releaseIdleRoformer();
+  await releaseIdleRoformer(() => run.set({ unloadingModel: "roformer" }));
+  run.set({ unloadingModel: null });
   if (!run.isCurrentRun() || run.isCancelling()) return false;
   return separateWith(fallback, run);
 }

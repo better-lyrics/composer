@@ -42,8 +42,12 @@ function disposeSeparationWorker(): void {
   }
 }
 
-/** Frees the RoFormer's memory unless it's separating; another model is about to load, or it was deselected. */
-async function releaseIdleRoformer(): Promise<void> {
+/**
+ * Frees the RoFormer's memory unless it's separating; another model is about to load, or it was deselected.
+ * `onUnloading` runs first when that means a wait.
+ */
+async function releaseIdleRoformer(onUnloading?: () => void): Promise<void> {
+  if (roformer?.hasMemoryToFree) onUnloading?.();
   await roformer?.releaseIfIdle();
   await roformer?.settled();
 }

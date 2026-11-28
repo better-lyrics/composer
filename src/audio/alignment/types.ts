@@ -63,12 +63,13 @@ interface Aligner {
   /**
    * Downloads and loads whatever the aligner needs, including the kanji
    * dictionary when `japanese`. `modelId` picks the checkpoint for aligners
-   * that offer more than one.
+   * that offer more than one. `onUnloadingVocalModel` is told when the load
+   * starts and stops waiting for the vocal model to free GPU memory.
    */
   prepare: (
     onProgress: (loaded: number, total: number) => void,
     signal: AbortSignal,
-    options: { japanese: boolean; modelId: string },
+    options: { japanese: boolean; modelId: string; onUnloadingVocalModel?: (unloading: boolean) => void },
   ) => Promise<void>;
   align: (segment: AlignmentSegment, signal: AbortSignal) => Promise<SegmentAlignment>;
   /**
