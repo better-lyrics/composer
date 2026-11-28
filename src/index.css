@@ -160,10 +160,9 @@ body {
   --blyrics-translated-color: color-mix(in oklab, var(--color-composer-text) 60%, transparent);
 }
 
-/* lyrics.css paints the romanization pill in fixed white, which vanishes on light themes. */
+/* The romanization pill's default is fixed white, which vanishes on light themes. */
 braccato-lyrics .blyrics--romanized {
-  background: color-mix(in oklab, var(--color-composer-text) 5%, transparent);
-  border-color: color-mix(in oklab, var(--color-composer-text) 10%, transparent);
+  --blyrics-romanized-bg-color: color-mix(in oklab, var(--color-composer-text) 5%, transparent);
 }
 
 /* The element is the scroller braccato autoscrolls, which is what centres the
@@ -215,6 +214,17 @@ braccato-lyrics .blyrics-container {
    renderer's own opacity instead of overriding it. */
 [data-lyrics-layout] [data-outside-focus] {
   filter: opacity(0.3);
+}
+
+/* Braccato draws on a canvas and reads each line's colours, so its fade scales their alpha instead. */
+braccato-lyrics [data-outside-focus] {
+  filter: none;
+  --blyrics-lyric-active-color: color(from var(--blyrics-text-color) srgb r g b / calc(alpha * 0.3));
+  --blyrics-lyric-inactive-color: color(
+    from var(--blyrics-text-color) srgb r g b / calc(var(--blyrics-inactive-opacity) * 0.3)
+  );
+  --blyrics-ui-text-color: color-mix(in oklab, var(--color-composer-text) 30%, transparent);
+  --blyrics-translated-color: color-mix(in oklab, var(--color-composer-text) 18%, transparent);
 }
 
 /* Text selection. Excludes animated Timeline and lyric parts: a match restyles their subtree on every animation frame */

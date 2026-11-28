@@ -190,6 +190,23 @@ function buildMatchingAlternateLanguageTtml(): string {
   });
 }
 
+/** One word-synced line 12-14s opening on a 0.2 s word, so a highlight lead lights most of it early. */
+function buildShortWordTtml(): string {
+  const lines = [
+    createLine({
+      id: "line-short",
+      text: "go on now",
+      words: [
+        { text: "go ", begin: 12, end: 12.2 },
+        { text: "on ", begin: 12.2, end: 13 },
+        { text: "now", begin: 13, end: 14 },
+      ],
+    }),
+  ];
+  const { metadata, agents } = useProjectStore.getState();
+  return generateTTML({ metadata, agents, lines, groups: [] });
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
@@ -197,5 +214,6 @@ export {
   buildAlternateLanguageTtml,
   buildBackgroundVocalTtml,
   buildMatchingAlternateLanguageTtml,
+  buildShortWordTtml,
   buildSyncedTtml,
 };

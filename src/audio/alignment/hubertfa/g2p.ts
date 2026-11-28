@@ -1,5 +1,6 @@
 import { type ReadingToken, isKana, kanaToMorae } from "@/audio/alignment/hubertfa/japanese";
 import { type Pronunciations, lookupWord } from "@/audio/alignment/hubertfa/lexicon";
+import { numberUnit } from "@/audio/alignment/hubertfa/numbers/number-unit";
 import { type PhoneLanguage, soundsToPhones, standInPhones } from "@/audio/alignment/hubertfa/readers/donors";
 import {
   type PhoneTable,
@@ -68,6 +69,8 @@ interface ReadingUnit {
   text: string;
   reading: string[] | null;
   read?: ReaderUnit;
+  /** A written number's words, which are read in place of its digits. */
+  spoken?: string;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -157,7 +160,13 @@ function readingUnits(words: readonly string[][], context: G2pContext): ReadingU
       const word = indices.map((index) => ({ index, text: parts[index].text }));
       for (const segment of segmentWord(word, context.latinReader ?? null)) {
         if (segment.kind === "english") {
-          units.push({ parts: segment.parts, language: "en", text: partsText(segment.parts), reading: null });
+          const unit: ReadingUnit = {
+            parts: segment.parts,
+            language: "en",
+            text: partsText(segment.parts),
+            reading: null,
+          };
+          units.push(numberUnit(unit, parts, context) ?? unit);
         } else {
           for (const read of segment.units) {
             units.push({ parts: read.parts, language: "reader", text: partsText(read.parts), reading: null, read });
@@ -202,7 +211,7 @@ function readingUnits(words: readonly string[][], context: G2pContext): ReadingU
 
 function lookupPhones(unit: ReadingUnit, dictionaries: G2pContext["dictionaries"], guessed: Set<string>) {
   if (unit.language === "en") {
-    const lookup = lookupWord(unit.text, dictionaries.en);
+    const lookup = lookupWord(unit.spoken ?? unit.text, dictionaries.en);
     if (lookup.kind === "unknown") return null;
     if (lookup.kind === "guessed") guessed.add(lookup.key);
     return lookup.kind === "silent" ? [] : lookup.phones;
@@ -254,7 +263,11 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
       continue;
     }
     const { language } = unit;
-    const wasGuessed = language === "en" && lookupWord(unit.text, context.dictionaries.en).kind === "guessed";
+    // Which reading of a number was sung is a guess, so its word is reported with the guessed ones.
+    if (unit.spoken !== undefined) guessed.add(unit.text.trim());
+    const wasGuessed =
+      unit.spoken !== undefined ||
+      (language === "en" && lookupWord(unit.text, context.dictionaries.en).kind === "guessed");
     if (language !== "en" && (context.phoneTable || !listed.has(language))) {
       const borrowed = context.phoneTable
         ? tableDictionaryPhones(context.phoneTable, language, phones)
