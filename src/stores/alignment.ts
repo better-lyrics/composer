@@ -5,13 +5,14 @@ import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import type { AnchorChain } from "@/domain/alignment/anchor";
-import { hasCjk } from "@/domain/alignment/cjk";
-import { lineReadingFor, songLanguage } from "@/domain/alignment/language";
+import { songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { alignLine, isAbortError } from "@/stores/alignment-line";
-import { isUnchanged, type PlannedLine, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import { alignJob, isAbortError } from "@/stores/alignment-line";
+import { type AlignedJob, lineUpdatesFrom, readingsFor } from "@/stores/alignment-jobs";
+import type { AlignTarget } from "@/stores/alignment-plan";
+import { isUnchanged, planLines, planLyrics, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
 import { recordRealignedLines } from "@/stores/alignment-record";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -57,8 +58,8 @@ interface AlignmentState {
 }
 
 interface AlignmentActions {
-  /** Aligns the given lines, or every eligible line when omitted. */
-  alignLines: (lineIds?: readonly string[], options?: AlignOptions) => Promise<AlignmentResult | null>;
+  /** Aligns the given tracks, or every eligible line when omitted. */
+  alignLines: (targets?: readonly AlignTarget[], options?: AlignOptions) => Promise<AlignmentResult | null>;
   cancel: () => void;
   dismissError: () => void;
   refreshModelCached: (modelId?: string) => Promise<void>;
@@ -107,12 +108,12 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     if (get().status === "error") set({ status: "idle", error: null });
   },
 
-  alignLines: async (lineIds, options = {}) => {
+  alignLines: async (targets, options = {}) => {
     const status = get().status;
     if (status === "running" || status === "downloading") return null;
     const aligner: Aligner = hubertfaAligner;
     const project = useProjectStore.getState();
-    const planned = planLines(project.lines, lineIds, options.realign ?? false);
+    const planned = planLines(project.lines, targets, options.realign ?? false);
     if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [], guessedWords: [] };
     // Claims the run and makes it cancellable before the first await.
     set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
@@ -124,8 +125,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     try {
       const assets = await resolveAlignmentAssets(modelId);
       if (!assets) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-      const reading = lineReadingFor(project.metadata.language, project.lines);
-      const japanese = reading.hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+      const { reading, japanese } = readingsFor(project, planned);
       const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
       if (!vocalsUrl) {
         return fail(
@@ -144,8 +144,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
       const pcm = await loadVocalsPcm(vocalsUrl);
-      const updates: LineUpdate[] = [];
-      const plannedById = new Map<string, PlannedLine>();
+      const jobs: AlignedJob[] = [];
       const unknownWords = new Set<string>();
       const guessedWords = new Set<string>();
       let fellBack = 0;
@@ -156,7 +155,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       for (const [index, plan] of planned.entries()) {
         signal.throwIfAborted();
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lines align in order: each may anchor on the one before
-        const { result, timings, ...next } = await alignLine(
+        const { result, timings, ...next } = await alignJob(
           plan,
           { aligner, pcm, reading, signal, anchors, smooth },
           chain,
@@ -166,8 +165,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         for (const word of result.guessedWords) guessedWords.add(word);
         if (timings) {
           if (result.fellBack) fellBack++;
-          updates.push({ id: plan.line.id, updates: { words: timings } });
-          plannedById.set(plan.line.id, plan);
+          jobs.push({ plan, words: timings });
         }
         set({ progress: { done: index + 1, total: planned.length } });
       }
@@ -177,7 +175,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       // Another project can share line ids and text (a duplicate, a re-import); this run's timing isn't its.
       if (latest.projectSession !== project.projectSession) throw new DOMException("Project changed", "AbortError");
       const currentById = new Map(latest.lines.map((l) => [l.id, l]));
-      const applicable = updates.filter((u) => isUnchanged(currentById.get(u.id), plannedById.get(u.id)!));
+      const applicable = lineUpdatesFrom(jobs.filter((j) => isUnchanged(currentById.get(j.plan.line.id), j.plan)));
       if (applicable.length > 0) {
         // Timing only: deriving text would drop the untimed words of partly synced lines.
         latest.updateLinesWithHistory(applicable, { deriveText: false });
@@ -189,7 +187,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       set({ status: "idle", progress: { done: 0, total: 0 } });
       return {
         aligned: applicable.length,
-        skipped: updates.length - applicable.length,
+        skipped: lineUpdatesFrom(jobs).length - applicable.length,
         fellBack,
         unknownWords: [...unknownWords],
         guessedWords: [...guessedWords],
@@ -222,9 +220,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         return groups.length > 0 ? [[line.id, groups] as const] : [];
       }),
     );
-    const planned = planLines(project.lines, [...groupsOf.keys()], true);
-    const reading = lineReadingFor(project.metadata.language, project.lines);
-    const japanese = reading.hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+    const planned = planLyrics(project.lines, [...groupsOf.keys()]);
+    const { reading, japanese } = readingsFor(project, planned);
     const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.

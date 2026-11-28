@@ -36,7 +36,11 @@ const ort = {
 
 async function contextOf(previous: PhoneUnit, next: PhoneUnit) {
   const prepared = { kind: "ready", units: [previous] };
-  return linesAround(request, async (words) => (words[0][0] === "si" ? prepared : { kind: "ready", units: [next] }), rows);
+  return linesAround(
+    request,
+    async (words) => (words[0][0] === "si" ? prepared : { kind: "ready", units: [next] }),
+    rows,
+  );
 }
 
 describe("a line among its neighbours, on a model with a phone table", () => {
@@ -51,6 +55,27 @@ describe("a line among its neighbours, on a model with a phone table", () => {
     };
     const placed = alignPhones([unit("n"), unit("_o")], own.sequence, context, request, outputs);
     expect(placed?.map((phone) => phone.index)).toEqual([1, 3]);
+  });
+
+  it("places gated words on the model's line frames, with no pull to the tap", () => {
+    const units = [unit("n"), unit("_o")];
+    const own = buildPhoneSequence(units, rows);
+    if (own.kind !== "sequence") throw new Error(`no sequence: ${own.kind}`);
+    // The model hears the words in the window's second half, faintly; the tap is at its start.
+    const outputs = {
+      ph_frame_logits: tensor(new Float32Array(vocab.vocab_size * FRAMES), [1, vocab.vocab_size, FRAMES]),
+      ph_edge_logits: tensor(new Float32Array(FRAMES), [1, FRAMES]),
+      line_logits: tensor(
+        Float32Array.from({ length: FRAMES }, (_, t) => (t < FRAMES / 2 ? -0.2 : 0.2)),
+        [1, FRAMES],
+      ),
+    };
+    const alone = { previous: [], next: [], rows };
+    const begins = (extra: Partial<LineRequest>) =>
+      alignPhones(units, own.sequence, alone, { ...request, tap: 0, ...extra }, outputs)?.[0].begin;
+
+    expect(begins({ wide: false, gated: true })).toBeCloseTo(1, 1);
+    expect(begins({ wide: true })).toBeLessThan(0.2);
   });
 
   it("regression: gives the model the neighbours' table keys as their rows", async () => {

@@ -32,6 +32,8 @@ interface LineRequest {
   tap?: number;
   /** The window reaches well past the line on both sides: a model that finds lines aligns it among its neighbours. */
   wide?: boolean;
+  /** No tap starts these words: a model that finds lines gates on the frames it says are theirs, with no tap hint. */
+  gated?: boolean;
 }
 
 type InboundMessage =

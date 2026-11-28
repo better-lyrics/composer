@@ -1,5 +1,6 @@
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAlignmentStore } from "@/stores/alignment";
+import type { AlignTarget } from "@/stores/alignment-plan";
 import { useSeparationStore } from "@/stores/separation";
 import { alignmentErrorCopy } from "@/ui/alignment-error-copy";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
@@ -17,7 +18,7 @@ interface AutoAlignOptions {
   toastErrors?: boolean;
 }
 
-type AutoAlign = (lineIds?: readonly string[], options?: AutoAlignOptions) => Promise<void>;
+type AutoAlign = (targets?: readonly AlignTarget[], options?: AutoAlignOptions) => Promise<void>;
 
 // -- Constants -----------------------------------------------------------------
 
@@ -27,7 +28,7 @@ const UNKNOWN_WORDS_SHOWN = 8;
 
 // The latest run, from any trigger, so Try again repeats it: the Timeline's one
 // line, or the Sync tab's whole song, with the same realign choice.
-let lastRequest: { lineIds?: readonly string[]; realign: boolean } = { realign: false };
+let lastRequest: { targets?: readonly AlignTarget[]; realign: boolean } = { realign: false };
 
 // -- Functions -----------------------------------------------------------------
 
@@ -42,7 +43,7 @@ function listWords(words: string[]): string {
   return more > 0 ? `${shown} and ${more} more` : shown;
 }
 
-function showAlignmentError(autoAlign: AutoAlign, lineIds?: readonly string[], realign?: boolean): void {
+function showAlignmentError(autoAlign: AutoAlign, targets?: readonly AlignTarget[], realign?: boolean): void {
   const error = useAlignmentStore.getState().error;
   if (!error) return;
   if (error.code === "needs-vocals") {
@@ -62,7 +63,7 @@ function showAlignmentError(autoAlign: AutoAlign, lineIds?: readonly string[], r
       duration: Number.POSITIVE_INFINITY,
       action: {
         label: size ? `Download (${formatWholeMegabytes(size)})` : "Download",
-        onClick: () => void autoAlign(lineIds, { allowDownload: true, realign }),
+        onClick: () => void autoAlign(targets, { allowDownload: true, realign }),
       },
     });
     return;
@@ -76,11 +77,11 @@ function useAutoAlign() {
   const status = useAlignmentStore((s) => s.status);
   const progress = useAlignmentStore((s) => s.progress);
 
-  const autoAlign: AutoAlign = useCallback(async (lineIds, options) => {
-    lastRequest = { lineIds, realign: options?.realign ?? false };
-    const result = await useAlignmentStore.getState().alignLines(lineIds, options);
+  const autoAlign: AutoAlign = useCallback(async (targets, options) => {
+    lastRequest = { targets, realign: options?.realign ?? false };
+    const result = await useAlignmentStore.getState().alignLines(targets, options);
     if (!result) {
-      if (options?.toastErrors !== false) showAlignmentError(autoAlign, lineIds, options?.realign);
+      if (options?.toastErrors !== false) showAlignmentError(autoAlign, targets, options?.realign);
       return;
     }
     if (result.aligned > 0) {
@@ -108,7 +109,7 @@ function useAutoAlign() {
   const cancel = useCallback(() => useAlignmentStore.getState().cancel(), []);
   const retry = useCallback(
     () =>
-      void autoAlign(lastRequest.lineIds, { allowDownload: true, realign: lastRequest.realign, toastErrors: false }),
+      void autoAlign(lastRequest.targets, { allowDownload: true, realign: lastRequest.realign, toastErrors: false }),
     [autoAlign],
   );
 

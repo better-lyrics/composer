@@ -3,7 +3,13 @@ import { type AnchorChain, type AnchorWord, anchorWindow, keepsAnchored, lastWor
 import { hasCjk } from "@/domain/alignment/cjk";
 import type { LineReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
-import { type AlignmentWindow, lineSearchWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
+import {
+  type AlignmentWindow,
+  backgroundWindow,
+  lineSearchWindow,
+  refinedWindow,
+  searchWindow,
+} from "@/domain/alignment/window";
 import {
   type WordInterval,
   closeShortGaps,
@@ -138,6 +144,32 @@ async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain
   return finish(plan, result, window, cooling, ctx.smooth);
 }
 
+/**
+ * Aligns one line's background vocals in their own window. They have no tap,
+ * so neither the anchor, the CTC search, step 1's longer lead-in nor a line
+ * finder's wide window applies, and they leave the anchor chain alone. A model
+ * that finds lines weighs in which frames it hears them on (`gated`). A job
+ * that fails keeps the words as they were.
+ */
+async function alignBackground(plan: PlannedLine, ctx: LineContext): Promise<AlignedLine> {
+  const { pcm } = ctx;
+  const duration = pcm.samples.length / pcm.sampleRate;
+  const window = backgroundWindow(guideTaps(plan, duration), { duration, previous: plan.previous });
+  const result = await ctx.aligner.align({ ...segmentIn(plan, ctx.reading, pcm, window), gated: true }, ctx.signal);
+  const parts = plan.words.reduce((n, word) => n + word.parts.length, 0);
+  if (result.fellBack || result.intervals.length !== parts) return { result, timings: null, chain: null };
+  const intervals = sanitizeIntervals(result.intervals, window);
+  const { words, existing } = plan;
+  const timed = existing ? retimeWords(existing, intervals) : timingsFromParts(words, intervals, result.splits);
+  return { result, timings: ctx.smooth ? closeShortGaps(timed) : timed, chain: null };
+}
+
+/** Aligns one job. Background vocals pass the chain on untouched, so lines anchor only on lyrics. */
+async function alignJob(plan: PlannedLine, ctx: LineContext, chain: AnchorChain | null): Promise<AlignedLine> {
+  if (plan.track === "word") return alignLine(plan, ctx, chain);
+  return { ...(await alignBackground(plan, ctx)), chain };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { alignLine, isAbortError };
+export { alignJob, isAbortError };

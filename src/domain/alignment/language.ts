@@ -11,6 +11,9 @@ type HanReading = "zh" | "ja";
 /** A language whose own spelling rules read the Latin-script words of a song set to it. Malay reads as Indonesian. */
 type LatinReader = "es" | "pt" | "fr" | "de" | "it" | "tr" | "id";
 
+/** What a line has sung: its lyrics and its background vocals. */
+type SungText = Pick<LyricLine, "text" | "backgroundText">;
+
 /** How a song's scripts are read for alignment. */
 interface LineReading {
   hanReading: HanReading;
@@ -56,16 +59,17 @@ function isAlignableLanguage(code: string): boolean {
 }
 
 // Han characters are kanji in a Japanese project, or when any line has kana
-// (an all-kanji line in a Japanese song would otherwise read as Mandarin).
-function hanReadingFor(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): HanReading {
+// (an all-kanji line in a Japanese song would otherwise read as Mandarin),
+// background vocals included.
+function hanReadingFor(language: string | undefined, lines: readonly SungText[]): HanReading {
   const base = baseLanguage(language);
   if (base === "ja" || base === "zh") return base;
-  return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
+  return lines.some((line) => hasKana(line.text) || hasKana(line.backgroundText ?? "")) ? "ja" : "zh";
 }
 
 // Only the project language picks a Latin reader: a song with none set, or set to a
 // language in another script, reads its Latin-script words as English.
-function lineReadingFor(language: string | undefined, lines: readonly Pick<LyricLine, "text">[]): LineReading {
+function lineReadingFor(language: string | undefined, lines: readonly SungText[]): LineReading {
   const base = baseLanguage(language);
   return { hanReading: hanReadingFor(language, lines), latinReader: base ? (LATIN_READERS[base] ?? null) : null };
 }

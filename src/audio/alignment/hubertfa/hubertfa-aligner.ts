@@ -24,6 +24,7 @@ function lineRequest(segment: AlignmentSegment): LineRequest {
     transliteration: segment.transliteration,
     ...(segment.context ? { context: segment.context } : {}),
     ...(segment.wide ? { wide: true } : {}),
+    ...(segment.gated ? { gated: true } : {}),
     tap: segment.taps.begin - segment.windowBegin,
   };
 }
