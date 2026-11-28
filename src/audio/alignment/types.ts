@@ -35,6 +35,11 @@ interface AlignmentSegment {
    * lines, which then aligns the line among its neighbours' words.
    */
   wide?: boolean;
+  /**
+   * Words no tap starts (a line's background vocals), in a window that isn't wide. A model that finds lines then
+   * weighs in the frames it says are theirs, without the begin tap as a hint.
+   */
+  gated?: boolean;
 }
 
 interface SegmentAlignment {

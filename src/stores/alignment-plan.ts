@@ -6,9 +6,10 @@ import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInte
 import type { LinkGroup } from "@/domain/group/template";
 import { sharedTimingFanOut } from "@/domain/group/shared-timing";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
-import { mainBounds } from "@/domain/line/bounds";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import type { WordTrack } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
@@ -21,21 +22,29 @@ interface AlignableCounts {
   lineTimed: number;
   /** Lines that already have word timing: only aligned when re-aligning. */
   wordTimed: number;
+  /** Background vocals aligned as jobs of their own, whether or not the run re-aligns. */
+  background: number;
+  /** Lines with any of the above. */
+  lines: number;
 }
 
+/** One aligner job: a line's lyrics, or its background vocals as a job of their own. */
 interface PlannedLine {
   line: LyricLine;
+  track: WordTrack;
   taps: WordInterval;
   words: AlignmentWord[];
-  /** The line's current word timing when re-aligning; its parts are kept and retimed. */
+  /** The track's current word timing when re-aligning; its parts are kept and retimed. */
   existing: WordTiming[] | null;
   previous: WordInterval | null;
-  /** The line just before, when it has timing: the only line this one may anchor on. */
+  /** The line just before, when it has timing: the only line this one may anchor on. Null for background vocals. */
   previousId: string | null;
   /**
    * The span the line's windows are built around: its taps, or for a line
    * tapped in Line mode that no tap ended (the last one, or one a jump left
    * behind), from its begin to the next line's, or on to the song's end.
+   * Background vocals have no tap, so theirs is that span joined with their
+   * words' own.
    */
   guide: WordInterval;
   /** The previous and next lyric lines' words by position in the lyrics (empty at either end). */
@@ -44,15 +53,19 @@ interface PlannedLine {
   endsAtNextTap: boolean;
 }
 
+/** One track of one line, as picked in the Timeline. */
+interface AlignTarget {
+  lineId: string;
+  track: WordTrack;
+}
+
+type TrackPlan = Pick<PlannedLine, "taps" | "words" | "existing" | "guide">;
+
 // -- Functions ----------------------------------------------------------------
 
 // A Line mode tap opens a line at end == begin and the next tap closes it there; the last line, and the
 // line before a jump, are never closed.
-function planLine(
-  line: LyricLine,
-  realign: boolean,
-  nextBegin: number,
-): Pick<PlannedLine, "taps" | "words" | "existing" | "guide"> | null {
+function planLine(line: LyricLine, realign: boolean, nextBegin: number): TrackPlan | null {
   if (isLineSynced(line)) {
     const end = line.end === line.begin ? nextBegin : line.end;
     if (end <= line.begin) return null;
@@ -73,8 +86,28 @@ function planLine(
   return null;
 }
 
-function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | undefined, realign: boolean) {
-  const wanted = lineIds ? new Set(lineIds) : null;
+// A whole-song run aligns background vocals with their line, since tapping a
+// line seeds them with a guess; re-aligning also redoes timed ones whose line
+// isn't aligned. A Timeline pick aligns them whatever the line's timing.
+function planBackground(line: LyricLine, span: WordInterval | null): TrackPlan | null {
+  if (!line.backgroundText) return null;
+  const existing = line.backgroundWords?.length ? line.backgroundWords : null;
+  // The line's span joined with its words' (effectiveBounds), or theirs alone on a line with no timing.
+  const own = bgBounds(line);
+  const guide =
+    span && own ? { begin: Math.min(span.begin, own.begin), end: Math.max(span.end, own.end) } : (span ?? own);
+  if (!guide || guide.end < guide.begin) return null;
+  if (existing) return { taps: guide, words: groupTimedWords(existing), existing, guide };
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(line.backgroundText);
+  return parts.length > 0
+    ? { taps: guide, words: groupAlignmentWords(parts, trailingSpace), existing: null, guide }
+    : null;
+}
+
+/** Every line's lyrics and background vocals, or only the targeted tracks. */
+function planLines(lines: readonly LyricLine[], targets: readonly AlignTarget[] | undefined, realign: boolean) {
+  const wanted = targets ? new Map<string, WordTrack[]>() : null;
+  for (const { lineId, track } of targets ?? []) wanted!.set(lineId, [...(wanted!.get(lineId) ?? []), track]);
   const bounds = lines.map((line) => mainBounds(line));
   const nextBegin: number[] = new Array(lines.length);
   let next = Number.POSITIVE_INFINITY;
@@ -90,11 +123,13 @@ function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | und
     return groupAlignmentWords(parts, trailingSpace).map((word) => word.parts);
   };
   lines.forEach((line, i) => {
-    const plan = !wanted || wanted.has(line.id) ? planLine(line, realign, nextBegin[i]) : null;
+    const tracks = wanted?.get(line.id);
+    const plan = !wanted || tracks?.includes("word") ? planLine(line, realign, nextBegin[i]) : null;
     const previousId = i > 0 && bounds[i - 1] ? lines[i - 1].id : null;
     if (plan) {
       planned.push({
         line,
+        track: "word",
         ...plan,
         previous,
         previousId,
@@ -102,21 +137,64 @@ function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | und
         endsAtNextTap: plan.guide.end === nextBegin[i],
       });
     }
+    const withLine = wanted ? !!tracks?.includes("bg") : plan !== null || (realign && !!line.backgroundWords?.length);
+    // A line Line mode never ended runs on to the next tap, or to the song's end.
+    const own = bounds[i];
+    const span = own && { begin: own.begin, end: own.end === own.begin ? nextBegin[i] : own.end };
+    const background = withLine ? planBackground(line, span) : null;
+    if (background) {
+      // A model that finds lines is told the background words alone: they aren't between the lyric lines' words.
+      const context = { previous: [], next: [] };
+      planned.push({ line, track: "bg", ...background, previous, previousId: null, context, endsAtNextTap: false });
+    }
     if (bounds[i]) previous = bounds[i];
   });
   return planned;
 }
 
-function countAlignableLines(lines: readonly LyricLine[], lineIds?: readonly string[]): AlignableCounts {
-  const all = planLines(lines, lineIds, true);
-  const lineTimed = all.filter((p) => p.existing === null).length;
-  return { lineTimed, wordTimed: all.length - lineTimed };
+/** The lyrics of the given lines, re-aligned. */
+function planLyrics(lines: readonly LyricLine[], lineIds: readonly string[]): PlannedLine[] {
+  return planLines(
+    lines,
+    lineIds.map((lineId) => ({ lineId, track: "word" }) as const),
+    true,
+  );
+}
+
+/** The tracks of the picked words, once each. */
+function alignTargetsOf(words: readonly { lineId: string; type: WordTrack }[]): AlignTarget[] {
+  const seen = new Set<string>();
+  return words.flatMap(({ lineId, type }) => {
+    const key = `${lineId}:${type}`;
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [{ lineId, track: type }];
+  });
+}
+
+function countAlignableLines(lines: readonly LyricLine[], targets?: readonly AlignTarget[]): AlignableCounts {
+  const all = planLines(lines, targets, true);
+  const main = all.filter((p) => p.track === "word");
+  const lineTimed = main.filter((p) => p.existing === null).length;
+  const count = new Set(all.map((p) => p.line.id)).size;
+  return { lineTimed, wordTimed: main.length - lineTimed, background: all.length - main.length, lines: count };
 }
 
 // A line the user retimed or retyped mid-run keeps their edit. The store
-// replaces a line's object (and its words array) on every change.
+// replaces a line's object (and its words arrays) on every change.
 function isUnchanged(current: LyricLine | undefined, planned: PlannedLine): boolean {
   if (!current || current.text !== planned.line.text) return false;
+  if (planned.track === "bg") {
+    // The line's own timing set the window too.
+    const { line } = planned;
+    return (
+      current.backgroundText === line.backgroundText &&
+      current.backgroundWords === line.backgroundWords &&
+      current.words === line.words &&
+      current.begin === line.begin &&
+      current.end === line.end
+    );
+  }
   if (planned.existing) return current.words === planned.existing;
   return isLineSynced(current) && current.begin === planned.taps.begin && current.end === planned.taps.end;
 }
@@ -137,7 +215,7 @@ function segmentIn(
   return {
     words: plan.words,
     ...reading,
-    transliteration: sungTransliteration(plan.line),
+    transliteration: sungTransliteration(plan.line, plan.track),
     taps: guideTaps(plan, pcm.samples.length / pcm.sampleRate),
     windowBegin: window.begin,
     samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
@@ -191,15 +269,17 @@ function withSharedTiming(
 
 // -- Exports ------------------------------------------------------------------
 
+export type { AlignTarget, PlannedLine };
 export {
+  alignTargetsOf,
   countAlignableLines,
   guideTaps,
   hasTappedEnd,
   isUnchanged,
-  planLines,
   plainWindow,
+  planLines,
+  planLyrics,
   segmentFor,
   segmentIn,
   withSharedTiming,
 };
-export type { PlannedLine };

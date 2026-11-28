@@ -244,8 +244,9 @@ async function handleAlign(request: LineRequest, anchor: string[] | null) {
   try {
     const inputs = await lineInputs(request, line.sequence);
     const outputs = await runModel(request.samples, inputs?.feeds);
-    // A wide window holds the neighbours' singing too: the line is aligned among their words, not alone.
-    const among = request.wide && !anchor ? (inputs?.context ?? null) : null;
+    // A wide window holds the neighbours' singing too: the line is aligned among their words, not alone. Gated
+    // words go the same way with no neighbours given, for the model's line frames.
+    const among = (request.wide || request.gated) && !anchor ? (inputs?.context ?? null) : null;
     const phones = alignPhones(line.units, line.sequence, among, request, outputs);
     if (!phones) {
       post({ type: "align-done", outcome: { kind: "no-path" } });

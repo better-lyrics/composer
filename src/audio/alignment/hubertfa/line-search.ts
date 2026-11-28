@@ -102,9 +102,9 @@ function nearestUnits(units: PhoneUnit[], last: boolean): PhoneUnit[] {
 /**
  * The line's phones in the window, in seconds from its first sample, from a line-finding model's outputs: the
  * decoder over the previous line's last words, the line's and the next line's first, each neighbour free to go
- * unplaced, with the begin tap as a soft hint and the model's line frames as a soft gate. The phones are indexed
- * into `own`, the line's sequence alone, as an alignment of the line by itself would give them. Null when none of
- * the line's phones is placed.
+ * unplaced, with the begin tap as a soft hint (not for `gated` words, which no tap starts) and the model's line
+ * frames as a soft gate. The phones are indexed into `own`, the line's sequence alone, as an alignment of the line
+ * by itself would give them. Null when none of the line's phones is placed.
  */
 function alignAmongNeighbours(
   units: PhoneUnit[],
@@ -136,7 +136,7 @@ function alignAmongNeighbours(
     own: {
       first,
       last: unitOf.findLastIndex((_, index) => isOwn(index)),
-      ...(tap === undefined ? {} : { hint: { ...hint, cost: TAP_HINT.cost } }),
+      ...(tap === undefined || request.gated ? {} : { hint: { ...hint, cost: TAP_HINT.cost } }),
       gate: { logits: outputs[LINE_OUTPUT].data, ...LINE_GATE },
     },
   });
